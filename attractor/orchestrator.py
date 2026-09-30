@@ -12,6 +12,7 @@ from attractor.models import SearchRequest, SearchResponse, VerificationStatus
 from attractor.router import AdaptiveRouter
 from evidence.core import EvidenceStore
 from failure_engine.core import FailureEngine
+from providers.factory import build_default_provider
 from providers.registry import ProviderRegistry
 
 
@@ -32,7 +33,23 @@ class Attractor:
     def run(self, request: SearchRequest) -> SearchResponse:
         evidence = EvidenceStore()
         failures = FailureEngine()
-        provider = self.providers.get("mock")
+        try:
+            provider = build_default_provider()
+        except (RuntimeError, ValueError) as exc:
+            failures.record(
+                failure_type=__import__("attractor.models", fromlist=["FailureType"]).FailureType.API_ERROR,
+                message=str(exc),
+                recoverable=False,
+            )
+            return SearchResponse(
+                query=request.query,
+                mode=request.mode,
+                answer="Execution stopped because the configured provider is unavailable.",
+                verification=VerificationStatus.FAILED,
+                confidence=0.0,
+                failures=failures.failures,
+                trace_id=f"tr_{uuid4().hex}",
+            )
         context = AgentContext(
             query=request.query,
             provider=provider,
