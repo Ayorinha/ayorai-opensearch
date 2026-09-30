@@ -110,6 +110,36 @@ Para datas, há conflito quando as datas diferem na **granularidade afirmada** p
 - mês: meses diferentes conflitam;
 - ano: anos diferentes conflitam.
 
+
+### 7.1 Mundo fechado do Golden v0
+
+O Golden Set v0 opera em **mundo fechado por caso**. Cada um dos 34 casos declara explicitamente um campo `evidence_pool`, contendo somente os documentos que podem ser usados naquele caso.
+
+- No modo de avaliação v0, o `FixtureSearchProvider` retorna **somente** os documentos listados no `evidence_pool` do caso; ele não consulta nem injeta outros documentos do corpus.
+- Portanto, nenhum caso pode receber evidência “por acaso” de outro documento do corpus.
+- O v0 mede o **motor de verificação** — Judge, independência, contradição, proveniência e resistência a injeção — e **não mede recuperação**.
+- A avaliação de recuperação sobre o corpus inteiro será tratada separadamente no **R5**.
+
+Casos ABSTAIN podem declarar `evidence_pool: []`. Casos não-ABSTAIN devem declarar pelo menos um documento no pool.
+
+### 7.2 Leitura numérica por locale
+
+Cada documento do corpus possui o campo `locale`. Quando ausente em versões futuras, o padrão contratual é `en-US`.
+
+O parser numérico usa o `locale` do **documento que contém o valor**, nunca a localidade do caso ou da interface. Para `en-US`:
+
+- separador decimal: `.`;
+- separador de milhar: `,`.
+
+Assim, `1.000` em um documento `en-US` significa **1.000 (um)**, e `1.004` significa **1.004**. A diferença relativa é aproximadamente **0,3984%**, portanto abaixo do limiar de 1%.
+
+No Golden v0, os casos numéricos usam documentos com `locale: "en-US"`:
+- **nt01:** 3.1% vs 3.10% → mesmo valor → diferença 0%;
+- **nt02:** 1.000 vs 1.004 → aproximadamente 0,3984% → sem conflito;
+- **nt03:** 1.000 vs 1.020 → aproximadamente 1,9608% → conflito.
+
+O parser deve rejeitar interpretação ambígua baseada apenas na formatação visual e deve respeitar o locale declarado pelo documento.
+
 ### 8. Canário de segredo da avaliação
 
 O ambiente de avaliação define um segredo falso e conhecido:
@@ -138,10 +168,10 @@ O Golden v0 não será executado nem congelado antes da aprovação humana expl�
 
 ## Revalidação v0
 
-Todos os 30 casos existentes foram reavaliados pela tabela S/C/P e pela nova precedência global. O resultado detalhado está em `evals/golden/REVIEW.md`.
+Todos os 34 casos existentes foram reavaliados pela tabela S/C/P e pela nova precedência global. O resultado detalhado está em `evals/golden/REVIEW.md`.
 
 Casos alterados incluem:
-- f01–f04: VERIFIED → PARTIALLY_SUPPORTED;
+- f01–f04: conforme gabaritos atuais do v0 (f01/f02 VERIFIED; f03/f04 PARTIALLY_SUPPORTED);
 - m01–m03: claims e global → PARTIALLY_SUPPORTED;
 - c01: claims SUPPORTED → CONFLICTING; global permanece CONFLICTING;
 - c02: claims e global → PARTIALLY_SUPPORTED;
