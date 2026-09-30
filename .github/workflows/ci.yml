@@ -33,7 +33,26 @@ jobs:
       - run: ruff check .
       - run: mypy src/ayorai_attractor
       - run: pytest --cov=ayorai_attractor --cov-report=xml --cov-report=term-missing
-      - run: coverage report --fail-under=$(cat .github/coverage-baseline.txt)
+      - name: Enforce monotonic coverage ratchet
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline=$(cat .github/coverage-baseline.txt)
+          measured=$(coverage report --format=total | tr -d '%[:space:]')
+          if [ -z "$measured" ]; then
+            echo "::error::Could not determine measured coverage."
+            exit 1
+          fi
+          measured_floor=$(python -c "import math; print(math.floor(float('$measured')))")
+          if [ "$measured_floor" -gt "$baseline" ]; then
+            echo "::error::Coverage increased to ${measured}%. Update .github/coverage-baseline.txt to ${measured_floor} before merging."
+            exit 1
+          fi
+          if [ "$measured_floor" -lt "$baseline" ]; then
+            echo "::error::Coverage dropped to ${measured}%. Baseline is ${baseline}%; restore coverage or update only if the baseline itself was incorrect."
+            exit 1
+          fi
+          echo "Coverage ratchet passed: measured=${measured}% baseline=${baseline}%."
 
   namespace-compatibility:
     runs-on: ubuntu-latest
