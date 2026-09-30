@@ -28,7 +28,9 @@ class AdaptiveRouter:
                 "chief_judge",
             }
             roles = [role for role in INITIAL_ROLES if role.id in ids]
-        return RoutingDecision(
-            roles=roles[:limit],
-            reason=f"mode={mode}; selected={min(limit, len(roles))} of {len(INITIAL_ROLES)} initial roles",
+        selected_count = min(limit, len(roles))
+        reason = (
+            f"mode={mode}; selected={selected_count} "
+            f"of {len(INITIAL_ROLES)} initial roles"
         )
+        return RoutingDecision(roles=roles[:limit], reason=reason)
