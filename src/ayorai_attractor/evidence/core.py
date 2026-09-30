@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from attractor.models import Evidence, VerificationStatus
+from ayorai_attractor.models import Evidence, VerificationStatus
 
 
 class EvidenceStore:

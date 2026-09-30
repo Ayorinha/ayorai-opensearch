@@ -1,5 +1,5 @@
-from mcp.gateway import MCPGateway
-from plugins.registry import Plugin
+from ayorai_attractor.mcp_gateway.gateway import MCPGateway
+from ayorai_attractor.plugins.registry import Plugin
 
 
 def test_gateway_executes_trusted_capability() -> None:

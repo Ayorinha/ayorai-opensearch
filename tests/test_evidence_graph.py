@@ -1,6 +1,6 @@
 import pytest
 
-from evidence.graph import EvidenceGraph
+from ayorai_attractor.evidence.graph import EvidenceGraph
 
 
 def test_evidence_graph_links_claim_to_source() -> None:

@@ -3,7 +3,7 @@ import os
 from urllib import error, request
 from urllib.parse import urlparse
 
-from providers.base import Provider, ProviderResponse
+from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 
 class OpenAICompatibleProvider(Provider):

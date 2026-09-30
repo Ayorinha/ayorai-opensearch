@@ -1,7 +1,7 @@
 # ruff: noqa: I001
 from uuid import uuid4
 
-from agents.core import (
+from ayorai_attractor.agents.core import (
     AgentContext,
     CriticAgent,
     FactCheckerAgent,
@@ -9,10 +9,10 @@ from agents.core import (
     PlannerAgent,
     ResearchAgent,
 )
-from evidence.core import EvidenceStore
-from failure_engine.core import FailureEngine
-from providers.factory import build_default_provider, build_search_provider
-from providers.registry import ProviderRegistry
+from ayorai_attractor.evidence.core import EvidenceStore
+from ayorai_attractor.failure_engine.core import FailureEngine
+from ayorai_attractor.providers.factory import build_default_provider, build_search_provider
+from ayorai_attractor.providers.registry import ProviderRegistry
 
 from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
 from .router import AdaptiveRouter

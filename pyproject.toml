@@ -26,13 +26,19 @@ dev = [
   "httpx>=0.28,<1",
   "pip-audit>=2.9,<3",
   "bandit>=1.8,<2",
+  "mcp>=2,<3",
+  "openai-agents>=0.1,<1",
 ]
 
 [project.scripts]
-opensearch = "attractor.cli.main:search"
+opensearch = "ayorai_attractor.cli.main:search"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
-include = ["attractor*", "agents*", "providers*", "evidence*", "failure_engine*", "evaluation*", "plugins*", "memory*", "observability*", "security*", "mcp*"]
+where = ["src"]
+include = ["ayorai_attractor*"]
 
 [tool.ruff]
 line-length = 100
@@ -42,7 +48,7 @@ target-version = "py311"
 select = ["E","F","I","B","UP"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agents", "attractor", "evidence", "failure_engine", "providers", "evaluation", "plugins", "memory", "observability", "security"]
+known-first-party = ["ayorai_attractor"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

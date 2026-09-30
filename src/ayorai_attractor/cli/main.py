@@ -2,8 +2,8 @@ import json
 
 import typer
 
-from attractor.models import QualityMode, SearchRequest
-from attractor.orchestrator import Attractor
+from ayorai_attractor.models import QualityMode, SearchRequest
+from ayorai_attractor.orchestrator import Attractor
 
 app = typer.Typer(help="AYORAI ATTRACTOR OpenSearch CLI.")
 engine = Attractor()

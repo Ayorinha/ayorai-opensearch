@@ -1,7 +1,7 @@
 import pytest
 
-from providers.factory import build_default_provider
-from providers.mock import MockProvider
+from ayorai_attractor.providers.factory import build_default_provider
+from ayorai_attractor.providers.mock import MockProvider
 
 
 def test_default_provider_is_safe_without_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -26,7 +26,7 @@ def test_openai_provider_requires_credentials(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_search_provider_requires_https() -> None:
-    from providers.http_search import HttpSearchProvider
+    from ayorai_attractor.providers.http_search import HttpSearchProvider
 
     provider = HttpSearchProvider("http://example.com/search")
     with pytest.raises(ValueError, match="HTTPS"):
@@ -35,7 +35,7 @@ def test_search_provider_requires_https() -> None:
 
 
 def test_opensearch_provider_requires_https() -> None:
-    from providers.opensearch import OpenSearchProvider
+    from ayorai_attractor.providers.opensearch import OpenSearchProvider
 
     try:
         OpenSearchProvider("http://localhost:9200", "documents")
