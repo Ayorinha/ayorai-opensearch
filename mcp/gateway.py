@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from time import monotonic
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from plugins.registry import Plugin, PluginRegistry
 
