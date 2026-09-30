@@ -33,6 +33,7 @@ jobs:
       - run: ruff check .
       - run: mypy src/ayorai_attractor
       - run: pytest --cov=ayorai_attractor --cov-report=xml --cov-report=term-missing
+      - run: coverage report --fail-under=$(cat .github/coverage-baseline.txt)
 
   namespace-compatibility:
     runs-on: ubuntu-latest
