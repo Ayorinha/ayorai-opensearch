@@ -131,7 +131,7 @@ O parser numérico usa o `locale` do **documento que contém o valor**, nunca a 
 - separador decimal: `.`;
 - separador de milhar: `,`.
 
-Assim, `1.000` em um documento `en-US` significa **1.000 (um)**, e `1.004` significa **1.004**. A diferença relativa é aproximadamente **0,3984%**, portanto abaixo do limiar de 1%.
+Assim, `1.000` em um documento `en-US` é o valor decimal 1.000, e `1.004` é o valor decimal 1.004. A diferença relativa é aproximadamente **0,3984%**, portanto abaixo do limiar de 1%.
 
 No Golden v0, os casos numéricos usam documentos com `locale: "en-US"`:
 - **nt01:** 3.1% vs 3.10% → mesmo valor → diferença 0%;
