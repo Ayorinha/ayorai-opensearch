@@ -14,15 +14,20 @@ from typing import Any
 def normalize_question(value: str) -> str:
     text = unicodedata.normalize("NFKD", value).casefold()
     text = "".join(ch for ch in text if not unicodedata.combining(ch))
-    text = re.sub(r"[^\\w\\s]", " ", text, flags=re.UNICODE)
-    return re.sub(r"\\s+", " ", text).strip()
+    text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def verdict_signature(case: dict[str, Any]) -> tuple[Any, ...]:
     claims = tuple(
         claim.get("verdict") for claim in case.get("expected_claims", [])
     )
-    return (case.get("expected_verdict"), case.get("global"), claims, case.get("response_status"))
+    return (
+        case.get("expected_verdict"),
+        case.get("global"),
+        claims,
+        case.get("response_status"),
+    )
 
 
 def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
@@ -62,7 +67,10 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
 
         for doc_id in pool:
             if doc_id not in corpus_ids:
-                errors.append(f"{case_id}: evidence_pool references missing document {doc_id}")
+                errors.append(
+                    f"{case_id}: evidence_pool references missing document {doc_id}"
+                )
+
         for doc_id in case.get("must_cite", []):
             if doc_id not in pool:
                 errors.append(
@@ -70,7 +78,9 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
                 )
 
         if not pool and not str(case.get("response_status", "")).startswith("ABSTAIN/"):
-            errors.append(f"{case_id}: evidence_pool is empty but case is not ABSTAIN")
+            errors.append(
+                f"{case_id}: evidence_pool is empty but case is not ABSTAIN"
+            )
 
         question = case.get("query")
         if isinstance(question, str):
@@ -80,6 +90,7 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
         signatures = {verdict_signature(case) for case in cases}
         if len(signatures) <= 1:
             continue
+
         for case in cases:
             contrast = case.get("contrast_with")
             if not contrast:
@@ -101,7 +112,9 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
     if len(corpus) != 52:
         errors.append(f"expected 52 corpus documents, found {len(corpus)}")
 
-    missing_locales = [doc.get("doc_id") for doc in corpus if not doc.get("locale")]
+    missing_locales = [
+        doc.get("doc_id") for doc in corpus if not doc.get("locale")
+    ]
     if missing_locales:
         errors.append(
             f"documents missing locale: {', '.join(map(str, missing_locales))}"
@@ -112,15 +125,25 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--golden", type=Path, default=Path("evals/golden/v0.jsonl"))
-    parser.add_argument("--corpus", type=Path, default=Path("evals/corpus/documents.jsonl"))
+    parser.add_argument(
+        "--golden",
+        type=Path,
+        default=Path("evals/golden/v0.jsonl"),
+    )
+    parser.add_argument(
+        "--corpus",
+        type=Path,
+        default=Path("evals/corpus/documents.jsonl"),
+    )
     args = parser.parse_args()
     errors = lint_golden(args.golden, args.corpus)
+
     if errors:
         print("GOLDEN_LINT: FAIL")
         for error in errors:
             print(f"- {error}")
         return 1
+
     print("GOLDEN_LINT: PASS")
     print("cases=34 corpus_documents=52 evidence_pools=34")
     print("duplicate_question_gold_conflicts=0")
