@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 from uuid import uuid4
 
 from agents.core import (
