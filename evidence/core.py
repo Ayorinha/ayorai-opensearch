@@ -16,6 +16,7 @@ class EvidenceStore:
             source=source,
             excerpt=excerpt,
             verified=verified,
+            independent=independent,
         )
         self._items[item.id] = item
         return item
