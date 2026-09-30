@@ -1,9 +1,9 @@
 from ayorai_attractor.agents.roles import INITIAL_ROLES
+from ayorai_attractor.evaluation.bench import benchmark_dimensions
 from ayorai_attractor.models import SearchRequest
 from ayorai_attractor.orchestrator import Attractor
-from ayorai_attractor.router import AdaptiveRouter
-from ayorai_attractor.evaluation.bench import benchmark_dimensions
 from ayorai_attractor.plugins.registry import Plugin, PluginRegistry
+from ayorai_attractor.router import AdaptiveRouter
 
 
 def test_initial_swarm_has_26_roles() -> None:
