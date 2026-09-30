@@ -1,0 +1,18 @@
+name: Golden case
+description: Propose a new evaluation case
+title: "[Golden] "
+labels: [evaluation]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence pool and expected state
+      description: Include synthetic document IDs, expected state, provenance and contrast_with when applicable.
+    validations:
+      required: true

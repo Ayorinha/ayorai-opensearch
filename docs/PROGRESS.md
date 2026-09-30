@@ -63,10 +63,18 @@ Não são previsões de prazo.
 
 PRs #7, #8, #9, #10 e #11 foram mergeados entre 16:50:30Z e 17:07:01Z em 2026-09-30; PR #12 foi mergeado às 18:33:31Z. Isso corresponde a 6 itens concluídos em aproximadamente 103 minutos entre o primeiro e o último merge. Esse ritmo é apenas histórico desta sessão e **não é uma estimativa de prazo**; a continuidade depende do tempo disponível do mantenedor.
 
+## Trilha de colaboração GitHub
+
+- **concluída no PR #21**, com CI verde antes do merge.
+- CONTRIBUTING.md e CODE_OF_CONDUCT.md.
+- Templates de bug, feature, golden case e pull request.
+- Seis issues reais (#15–#20), com `good first issue` / `help wanted`.
+- Discussions: **não ativadas pelo conector disponível**; a configuração requer ação no GitHub.
+
 ## Próximos 3 itens
 
-1. Trilha de colaboração do GitHub em PR próprio.
-2. README/portfólio do ATTRACTOR em PR próprio.
+1. README/portfólio do ATTRACTOR em PR próprio.
+2. README do perfil Ayorinha em PR próprio.
 3. R1-a — contrato de modelos e ADR do motor de verificação.
 
 ## Evidência
