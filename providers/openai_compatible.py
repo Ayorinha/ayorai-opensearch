@@ -1,6 +1,6 @@
 import json
 import os
-from urllib import error, request
+from urllib import error, request\nfrom urllib.parse import urlparse
 
 from providers.base import Provider, ProviderResponse
 
@@ -17,7 +17,7 @@ class OpenAICompatibleProvider(Provider):
         self.model = model or os.getenv("ATTRACTOR_MODEL", "gpt-5")
 
     def execute(self, prompt: str) -> ProviderResponse:
-        if not self.api_key:
+        if urlparse(self.base_url).scheme != "https":\n            raise ValueError("Provider base URL must use HTTPS")\n        if not self.api_key:
             raise RuntimeError("OPENAI_API_KEY is not configured")
         payload = json.dumps(
             {
@@ -35,7 +35,7 @@ class OpenAICompatibleProvider(Provider):
             method="POST",
         )
         try:
-            with request.urlopen(req, timeout=60) as response:
+            with request.urlopen(req, timeout=60)  # nosec B310 - provider URL is HTTPS-only as response:
                 data = json.load(response)
         except error.URLError as exc:
             raise RuntimeError(f"Provider request failed: {exc}") from exc
