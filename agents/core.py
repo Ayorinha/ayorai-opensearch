@@ -10,6 +10,7 @@ from providers.base import Provider
 class AgentContext:
     query: str
     provider: Provider
+    search_provider: Provider | None
     evidence: EvidenceStore
     failures: FailureEngine
 
@@ -38,6 +39,23 @@ class ResearchAgent(Agent):
     name = "research"
 
     def run(self, context: AgentContext) -> AgentResult:
+        evidence_ids: list[str] = []
+        if context.search_provider is not None:
+            try:
+                search_response = context.search_provider.execute(context.query)
+                search_evidence = context.evidence.add(
+                    claim=f"External search returned results for '{context.query}'.",
+                    source=search_response.source or "external-search",
+                    excerpt=search_response.excerpt or search_response.text,
+                    independent=search_response.independent,
+                )
+                evidence_ids.append(search_evidence.id)
+            except Exception as exc:
+                context.failures.record(
+                    FailureType.API_ERROR,
+                    f"External search failed: {exc}",
+                    recoverable=True,
+                )
         try:
             response = context.provider.execute(context.query)
         except Exception as exc:
@@ -56,11 +74,12 @@ class ResearchAgent(Agent):
             claim=f"Provider produced an analysis for '{context.query}'.",
             source=response.source or "unknown",
             excerpt=response.excerpt or response.text,
+            independent=response.independent,
         )
         return AgentResult(
             agent=self.name,
             output=response.text,
-            evidence_ids=[evidence.id],
+            evidence_ids=[*evidence_ids, evidence.id],
         )
 
 
