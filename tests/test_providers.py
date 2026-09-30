@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 from providers.factory import build_default_provider
