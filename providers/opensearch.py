@@ -2,10 +2,12 @@ import os
 
 import httpx
 
-from providers.base import ProviderResponse
+from providers.base import Provider, ProviderResponse
 
 
-class OpenSearchProvider:
+class OpenSearchProvider(Provider):
+    id = "opensearch"
+    capabilities = frozenset({"search", "evidence"})
     """Read-only OpenSearch-compatible search adapter."""
 
     def __init__(
