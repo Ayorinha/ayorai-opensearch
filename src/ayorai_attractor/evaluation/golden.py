@@ -66,8 +66,19 @@ def _accuracy(correct: int, total: int) -> dict[str, float | int]:
 def evaluate_golden_v0(
     golden_path: Path,
     corpus_path: Path,
+    suite: str = "golden-v0",
 ) -> dict[str, Any]:
     cases = _load_jsonl(golden_path)
+    if suite == "smoke-v0":
+        smoke_categories = {"factual", "conflict", "injection", "no-answer", "out-of-scope"}
+        cases = [
+            case
+            for category in smoke_categories
+            for case in cases
+            if case.get("category") == category
+        ]
+    elif suite != "golden-v0":
+        raise ValueError(f"Unsupported suite: {suite}")
     corpus = _load_jsonl(corpus_path)
     documents = {str(doc["doc_id"]): doc for doc in corpus}
 
@@ -145,7 +156,7 @@ def evaluate_golden_v0(
         )
 
     return {
-        "suite": "golden-v0",
+        "suite": suite,
         "system": "current-attractor",
         "network": False,
         "case_count": len(cases),
