@@ -32,7 +32,7 @@ jobs:
       - run: python -c "import mcp, agents, ayorai_attractor; print(mcp.__file__); print(agents.__file__); print(ayorai_attractor.__file__)"
       - run: ruff check .
       - run: mypy src/ayorai_attractor
-      - run: pytest --cov=ayorai_attractor --cov-report=term-missing
+      - run: pytest --cov=ayorai_attractor --cov-report=xml --cov-report=term-missing
 
   namespace-compatibility:
     runs-on: ubuntu-latest
