@@ -1,0 +1,55 @@
+name: Golden v0 Freeze and Baseline
+
+on:
+  push:
+    branches:
+      - a4-golden-v0-review
+
+permissions:
+  contents: read
+
+jobs:
+  freeze-and-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - name: Lint frozen golden contract
+        run: python scripts/lint_golden.py
+      - name: Calculate SHA-256 for freeze
+        run: |
+          echo "SHA256 golden v0:"
+          sha256sum evals/golden/v0.jsonl
+          echo "SHA256 corpus:"
+          sha256sum evals/corpus/documents.jsonl
+      - name: Verify manifest exists before baseline
+        id: manifest
+        shell: bash
+        run: |
+          if [ -f evals/golden/MANIFEST.json ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            cat evals/golden/MANIFEST.json
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "MANIFEST.json not present yet; baseline is intentionally skipped."
+          fi
+      - name: Run baseline on current system
+        if: steps.manifest.outputs.present == 'true'
+        run: |
+          mkdir -p reports
+          attractor eval --suite golden-v0 --out "reports/eval-${GITHUB_SHA}.json"
+          cat "reports/eval-${GITHUB_SHA}.json"
+      - name: Upload baseline artifact
+        if: steps.manifest.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-v0-baseline-${{ github.sha }}
+          path: |
+            reports/eval-${{ github.sha }}.json
+            evals/golden/MANIFEST.json

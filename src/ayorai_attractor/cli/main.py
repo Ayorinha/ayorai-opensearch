@@ -1,7 +1,9 @@
 import json
+from pathlib import Path
 
 import typer
 
+from ayorai_attractor.evaluation.golden import evaluate_golden_v0
 from ayorai_attractor.models import QualityMode, SearchRequest
 from ayorai_attractor.orchestrator import Attractor
 
@@ -26,3 +28,31 @@ def search(
             ensure_ascii=False,
         )
     )
+
+
+@app.command(name="eval")
+def eval_suite(
+    suite: str = typer.Option("golden-v0", "--suite"),
+    out: Path = typer.Option(  # noqa: B008
+        Path("reports/eval-golden-v0.json"), "--out"
+    ),
+) -> None:
+    """Run a deterministic evaluation suite."""
+    if suite not in {"golden-v0", "smoke-v0"}:
+        raise typer.BadParameter("Only golden-v0 and smoke-v0 are implemented.")
+    report = evaluate_golden_v0(
+        Path("evals/golden/v0.jsonl"),
+        Path("evals/corpus/documents.jsonl"),
+        suite=suite,
+    )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    typer.echo(json.dumps({
+        "suite": suite,
+        "out": str(out),
+        "global_accuracy": report["global_accuracy"],
+        "majority_class_baseline": report["majority_class_baseline"],
+    }, ensure_ascii=False))

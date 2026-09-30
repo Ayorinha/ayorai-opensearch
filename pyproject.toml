@@ -32,6 +32,7 @@ dev = [
 
 [project.scripts]
 opensearch = "ayorai_attractor.cli.main:search"
+attractor = "ayorai_attractor.cli.main:app"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
