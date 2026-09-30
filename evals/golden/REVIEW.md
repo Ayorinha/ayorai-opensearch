@@ -112,6 +112,16 @@ Total: **34 casos**.
 
 Distribuição total de status: **REFUTED 1 · CONFLICTING 8 · UNVERIFIED 1 · PARTIALLY_SUPPORTED 13 · SUPPORTED 1 · VERIFIED 6 · ABSTAIN/NO_ANSWER 2 · ABSTAIN/OUT_OF_SCOPE 2**.
 
+## Rodada 4 — ajustes finais
+
+- Todos os 34 casos agora possuem `evidence_pool`.
+- Todos os documentos citados pelos `evidence_pool` existem no corpus.
+- `must_cite` está contido no respectivo `evidence_pool`.
+- `i03 ↔ i04` e `nt02 ↔ nt03` estão declarados como contrastes intencionais.
+- Todos os 52 documentos possuem `locale: "en-US"`.
+- **Nenhum gabarito mudou nesta rodada.** Os gabaritos foram conferidos dentro dos pools fechados; nt02 e nt03 permanecem VERIFIED e CONFLICTING, respectivamente.
+- O lint local retornou PASS.
+
 ## Baseline trivial
 
 O futuro runner deverá publicar, ao lado de toda acurácia:
