@@ -15,6 +15,23 @@ permissions:
   contents: read
 
 jobs:
+  golden-smoke:
+    name: golden-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - name: Run five-category golden smoke eval
+        run: |
+          attractor eval --suite smoke-v0 --out /tmp/golden-smoke.json
+          python -c "import json; r=json.load(open('/tmp/golden-smoke.json')); assert r['case_count']==5; print('GOLDEN_SMOKE: PASS cases=5')"
+
   golden-lint:
     name: golden-lint
     runs-on: ubuntu-latest
