@@ -2,11 +2,15 @@ import os
 
 from providers.base import Provider
 from providers.http_search import HttpSearchProvider
+from providers.opensearch import build_opensearch_provider
 from providers.mock import MockProvider
 from providers.openai_compatible import OpenAICompatibleProvider
 
 
-def build_search_provider() -> HttpSearchProvider | None:
+def build_search_provider() -> HttpSearchProvider | object | None:
+    opensearch = build_opensearch_provider()
+    if opensearch is not None:
+        return opensearch
     endpoint = os.getenv("ATTRACTOR_SEARCH_ENDPOINT", "").strip()
     if not endpoint:
         return None
