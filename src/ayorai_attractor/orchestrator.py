@@ -60,7 +60,11 @@ class Attractor:
         context = AgentContext(
             query=request.query,
             provider=provider,
-            search_provider=(\n                self.search_provider\n                if self.search_provider is not None\n                else build_search_provider()\n            ),
+            search_provider=(
+                self.search_provider
+                if self.search_provider is not None
+                else build_search_provider()
+            ),
             evidence=evidence,
             failures=failures,
         )
