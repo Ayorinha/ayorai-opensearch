@@ -1,15 +1,12 @@
 import json
-from urllib import error, parse, request\nfrom urllib.parse import urlparse
+from urllib import error, parse, request
+from urllib.parse import urlparse
 
 from providers.base import Provider, ProviderResponse
 
 
 class HttpSearchProvider(Provider):
-    """Generic JSON search adapter.
-
-    The endpoint contract is intentionally small so real search vendors can be
-    added without coupling the core engine to one provider.
-    """
+    """Generic JSON search adapter with an HTTPS-only boundary."""
 
     id = "http-search"
     capabilities = frozenset({"search", "research", "evidence"})
@@ -19,13 +16,15 @@ class HttpSearchProvider(Provider):
         self.api_key = api_key
 
     def execute(self, prompt: str) -> ProviderResponse:
-        if urlparse(self.endpoint).scheme != "https":\n            raise ValueError("Search endpoint must use HTTPS")\n        query = parse.urlencode({"q": prompt})
+        if urlparse(self.endpoint).scheme != "https":
+            raise ValueError("Search endpoint must use HTTPS")
+        query = parse.urlencode({"q": prompt})
         headers = {"Accept": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         req = request.Request(f"{self.endpoint}?{query}", headers=headers)
         try:
-            with request.urlopen(req, timeout=30)  # nosec B310 - endpoint is HTTPS-only as response:
+            with request.urlopen(req, timeout=30) as response:  # nosec B310 - HTTPS-only endpoint
                 data = json.load(response)
         except error.URLError as exc:
             raise RuntimeError(f"Search request failed: {exc}") from exc
