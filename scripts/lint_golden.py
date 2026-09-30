@@ -27,8 +27,16 @@ def verdict_signature(case: dict[str, Any]) -> tuple[Any, ...]:
 
 def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
     errors: list[str] = []
-    golden = [json.loads(line) for line in golden_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    corpus = [json.loads(line) for line in corpus_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    golden = [
+        json.loads(line)
+        for line in golden_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    corpus = [
+        json.loads(line)
+        for line in corpus_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
     corpus_ids = {doc.get("doc_id") for doc in corpus}
 
     seen_ids: set[str] = set()
@@ -55,6 +63,11 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
         for doc_id in pool:
             if doc_id not in corpus_ids:
                 errors.append(f"{case_id}: evidence_pool references missing document {doc_id}")
+        for doc_id in case.get("must_cite", []):
+            if doc_id not in pool:
+                errors.append(
+                    f"{case_id}: must_cite document {doc_id} is outside evidence_pool"
+                )
 
         if not pool and not str(case.get("response_status", "")).startswith("ABSTAIN/"):
             errors.append(f"{case_id}: evidence_pool is empty but case is not ABSTAIN")
@@ -62,9 +75,6 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
         question = case.get("query")
         if isinstance(question, str):
             by_question[normalize_question(question)].append(case)
-
-        if "locale" not in case and case.get("category", "").startswith("numeric"):
-            errors.append(f"{case_id}: numeric case must be backed by corpus documents with locale")
 
     for normalized, cases in by_question.items():
         signatures = {verdict_signature(case) for case in cases}
@@ -77,8 +87,14 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
                     f"{case['id']}: normalized question has differing gold labels "
                     f"without contrast_with (question={normalized!r})"
                 )
-            elif not isinstance(contrast, list) or not all(isinstance(item, str) for item in contrast):
-                errors.append(f"{case['id']}: contrast_with must be a non-empty list of case ids")
+            elif (
+                not isinstance(contrast, list)
+                or not contrast
+                or not all(isinstance(item, str) for item in contrast)
+            ):
+                errors.append(
+                    f"{case['id']}: contrast_with must be a non-empty list of case ids"
+                )
 
     if len(golden) != 34:
         errors.append(f"expected 34 golden cases, found {len(golden)}")
@@ -87,7 +103,9 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
 
     missing_locales = [doc.get("doc_id") for doc in corpus if not doc.get("locale")]
     if missing_locales:
-        errors.append(f"documents missing locale: {', '.join(map(str, missing_locales))}")
+        errors.append(
+            f"documents missing locale: {', '.join(map(str, missing_locales))}"
+        )
 
     return errors
 
