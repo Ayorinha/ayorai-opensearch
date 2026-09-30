@@ -8,12 +8,13 @@ from agents.core import (
     PlannerAgent,
     ResearchAgent,
 )
-from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
-from .router import AdaptiveRouter
 from evidence.core import EvidenceStore
 from failure_engine.core import FailureEngine
 from providers.factory import build_default_provider
 from providers.registry import ProviderRegistry
+
+from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
+from .router import AdaptiveRouter
 
 
 IMPLEMENTED_AGENTS = {
