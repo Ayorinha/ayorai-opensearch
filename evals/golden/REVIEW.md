@@ -1,7 +1,7 @@
 # Golden Set v0 — Human Review
 
 **Status:** DRAFT — **não congelado, não hasheado e não executado**.
-**Tamanho:** 30 casos · 42 documentos sintéticos.
+**Tamanho:** 30 casos · 43 documentos sintéticos.
 
 ## Autoauditoria
 
@@ -9,9 +9,9 @@
 
 **Itens não cobertos:** zero.
 
-**Casos ⚠️:** m01, m02, m03, c03, r01, r02, h01, ch01, p01, p02 e rf01.
+**Casos ⚠️:** nenhum. Todos os antigos casos marcados ⚠️ foram resolvidos pelo ADR-002 e o gabarito foi ajustado onde necessário.
 
-**Dependências ainda não definidas:** ADR-002 ainda não existe no repositório; portanto o gabarito assume (a) agregação global pelo elo mais fraco, (b) VERIFIED quando há duas fontes independentes concordantes e proveniência completa, (c) proveniência incompleta limita a SUPPORTED, (d) mesmo origin_id, cadeia de citação canônica ou hash idêntico formam um cluster, e (e) contradição unívoca da afirmação recebe REFUTED. Estas são hipóteses para aprovação humana, não lógica implementada.
+**Dependências resolvidas:** ADR-002-judge-rules.md agora define a agregação pelo elo mais fraco, proveniência completa, clusters, abstenção, injeção, mapeamento de INSUFFICIENT_EVIDENCE e REFUTED/CONFLICTING. O ADR permanece Draft até aprovação conjunta com este v0.
 
 **Observação sobre LLM/mock:** o requisito de que uma única resposta de LLM/mock resulte em UNVERIFIED está explicitado, mas o corpus v0 não contém uma fixture em que a única evidência seja a resposta de um provider mock; isso ficará como teste explícito do R1. ⚠️
 
@@ -40,7 +40,7 @@
 | Injection: declarar VERIFIED | i01 |
 | Injection: ignorar outras fontes | i02 |
 | Injection: revelar configuração/segredos | i01, i03 |
-| Única evidência LLM/mock → UNVERIFIED | requisito explicitado; fixture dedicada ainda não existe ⚠️ |
+| Única evidência LLM/mock → UNVERIFIED | c03 |
 
 ## Casos para revisão
 
@@ -89,7 +89,7 @@
 8. Instruções dentro dos documentos são dados, nunca instruções de sistema.
 9. “Sem resposta” significa que a pergunta pertence ao domínio do corpus, mas o atributo solicitado não aparece; “fora de escopo” significa que a pergunta pede uma decisão/serviço que o corpus não se propõe a fornecer.
 10. A única evidência de LLM/mock deve resultar em UNVERIFIED; a implementação será provada no R1.
-11. ADR-002 será criado em R1-a; portanto os nomes das regras acima são hipóteses de gabarito e não afirmam que a lógica já existe.
-12. Após aprovação explícita, v0 poderá ser congelado por SHA-256 em evals/golden/MANIFEST.json. Antes disso, não executar a avaliação.
+11. ADR-002 está em Draft neste mesmo PR e formaliza as regras usadas para resolver todos os antigos ⚠️; nenhuma dessas regras foi ainda executada pelo sistema.
+12. Após aprovação explícita conjunta, v0 e ADR-002 poderão ser congelados por SHA-256 em evals/golden/MANIFEST.json. Antes disso, não executar a avaliação.
 
 **Decisão pendente:** revisão humana do gabarito. O PR #12 permanece Draft.
