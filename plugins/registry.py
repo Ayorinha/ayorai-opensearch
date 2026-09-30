@@ -27,7 +27,15 @@ class PluginRegistry:
         ]
         if trusted_only:
             candidates = [plugin for plugin in candidates if plugin.trust_level == "trusted"]
-        return sorted(candidates, key=lambda plugin: (plugin.latency_ms is None, plugin.latency_ms or 0.0, plugin.cost_per_call is None, plugin.cost_per_call or 0.0))
+        return sorted(
+            candidates,
+            key=lambda plugin: (
+                plugin.latency_ms is None,
+                plugin.latency_ms or 0.0,
+                plugin.cost_per_call is None,
+                plugin.cost_per_call or 0.0,
+            ),
+        )
 
     def disable(self, plugin_id: str) -> None:
         if plugin_id in self._plugins:
