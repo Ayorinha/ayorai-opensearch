@@ -29,6 +29,8 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
+      - name: Lint Golden v0 closed-world contract
+        run: python scripts/lint_golden.py
       - run: python -c "import mcp, agents, ayorai_attractor; print(mcp.__file__); print(agents.__file__); print(ayorai_attractor.__file__)"
       - run: ruff check .
       - run: mypy src/ayorai_attractor
