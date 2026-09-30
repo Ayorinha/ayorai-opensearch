@@ -1,6 +1,6 @@
 # MCP Gateway
 
-The future MCP layer will treat external tools as capabilities, not implicit permissions.
+The MCP Gateway now treats external tools as capabilities, not implicit permissions. Tool execution is deny-by-default for untrusted plugins.
 
 Every tool should have:
 
