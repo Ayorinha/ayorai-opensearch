@@ -1,6 +1,6 @@
 # ADR-002 — Judge Rules and Evidence Verification
 
-**Status:** Draft — aguardando aprovação humana junto com Golden Set v0  
+**Status:** Accepted — 2026-09-30, approved by the maintainer together with Golden v0 (PR #12, merge b7df480)  
 **Date:** 2026-09-30  
 **Scope:** R1 verification engine
 
@@ -166,6 +166,8 @@ Cada regra desta ADR deve ter no R1:
 
 O Golden v0 não será executado nem congelado antes da aprovação humana explícita.
 
+**Nota histórica:** A condição de aprovação humana explícita foi cumprida em 2026-09-30 pelo mantenedor, junto com a aprovação do Golden v0 no PR #12, merge `b7df480`.
+
 ## Revalidação v0
 
 Todos os 34 casos existentes foram reavaliados pela tabela S/C/P e pela nova precedência global. O resultado detalhado está em `evals/golden/REVIEW.md`.
@@ -185,3 +187,5 @@ A rodada 3 adiciona dois casos de fronteira numérica e um conjunto de fixtures 
 ## Golden v0
 
 O Golden Set permanece em Draft e não será executado, congelado, hasheado ou transformado em baseline antes da aprovação humana explícita deste ADR e do v0.
+
+**Nota histórica:** A condição registrada nessa frase foi cumprida em 2026-09-30 pelo mantenedor, com a aprovação deste ADR e do Golden v0 no PR #12, merge `b7df480`. A frase é preservada como registro histórico e não altera as regras do ADR.
