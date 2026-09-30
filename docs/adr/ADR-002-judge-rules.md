@@ -36,7 +36,7 @@ Para um cluster de suporte participar de P, cada evidência de suporte precisa c
 3. `retrieved_at` válido;
 4. offsets válidos para o trecho recuperado;
 5. excerpt verificável associado ao documento;
-6. `origin_id` ou URL canônica suficiente para formar o cluster.
+6. `origin_id` ou URL canônica válida para formar o cluster.
 
 **P é verdadeiro somente quando toda a evidência de suporte usada para o claim tem proveniência completa.**
 
