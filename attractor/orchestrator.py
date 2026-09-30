@@ -8,12 +8,7 @@ from agents.core import (
     PlannerAgent,
     ResearchAgent,
 )
-from attractor.models import (
-    FailureType,
-    SearchRequest,
-    SearchResponse,
-    VerificationStatus,
-)
+from attractor.models import FailureType, SearchRequest, SearchResponse, VerificationStatus
 from attractor.router import AdaptiveRouter
 from evidence.core import EvidenceStore
 from failure_engine.core import FailureEngine
