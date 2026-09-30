@@ -29,7 +29,7 @@ dev = [
 ]
 
 [project.scripts]
-opensearch = "attractor.cli.main:app"
+opensearch = "attractor.cli.main:search"
 
 [tool.setuptools.packages.find]
 include = ["attractor*", "agents*", "providers*", "evidence*", "failure_engine*", "evaluation*"]
