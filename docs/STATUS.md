@@ -2,7 +2,7 @@
 
 **Updated:** 2026-09-30  
 **Baseline:** `baf0a82372b0e3053bc7bd66968fb8db495f2b5e`  
-**Current phase:** Phase 0 / A2.2
+**Current phase:** Phase 0 / A3
 
 | Capability | Status |
 |---|---|
@@ -31,7 +31,7 @@
 | Official MCP SDK coexistence | VERIFIED — A1 CI proof |
 | Official OpenAI Agents SDK coexistence | VERIFIED — A1 CI proof |
 | Coverage ratchet | VERIFIED — true monotonic ratchet; baseline 69%; increases and decreases fail until baseline is reconciled |
-| Strict mypy job | MISSING — A3 |
+| Strict mypy job | VERIFIED — non-blocking `mypy --strict` reports 0 errors across 39 source files; strict evidence check is blocking |
 | Golden Set v0 | MISSING — A4 |
 | Baseline evaluation metrics | NOT MEASURED |
 | Hybrid BM25 + kNN + RRF | MISSING |
@@ -106,3 +106,16 @@ PR #9 was merged after CI passed on Python 3.11, 3.12 and 3.13 plus namespace co
 3. passes when the floored measured coverage equals the baseline.
 
 No baseline increase was needed because the verified measurement remained 69%.
+
+
+## A3 — Strict typing baseline (verified by CI)
+
+CI run: 36748693348.  
+- `mypy --strict src/ayorai_attractor`: **0 errors in 39 source files**.
+- Strict error count by module: **0 for every source module**; no module emitted an error line.
+- Blocking check: `mypy --strict src/ayorai_attractor/evidence` passed.
+- The strict job remains non-blocking for the repository-wide migration, while `ayorai_attractor.evidence` is enforced through a `[tool.mypy] [[tool.mypy.overrides]]` strict override.
+- The strict override list is intentionally a ratchet: future strict modules are added to the list and cannot be removed silently.
+- CI, Security and CodeQL all passed for PR #11.
+
+No R1 code was introduced in A3.

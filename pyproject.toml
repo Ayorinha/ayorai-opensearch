@@ -60,3 +60,9 @@ check_untyped_defs = true
 disallow_untyped_defs = true
 no_implicit_optional = true
 warn_unused_ignores = true
+
+
+# Strict typing ratchet: this list only grows.
+[[tool.mypy.overrides]]
+module = ["ayorai_attractor.evidence", "ayorai_attractor.evidence.*"]
+strict = true
