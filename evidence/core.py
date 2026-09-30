@@ -8,7 +8,12 @@ class EvidenceStore:
         self._items: dict[str, Evidence] = {}
 
     def add(
-        self, claim: str, source: str, excerpt: str, verified: bool = False
+        self,
+        claim: str,
+        source: str,
+        excerpt: str,
+        verified: bool = False,
+        independent: bool = False,
     ) -> Evidence:
         item = Evidence(
             id=f"ev_{uuid4().hex[:12]}",
