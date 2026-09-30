@@ -22,3 +22,12 @@ def test_openai_provider_requires_credentials(monkeypatch: pytest.MonkeyPatch) -
     provider = build_default_provider()
     with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
         provider.execute("test")
+
+
+
+def test_search_provider_requires_https() -> None:
+    from providers.http_search import HttpSearchProvider
+
+    provider = HttpSearchProvider("http://example.com/search")
+    with pytest.raises(ValueError, match="HTTPS"):
+        provider.execute("test")
