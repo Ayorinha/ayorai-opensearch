@@ -54,6 +54,7 @@ class Attractor:
             query=request.query,
             provider=provider,
             evidence=evidence,
+            failures=failures,
         )
 
         decision = self.router.select(
