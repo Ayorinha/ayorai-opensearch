@@ -18,9 +18,10 @@ class OpenAICompatibleProvider(Provider):
         api_key: str | None = None,
         model: str | None = None,
     ) -> None:
-        self.base_url = (
-            base_url or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-        ).rstrip("/")
+        resolved_base_url = base_url if base_url is not None else os.getenv(
+            "OPENAI_BASE_URL", "https://api.openai.com/v1"
+        )
+        self.base_url = resolved_base_url.rstrip("/")
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model = model or os.getenv("ATTRACTOR_MODEL", "gpt-5")
 
