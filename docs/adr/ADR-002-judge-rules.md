@@ -91,9 +91,11 @@ Assim:
 
 A tolerância padrão para valores numéricos do mesmo atributo é **1% de diferença relativa** e é configurável.
 
-Para dois valores positivos a e b:
+Para dois valores numéricos a e b:
 
-`relative_difference = |a-b| / max(|a|, |b|)`
+`rel_diff = |a − b| / max(|a|, |b|)`
+
+Se `max(|a|, |b|) < 1e-9`, a comparação é feita por **igualdade exata**.
 
 - se `relative_difference > 0.01`, os valores são conflitantes para o mesmo atributo;
 - se `relative_difference <= 0.01`, os valores não são classificados como conflito numérico somente por essa diferença.
@@ -148,7 +150,7 @@ Casos alterados incluem:
 - rf01 permanece REFUTED;
 - n01/n02 e o01/o02 passam a usar explicitamente os status ABSTAIN solicitados, sem global para a linha out-of-scope.
 
-Dois novos casos foram adicionados para cobrir injection factual corroborada e tolerância numérica. O Golden v0 passa a ter **32 casos**.
+A rodada 3 adiciona dois casos de fronteira numérica e um conjunto de fixtures de injection realista. O Golden v0 passa a ter **34 casos**.
 
 ## Golden v0
 
