@@ -1,23 +1,33 @@
 import json
 import os
-from urllib import error, request\nfrom urllib.parse import urlparse
+from urllib import error, request
+from urllib.parse import urlparse
 
 from providers.base import Provider, ProviderResponse
 
 
 class OpenAICompatibleProvider(Provider):
-    """Minimal OpenAI-compatible chat provider using the Python standard library."""
+    """Minimal OpenAI-compatible chat provider using the standard library."""
 
     id = "openai-compatible"
     capabilities = frozenset({"reasoning", "research", "coding", "critique"})
 
-    def __init__(self, base_url: str | None = None, api_key: str | None = None, model: str | None = None) -> None:
-        self.base_url = (base_url or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")).rstrip("/")
+    def __init__(
+        self,
+        base_url: str | None = None,
+        api_key: str | None = None,
+        model: str | None = None,
+    ) -> None:
+        self.base_url = (
+            base_url or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        ).rstrip("/")
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model = model or os.getenv("ATTRACTOR_MODEL", "gpt-5")
 
     def execute(self, prompt: str) -> ProviderResponse:
-        if urlparse(self.base_url).scheme != "https":\n            raise ValueError("Provider base URL must use HTTPS")\n        if not self.api_key:
+        if urlparse(self.base_url).scheme != "https":
+            raise ValueError("Provider base URL must use HTTPS")
+        if not self.api_key:
             raise RuntimeError("OPENAI_API_KEY is not configured")
         payload = json.dumps(
             {
@@ -35,7 +45,7 @@ class OpenAICompatibleProvider(Provider):
             method="POST",
         )
         try:
-            with request.urlopen(req, timeout=60)  # nosec B310 - provider URL is HTTPS-only as response:
+            with request.urlopen(req, timeout=60) as response:  # nosec B310 - HTTPS-only endpoint
                 data = json.load(response)
         except error.URLError as exc:
             raise RuntimeError(f"Provider request failed: {exc}") from exc
