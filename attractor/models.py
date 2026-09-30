@@ -1,15 +1,15 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class QualityMode(str, Enum):
+class QualityMode(StrEnum):
     FAST = "fast"
     BALANCED = "balanced"
     DEEP = "deep"
 
 
-class VerificationStatus(str, Enum):
+class VerificationStatus(StrEnum):
     VERIFIED = "verified"
     SUPPORTED = "supported"
     PARTIALLY_SUPPORTED = "partially_supported"
@@ -19,7 +19,7 @@ class VerificationStatus(str, Enum):
     FAILED = "failed"
 
 
-class FailureType(str, Enum):
+class FailureType(StrEnum):
     TIMEOUT = "timeout"
     API_ERROR = "api_error"
     RATE_LIMIT = "rate_limit"
