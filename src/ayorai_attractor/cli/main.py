@@ -38,11 +38,12 @@ def eval_suite(
     ),
 ) -> None:
     """Run a deterministic evaluation suite."""
-    if suite != "golden-v0":
-        raise typer.BadParameter("Only golden-v0 is implemented.")
+    if suite not in {"golden-v0", "smoke-v0"}:
+        raise typer.BadParameter("Only golden-v0 and smoke-v0 are implemented.")
     report = evaluate_golden_v0(
         Path("evals/golden/v0.jsonl"),
         Path("evals/corpus/documents.jsonl"),
+        suite=suite,
     )
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
