@@ -9,14 +9,25 @@ from agents.core import (
     ResearchAgent,
 )
 from attractor.models import SearchRequest, SearchResponse, VerificationStatus
+from attractor.router import AdaptiveRouter
 from evidence.core import EvidenceStore
 from failure_engine.core import FailureEngine
 from providers.registry import ProviderRegistry
 
 
+IMPLEMENTED_AGENTS = {
+    "planner": PlannerAgent,
+    "researcher": ResearchAgent,
+    "critic": CriticAgent,
+    "fact_checker": FactCheckerAgent,
+    "chief_judge": JudgeAgent,
+}
+
+
 class Attractor:
     def __init__(self) -> None:
         self.providers = ProviderRegistry()
+        self.router = AdaptiveRouter()
 
     def run(self, request: SearchRequest) -> SearchResponse:
         evidence = EvidenceStore()
@@ -28,14 +39,16 @@ class Attractor:
             evidence=evidence,
         )
 
-        agents = [
-            PlannerAgent(),
-            ResearchAgent(),
-            CriticAgent(),
-            FactCheckerAgent(),
-            JudgeAgent(),
+        decision = self.router.select(
+            query=request.query,
+            mode=request.mode.value,
+            max_agents=request.max_agents,
+        )
+        selected = [
+            IMPLEMENTED_AGENTS[role.id]()
+            for role in decision.roles
+            if role.id in IMPLEMENTED_AGENTS
         ]
-        selected = agents[: min(request.max_agents, len(agents))]
         outputs = [agent.run(context) for agent in selected]
 
         status = evidence.status()
