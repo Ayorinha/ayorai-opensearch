@@ -1,0 +1,1 @@
+"""Lifelong memory extension point."""
