@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 @dataclass
@@ -28,7 +28,7 @@ class MemoryStore:
             value=value,
             source=source,
             confidence=confidence,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
     def get(self, key: str) -> MemoryRecord | None:
