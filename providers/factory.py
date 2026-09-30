@@ -1,11 +1,10 @@
 import os
 
 from providers.base import Provider
-from providers.base import Provider
 from providers.http_search import HttpSearchProvider
-from providers.opensearch import build_opensearch_provider
 from providers.mock import MockProvider
 from providers.openai_compatible import OpenAICompatibleProvider
+from providers.opensearch import build_opensearch_provider
 
 
 def build_search_provider() -> Provider | None:
