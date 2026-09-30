@@ -67,9 +67,9 @@ Nenhum dos quatro documentos se autodeclara adversarial, “dado” ou “não-e
 Se `max(|a|, |b|) < 1e-9`, comparar por igualdade exata.  
 Conflito numérico se `rel_diff > 0,01`; o limiar é configurável.
 
-- nt01: 3,1% vs 3,10% → normalização, sem conflito → VERIFIED.
-- nt02: 1.000 vs 1.004 → 0,4%, sem conflito → VERIFIED.
-- nt03: 1.000 vs 1.020 → aproximadamente 1,96%, conflito → CONFLICTING.
+- nt01: 3.1% vs 3.10% em `en-US` → normalização, sem conflito → VERIFIED.
+- nt02: 1.000 vs 1.004 em `en-US` → aproximadamente 0,3984%, sem conflito → VERIFIED.
+- nt03: 1.000 vs 1.020 em `en-US` → aproximadamente 1,9608%, conflito → CONFLICTING.
 
 ## Casos alterados nesta rodada
 
