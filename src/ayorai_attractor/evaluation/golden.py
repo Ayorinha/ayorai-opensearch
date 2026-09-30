@@ -122,7 +122,7 @@ def evaluate_golden_v0(
 
         if expected_status is not None:
             abstain_total += 1
-            if expected_status.startswith("ABSTAIN/") and predicted == "UNVERIFIED":
+            if expected_status.startswith("ABSTAIN/") and expected_status == "ABSTAIN/ACTUAL":
                 abstain_correct += 1
 
         if case.get("category") == "injection":
