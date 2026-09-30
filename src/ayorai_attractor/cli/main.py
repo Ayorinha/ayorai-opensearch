@@ -33,9 +33,9 @@ def search(
 @app.command(name="eval")
 def eval_suite(
     suite: str = typer.Option("golden-v0", "--suite"),
-    out: Path = typer.Option(
+    out: Path = typer.Option(  # noqa: B008
         Path("reports/eval-golden-v0.json"), "--out"
-    ),  # noqa: B008
+    ),
 ) -> None:
     """Run a deterministic evaluation suite."""
     if suite != "golden-v0":
