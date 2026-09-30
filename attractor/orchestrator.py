@@ -8,7 +8,12 @@ from agents.core import (
     PlannerAgent,
     ResearchAgent,
 )
-from attractor.models import FailureType, SearchRequest, SearchResponse, VerificationStatus
+from attractor.models import (
+    FailureType,
+    SearchRequest,
+    SearchResponse,
+    VerificationStatus,
+)
 from attractor.router import AdaptiveRouter
 from evidence.core import EvidenceStore
 from failure_engine.core import FailureEngine
@@ -44,7 +49,10 @@ class Attractor:
             return SearchResponse(
                 query=request.query,
                 mode=request.mode,
-                answer="Execution stopped because the configured provider is unavailable.",
+                answer=(
+                    "Execution stopped because the configured provider "
+                    "is unavailable."
+                ),
                 verification=VerificationStatus.FAILED,
                 confidence=0.0,
                 failures=failures.failures,
