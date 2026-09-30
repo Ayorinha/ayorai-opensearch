@@ -74,6 +74,12 @@ Development dependencies include the official Python packages `mcp` and `openai-
 
 Never place secrets, personal data, financial records or confidential institutional material in examples or tests. Production integrations must enforce authorization, audit logging, rate limits and data minimization.
 
+## Acknowledgments
+
+AYORAI ATTRACTOR builds on the Python ecosystem and integrates official MCP and OpenAI Agents SDK packages. The project also acknowledges the open-source maintainers whose libraries make its evaluation, API, security and developer tooling possible.
+
+Community contributions should preserve the project's evidence-first and reproducible evaluation standards.
+
 ## License
 
 Apache-2.0. See LICENSE.
