@@ -13,6 +13,7 @@ from ayorai_attractor.evidence.core import EvidenceStore
 from ayorai_attractor.failure_engine.core import FailureEngine
 from ayorai_attractor.providers.factory import build_default_provider, build_search_provider
 from ayorai_attractor.providers.registry import ProviderRegistry
+from ayorai_attractor.providers.base import Provider
 
 from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
 from .router import AdaptiveRouter
@@ -28,9 +29,10 @@ IMPLEMENTED_AGENTS = {
 
 
 class Attractor:
-    def __init__(self) -> None:
+    def __init__(self, search_provider: Provider | None = None) -> None:
         self.providers = ProviderRegistry()
         self.router = AdaptiveRouter()
+        self.search_provider = search_provider
 
     def run(self, request: SearchRequest) -> SearchResponse:
         evidence = EvidenceStore()
@@ -58,7 +60,11 @@ class Attractor:
         context = AgentContext(
             query=request.query,
             provider=provider,
-            search_provider=build_search_provider(),
+            search_provider=(
+                self.search_provider
+                if self.search_provider is not None
+                else build_search_provider()
+            ),
             evidence=evidence,
             failures=failures,
         )

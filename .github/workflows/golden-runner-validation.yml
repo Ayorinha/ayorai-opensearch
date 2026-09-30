@@ -1,0 +1,29 @@
+name: Golden Baseline Runner Validation
+
+on:
+  push:
+    branches:
+      - a4-golden-baseline-runner
+
+permissions:
+  contents: read
+
+jobs:
+  runner-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: mypy src/ayorai_attractor
+      - run: pytest -q tests/test_golden_runner.py
+      - name: Verify CLI runner
+        run: |
+          attractor eval --suite golden-v0 --out /tmp/eval-golden-v0.json
+          python -c "import json; r=json.load(open('/tmp/eval-golden-v0.json')); assert r['case_count']==34; print(r['global_accuracy']); print(r['majority_class_baseline'])"
