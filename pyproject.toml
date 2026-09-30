@@ -32,7 +32,7 @@ dev = [
 opensearch = "attractor.cli.main:search"
 
 [tool.setuptools.packages.find]
-include = ["attractor*", "agents*", "providers*", "evidence*", "failure_engine*", "evaluation*"]
+include = ["attractor*", "agents*", "providers*", "evidence*", "failure_engine*", "evaluation*", "plugins*", "memory*", "observability*", "security*"]
 
 [tool.ruff]
 line-length = 100
