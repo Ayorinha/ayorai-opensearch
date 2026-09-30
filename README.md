@@ -1,6 +1,6 @@
 # AYORAI ATTRACTOR
 
-**Evidence-first multi-agent intelligence and verification engine.**
+**AYORAI ATTRACTOR — Evidence-first claim-level verification engine**
 
 > Many Models. One Intelligence Layer. Verified Results.
 
