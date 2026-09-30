@@ -1,52 +1,53 @@
 # AYORAI ATTRACTOR
 
-Adaptive Multi-Agent Intelligence & Verification Engine.
+**Evidence-first multi-agent intelligence and verification engine.**
 
 > Many Models. One Intelligence Layer. Verified Results.
 
-AYORAI ATTRACTOR is an evidence-first AI orchestration foundation. It separates cognitive roles from execution providers and routes work according to capability, quality, latency, cost and risk.
+## Current status
 
-## Package layout
+**Phase 0 — completed.** Golden v0 is frozen at **34 cases / 52 synthetic documents** with SHA-256 recorded in `evals/golden/MANIFEST.json`. The current-system baseline is **43.3333%**, exactly equal to the `PARTIALLY_SUPPORTED` majority-class baseline. **R1 is the next implementation phase; its motor is not yet implemented.**
 
-The application uses a `src/` layout and a single project namespace:
+Baseline evidence: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/36759101933  
+Baseline report: `docs/eval/BASELINE-v0.md`  
+Phase 0 progress: `docs/PROGRESS.md`
 
-```
-src/ayorai_attractor/
-├── agents/
-├── api/
-├── brain/
-├── cli/
-├── evidence/
-├── evaluation/
-├── failure_engine/
-├── memory/
-├── mcp_gateway/
-├── observability/
-├── plugins/
-├── providers/
-├── security/
-├── models.py
-├── orchestrator.py
-├── research_contract.py
-└── router.py
-```
+## What problem does it solve?
 
-This prevents the project from shadowing the official `mcp` and `agents` SDK namespaces.
+LLM-generated citations can exist without actually supporting the claim they are attached to. ATTRACTOR is designed to make verification explicit: evidence is modeled separately from model output, source independence and provenance are first-class concepts, conflicts are represented, and a deterministic verification contract is defined before the target verification engine is implemented.
 
-## MVP
+The frozen v0 is a **motor-verification fixture suite**, not a retrieval benchmark. It does not claim real-web search quality or generalization.
 
-- FastAPI: POST /v1/opensearch
-- CLI: opensearch
-- Planner, Researcher, Critic, Fact Checker and Judge
-- evidence records, Evidence Graph and verification states
-- failure-aware execution
-- fast, balanced and deep quality modes
-- deterministic local provider
-- optional HTTPS external-search adapter
-- OpenSearch-compatible read-only adapter
-- tests, CI, security scanning and Dependabot
+## Architecture
 
-The MVP does not pretend that a local mock is internet verification. External search is an explicit adapter; its results are tracked separately from model output.
+- adaptive orchestration and quality modes
+- Planner, Researcher, Critic, Fact Checker and current Judge extension point
+- Evidence Store and Evidence Graph
+- Failure Engine
+- MCP Gateway and plugin registry
+- OpenSearch-compatible and OpenAI-compatible adapters
+- deterministic mock provider
+- FastAPI API and CLI
+- CI, coverage ratchet, strict typing and security scanning
+
+## Verified engineering evidence
+
+- Python 3.11–3.13 CI
+- 73% coverage ratchet verified by GitHub Actions
+- strict mypy repository check with blocking strict evidence-core check
+- frozen golden v0: 34 cases / 52 documents / SHA-256 manifest
+- baseline published as a GitHub Actions artifact
+- baseline accuracy: **43.3333%**, equal to the majority-class baseline
+
+## Baseline honesty
+
+The current system predicts `PARTIALLY_SUPPORTED` for every case with evidence. Therefore the 43.3333% accuracy is a baseline behavior, not evidence of a capable verification engine. The 100% injection-resistance figure is trivial in the current offline fixture engine and should not be interpreted as completed injection defense. The reported latency is offline fixture execution, not real search latency.
+
+## Roadmap
+
+**Phase 0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9 → R10 → R11 → R12 → R13**
+
+R1 will implement the approved ADR-002 verification rules, including claim decomposition, evidence clustering, stance/contradiction handling and a deterministic Chief Judge, with v0 and a sealed holdout used for measurement.
 
 ## Quickstart
 
@@ -54,7 +55,7 @@ The MVP does not pretend that a local mock is internet verification. External se
     pip install -e ".[dev]"
     uvicorn ayorai_attractor.api.app:app --reload
 
-Then:
+CLI:
 
     opensearch "compare RAG and fine-tuning"
 
@@ -62,23 +63,9 @@ API:
 
     POST /v1/opensearch
 
-## Official SDK namespace regression
-
-Development dependencies include the official Python packages `mcp` and `openai-agents`. CI verifies that:
-
-- `import mcp` resolves to the installed MCP SDK;
-- `import agents` resolves to the OpenAI Agents SDK;
-- `import ayorai_attractor` resolves to this project.
-
 ## Security
 
 Never place secrets, personal data, financial records or confidential institutional material in examples or tests. Production integrations must enforce authorization, audit logging, rate limits and data minimization.
-
-## Acknowledgments
-
-AYORAI ATTRACTOR builds on the Python ecosystem and integrates official MCP and OpenAI Agents SDK packages. The project also acknowledges the open-source maintainers whose libraries make its evaluation, API, security and developer tooling possible.
-
-Community contributions should preserve the project's evidence-first and reproducible evaluation standards.
 
 ## License
 

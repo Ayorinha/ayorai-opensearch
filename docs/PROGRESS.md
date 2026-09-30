@@ -71,11 +71,16 @@ PRs #7, #8, #9, #10 e #11 foram mergeados entre 16:50:30Z e 17:07:01Z em 2026-09
 - Seis issues reais (#15–#20), com `good first issue` / `help wanted`.
 - Discussions: **não ativadas pelo conector disponível**; a configuração requer ação no GitHub.
 
+## Portfólio do ATTRACTOR
+
+- README reestruturado no PR desta etapa, com baseline e limites honestos.
+- Topics e descrição curta do repositório: **não expostos pelo conector disponível**; não foram falsamente marcados como concluídos.
+
 ## Próximos 3 itens
 
-1. README/portfólio do ATTRACTOR em PR próprio.
-2. README do perfil Ayorinha em PR próprio.
-3. R1-a — contrato de modelos e ADR do motor de verificação.
+1. README do perfil Ayorinha em PR próprio.
+2. R1-a — contrato de modelos e ADR do motor de verificação.
+3. R1-b — clusters de evidência e testes de propriedade.
 
 ## Evidência
 
