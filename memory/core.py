@@ -16,7 +16,13 @@ class MemoryStore:
     def __init__(self) -> None:
         self._records: dict[str, MemoryRecord] = {}
 
-    def put(self, key: str, value: str, source: str, confidence: float) -> None:
+    def put(
+        self,
+        key: str,
+        value: str,
+        source: str,
+        confidence: float,
+    ) -> None:
         self._records[key] = MemoryRecord(
             key=key,
             value=value,
