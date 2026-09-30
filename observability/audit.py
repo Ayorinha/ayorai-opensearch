@@ -14,7 +14,12 @@ class AuditLog:
     def __init__(self) -> None:
         self.events: list[AuditEvent] = []
 
-    def record(self, trace_id: str, event: str, metadata: dict[str, str] | None = None) -> None:
+    def record(
+        self,
+        trace_id: str,
+        event: str,
+        metadata: dict[str, str] | None = None,
+    ) -> None:
         self.events.append(
             AuditEvent(
                 trace_id=trace_id,
