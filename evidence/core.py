@@ -1,4 +1,3 @@
-from typing import cast
 from uuid import uuid4
 
 from attractor.models import Evidence, VerificationStatus
@@ -27,6 +26,6 @@ class EvidenceStore:
     def status(self) -> VerificationStatus:
         if not self._items:
             return VerificationStatus.INSUFFICIENT_EVIDENCE
-        if all(item.verified for item in self._items):
+        if all(item.verified for item in self.all()):
             return VerificationStatus.VERIFIED
         return VerificationStatus.UNVERIFIED
