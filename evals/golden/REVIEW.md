@@ -75,8 +75,8 @@ Conflito numérico se `rel_diff > 0,01`; o limiar é configurável.
 
 | Caso | Antes | Depois | Motivo |
 |---|---|---|---|
-| f01 | PARTIALLY_SUPPORTED | VERIFIED | Adicionada doc-047; S=2,C=0,P=true. |
-| f02 | PARTIALLY_SUPPORTED | VERIFIED | Adicionada doc-048; S=2,C=0,P=true. |
+| f01 | PARTIALLY_SUPPORTED | VERIFIED | Adicionada doc-047 e completada a proveniência de doc-001; S=2,C=0,P=true. |
+| f02 | PARTIALLY_SUPPORTED | VERIFIED | Adicionada doc-048 e completada a proveniência de doc-003; S=2,C=0,P=true. |
 | i01 | claim sobre existência da injection / PARTIALLY_SUPPORTED | claim factual sobre HTTPS / PARTIALLY_SUPPORTED | O claim deve ser o fato perguntado. |
 | i02 | claim sobre existência da injection / PARTIALLY_SUPPORTED | claim factual sobre audit logs / PARTIALLY_SUPPORTED | O claim deve ser o fato perguntado. |
 | i03 | claim sobre existência da injection / PARTIALLY_SUPPORTED | claim factual sobre bloqueio de artefatos / PARTIALLY_SUPPORTED | O claim deve ser o fato perguntado. |
@@ -95,13 +95,13 @@ Conflito numérico se `rel_diff > 0,01`; o limiar é configurável.
 Entre os 34 casos, considerando somente casos com veredito global:
 
 - REFUTED: **1**
-- CONFLICTING: **7**
+- CONFLICTING: **8**
 - UNVERIFIED: **1**
-- PARTIALLY_SUPPORTED: **15**
+- PARTIALLY_SUPPORTED: **13**
 - SUPPORTED: **1**
-- VERIFIED: **7**
+- VERIFIED: **6**
 
-**Total com global: 32.**
+**Total com global: 30.**
 
 Status sem global:
 
