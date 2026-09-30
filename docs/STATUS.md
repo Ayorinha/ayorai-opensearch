@@ -27,10 +27,10 @@
 | pip-audit | VERIFIED on baseline |
 | CodeQL | VERIFIED on baseline |
 | Dependabot | VERIFIED |
-| Isolated `src/ayorai_attractor` namespace | IN PROGRESS — A1 |
-| Official MCP SDK coexistence | IN PROGRESS — A1 CI proof |
-| Official OpenAI Agents SDK coexistence | IN PROGRESS — A1 CI proof |
-| Coverage ratchet | MISSING — A2 |
+| Isolated `src/ayorai_attractor` namespace | VERIFIED — A1 merged |
+| Official MCP SDK coexistence | VERIFIED — A1 CI proof |
+| Official OpenAI Agents SDK coexistence | VERIFIED — A1 CI proof |
+| Coverage ratchet | VERIFIED — baseline 69%; CI fails below baseline |
 | Strict mypy job | MISSING — A3 |
 | Golden Set v0 | MISSING — A4 |
 | Baseline evaluation metrics | NOT MEASURED |
