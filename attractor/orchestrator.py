@@ -11,7 +11,7 @@ from agents.core import (
 )
 from evidence.core import EvidenceStore
 from failure_engine.core import FailureEngine
-from providers.factory import build_default_provider
+from providers.factory import build_default_provider, build_search_provider
 from providers.registry import ProviderRegistry
 
 from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
@@ -58,6 +58,7 @@ class Attractor:
         context = AgentContext(
             query=request.query,
             provider=provider,
+            search_provider=build_search_provider(),
             evidence=evidence,
             failures=failures,
         )
