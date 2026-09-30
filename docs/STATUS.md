@@ -110,12 +110,16 @@ No baseline increase was needed because the verified measurement remained 69%.
 
 ## A3 — Strict typing baseline (verified by CI)
 
-CI run: 36748693348.  
-- `mypy --strict src/ayorai_attractor`: **0 errors in 39 source files**.
-- Strict error count by module: **0 for every source module**; no module emitted an error line.
+CI run: 36748963622.  
+Evidence job: typecheck-strict (non-blocking), job 110002319794.  
+- Exact command executed: `mypy --strict src/ayorai_attractor > /tmp/mypy-strict.log 2>&1`.
+- Exact output: `Success: no issues found in 39 source files`.
+- Parser output: `STRICT_MYPY_TOTAL_ERRORS=0`.
 - Blocking check: `mypy --strict src/ayorai_attractor/evidence` passed.
-- The strict job remains non-blocking for the repository-wide migration, while `ayorai_attractor.evidence` is enforced through a `[tool.mypy] [[tool.mypy.overrides]]` strict override.
+- `warn_unused_ignores = true` is active in pyproject.toml.
+- `grep -rn "type: ignore" src/ | wc -l`: **0**; no type: ignore occurrences were found.
+- Explicit `Any` grep: **5 matching lines**, all in `src/ayorai_attractor/mcp_gateway/gateway.py`; they are the typed MCP gateway boundary (`dict[str, Any]`, callable return `Any`, and output `Any`). No Any occurs in the other 38 source files checked.
+- The strict repository-wide job remains non-blocking for the migration, while `ayorai_attractor.evidence` is enforced through a strict override.
 - The strict override list is intentionally a ratchet: future strict modules are added to the list and cannot be removed silently.
-- CI, Security and CodeQL all passed for PR #11.
 
 No R1 code was introduced in A3.
