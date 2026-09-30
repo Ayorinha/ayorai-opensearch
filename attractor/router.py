@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from agents.roles import AgentRole, INITIAL_ROLES
+from agents.roles import INITIAL_ROLES, AgentRole
 
 
 @dataclass(frozen=True)
