@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from attractor.models import SearchRequest, SearchResponse
-from attractor.orchestrator import Attractor
+from ayorai_attractor.models import SearchRequest, SearchResponse
+from ayorai_attractor.orchestrator import Attractor
 
 app = FastAPI(
     title="AYORAI ATTRACTOR",

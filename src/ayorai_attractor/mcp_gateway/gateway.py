@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from time import monotonic
 from typing import Any
 
-from plugins.registry import Plugin, PluginRegistry
+from ayorai_attractor.plugins.registry import Plugin, PluginRegistry
 
 
 @dataclass(frozen=True)

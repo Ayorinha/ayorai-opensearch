@@ -2,7 +2,7 @@ import os
 
 import httpx
 
-from providers.base import Provider, ProviderResponse
+from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 
 class OpenSearchProvider(Provider):

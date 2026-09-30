@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 
-from attractor.api.app import app
-from attractor.models import SearchRequest, VerificationStatus
-from attractor.orchestrator import Attractor
+from ayorai_attractor.api.app import app
+from ayorai_attractor.models import SearchRequest, VerificationStatus
+from ayorai_attractor.orchestrator import Attractor
 
 
 def test_orchestrator_is_unverified_without_external_sources() -> None:

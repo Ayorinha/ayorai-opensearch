@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from attractor.models import AgentResult, FailureType
-from evidence.core import EvidenceStore
-from failure_engine.core import FailureEngine
-from providers.base import Provider
+from ayorai_attractor.models import AgentResult, FailureType
+from ayorai_attractor.evidence.core import EvidenceStore
+from ayorai_attractor.failure_engine.core import FailureEngine
+from ayorai_attractor.providers.base import Provider
 
 
 @dataclass

@@ -1,5 +1,5 @@
-from providers.base import Provider
-from providers.mock import MockProvider
+from ayorai_attractor.providers.base import Provider
+from ayorai_attractor.providers.mock import MockProvider
 
 
 class ProviderRegistry:

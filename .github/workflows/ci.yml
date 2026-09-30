@@ -29,6 +29,21 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
+      - run: python -c "import mcp, agents, ayorai_attractor; print(mcp.__file__); print(agents.__file__); print(ayorai_attractor.__file__)"
       - run: ruff check .
-      - run: mypy attractor agents providers evidence failure_engine plugins memory observability security
-      - run: pytest --cov=attractor --cov=agents --cov=providers --cov=evidence --cov=failure_engine --cov-report=term-missing
+      - run: mypy src/ayorai_attractor
+      - run: pytest --cov=ayorai_attractor --cov-report=term-missing
+
+  namespace-compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: python -c "import mcp, agents, ayorai_attractor; assert 'site-packages' in mcp.__file__; assert 'site-packages' in agents.__file__; print('official SDK namespaces resolved')"
+      - run: pytest -q

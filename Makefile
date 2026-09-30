@@ -8,11 +8,11 @@ lint:
 	ruff check .
 
 typecheck:
-	mypy attractor agents providers evidence failure_engine
+	mypy src/ayorai_attractor
 
 security:
 	pip-audit
-	bandit -r attractor agents providers evidence failure_engine
+	bandit -r src/ayorai_attractor
 
 run:
-	uvicorn attractor.api.app:app --reload
+	uvicorn ayorai_attractor.api.app:app --reload

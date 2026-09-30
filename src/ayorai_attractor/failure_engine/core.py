@@ -1,4 +1,4 @@
-from attractor.models import Failure, FailureType
+from ayorai_attractor.models import Failure, FailureType
 
 
 class FailureEngine:

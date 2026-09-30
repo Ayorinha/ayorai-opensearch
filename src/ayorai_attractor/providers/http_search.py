@@ -2,7 +2,7 @@ import json
 from urllib import error, parse, request
 from urllib.parse import urlparse
 
-from providers.base import Provider, ProviderResponse
+from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 
 class HttpSearchProvider(Provider):

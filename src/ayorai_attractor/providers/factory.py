@@ -1,10 +1,10 @@
 import os
 
-from providers.base import Provider
-from providers.http_search import HttpSearchProvider
-from providers.mock import MockProvider
-from providers.openai_compatible import OpenAICompatibleProvider
-from providers.opensearch import build_opensearch_provider
+from ayorai_attractor.providers.base import Provider
+from ayorai_attractor.providers.http_search import HttpSearchProvider
+from ayorai_attractor.providers.mock import MockProvider
+from ayorai_attractor.providers.openai_compatible import OpenAICompatibleProvider
+from ayorai_attractor.providers.opensearch import build_opensearch_provider
 
 
 def build_search_provider() -> Provider | None:
