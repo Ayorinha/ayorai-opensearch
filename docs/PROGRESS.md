@@ -1,7 +1,7 @@
 # AYORAI ATTRACTOR — Progress
 
 **Estado atual:** Fase 0 concluída; R1 não iniciado.  
-**Base verificada:** main em `b7df480a480c948a50341c34cb91d3a3a0af7a51`.  
+**Base verificada:** main em `b42cadd9095067e3d65de5c6edf53602fa44baa0`.  
 **Ground Truth:** 34 casos / 52 documentos.  
 **Baseline:** 43,3333%, igual à classe majoritária.
 
@@ -9,7 +9,7 @@
 
 | Item | Peso | Status | PRs | Data de conclusão |
 |---|---:|---|---|---|
-| Fase 0 — Fundação e ground truth | 10 | concluído | #7–#12 | 2026-09-30 |
+| Fase 0 — Fundação e ground truth | 10 | concluído | #7–#14 | 2026-09-30 |
 | R1 — Motor de verificação | 15 | não iniciado | — | — |
 | R2 — Audit Mode | 10 | não iniciado | — | — |
 | R3 — Conselho de IAs | 10 | não iniciado | — | — |
@@ -78,12 +78,18 @@ PRs #7, #8, #9, #10 e #11 foram mergeados entre 16:50:30Z e 17:07:01Z em 2026-09
 
 ## Próximos 3 itens
 
-1. README do perfil Ayorinha em PR próprio.
-2. R1-a — contrato de modelos e ADR do motor de verificação.
-3. R1-b — clusters de evidência e testes de propriedade.
+1. Revisão/aprovação do PR #1 no perfil Ayorinha.
+2. Publicação manual do GitHub Release v0.1.0 (tag + release), pois o conector não expõe essa operação.
+3. R1-a — contrato de modelos e ADR do motor de verificação.
 
 ## Evidência
 
 - PR #12 / Fase 0: https://github.com/Ayorinha/ayorai-opensearch/pull/12
+- Runner: https://github.com/Ayorinha/ayorai-opensearch/pull/13
+- Registro final: https://github.com/Ayorinha/ayorai-opensearch/pull/14
+- Trilha GitHub: https://github.com/Ayorinha/ayorai-opensearch/pull/21
+- README ATTRACTOR: https://github.com/Ayorinha/ayorai-opensearch/pull/22
+- Post draft: https://github.com/Ayorinha/ayorai-opensearch/pull/23
+- Perfil Ayorinha: https://github.com/Ayorinha/Ayorinha/pull/1
 - Baseline: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/36759101933
 - Green Wall: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/36759109543
