@@ -1,13 +1,14 @@
 import os
 
 from providers.base import Provider
+from providers.base import Provider
 from providers.http_search import HttpSearchProvider
 from providers.opensearch import build_opensearch_provider
 from providers.mock import MockProvider
 from providers.openai_compatible import OpenAICompatibleProvider
 
 
-def build_search_provider() -> HttpSearchProvider | object | None:
+def build_search_provider() -> Provider | None:
     opensearch = build_opensearch_provider()
     if opensearch is not None:
         return opensearch
