@@ -72,10 +72,8 @@ def evaluate_golden_v0(
     if suite == "smoke-v0":
         smoke_categories = {"factual", "conflict", "injection", "no-answer", "out-of-scope"}
         cases = [
-            case
-            for category in smoke_categories
-            for case in cases
-            if case.get("category") == category
+            next(case for case in cases if case.get("category") == category)
+            for category in sorted(smoke_categories)
         ]
     elif suite != "golden-v0":
         raise ValueError(f"Unsupported suite: {suite}")
