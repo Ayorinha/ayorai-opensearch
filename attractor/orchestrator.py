@@ -8,7 +8,7 @@ from agents.core import (
     PlannerAgent,
     ResearchAgent,
 )
-from attractor.models import SearchRequest, SearchResponse, VerificationStatus
+from attractor.models import FailureType, SearchRequest, SearchResponse, VerificationStatus
 from attractor.router import AdaptiveRouter
 from evidence.core import EvidenceStore
 from failure_engine.core import FailureEngine
@@ -37,7 +37,7 @@ class Attractor:
             provider = build_default_provider()
         except (RuntimeError, ValueError) as exc:
             failures.record(
-                failure_type=__import__("attractor.models", fromlist=["FailureType"]).FailureType.API_ERROR,
+                failure_type=FailureType.API_ERROR,
                 message=str(exc),
                 recoverable=False,
             )
