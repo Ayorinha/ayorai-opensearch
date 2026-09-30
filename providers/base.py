@@ -7,6 +7,7 @@ class ProviderResponse:
     text: str
     source: str | None = None
     excerpt: str | None = None
+    independent: bool = False
 
 
 class Provider(ABC):
