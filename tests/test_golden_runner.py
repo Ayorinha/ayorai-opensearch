@@ -23,3 +23,4 @@ def test_golden_v0_runner_is_deterministic_and_closed_world() -> None:
         "accuracy": 0.433333,
     }
     assert report["network"] is False
+    assert report["abstention_accuracy"] == {"correct": 0, "total": 4, "accuracy": 0.0}
