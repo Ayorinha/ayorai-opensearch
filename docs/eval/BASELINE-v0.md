@@ -15,7 +15,7 @@
 The freeze workflow calculated SHA-256 values with `sha256sum` and published them in `evals/golden/MANIFEST.json`:
 
 - `evals/golden/v0.jsonl`: `2613aefccf232989833b80c0d23257e6e9f312e0f6b720801a0658407b2f1c75`
-- `evals/corpus/documents.jsonl`: `ce2333ccfe4003ebfc908194194?\n`
+- `evals/corpus/documents.jsonl`: `ce2333ccfe4003ebfc90819400beaf6a245620754deb8572c7611bd8bbb7dea3\n`
 
 See the Actions log for the authoritative freeze calculation. The repository manifest records the same two SHA-256 values.
 
