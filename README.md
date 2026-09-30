@@ -11,13 +11,14 @@ AYORAI ATTRACTOR is an evidence-first AI orchestration foundation. It separates 
 - FastAPI: POST /v1/opensearch
 - CLI: opensearch
 - Planner, Researcher, Critic, Fact Checker and Judge
-- evidence records and verification states
+- evidence records, Evidence Graph and verification states
 - failure-aware execution
 - fast, balanced and deep quality modes
 - deterministic local provider, so the project runs without API keys
+- optional HTTPS external-search adapter via `ATTRACTOR_SEARCH_ENDPOINT`
 - tests, CI, security scanning and Dependabot
 
-The MVP intentionally does not pretend that a local mock is internet verification. External providers will be admitted through explicit adapters and evaluation.
+The MVP intentionally does not pretend that a local mock is internet verification. External search is an explicit, HTTPS-only adapter; its results are tracked separately from model output and feed the Evidence Graph. A single independent source is classified as partial support; multiple independent sources can reach supported status, while verified status still requires explicit verification flags.
 
 ## Architecture
 
