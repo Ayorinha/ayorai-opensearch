@@ -31,3 +31,15 @@ def test_search_provider_requires_https() -> None:
     provider = HttpSearchProvider("http://example.com/search")
     with pytest.raises(ValueError, match="HTTPS"):
         provider.execute("test")
+
+
+
+def test_opensearch_provider_requires_https() -> None:
+    from providers.opensearch import OpenSearchProvider
+
+    try:
+        OpenSearchProvider("http://localhost:9200", "documents")
+    except ValueError as exc:
+        assert "HTTPS" in str(exc)
+    else:
+        raise AssertionError("insecure OpenSearch endpoint was accepted")
