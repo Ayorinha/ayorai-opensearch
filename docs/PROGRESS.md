@@ -1,7 +1,7 @@
 # AYORAI ATTRACTOR — Progress
 
-**Estado atual:** Fase 0 concluída; R1 não iniciado.  
-**Base verificada:** main em `b42cadd9095067e3d65de5c6edf53602fa44baa0`.  
+**Estado atual:** Fase 0 concluída; Master Gate concluído; R1-a em preparação.  
+**Base verificada:** main em `6fd988064bfb048b02e24e5ccb89b10ef50d4e0e`.  
 **Ground Truth:** 34 casos / 52 documentos.  
 **Baseline:** 43,3333%, igual à classe majoritária.
 
@@ -74,13 +74,22 @@ PRs #7, #8, #9, #10 e #11 foram mergeados entre 16:50:30Z e 17:07:01Z em 2026-09
 ## Portfólio do ATTRACTOR
 
 - README reestruturado no PR desta etapa, com baseline e limites honestos.
-- Topics e descrição curta do repositório: **não expostos pelo conector disponível**; não foram falsamente marcados como concluídos.
+- Topics e descrição curta do repositório: **verificados via API após configuração manual**.
+
+## Master Gate — concluído em 2026-09-30
+
+- PR #1 do perfil Ayorinha: concluído.
+- Release `v0.1.0`: publicada apontando para `main`.
+- Discussions: ativadas.
+- Descrição curta: `AYORAI ATTRACTOR — Evidence-first claim-level verification engine`.
+- Topics: configurados com 9 tópicos, sem `self-evolving`.
+- CI da `main` atual: verde no commit `6fd988064bfb048b02e24e5ccb89b10ef50d4e0e`.
 
 ## Próximos 3 itens
 
-1. Revisão/aprovação do PR #1 no perfil Ayorinha.
-2. Publicação manual do GitHub Release v0.1.0 (tag + release), pois o conector não expõe essa operação.
-3. R1-a — contrato de modelos e ADR do motor de verificação.
+1. R1-a — contratos Pydantic v2 estritos e traceabilidade.
+2. R1-b — independência de clusters e property tests.
+3. R1-c — stance heurística e detecção de contradição.
 
 ## Evidência
 
