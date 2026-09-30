@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,7 @@ class AuditLog:
             AuditEvent(
                 trace_id=trace_id,
                 event=event,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 metadata=metadata or {},
             )
         )
