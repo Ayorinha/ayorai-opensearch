@@ -29,4 +29,9 @@ class HttpSearchProvider(Provider):
         except error.URLError as exc:
             raise RuntimeError(f"Search request failed: {exc}") from exc
         text = json.dumps(data, ensure_ascii=False)
-        return ProviderResponse(text=text, source=self.endpoint, excerpt=text[:1000])
+        return ProviderResponse(
+            text=text,
+            source=self.endpoint,
+            excerpt=text[:1000],
+            independent=True,
+        )
