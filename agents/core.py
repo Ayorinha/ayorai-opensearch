@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
-from attractor.models import AgentResult
+from attractor.models import AgentResult, FailureType
 from evidence.core import EvidenceStore
+from failure_engine.core import FailureEngine
 from providers.base import Provider
 
 
@@ -10,6 +11,7 @@ class AgentContext:
     query: str
     provider: Provider
     evidence: EvidenceStore
+    failures: FailureEngine
 
 
 class Agent:
@@ -36,9 +38,22 @@ class ResearchAgent(Agent):
     name = "research"
 
     def run(self, context: AgentContext) -> AgentResult:
-        response = context.provider.execute(context.query)
+        try:
+            response = context.provider.execute(context.query)
+        except Exception as exc:
+            failure = context.failures.record(
+                FailureType.API_ERROR,
+                f"Research provider failed: {exc}",
+                recoverable=True,
+            )
+            return AgentResult(
+                agent=self.name,
+                output="Research provider failed; no evidence was accepted.",
+                failures=[failure],
+            )
+
         evidence = context.evidence.add(
-            claim=f"Local provider produced an analysis for '{context.query}'.",
+            claim=f"Provider produced an analysis for '{context.query}'.",
             source=response.source or "unknown",
             excerpt=response.excerpt or response.text,
         )
