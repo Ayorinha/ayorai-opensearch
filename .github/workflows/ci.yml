@@ -26,5 +26,5 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
       - run: ruff check .
-      - run: mypy attractor agents providers evidence failure_engine
+      - run: mypy attractor agents providers evidence failure_engine plugins memory observability security
       - run: pytest --cov=attractor --cov=agents --cov=providers --cov=evidence --cov=failure_engine --cov-report=term-missing
