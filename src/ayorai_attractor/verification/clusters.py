@@ -1,4 +1,4 @@
-"""Deterministic evidence-cluster independence rules from ADR-002."""
+"""Deterministic evidence-cluster dependency rules from ADR-002."""
 
 from collections.abc import Iterable
 
@@ -25,12 +25,13 @@ def dependency_reason(left: Evidence, right: Evidence) -> str | None:
     return None
 
 
-def are_independent(left: Evidence, right: Evidence) -> bool:
-    """Return whether ADR-002 provides no dependency signal between two items.
+def has_known_dependency(left: Evidence, right: Evidence) -> bool:
+    """Return whether ADR-002 establishes a dependency between two items.
 
-    Different domains alone never establish independence.
+    A missing dependency signal is UNKNOWN, not proof of independence.
+    In particular, different domains alone never establish independence.
     """
-    return left.id != right.id and dependency_reason(left, right) is None
+    return left.id != right.id and dependency_reason(left, right) is not None
 
 
 def cluster_evidence(items: Iterable[Evidence]) -> list[frozenset[str]]:
@@ -52,7 +53,7 @@ def cluster_evidence(items: Iterable[Evidence]) -> list[frozenset[str]]:
 
     for index, left in enumerate(evidence):
         for right in evidence[index + 1 :]:
-            if dependency_reason(left, right) is not None:
+            if has_known_dependency(left, right):
                 union(left.id, right.id)
 
     clusters: dict[str, set[str]] = {}
