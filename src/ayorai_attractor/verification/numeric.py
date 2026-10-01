@@ -107,10 +107,10 @@ def parse_date(value: str, granularity: DateGranularity | str) -> date:
         if selected is DateGranularity.DAY:
             return date.fromisoformat(text)
         if selected is DateGranularity.MONTH:
-            year, month = text.split("-")
-            return date(int(year), int(month), 1)
-        year = int(text)
-        return date(year, 1, 1)
+            year_text, month_text = text.split("-")
+            return date(int(year_text), int(month_text), 1)
+        year_text = text
+        return date(int(year_text), 1, 1)
     except (TypeError, ValueError) as exc:
         raise ValueError(f"invalid {selected.value}-granularity date: {value!r}") from exc
 
