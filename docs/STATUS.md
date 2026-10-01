@@ -1,125 +1,82 @@
-# AYORAI ATTRACTOR — Status
+# AYORAI ATTRACTOR — Engineering Status
 
-**Updated:** 2026-09-30  
-**Baseline:** `baf0a82372b0e3053bc7bd66968fb8db495f2b5e`  
-**Current phase:** Phase 0 / A3
+**Updated:** 2026-10-01  
+**Default branch:** `main`  
+**Current implementation:** Phase 0 + deterministic R1 + R2/R3/R4/R5/R6/R8/R9/R10/R13 cores  
+**Evaluation ground truth:** 34 cases / 52 synthetic documents
 
-| Capability | Status |
-|---|---|
-| FastAPI API | VERIFIED |
-| CLI | VERIFIED |
-| Planner / Researcher / Critic / Fact Checker / Chief Judge | VERIFIED |
-| 26 agent roles | DECLARED — 26 roles defined; subset executable |
-| Adaptive routing | VERIFIED |
-| Evidence store | VERIFIED |
-| Evidence graph | VERIFIED |
-| Failure Engine | VERIFIED |
-| MCP Gateway MVP | VERIFIED |
-| Plugin Registry | VERIFIED |
-| OpenSearch provider | VERIFIED |
-| OpenAI-compatible provider | VERIFIED |
-| Mock provider | VERIFIED |
-| Docker execution | VERIFIED |
-| Ruff | VERIFIED on baseline; A1 final CI pending |
-| mypy non-strict | VERIFIED on baseline |
-| pytest | VERIFIED on baseline |
-| Bandit | VERIFIED on baseline |
-| pip-audit | VERIFIED on baseline |
-| CodeQL | VERIFIED on baseline |
-| Dependabot | VERIFIED |
-| Isolated `src/ayorai_attractor` namespace | VERIFIED — A1 merged |
-| Official MCP SDK coexistence | VERIFIED — A1 CI proof |
-| Official OpenAI Agents SDK coexistence | VERIFIED — A1 CI proof |
-| Coverage ratchet | VERIFIED — true monotonic ratchet; baseline 69%; increases and decreases fail until baseline is reconciled |
-| Strict mypy job | VERIFIED — non-blocking `mypy --strict` reports 0 errors across 39 source files; strict evidence check is blocking |
-| Golden Set v0 | MISSING — A4 |
-| Baseline evaluation metrics | NOT MEASURED |
-| Hybrid BM25 + kNN + RRF | MISSING |
-| Cross-encoder reranking | MISSING |
-| Claim decomposition at target level | MISSING |
-| SUPPORTS/CONTRADICTS classifier | MISSING |
-| Source-independence clustering | MISSING |
-| Contradiction detector | MISSING |
-| Deterministic Chief Judge at target specification | MISSING — R1 |
-| Run Bundle / replay | MISSING |
-| Hash-chained audit | MISSING |
-| OpenTelemetry / GenAI tracing | MISSING |
-| Cost tracking | MISSING |
-| Golden smoke/regression gates | MISSING |
-| Red-team CI / OWASP ASI mapping | MISSING |
-| GEPA / Evolution Engine | MISSING |
-| Attractor Studio | MISSING |
-| Multi-tenant / durable execution / queue / SSE | MISSING |
+This document is intentionally evidence-based: a capability is marked **VERIFIED** only when code, tests, repository artifacts, or CI provide direct evidence. Roadmap items are not presented as implemented.
 
-A capability is changed from the Phase 0 baseline only when repository evidence or CI verifies it. No evaluation metric is invented.
+## Reference-grade capability map
 
+| Area | Status | Evidence |
+|---|---|---|
+| Deterministic claim verification | VERIFIED | `verification/judge.py`, numeric/date rules, tests |
+| Evidence provenance | VERIFIED | structured evidence model + provenance checks |
+| Source-independence clustering | VERIFIED | `verification/clusters.py` + tests |
+| Contradiction handling | VERIFIED | deterministic stance/judge model |
+| Abstention contracts | VERIFIED | response/security tests |
+| Audit mode | VERIFIED | `audit.py` + tests |
+| Replay / content addressing | VERIFIED | `replay.py` + tests |
+| Council / controlled deliberation core | VERIFIED | `council.py` + tests |
+| Hybrid rank fusion | VERIFIED | `hybrid.py` + tests |
+| Durable checkpoint core | VERIFIED | `durable.py` + tests |
+| Cost / latency metrics primitives | VERIFIED | `metrics.py` + tests |
+| Governance checks | VERIFIED | `governance.py` + tests |
+| MCP gateway | VERIFIED | gateway implementation + tests |
+| Provider adapters | VERIFIED | OpenSearch, OpenAI-compatible and mock providers |
+| FastAPI API | VERIFIED | `api/app.py` + tests |
+| CLI | VERIFIED | `cli/main.py` + tests |
+| Docker execution | VERIFIED | Dockerfile + compose |
+| Golden v0 closed-world fixture | VERIFIED | 34 cases / 52 documents / SHA-256 manifest |
+| Golden smoke CI | VERIFIED | blocking CI job |
+| Full Golden v0 regression | BLOCKING CI | 34-case job; report uploaded as artifact |
+| Python compatibility | VERIFIED | CI matrix 3.11 / 3.12 / 3.13 |
+| Ruff | VERIFIED | blocking CI |
+| mypy | BLOCKING | blocking non-strict type check |
+| strict evidence typing | VERIFIED | blocking strict evidence check |
+| Security audit | VERIFIED | pip-audit + Bandit |
+| CodeQL | VERIFIED | CodeQL v4 workflow |
+| Dependabot | VERIFIED | repository configuration |
+| Community health | VERIFIED | README, LICENSE, SECURITY, CONTRIBUTING, CODE_OF_CONDUCT, issue forms |
 
-## A2.2 — Coverage map (verified by CI)
+## Evaluation truth
 
-Measurement source: CI run 36748347025, Python 3.13.15.  
-Result: **535 statements, 165 missed, 69% total coverage**; 18 tests passed.  
-The same ratchet passed at 69% against the 69% baseline.
+The frozen Golden v0 is a **deterministic motor-verification fixture suite**. It is not a real-web retrieval benchmark and must not be interpreted as proof of general-world factuality.
 
-| Module | Stmts | Miss | Cover |
-|---|---:|---:|---:|
-| `ayorai_attractor/__init__.py` | 1 | 0 | 100% |
-| `agents/core.py` | 50 | 10 | **80%** |
-| `agents/roles.py` | 7 | 0 | 100% |
-| `api/app.py` | 11 | 0 | 100% |
-| `cli/main.py` | 10 | 10 | 0% |
-| `evaluation/bench.py` | 8 | 0 | 100% |
-| `evidence/core.py` | 23 | 4 | **83%** |
-| `evidence/graph.py` | 28 | 0 | 100% |
-| `failure_engine/core.py` | 10 | 4 | 60% |
-| `mcp_gateway/gateway.py` | 32 | 3 | 91% |
-| `memory/core.py` | 17 | 17 | 0% |
-| `models.py` | 59 | 0 | 100% |
-| `observability/audit.py` | 13 | 13 | 0% |
-| `orchestrator.py` | 32 | 5 | 84% |
-| `plugins/registry.py` | 26 | 4 | 85% |
-| `providers/base.py` | 14 | 1 | 93% |
-| `providers/catalog.py` | 18 | 18 | 0% |
-| `providers/factory.py` | 21 | 2 | 90% |
-| `providers/http_search.py` | 25 | 12 | 52% |
-| `providers/mock.py` | 6 | 0 | 100% |
-| `providers/openai_compatible.py` | 30 | 13 | 57% |
-| `providers/opensearch.py` | 39 | 23 | 41% |
-| `providers/registry.py` | 12 | 3 | 75% |
-| `research_contract.py` | 9 | 9 | 0% |
-| `router.py` | 20 | 0 | 100% |
-| `security/policy.py` | 14 | 14 | 0% |
+The recorded majority-class baseline is **43.3333%**. Any future benchmark claim must report the dataset version, case count, corpus count, suite, system commit and reproducibility artifacts.
 
-Zero-statement `__init__.py` modules report 100% and are omitted from the detailed table.
+## Remaining engineering frontier
 
-### R1 gate check
+These are intentionally still separate from the verified core:
 
-- **EvidenceStore / `evidence/core.py`: 83% — above the 80% gate.**
-- **Judge:** there is no dedicated Judge module yet; the current `JudgeAgent` is in `agents/core.py`, which is **80%** covered.
-- No coverage-driven test addition is required by the A2.2 80% gate for evidence or the current Judge location.
-- Other low-coverage modules remain tracked as technical debt; A2.2 does not silently reclassify them as R1-ready.
+- production-grade hybrid retrieval against a real index;
+- cross-encoder / learned reranking;
+- target-level claim decomposition and automated stance extraction;
+- production OpenTelemetry / GenAI semantic conventions;
+- durable external queue / worker execution;
+- multi-tenant authorization and isolation;
+- streaming/SSE production API;
+- adversarial red-team suite mapped to current agent-security guidance;
+- larger independently curated evaluation sets;
+- published reproducible comparisons against external baselines.
 
-### A2.1 verification
+The project should advance these only with executable implementations, tests, measured results and documentation. No roadmap item should be promoted to VERIFIED merely because an interface exists.
 
-PR #9 was merged after CI passed on Python 3.11, 3.12 and 3.13 plus namespace compatibility. The ratchet now:
-1. fails when measured coverage is below baseline;
-2. fails when the floored measured coverage is above baseline, with the exact value to record;
-3. passes when the floored measured coverage equals the baseline.
+## Quality gates
 
-No baseline increase was needed because the verified measurement remained 69%.
+A merge-ready change should preserve:
 
+1. deterministic tests;
+2. Python 3.11–3.13 compatibility;
+3. Ruff and mypy;
+4. coverage non-regression;
+5. Golden contract integrity;
+6. security scans;
+7. reproducible evaluation artifacts.
 
-## A3 — Strict typing baseline (verified by CI)
+## Maintainer principle
 
-CI run: 36748963622.  
-Evidence job: typecheck-strict (non-blocking), job 110002319794.  
-- Exact command executed: `mypy --strict src/ayorai_attractor > /tmp/mypy-strict.log 2>&1`.
-- Exact output: `Success: no issues found in 39 source files`.
-- Parser output: `STRICT_MYPY_TOTAL_ERRORS=0`.
-- Blocking check: `mypy --strict src/ayorai_attractor/evidence` passed.
-- `warn_unused_ignores = true` is active in pyproject.toml.
-- `grep -rn "type: ignore" src/ | wc -l`: **0**; no type: ignore occurrences were found.
-- Explicit `Any` grep: **5 matching lines**, all in `src/ayorai_attractor/mcp_gateway/gateway.py`; they are the typed MCP gateway boundary (`dict[str, Any]`, callable return `Any`, and output `Any`). No Any occurs in the other 38 source files checked.
-- The strict repository-wide job remains non-blocking for the migration, while `ayorai_attractor.evidence` is enforced through a strict override.
-- The strict override list is intentionally a ratchet: future strict modules are added to the list and cannot be removed silently.
+**Evidence before claims. Determinism before persuasion. Reproducibility before benchmarks.**
 
-No R1 code was introduced in A3.
+That principle is the standard for ATTRACTOR itself.

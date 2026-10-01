@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: "AYORAI ATTRACTOR"
+message: "If you use AYORAI ATTRACTOR in research or software, please cite this repository."
+type: software
+authors:
+  - family-names: Ayora
+    given-names: Anderson Leon
+repository-code: "https://github.com/Ayorinha/ayorai-opensearch"
+url: "https://github.com/Ayorinha/ayorai-opensearch"
+license: Apache-2.0
+version: 0.1.0
+date-released: 2026-09-30
+keywords:
+  - artificial intelligence
+  - AI safety
+  - evidence verification
+  - provenance
+  - RAG
+  - trustworthy AI

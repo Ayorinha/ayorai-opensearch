@@ -7,7 +7,13 @@ failures, and verification signals that led to the current response.
 from dataclasses import dataclass
 from enum import StrEnum
 
-from ayorai_attractor.models import Evidence, Failure, SearchResponse
+from ayorai_attractor.models import (
+    Evidence,
+    Failure,
+    QualityMode,
+    SearchResponse,
+    VerificationStatus,
+)
 
 
 class AuditSeverity(StrEnum):
@@ -105,9 +111,9 @@ def audit_evidence(
     """Audit evidence directly for callers without a SearchResponse."""
     response = SearchResponse(
         query="audit",
-        mode="balanced",
+        mode=QualityMode.BALANCED,
         answer="audit",
-        verification="unverified",
+        verification=VerificationStatus.UNVERIFIED,
         confidence=0.0,
         evidence=evidence,
         failures=failures or [],
