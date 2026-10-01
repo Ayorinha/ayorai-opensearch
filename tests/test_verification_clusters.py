@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from ayorai_attractor.verification.clusters import (
     cluster_evidence,
@@ -55,8 +56,13 @@ def test_same_normalized_hash_is_dependent() -> None:
 
 
 def test_citation_republication_chain_is_dependent() -> None:
-    left = evidence("e1", origin_id="o1")
-    right = evidence("e2", origin_id="o2", cited_origin_id="o1")
+    left = evidence("e1", canonical_url=None, origin_id="o1")
+    right = evidence(
+        "e2",
+        canonical_url=None,
+        origin_id="o2",
+        cited_origin_id="o1",
+    )
     assert dependency_reason(left, right) == "citation_republication_chain"
 
 
@@ -73,8 +79,8 @@ def test_disjoint_origin_ids_have_no_known_dependency(
 ) -> None:
     if left_origin == right_origin:
         return
-    left = evidence("e1", origin_id=left_origin)
-    right = evidence("e2", origin_id=right_origin)
+    left = evidence("e1", canonical_url=None, origin_id=left_origin)
+    right = evidence("e2", canonical_url=None, origin_id=right_origin)
     assert not has_known_dependency(left, right)
 
 
