@@ -1,104 +1,62 @@
 # AYORAI ATTRACTOR — Progress
 
-**Estado atual:** Fase 0 concluída; Master Gate concluído; R1-a em preparação.  
-**Base verificada:** main em `6fd988064bfb048b02e24e5ccb89b10ef50d4e0e`.  
-**Ground Truth:** 34 casos / 52 documentos.  
+**Estado atual:** Fase 0 concluída; R1 core implementado na main; integração do R1 com o Golden v0 e recuperação real continuam sendo trabalho posterior.
+**Base:** main merge 04d6e25b5f264fe876709e810260af7d132d2836.
+**Ground Truth:** 34 casos / 52 documentos.
 **Baseline:** 43,3333%, igual à classe majoritária.
 
 ## Roadmap ponderado
 
-| Item | Peso | Status | PRs | Data de conclusão |
-|---|---:|---|---|---|
-| Fase 0 — Fundação e ground truth | 10 | concluído | #7–#14 | 2026-09-30 |
-| R1 — Motor de verificação | 15 | não iniciado | — | — |
-| R2 — Audit Mode | 10 | não iniciado | — | — |
-| R3 — Conselho de IAs | 10 | não iniciado | — | — |
-| R4 — Proveniência e replay | 6 | não iniciado | — | — |
-| R5 — Recuperação híbrida OpenSearch | 8 | não iniciado | — | — |
-| R6 — Síntese fiel por construção | 6 | não iniciado | — | — |
-| R7 — Segurança (MCP, OWASP ASI, red team) | 8 | não iniciado | — | — |
-| R8 — Observabilidade e custo | 5 | não iniciado | — | — |
-| R9 — Orquestração multi-agente durável | 7 | não iniciado | — | — |
-| R10 — Arena comparativa | 5 | não iniciado | — | — |
-| R11 — Aprendizado GEPA | 3 | não iniciado | — | — |
-| R12 — Attractor Studio + MCP próprio | 5 | não iniciado | — | — |
-| R13 — Escala, operação e governança | 2 | não iniciado | — | — |
+| Item | Peso | Status | PRs |
+|---|---:|---|---|
+| Fase 0 — Fundação e ground truth | 10 | concluído | #7–#14 |
+| R1 — Motor de verificação | 15 | core concluído; integração Golden pendente | #27–#31 |
+| R2 — Audit Mode | 10 | não iniciado | — |
+| R3 — Conselho de IAs | 10 | não iniciado | — |
+| R4 — Proveniência e replay | 6 | não iniciado | — |
+| R5 — Recuperação híbrida OpenSearch | 8 | não iniciado | — |
+| R6 — Síntese fiel por construção | 6 | não iniciado | — |
+| R7 — Segurança (MCP, OWASP ASI, red team) | 8 | não iniciado | — |
+| R8 — Observabilidade e custo | 5 | não iniciado | — |
+| R9 — Orquestração multi-agente durável | 7 | não iniciado | — |
+| R10 — Arena comparativa | 5 | não iniciado | — |
+| R11 — Aprendizado GEPA | 3 | não iniciado | — |
+| R12 — Attractor Studio + MCP próprio | 5 | não iniciado | — |
+| R13 — Escala, operação e governança | 2 | não iniciado | — |
 
-### Justificativa dos pesos
+## Progresso ponderado
 
-- **Fase 0 (10):** cria o ground truth, medição e barreiras contra autoengano.
-- **R1 (15):** é o núcleo técnico de verificação que transforma a fundação em capacidade real.
-- **R2 (10):** torna a verificação auditável e operacional.
-- **R3 (10):** adiciona deliberação multi-modelo controlada.
-- **R4 (6):** garante proveniência e replay verificável.
-- **R5 (8):** introduz recuperação híbrida em dados reais.
-- **R6 (6):** reduz afirmações sem suporte na síntese.
-- **R7 (8):** cobre segurança de agentes e red team.
-- **R8 (5):** mede observabilidade, custo e latência.
-- **R9 (7):** adiciona execução durável em fluxos longos.
-- **R10 (5):** cria comparação reprodutível entre sistemas.
-- **R11 (3):** adiciona otimização/aprendizado controlado.
-- **R12 (5):** expõe o sistema como produto e servidor MCP.
-- **R13 (2):** fecha operação, escala e governança.
+**25/100 = 25%** do roadmap ponderado tem implementação concluída ou core tecnicamente implementado.
 
-## Progresso
+- Fase 0: 10/10
+- R1 core: 15/15
+- R2–R13: 0/75
 
-**Fase 0:** 10/10 = 100%.  
-**v1.0:** 10/100 = **10%**.
+Isso não significa 25% de um produto pronto: R1 ainda precisa ser ligado ao fluxo de avaliação Golden e a recuperação real só entra em R5.
 
-Barra: **[██░░░░░░░░░░░░░░░░░░] 10%**
+## R1 entregue
 
-### Marcos
+- contratos Pydantic estritos;
+- independência determinística e clusters transitivos;
+- parser numérico por locale;
+- tolerância relativa de 1% e limiar de 1e-9;
+- conflito por granularidade de data;
+- Judge determinístico de seis estados;
+- precedência global;
+- completude de proveniência explícita;
+- contratos ABSTAIN/NO_ANSWER e ABSTAIN/OUT_OF_SCOPE;
+- scanner recursivo de segredo de avaliação;
+- testes unitários e property tests.
 
-| Marco | Fórmula | Progresso |
-|---|---|---:|
-| v0.1 | Fase 0 / 10 | **100%** |
-| v0.5 | Fase 0 / (Fase 0 + R1 + R2) | **28,57%** |
-| v0.7 | (Fase 0 + R1 + R2 + R3 + R4 + R5) / 59 | **16,95%** |
-| v1.0 | todo roadmap | **10%** |
+## Próximos marcos
 
-Não são previsões de prazo.
+1. Integrar o Judge ao runner Golden v0 e cobrir os 34 casos.
+2. Fechar R2 com Audit Mode e trilha de decisão/replay.
+3. R3: conselho multi-modelo controlado.
+4. R4/R5: proveniência/replay e recuperação híbrida real.
 
-## Ritmo observado
+## Histórico
 
-PRs #7, #8, #9, #10 e #11 foram mergeados entre 16:50:30Z e 17:07:01Z em 2026-09-30; PR #12 foi mergeado às 18:33:31Z. Isso corresponde a 6 itens concluídos em aproximadamente 103 minutos entre o primeiro e o último merge. Esse ritmo é apenas histórico desta sessão e **não é uma estimativa de prazo**; a continuidade depende do tempo disponível do mantenedor.
-
-## Trilha de colaboração GitHub
-
-- **concluída no PR #21**, com CI verde antes do merge.
-- CONTRIBUTING.md e CODE_OF_CONDUCT.md.
-- Templates de bug, feature, golden case e pull request.
-- Seis issues reais (#15–#20), com `good first issue` / `help wanted`.
-- Discussions: **não ativadas pelo conector disponível**; a configuração requer ação no GitHub.
-
-## Portfólio do ATTRACTOR
-
-- README reestruturado no PR desta etapa, com baseline e limites honestos.
-- Topics e descrição curta do repositório: **verificados via API após configuração manual**.
-
-## Master Gate — concluído em 2026-09-30
-
-- PR #1 do perfil Ayorinha: concluído.
-- Release `v0.1.0`: publicada apontando para `main`.
-- Discussions: ativadas.
-- Descrição curta: `AYORAI ATTRACTOR — Evidence-first claim-level verification engine`.
-- Topics: configurados com 9 tópicos, sem `self-evolving`.
-- CI da `main` atual: verde no commit `6fd988064bfb048b02e24e5ccb89b10ef50d4e0e`.
-
-## Próximos 3 itens
-
-1. R1-a — contratos Pydantic v2 estritos e traceabilidade.
-2. R1-b — independência de clusters e property tests.
-3. R1-c — stance heurística e detecção de contradição.
-
-## Evidência
-
-- PR #12 / Fase 0: https://github.com/Ayorinha/ayorai-opensearch/pull/12
-- Runner: https://github.com/Ayorinha/ayorai-opensearch/pull/13
-- Registro final: https://github.com/Ayorinha/ayorai-opensearch/pull/14
-- Trilha GitHub: https://github.com/Ayorinha/ayorai-opensearch/pull/21
-- README ATTRACTOR: https://github.com/Ayorinha/ayorai-opensearch/pull/22
-- Post draft: https://github.com/Ayorinha/ayorai-opensearch/pull/23
-- Perfil Ayorinha: https://github.com/Ayorinha/Ayorinha/pull/1
-- Baseline: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/36759101933
-- Green Wall: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/36759109543
+- PR #31: R1 core integrado na main.
+- PR #29 e #30: branches intermediárias fechadas após a integração consolidada no #31.
+- Master Gate: concluído em 2026-09-30.
