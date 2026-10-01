@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -19,7 +19,7 @@ def evidence(**overrides: object) -> Evidence:
         "claim_id": "c1",
         "source_id": "source-1",
         "source_location": "https://example.test/doc/1",
-        "retrieved_at": datetime(2026, 9, 30, tzinfo=timezone.utc),
+        "retrieved_at": datetime(2026, 9, 30, tzinfo=UTC),
         "start_offset": 0,
         "end_offset": 12,
         "excerpt": "The claim is supported.",
@@ -56,7 +56,12 @@ def test_stance_edge_is_explicit() -> None:
 
 def test_verdict_has_exactly_six_r1_states() -> None:
     assert {item.value for item in Verdict} == {
-        "verified", "supported", "partially_supported", "unverified", "refuted", "conflicting",
+        "verified",
+        "supported",
+        "partially_supported",
+        "unverified",
+        "refuted",
+        "conflicting",
     }
 
 
