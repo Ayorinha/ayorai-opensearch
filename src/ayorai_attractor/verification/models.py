@@ -31,6 +31,9 @@ class Evidence(StrictModel):
     excerpt: str = Field(min_length=1)
     origin_id: str | None = Field(default=None, min_length=1)
     canonical_url: HttpUrl | None = None
+    normalized_content_hash: str | None = Field(default=None, min_length=1)
+    cited_origin_id: str | None = Field(default=None, min_length=1)
+    provenance_complete: bool = True
 
     @model_validator(mode="after")
     def require_origin_or_canonical_url(self) -> "Evidence":

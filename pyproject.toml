@@ -28,6 +28,7 @@ dev = [
   "bandit>=1.8,<2",
   "mcp>=2,<3",
   "openai-agents>=0.1,<1",
+  "hypothesis>=6.100,<7",
 ]
 
 [project.scripts]
