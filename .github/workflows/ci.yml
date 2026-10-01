@@ -102,7 +102,7 @@ jobs:
             exit 1
           fi
           measured_floor=$(python -c "import math; print(math.floor(float('$measured')))")
-if [ "$measured_floor" -lt "$baseline" ]; then
+          if [ "$measured_floor" -lt "$baseline" ]; then
             echo "::error::Coverage dropped to ${measured}%. Baseline is ${baseline}%; restore coverage or update only if the baseline itself was incorrect."
             exit 1
           fi
