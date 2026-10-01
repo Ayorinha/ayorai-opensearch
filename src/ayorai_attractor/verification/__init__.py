@@ -1,13 +1,22 @@
 """Strict verification contracts for R1."""
 
 from .clusters import cluster_evidence, dependency_reason, has_known_dependency
-from .numeric import (\n    DEFAULT_RELATIVE_TOLERANCE,\n    DateGranularity,\n    NumericLocale,\n    dates_conflict,\n    numeric_conflicts,\n    parse_number,\n    relative_difference,\n)\nfrom .models import (
+from .models import (
     INSUFFICIENT_EVIDENCE_TO_VERDICT,
     Claim,
     Evidence,
     Stance,
     StanceEdge,
     Verdict,
+)
+from .numeric import (
+    DEFAULT_RELATIVE_TOLERANCE,
+    DateGranularity,
+    NumericLocale,
+    dates_conflict,
+    numeric_conflicts,
+    parse_number,
+    relative_difference,
 )
 
 __all__ = [
@@ -19,5 +28,12 @@ __all__ = [
     "INSUFFICIENT_EVIDENCE_TO_VERDICT",
     "has_known_dependency",
     "cluster_evidence",
-    "dependency_reason",\n    "DEFAULT_RELATIVE_TOLERANCE",\n    "DateGranularity",\n    "NumericLocale",\n    "dates_conflict",\n    "numeric_conflicts",\n    "parse_number",\n    "relative_difference",
+    "dependency_reason",
+    "DEFAULT_RELATIVE_TOLERANCE",
+    "DateGranularity",
+    "NumericLocale",
+    "dates_conflict",
+    "numeric_conflicts",
+    "parse_number",
+    "relative_difference",
 ]
