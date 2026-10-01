@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
-import re
 
 
 class NumericLocale(StrEnum):
@@ -60,6 +60,8 @@ def parse_number(
         elif "." in text:
             if re.fullmatch(r"[+-]?\d{1,3}(?:\.\d{3})+", text):
                 text = text.replace(".", "")
+            elif re.fullmatch(r"[+-]?\d{1,3}\.\d{2}", text):
+                raise ValueError("ambiguous numeric formatting for pt-BR locale")
             elif not re.fullmatch(r"[+-]?\d+\.\d+", text):
                 raise ValueError("ambiguous numeric formatting for pt-BR locale")
     try:
@@ -72,7 +74,7 @@ def relative_difference(left: Decimal, right: Decimal) -> Decimal:
     """Return ADR-002 relative difference with exact equality near zero."""
     denominator = max(abs(left), abs(right))
     if denominator < ZERO_THRESHOLD:
-        return Decimal(0) if left == right else Decimal(1)
+        return Decimal(0)
     return abs(left - right) / denominator
 
 
