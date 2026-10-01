@@ -1,8 +1,8 @@
 """Content-addressed replay bundle for R4 provenance and reproducibility."""
 
-from dataclasses import dataclass
 import hashlib
 import json
+from dataclasses import dataclass
 from typing import Any
 
 
