@@ -1,4 +1,4 @@
-from ayorai_attractor.audit import AuditSeverity, AuditReport
+from ayorai_attractor.audit import AuditReport, AuditSeverity
 from ayorai_attractor.models import Evidence, SearchResponse, VerificationStatus
 
 
