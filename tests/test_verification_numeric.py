@@ -30,7 +30,7 @@ def test_en_us_values_above_tolerance_conflict() -> None:
 
 def test_zero_values_use_exact_equality() -> None:
     assert relative_difference(Decimal("0"), Decimal("0")) == Decimal("0")
-    assert relative_difference(Decimal("0"), Decimal("0.000000001")) == Decimal("0")
+    assert relative_difference(Decimal("0"), Decimal("0.0000000001")) == Decimal("0")
 
 
 def test_locale_controls_interpretation() -> None:
