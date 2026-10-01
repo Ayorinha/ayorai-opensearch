@@ -1,6 +1,6 @@
 """Strict verification contracts for R1."""
 
-from .clusters import are_independent, cluster_evidence, dependency_reason
+from .clusters import cluster_evidence, dependency_reason, has_known_dependency
 from .models import (
     INSUFFICIENT_EVIDENCE_TO_VERDICT,
     Claim,
@@ -17,7 +17,7 @@ __all__ = [
     "StanceEdge",
     "Verdict",
     "INSUFFICIENT_EVIDENCE_TO_VERDICT",
-    "are_independent",
+    "has_known_dependency",
     "cluster_evidence",
     "dependency_reason",
 ]
