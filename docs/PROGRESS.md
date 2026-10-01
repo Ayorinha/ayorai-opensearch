@@ -37,3 +37,7 @@
 5. Implementar R7 red team, R11 GEPA e R12 MCP dedicado.
 
 Não há uma alegação de conclusão total enquanto esses itens não estiverem executáveis e testados.
+
+## CI verification checkpoint
+
+All R1/R2/R3/R4/R5/R6/R8/R9/R10/R13 core changes are present on main. The latest CI run is intentionally re-evaluated after the consolidated style/test fixes.
