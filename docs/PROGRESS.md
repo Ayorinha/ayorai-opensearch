@@ -1,7 +1,7 @@
 # AYORAI ATTRACTOR — Progress
 
-**Estado atual:** Fase 0 concluída; R1 core implementado na main; integração do R1 com o Golden v0 e recuperação real continuam sendo trabalho posterior.
-**Base:** main merge 04d6e25b5f264fe876709e810260af7d132d2836.
+**Estado atual:** Fase 0 concluída; R1 core implementado; núcleos determinísticos de R2, R3, R4, R5, R6, R8, R9, R10 e R13 adicionados. As integrações operacionais completas e R11 ainda permanecem.
+**Base:** main merge 13621913af657708867021f8442bf6919fc6aa3f.
 **Ground Truth:** 34 casos / 52 documentos.
 **Baseline:** 43,3333%, igual à classe majoritária.
 
@@ -10,53 +10,30 @@
 | Item | Peso | Status | PRs |
 |---|---:|---|---|
 | Fase 0 — Fundação e ground truth | 10 | concluído | #7–#14 |
-| R1 — Motor de verificação | 15 | core concluído; integração Golden pendente | #27–#31 |
-| R2 — Audit Mode | 10 | não iniciado | — |
-| R3 — Conselho de IAs | 10 | não iniciado | — |
-| R4 — Proveniência e replay | 6 | não iniciado | — |
-| R5 — Recuperação híbrida OpenSearch | 8 | não iniciado | — |
-| R6 — Síntese fiel por construção | 6 | não iniciado | — |
-| R7 — Segurança (MCP, OWASP ASI, red team) | 8 | não iniciado | — |
-| R8 — Observabilidade e custo | 5 | não iniciado | — |
-| R9 — Orquestração multi-agente durável | 7 | não iniciado | — |
-| R10 — Arena comparativa | 5 | não iniciado | — |
+| R1 — Motor de verificação | 15 | core concluído; Golden integration pendente | #27–#31 |
+| R2 — Audit Mode | 10 | core concluído; exposição operacional pendente | #32 |
+| R3 — Conselho de IAs | 10 | core concluído; adapters/orquestração pendentes | #33 |
+| R4 — Proveniência e replay | 6 | core concluído; persistência/integração pendentes | #33 |
+| R5 — Recuperação híbrida OpenSearch | 8 | core de fusão concluído; pipeline real pendente | #34 |
+| R6 — Síntese fiel por construção | 6 | grounding gate concluído; integração de geração pendente | #34 |
+| R7 — Segurança | 8 | parcialmente implementado; red team/OWASP pendentes | #27–#31 |
+| R8 — Observabilidade e custo | 5 | métricas core concluídas; telemetria integrada pendente | #34 |
+| R9 — Orquestração durável | 7 | checkpoint core concluído; execução distribuída pendente | #35 |
+| R10 — Arena comparativa | 5 | scoring core concluído; harness completo pendente | #34 |
 | R11 — Aprendizado GEPA | 3 | não iniciado | — |
-| R12 — Attractor Studio + MCP próprio | 5 | não iniciado | — |
-| R13 — Escala, operação e governança | 2 | não iniciado | — |
+| R12 — Attractor Studio + MCP próprio | 5 | infraestrutura existente; produto MCP dedicado pendente | — |
+| R13 — Escala, operação e governança | 2 | checks de governança core concluídos; operação pendente | #34 |
 
-## Progresso ponderado
+## Progresso honesto
 
-**25/100 = 25%** do roadmap ponderado tem implementação concluída ou core tecnicamente implementado.
+**25/100 = 25%** do roadmap ponderado é contado como fase/core suficientemente implementado para não ser apenas documentação. Os módulos adicionais acima são fundações parciais e não são contados como fases 100% concluídas.
 
-- Fase 0: 10/10
-- R1 core: 15/15
-- R2–R13: 0/75
+## Próximo gargalo técnico
 
-Isso não significa 25% de um produto pronto: R1 ainda precisa ser ligado ao fluxo de avaliação Golden e a recuperação real só entra em R5.
+1. Integrar R1 ao runner Golden v0 e reavaliar os 34 casos.
+2. Expor R2 Audit Mode no fluxo/API.
+3. Ligar R3/R4 ao orchestrator e ao armazenamento de traces.
+4. Integrar R5 ao adaptador OpenSearch e R6 ao pipeline de resposta.
+5. Implementar R7 red team, R11 GEPA e R12 MCP dedicado.
 
-## R1 entregue
-
-- contratos Pydantic estritos;
-- independência determinística e clusters transitivos;
-- parser numérico por locale;
-- tolerância relativa de 1% e limiar de 1e-9;
-- conflito por granularidade de data;
-- Judge determinístico de seis estados;
-- precedência global;
-- completude de proveniência explícita;
-- contratos ABSTAIN/NO_ANSWER e ABSTAIN/OUT_OF_SCOPE;
-- scanner recursivo de segredo de avaliação;
-- testes unitários e property tests.
-
-## Próximos marcos
-
-1. Integrar o Judge ao runner Golden v0 e cobrir os 34 casos.
-2. Fechar R2 com Audit Mode e trilha de decisão/replay.
-3. R3: conselho multi-modelo controlado.
-4. R4/R5: proveniência/replay e recuperação híbrida real.
-
-## Histórico
-
-- PR #31: R1 core integrado na main.
-- PR #29 e #30: branches intermediárias fechadas após a integração consolidada no #31.
-- Master Gate: concluído em 2026-09-30.
+Não há uma alegação de conclusão total enquanto esses itens não estiverem executáveis e testados.
