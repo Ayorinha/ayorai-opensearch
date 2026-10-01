@@ -11,7 +11,7 @@ from ayorai_attractor.verification.judge import (
 from ayorai_attractor.verification.models import Claim, Evidence, Stance, StanceEdge, Verdict
 
 
-def ev(item_id: str, *, origin: str | None, claim_id: str = "c1") -> Evidence:
+def ev(\n    item_id: str,\n    *,\n    origin: str | None,\n    claim_id: str = "c1",\n    provenance_complete: bool = True,\n) -> Evidence:
     return Evidence(
         id=item_id,
         claim_id=claim_id,
