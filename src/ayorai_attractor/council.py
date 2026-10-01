@@ -4,9 +4,9 @@ Models provide explicit votes; this module only aggregates those votes.
 No model is treated as authoritative and no hidden tie-breaker exists.
 """
 
+from collections import Counter
 from dataclasses import dataclass
 from enum import StrEnum
-from collections import Counter
 
 
 class CouncilDecision(StrEnum):
