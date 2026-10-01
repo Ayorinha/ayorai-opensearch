@@ -98,8 +98,11 @@ def _failure_finding(failure: Failure) -> AuditFinding:
     )
 
 
-def audit_evidence(\n    evidence: list[Evidence], failures: list[Failure] | None = None\n) -> tuple[AuditFinding, ...]:
-    """Audit evidence directly for callers that do not have a SearchResponse."""
+def audit_evidence(
+    evidence: list[Evidence],
+    failures: list[Failure] | None = None,
+) -> tuple[AuditFinding, ...]:
+    """Audit evidence directly for callers without a SearchResponse."""
     response = SearchResponse(
         query="audit",
         mode="balanced",
