@@ -58,10 +58,10 @@ def parse_number(
                 raise ValueError("ambiguous numeric formatting for pt-BR locale")
             text = text.replace(",", ".")
         elif "." in text:
-            if not re.fullmatch(r"[+-]?\d{1,3}(?:\.\d{3})+", text):
-                # A decimal point is valid when it is not a thousands pattern.
-                if not re.fullmatch(r"[+-]?\d+\.\d+", text):
-                    raise ValueError("ambiguous numeric formatting for pt-BR locale")
+            if re.fullmatch(r"[+-]?\d{1,3}(?:\.\d{3})+", text):
+                text = text.replace(".", "")
+            elif not re.fullmatch(r"[+-]?\d+\.\d+", text):
+                raise ValueError("ambiguous numeric formatting for pt-BR locale")
     try:
         return Decimal(text)
     except InvalidOperation as exc:
