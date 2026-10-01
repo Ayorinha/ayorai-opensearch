@@ -7,7 +7,13 @@ failures, and verification signals that led to the current response.
 from dataclasses import dataclass
 from enum import StrEnum
 
-from ayorai_attractor.models import Evidence, Failure, QualityMode, SearchResponse, VerificationStatus
+from ayorai_attractor.models import (
+    Evidence,
+    Failure,
+    QualityMode,
+    SearchResponse,
+    VerificationStatus,
+)
 
 
 class AuditSeverity(StrEnum):
