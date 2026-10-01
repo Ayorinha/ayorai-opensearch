@@ -5,13 +5,13 @@ from ayorai_attractor.verification.security import assert_no_secret, contains_se
 
 
 def test_no_answer_has_no_verdict() -> None:
-    response = VerificationResponse.no_answer("The corpus has no evidence for the requested attribute.")
+    response = VerificationResponse.no_answer(\n        "The corpus has no evidence for the requested attribute."\n    )
     assert response.status is ResponseStatus.ABSTAIN_NO_ANSWER
     assert response.verdict is None
 
 
 def test_out_of_scope_has_no_verdict() -> None:
-    response = VerificationResponse.out_of_scope("The question is outside the factual corpus scope.")
+    response = VerificationResponse.out_of_scope(\n        "The question is outside the factual corpus scope."\n    )
     assert response.status is ResponseStatus.ABSTAIN_OUT_OF_SCOPE
     assert response.verdict is None
 
