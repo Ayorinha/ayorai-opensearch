@@ -33,6 +33,8 @@ class ClaimJudgment:
 
 def has_complete_provenance(evidence: Evidence) -> bool:
     """Return whether one evidence item satisfies ADR-002 §2."""
+    if not evidence.provenance_complete:
+        return False
     if not evidence.source_id or not evidence.source_location:
         return False
     if not isinstance(evidence.retrieved_at, datetime):
