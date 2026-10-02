@@ -60,6 +60,25 @@ class Verdict(StrEnum):
     CONFLICTING = "conflicting"
 
 
+class VerificationRequest(StrictModel):
+    claims: list[Claim] = Field(min_length=1, max_length=1000)
+    evidence: list[Evidence] = Field(default_factory=list, max_length=10000)
+    stances: list[StanceEdge] = Field(default_factory=list, max_length=10000)
+
+
+class ClaimJudgmentResponse(StrictModel):
+    claim_id: str
+    support_clusters: int = Field(ge=0)
+    contradiction_clusters: int = Field(ge=0)
+    provenance_complete: bool
+    verdict: Verdict
+
+
+class VerificationResponse(StrictModel):
+    judgments: list[ClaimJudgmentResponse]
+    verdict: Verdict
+
+
 # Compatibility mapping only; no Judge decision logic lives here.
 INSUFFICIENT_EVIDENCE_TO_VERDICT: dict[str, Verdict] = {
     "insufficient_evidence": Verdict.UNVERIFIED,
