@@ -32,6 +32,6 @@ def test_benchmark_is_multidimensional() -> None:
     assert "cost" in dimensions
 
 
-def test_deep_request_never_claims_unimplemented_verification() -> None:
+def test_deep_request_never_claims_unverified_evidence() -> None:
     result = Attractor().run(SearchRequest(query="deep test", mode="deep", max_agents=26))
-    assert result.verification.value == "unverified"
+    assert result.verification.value == "insufficient_evidence"
