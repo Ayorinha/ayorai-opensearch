@@ -70,16 +70,20 @@ class ResearchAgent(Agent):
                 failures=[failure],
             )
 
-        evidence = context.evidence.add(
-            claim=f"Provider produced an analysis for '{context.query}'.",
-            source=response.source or "unknown",
-            excerpt=response.excerpt or response.text,
-            independent=response.independent,
-        )
+        # A model/provider response is not evidence by itself. Accept it only
+        # when the provider explicitly supplies provenance and an excerpt.
+        if response.source and response.excerpt:
+            evidence = context.evidence.add(
+                claim=f"Provider produced an analysis for '{context.query}'.",
+                source=response.source,
+                excerpt=response.excerpt,
+                independent=response.independent,
+            )
+            evidence_ids.append(evidence.id)
         return AgentResult(
             agent=self.name,
             output=response.text,
-            evidence_ids=[*evidence_ids, evidence.id],
+            evidence_ids=evidence_ids,
         )
 
 
