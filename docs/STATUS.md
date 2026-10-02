@@ -12,7 +12,7 @@ This document is intentionally evidence-based: a capability is marked **VERIFIED
 | Area | Status | Evidence |
 |---|---|---|
 | Deterministic claim verification | VERIFIED | verification/judge.py, numeric/date rules, tests |
-| Strict R1 API contract | VERIFIED | POST /v1/verify + integration test |
+| Strict R1 API contract | IMPLEMENTED — CI REVALIDATION | POST /v1/verify + contract test; latest PR gate is being revalidated |
 | Evidence provenance | VERIFIED | structured evidence model + provenance checks |
 | Source-independence clustering | VERIFIED | verification/clusters.py + tests |
 | Contradiction handling | VERIFIED | deterministic stance/judge model |
