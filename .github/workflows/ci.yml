@@ -56,6 +56,22 @@ jobs:
         with:
           name: golden-v0-${{ github.sha }}
           path: reports/golden-v0.json
+  judge-regression:
+    name: judge-regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - name: Execute deterministic Judge suite
+        run: |
+          python -c 'from pathlib import Path; from ayorai_attractor.evaluation.judge import evaluate_judge_suite; r=evaluate_judge_suite(Path("evals/judge/v0.jsonl")); assert r["case_count"] == 6; assert r["correct"] == 6; assert r["accuracy"] == 1.0; print("JUDGE_V0: PASS", r["confusion_matrix"])'
+
   golden-lint:
     name: golden-lint
     runs-on: ubuntu-latest
