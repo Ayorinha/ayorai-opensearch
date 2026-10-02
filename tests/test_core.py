@@ -85,8 +85,18 @@ def test_structured_r1_verify_endpoint() -> None:
                 },
             ],
             "stances": [
-                {"id": "s1", "claim_id": "c1", "evidence_id": "e1", "stance": "supports"},
-                {"id": "s2", "claim_id": "c1", "evidence_id": "e2", "stance": "supports"},
+                {
+                    "id": "s1",
+                    "claim_id": "c1",
+                    "evidence_id": "e1",
+                    "stance": "supports",
+                },
+                {
+                    "id": "s2",
+                    "claim_id": "c1",
+                    "evidence_id": "e2",
+                    "stance": "supports",
+                },
             ],
         },
     )
