@@ -109,11 +109,11 @@ class Attractor:
         status = evidence.status()
         if status is VerificationStatus.UNVERIFIED:
             answer = (
-                f"Preliminary result for '{request.query}'. "
-                "The MVP generated a local analysis, but independent external "
-                "evidence is not configured, so the result is not verified."
+                "Abstained: independent external evidence is not available "
+                "for this result."
             )
-            confidence = 0.35
+            status = VerificationStatus.INSUFFICIENT_EVIDENCE
+            confidence = 0.0
         else:
             answer = outputs[-1].output if outputs else "No result."
             confidence = 0.9
