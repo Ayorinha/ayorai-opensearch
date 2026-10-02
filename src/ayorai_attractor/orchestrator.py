@@ -1,8 +1,5 @@
 from uuid import uuid4
 
-from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
-from .router import AdaptiveRouter
-
 from ayorai_attractor.agents.core import (
     AgentContext,
     CriticAgent,
@@ -20,6 +17,9 @@ from ayorai_attractor.providers.registry import ProviderRegistry
 from ayorai_attractor.replay import ReplayBundle
 from ayorai_attractor.security import scan_untrusted_text
 from ayorai_attractor.synthesis import validate_claim_citations
+
+from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
+from .router import AdaptiveRouter
 
 
 IMPLEMENTED_AGENTS = {
