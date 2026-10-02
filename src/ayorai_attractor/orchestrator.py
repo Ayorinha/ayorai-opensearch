@@ -21,7 +21,6 @@ from ayorai_attractor.synthesis import validate_claim_citations
 from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
 from .router import AdaptiveRouter
 
-
 IMPLEMENTED_AGENTS = {
     "planner": PlannerAgent,
     "researcher": ResearchAgent,
