@@ -29,3 +29,20 @@ def test_opensearch() -> None:
     payload = response.json()
     assert payload["verification"] == "unverified"
     assert payload["trace_id"].startswith("tr_")
+
+
+def test_opensearch_audit() -> None:
+    client = TestClient(app)
+    response = client.post(
+        "/v1/opensearch/audit",
+        json={"query": "compare RAG and fine-tuning", "mode": "balanced"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["verification"] == "unverified"
+    assert payload["trace_id"].startswith("tr_")
+    assert payload["evidence_count"] >= 1
+    assert [item["code"] for item in payload["findings"]] == [
+        "WEAK_INDEPENDENCE",
+        "NO_VERIFIED_EVIDENCE",
+    ]
