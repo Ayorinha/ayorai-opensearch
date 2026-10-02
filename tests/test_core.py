@@ -5,11 +5,12 @@ from ayorai_attractor.models import SearchRequest, VerificationStatus
 from ayorai_attractor.orchestrator import Attractor
 
 
-def test_orchestrator_is_unverified_without_external_sources() -> None:
+def test_orchestrator_abstains_without_verified_evidence() -> None:
     result = Attractor().run(SearchRequest(query="test query"))
-    assert result.verification is VerificationStatus.UNVERIFIED
+    assert result.verification is VerificationStatus.INSUFFICIENT_EVIDENCE
     assert "research" in result.agents_used
-    assert result.confidence < 0.5
+    assert result.confidence == 0.0
+    assert result.answer.startswith("Abstained:")
 
 
 def test_health() -> None:
@@ -27,7 +28,9 @@ def test_opensearch() -> None:
     )
     assert response.status_code == 200
     payload = response.json()
-    assert payload["verification"] == "unverified"
+    assert payload["verification"] == "insufficient_evidence"
+    assert payload["confidence"] == 0.0
+    assert payload["answer"].startswith("Abstained:")
     assert payload["trace_id"].startswith("tr_")
 
 
@@ -39,7 +42,7 @@ def test_opensearch_audit() -> None:
     )
     assert response.status_code == 200
     payload = response.json()
-    assert payload["verification"] == "unverified"
+    assert payload["verification"] == "insufficient_evidence"
     assert payload["trace_id"].startswith("tr_")
     assert payload["evidence_count"] == 0
     assert payload["independent_evidence_count"] == 0
@@ -47,4 +50,5 @@ def test_opensearch_audit() -> None:
     assert [item["code"] for item in payload["findings"]] == [
         "NO_EVIDENCE",
         "NO_VERIFIED_EVIDENCE",
+        "NON_VERIFIED_RESPONSE",
     ]
