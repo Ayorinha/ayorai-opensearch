@@ -8,6 +8,15 @@ from ayorai_attractor.models import (
     SearchResponse,
 )
 from ayorai_attractor.orchestrator import Attractor
+from ayorai_attractor.verification.api_models import (
+    ClaimJudgmentResponse,
+    Traceability,
+    VerificationAPIResponse,
+    VerificationRequest,
+)
+from ayorai_attractor.verification.judge import judge
+from ayorai_attractor.verification.models import Verdict
+from ayorai_attractor.verification.response import ResponseStatus
 
 app = FastAPI(
     title="AYORAI ATTRACTOR",
@@ -47,4 +56,42 @@ def audit(request: SearchRequest) -> AuditResponse:
             )
             for item in report.findings
         ],
+    )
+
+
+@app.post("/v1/verify", response_model=VerificationAPIResponse)
+def verify(request: VerificationRequest) -> VerificationAPIResponse:
+    """Evaluate structured claims with the deterministic ADR-002 Judge."""
+    if not request.claims:
+        return VerificationAPIResponse(
+            status=ResponseStatus.ABSTAIN_OUT_OF_SCOPE,
+            verdict=None,
+            judgments=[],
+            traceability=Traceability(adr="ADR-002", rules=["§5"]),
+        )
+
+    judgments, verdict = judge(request.claims, request.evidence, request.stances)
+    status = (
+        ResponseStatus.ABSTAIN_NO_ANSWER
+        if verdict is Verdict.UNVERIFIED
+        else ResponseStatus(verdict.value)
+    )
+    api_verdict = None if status is ResponseStatus.ABSTAIN_NO_ANSWER else verdict
+    return VerificationAPIResponse(
+        status=status,
+        verdict=api_verdict,
+        judgments=[
+            ClaimJudgmentResponse(
+                claim_id=item.claim_id,
+                support_clusters=item.support_clusters,
+                contradiction_clusters=item.contradiction_clusters,
+                provenance_complete=item.provenance_complete,
+                verdict=item.verdict,
+            )
+            for item in judgments
+        ],
+        traceability=Traceability(
+            adr="ADR-002",
+            rules=["§1", "§2", "§3", "§4", "§5", "§9"],
+        ),
     )

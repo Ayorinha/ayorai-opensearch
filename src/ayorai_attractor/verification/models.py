@@ -3,7 +3,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 
 class StrictModel(BaseModel):
@@ -35,6 +35,25 @@ class Evidence(StrictModel):
     cited_origin_id: str | None = Field(default=None, min_length=1)
     provenance_complete: bool = True
 
+    @field_validator("retrieved_at", mode="before")
+    @classmethod
+    def parse_rfc3339_timestamp(cls, value: object) -> object:
+        """Accept JSON RFC3339 timestamps without enabling general coercion."""
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise ValueError("retrieved_at must be a valid RFC3339 timestamp") from exc
+        return value
+
+    @field_validator("canonical_url", mode="before")
+    @classmethod
+    def parse_http_url(cls, value: object) -> object:
+        """Accept a JSON URL string while retaining HttpUrl validation."""
+        if isinstance(value, str):
+            return HttpUrl(value)
+        return value
+
     @model_validator(mode="after")
     def require_origin_or_canonical_url(self) -> "Evidence":
         if self.origin_id is None and self.canonical_url is None:
@@ -49,6 +68,17 @@ class StanceEdge(StrictModel):
     claim_id: str = Field(min_length=1)
     evidence_id: str = Field(min_length=1)
     stance: Stance
+
+    @field_validator("stance", mode="before")
+    @classmethod
+    def parse_stance(cls, value: object) -> object:
+        """Parse only the declared wire values; reject arbitrary coercion."""
+        if isinstance(value, str):
+            try:
+                return Stance(value)
+            except ValueError as exc:
+                raise ValueError("stance must be supports or contradicts") from exc
+        return value
 
 
 class Verdict(StrEnum):
