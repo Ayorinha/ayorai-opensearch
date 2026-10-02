@@ -35,6 +35,17 @@ class Evidence(StrictModel):
     cited_origin_id: str | None = Field(default=None, min_length=1)
     provenance_complete: bool = True
 
+    @model_validator(mode="before")
+    @classmethod
+    def parse_retrieved_at(cls, value: object) -> object:
+        if isinstance(value, dict) and isinstance(value.get("retrieved_at"), str):
+            parsed = dict(value)
+            parsed["retrieved_at"] = datetime.fromisoformat(
+                parsed["retrieved_at"].replace("Z", "+00:00")
+            )
+            return parsed
+        return value
+
     @model_validator(mode="after")
     def require_origin_or_canonical_url(self) -> "Evidence":
         if self.origin_id is None and self.canonical_url is None:
