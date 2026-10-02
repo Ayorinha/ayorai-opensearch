@@ -18,3 +18,12 @@ def test_judge_evaluation_covers_all_six_verdicts() -> None:
         "REFUTED",
         "UNVERIFIED",
     }
+
+
+def test_golden_v1_provenance_edge_stays_supported() -> None:
+    root = Path(__file__).resolve().parents[1]
+    report = evaluate_judge_suite(root / "evals/golden/v1.jsonl")
+
+    assert report["case_count"] == 1
+    assert report["correct"] == 1
+    assert report["results"][0]["predicted"] == "SUPPORTED"
