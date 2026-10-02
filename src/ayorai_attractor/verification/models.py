@@ -46,6 +46,14 @@ class Evidence(StrictModel):
                 raise ValueError("retrieved_at must be a valid RFC3339 timestamp") from exc
         return value
 
+    @field_validator("canonical_url", mode="before")
+    @classmethod
+    def parse_http_url(cls, value: object) -> object:
+        """Accept a JSON URL string while retaining HttpUrl validation."""
+        if isinstance(value, str):
+            return HttpUrl(value)
+        return value
+
     @model_validator(mode="after")
     def require_origin_or_canonical_url(self) -> "Evidence":
         if self.origin_id is None and self.canonical_url is None:
@@ -60,6 +68,17 @@ class StanceEdge(StrictModel):
     claim_id: str = Field(min_length=1)
     evidence_id: str = Field(min_length=1)
     stance: Stance
+
+    @field_validator("stance", mode="before")
+    @classmethod
+    def parse_stance(cls, value: object) -> object:
+        """Parse only the declared wire values; reject arbitrary coercion."""
+        if isinstance(value, str):
+            try:
+                return Stance(value)
+            except ValueError as exc:
+                raise ValueError("stance must be supports or contradicts") from exc
+        return value
 
 
 class Verdict(StrEnum):
