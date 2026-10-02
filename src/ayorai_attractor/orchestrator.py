@@ -15,6 +15,7 @@ from ayorai_attractor.providers.factory import build_default_provider, build_sea
 from ayorai_attractor.providers.registry import ProviderRegistry
 from ayorai_attractor.providers.base import Provider
 from ayorai_attractor.replay import ReplayBundle
+from ayorai_attractor.security import scan_untrusted_text
 from ayorai_attractor.synthesis import validate_claim_citations
 
 from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
@@ -40,8 +41,10 @@ class Attractor:
         evidence = EvidenceStore()
         failures = FailureEngine()
         trace_id = f"tr_{uuid4().hex}"
+        security_findings = scan_untrusted_text(request.query)
         events: list[dict[str, object]] = [
-            {"type": "request", "query": request.query, "mode": request.mode.value}
+            {"type": "request", "query": request.query, "mode": request.mode.value},
+            {"type": "security_scan", "findings": [item.code for item in security_findings]},
         ]
         try:
             provider = build_default_provider()
