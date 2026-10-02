@@ -1,4 +1,5 @@
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from ayorai_attractor.evidence.graph import EvidenceGraph
 from ayorai_attractor.verification.models import Claim, Evidence, Stance, StanceEdge
