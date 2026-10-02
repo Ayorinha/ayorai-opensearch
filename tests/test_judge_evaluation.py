@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from evaluation.judge import evaluate_judge_suite
+from ayorai_attractor.evaluation.judge import evaluate_judge_suite
 
 
 def test_judge_evaluation_covers_all_six_verdicts() -> None:
