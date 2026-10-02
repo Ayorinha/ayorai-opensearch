@@ -74,3 +74,19 @@ class SearchResponse(BaseModel):
     failures: list[Failure] = Field(default_factory=list)
     agents_used: list[str] = Field(default_factory=list)
     trace_id: str
+
+
+class AuditFindingResponse(BaseModel):
+    code: str
+    severity: str
+    message: str
+
+
+class AuditResponse(BaseModel):
+    trace_id: str
+    verification: str
+    evidence_count: int = Field(ge=0)
+    independent_evidence_count: int = Field(ge=0)
+    verified_evidence_count: int = Field(ge=0)
+    failure_count: int = Field(ge=0)
+    findings: list[AuditFindingResponse] = Field(default_factory=list)
