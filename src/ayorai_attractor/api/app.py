@@ -6,7 +6,6 @@ from ayorai_attractor.models import (
     AuditResponse,
     SearchRequest,
     SearchResponse,
-    Verdict,
 )
 from ayorai_attractor.orchestrator import Attractor
 from ayorai_attractor.verification.api_models import (
@@ -16,6 +15,7 @@ from ayorai_attractor.verification.api_models import (
     VerificationRequest,
 )
 from ayorai_attractor.verification.judge import judge
+from ayorai_attractor.verification.models import Verdict
 from ayorai_attractor.verification.response import ResponseStatus
 
 app = FastAPI(
