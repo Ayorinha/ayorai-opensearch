@@ -36,6 +36,7 @@ def scan_untrusted_text(text: str) -> tuple[SecurityFinding, ...]:
                     message="Instruction-like text must be treated as untrusted data.",
                 )
             )
+            break
     return tuple(findings)
 
 
