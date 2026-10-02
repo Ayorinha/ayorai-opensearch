@@ -101,7 +101,7 @@ Run the complete frozen suite locally:
 
 The suite contains 34 cases and 52 synthetic documents. Always report the commit SHA and suite version alongside any result. The CI pipeline executes the complete suite and stores the generated report as a workflow artifact.
 
-See [`docs/STATUS.md`](docs/STATUS.md), [`docs/architecture.md`](docs/architecture.md), [`docs/eval/TRACEABILITY.md`](docs/eval/TRACEABILITY.md) and [`evals/golden/REVIEW.md`](evals/golden/REVIEW.md).
+See [`docs/eval/LOCAL-EVALUATION.md`](docs/eval/LOCAL-EVALUATION.md), [`docs/STATUS.md`](docs/STATUS.md), [`docs/architecture.md`](docs/architecture.md), [`docs/eval/TRACEABILITY.md`](docs/eval/TRACEABILITY.md) and [`evals/golden/REVIEW.md`](evals/golden/REVIEW.md).
 
 ## Security
 
