@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ayorai_attractor.verification.judge import judge
 from ayorai_attractor.verification.models import Claim, Evidence, Stance, StanceEdge, Verdict
@@ -17,7 +17,7 @@ def _evidence(
         claim_id=claim_id,
         source_id=origin_id,
         source_location=f"doc:{evidence_id}",
-        retrieved_at=datetime(2026, 10, 2, tzinfo=timezone.utc),
+        retrieved_at=datetime(2026, 10, 2, tzinfo=UTC),
         start_offset=start,
         end_offset=end,
         excerpt="The claim is supported.",
