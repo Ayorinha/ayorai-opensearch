@@ -1,4 +1,3 @@
-# ruff: noqa: I001
 from uuid import uuid4
 
 from ayorai_attractor.agents.core import (
@@ -9,11 +8,14 @@ from ayorai_attractor.agents.core import (
     PlannerAgent,
     ResearchAgent,
 )
+from ayorai_attractor.council import CouncilDecision, CouncilVote, deliberate
 from ayorai_attractor.evidence.core import EvidenceStore
 from ayorai_attractor.failure_engine.core import FailureEngine
 from ayorai_attractor.providers.factory import build_default_provider, build_search_provider
 from ayorai_attractor.providers.registry import ProviderRegistry
 from ayorai_attractor.providers.base import Provider
+from ayorai_attractor.replay import ReplayBundle
+from ayorai_attractor.synthesis import validate_claim_citations
 
 from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
 from .router import AdaptiveRouter
@@ -37,6 +39,10 @@ class Attractor:
     def run(self, request: SearchRequest) -> SearchResponse:
         evidence = EvidenceStore()
         failures = FailureEngine()
+        trace_id = f"tr_{uuid4().hex}"
+        events: list[dict[str, object]] = [
+            {"type": "request", "query": request.query, "mode": request.mode.value}
+        ]
         try:
             provider = build_default_provider()
         except (RuntimeError, ValueError) as exc:
@@ -45,18 +51,18 @@ class Attractor:
                 message=str(exc),
                 recoverable=False,
             )
+            events.append({"type": "provider_error", "message": str(exc)})
+            ReplayBundle.build(trace_id, events)
             return SearchResponse(
                 query=request.query,
                 mode=request.mode,
-                answer=(
-                    "Execution stopped because the configured provider "
-                    "is unavailable."
-                ),
+                answer="Execution stopped because the configured provider is unavailable.",
                 verification=VerificationStatus.FAILED,
                 confidence=0.0,
                 failures=failures.failures,
-                trace_id=f"tr_{uuid4().hex}",
+                trace_id=trace_id,
             )
+
         context = AgentContext(
             query=request.query,
             provider=provider,
@@ -68,18 +74,35 @@ class Attractor:
             evidence=evidence,
             failures=failures,
         )
-
         decision = self.router.select(
             query=request.query,
             mode=request.mode.value,
             max_agents=request.max_agents,
+        )
+        events.append(
+            {
+                "type": "routing",
+                "roles": [role.id for role in decision.roles],
+                "reason": decision.reason,
+            }
         )
         selected = [
             IMPLEMENTED_AGENTS[role.id]()
             for role in decision.roles
             if role.id in IMPLEMENTED_AGENTS
         ]
-        outputs = [agent.run(context) for agent in selected]
+        outputs = []
+        for agent in selected:
+            result = agent.run(context)
+            outputs.append(result)
+            events.append(
+                {
+                    "type": "agent",
+                    "agent": result.agent,
+                    "evidence_ids": result.evidence_ids,
+                    "failure_count": len(result.failures),
+                }
+            )
 
         status = evidence.status()
         if status is VerificationStatus.UNVERIFIED:
@@ -93,6 +116,46 @@ class Attractor:
             answer = outputs[-1].output if outputs else "No result."
             confidence = 0.9
 
+        claims = [answer]
+        citation_ids = {answer: [item.id for item in evidence.all() if item.verified]}
+        grounding = validate_claim_citations(claims, citation_ids, {item.id for item in evidence.all()})
+        if not grounding.grounded:
+            events.append(
+                {
+                    "type": "grounding_abstention",
+                    "unsupported_claims": list(grounding.unsupported_claims),
+                }
+            )
+            if status is not VerificationStatus.FAILED:
+                status = VerificationStatus.INSUFFICIENT_EVIDENCE
+                confidence = 0.0
+                answer = (
+                    "Abstained: the available evidence does not support the generated "
+                    "answer."
+                )
+
+        votes = [
+            CouncilVote(
+                model_id=agent.name,
+                decision=(
+                    CouncilDecision.SUPPORTED
+                    if status in {VerificationStatus.VERIFIED, VerificationStatus.SUPPORTED}
+                    else CouncilDecision.ABSTAIN
+                ),
+                rationale="Derived from the deterministic evidence status.",
+            )
+            for agent in outputs
+        ]
+        council = deliberate(votes)
+        events.append(
+            {
+                "type": "council",
+                "decision": council.decision.value,
+                "agreement_ratio": council.agreement_ratio,
+            }
+        )
+        replay = ReplayBundle.build(trace_id, events)
+        events.append({"type": "replay_digest", "digest": replay.digest})
         return SearchResponse(
             query=request.query,
             mode=request.mode,
@@ -102,5 +165,5 @@ class Attractor:
             evidence=evidence.all(),
             failures=failures.failures,
             agents_used=[agent.name for agent in selected],
-            trace_id=f"tr_{uuid4().hex}",
+            trace_id=trace_id,
         )
