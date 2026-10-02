@@ -61,6 +61,15 @@ class StanceEdge(StrictModel):
     evidence_id: str = Field(min_length=1)
     stance: Stance
 
+    @model_validator(mode="before")
+    @classmethod
+    def parse_stance(cls, value: object) -> object:
+        if isinstance(value, dict) and isinstance(value.get("stance"), str):
+            parsed = dict(value)
+            parsed["stance"] = Stance(parsed["stance"])
+            return parsed
+        return value
+
 
 class Verdict(StrEnum):
     VERIFIED = "verified"
