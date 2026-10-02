@@ -76,7 +76,7 @@ This is intentionally a **reference architecture and research/engineering platfo
 
 **Phase 0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9 → R10 → R11 → R12 → R13**
 
-R1 core is implemented. The next integration milestone is executing the deterministic Judge against Golden v0. R2 adds audit/replay operation; R3 adds controlled multi-model deliberation; R5 introduces real hybrid retrieval.
+R1 deterministic core is implemented and exposed through POST /v1/verify, with an independent six-verdict Judge regression suite and a post-v0 Golden v1 provenance edge case. Frozen Golden v0 remains the end-to-end engine fixture suite. R2 adds audit/replay operation; R3 adds controlled multi-model deliberation; R5 introduces real hybrid retrieval.
 
 ## Quickstart
 
@@ -92,6 +92,7 @@ API:
 
     POST /v1/opensearch
     POST /v1/audit
+    POST /v1/verify
 
 ## Reproducible evaluation
 
