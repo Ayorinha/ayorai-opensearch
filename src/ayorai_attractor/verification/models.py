@@ -3,7 +3,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 
 class StrictModel(BaseModel):
@@ -34,6 +34,17 @@ class Evidence(StrictModel):
     normalized_content_hash: str | None = Field(default=None, min_length=1)
     cited_origin_id: str | None = Field(default=None, min_length=1)
     provenance_complete: bool = True
+
+    @field_validator("retrieved_at", mode="before")
+    @classmethod
+    def parse_rfc3339_timestamp(cls, value: object) -> object:
+        """Accept JSON RFC3339 timestamps without enabling general coercion."""
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise ValueError("retrieved_at must be a valid RFC3339 timestamp") from exc
+        return value
 
     @model_validator(mode="after")
     def require_origin_or_canonical_url(self) -> "Evidence":
