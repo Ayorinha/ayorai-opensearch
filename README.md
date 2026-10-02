@@ -12,8 +12,8 @@
 
 Golden v0 remains **34 cases / 52 synthetic documents** with SHA-256 recorded in evals/golden/MANIFEST.json. The original baseline is **43.3333%**, exactly equal to the PARTIALLY_SUPPORTED majority-class baseline. This baseline is not evidence of a capable verifier.
 
-Baseline evidence: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/36759101933
-Baseline report: docs/eval/BASELINE-v0.md
+Baseline evidence: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/36759101933  
+Baseline report: docs/eval/BASELINE-v0.md  
 Progress: docs/PROGRESS.md
 
 ## What problem does it solve?
@@ -31,7 +31,8 @@ The frozen v0 is a **motor-verification fixture suite**, not a retrieval benchma
 - global verdict precedence;
 - explicit provenance completeness;
 - ABSTAIN/NO_ANSWER and ABSTAIN/OUT_OF_SCOPE contracts;
-- recursive evaluation-secret leakage detection.
+- recursive evaluation-secret leakage detection;
+- **structured /v1/verify API with strict claim/evidence/stance contracts.**
 
 The Judge does not delegate verdict decisions to an LLM. Instruction-like text inside a retrieved document remains document data; it does not become an instruction to the system.
 
@@ -67,12 +68,13 @@ This is intentionally a **reference architecture and research/engineering platfo
 - frozen golden v0: 34 cases / 52 documents / SHA-256 manifest
 - baseline accuracy: **43.3333%**, equal to the majority-class baseline
 - R1 deterministic verification core with unit and property tests
+- strict verification API exercised by integration tests
 
 ## Roadmap
 
 **Phase 0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9 → R10 → R11 → R12 → R13**
 
-R1 core is implemented. The next integration milestone is executing the deterministic Judge against Golden v0. R2 adds audit/replay operation; R3 adds controlled multi-model deliberation; R5 introduces real hybrid retrieval.
+R1 core is implemented and exposed through a strict structured endpoint. R2 adds audit/replay operation; R3 adds controlled multi-model deliberation; R5 introduces real hybrid retrieval. The next engineering work should integrate retrieval outputs into the strict evidence contract without inventing provenance.
 
 ## Quickstart
 
@@ -87,6 +89,10 @@ CLI:
 API:
 
     POST /v1/opensearch
+    POST /v1/opensearch/audit
+    POST /v1/verify
+
+The /v1/verify endpoint accepts structured claims, evidence with provenance, and explicit SUPPORTS/CONTRADICTS edges. The verdict is computed by deterministic R1 rules; no LLM is consulted for the final decision.
 
 ## Reproducible evaluation
 
@@ -96,7 +102,7 @@ Run the complete frozen suite locally:
 
 The suite contains 34 cases and 52 synthetic documents. Always report the commit SHA and suite version alongside any result. The CI pipeline executes the complete suite and stores the generated report as a workflow artifact.
 
-See [`docs/STATUS.md`](docs/STATUS.md), [`docs/architecture.md`](docs/architecture.md), [`docs/eval/TRACEABILITY.md`](docs/eval/TRACEABILITY.md) and [`evals/golden/REVIEW.md`](evals/golden/REVIEW.md).
+See docs/STATUS.md, docs/architecture.md, docs/eval/TRACEABILITY.md and evals/golden/REVIEW.md.
 
 ## Security
 
