@@ -35,6 +35,10 @@ The frozen v0 is a **motor-verification fixture suite**, not a retrieval benchma
 
 The Judge does not delegate verdict decisions to an LLM. Instruction-like text inside a retrieved document remains document data; it does not become an instruction to the system.
 
+## R2 Audit API
+
+The deterministic audit core is exposed through `POST /v1/audit`. It executes the same request contract as `/v1/opensearch` and returns a typed audit report containing the trace ID, verification state, evidence counts, failure count and deterministic findings. Audit output describes the response; it does not alter the verdict.
+
 ## Architecture
 
 - adaptive orchestration and quality modes
@@ -87,6 +91,7 @@ CLI:
 API:
 
     POST /v1/opensearch
+    POST /v1/audit
 
 ## Reproducible evaluation
 

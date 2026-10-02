@@ -1,7 +1,8 @@
 # AYORAI ATTRACTOR — Progress
 
 **Estado atual:** Fase 0 concluída; R1 core implementado; núcleos determinísticos de R2, R3, R4, R5, R6, R8, R9, R10 e R13 adicionados. As integrações operacionais completas e R11 ainda permanecem.
-**Base:** main merge 13621913af657708867021f8442bf6919fc6aa3f.
+**Main verificado antes desta etapa:** `5453f9a2faa4ab4cd32468031bda7c3967808bf4`.
+**Branch desta etapa:** `feat/r2-audit-api`.
 **Ground Truth:** 34 casos / 52 documentos.
 **Baseline:** 43,3333%, igual à classe majoritária.
 
@@ -11,7 +12,7 @@
 |---|---:|---|---|
 | Fase 0 — Fundação e ground truth | 10 | concluído | #7–#14 |
 | R1 — Motor de verificação | 15 | core concluído; Golden integration pendente | #27–#31 |
-| R2 — Audit Mode | 10 | core concluído; exposição operacional pendente | #32 |
+| R2 — Audit Mode | 10 | API executável nesta etapa; persistência/telemetria ainda pendentes | #32 + integração atual |
 | R3 — Conselho de IAs | 10 | core concluído; adapters/orquestração pendentes | #33 |
 | R4 — Proveniência e replay | 6 | core concluído; persistência/integração pendentes | #33 |
 | R5 — Recuperação híbrida OpenSearch | 8 | core de fusão concluído; pipeline real pendente | #34 |
@@ -30,8 +31,8 @@
 
 ## Próximo gargalo técnico
 
-1. Integrar R1 ao runner Golden v0 e reavaliar os 34 casos.
-2. Expor R2 Audit Mode no fluxo/API.
+1. Confirmar a CI da implementação R2 e corrigir qualquer falha real.
+2. Ligar R2 ao armazenamento de traces/replay sem duplicar execução.
 3. Ligar R3/R4 ao orchestrator e ao armazenamento de traces.
 4. Integrar R5 ao adaptador OpenSearch e R6 ao pipeline de resposta.
 5. Implementar R7 red team, R11 GEPA e R12 MCP dedicado.
