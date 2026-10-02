@@ -52,3 +52,53 @@ def test_opensearch_audit() -> None:
         "NO_VERIFIED_EVIDENCE",
         "NON_VERIFIED_RESPONSE",
     ]
+
+
+def test_structured_r1_verify_endpoint() -> None:
+    client = TestClient(app)
+    response = client.post(
+        "/v1/verify",
+        json={
+            "claims": [{"id": "c1", "text": "The service launched in 2026."}],
+            "evidence": [
+                {
+                    "id": "e1",
+                    "claim_id": "c1",
+                    "source_id": "source-a",
+                    "source_location": "document:1",
+                    "retrieved_at": "2026-10-02T09:00:00Z",
+                    "start_offset": 0,
+                    "end_offset": 30,
+                    "excerpt": "The service launched in 2026.",
+                    "origin_id": "origin-a",
+                },
+                {
+                    "id": "e2",
+                    "claim_id": "c1",
+                    "source_id": "source-b",
+                    "source_location": "document:2",
+                    "retrieved_at": "2026-10-02T09:00:01Z",
+                    "start_offset": 0,
+                    "end_offset": 30,
+                    "excerpt": "The service launched in 2026.",
+                    "origin_id": "origin-b",
+                },
+            ],
+            "stances": [
+                {"id": "s1", "claim_id": "c1", "evidence_id": "e1", "stance": "supports"},
+                {"id": "s2", "claim_id": "c1", "evidence_id": "e2", "stance": "supports"},
+            ],
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["verdict"] == "verified"
+    assert payload["judgments"] == [
+        {
+            "claim_id": "c1",
+            "support_clusters": 2,
+            "contradiction_clusters": 0,
+            "provenance_complete": True,
+            "verdict": "verified",
+        }
+    ]
