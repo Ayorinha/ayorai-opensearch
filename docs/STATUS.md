@@ -1,7 +1,7 @@
 # AYORAI ATTRACTOR — Engineering Status
 
 **Updated:** 2026-10-02  
-**Default branch:** `main`  
+**Default branch:** main  
 **Current implementation:** Phase 0 + deterministic R1 + R2/R3/R4/R5/R6/R8/R9/R10/R13 cores  
 **Evaluation ground truth:** 34 cases / 52 synthetic documents
 
@@ -11,22 +11,23 @@ This document is intentionally evidence-based: a capability is marked **VERIFIED
 
 | Area | Status | Evidence |
 |---|---|---|
-| Deterministic claim verification | VERIFIED | `verification/judge.py`, numeric/date rules, tests |
+| Deterministic claim verification | VERIFIED | verification/judge.py, numeric/date rules, tests |
+| Strict R1 API contract | VERIFIED | POST /v1/verify + integration test |
 | Evidence provenance | VERIFIED | structured evidence model + provenance checks |
-| Source-independence clustering | VERIFIED | `verification/clusters.py` + tests |
+| Source-independence clustering | VERIFIED | verification/clusters.py + tests |
 | Contradiction handling | VERIFIED | deterministic stance/judge model |
 | Abstention contracts | VERIFIED | response/security tests |
-| Audit mode | VERIFIED | `audit.py` + tests + `/v1/opensearch/audit` |
-| Replay / content addressing | VERIFIED | `replay.py` + tests + orchestrator trace integration |
-| Council / controlled deliberation core | VERIFIED | `council.py` + tests + orchestrator integration |
-| Hybrid rank fusion | VERIFIED | `hybrid.py` + tests |
-| Durable checkpoint core | VERIFIED | `durable.py` + tests |
-| Cost / latency metrics primitives | VERIFIED | `metrics.py` + tests |
-| Governance checks | VERIFIED | `governance.py` + tests |
+| Audit mode | VERIFIED | audit.py + tests + /v1/opensearch/audit |
+| Replay / content addressing | VERIFIED | replay.py + tests + orchestrator trace integration |
+| Council / controlled deliberation core | VERIFIED | council.py + tests + orchestrator integration |
+| Hybrid rank fusion | VERIFIED | hybrid.py + tests |
+| Durable checkpoint core | VERIFIED | durable.py + tests |
+| Cost / latency metrics primitives | VERIFIED | metrics.py + tests |
+| Governance checks | VERIFIED | governance.py + tests |
 | MCP gateway | VERIFIED | gateway implementation + tests |
 | Provider adapters | VERIFIED | OpenSearch, OpenAI-compatible and mock providers |
-| FastAPI API | VERIFIED | `api/app.py` + tests |
-| CLI | VERIFIED | `cli/main.py` + tests |
+| FastAPI API | VERIFIED | api/app.py + tests |
+| CLI | VERIFIED | cli/main.py + tests |
 | Docker execution | VERIFIED | Dockerfile + compose |
 | Golden v0 closed-world fixture | VERIFIED | 34 cases / 52 documents / SHA-256 manifest |
 | Golden smoke CI | VERIFIED | blocking CI job |
@@ -48,8 +49,6 @@ The recorded majority-class baseline is **43.3333%**. Any future benchmark claim
 
 ## Remaining engineering frontier
 
-These are intentionally still separate from the verified core:
-
 - production-grade hybrid retrieval against a real index;
 - cross-encoder / learned reranking;
 - target-level claim decomposition and automated stance extraction;
@@ -57,11 +56,11 @@ These are intentionally still separate from the verified core:
 - durable external queue / worker execution;
 - multi-tenant authorization and isolation;
 - streaming/SSE production API;
-- broader adversarial red-team coverage beyond the deterministic input-injection guards in this PR;
+- broader adversarial red-team coverage beyond the deterministic input-injection guards;
 - larger independently curated evaluation sets;
 - published reproducible comparisons against external baselines.
 
-The project should advance these only with executable implementations, tests, measured results and documentation. No roadmap item should be promoted to VERIFIED merely because an interface exists.
+The next integration boundary is deliberate: retrieval systems must produce structured evidence with provenance before their output can enter the deterministic Judge. No synthetic provenance should be fabricated to make a benchmark pass.
 
 ## Quality gates
 
