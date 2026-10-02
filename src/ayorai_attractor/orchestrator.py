@@ -11,9 +11,9 @@ from ayorai_attractor.agents.core import (
 from ayorai_attractor.council import CouncilDecision, CouncilVote, deliberate
 from ayorai_attractor.evidence.core import EvidenceStore
 from ayorai_attractor.failure_engine.core import FailureEngine
+from ayorai_attractor.providers.base import Provider
 from ayorai_attractor.providers.factory import build_default_provider, build_search_provider
 from ayorai_attractor.providers.registry import ProviderRegistry
-from ayorai_attractor.providers.base import Provider
 from ayorai_attractor.replay import ReplayBundle
 from ayorai_attractor.security import scan_untrusted_text
 from ayorai_attractor.synthesis import validate_claim_citations
@@ -120,7 +120,7 @@ class Attractor:
             confidence = 0.9
 
         claims = [answer]
-        citation_ids = {answer: [item.id for item in evidence.all() if item.verified]}
+        citation_ids = {answer: [item.id for item in evidence.all()]}
         grounding = validate_claim_citations(claims, citation_ids, {item.id for item in evidence.all()})
         if not grounding.grounded:
             events.append(
