@@ -70,7 +70,7 @@ jobs:
       - run: pip install -e ".[dev]"
       - name: Execute deterministic Judge suite
         run: |
-          python -c 'from pathlib import Path; from ayorai_attractor.evaluation.judge import evaluate_judge_suite; r=evaluate_judge_suite(Path("evals/judge/v0.jsonl")); assert r["case_count"] == 6; assert r["correct"] == 6; assert r["accuracy"] == 1.0; print("JUDGE_V0: PASS", r["confusion_matrix"])'
+          python -c 'from pathlib import Path; from ayorai_attractor.evaluation.judge import evaluate_judge_suite; r=evaluate_judge_suite(Path("evals/judge/v0.jsonl")); assert r["case_count"] == 6; assert r["correct"] == 6; assert r["accuracy"] == 1.0; print("JUDGE_V0: PASS", r["confusion_matrix"])'\n          python -c 'from pathlib import Path; from ayorai_attractor.evaluation.judge import evaluate_judge_suite; r=evaluate_judge_suite(Path("evals/golden/v1.jsonl")); assert r["case_count"] == 1; assert r["correct"] == 1; assert r["results"][0]["predicted"] == "SUPPORTED"; print("GOLDEN_V1: PASS", r["results"][0])'
 
   golden-lint:
     name: golden-lint
