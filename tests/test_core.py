@@ -44,8 +44,8 @@ def test_opensearch_audit() -> None:
     payload = response.json()
     assert payload["verification"] == "insufficient_evidence"
     assert payload["trace_id"].startswith("tr_")
-    assert payload["evidence_count"] == 0
-    assert payload["independent_evidence_count"] == 0
+    assert payload["evidence_count"] == 1
+    assert payload["independent_evidence_count"] == 1
     assert payload["verified_evidence_count"] == 0
     assert [item["code"] for item in payload["findings"]] == [
         "NO_EVIDENCE",
