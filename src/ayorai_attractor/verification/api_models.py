@@ -2,11 +2,10 @@
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .models import Claim, Evidence, StanceEdge, Verdict
 from .response import ResponseStatus
-from pydantic import BaseModel, ConfigDict
 
 
 class Traceability(BaseModel):
