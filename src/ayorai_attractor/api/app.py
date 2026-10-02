@@ -6,6 +6,7 @@ from ayorai_attractor.models import (
     AuditResponse,
     SearchRequest,
     SearchResponse,
+    Verdict,
 )
 from ayorai_attractor.orchestrator import Attractor
 from ayorai_attractor.verification.api_models import (
@@ -66,18 +67,19 @@ def verify(request: VerificationRequest) -> VerificationAPIResponse:
             status=ResponseStatus.ABSTAIN_OUT_OF_SCOPE,
             verdict=None,
             judgments=[],
-            traceability=Traceability(adr="ADR-002", rules=["§5"] ),
+            traceability=Traceability(adr="ADR-002", rules=["§5"]),
         )
 
     judgments, verdict = judge(request.claims, request.evidence, request.stances)
     status = (
-        "abstain/no_answer"
-        if verdict.value == "unverified"
-        else verdict
+        ResponseStatus.ABSTAIN_NO_ANSWER
+        if verdict is Verdict.UNVERIFIED
+        else ResponseStatus(verdict.value)
     )
+    api_verdict = None if status is ResponseStatus.ABSTAIN_NO_ANSWER else verdict
     return VerificationAPIResponse(
         status=status,
-        verdict=None if status is ResponseStatus.ABSTAIN_NO_ANSWER else ResponseStatus(verdict.value),
+        verdict=api_verdict,
         judgments=[
             ClaimJudgmentResponse(
                 claim_id=item.claim_id,
