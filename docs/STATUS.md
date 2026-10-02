@@ -1,6 +1,6 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-**Updated:** 2026-10-01  
+**Updated:** 2026-10-02  
 **Default branch:** `main`  
 **Current implementation:** Phase 0 + deterministic R1 + R2/R3/R4/R5/R6/R8/R9/R10/R13 cores  
 **Evaluation ground truth:** 34 cases / 52 synthetic documents
@@ -16,9 +16,9 @@ This document is intentionally evidence-based: a capability is marked **VERIFIED
 | Source-independence clustering | VERIFIED | `verification/clusters.py` + tests |
 | Contradiction handling | VERIFIED | deterministic stance/judge model |
 | Abstention contracts | VERIFIED | response/security tests |
-| Audit mode | VERIFIED | `audit.py` + tests |
-| Replay / content addressing | VERIFIED | `replay.py` + tests |
-| Council / controlled deliberation core | VERIFIED | `council.py` + tests |
+| Audit mode | VERIFIED | `audit.py` + tests + `/v1/opensearch/audit` |
+| Replay / content addressing | VERIFIED | `replay.py` + tests + orchestrator trace integration |
+| Council / controlled deliberation core | VERIFIED | `council.py` + tests + orchestrator integration |
 | Hybrid rank fusion | VERIFIED | `hybrid.py` + tests |
 | Durable checkpoint core | VERIFIED | `durable.py` + tests |
 | Cost / latency metrics primitives | VERIFIED | `metrics.py` + tests |
@@ -57,7 +57,7 @@ These are intentionally still separate from the verified core:
 - durable external queue / worker execution;
 - multi-tenant authorization and isolation;
 - streaming/SSE production API;
-- adversarial red-team suite mapped to current agent-security guidance;
+- broader adversarial red-team coverage beyond the deterministic input-injection guards in this PR;
 - larger independently curated evaluation sets;
 - published reproducible comparisons against external baselines.
 
