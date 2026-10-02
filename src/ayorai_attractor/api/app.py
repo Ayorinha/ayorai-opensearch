@@ -8,6 +8,13 @@ from ayorai_attractor.models import (
     SearchResponse,
 )
 from ayorai_attractor.orchestrator import Attractor
+from ayorai_attractor.verification.api_models import (
+    ClaimJudgmentResponse,
+    Traceability,
+    VerificationAPIResponse,
+    VerificationRequest,
+)
+from ayorai_attractor.verification.judge import judge
 
 app = FastAPI(
     title="AYORAI ATTRACTOR",
@@ -47,4 +54,41 @@ def audit(request: SearchRequest) -> AuditResponse:
             )
             for item in report.findings
         ],
+    )
+
+
+@app.post("/v1/verify", response_model=VerificationAPIResponse)
+def verify(request: VerificationRequest) -> VerificationAPIResponse:
+    """Evaluate structured claims with the deterministic ADR-002 Judge."""
+    if not request.claims:
+        return VerificationAPIResponse(
+            status="abstain/out_of_scope",
+            verdict=None,
+            judgments=[],
+            traceability=Traceability(adr="ADR-002", rules=["§5"] ),
+        )
+
+    judgments, verdict = judge(request.claims, request.evidence, request.stances)
+    status = (
+        "abstain/no_answer"
+        if verdict.value == "unverified"
+        else verdict
+    )
+    return VerificationAPIResponse(
+        status=status,
+        verdict=None if status == "abstain/no_answer" else verdict,
+        judgments=[
+            ClaimJudgmentResponse(
+                claim_id=item.claim_id,
+                support_clusters=item.support_clusters,
+                contradiction_clusters=item.contradiction_clusters,
+                provenance_complete=item.provenance_complete,
+                verdict=item.verdict,
+            )
+            for item in judgments
+        ],
+        traceability=Traceability(
+            adr="ADR-002",
+            rules=["§1", "§2", "§3", "§4", "§5", "§9"],
+        ),
     )
