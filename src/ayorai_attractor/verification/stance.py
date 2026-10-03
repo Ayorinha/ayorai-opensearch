@@ -124,7 +124,7 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
         local_context = tokens[max(0, index - 2) : index + 3]
         if "%" in token or "percent" in context or "porcento" in context:
             unit = "percent"
-        elif any(value in local_context for value in ("usd", "eur", "brl")):
+        elif any(value in context for value in ("usd", "eur", "brl")):
             currency = next(
                 value for value in ("usd", "eur", "brl") if value in local_context
             )
@@ -154,7 +154,7 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             unit = f"{currency}:{scale_alias.get(scale, scale or 'base')}"
         elif "ms" in context:
             unit = "ms"
-        elif "year" in context or (token.isdigit() and 1900 <= int(token) <= 2100):
+        elif "year" in context or "fiscal" in context:
             unit = "year"
         elif any(value in context for value in ("employees", "people", "customers", "offices")):
             word = next(
