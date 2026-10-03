@@ -17,23 +17,31 @@ from .models import (
     Verdict,
 )
 from .claim_pipeline import ClaimVerificationPipeline, ClaimVerificationResult, RuleScopeClassifier
+from .clusters import cluster_evidence, dependency_reason, has_known_dependency
 from .extraction import (
     ClaimExtractionResult,
     ClaimExtractor,
     ComponentProvenance,
     ExtractedClaim,
-    NLIClaimExtractor,
     LLMClaimExtractor,
+    NLIClaimExtractor,
     RetrievedDocument,
     RuleClaimExtractor,
 )
-from .stance import (
-    DetectedStance,
-    LLMStanceDetector,
-    NLIStanceDetector,
-    RuleStanceDetector,
-    StanceDetectionResult,
-    StanceDetector,
+from .judge import (
+    ClaimJudgment,
+    aggregate_verdict,
+    has_complete_provenance,
+    judge,
+    judge_claim,
+)
+from .models import (
+    INSUFFICIENT_EVIDENCE_TO_VERDICT,
+    Claim,
+    Evidence,
+    Stance,
+    StanceEdge,
+    Verdict,
 )
 from .numeric import (
     DEFAULT_RELATIVE_TOLERANCE,
@@ -46,6 +54,14 @@ from .numeric import (
 )
 from .response import ResponseStatus, VerificationResponse
 from .security import assert_no_secret, contains_secret
+from .stance import (
+    DetectedStance,
+    LLMStanceDetector,
+    NLIStanceDetector,
+    RuleStanceDetector,
+    StanceDetectionResult,
+    StanceDetector,
+)
 
 __all__ = [
     "Claim",
