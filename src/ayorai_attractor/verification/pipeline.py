@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from ayorai_attractor.synthesis import GroundingResult, GroundedSynthesizer, SynthesisResult
+from ayorai_attractor.synthesis import GroundedSynthesizer, GroundingResult, SynthesisResult
 
 from .judge import ClaimJudgment, judge
 from .models import Claim, Evidence, StanceEdge, Verdict
