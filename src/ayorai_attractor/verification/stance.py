@@ -658,38 +658,40 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
 
 
 
+def _sentence_windows(evidence: Evidence) -> list[tuple[int, int, str]]:
+    text = evidence.excerpt
+    spans: list[tuple[int, int, str]] = []
+    start = 0
+    for match in re.finditer(r'[.!?](?:["\\'”’)]*)?(?=\\s|$)', text):
+        end = match.end()
+        raw = text[start:end]
+        left = start + len(raw) - len(raw.lstrip())
+        right = start + len(raw.rstrip())
+        if left < right:
+            spans.append(
+                (
+                    evidence.start_offset + left,
+                    evidence.start_offset + right,
+                    text[left:right],
+                )
+            )
+        start = end
+        while start < len(text) and text[start].isspace():
+            start += 1
+    if start < len(text):
+        spans.append((evidence.start_offset + start, evidence.end_offset, text[start:]))
+    if not spans:
+        spans.append((evidence.start_offset, evidence.end_offset, text))
+    return spans
+
+
 class SentenceNLIStanceDetector(NLIStanceDetector):
     """H1: evaluate claim against deterministic sentence spans."""
 
     component = "stance_detector.nli_sentence"
 
     def _windows(self, evidence: Evidence) -> list[tuple[int, int, str]]:
-        text = evidence.excerpt
-        spans: list[tuple[int, int, str]] = []
-        start = 0
-        for match in re.finditer(r'[.!?](?:["\'”’)]*)?(?=\s|$)', text):
-            end = match.end()
-            raw = text[start:end]
-            left = start + len(raw) - len(raw.lstrip())
-            right = start + len(raw.rstrip())
-            if left < right:
-                spans.append(
-                    (
-                        evidence.start_offset + left,
-                        evidence.start_offset + right,
-                        text[left:right],
-                    )
-                )
-            start = end
-            while start < len(text) and text[start].isspace():
-                start += 1
-        if start < len(text):
-            spans.append(
-                (evidence.start_offset + start, evidence.end_offset, text[start:])
-            )
-        if not spans:
-            spans.append((evidence.start_offset, evidence.end_offset, text))
-        return spans
+        return _sentence_windows(evidence)
 
 
 class SentenceTranslatedNLIStanceDetector(TranslatedNLIStanceDetector):
