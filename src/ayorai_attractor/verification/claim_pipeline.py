@@ -1,20 +1,29 @@
-# ruff: noqa
-"""Claim-level verification: claims are inputs; evidence is never a claim source."""
+"""Claim-level end-to-end verification pipeline.
+
+Retrieval and learned components are replaceable. The final verdict always
+comes from the deterministic ADR-002 Judge.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, Sequence
+from collections.abc import Sequence
+from typing import Protocol
 
 from .extraction import ClaimExtractor, ExtractedClaim, RetrievedDocument
 from .judge import ClaimJudgment, judge
-from .models import Claim, Evidence, StanceEdge, Verdict
+from .models import Evidence, StanceEdge, Verdict
 from .response import ResponseStatus
 from .stance import StanceDetector
 
 
+class Retriever(Protocol):
+    def retrieve(self, query: str) -> Sequence[RetrievedDocument]:
+        ...
+
+
 class ScopeClassifier(Protocol):
-    def is_out_of_scope(self, text: str) -> bool:
+    def is_out_of_scope(self, query: str) -> bool:
         ...
 
 
@@ -22,8 +31,8 @@ class ScopeClassifier(Protocol):
 class RuleScopeClassifier:
     forbidden_terms: tuple[str, ...] = ()
 
-    def is_out_of_scope(self, text: str) -> bool:
-        lowered = text.casefold()
+    def is_out_of_scope(self, query: str) -> bool:
+        lowered = query.casefold()
         return any(term.casefold() in lowered for term in self.forbidden_terms)
 
 
@@ -43,33 +52,24 @@ class ClaimVerificationResult:
 class ClaimVerificationPipeline:
     def __init__(
         self,
+        retriever: Retriever,
+        claim_extractor: ClaimExtractor,
         stance_detector: StanceDetector,
         *,
-        claim_extractor: ClaimExtractor | None = None,
         scope_classifier: ScopeClassifier | None = None,
     ) -> None:
+        self.retriever = retriever
         self.claim_extractor = claim_extractor
         self.stance_detector = stance_detector
         self.scope_classifier = scope_classifier
 
-    def verify(
-        self,
-        claims: Sequence[str],
-        documents: Sequence[RetrievedDocument],
-    ) -> ClaimVerificationResult:
-        """Verify caller-supplied claims against the closed-world documents.
+    def verify(self, query: str) -> ClaimVerificationResult:
+        if not query.strip():
+            raise ValueError("query must not be empty")
 
-        The claim text is authoritative input. No verdict or claim text is
-        derived from document content.
-        """
-        normalized = tuple(str(claim).strip() for claim in claims if str(claim).strip())
-        if not normalized:
-            raise ValueError("at least one claim is required")
-
-        response = "\n".join(normalized)
-        if self.scope_classifier is not None and self.scope_classifier.is_out_of_scope(response):
+        if self.scope_classifier is not None and self.scope_classifier.is_out_of_scope(query):
             return ClaimVerificationResult(
-                query=response,
+                query=query,
                 claims=(),
                 evidence=(),
                 stances=(),
@@ -77,81 +77,13 @@ class ClaimVerificationPipeline:
                 verdict=None,
                 status=ResponseStatus.ABSTAIN_OUT_OF_SCOPE,
                 confidence=1.0,
-                rationale="The configured scope classifier rejected the claims.",
+                rationale="The configured scope classifier rejected this query.",
             )
 
-        extracted = tuple(
-            ExtractedClaim(
-                claim=Claim(id=f"clm_{index:03d}", text=text),
-                confidence=1.0,
-                provenance=_input_provenance(text),
-            )
-            for index, text in enumerate(normalized, start=1)
-        )
+        documents = tuple(self.retriever.retrieve(query))
         if not documents:
             return ClaimVerificationResult(
-                query=response,
-                claims=extracted,
-                evidence=(),
-                stances=(),
-                judgments=(),
-                verdict=None,
-                status=ResponseStatus.ABSTAIN_NO_ANSWER,
-                confidence=1.0,
-                rationale="No retrievable evidence was available for the supplied claims.",
-            )
-
-        evidence = tuple(
-            document.to_evidence(
-                item.claim.id,
-                evidence_id=f"{document.id}::{item.claim.id}",
-            )
-            for item in extracted
-            for document in documents
-        )
-        stance_result = self.stance_detector.detect(extracted, evidence)
-        stances = tuple(item.edge for item in stance_result.edges)
-        judgments, verdict = judge(
-            [item.claim for item in extracted],
-            list(evidence),
-            list(stances),
-        )
-        confidence = min(
-            (item.confidence for item in extracted),
-            default=1.0,
-        )
-        confidence = min(
-            confidence,
-            min((item.confidence for item in stance_result.edges), default=confidence),
-        )
-        return ClaimVerificationResult(
-            query=response,
-            claims=extracted,
-            evidence=evidence,
-            stances=stances,
-            judgments=tuple(judgments),
-            verdict=verdict,
-            status=ResponseStatus(verdict.value),
-            confidence=confidence,
-            rationale=(
-                f"Deterministic ADR-002 Judge returned {verdict.value} from "
-                f"{len(extracted)} claim(s), {len(evidence)} evidence item(s) "
-                f"and {len(stances)} stance edge(s)."
-            ),
-        )
-
-    def verify_response(
-        self,
-        response: str,
-        documents: Sequence[RetrievedDocument],
-    ) -> ClaimVerificationResult:
-        """Decompose a model response, then verify the resulting claims."""
-        if self.claim_extractor is None:
-            raise ValueError("claim_extractor is required for verify_response")
-        extraction = self.claim_extractor.extract(response)
-        if not extraction.claims:
-            return ClaimVerificationResult(
-                query=response,
+                query=query,
                 claims=(),
                 evidence=(),
                 stances=(),
@@ -159,23 +91,62 @@ class ClaimVerificationPipeline:
                 verdict=None,
                 status=ResponseStatus.ABSTAIN_NO_ANSWER,
                 confidence=1.0,
-                rationale="No atomic claim could be extracted from the response.",
+                rationale="No retrievable evidence was available for the query.",
             )
-        return self.verify(
-            [item.claim.text for item in extraction.claims],
-            documents,
+
+        extraction = self.claim_extractor.extract(query, documents)
+        if not extraction.claims:
+            return ClaimVerificationResult(
+                query=query,
+                claims=(),
+                evidence=(),
+                stances=(),
+                judgments=(),
+                verdict=None,
+                status=ResponseStatus.ABSTAIN_NO_ANSWER,
+                confidence=1.0,
+                rationale="No verifiable claim could be extracted from the retrieved evidence.",
+            )
+
+        documents_by_id = {document.id: document for document in documents}
+        evidence: list[Evidence] = []
+        assigned: dict[str, str] = {}
+        for item in extraction.claims:
+            if not item.evidence_ids:
+                raise ValueError(f"claim has no evidence mapping: {item.claim.id}")
+            for evidence_id in item.evidence_ids:
+                if evidence_id not in documents_by_id:
+                    raise ValueError(f"claim references unknown evidence: {evidence_id}")
+                if evidence_id in assigned:
+                    raise ValueError(f"evidence mapped to multiple claims: {evidence_id}")
+                assigned[evidence_id] = item.claim.id
+                evidence.append(documents_by_id[evidence_id].to_evidence(item.claim.id))
+
+        stance_result = self.stance_detector.detect(extraction.claims, evidence)
+        stances = tuple(item.edge for item in stance_result.edges)
+        judgments, verdict = judge(
+            [item.claim for item in extraction.claims],
+            evidence,
+            list(stances),
         )
-
-
-def _input_provenance(text: str):
-    from .extraction import ComponentProvenance
-    import hashlib
-
-    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    return ComponentProvenance(
-        component="claim_input",
-        model="caller",
-        version="1",
-        input_sha256=digest,
-        output_sha256=digest,
-    )
+        status = ResponseStatus(verdict.value)
+        claim_confidence = min(item.confidence for item in extraction.claims)
+        stance_confidence = min(
+            (item.confidence for item in stance_result.edges),
+            default=claim_confidence,
+        )
+        return ClaimVerificationResult(
+            query=query,
+            claims=extraction.claims,
+            evidence=tuple(evidence),
+            stances=stances,
+            judgments=tuple(judgments),
+            verdict=verdict,
+            status=status,
+            confidence=min(claim_confidence, stance_confidence),
+            rationale=(
+                f"Deterministic ADR-002 Judge returned {verdict.value} from "
+                f"{len(extraction.claims)} claim(s), {len(evidence)} evidence item(s) "
+                f"and {len(stances)} stance edge(s)."
+            ),
+        )
