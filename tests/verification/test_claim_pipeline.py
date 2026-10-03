@@ -104,3 +104,25 @@ def test_pipeline_preserves_provenance_as_part_of_judge_input() -> None:
 
     assert result.verdict.value == "verified"
     assert all(item.provenance_complete for item in result.evidence)
+
+
+def test_pipeline_does_not_upgrade_incomplete_provenance() -> None:
+    first = document(
+        "e1",
+        "VectorLabs blocks unsigned model artifacts before deployment.",
+        origin="o1",
+    )
+    second = document(
+        "e2",
+        "VectorLabs blocks unsigned model artifacts before deployment.",
+        origin="o2",
+    )
+    second = RetrievedDocument(
+        **{**second.__dict__, "provenance_complete": False},
+    )
+    result = pipeline([first, second]).verify(
+        "Does VectorLabs block unsigned model artifacts before deployment?"
+    )
+
+    assert result.verdict.value == "supported"
+    assert result.judgments[0].provenance_complete is False
