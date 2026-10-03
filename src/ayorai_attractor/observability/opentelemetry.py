@@ -16,7 +16,12 @@ from .tracing import TraceEvent
 class OpenTelemetrySink:
     """Export TraceSink events through the OpenTelemetry tracing API."""
 
-    def __init__(self, tracer: Any | None = None, *, instrumentation_name: str = "ayorai-attractor") -> None:
+    def __init__(
+        self,
+        tracer: Any | None = None,
+        *,
+        instrumentation_name: str = "ayorai-attractor",
+    ) -> None:
         if tracer is None:
             try:
                 from opentelemetry import trace

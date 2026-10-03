@@ -1,6 +1,17 @@
 """Strict verification contracts for R1."""
 
+from .claim_pipeline import ClaimVerificationPipeline, ClaimVerificationResult, RuleScopeClassifier
 from .clusters import cluster_evidence, dependency_reason, has_known_dependency
+from .extraction import (
+    ClaimExtractionResult,
+    ClaimExtractor,
+    ComponentProvenance,
+    ExtractedClaim,
+    LLMClaimExtractor,
+    NLIClaimExtractor,
+    RetrievedDocument,
+    RuleClaimExtractor,
+)
 from .judge import (
     ClaimJudgment,
     aggregate_verdict,
@@ -27,9 +38,34 @@ from .numeric import (
 )
 from .response import ResponseStatus, VerificationResponse
 from .security import assert_no_secret, contains_secret
+from .stance import (
+    DetectedStance,
+    LLMStanceDetector,
+    NLIStanceDetector,
+    RuleStanceDetector,
+    StanceDetectionResult,
+    StanceDetector,
+)
 
 __all__ = [
     "Claim",
+    "ClaimVerificationPipeline",
+    "ClaimVerificationResult",
+    "RuleScopeClassifier",
+    "ComponentProvenance",
+    "RetrievedDocument",
+    "ExtractedClaim",
+    "ClaimExtractionResult",
+    "ClaimExtractor",
+    "RuleClaimExtractor",
+    "NLIClaimExtractor",
+    "LLMClaimExtractor",
+    "DetectedStance",
+    "StanceDetectionResult",
+    "StanceDetector",
+    "RuleStanceDetector",
+    "NLIStanceDetector",
+    "LLMStanceDetector",
     "Evidence",
     "Stance",
     "StanceEdge",

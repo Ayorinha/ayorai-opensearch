@@ -1,82 +1,67 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-**Updated:** 2026-10-01  
-**Default branch:** `main`  
-**Current implementation:** Phase 0 + deterministic R1 + R2/R3/R4/R5/R6/R8/R9/R10/R13 cores  
-**Evaluation ground truth:** 34 cases / 52 synthetic documents
+Updated: 2026-10-03
 
-This document is intentionally evidence-based: a capability is marked **VERIFIED** only when code, tests, repository artifacts, or CI provide direct evidence. Roadmap items are not presented as implemented.
+## Verification boundary
 
-## Reference-grade capability map
+verify(claims, documents) verifies caller-supplied claims. ClaimExtractor is
+response-only and never receives evidence.
 
-| Area | Status | Evidence |
-|---|---|---|
-| Deterministic claim verification | VERIFIED | `verification/judge.py`, numeric/date rules, tests |
-| Evidence provenance | VERIFIED | structured evidence model + provenance checks |
-| Source-independence clustering | VERIFIED | `verification/clusters.py` + tests |
-| Contradiction handling | VERIFIED | deterministic stance/judge model |
-| Abstention contracts | VERIFIED | response/security tests |
-| Audit mode | VERIFIED | `audit.py` + tests |
-| Replay / content addressing | VERIFIED | `replay.py` + tests |
-| Council / controlled deliberation core | VERIFIED | `council.py` + tests |
-| Hybrid rank fusion | VERIFIED | `hybrid.py` + tests |
-| Durable checkpoint core | VERIFIED | `durable.py` + tests |
-| Cost / latency metrics primitives | VERIFIED | `metrics.py` + tests |
-| Governance checks | VERIFIED | `governance.py` + tests |
-| MCP gateway | VERIFIED | gateway implementation + tests |
-| Provider adapters | VERIFIED | OpenSearch, OpenAI-compatible and mock providers |
-| FastAPI API | VERIFIED | `api/app.py` + tests |
-| CLI | VERIFIED | `cli/main.py` + tests |
-| Docker execution | VERIFIED | Dockerfile + compose |
-| Golden v0 closed-world fixture | VERIFIED | 34 cases / 52 documents / SHA-256 manifest |
-| Golden smoke CI | VERIFIED | blocking CI job |
-| Full Golden v0 regression | BLOCKING CI | 34-case job; report uploaded as artifact |
-| Python compatibility | VERIFIED | CI matrix 3.11 / 3.12 / 3.13 |
-| Ruff | VERIFIED | blocking CI |
-| mypy | BLOCKING | blocking non-strict type check |
-| strict evidence typing | VERIFIED | blocking strict evidence check |
-| Security audit | VERIFIED | pip-audit + Bandit |
-| CodeQL | VERIFIED | CodeQL v4 workflow |
-| Dependabot | VERIFIED | repository configuration |
-| Community health | VERIFIED | README, LICENSE, SECURITY, CONTRIBUTING, CODE_OF_CONDUCT, issue forms |
+ADR-003 defines SUPPORTS, CONTRADICTS and NEUTRAL. Neutral edges are ignored by
+the deterministic Judge.
 
-## Evaluation truth
+Numeric contradiction checks require matching numeric unit and attribute
+context. Evidence-vs-evidence baseline comparison is removed.
 
-The frozen Golden v0 is a **deterministic motor-verification fixture suite**. It is not a real-web retrieval benchmark and must not be interpreted as proof of general-world factuality.
+Negation detection is token-based and cannot treat substrings as negation.
 
-The recorded majority-class baseline is **43.3333%**. Any future benchmark claim must report the dataset version, case count, corpus count, suite, system commit and reproducibility artifacts.
+Production parsing/mapping failures abstain with a recorded reason. LLM claim
+and stance payloads use strict Pydantic schemas.
 
-## Remaining engineering frontier
+## P0.c Golden runner
 
-These are intentionally still separate from the verified core:
+The official runner now feeds only expected_claims[].text into the verifier.
+The per-claim verdict field is never passed to the pipeline. Verdicts are
+produced only by the deterministic Judge.
 
-- production-grade hybrid retrieval against a real index;
-- cross-encoder / learned reranking;
-- target-level claim decomposition and automated stance extraction;
-- production OpenTelemetry / GenAI semantic conventions;
-- durable external queue / worker execution;
-- multi-tenant authorization and isolation;
-- streaming/SSE production API;
-- adversarial red-team suite mapped to current agent-security guidance;
-- larger independently curated evaluation sets;
-- published reproducible comparisons against external baselines.
+The runner reports:
+- accuracy;
+- balanced accuracy;
+- fixed 6x6 confusion matrix;
+- deterministic 10,000-sample bootstrap 95% CI;
+- exact paired McNemar versus the legacy runner;
+- evaluated abstention contracts.
 
-The project should advance these only with executable implementations, tests, measured results and documentation. No roadmap item should be promoted to VERIFIED merely because an interface exists.
+Golden v0 is DEV data and must not be tuned to improve these numbers.
+
+## Pre-fix reproduction
+
+scripts/reproduce_p0c_prefixed_golden.py records:
+- new pipeline: 9/30 = 30.0000%;
+- legacy: 13/30 = 43.3333%;
+- legacy correct/new wrong: 6;
+- new correct/legacy wrong: 2;
+- exact McNemar p = 0.28906250.
+
+Those are diagnostic pre-fix numbers, not current post-fix benchmark results.
+
+## CI evidence
+
+P0.c is wired; the post-fix numerical result remains pending the current CI run.
 
 ## Quality gates
 
-A merge-ready change should preserve:
+Every defect fix requires a regression test and CI evidence before merge.
+Infrastructure feature work is frozen until hidden-test and external benchmark
+gates are met.
 
-1. deterministic tests;
-2. Python 3.11–3.13 compatibility;
-3. Ruff and mypy;
-4. coverage non-regression;
-5. Golden contract integrity;
-6. security scans;
-7. reproducible evaluation artifacts.
 
-## Maintainer principle
+## F0 recovery after external review
 
-**Evidence before claims. Determinism before persuasion. Reproducibility before benchmarks.**
-
-That principle is the standard for ATTRACTOR itself.
+- Recovery branch: fix/f0-recovery
+- Verified HEAD: 7478f7a320285e033a683620b60ad0a60153efe8
+- Golden v0: 8/30 (26.6667%), balanced accuracy 44.0171%, bootstrap 95% CI [13.3333%, 43.3333%]
+- Abstention contracts: 4/4
+- CI run: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/37133387080
+- Core test/type/security/CodeQL gates: green
+- Dependency Review: blocked because GitHub Dependency Graph is disabled; do not claim F0 fully closed until that repository setting is enabled.

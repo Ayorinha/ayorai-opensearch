@@ -1,4 +1,4 @@
-"""Strict Pydantic contracts for the R1 verification engine."""
+"""Strict Pydantic contracts for the deterministic verification core."""
 
 from datetime import datetime
 from enum import StrEnum
@@ -18,6 +18,7 @@ class Claim(StrictModel):
 class Stance(StrEnum):
     SUPPORTS = "supports"
     CONTRADICTS = "contradicts"
+    NEUTRAL = "neutral"
 
 
 class Evidence(StrictModel):
@@ -38,7 +39,6 @@ class Evidence(StrictModel):
     @field_validator("retrieved_at", mode="before")
     @classmethod
     def parse_rfc3339_timestamp(cls, value: object) -> object:
-        """Accept JSON RFC3339 timestamps without enabling general coercion."""
         if isinstance(value, str):
             try:
                 return datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -49,7 +49,6 @@ class Evidence(StrictModel):
     @field_validator("canonical_url", mode="before")
     @classmethod
     def parse_http_url(cls, value: object) -> object:
-        """Accept a JSON URL string while retaining HttpUrl validation."""
         if isinstance(value, str):
             return HttpUrl(value)
         return value
@@ -72,12 +71,13 @@ class StanceEdge(StrictModel):
     @field_validator("stance", mode="before")
     @classmethod
     def parse_stance(cls, value: object) -> object:
-        """Parse only the declared wire values; reject arbitrary coercion."""
         if isinstance(value, str):
             try:
                 return Stance(value)
             except ValueError as exc:
-                raise ValueError("stance must be supports or contradicts") from exc
+                raise ValueError(
+                    "stance must be supports, contradicts or neutral"
+                ) from exc
         return value
 
 
@@ -90,7 +90,6 @@ class Verdict(StrEnum):
     CONFLICTING = "conflicting"
 
 
-# Compatibility mapping only; no Judge decision logic lives here.
 INSUFFICIENT_EVIDENCE_TO_VERDICT: dict[str, Verdict] = {
     "insufficient_evidence": Verdict.UNVERIFIED,
 }
