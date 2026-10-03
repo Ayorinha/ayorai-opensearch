@@ -32,6 +32,7 @@ dev = [
   "mcp>=2,<3",
   "openai-agents>=0.1,<1",
   "hypothesis>=6.100,<7",
+  "PyYAML>=6.0,<7",
 ]
 
 [project.scripts]
