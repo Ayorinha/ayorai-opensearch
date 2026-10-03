@@ -2,11 +2,12 @@
 
 **Estado atual:** Fase 0 concluída; R1 core implementado; R2–R13 possuem
 fundamentos de engenharia testados no main. R14 adiciona contexto de tracing
-provider-neutral integrado ao orquestrador. As integrações de produção,
-execução distribuída e hardening operacional continuam sendo tratadas
-separadamente.
+provider-neutral integrado ao orquestrador. R15 adiciona a fronteira de
+execução durável sobre o JobStore, com claim/finish e isolamento de falhas.
+Integrações de produção, execução distribuída e hardening operacional
+continuam sendo tratadas separadamente.
 
-**Main de referência antes de R14:** `2226e7c6820aa453703eaa42cf3beeca7e7df55b`.
+**Main de referência atual:** `7067a7ebe1cd0ab22c89baecc4166d5ce19debdc` (merge de R15).
 
 **Ground Truth:** 34 casos / 52 documentos sintéticos.
 **Baseline:** 43,3333%, exatamente igual à classe majoritária
@@ -30,7 +31,8 @@ PARTIALLY_SUPPORTED. Esse número não demonstra capacidade de verificação.
 | R11 | fundação implementada | bounded optimizer |
 | R12 | fundação implementada | MCP/plugin governance boundary |
 | R13 | fundação implementada | TenantContext imutável |
-| R14 | em implementação | TraceContext integrado ao orchestrator |
+| R14 | implementação integrada | TraceContext + eventos no orchestrator |
+| R15 | implementação integrada | JobExecutor + lifecycle do JobStore + testes |
 
 ## Princípio de conclusão
 
@@ -42,11 +44,11 @@ aspiracional não conta como implementação.
 
 1. exportação OpenTelemetry sem acoplamento semântico ao Judge;
 2. propagação de tenant context nas superfícies de runtime e autorização;
-3. integração real do JobStore ao executor/worker;
-4. harness Golden automatizado com relatórios estatísticos reproduzíveis;
-5. transport-level MCP e isolamento de ferramentas;
-6. adapter para provedores modernos de modelos sem delegar o Judge;
-7. hardening de deployment, supply chain e release reproducível.
+3. harness Golden automatizado com relatórios estatísticos reproduzíveis;
+4. transport-level MCP e isolamento de ferramentas;
+5. adapter para provedores modernos de modelos sem delegar o Judge;
+6. hardening de deployment, supply chain e release reproduzível;
+7. verificação explícita de CI/security/CodeQL para os commits mais recentes.
 
 ## Segurança e qualidade
 
