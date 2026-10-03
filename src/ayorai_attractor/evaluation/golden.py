@@ -5,7 +5,7 @@ import json
 import os
 import subprocess
 import time
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -86,11 +86,16 @@ class FixtureRetriever:
 
 
 def _load_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+    return [
+        json.loads(x)
+        for x in path.read_text(encoding="utf-8").splitlines()
+        if x.strip()
+    ]
 
 
 def _accuracy(correct: int, total: int) -> dict[str, float | int]:
-    return {"correct": correct, "total": total, "accuracy": round(correct / total, 6) if total else 0.0}
+    accuracy = round(correct / total, 6) if total else 0.0
+    return {"correct": correct, "total": total, "accuracy": accuracy}
 
 
 def _git_sha() -> str:
