@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+
 from pydantic import ValidationError
 
 from ayorai_attractor.verification.claim_pipeline import ClaimVerificationPipeline
@@ -6,8 +7,9 @@ from ayorai_attractor.verification.extraction import LLMClaimExtractor, Retrieve
 from ayorai_attractor.verification.response import ResponseStatus
 from ayorai_attractor.verification.stance import LLMStanceDetector
 
+
 def doc() -> RetrievedDocument:
-    text="AtlasGrid revenue was USD 120 million."
+    text = "AtlasGrid revenue was USD 120 million."
     return RetrievedDocument(
         "e1",
         text,
@@ -18,17 +20,20 @@ def doc() -> RetrievedDocument:
         origin_id="o1",
     )
 
+
 class BadClaimProvider:
     def execute(self, prompt: str):
-        return type("R",(),{"text":'{"claims":[{"text":"ok","confidence":2.0}]}'})()
+        return type("R", (), {"text": '{"claims":[{"text":"ok","confidence":2.0}]}'} )()
+
 
 class BadStanceProvider:
-    def execute(self,prompt:str):
+    def execute(self, prompt: str):
         return type(
             "R",
             (),
             {"text": '{"evidence_id":"forged","stance":"supports","confidence":1.0}'},
         )()
+
 
 def test_llm_claim_schema_is_strict() -> None:
     try:
@@ -37,6 +42,7 @@ def test_llm_claim_schema_is_strict() -> None:
         pass
     else:
         raise AssertionError("invalid confidence must be rejected")
+
 
 def test_invalid_llm_evidence_id_abstains_with_reason() -> None:
     pipeline = ClaimVerificationPipeline(

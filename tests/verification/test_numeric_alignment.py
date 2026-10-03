@@ -1,11 +1,9 @@
 from datetime import UTC, datetime
 
-from ayorai_attractor.verification.extraction import (
-    ComponentProvenance,
-    ExtractedClaim,
-)
+from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
 from ayorai_attractor.verification.models import Claim, Evidence, Stance
 from ayorai_attractor.verification.stance import RuleStanceDetector
+
 
 def extracted(text: str) -> ExtractedClaim:
     return ExtractedClaim(
@@ -13,6 +11,7 @@ def extracted(text: str) -> ExtractedClaim:
         confidence=1.0,
         provenance=ComponentProvenance("test", "fixture", "1", "in", "out"),
     )
+
 
 def evidence(text: str) -> Evidence:
     return Evidence(
@@ -27,6 +26,7 @@ def evidence(text: str) -> Evidence:
         origin_id="atlasgrid-annual-2025",
     )
 
+
 def test_doc_001_does_not_contradict_itself() -> None:
     claim = extracted("AtlasGrid reported revenue of USD 120 million for fiscal year 2025.")
     result = RuleStanceDetector().detect(
@@ -40,9 +40,11 @@ def test_doc_001_does_not_contradict_itself() -> None:
     )
     assert result.edges[0].edge.stance is Stance.SUPPORTS
 
+
 def test_year_and_monetary_value_are_different_numeric_attributes() -> None:
     claim = extracted("AtlasGrid revenue was USD 120 million in 2025.")
-    result = RuleStanceDetector().detect([claim], [evidence(
-        "AtlasGrid revenue was USD 120 million in fiscal year 2025."
-    )])
+    result = RuleStanceDetector().detect(
+        [claim],
+        [evidence("AtlasGrid revenue was USD 120 million in fiscal year 2025.")],
+    )
     assert result.edges[0].edge.stance is Stance.SUPPORTS

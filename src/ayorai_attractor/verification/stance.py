@@ -5,9 +5,10 @@ import hashlib
 import re
 from dataclasses import dataclass
 from collections.abc import Sequence
-from typing import Any, Protocol
 from .extraction import ComponentProvenance, ExtractedClaim
 from .models import Evidence, Stance, StanceEdge
+from typing import Any, Literal, Protocol
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from .numeric import DEFAULT_RELATIVE_TOLERANCE, NumericLocale, numeric_conflicts
@@ -17,7 +18,7 @@ class LLMStancePayload(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     evidence_id: str = Field(min_length=1)
-    stance: Stance
+    stance: Literal["supports", "contradicts", "neutral"]
     confidence: float = Field(ge=0.0, le=1.0)
 
 _NUMBER_RE = re.compile(r"(?<![\w])[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?")
@@ -132,7 +133,7 @@ class LLMStanceDetector:
                             id=f"ste_{claim_item.claim.id}_{item.id}",
                             claim_id=claim_item.claim.id,
                             evidence_id=item.id,
-                            stance=result.stance,
+                            stance=Stance(result.stance),
                         ),
                         result.confidence,
                         ComponentProvenance(

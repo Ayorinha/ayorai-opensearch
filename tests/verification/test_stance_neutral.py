@@ -5,12 +5,14 @@ from ayorai_attractor.verification.judge import judge
 from ayorai_attractor.verification.models import Claim, Evidence, Stance, StanceEdge
 from ayorai_attractor.verification.stance import RuleStanceDetector
 
+
 def extracted(claim_id: str, text: str) -> ExtractedClaim:
     return ExtractedClaim(
         claim=Claim(id=claim_id, text=text),
         confidence=1.0,
         provenance=ComponentProvenance("test", "fixture", "1", "in", "out"),
     )
+
 
 def evidence(claim_id: str, evidence_id: str, text: str) -> Evidence:
     return Evidence(
@@ -25,12 +27,14 @@ def evidence(claim_id: str, evidence_id: str, text: str) -> Evidence:
         origin_id=evidence_id,
     )
 
+
 def test_irrelevant_document_is_neutral() -> None:
     result = RuleStanceDetector().detect(
         [extracted("c1", "AtlasGrid revenue was USD 120 million.")],
         [evidence("c1", "e1", "The weather fixture reports rain in Testville.")],
     )
     assert result.edges[0].edge.stance is Stance.NEUTRAL
+
 
 def test_neutral_is_ignored_by_judge() -> None:
     claim = Claim(id="c1", text="The claim")
