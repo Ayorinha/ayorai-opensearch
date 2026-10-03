@@ -12,8 +12,8 @@ import sqlite3
 from pathlib import Path
 
 from ayorai_attractor.audit import AuditReport
-from ayorai_attractor.replay import ReplayBundle
 from ayorai_attractor.models import SearchResponse
+from ayorai_attractor.replay import ReplayBundle
 
 
 class AuditTraceStore:
@@ -24,7 +24,7 @@ class AuditTraceStore:
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(self.path)
         connection = self._connection
-            connection.execute(
+        connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS audit_traces (
                     trace_id TEXT PRIMARY KEY,
@@ -54,34 +54,34 @@ class AuditTraceStore:
         replay = ReplayBundle.build(response.trace_id, events, version="r2-v1")
         connection = self._connection
         connection.execute(
-                """
-                INSERT OR REPLACE INTO audit_traces
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    report.trace_id,
-                    report.verification,
-                    report.evidence_count,
-                    report.independent_evidence_count,
-                    report.verified_evidence_count,
-                    report.failure_count,
-                    len(report.findings),
-                    replay.digest,
-                ),
-            )
+            """
+            INSERT OR REPLACE INTO audit_traces
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                report.trace_id,
+                report.verification,
+                report.evidence_count,
+                report.independent_evidence_count,
+                report.verified_evidence_count,
+                report.failure_count,
+                len(report.findings),
+                replay.digest,
+            ),
+        )
         return replay.digest
 
     def get(self, trace_id: str) -> dict[str, object] | None:
         connection = self._connection
         row = connection.execute(
-                """
-                SELECT trace_id, verification, evidence_count,
-                       independent_evidence_count, verified_evidence_count,
-                       failure_count, finding_count, replay_digest
-                FROM audit_traces WHERE trace_id = ?
-                """,
-                (trace_id,),
-            ).fetchone()
+            """
+            SELECT trace_id, verification, evidence_count,
+                   independent_evidence_count, verified_evidence_count,
+                   failure_count, finding_count, replay_digest
+            FROM audit_traces WHERE trace_id = ?
+            """,
+            (trace_id,),
+        ).fetchone()
         if row is None:
             return None
         return {
