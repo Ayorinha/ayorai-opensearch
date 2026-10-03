@@ -10,7 +10,7 @@ from ayorai_attractor.verification.models import (
     StanceEdge,
     Verdict,
 )
-from ayorai_attractor.verification.stance import RuleStanceDetector
+from ayorai_attractor.verification.stance import RuleStanceDetector, _numeric_facts, _numeric_facts_align
 
 
 def evidence(
@@ -151,3 +151,18 @@ def test_unknown_provenance_does_not_count_for_verified() -> None:
     judgment = judge_claim(claim, [item], [edge])
     assert judgment.support_clusters == 1
     assert judgment.verdict is Verdict.PARTIALLY_SUPPORTED
+
+
+def test_numeric_alignment_internal_contracts() -> None:
+    assert _numeric_facts("Revenue was 100 million USD.") == [
+        ("100", "usd:million", "revenue")
+    ]
+    assert _numeric_facts("The figure is 120 million USD.") == [
+        ("120", "usd:million", "figure")
+    ]
+    assert _numeric_facts_align(
+        "Revenue was 100 million USD.", "The figure is 120 million USD."
+    ) == (False, False, False)
+    assert _numeric_facts_align(
+        "Revenue was 100 million USD.", "Revenue was 120 million USD."
+    ) == (True, False, True)
