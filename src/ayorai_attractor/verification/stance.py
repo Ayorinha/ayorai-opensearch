@@ -135,7 +135,12 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
                 ),
                 "",
             )
-            scale_alias = {"million": "million", "millions": "million", "milhão": "million", "milhões": "million", "billion": "billion", "billions": "billion", "bilhão": "billion", "bilhões": "billion"}
+            scale_alias = {
+                "million": "million", "millions": "million",
+                "milhão": "million", "milhões": "million",
+                "billion": "billion", "billions": "billion",
+                "bilhão": "billion", "bilhões": "billion",
+            }
             unit = f"{currency}:{scale_alias.get(scale, scale or 'base')}"
         elif "ms" in context:
             unit = "ms"
@@ -339,7 +344,8 @@ class RuleStanceDetector:
                             self.component,
                             self.model,
                             self.version,
-                            _sha256(claim_item.claim.text + "\\n" + item.excerpt),
+                            _sha256(claim_item.claim.text + "\
+" + item.excerpt),
                             _sha256(payload),
                         ),
                     )
@@ -433,7 +439,8 @@ class NLIStanceDetector:
                             self.model,
                             f"{self.version}|window={start}:{end}",
                             _sha256(
-                                claim_item.claim.text + "\\n"
+                                claim_item.claim.text + "\
+"
                                 + item.excerpt[local_start:local_end]
                             ),
                             _sha256(f"{stance}|{confidence:.12f}|{start}|{end}"),
@@ -522,7 +529,8 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
                             self.model,
                             f"{self.version}|window={start}:{end}|translation={translation_hash}",
                             _sha256(
-                                translated_claim + "\\n"
+                                translated_claim + "\
+"
                                 + translated_document[local_start:local_end]
                             ),
                             _sha256(
