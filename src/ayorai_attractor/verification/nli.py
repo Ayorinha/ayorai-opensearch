@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 from .models import Stance
@@ -22,7 +21,6 @@ def _resolve_label_map(id2label: dict[int, str]) -> dict[int, Stance]:
     return {index: _LABEL_TO_STANCE[label] for index, label in normalized.items()}
 
 
-@dataclass(frozen=True)
 class TransformersNLIBackend:
     """CPU-only three-class NLI backend with an explicit label-map contract."""
 
@@ -35,8 +33,8 @@ class TransformersNLIBackend:
         object.__setattr__(self, "_label_map", None)
 
     def _load(self) -> tuple[Any, dict[int, Stance]]:
-        pipeline = getattr(self, "_pipeline")
-        label_map = getattr(self, "_label_map")
+        pipeline = self._pipeline
+        label_map = self._label_map
         if pipeline is not None and label_map is not None:
             return pipeline, label_map
 
@@ -68,9 +66,9 @@ class TransformersNLIBackend:
 
     def classify(self, claim_text: str, evidence_text: str) -> dict[str, float | str]:
         backend, label_map = self._load()
-        torch = getattr(backend, "_torch")
-        tokenizer = getattr(backend, "_tokenizer")
-        model = getattr(backend, "_model")
+        torch = backend._torch
+        tokenizer = backend._tokenizer
+        model = backend._model
         encoded = tokenizer(
             claim_text,
             evidence_text,
