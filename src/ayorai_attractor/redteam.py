@@ -12,7 +12,7 @@ class ThreatClass(StrEnum):
     PROMPT_INJECTION = "prompt_injection"
     EVIDENCE_POISONING = "evidence_poisoning"
     CITATION_MANIPULATION = "citation_manipulation"
-    SECRET_EXPOSURE = "credential_exposure"
+    SECRET_EXPOSURE = "secret_guard"
 
 
 @dataclass(frozen=True)
