@@ -1,0 +1,89 @@
+from datetime import datetime, timezone
+
+from ayorai_attractor.verification.clusters import cluster_evidence, dependency_reason
+from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
+from ayorai_attractor.verification.models import Claim, Evidence, Stance
+from ayorai_attractor.verification.stance import RuleStanceDetector
+
+
+def evidence(
+    evidence_id: str,
+    *,
+    source_id: str,
+    origin_id: str | None = None,
+    normalized_hash: str | None = None,
+    cited_origin_id: str | None = None,
+    excerpt: str = "Revenue was 100.",
+) -> Evidence:
+    return Evidence(
+        id=evidence_id,
+        claim_id="c1",
+        source_id=source_id,
+        source_location="body",
+        retrieved_at=datetime(2026, 10, 3, tzinfo=timezone.utc),
+        start_offset=0,
+        end_offset=len(excerpt),
+        excerpt=excerpt,
+        origin_id=origin_id,
+        canonical_url=None,
+        normalized_content_hash=normalized_hash,
+        cited_origin_id=cited_origin_id,
+    )
+
+
+def claim_item(text: str) -> ExtractedClaim:
+    return ExtractedClaim(
+        claim=Claim(id="c1", text=text),
+        confidence=1.0,
+        provenance=ComponentProvenance("test", "fake", "1", "in", "out"),
+    )
+
+
+def test_same_source_id_is_not_independent() -> None:
+    left = evidence("e1", source_id="source-a")
+    right = evidence("e2", source_id="source-a")
+    assert dependency_reason(left, right) == "same_source_id"
+    assert cluster_evidence([left, right]) == [frozenset({"e1", "e2"})]
+
+
+def test_same_hash_is_not_independent_even_with_distinct_sources() -> None:
+    left = evidence("e1", source_id="source-a", normalized_hash="h")
+    right = evidence("e2", source_id="source-b", normalized_hash="h")
+    assert dependency_reason(left, right) == "same_normalized_content_hash"
+
+
+def test_citation_republication_is_transitive() -> None:
+    original = evidence("e1", source_id="a", origin_id="origin-a")
+    republication = evidence("e2", source_id="b", cited_origin_id="origin-a")
+    third = evidence("e3", source_id="b", cited_origin_id="origin-b", origin_id="origin-b")
+    clusters = cluster_evidence([original, republication, third])
+    assert any(cluster == frozenset({"e1", "e2"}) for cluster in clusters)
+    assert any("e3" in cluster for cluster in clusters)
+
+
+def test_missing_dependency_metadata_is_not_independence() -> None:
+    left = evidence("e1", source_id="source-a")
+    right = evidence("e2", source_id="source-b")
+    assert dependency_reason(left, right) is None
+    assert len(cluster_evidence([left, right])) == 2
+
+
+def test_numeric_absolute_agreement_below_relative_tolerance_supports() -> None:
+    claim = claim_item("Revenue was 100 million USD.")
+    item = evidence("e1", source_id="source-a", excerpt="Revenue was 100.5 million USD.")
+    result = RuleStanceDetector().detect([claim], [item])
+    assert result.edges[0].edge.stance is Stance.SUPPORTS
+
+
+def test_numeric_boundary_is_inclusive() -> None:
+    claim = claim_item("Revenue was 100 million USD.")
+    item = evidence("e1", source_id="source-a", excerpt="Revenue was 101 million USD.")
+    result = RuleStanceDetector().detect([claim], [item])
+    assert result.edges[0].edge.stance is Stance.SUPPORTS
+
+
+def test_numeric_value_beyond_tolerance_contradicts_even_with_low_lexical_overlap() -> None:
+    claim = claim_item("Revenue was 100 million USD.")
+    item = evidence("e1", source_id="source-a", excerpt="The figure is 120 million USD.")
+    result = RuleStanceDetector().detect([claim], [item])
+    assert result.edges[0].edge.stance is Stance.CONTRADICTS
