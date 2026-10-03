@@ -71,6 +71,7 @@ class AuditTraceStore:
                 replay.digest,
             ),
         )
+        connection.commit()
         return replay.digest
 
     def get(self, trace_id: str) -> AuditTraceResponse | None:
