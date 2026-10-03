@@ -82,5 +82,8 @@ def mcnemar_exact_pvalue(
     discordant = b + c
     if discordant == 0:
         return 1.0
-    tail = sum(comb(discordant, k) for k in range(0, min(b, c) + 1)) / (2**discordant)
+    tail: float = float(
+        sum(comb(discordant, k) for k in range(0, min(b, c) + 1))
+        / (2**discordant)
+    )
     return min(1.0, 2 * tail)
