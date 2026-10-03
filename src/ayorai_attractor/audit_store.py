@@ -22,7 +22,8 @@ class AuditTraceStore:
         self.path = configured
         if configured != ":memory:":
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
-        with self._connect() as connection:
+        self._connection = sqlite3.connect(self.path)
+        connection = self._connection
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS audit_traces (
@@ -51,8 +52,8 @@ class AuditTraceStore:
             }
         ]
         replay = ReplayBundle.build(response.trace_id, events, version="r2-v1")
-        with self._connect() as connection:
-            connection.execute(
+        connection = self._connection
+        connection.execute(
                 """
                 INSERT OR REPLACE INTO audit_traces
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -71,8 +72,8 @@ class AuditTraceStore:
         return replay.digest
 
     def get(self, trace_id: str) -> dict[str, object] | None:
-        with self._connect() as connection:
-            row = connection.execute(
+        connection = self._connection
+        row = connection.execute(
                 """
                 SELECT trace_id, verification, evidence_count,
                        independent_evidence_count, verified_evidence_count,
