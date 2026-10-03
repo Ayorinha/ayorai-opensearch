@@ -10,7 +10,11 @@ from ayorai_attractor.verification.models import (
     StanceEdge,
     Verdict,
 )
-from ayorai_attractor.verification.stance import RuleStanceDetector, _numeric_facts, _numeric_facts_align
+from ayorai_attractor.verification.stance import (
+    RuleStanceDetector,
+    _numeric_facts,
+    _numeric_facts_align,
+)
 
 
 def evidence(
