@@ -25,7 +25,12 @@ ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "evals/golden/v0.jsonl"
 CORPUS = ROOT / "evals/corpus/documents.jsonl"
 RETRIEVED_AT = datetime(2026, 9, 30, 12, 0, tzinfo=UTC)
-OUT_OF_SCOPE_TERMS = ("diagnóstico", "diagnostico", "estratégia jurídica", "estrategia juridica")
+OUT_OF_SCOPE_TERMS = (
+    "diagnóstico",
+    "diagnostico",
+    "estratégia jurídica",
+    "estrategia juridica",
+)
 
 
 def load_jsonl(path: Path) -> list[dict[str, object]]:
