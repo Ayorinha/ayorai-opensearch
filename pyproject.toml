@@ -18,6 +18,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+nli = [
+  "transformers>=4.55,<5",
+  "torch>=2.7,<3",
+]
 telemetry = [
   "opentelemetry-api>=1.45,<2",
 ]
