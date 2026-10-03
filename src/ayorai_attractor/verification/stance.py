@@ -130,6 +130,7 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
         before = tokens[max(0, index - 6) : index]
         after = tokens[index + 1 : index + 4]
         context = before + after
+        local_context = tokens[max(0, index - 3) : index + 4]
         if "%" in token or "percent" in context or "porcento" in context:
             unit = "percent"
         elif token.isdigit() and 1900 <= int(token) <= 2100 and not any(
