@@ -1,6 +1,7 @@
 # ruff: noqa: I001
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
@@ -40,9 +41,13 @@ class FixtureSearchProvider(Provider):
         excerpts = [str(doc["content"]) for doc in selected]
         source_ids = ",".join(str(doc["doc_id"]) for doc in selected)
         return ProviderResponse(
-            text="\n\n".join(excerpts),
+            text="
+
+".join(excerpts),
             source=f"fixture://golden-v0/{source_ids or 'empty'}",
-            excerpt="\n\n".join(excerpts),
+            excerpt="
+
+".join(excerpts),
             independent=bool(selected),
         )
 
@@ -61,6 +66,22 @@ def _accuracy(correct: int, total: int) -> dict[str, float | int]:
         "total": total,
         "accuracy": round(correct / total, 6) if total else 0.0,
     }
+
+
+def _content_digest(report: dict[str, Any]) -> str:
+    """Hash semantic evaluation results while excluding volatile runtime fields."""
+    stable = {
+        key: value
+        for key, value in report.items()
+        if key not in {"latency_ms", "git_sha", "content_sha256"}
+    }
+    payload = json.dumps(
+        stable,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def evaluate_golden_v0(
@@ -86,11 +107,7 @@ def evaluate_golden_v0(
     category_correct: Counter[str] = Counter()
     state_totals: Counter[str] = Counter()
     state_correct: Counter[str] = Counter()
-    expected_global = [
-        str(case["global"])
-        for case in cases
-        if "global" in case
-    ]
+    expected_global = [str(case["global"]) for case in cases if "global" in case]
 
     majority_label = Counter(expected_global).most_common(1)[0][0]
     majority_correct = sum(label == majority_label for label in expected_global)
@@ -106,12 +123,7 @@ def evaluate_golden_v0(
         provider = FixtureSearchProvider(documents, evidence_pool)
         engine = Attractor(search_provider=provider)
         started = time.perf_counter()
-        response = engine.run(
-            SearchRequest(
-                query=str(case["query"]),
-                max_agents=5,
-            )
-        )
+        response = engine.run(SearchRequest(query=str(case["query"]), max_agents=5))
         latency_ms = (time.perf_counter() - started) * 1000
         latencies_ms.append(latency_ms)
 
@@ -153,7 +165,7 @@ def evaluate_golden_v0(
             }
         )
 
-    return {
+    report: dict[str, Any] = {
         "suite": suite,
         "system": "current-attractor",
         "network": False,
@@ -193,3 +205,5 @@ def evaluate_golden_v0(
         "results": results,
         "git_sha": os.getenv("GITHUB_SHA", "unknown"),
     }
+    report["content_sha256"] = _content_digest(report)
+    return report
