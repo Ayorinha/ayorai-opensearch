@@ -338,8 +338,7 @@ class RuleStanceDetector:
                             self.component,
                             self.model,
                             self.version,
-                            _sha256(claim_item.claim.text + "
-" + item.excerpt),
+                            _sha256(claim_item.claim.text + "\\n" + item.excerpt),
                             _sha256(payload),
                         ),
                     )
@@ -433,8 +432,7 @@ class NLIStanceDetector:
                             self.model,
                             f"{self.version}|window={start}:{end}",
                             _sha256(
-                                claim_item.claim.text + "
-"
+                                claim_item.claim.text + "\\n"
                                 + item.excerpt[local_start:local_end]
                             ),
                             _sha256(f"{stance}|{confidence:.12f}|{start}|{end}"),
@@ -523,8 +521,7 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
                             self.model,
                             f"{self.version}|window={start}:{end}|translation={translation_hash}",
                             _sha256(
-                                translated_claim + "
-"
+                                translated_claim + "\\n"
                                 + translated_document[local_start:local_end]
                             ),
                             _sha256(
