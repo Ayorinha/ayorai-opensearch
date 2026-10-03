@@ -21,9 +21,9 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
     saved = reopened.get("tr_persisted")
 
     assert saved is not None
-    assert saved["trace_id"] == "tr_persisted"
-    assert saved["verification"] == "unverified"
-    assert saved["replay_digest"] == digest
+    assert saved.trace_id == "tr_persisted"
+    assert saved.verification == "unverified"
+    assert saved.replay_digest == digest
 
 
 def test_missing_trace_returns_none(tmp_path) -> None:
