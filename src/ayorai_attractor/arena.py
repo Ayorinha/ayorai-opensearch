@@ -1,7 +1,7 @@
 """Reproducible system comparison primitives for R10."""
 
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from ayorai_attractor.evaluation.stats import (
     bootstrap_accuracy,
