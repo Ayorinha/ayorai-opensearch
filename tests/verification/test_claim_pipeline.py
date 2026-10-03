@@ -143,7 +143,13 @@ def test_pipeline_contract_rejects_retriever_as_verification_input() -> None:
     assert "retriever" not in signature.parameters
     result = pipeline().verify(
         ["AtlasGrid revenue was USD 120 million."],
-        [document("e1", "AtlasGrid revenue was USD 120 million.", origin="o1")],
+        [
+            document(
+                "e1",
+                "The annual report records USD 120 million in AtlasGrid revenue.",
+                origin="o1",
+            )
+        ],
     )
     assert result.claims[0].claim.text == "AtlasGrid revenue was USD 120 million."
     assert result.claims[0].claim.text != result.evidence[0].excerpt

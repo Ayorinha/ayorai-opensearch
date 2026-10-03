@@ -1,6 +1,9 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
+from ayorai_attractor.verification.extraction import (
+    ComponentProvenance,
+    ExtractedClaim,
+)
 from ayorai_attractor.verification.judge import judge
 from ayorai_attractor.verification.models import Claim, Evidence, Stance, StanceEdge
 from ayorai_attractor.verification.stance import RuleStanceDetector
@@ -18,7 +21,7 @@ def evidence(claim_id: str, evidence_id: str, text: str) -> Evidence:
         claim_id=claim_id,
         source_id=evidence_id,
         source_location=f"fixture://{evidence_id}",
-        retrieved_at=datetime(2026, 9, 30, tzinfo=timezone.utc),
+        retrieved_at=datetime(2026, 9, 30, tzinfo=UTC),
         start_offset=0,
         end_offset=len(text),
         excerpt=text,

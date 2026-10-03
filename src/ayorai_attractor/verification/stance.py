@@ -8,7 +8,17 @@ from collections.abc import Sequence
 from typing import Any, Protocol
 from .extraction import ComponentProvenance, ExtractedClaim
 from .models import Evidence, Stance, StanceEdge
+from pydantic import BaseModel, ConfigDict, Field
+
 from .numeric import DEFAULT_RELATIVE_TOLERANCE, NumericLocale, numeric_conflicts
+
+
+class LLMStancePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    evidence_id: str = Field(min_length=1)
+    stance: Stance
+    confidence: float = Field(ge=0.0, le=1.0)
 
 _NUMBER_RE = re.compile(r"(?<![\w])[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?")
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
@@ -109,6 +119,26 @@ class LLMStanceDetector:
         for claim_item in claims:
             for item in (x for x in evidence if x.claim_id==claim_item.claim.id):
                 prompt=json.dumps({"task":"classify stance only","claim":claim_item.claim.text,"evidence":item.excerpt,"allowed_stance":["supports","contradicts","neutral"]},ensure_ascii=False,sort_keys=True)
-                response=self.provider.execute(prompt); result=json.loads(response.text)
-                output.append(DetectedStance(StanceEdge(id=f"ste_{claim_item.claim.id}_{item.id}",claim_id=claim_item.claim.id,evidence_id=item.id,stance=Stance(str(result["stance"]))),float(result["confidence"]),ComponentProvenance(self.component,self.model,self.version,_sha256(prompt),_sha256(response.text))))
+                response = self.provider.execute(prompt)
+                result = LLMStancePayload.model_validate(json.loads(response.text))
+                if result.evidence_id != item.id:
+                    raise ValueError(f"unknown evidence id: {result.evidence_id}")
+                output.append(
+                    DetectedStance(
+                        StanceEdge(
+                            id=f"ste_{claim_item.claim.id}_{item.id}",
+                            claim_id=claim_item.claim.id,
+                            evidence_id=item.id,
+                            stance=result.stance,
+                        ),
+                        result.confidence,
+                        ComponentProvenance(
+                            self.component,
+                            self.model,
+                            self.version,
+                            _sha256(prompt),
+                            _sha256(response.text),
+                        ),
+                    )
+                )
         return StanceDetectionResult(tuple(output))

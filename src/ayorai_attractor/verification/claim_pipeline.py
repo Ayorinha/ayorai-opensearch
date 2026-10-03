@@ -12,6 +12,7 @@ from .judge import ClaimJudgment, judge
 from .models import Claim, Evidence, StanceEdge, Verdict
 from .response import ResponseStatus
 from .stance import StanceDetector
+from pydantic import ValidationError
 
 
 class ScopeClassifier(Protocol):
@@ -39,6 +40,7 @@ class ClaimVerificationResult:
     status: ResponseStatus
     confidence: float
     rationale: str
+    abstention_reason: str | None = None
 
 
 class ClaimVerificationPipeline:
@@ -110,13 +112,27 @@ class ClaimVerificationPipeline:
             for item in extracted
             for document in documents
         )
-        stance_result = self.stance_detector.detect(extracted, evidence)
-        stances = tuple(item.edge for item in stance_result.edges)
-        judgments, verdict = judge(
-            [item.claim for item in extracted],
-            list(evidence),
-            list(stances),
-        )
+        try:
+            stance_result = self.stance_detector.detect(extracted, evidence)
+            stances = tuple(item.edge for item in stance_result.edges)
+            judgments, verdict = judge(
+                [item.claim for item in extracted],
+                list(evidence),
+                list(stances),
+            )
+        except (ValidationError, ValueError) as exc:
+            return ClaimVerificationResult(
+                query=response,
+                claims=extracted,
+                evidence=evidence,
+                stances=(),
+                judgments=(),
+                verdict=None,
+                status=ResponseStatus.ABSTAIN_PROCESSING_ERROR,
+                confidence=1.0,
+                rationale=f"{type(exc).__name__}: {exc}",
+                abstention_reason=type(exc).__name__,
+            )
         confidence = min(
             (item.confidence for item in extracted),
             default=1.0,

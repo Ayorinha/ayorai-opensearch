@@ -11,7 +11,22 @@ from datetime import datetime
 from collections.abc import Sequence
 from typing import Any, Protocol
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from .models import Claim, Evidence
+
+
+class LLMClaimPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    text: str = Field(min_length=1)
+    confidence: float = Field(ge=0.0, le=1.0)
+
+
+class LLMClaimResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    claims: list[LLMClaimPayload] = Field(min_length=1)
 
 _SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
 _TOKEN_RE = re.compile(r"[\wÀ-ÿ]+", re.UNICODE)
@@ -184,14 +199,13 @@ class LLMClaimExtractor:
             sort_keys=True,
         )
         provider_response = self.provider.execute(prompt)
-        payload = json.loads(provider_response.text)
+        payload = LLMClaimResponse.model_validate(json.loads(provider_response.text))
         claims: list[ExtractedClaim] = []
-        for index, item in enumerate(payload["claims"], start=1):
-            text = str(item["text"])
+        for index, item in enumerate(payload.claims, start=1):
             claims.append(
                 ExtractedClaim(
-                    claim=Claim(id=f"clm_{index:03d}", text=text),
-                    confidence=float(item["confidence"]),
+                    claim=Claim(id=f"clm_{index:03d}", text=item.text),
+                    confidence=item.confidence,
                     provenance=ComponentProvenance(
                         component=self.component,
                         model=self.model,
