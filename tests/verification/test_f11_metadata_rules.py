@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from ayorai_attractor.verification.clusters import cluster_evidence, dependency_reason
 from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
-from ayorai_attractor.verification.models import Claim, Evidence, Stance
+from ayorai_attractor.verification.judge import judge_claim\nfrom ayorai_attractor.verification.models import Claim, Evidence, Stance, StanceEdge, Verdict
 from ayorai_attractor.verification.stance import RuleStanceDetector
 
 
@@ -128,3 +128,17 @@ def test_pt_en_numeric_conflict_is_contradiction() -> None:
     item = evidence("e1", source_id="source-a", excerpt="Company X revenue was 120 million USD.")
     result = RuleStanceDetector().detect([claim], [item])
     assert result.edges[0].edge.stance is Stance.CONTRADICTS
+
+
+def test_unknown_provenance_does_not_count_for_verified() -> None:
+    item = evidence("e1", source_id="source-a").model_copy(update={"origin_id": None})
+    claim = Claim(id="c1", text="Revenue was 100 million USD.")
+    edge = StanceEdge(
+        id="s1",
+        claim_id="c1",
+        evidence_id="e1",
+        stance=Stance.SUPPORTS,
+    )
+    judgment = judge_claim(claim, [item], [edge])
+    assert judgment.support_clusters == 0
+    assert judgment.verdict is Verdict.UNVERIFIED
