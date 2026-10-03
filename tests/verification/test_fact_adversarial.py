@@ -98,3 +98,7 @@ def test_fact_layer_never_raises_on_free_text() -> None:
         left = " ".join(rng.choice(vocab) for _ in range(rng.randint(0, 14)))
         right = " ".join(rng.choice(vocab) for _ in range(rng.randint(0, 14)))
         _numeric_facts_align(left, right)
+def test_provenance_input_hash_preserves_separator() -> None:
+    first = RuleStanceDetector().detect([_claim("ab")], [_evidence("c")])
+    second = RuleStanceDetector().detect([_claim("a")], [_evidence("bc")])
+    assert first.edges[0].provenance.input_hash != second.edges[0].provenance.input_hash
