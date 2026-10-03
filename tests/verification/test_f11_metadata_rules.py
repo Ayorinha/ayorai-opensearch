@@ -31,7 +31,7 @@ def evidence(
         start_offset=0,
         end_offset=len(excerpt),
         excerpt=excerpt,
-        origin_id=origin_id,
+        origin_id=source_id if origin_id is None else origin_id,
         canonical_url=None,
         normalized_content_hash=normalized_hash,
         cited_origin_id=cited_origin_id,
