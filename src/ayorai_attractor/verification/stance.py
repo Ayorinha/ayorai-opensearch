@@ -128,7 +128,7 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
         if not any(character.isdigit() for character in token):
             continue
         before = tokens[max(0, index - 6) : index]
-        after = tokens[index + 1 : index + 4]
+        after = tokens[index + 1 : index + 7]
         context = before + after
         context = tokens[max(0, index - 3) : index + 4]
         if "%" in token or "percent" in context or "porcento" in context:
