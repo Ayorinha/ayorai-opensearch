@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 import httpx
 
@@ -165,7 +166,7 @@ class HybridOpenSearchProvider(OpenSearchProvider):
             independent=True,
         )
 
-    def _search(self, query: dict[str, object]) -> list[dict[str, object]]:
+    def _search(self, query: dict[str, object]) -> list[dict[str, Any]]:
         headers = {"Accept": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"ApiKey {self.api_key}"
