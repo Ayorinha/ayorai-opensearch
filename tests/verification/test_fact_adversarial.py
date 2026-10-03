@@ -14,7 +14,11 @@ import pytest
 
 from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
 from ayorai_attractor.verification.models import Claim, Evidence, Stance
-from ayorai_attractor.verification.stance import RuleStanceDetector, _numeric_facts_align
+from ayorai_attractor.verification.stance import (
+    RuleStanceDetector,
+    SentenceNLIStanceDetector,
+    _numeric_facts_align,
+)
 
 S, C, N = Stance.SUPPORTS, Stance.CONTRADICTS, Stance.NEUTRAL
 
@@ -112,3 +116,33 @@ def test_provenance_input_hash_separates_claim_and_excerpt() -> None:
     expected = hashlib.sha256(b"ab\nc").hexdigest()
     assert first.edges[0].provenance.input_sha256 == expected
     assert first.edges[0].provenance.input_sha256 != second.edges[0].provenance.input_sha256
+
+
+class _FakeNLI:
+    def classify(self, claim: str, evidence: str) -> dict[str, object]:
+        if "contradiction" in evidence:
+            return {"stance": "contradicts", "confidence": 0.9}
+        return {"stance": "supports", "confidence": 0.8}
+
+
+def test_sentence_h1_splits_and_preserves_offsets() -> None:
+    evidence = _evidence("First sentence. Second sentence!")
+    detector = SentenceNLIStanceDetector(
+        _FakeNLI(), model="fake", version="1", tie_precedence="contradicts"
+    )
+    spans = detector._windows(evidence)
+    assert [item[2] for item in spans] == ["First sentence.", "Second sentence!"]
+    assert spans[0][:2] == (0, 15)
+    assert spans[1][:2] == (16, 33)
+
+
+def test_sentence_h1_tie_prefers_contradicts() -> None:
+    class TieNLI:
+        def classify(self, claim: str, evidence: str) -> dict[str, object]:
+            return {"stance": "contradicts" if "second" in evidence else "supports", "confidence": 0.8}
+
+    detector = SentenceNLIStanceDetector(
+        TieNLI(), model="fake", version="1", tie_precedence="contradicts"
+    )
+    result = detector.detect([_claim("claim")], [_evidence("first. second.")])
+    assert result.edges[0].edge.stance is Stance.CONTRADICTS
