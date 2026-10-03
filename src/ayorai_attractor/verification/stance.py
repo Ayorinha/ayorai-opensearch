@@ -143,7 +143,16 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             )
         ):
             unit = "year"
-        elif any(value in context for value in ("usd", "eur", "brl")):
+        elif any(value in context for value in ("usd", "eur", "brl")) and (
+            any(value in context for value in (
+                "million", "millions", "milhão", "milhões",
+                "billion", "billions", "bilhão", "bilhões",
+            ))
+            or any(
+                value in (tokens[max(0, index - 1) : index + 2])
+                for value in ("usd", "eur", "brl")
+            )
+        ):
             currency = next(value for value in ("usd", "eur", "brl") if value in context)
             scale = next(
                 (
