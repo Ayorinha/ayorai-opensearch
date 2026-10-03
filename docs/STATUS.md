@@ -54,3 +54,14 @@ P0.c is wired; the post-fix numerical result remains pending the current CI run.
 Every defect fix requires a regression test and CI evidence before merge.
 Infrastructure feature work is frozen until hidden-test and external benchmark
 gates are met.
+
+
+## F0 recovery after external review
+
+- Recovery branch: fix/f0-recovery
+- Verified HEAD: 7478f7a320285e033a683620b60ad0a60153efe8
+- Golden v0: 8/30 (26.6667%), balanced accuracy 44.0171%, bootstrap 95% CI [13.3333%, 43.3333%]
+- Abstention contracts: 4/4
+- CI run: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/37133387080
+- Core test/type/security/CodeQL gates: green
+- Dependency Review: blocked because GitHub Dependency Graph is disabled; do not claim F0 fully closed until that repository setting is enabled.

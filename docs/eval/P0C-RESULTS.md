@@ -1,39 +1,49 @@
-# P0.c — Claim-level pipeline pre-fix result
+# P0C — F0 Stabilization Results
 
-## Scope
+## Recovery trigger
 
-This artifact records the measured DEV result immediately before F0 stabilization. It is not a post-fix benchmark and does not represent a release-quality accuracy claim.
+External review of p0-pipeline at c3b0deb found that the F0 report no longer matched the code: the verification path had regressed to retriever-derived claims, evaluation/golden.py called a mismatched ClaimVerificationPipeline constructor, and the regression suite was not green.
 
-- Branch: `p0-pipeline`
-- Pre-fix commit: `b4cdc78dff0bda4284590e5f71a3d647e06db2f2`
-- CI merge ref: `598e17d8bf4bfed4af1d66fa8e86e9cbcf5bebe6`
-- CI run: `37128251283`
-- Golden v0 labeled cases: 30
-- Golden v0 total cases: 34
-- Corpus documents: 52
+The pre-F0 abstention contract was 4/4, not 0/4.
 
-## Measured DEV result
+## Recovery
 
-| Metric | Result |
+Recovery branch: fix/f0-recovery.
+
+claim_pipeline.py, extraction.py and stance.py were restored from 9e119a5 and then changed incrementally. The recovery also restored claim-as-input regression tests, added strict LLM payload validation, normalized processing errors to ABSTAIN/PROCESSING_ERROR, added the retriever guard, and closed Ruff/mypy/security regressions.
+
+The verification contract is explicit: ClaimVerificationPipeline.verify(claims, documents) receives caller-supplied claims; verify() has no retriever parameter; claim extraction receives only the model response; the deterministic Judge remains the verdict authority.
+
+## Post-F0 Golden v0
+
+CI run: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/37133387080
+HEAD: 7478f7a320285e033a683620b60ad0a60153efe8
+Artifact: golden-v0-38d183c53a5990aec1b1b0977051e35fdcf5c95f
+Report digest: a7e83161b613c6af81645e1a4daf8fc55331615a55242b509616855d68fe737a
+
+| Metric | Post-F0 |
 |---|---:|
-| Accuracy | 8/30 = 26.7% |
-| Balanced accuracy | 44.0% |
-| 95% CI | [13.3%, 43.3%] |
-| McNemar vs legacy | 9 vs 4 |
-| McNemar p-value | 0.27 |
-| Abstention cases correct | 0/4 |
-| CONFLICTING | 0/8 |
-| Independence cases | 0/4 |
-| Multi-hop | 0/3 |
+| Cases | 34 |
+| Corpus documents | 52 |
+| Global verdict cases | 30 |
+| Accuracy | 8/30 = 26.6667% |
+| Majority baseline | 13/30 = 43.3333% |
+| Balanced accuracy | 44.0171% |
+| Bootstrap 95% CI | [13.3333%, 43.3333%] |
+| McNemar vs legacy | 9 legacy-correct/new-wrong; 4 new-correct/legacy-wrong; exact p=0.266845703125 |
+| Abstention contracts | 4/4 |
+| ABSTAIN/NO_ANSWER | 2/2 |
+| ABSTAIN/OUT_OF_SCOPE | 2/2 |
+| Report SHA-256 | a7e83161b613c6af81645e1a4daf8fc55331615a55242b509616855d68fe737a |
 
-## Root cause observed
+Post-F0 accuracy is unchanged from the measured pre-recovery diagnostic (8/30). F0 is stabilization/recovery, not an accuracy-improvement claim.
 
-The fixture corpus is English while the current rule stance path receives Portuguese claims. The lexical detector therefore produces mostly NEUTRAL/unsupported behavior, and the source-independence clustering path is not meaningfully exercised.
+## CI evidence
 
-A separate deterministic bug was identified in the F0 CI failures: numeric comparison performed a cross-product over all numbers in two evidence texts, allowing unrelated values such as a year and an amount to trigger contradiction.
+At HEAD 7478f7a, test 3.11, test 3.12, test 3.13, namespace compatibility, Golden lint, Golden smoke, Golden regression, Judge regression, strict typecheck, security, CodeQL and analyze completed successfully.
 
-## Reproduction contract
+Dependency Review remains the only failing check because GitHub reports that Dependency Graph is disabled for the repository. This is a repository setting, not a code/test failure.
 
-The post-fix result is intentionally not recorded here. After the F0 branch is green, publish the new commit SHA, dataset/manifest version, seed where applicable, confidence interval, baseline, and exact command used for reproduction in a new result artifact.
+## Exit status
 
-The frozen suite remains DEV data and must not be tuned case-by-case.
+F0 code/test/type/security/CodeQL gates are green at 7478f7a. F0 is not marked fully closed until Dependency Graph is enabled and Dependency Review passes. PR #85 is not merged here.
