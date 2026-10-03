@@ -17,7 +17,7 @@ The MiniCheck paper introduced the benchmark and reports specialized fact-checke
 
 **Questioning the preliminary claim:** “the real ceiling is 77–80%” is not established by the leaderboard. The observed scores show that 75–77% is achievable on this benchmark, but a benchmark-specific range is not a theoretical ceiling for factual verification.
 
-The claim that analyses establish “at least 6% wrong labels in AggreFact” is also not adopted as a project fact without a primary-source error audit defining the denominator and label adjudication protocol. The benchmark's reported results are treated as measurements, not as proof that its labels are wrong.
+Laban et al. (2023), arXiv:2305.14540, manually audited the **original AggreFact** dataset and reported that at least 6% of its labels were erroneous. This is a useful data-quality warning, but it must not be transferred automatically to **LLM-AggreFact**, whose labels/benchmark construction are a different object. [Laban et al., arXiv:2305.14540](https://arxiv.org/abs/2305.14540), accessed 2026-10-03.
 
 ## 3. What leading systems do that ATTRACTOR does not — yet
 
@@ -70,7 +70,7 @@ These are architectural differences, not accuracy claims.
 ## 7. Where I disagree with the preliminary Claude assessment
 
 1. **“77–80% is the real ceiling.”** I do not accept this as established. It is a benchmark observation, not a demonstrated ceiling.
-2. **“At least 6% of AggreFact labels are wrong.”** I do not promote this to fact without a primary adjudication study specifying the disputed cases and denominator.
+2. **“At least 6% of AggreFact labels are wrong.”** I accept the narrower primary-source statement from Laban et al.: their manual analysis found at least 6% erroneous labels in the **original AggreFact**. I do not generalize that figure to LLM-AggreFact.
 3. **License symmetry.** The previous OPUS treatment was too conservative if the rule was meant to be “no declared NC dataset.” The consistent policy is now: permissive fixed weights + no *declared* NC training data + fixed revision + verification date. Unknown or incompletely inventoried data is a legal-risk note, not automatically an NC finding.
 4. **Granite Guardian as a direct substitute for ATTRACTOR Judge.** Its benchmark performance is relevant, but its model-generated yes/no score does not satisfy ATTRACTOR's deterministic final-verdict contract.
 
