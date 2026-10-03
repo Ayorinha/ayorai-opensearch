@@ -44,6 +44,31 @@ At HEAD 7478f7a, test 3.11, test 3.12, test 3.13, namespace compatibility, Golde
 
 Dependency Review remains the only failing check because GitHub reports that Dependency Graph is disabled for the repository. This is a repository setting, not a code/test failure.
 
-## Exit status
 
-F0 code/test/type/security/CodeQL gates are green at 7478f7a. F0 is not marked fully closed until Dependency Graph is enabled and Dependency Review passes. PR #85 is not merged here.
+## Final F0 merge evidence
+
+PR #88 merge commit: `477308b0ee7c96cd479c2edb7a5d28b19edcffd1`.
+
+PR #89 merge commit: `0d8b984b8ea386e0d38082b21a3ea398a57d9088`.
+
+Final green CI for the merged PR #89 head: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/37138651466
+
+The final Golden v0 artifact produced by that CI run records the real runner git SHA `79679c6af1de7aa6a45237dd13d1c6c495f97185`.
+
+| Metric | Final CI Golden v0 |
+|---|---:|
+| Cases | 34 |
+| Corpus documents | 52 |
+| Global verdict cases | 30 |
+| Accuracy | 8/30 = 26.6667% |
+| Balanced accuracy | 44.0171% |
+| McNemar vs legacy | 9 legacy-correct/new-wrong; 4 new-correct/legacy-wrong; exact p=0.266845703125 |
+| Abstention contracts | 4/4 |
+| Report SHA-256 | a494d084c1e767e779f12aef8d2f935b4304ac89a4d96f28421d341561b5f5fd |
+| Golden git_sha | 79679c6af1de7aa6a45237dd13d1c6c495f97185 |
+
+The final CI jobs were green for test 3.11, test 3.12, test 3.13, Golden lint, Golden smoke, Golden regression, Judge regression, namespace compatibility and strict typecheck; Security, CodeQL and Dependency Review also completed successfully. No release or tag was created.
+
+## Final exit status
+
+F0 recovery is merge-complete: PR #88 and PR #89 are merged, the final CI evidence is green, the Golden artifact records a real git SHA, and the authorship documentation link test is included in PR #89.
