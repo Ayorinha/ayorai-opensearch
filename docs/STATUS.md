@@ -1,6 +1,6 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-**Updated:** 2026-10-01  
+**Updated:** 2026-10-03  
 **Default branch:** `main`  
 **Current implementation:** Phase 0 + deterministic R1 + R2/R3/R4/R5/R6/R8/R9/R10/R13 cores  
 **Evaluation ground truth:** 34 cases / 52 synthetic documents
@@ -11,7 +11,7 @@ This document is intentionally evidence-based: a capability is marked **VERIFIED
 
 | Area | Status | Evidence |
 |---|---|---|
-| Deterministic claim verification | VERIFIED | `verification/judge.py`, numeric/date rules, tests |
+| Deterministic claim verification | VERIFIED | `verification/judge.py`, numeric/date rules, tests |\n| Claim-level pipeline contracts | IMPLEMENTED / NOT YET GOLDEN-VERIFIED | `verification/extraction.py`, `verification/stance.py`, `verification/claim_pipeline.py` + tests |
 | Evidence provenance | VERIFIED | structured evidence model + provenance checks |
 | Source-independence clustering | VERIFIED | `verification/clusters.py` + tests |
 | Contradiction handling | VERIFIED | deterministic stance/judge model |
@@ -52,7 +52,7 @@ These are intentionally still separate from the verified core:
 
 - production-grade hybrid retrieval against a real index;
 - cross-encoder / learned reranking;
-- target-level claim decomposition and automated stance extraction;
+- Golden v0 integration through the new claim-level pipeline;\n- target-level claim decomposition and automated stance extraction;
 - production OpenTelemetry / GenAI semantic conventions;
 - durable external queue / worker execution;
 - multi-tenant authorization and isolation;
@@ -80,3 +80,20 @@ A merge-ready change should preserve:
 **Evidence before claims. Determinism before persuasion. Reproducibility before benchmarks.**
 
 That principle is the standard for ATTRACTOR itself.
+
+
+## P0 claim-level verification boundary
+
+The new P0 path separates learned/advisory components from the deterministic Judge:
+
+`retrieval → ClaimExtractor → StanceDetector → ADR-002 Judge → ResponseStatus`.
+
+Three adapter families are defined for claim extraction and stance detection:
+
+1. deterministic rule/fixture implementations for CI;
+2. injected local NLI implementations (for example MiniCheck/DeBERTa-class backends);
+3. provider-backed LLM implementations.
+
+Each learned output carries component/model/version and input/output SHA-256 provenance. These components may produce Claims and StanceEdges only; they never select a final Verdict.
+
+**Important:** this increment establishes the contracts and executable unit tests. It does **not** claim that Golden v0 is now improved. The Golden runner still requires a separate integration increment before any benchmark number changes.
