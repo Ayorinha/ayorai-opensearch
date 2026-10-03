@@ -8,4 +8,4 @@ This module is intentionally evaluator-driven. It does not call an LLM, mutate p
 
 ## Safety boundary
 
-Optimization may improve retrieval, synthesis, routing, or prompt candidates, but it must never bypass evidence validation or replace the deterministic verification Judge.
+Optimization may improve retrieval, synthesis, routing, or prompt candidates, but it must never bypass evidence validation or replace the deterministic verification Judge. Production optimization should also publish the candidate set, evaluator version, score definition, and selected candidate so changes remain reproducible.
