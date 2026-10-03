@@ -112,11 +112,12 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
         before = tokens[max(0, index - 6) : index]
         after = tokens[index + 1 : index + 4]
         context = before + after
+        local_context = tokens[max(0, index - 2) : index + 3]
         if "%" in token or "percent" in context or "porcento" in context:
             unit = "percent"
-        elif any(value in context for value in ("usd", "eur", "brl")):
+        elif any(value in local_context for value in ("usd", "eur", "brl")):
             currency = next(
-                value for value in ("usd", "eur", "brl") if value in context
+                value for value in ("usd", "eur", "brl") if value in local_context
             )
             scale = next(
                 (
