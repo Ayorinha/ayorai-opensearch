@@ -40,9 +40,7 @@ Post-F0 accuracy is unchanged from the measured pre-recovery diagnostic (8/30). 
 
 ## CI evidence
 
-At HEAD 7478f7a, test 3.11, test 3.12, test 3.13, namespace compatibility, Golden lint, Golden smoke, Golden regression, Judge regression, strict typecheck, security, CodeQL and analyze completed successfully.
-
-Dependency Review remains the only failing check because GitHub reports that Dependency Graph is disabled for the repository. This is a repository setting, not a code/test failure.
+The historical recovery run at HEAD 7478f7a had a Dependency Review repository-setting failure. That result is superseded by the final PR #89 CI run recorded below: all required CI jobs plus Security, CodeQL and Dependency Review completed successfully.
 
 
 ## Final F0 merge evidence
