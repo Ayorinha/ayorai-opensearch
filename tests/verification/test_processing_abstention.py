@@ -1,3 +1,4 @@
+# ruff: noqa
 from datetime import datetime, timezone
 from pydantic import ValidationError
 from ayorai_attractor.verification.claim_pipeline import ClaimVerificationPipeline

@@ -92,7 +92,6 @@ class JobStore:
             ).rowcount
             if updated != 1:
                 self._connection.rollback()
-                job = self.get(job_id)
                 raise ValueError("only queued jobs can be claimed")
             self._connection.commit()
         except Exception:

@@ -15,27 +15,42 @@ context. Evidence-vs-evidence baseline comparison is removed.
 
 Negation detection is token-based and cannot treat substrings as negation.
 
-Production parsing/mapping failures now return an explicit processing-error
-abstention with a recorded reason. LLM claim and stance payloads use strict
-Pydantic schemas, and stance evidence IDs are checked against the allowed
-current evidence ID.
+Production parsing/mapping failures abstain with a recorded reason. LLM claim
+and stance payloads use strict Pydantic schemas.
 
-## Evaluation truth
+## P0.c Golden runner
 
-Golden v0 is DEV data. The versioned pre-fix reproduction is:
-scripts/reproduce_p0c_prefixed_golden.py
+The official runner now feeds only expected_claims[].text into the verifier.
+The per-claim verdict field is never passed to the pipeline. Verdicts are
+produced only by the deterministic Judge.
 
-Observed pre-fix result:
+The runner reports:
+- accuracy;
+- balanced accuracy;
+- fixed 6x6 confusion matrix;
+- deterministic 10,000-sample bootstrap 95% CI;
+- exact paired McNemar versus the legacy runner;
+- evaluated abstention contracts.
+
+Golden v0 is DEV data and must not be tuned to improve these numbers.
+
+## Pre-fix reproduction
+
+scripts/reproduce_p0c_prefixed_golden.py records:
 - new pipeline: 9/30 = 30.0000%;
 - legacy: 13/30 = 43.3333%;
 - legacy correct/new wrong: 6;
 - new correct/legacy wrong: 2;
 - exact McNemar p = 0.28906250.
 
-These values are diagnostic only and are not tuning targets.
+Those are diagnostic pre-fix numbers, not current post-fix benchmark results.
+
+## CI evidence
+
+P0.c is wired; the post-fix numerical result remains pending the current CI run.
 
 ## Quality gates
 
 Every defect fix requires a regression test and CI evidence before merge.
-Infrastructure feature work is frozen until the hidden-test and external
-benchmark gates in the ATTRACTOR v1.0 definition are met.
+Infrastructure feature work is frozen until hidden-test and external benchmark
+gates are met.

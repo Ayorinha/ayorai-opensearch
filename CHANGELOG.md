@@ -13,15 +13,15 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - Numeric contradiction detection aligns unit and attribute context.
 - Negation detection uses token boundaries.
 - Production parsing/mapping failures abstain with a recorded reason.
-- LLM claim and stance payloads are validated with strict Pydantic schemas and
-  stance evidence IDs are restricted to the current evidence item.
+- LLM claim and stance payloads use strict Pydantic schemas.
+- P0.c Golden runner now verifies expected_claims text without consuming verdict labels and reports statistical comparison against the legacy runner.
 
 ### Engineering
 
 - Deterministic R1 verification contracts stabilized.
 - Numeric/date locale handling hardened.
 - Explicit abstention response contracts.
-- Full Golden v0 regression remains available as a diagnostic artifact.
+- Full Golden v0 regression remains a diagnostic/development artifact.
 
 ## [0.1.0] - 2026-09-30
 

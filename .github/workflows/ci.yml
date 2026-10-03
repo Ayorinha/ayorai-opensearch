@@ -50,7 +50,7 @@ jobs:
         run: |
           mkdir -p reports
           attractor eval --suite golden-v0 --out reports/golden-v0.json
-          python -c 'import json; from pathlib import Path; r=json.loads(Path("reports/golden-v0.json").read_text()); assert r["case_count"] == 34; assert r["corpus_document_count"] == 52; assert r["majority_class_baseline"]["accuracy"] == 0.433333; assert len(r["content_sha256"]) == 64; print("GOLDEN_V0: PASS", r["global_accuracy"], r["injection_resistance"], r["latency_ms"], "digest="+r["content_sha256"])'
+          python -c 'import json; from pathlib import Path; r=json.loads(Path("reports/golden-v0.json").read_text()); assert r["case_count"] == 34; assert r["corpus_document_count"] == 52; assert r["cases_with_global_verdict"] == 30; assert r["majority_class_baseline"]["accuracy"] == 0.433333; assert set(r["confusion_matrix"]) == {"VERIFIED","SUPPORTED","PARTIALLY_SUPPORTED","UNVERIFIED","REFUTED","CONFLICTING"}; assert len(r["content_sha256"]) == 64; print("GOLDEN_V0: PASS", r["global_accuracy"], r["balanced_accuracy"], r["mcnemar_vs_legacy"], "digest="+r["content_sha256"])'
       - name: Upload reproducible evaluation report
         uses: actions/upload-artifact@v7
         with:
