@@ -19,7 +19,7 @@ Two evidence items are dependent when any deterministic relation below is establ
 
 Dependency is transitive. A publication chain therefore forms one dependency cluster even when the final URLs differ.
 
-Missing dependency metadata is UNKNOWN, not evidence of independence. Different domains, URLs or source labels alone do not prove independence.
+Missing dependency metadata is UNKNOWN, not evidence of independence. Different domains, URLs or source labels alone do not prove independence. UNKNOWN evidence does not count as an independent corroborating cluster for VERIFIED; it remains eligible for audit inspection and can contribute to lower-confidence support when explicitly permitted by ADR-002.
 
 The Judge counts supporting and contradicting clusters, not raw evidence items. This prevents republications and copied text from being counted as independent corroboration.
 
