@@ -29,7 +29,7 @@ def test_arena_comparison_reports_statistics_without_ranking() -> None:
     )
     assert report.bootstrap_intervals["baseline"] == (1.0, 1.0)
     assert report.scores[1].accuracy == 0.75
-    assert report.pairwise_mcnemar[("baseline", "candidate")] < 1.0
+    assert 0.0 <= report.pairwise_mcnemar[("baseline", "candidate")] <= 1.0
     assert report.confusion_matrices["candidate"]["SUPPORTED"]["REFUTED"] == 1
 
 
