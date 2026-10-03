@@ -140,7 +140,7 @@ def test_pt_en_numeric_conflict_is_contradiction() -> None:
 
 
 def test_unknown_provenance_does_not_count_for_verified() -> None:
-    item = evidence("e1", source_id="source-a").model_copy(update={"origin_id": None})
+    item = evidence("e1", source_id="source-a").model_copy(update={"provenance_complete": False})
     claim = Claim(id="c1", text="Revenue was 100 million USD.")
     edge = StanceEdge(
         id="s1",
