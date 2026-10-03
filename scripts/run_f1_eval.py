@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import os
@@ -252,232 +253,173 @@ def _error_analysis(report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _paired(left: dict[str, Any], right: dict[str, Any]) -> dict[str, float | int]:
+    left_by_id = {item["id"]: item for item in left["results"]}
+    right_by_id = {item["id"]: item for item in right["results"]}
+    ids = sorted(set(left_by_id) & set(right_by_id))
+    if len(ids) != len(left_by_id) or len(ids) != len(right_by_id):
+        raise ValueError("v0/v0.1 case ids do not match")
+    gold = [left_by_id[item]["expected"] for item in ids]
+    predictions_left = [left_by_id[item]["predicted"] for item in ids]
+    predictions_right = [right_by_id[item]["predicted"] for item in ids]
+    return {
+        "case_count": len(ids),
+        "left_correct_right_wrong": sum(
+            g == x and g != y
+            for g, x, y in zip(gold, predictions_left, predictions_right, strict=True)
+        ),
+        "right_correct_left_wrong": sum(
+            g != x and g == y
+            for g, x, y in zip(gold, predictions_left, predictions_right, strict=True)
+        ),
+        "exact_p": mcnemar_exact_pvalue(gold, predictions_left, predictions_right),
+    }
+
+
 def _markdown(report: dict[str, Any]) -> str:
     lines = [
-        "# F1 Results — Golden v0",
+        "# F1 Results — Golden v0 / v0.1",
         "",
         f"Evaluation commit: {os.environ.get('GITHUB_SHA', 'unknown')}",
         f"CI: {os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/"
         f"{os.environ.get('GITHUB_REPOSITORY', 'Ayorinha/ayorai-opensearch')}/actions/"
         f"runs/{os.environ.get('GITHUB_RUN_ID', 'unknown')}",
-        f"Golden SHA-256: {report['golden_sha256']}",
-        f"Corpus SHA-256: {report['corpus_sha256']}",
-        f"Threshold/config SHA-256: {report['thresholds_sha256']}",
         f"Seed: {report['seed']}",
         "Bootstrap: 10,000",
         "",
-        "## Paths",
+        "Both frozen development Goldens were evaluated with identical code, thresholds and models.",
         "",
-        "| Path | Status |",
-        "|---|---|",
-        "| A — multilingual direct NLI | measured, EVAL_ONLY |",
-        "| B — translate-then-verify | measured, EVAL_ONLY, non-commercial |",
-        "| C — rules-only | measured ablation |",
-        "",
-        "## Metrics",
-        "",
-        "| System | Accuracy | Balanced | IC95% | ECE | p50 ms | p95 ms |",
-        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for suite_key, title in (("golden_v0", "Golden v0"), ("golden_v0_1", "Golden v0.1")):
+        suite = report[suite_key]
+        lines += [
+            f"## {title}", "",
+            f"Golden SHA-256: {suite['golden_sha256']}", "",
+            "| Path | Accuracy | Balanced | IC95% | ECE | p50 ms | p95 ms |",
+            "|---|---:|---:|---:|---:|---:|---:|",
+        ]
+        for key in ("A", "B", "C"):
+            item = suite[key]
+            lines.append(
+                f"| {key} | {item['accuracy']:.4f} | {item['balanced_accuracy']:.4f} | "
+                f"[{item['bootstrap_95_ci']['lower']:.4f}, {item['bootstrap_95_ci']['upper']:.4f}] | "
+                f"{item['ece']:.4f} | {item['latency_ms']['p50']:.3f} | {item['latency_ms']['p95']:.3f} |"
+            )
+        lines.append(
+            f"| Majority baseline | {suite['A']['majority_class_baseline']['accuracy']:.4f} | — | — | — | — | — |"
+        )
+        lines.append("")
+    lines += [
+        "## Paired McNemar — v0 vs v0.1", "",
+        "| Path | v0 correct / v0.1 wrong | v0.1 correct / v0 wrong | Exact p |",
+        "|---|---:|---:|---:|",
     ]
     for key in ("A", "B", "C"):
-        item = report[key]
+        item = report["mcnemar_v0_vs_v0_1"][key]
         lines.append(
-            f"| {key} | {item['accuracy']:.4f} | {item['balanced_accuracy']:.4f} | "
-            f"[{item['bootstrap_95_ci']['lower']:.4f}, "
-            f"{item['bootstrap_95_ci']['upper']:.4f}] | {item['ece']:.4f} | "
-            f"{item['latency_ms']['p50']:.3f} | {item['latency_ms']['p95']:.3f} |"
+            f"| {key} | {item['left_correct_right_wrong']} | "
+            f"{item['right_correct_left_wrong']} | {item['exact_p']:.6g} |"
         )
-    lines.extend(
-        [
-            f"| Majority baseline | "
-            f"{report['A']['majority_class_baseline']['accuracy']:.4f} | — | — | — | — | — |",
-            "",
-            "## Confusion matrices",
-            "",
-        ]
-    )
-    for key in ("A", "B"):
-        labels = list(report[key]["confusion_matrix"])
-        lines.extend(
-            [
-                f"### {key}",
-                "",
-                "| Expected \\ Predicted | " + " | ".join(labels) + " |",
-                "|---|" + "|".join(["---"] * len(labels)) + "|",
-            ]
-        )
-        matrix = report[key]["confusion_matrix"]
-        for label in labels:
-            row = matrix[label]
-            lines.append(f"| {label} | " + " | ".join(str(row[guess]) for guess in labels) + " |")
-        lines.append("")
-    lines.extend(
-        [
-            "## McNemar",
-            "",
-            f"A vs F0/C: {report['mcnemar_A_vs_F0_C']}",
-            f"B vs F0/C: {report['mcnemar_B_vs_F0_C']}",
-            f"A vs legacy: {report['A']['mcnemar_vs_legacy']}",
-            "",
-            "## A error analysis",
-            "",
-            "| Case | Category | Expected | Predicted | Cause | Max resolvable |",
-            "|---|---|---|---|---|---:|",
-        ]
-    )
-    for item in report["A_error_analysis"]["case_errors"]:
-        lines.append(
-            f"| {item['id']} | {item['category']} | {item['expected']} | "
-            f"{item['predicted']} | {item['cause']} | {item['maximum_resolvable']} |"
-        )
-    lines.extend(
-        [
-            "",
-            f"Upper-bound errors by cause: {report['A_error_analysis']['upper_bound_by_cause']}",
-            "",
-            "## B error analysis",
-            "",
-            "| Case | Category | Expected | Predicted | Cause | Max resolvable |",
-            "|---|---|---|---|---|---:|",
-        ]
-    )
-    for item in report["B_error_analysis"]["case_errors"]:
-        lines.append(
-            f"| {item['id']} | {item['category']} | {item['expected']} | "
-            f"{item['predicted']} | {item['cause']} | {item['maximum_resolvable']} |"
-        )
-    lines.extend(
-        [
-            "",
-            f"Upper-bound errors by cause: {report['B_error_analysis']['upper_bound_by_cause']}",
-            "",
-            "## Statistical limitation",
-            "",
-            "With n=30, exceeding the 43.33% majority baseline with p<0.05 "
-            "requires approximately 60% accuracy in this small paired setting. "
-            "A's 95% bootstrap interval includes the baseline.",
-            "",
-            "No threshold was tuned against Golden v0. ADR-002 remains the sole "
-            "final-verdict authority.",
-            "",
-            f"Report SHA-256: {report['report_sha256']}",
-            "",
-        ]
-    )
+    lines += ["", f"Internal report content SHA-256: {report['report_sha256']}", ""]
     return "\n".join(lines)
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--suite",
+        choices=("golden-v0", "golden-v0.1"),
+        default="golden-v0.1",
+    )
+    args = parser.parse_args()
     config = _load_config()
     window = config["evidence_windows"]
-    cases = _load_jsonl(GOLDEN)
     corpus = {str(row["doc_id"]): row for row in _load_jsonl(CORPUS)}
+    suite_paths = {
+        "golden-v0": ROOT / "evals/golden/v0.jsonl",
+        "golden-v0.1": ROOT / "evals/golden/v0.1.jsonl",
+    }
 
-    rule_report = _evaluate(RuleStanceDetector(), cases, corpus)
+    def evaluate_suite(path: Path) -> dict[str, Any]:
+        cases = _load_jsonl(path)
+        rule_report = _evaluate(RuleStanceDetector(), cases, corpus)
 
-    a_backend = TransformersNLIBackend(
-        EVAL_ONLY_MODEL,
-        EVAL_ONLY_REVISION,
-        license_level=EVAL_ONLY_LEVEL,
-        evaluation_mode=True,
-    )
-    a_detector = NLIStanceDetector(
-        a_backend,
-        model=EVAL_ONLY_MODEL,
-        version=a_backend.provenance_version,
-        window_size=int(window["max_characters"]),
-        window_overlap=int(window["overlap_characters"]),
-        tie_precedence=str(window["tie_precedence"]),
-    )
-    a_report = _evaluate(a_detector, cases, corpus)
+        a_backend = TransformersNLIBackend(
+            EVAL_ONLY_MODEL, EVAL_ONLY_REVISION,
+            license_level=EVAL_ONLY_LEVEL, evaluation_mode=True,
+        )
+        a_detector = NLIStanceDetector(
+            a_backend,
+            model=EVAL_ONLY_MODEL,
+            version=a_backend.provenance_version,
+            window_size=int(window["max_characters"]),
+            window_overlap=int(window["overlap_characters"]),
+            tie_precedence=str(window["tie_precedence"]),
+        )
+        a_report = _evaluate(a_detector, cases, corpus)
 
-    b_backend = TransformersNLIBackend(
-        B_NLI_MODEL,
-        B_NLI_REVISION,
-        license_level="EVAL_ONLY",
-        evaluation_mode=True,
-    )
-    b_translator = MarianTranslationBackend(
-        B_TRANSLATOR_MODEL,
-        B_TRANSLATOR_REVISION,
-    )
-    b_detector = TranslatedNLIStanceDetector(
-        b_backend,
-        b_translator,
-        model=f"{B_TRANSLATOR_MODEL}+{B_NLI_MODEL}",
-        version=f"{b_translator.provenance_version}+{b_backend.provenance_version}",
-        window_size=int(window["max_characters"]),
-        window_overlap=int(window["overlap_characters"]),
-        tie_precedence=str(window["tie_precedence"]),
-    )
-    b_report = _evaluate(b_detector, cases, corpus)
-
-    gold = [str(case["global"]).upper() for case in cases if "global" in case]
-    f0_predictions = rule_report["_predictions"]
-    a_predictions = a_report["_predictions"]
-    b_predictions = b_report["_predictions"]
-
-    def paired(left: list[str], right: list[str]) -> dict[str, float | int]:
+        b_backend = TransformersNLIBackend(
+            B_NLI_MODEL, B_NLI_REVISION,
+            license_level="EVAL_ONLY", evaluation_mode=True,
+        )
+        b_translator = MarianTranslationBackend(
+            B_TRANSLATOR_MODEL, B_TRANSLATOR_REVISION,
+        )
+        b_detector = TranslatedNLIStanceDetector(
+            b_backend, b_translator,
+            model=f"{B_TRANSLATOR_MODEL}+{B_NLI_MODEL}",
+            version=f"{b_translator.provenance_version}+{b_backend.provenance_version}",
+            window_size=int(window["max_characters"]),
+            window_overlap=int(window["overlap_characters"]),
+            tie_precedence=str(window["tie_precedence"]),
+        )
+        b_report = _evaluate(b_detector, cases, corpus)
+        predictions = {
+            "A": a_report.pop("_predictions"),
+            "B": b_report.pop("_predictions"),
+            "C": rule_report.pop("_predictions"),
+        }
         return {
-            "left_correct_right_wrong": sum(
-                g == old and g != new
-                for g, old, new in zip(gold, left, right, strict=True)
-            ),
-            "right_correct_left_wrong": sum(
-                g != old and g == new
-                for g, old, new in zip(gold, left, right, strict=True)
-            ),
-            "exact_p": mcnemar_exact_pvalue(gold, left, right),
+            "golden_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "A": a_report,
+            "B": b_report,
+            "C": rule_report,
+            "_predictions": predictions,
         }
 
-    a_vs_f0 = paired(f0_predictions, a_predictions)
-    b_vs_f0 = paired(f0_predictions, b_predictions)
-    for report_item in (rule_report, a_report, b_report):
-        report_item.pop("_predictions", None)
+    v0 = evaluate_suite(suite_paths["golden-v0"])
+    v01 = evaluate_suite(suite_paths["golden-v0.1"])
+    paired = {
+        key: _paired(
+            {**v0[key], "results": v0[key]["results"]},
+            {**v01[key], "results": v01[key]["results"]},
+        )
+        for key in ("A", "B", "C")
+    }
+    v0.pop("_predictions")
+    v01.pop("_predictions")
 
     report = {
-        "suite": "golden-v0",
+        "suite": args.suite,
+        "comparison": "golden-v0 vs golden-v0.1",
         "seed": 20261003,
-        "golden_cases": len(gold),
-        "golden_sha256": hashlib.sha256(GOLDEN.read_bytes()).hexdigest(),
-        "corpus_sha256": hashlib.sha256(CORPUS.read_bytes()).hexdigest(),
+        "bootstrap_iterations": 10000,
         "thresholds_sha256": hashlib.sha256(CONFIG.read_bytes()).hexdigest(),
-        "config": config,
-        "A": a_report,
-        "B": b_report,
-        "C": rule_report,
-        "mcnemar_A_vs_F0_C": a_vs_f0,
-        "mcnemar_B_vs_F0_C": b_vs_f0,
-        "A_error_analysis": {},
-        "limitations": [
-            "Golden v0 contains 30 scored cases; four ABSTAIN contracts are "
-            "outside global-verdict accuracy.",
-            "A and B are EVAL_ONLY and are not commercial defaults.",
-            "B uses Helsinki-NLP/opus-mt-ROMANCE-en and "
-            "cross-encoder/nli-deberta-v3-base.",
-            "The original source excerpt remains the audit evidence; "
-            "translation is model input only.",
-            "With n=30, approximately 60% accuracy is needed to exceed the "
-            "43.33% majority baseline with p<0.05; A's IC95% includes the baseline.",
-        ],
+        "golden_v0": v0,
+        "golden_v0_1": v01,
+        "mcnemar_v0_vs_v0_1": paired,
     }
-    report["A_error_analysis"] = _error_analysis(a_report)
-    report["B_error_analysis"] = _error_analysis(b_report)
     stable = json.dumps(
-        report,
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
+        report, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode()
     report["report_sha256"] = hashlib.sha256(stable).hexdigest()
-
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     OUT_MD.write_text(_markdown(report), encoding="utf-8")
-    print(OUT_MD.read_text(encoding="utf-8"))
+    print(_markdown(report))
 
 
 if __name__ == "__main__":

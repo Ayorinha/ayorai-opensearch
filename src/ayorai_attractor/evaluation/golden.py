@@ -177,7 +177,7 @@ def evaluate_golden_v0(
             next(c for c in cases if c.get("category") == category)
             for category in sorted(wanted)
         ]
-    elif suite != "golden-v0":
+    elif suite not in {"golden-v0", "golden-v0.1"}:
         raise ValueError(f"Unsupported suite: {suite}")
     documents = {str(x["doc_id"]): x for x in corpus}
     scope = RuleScopeClassifier(
