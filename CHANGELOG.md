@@ -10,8 +10,8 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - Claim verification accepts caller-supplied claims separately from evidence.
 - Claim extraction is response-only and cannot read evidence.
 - ADR-003 adds NEUTRAL stance semantics.
-- Numeric contradiction detection now aligns unit and attribute context and
-  does not compare evidence documents against an arbitrary baseline.
+- Numeric contradiction detection aligns unit and attribute context.
+- Negation detection uses token boundaries rather than substring matching.
 
 ### Engineering
 

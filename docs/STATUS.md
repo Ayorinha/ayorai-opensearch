@@ -2,20 +2,19 @@
 
 Updated: 2026-10-03
 
-## Current verification boundary
+## Verification boundary
 
-The claim-level API treats caller-supplied claims as the object of verification:
-verify(claims, documents).
+verify(claims, documents) verifies caller-supplied claims. ClaimExtractor is
+response-only and never receives evidence.
 
-ClaimExtractor is response-only and never receives evidence.
+ADR-003 defines SUPPORTS, CONTRADICTS and NEUTRAL. Neutral edges are ignored by
+the deterministic Judge.
 
-ADR-003 defines SUPPORTS, CONTRADICTS and NEUTRAL. Neutral edges are ignored
-by the deterministic Judge; zero support and zero contradiction yields
-UNVERIFIED.
+Numeric contradiction checks require matching numeric unit and attribute
+context. Evidence-vs-evidence baseline comparison is removed.
 
-Numeric contradiction checks now require matching numeric unit and attribute
-context. Evidence-vs-evidence baseline comparison is removed from the stance
-detector.
+Negation detection is token-based and cannot treat substrings such as "ano",
+"novembro" or "sempre" as negation.
 
 ## Evaluation truth
 
