@@ -14,6 +14,10 @@ The collector receives measurements explicitly; it does not read the clock, envi
 
 This layer is observational only. It must never decide a verification verdict. The deterministic Judge remains the authority for claim verification.
 
+## Privacy boundary
+
+Metrics should record aggregate operational metadata rather than raw prompts, evidence excerpts, credentials, or model outputs. Token counts and configured prices are sufficient for cost estimation without persisting sensitive content.
+
 ## Next R8 integration
 
 The next increment can attach these primitives to request/agent spans and export them through OpenTelemetry, while preserving the same no-secret and no-raw-prompt persistence boundary used by the audit store.
