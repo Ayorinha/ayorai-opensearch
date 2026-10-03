@@ -174,10 +174,14 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             unit = "scalar"
 
         context_candidates = before + after
-        matched_attribute = next(
-            (aliases[value] for value in context_candidates if value in aliases),
-            None,
-        )
+        attribute_candidates = [
+            (abs(position - index), aliases[token_value])
+            for position, token_value in enumerate(tokens)
+            for _alias in (aliases.get(token_value),)
+            if _alias is not None
+            and max(0, index - 10) <= position <= min(len(tokens) - 1, index + 10)
+        ]
+        matched_attribute = min(attribute_candidates)[1] if attribute_candidates else None
         attribute = (
             "year"
             if unit == "year"
