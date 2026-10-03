@@ -63,7 +63,18 @@ _STOPWORDS = frozenset(
 _UNIT_WORDS = frozenset(
     {
         "usd", "eur", "brl", "ms", "million", "millions", "billion", "billions",
-        "employees",\n        "people",\n        "customers",\n        "offices",\n        "percent",\n        "rate",\n        "year",\n        "mil",\n        "milhão",\n        "milhões",\n        "bilhão",\n        "bilhões",
+        "employees",
+        "people",
+        "customers",
+        "offices",
+        "percent",
+        "rate",
+        "year",
+        "mil",
+        "milhão",
+        "milhões",
+        "bilhão",
+        "bilhões",
     }
 )
 _PT_MARKERS = frozenset(
@@ -110,7 +121,16 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             scale = next(
                 (
                     value
-                    for value in (\n                        "million",\n                        "millions",\n                        "milhão",\n                        "milhões",\n                        "billion",\n                        "billions",\n                        "bilhão",\n                        "bilhões",\n                    )
+                    for value in (
+                        "million",
+                        "millions",
+                        "milhão",
+                        "milhões",
+                        "billion",
+                        "billions",
+                        "bilhão",
+                        "bilhões",
+                    )
                     if value in context
                 ),
                 "",
@@ -136,12 +156,24 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
                 (
                     value
                     for value in reversed(before)
-                    if (\n                        value not in _STOPWORDS\n                        and value not in _UNIT_WORDS\n                        and value not in _entities(text)\n                    )
+                    if (
+                        value not in _STOPWORDS
+                        and value not in _UNIT_WORDS
+                        and value not in _entities(text)
+                    )
                 ),
                 "unknown",
             )
         )
-        attribute = {\n            "receita": "revenue",\n            "faturamento": "revenue",\n            "revenue": "revenue",\n            "lucro": "profit",\n            "profit": "profit",\n            "custo": "cost",\n            "cost": "cost",\n        }.get(attribute, attribute)
+        attribute = {
+            "receita": "revenue",
+            "faturamento": "revenue",
+            "revenue": "revenue",
+            "lucro": "profit",
+            "profit": "profit",
+            "custo": "cost",
+            "cost": "cost",
+        }.get(attribute, attribute)
         facts.append((token, unit, attribute))
     return facts
 
@@ -306,7 +338,8 @@ class RuleStanceDetector:
                             self.component,
                             self.model,
                             self.version,
-                            _sha256(claim_item.claim.text + "\n" + item.excerpt),
+                            _sha256(claim_item.claim.text + "
+" + item.excerpt),
                             _sha256(payload),
                         ),
                     )
@@ -400,7 +433,8 @@ class NLIStanceDetector:
                             self.model,
                             f"{self.version}|window={start}:{end}",
                             _sha256(
-                                claim_item.claim.text + "\n"
+                                claim_item.claim.text + "
+"
                                 + item.excerpt[local_start:local_end]
                             ),
                             _sha256(f"{stance}|{confidence:.12f}|{start}|{end}"),
@@ -489,7 +523,8 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
                             self.model,
                             f"{self.version}|window={start}:{end}|translation={translation_hash}",
                             _sha256(
-                                translated_claim + "\n"
+                                translated_claim + "
+"
                                 + translated_document[local_start:local_end]
                             ),
                             _sha256(
