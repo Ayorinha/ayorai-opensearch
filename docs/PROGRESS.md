@@ -1,8 +1,8 @@
 # AYORAI ATTRACTOR — Progress
 
-**Estado atual:** Fase 0 concluída; R1 core implementado; R2–R13 possuem fundamentos de engenharia testados no main. R14 adiciona contexto de tracing provider-neutral integrado ao orquestrador. R15 adiciona a fronteira de execução durável sobre o JobStore. R16 adiciona revisão automatizada de dependências em pull requests. R17 adiciona uma fronteira provider-neutral para exportação de eventos de tracing. R18 propaga um TenantContext confiável da fronteira de runtime para o AgentContext, sem transformar dados do pedido em autorização.
+**Estado atual:** Fase 0 concluída; R1 core implementado; R2–R13 possuem fundamentos de engenharia testados no main. R14 adiciona contexto de tracing provider-neutral integrado ao orquestrador. R15 adiciona a fronteira de execução durável sobre o JobStore. R16 adiciona revisão automatizada de dependências em pull requests. R17 adiciona uma fronteira provider-neutral para exportação de eventos de tracing. R18 propaga um TenantContext confiável da fronteira de runtime para o AgentContext. R19 torna os relatórios comparativos do Arena JSON-ready e determinísticos para integração em harnesses e artefatos, sem selecionar vencedor.
 
-**Main de referência atual:** 108835422e612f2d31c2a1bdf6d163f74326f1c9 (merge de R18).
+**Main de referência atual:** 48a9a78f55e029861a408421178b8070fdbdb2e0 (merge de R19).
 
 **Ground Truth:** 34 casos / 52 documentos sintéticos.
 **Baseline:** 43,3333%, exatamente igual à classe majoritária PARTIALLY_SUPPORTED. Esse número não demonstra capacidade de verificação.
@@ -30,6 +30,7 @@
 | R16 | implementação integrada | Dependency Review workflow |
 | R17 | implementação integrada | TraceSink export boundary + testes |
 | R18 | implementação integrada | TenantContext propagado ao AgentContext + teste |
+| R19 | implementação integrada | ArenaReport.to_dict + teste de serialização |
 
 ## Princípio de conclusão
 
@@ -37,7 +38,7 @@ Uma etapa só é considerada concluída quando existe implementação executáve
 
 ## Próximos gargalos
 
-1. executar e publicar o harness Golden completo com relatórios estatísticos reproduzíveis;
+1. harness Golden executável com relatório estatístico persistível e reproduzível;
 2. adapter OpenTelemetry atrás da fronteira TraceSink, sem acoplamento semântico ao Judge;
 3. transport-level MCP e isolamento de ferramentas;
 4. adapter de modelos/providers modernos sem delegar o Judge;
