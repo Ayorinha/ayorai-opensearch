@@ -97,8 +97,15 @@ def test_fact_layer_never_raises_on_free_text() -> None:
     for _ in range(3000):
         left = " ".join(rng.choice(vocab) for _ in range(rng.randint(0, 14)))
         right = " ".join(rng.choice(vocab) for _ in range(rng.randint(0, 14)))
-        _numeric_facts_align(left, right)
-def test_provenance_input_hash_preserves_separator() -> None:
+        _numeric_facts_align(left, right)def test_provenance_input_hash_separates_claim_and_excerpt() -> None:
+    """Claim and excerpt are hashed with a newline separator (ADR-002 provenance).
+
+    Without a separator, ("ab", "c") and ("a", "bc") would share one hash.
+    """
+    import hashlib
+
     first = RuleStanceDetector().detect([_claim("ab")], [_evidence("c")])
     second = RuleStanceDetector().detect([_claim("a")], [_evidence("bc")])
+    expected = hashlib.sha256(b"ab\nc").hexdigest()
+    assert first.edges[0].provenance.input_sha256 == expected
     assert first.edges[0].provenance.input_sha256 != second.edges[0].provenance.input_sha256
