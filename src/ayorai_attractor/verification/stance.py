@@ -108,7 +108,7 @@ def _has_negation(text: str) -> bool:
 
 
 _FACT_TOKEN_RE = re.compile(
-    r"(?<!\\w)[-+]?\\d+(?:[.,]\\d+|[.,]\\d{3})*(?:\\s*%)?|[\\wÀ-ÿ]+",
+    r"(?<!\w)[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?|[\wÀ-ÿ]+",
     re.UNICODE,
 )
 
