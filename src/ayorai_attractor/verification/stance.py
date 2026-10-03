@@ -433,14 +433,6 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
 
 
 
-class LLMStancePayload(BaseModel):
-    model_config = ConfigDict(extra="forbid", strict=True)
-
-    evidence_id: str = Field(min_length=1)
-    stance: Literal["supports", "contradicts", "neutral"]
-    confidence: float = Field(ge=0.0, le=1.0)
-
-
 class LLMStanceDetector:
     component = "stance_detector.llm"
 
