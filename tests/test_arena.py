@@ -40,3 +40,19 @@ def test_arena_rejects_missing_prediction() -> None:
             {"system-a": {}},
             bootstrap_iterations=10,
         )
+
+
+def test_arena_report_serializes_without_ranked_winner() -> None:
+    report = compare_systems(
+        [ArenaCase("a", "VERIFIED"), ArenaCase("b", "REFUTED")],
+        {
+            "baseline": {"a": "VERIFIED", "b": "REFUTED"},
+            "candidate": {"a": "VERIFIED", "b": "UNVERIFIED"},
+        },
+        bootstrap_iterations=100,
+        bootstrap_seed=11,
+    )
+    payload = report.to_dict()
+    assert payload["scores"][0]["system_id"] == "baseline"
+    assert payload["pairwise_mcnemar"]["baseline::candidate"] >= 0.0
+    assert "winner" not in payload
