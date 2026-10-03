@@ -203,24 +203,26 @@ def _numeric_relation(claim_text: str, evidence_text: str) -> tuple[bool, bool]:
     conflict = False
     agreement = False
     for left, left_unit, left_attribute in _numeric_facts(claim_text):
-        for right, right_unit, right_attribute in _numeric_facts(evidence_text):
-            if left_unit != right_unit or left_attribute != right_attribute:
-                continue
-            if numeric_conflicts(
+        matches = [
+            right
+            for right, right_unit, right_attribute in _numeric_facts(evidence_text)
+            if right_unit == left_unit and right_attribute == left_attribute
+        ]
+        if not matches:
+            continue
+        if any(
+            not numeric_conflicts(
                 left,
                 right,
                 locale=NumericLocale.EN_US,
                 tolerance=DEFAULT_RELATIVE_TOLERANCE,
-            ):
-                conflict = True
-            else:
-                agreement = True
+            )
+            for right in matches
+        ):
+            agreement = True
+        else:
+            conflict = True
     return conflict, agreement
-
-
-def _entities(text: str) -> set[str]:
-    return {match.group("name").casefold() for match in _ENTITY_RE.finditer(text)}
-
 
 def _numeric_facts_align(
     claim_text: str, evidence_text: str
@@ -247,13 +249,18 @@ def _numeric_facts_align(
         if not matches:
             continue
         matched_claim_facts += 1
-        for right in matches:
-            if numeric_conflicts(
-                left, right, locale=NumericLocale.EN_US, tolerance=DEFAULT_RELATIVE_TOLERANCE
-            ):
-                conflict = True
-            else:
-                agreement = True
+        if any(
+            not numeric_conflicts(
+                left,
+                right,
+                locale=NumericLocale.EN_US,
+                tolerance=DEFAULT_RELATIVE_TOLERANCE,
+            )
+            for right in matches
+        ):
+            agreement = True
+        else:
+            conflict = True
 
     return conflict, agreement, matched_claim_facts == len(claim_facts)
 
