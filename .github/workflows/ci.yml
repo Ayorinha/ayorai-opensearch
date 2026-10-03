@@ -27,7 +27,6 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
-      - run: pip install cffconvert
       - name: Run five-category golden smoke eval
         run: |
           attractor eval --suite smoke-v0 --out /tmp/golden-smoke.json
@@ -87,7 +86,7 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
       - name: Validate CITATION.cff
-        run: cffconvert --validate
+        run: pipx run --spec cffconvert==2.0.0 cffconvert --validate
       - name: Reject file-wide Ruff suppression
         run: python -m pytest -q tests/test_ruff_suppression_guard.py
 
