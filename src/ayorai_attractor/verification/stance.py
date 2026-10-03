@@ -62,23 +62,25 @@ _STOPWORDS = frozenset(
 )
 _UNIT_WORDS = frozenset(
     {
-        "usd",
-        "eur",
-        "brl",
-        "ms",
-        "million",
-        "millions",
-        "billion",
-        "billions",
-        "employees",
-        "people",
-        "customers",
-        "offices",
-        "percent",
-        "rate",
-        "year",
+        "usd", "eur", "brl", "ms", "million", "millions", "billion", "billions",
+        "employees", "people", "customers", "offices", "percent", "rate", "year",
     }
 )
+_PT_MARKERS = frozenset(
+    {"não", "nao", "uma", "para", "com", "que", "foi", "são", "sao",
+     "empresa", "receita", "ano", "dos", "das", "em", "por"}
+)
+_EN_MARKERS = frozenset(
+    {"the", "was", "were", "with", "that", "company", "revenue", "year",
+     "from", "for", "and", "not", "this", "reported"}
+)
+
+
+def detect_language(text: str) -> str:
+    tokens = {token.casefold() for token in _TOKEN_RE.findall(text)}
+    pt = len(tokens & _PT_MARKERS) + sum(char in text for char in "ãõáéíóúç")
+    en = len(tokens & _EN_MARKERS)
+    return "pt" if pt > en else "en"
 
 
 def _sha256(value: str) -> str:
@@ -246,8 +248,52 @@ class RuleStanceDetector:
 class NLIStanceDetector:
     component = "stance_detector.nli"
 
-    def __init__(self, backend: Any, *, model: str, version: str) -> None:
-        self.backend, self.model, self.version = backend, model, version
+    def __init__(
+        self,
+        backend: Any,
+        *,
+        model: str,
+        version: str,
+        window_size: int = 512,
+        window_overlap: int = 64,
+        tie_precedence: str = "contradicts",
+    ) -> None:
+        if window_size <= 0 or window_overlap < 0 or window_overlap >= window_size:
+            raise ValueError("invalid evidence window configuration")
+        if tie_precedence not in {"contradicts", "supports", "neutral"}:
+            raise ValueError("invalid stance tie precedence")
+        self.backend = backend
+        self.model = model
+        self.version = version
+        self.window_size = window_size
+        self.window_overlap = window_overlap
+        self.tie_precedence = tie_precedence
+
+    def _windows(self, evidence: Evidence) -> list[tuple[int, int, str]]:
+        text = evidence.excerpt
+        if len(text) <= self.window_size:
+            return [(evidence.start_offset, evidence.end_offset, text)]
+        step = self.window_size - self.window_overlap
+        windows = []
+        for start in range(0, len(text), step):
+            end = min(len(text), start + self.window_size)
+            windows.append(
+                (evidence.start_offset + start, evidence.start_offset + end, text[start:end])
+            )
+            if end == len(text):
+                break
+        return windows
+
+    def _choose(
+        self,
+        candidates: list[tuple[str, float, int, int]],
+    ) -> tuple[str, float, int, int]:
+        priority = {"contradicts": 2, "supports": 1, "neutral": 0}
+        if self.tie_precedence == "supports":
+            priority["supports"] = 3
+        elif self.tie_precedence == "neutral":
+            priority["neutral"] = 3
+        return max(candidates, key=lambda item: (item[1], priority[item[0]]))
 
     def detect(
         self,
@@ -257,77 +303,131 @@ class NLIStanceDetector:
         output = []
         for claim_item in claims:
             for item in (x for x in evidence if x.claim_id == claim_item.claim.id):
-                result = self.backend.classify(claim_item.claim.text, item.excerpt)
+                candidates = []
+                for start, end, window in self._windows(item):
+                    result = self.backend.classify(claim_item.claim.text, window)
+                    candidates.append(
+                        (
+                            str(result["stance"]),
+                            float(result["confidence"]),
+                            start,
+                            end,
+                        )
+                    )
+                stance, confidence, start, end = self._choose(candidates)
+                local_start = start - item.start_offset
+                local_end = end - item.start_offset
                 output.append(
                     DetectedStance(
                         StanceEdge(
                             id=f"ste_{claim_item.claim.id}_{item.id}",
                             claim_id=claim_item.claim.id,
                             evidence_id=item.id,
-                            stance=Stance(str(result["stance"])),
+                            stance=Stance(stance),
                         ),
-                        float(result["confidence"]),
+                        confidence,
                         ComponentProvenance(
                             self.component,
                             self.model,
-                            self.version,
-                            _sha256(claim_item.claim.text + "\n" + item.excerpt),
-                            _sha256(str(result)),
+                            f"{self.version}|window={start}:{end}",
+                            _sha256(
+                                claim_item.claim.text + "\n"
+                                + item.excerpt[local_start:local_end]
+                            ),
+                            _sha256(f"{stance}|{confidence:.12f}|{start}|{end}"),
                         ),
                     )
                 )
         return StanceDetectionResult(tuple(output))
 
 
-class LLMStanceDetector:
-    component = "stance_detector.llm"
+class TranslatedNLIStanceDetector(NLIStanceDetector):
+    component = "stance_detector.translate_nli"
 
-    def __init__(self, provider: Any, *, model: str, version: str) -> None:
-        self.provider, self.model, self.version = provider, model, version
+    def __init__(
+        self,
+        backend: Any,
+        translator: Any,
+        *,
+        model: str,
+        version: str,
+        window_size: int = 512,
+        window_overlap: int = 64,
+        tie_precedence: str = "contradicts",
+    ) -> None:
+        super().__init__(
+            backend,
+            model=model,
+            version=version,
+            window_size=window_size,
+            window_overlap=window_overlap,
+            tie_precedence=tie_precedence,
+        )
+        self.translator = translator
 
     def detect(
         self,
         claims: Sequence[ExtractedClaim],
         evidence: Sequence[Evidence],
     ) -> StanceDetectionResult:
-        import json
-
         output = []
         for claim_item in claims:
             for item in (x for x in evidence if x.claim_id == claim_item.claim.id):
-                prompt = json.dumps(
-                    {
-                        "task": "classify stance only",
-                        "claim": claim_item.claim.text,
-                        "evidence": item.excerpt,
-                        "allowed_stance": ["supports", "contradicts", "neutral"],
-                    },
-                    ensure_ascii=False,
-                    sort_keys=True,
-                )
-                response = self.provider.execute(prompt)
-                try:
-                    result = LLMStancePayload.model_validate(json.loads(response.text))
-                except Exception as exc:
-                    raise ValueError(f"invalid stance payload: {exc}") from exc
-                if result.evidence_id != item.id:
-                    raise ValueError(f"unknown evidence id: {result.evidence_id}")
+                claim = claim_item.claim.text
+                document = item.excerpt
+                claim_lang = detect_language(claim)
+                document_lang = detect_language(document)
+                translated_claim = claim
+                translated_document = document
+                translation_hash = "none"
+                if claim_lang != document_lang:
+                    if claim_lang == "pt":
+                        translated_claim = self.translator.translate(claim)
+                        translation_hash = self.translator.provenance_hash(
+                            claim, translated_claim
+                        )
+                    elif document_lang == "pt":
+                        translated_document = self.translator.translate(document)
+                        translation_hash = self.translator.provenance_hash(
+                            document, translated_document
+                        )
+                temp_evidence = item.model_copy(update={"excerpt": translated_document})
+                candidates = []
+                for start, end, window in self._windows(temp_evidence):
+                    result = self.backend.classify(translated_claim, window)
+                    candidates.append(
+                        (
+                            str(result["stance"]),
+                            float(result["confidence"]),
+                            start,
+                            end,
+                        )
+                    )
+                stance, confidence, start, end = self._choose(candidates)
+                local_start = start - temp_evidence.start_offset
+                local_end = end - temp_evidence.start_offset
                 output.append(
                     DetectedStance(
                         StanceEdge(
                             id=f"ste_{claim_item.claim.id}_{item.id}",
                             claim_id=claim_item.claim.id,
                             evidence_id=item.id,
-                            stance=Stance(result.stance),
+                            stance=Stance(stance),
                         ),
-                        result.confidence,
+                        confidence,
                         ComponentProvenance(
                             self.component,
                             self.model,
-                            self.version,
-                            _sha256(prompt),
-                            _sha256(response.text),
+                            f"{self.version}|window={start}:{end}|translation={translation_hash}",
+                            _sha256(
+                                translated_claim + "\n"
+                                + translated_document[local_start:local_end]
+                            ),
+                            _sha256(
+                                f"{stance}|{confidence:.12f}|{start}|{end}|{translation_hash}"
+                            ),
                         ),
                     )
                 )
         return StanceDetectionResult(tuple(output))
+
