@@ -21,7 +21,7 @@ This artifact records the measured DEV result immediately before F0 stabilizatio
 | 95% CI | [13.3%, 43.3%] |
 | McNemar vs legacy | 9 vs 4 |
 | McNemar p-value | 0.27 |
-| Abstraction cases correct | 0/4 |
+| Abstention cases correct | 0/4 |
 | CONFLICTING | 0/8 |
 | Independence cases | 0/4 |
 | Multi-hop | 0/3 |
