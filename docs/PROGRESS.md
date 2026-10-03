@@ -2,7 +2,7 @@
 
 **Estado atual:** Fase 0 concluída; R1 core implementado; R2–R13 possuem fundamentos de engenharia testados no main. R14 adiciona contexto de tracing provider-neutral integrado ao orquestrador. R15 adiciona a fronteira de execução durável sobre o JobStore. R16 adiciona revisão automatizada de dependências em pull requests. R17 adiciona uma fronteira provider-neutral para exportação de eventos de tracing. R18 propaga um TenantContext confiável da fronteira de runtime para o AgentContext, sem transformar dados do pedido em autorização.
 
-**Main de referência atual:** 1d8e1ee24933d4a7e6d9b22bf247d88de469f367 (merge de R17).
+**Main de referência atual:** 108835422e612f2d31c2a1bdf6d163f74326f1c9 (merge de R18).
 
 **Ground Truth:** 34 casos / 52 documentos sintéticos.
 **Baseline:** 43,3333%, exatamente igual à classe majoritária PARTIALLY_SUPPORTED. Esse número não demonstra capacidade de verificação.
