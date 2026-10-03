@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ayorai_attractor.verification.claim_pipeline import (
     ClaimVerificationPipeline,
@@ -31,7 +31,7 @@ def document(
         source_id=doc_id,
         source_location=f"fixture://{doc_id}",
         retrieved_at=(
-            datetime(2026, 9, 30, tzinfo=timezone.utc)
+            datetime(2026, 9, 30, tzinfo=UTC)
             if retrieved
             else datetime(2026, 9, 30, tzinfo=timezone.utc)
         ),
