@@ -10,3 +10,5 @@ ATTRACTOR keeps decision logic separate from statistical reporting.
 These functions consume only expected and predicted labels. They do not alter verdicts, call an LLM, or select a benchmark winner.
 
 A benchmark report should publish the dataset/suite version, case count, system commit, point accuracy, bootstrap interval, confusion matrix, and—when comparing two systems on identical cases—the paired McNemar result. The report should preserve system identifiers and raw metrics so downstream readers can make their own assessment.
+
+For reproducibility, both systems in a paired comparison must use the same ordered gold-case sequence. Missing predictions are rejected rather than silently treated as errors.
