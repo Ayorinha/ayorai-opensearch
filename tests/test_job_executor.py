@@ -2,15 +2,15 @@ from dataclasses import dataclass
 
 import pytest
 
-from ayorai_attractor.job_store import JobStatus, JobStore
 from ayorai_attractor.job_executor import JobExecutor
+from ayorai_attractor.job_store import Job, JobStatus, JobStore
 
 
 @dataclass
 class Handler:
     fail: bool = False
 
-    def execute(self, job) -> None:  # type: ignore[no-untyped-def]
+    def execute(self, job: Job) -> None:
         if self.fail:
             raise RuntimeError("worker failure")
 
