@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -90,6 +91,22 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
 
 def _accuracy(correct: int, total: int) -> dict[str, float | int]:
     return {"correct": correct, "total": total, "accuracy": round(correct / total, 6) if total else 0.0}
+
+
+def _git_sha() -> str:
+    configured = os.getenv("GITHUB_SHA")
+    if configured:
+        return configured
+    try:
+        result = subprocess.run(  # nosec B603 - fixed local git argv
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+    return result.stdout.strip() or "unknown"
 
 
 def _content_digest(report: dict[str, Any]) -> str:
@@ -249,7 +266,7 @@ def evaluate_golden_v0(
             ),
         },
         "results": results,
-        "git_sha": os.getenv("GITHUB_SHA", "unknown"),
+        "git_sha": _git_sha(),
     }
     report["content_sha256"] = _content_digest(report)
     return report
