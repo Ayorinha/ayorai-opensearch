@@ -60,6 +60,29 @@ class MetricsCollector:
         if cost is not None:
             self._estimated_cost += cost.estimated_cost
 
+    def prometheus(self) -> str:
+        """Render a stable Prometheus text exposition snapshot."""
+        snapshot = self.snapshot()
+        return "\n".join(
+            [
+                "# TYPE attractor_requests_total counter",
+                f"attractor_requests_total {snapshot.requests}",
+                "# TYPE attractor_successes_total counter",
+                f"attractor_successes_total {snapshot.successes}",
+                "# TYPE attractor_failures_total counter",
+                f"attractor_failures_total {snapshot.failures}",
+                "# TYPE attractor_success_rate gauge",
+                f"attractor_success_rate {snapshot.success_rate}",
+                "# TYPE attractor_mean_latency_ms gauge",
+                f"attractor_mean_latency_ms {snapshot.mean_latency_ms}",
+                "# TYPE attractor_p95_latency_ms gauge",
+                f"attractor_p95_latency_ms {snapshot.p95_latency_ms}",
+                "# TYPE attractor_estimated_cost_total gauge",
+                f"attractor_estimated_cost_total {snapshot.estimated_cost}",
+                "",
+            ]
+        )
+
     def snapshot(self) -> MetricsSnapshot:
         return MetricsSnapshot(
             requests=self._requests,
