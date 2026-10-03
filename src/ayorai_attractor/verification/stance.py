@@ -133,8 +133,14 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
         context = tokens[max(0, index - 3) : index + 4]
         if "%" in token or "percent" in context or "porcento" in context:
             unit = "percent"
-        elif token.isdigit() and 1900 <= int(token) <= 2100 and not any(
-            value in context for value in ("usd", "eur", "brl")
+        elif (
+            token.isdigit()
+            and 1900 <= int(token) <= 2100
+            and (
+                "year" in context
+                or "fiscal" in context
+                or any(value in context for value in aliases)
+            )
         ):
             unit = "year"
         elif any(value in context for value in ("usd", "eur", "brl")):
