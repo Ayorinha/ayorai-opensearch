@@ -31,6 +31,29 @@ class ArenaReport:
     confusion_matrices: dict[str, dict[str, dict[str, int]]]
     pairwise_mcnemar: dict[tuple[str, str], float]
 
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-ready, deterministic report without ranking systems."""
+        return {
+            "scores": [
+                {
+                    "system_id": score.system_id,
+                    "correct": score.correct,
+                    "total": score.total,
+                    "accuracy": score.accuracy,
+                }
+                for score in self.scores
+            ],
+            "bootstrap_intervals": {
+                system_id: [interval[0], interval[1]]
+                for system_id, interval in self.bootstrap_intervals.items()
+            },
+            "confusion_matrices": self.confusion_matrices,
+            "pairwise_mcnemar": {
+                f"{left}::{right}": p_value
+                for (left, right), p_value in self.pairwise_mcnemar.items()
+            },
+        }
+
 
 def score_system(
     system_id: str,
