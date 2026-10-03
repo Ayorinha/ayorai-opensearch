@@ -1,20 +1,16 @@
-from __future__ import annotations
-
 from typing import Any
 
 
 _LABEL_TO_STANCE = {"entailment": "supports", "contradiction": "contradicts", "neutral": "neutral"}
 
 
-def _resolve_label_map(id2label: dict[int, str]) -> dict[int, Stance]:
-    from .models import Stance
-
+def _resolve_label_map(id2label: dict[int, str]) -> dict[int, str]:
     normalized = {index: label.strip().casefold() for index, label in id2label.items()}
     if set(normalized.values()) != set(_LABEL_TO_STANCE):
         raise ValueError(
             "NLI model must expose exactly entailment, contradiction and neutral labels"
         )
-    return {index: Stance(_LABEL_TO_STANCE[label]) for index, label in normalized.items()}
+    return {index: _LABEL_TO_STANCE[label] for index, label in normalized.items()}
 
 
 class TransformersNLIBackend:
@@ -25,7 +21,7 @@ class TransformersNLIBackend:
             raise ValueError("model_id and model_revision are required")
         self.model_id = model_id
         self.model_revision = model_revision
-        self._label_map: dict[int, Stance] | None = None
+        self._label_map: dict[int, str] | None = None
         self._tokenizer: Any = None
         self._model: Any = None
         self._torch: Any = None
