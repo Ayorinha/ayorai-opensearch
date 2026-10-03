@@ -45,3 +45,15 @@ def test_negative_latency_is_rejected() -> None:
         assert "non-negative" in str(exc)
     else:
         raise AssertionError("negative latency must be rejected")
+
+
+
+def test_prometheus_export_is_stable() -> None:
+    collector = MetricsCollector()
+    collector.record(latency_ms=100, success=True)
+    collector.record(latency_ms=300, success=False)
+    output = collector.prometheus()
+    assert "attractor_requests_total 2" in output
+    assert "attractor_success_rate 0.5" in output
+    assert "attractor_p95_latency_ms 300" in output
+    assert output.endswith("\n")
