@@ -470,43 +470,6 @@ class RuleStanceDetector:
         return StanceDetectionResult(tuple(output))
 
 
-class SentenceNLIStanceDetector(NLIStanceDetector):
-    """H1: evaluate claim against deterministic sentence spans."""
-
-    component = "stance_detector.nli_sentence"
-
-    def _windows(self, evidence: Evidence) -> list[tuple[int, int, str]]:
-        text = evidence.excerpt
-        spans: list[tuple[int, int, str]] = []
-        start = 0
-        for match in re.finditer(r"[.!?](?:["'”’)]*)?(?=\\s|$)", text):
-            end = match.end()
-            sentence = text[start:end].strip()
-            if sentence:
-                left = start + len(text[start:end]) - len(text[start:end].lstrip())
-                right = start + len(text[start:end].rstrip())
-                spans.append(
-                    (evidence.start_offset + left, evidence.start_offset + right, text[left:right])
-                )
-            start = end
-            while start < len(text) and text[start].isspace():
-                start += 1
-        if start < len(text):
-            spans.append((evidence.start_offset + start, evidence.end_offset, text[start:]))
-        if not spans:
-            spans.append((evidence.start_offset, evidence.end_offset, text))
-        return spans
-
-
-class SentenceTranslatedNLIStanceDetector(TranslatedNLIStanceDetector):
-    """H1 translated path: sentence aggregation with the E1 translation contract."""
-
-    component = "stance_detector.translate_nli_sentence"
-
-    def _windows(self, evidence: Evidence) -> list[tuple[int, int, str]]:
-        return SentenceNLIStanceDetector._windows(self, evidence)
-
-
 class NLIStanceDetector(StanceDetector):
     component = "stance_detector.nli"
 
@@ -693,6 +656,49 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
                 )
         return StanceDetectionResult(tuple(output))
 
+
+
+class SentenceNLIStanceDetector(NLIStanceDetector):
+    """H1: evaluate claim against deterministic sentence spans."""
+
+    component = "stance_detector.nli_sentence"
+
+    def _windows(self, evidence: Evidence) -> list[tuple[int, int, str]]:
+        text = evidence.excerpt
+        spans: list[tuple[int, int, str]] = []
+        start = 0
+        for match in re.finditer(r'[.!?](?:["\'”’)]*)?(?=\s|$)', text):
+            end = match.end()
+            raw = text[start:end]
+            left = start + len(raw) - len(raw.lstrip())
+            right = start + len(raw.rstrip())
+            if left < right:
+                spans.append(
+                    (
+                        evidence.start_offset + left,
+                        evidence.start_offset + right,
+                        text[left:right],
+                    )
+                )
+            start = end
+            while start < len(text) and text[start].isspace():
+                start += 1
+        if start < len(text):
+            spans.append(
+                (evidence.start_offset + start, evidence.end_offset, text[start:])
+            )
+        if not spans:
+            spans.append((evidence.start_offset, evidence.end_offset, text))
+        return spans
+
+
+class SentenceTranslatedNLIStanceDetector(TranslatedNLIStanceDetector):
+    """H1 translated path: sentence aggregation with the E1 translation contract."""
+
+    component = "stance_detector.translate_nli_sentence"
+
+    def _windows(self, evidence: Evidence) -> list[tuple[int, int, str]]:
+        return SentenceNLIStanceDetector._windows(self, evidence)
 
 
 class LLMStanceDetector:
