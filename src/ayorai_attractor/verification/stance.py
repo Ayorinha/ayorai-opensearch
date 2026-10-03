@@ -116,7 +116,7 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
     tokens = _FACT_TOKEN_RE.findall(text.casefold())
     facts = []
     for index, token in enumerate(tokens):
-        if not _NUMBER_RE.fullmatch(token):
+        if not any(character.isdigit() for character in token):
             continue
         before = tokens[max(0, index - 6) : index]
         after = tokens[index + 1 : index + 4]
