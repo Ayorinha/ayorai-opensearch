@@ -65,6 +65,16 @@ class FixtureRetriever:
         for doc_id in self.evidence_pool:
             item = self.documents[doc_id]
             content = str(item["content"])
+            offsets = item.get("offsets")
+            retrieved_at = item.get("retrieved_at")
+            complete_offsets = (
+                isinstance(offsets, list)
+                and len(offsets) == 2
+                and all(isinstance(value, int) for value in offsets)
+                and offsets[0] >= 0
+                and offsets[1] > offsets[0]
+                and offsets[1] <= len(content)
+            )
             output.append(
                 RetrievedDocument(
                     id=doc_id,
@@ -72,13 +82,13 @@ class FixtureRetriever:
                     source_id=doc_id,
                     source_location=str(item["url"]),
                     retrieved_at=datetime.fromisoformat(
-                        str(item.get("retrieved_at", "2026-09-30T12:00:00+00:00")).replace(
-                            "Z", "+00:00"
-                        )
+                        str(retrieved_at or "2026-09-30T12:00:00+00:00").replace("Z", "+00:00")
                     ),
-                    end_offset=len(content),
+                    start_offset=offsets[0] if complete_offsets else 0,
+                    end_offset=offsets[1] if complete_offsets else len(content),
                     origin_id=str(item["origin_id"]),
                     canonical_url=str(item["url"]),
+                    provenance_complete=bool(retrieved_at and complete_offsets),
                 )
             )
         return output
