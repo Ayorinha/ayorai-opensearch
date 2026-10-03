@@ -662,7 +662,7 @@ def _sentence_windows(evidence: Evidence) -> list[tuple[int, int, str]]:
     text = evidence.excerpt
     spans: list[tuple[int, int, str]] = []
     start = 0
-    for match in re.finditer(r'[.!?](?:["\\'”’)]*)?(?=\\s|$)', text):
+    for match in re.finditer(r"[.!?](?:[\"”’)]*)?(?=\s|$)", text):
         end = match.end()
         raw = text[start:end]
         left = start + len(raw) - len(raw.lstrip())
