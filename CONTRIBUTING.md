@@ -22,14 +22,3 @@ Não envie credenciais, tokens, dados pessoais, financeiros ou material confiden
 ## Qualidade
 
 PRs devem manter CI, segurança e CodeQL verdes. Resultados de benchmark/eval só devem ser publicados com o run do GitHub Actions que os produziu.
-
-
-## DCO
-
-External contributions must use the Developer Certificate of Origin (DCO). Every commit submitted in an external PR must contain a `Signed-off-by: Full Name <email>` trailer asserting the contributor's right to submit the work.
-
-Example:
-
-`Signed-off-by: Anderson Leon Ayora <ayora.anderson@gmail.com>`
-
-A separate individual CLA draft is maintained at [docs/legal/CLA-DRAFT.md](docs/legal/CLA-DRAFT.md) for future legal review. The DCO requirement does not by itself change the current Apache-2.0 license.
