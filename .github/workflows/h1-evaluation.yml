@@ -1,0 +1,45 @@
+name: H1 Sentence Aggregation Evaluation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/f1-multilingual-stance
+
+permissions:
+  contents: read
+
+jobs:
+  h1-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev,nli]"
+      - name: Run H1
+        env:
+          HF_HUB_DISABLE_TELEMETRY: "1"
+          TOKENIZERS_PARALLELISM: "false"
+        run: |
+          set -o pipefail
+          rm -rf reports
+          mkdir -p reports
+          python scripts/run_h1_eval.py --suite golden-v0.1 | tee reports/h1-eval-console.txt
+      - name: Validate evidence
+        run: |
+          test -s reports/h1-results.json
+          test -s reports/H1-RESULTS.md
+          sha256sum reports/h1-results.json reports/H1-RESULTS.md reports/h1-eval-console.txt
+      - name: Upload H1 evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: h1-eval-${{ github.sha }}
+          path: |
+            reports/h1-results.json
+            reports/H1-RESULTS.md
+            reports/h1-eval-console.txt

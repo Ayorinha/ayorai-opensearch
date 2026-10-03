@@ -63,3 +63,10 @@ With n=30, exceeding the 43.33% majority baseline with p<0.05 requires approxima
 No threshold was tuned against Golden v0. ADR-002 remains the sole final-verdict authority.
 
 Report SHA-256: 0c7fad3b4bc4db96f888ac0b26f45bb4b0f7616a6e63e8df5bfb7d73a30342a9
+
+
+## E1 Audit Disclosures
+
+- **A** is EVAL_ONLY because its model license is not cleared for commercial use; **B is the candidate commercial path** subject to independent license verification.
+- **Golden v0 and v0.1 are development sets.** The v0.1 rewrite was authored after the author had seen per-case Path C results, as disclosed in the pre-registration. Generalization is reserved for the hidden Golden v1.
+- **Path C nearly did not improve on v0.1:** the deterministic reference reproduced locally at 10/30 (balanced accuracy 0.481838; 95% bootstrap CI [0.1667, 0.5000]).
