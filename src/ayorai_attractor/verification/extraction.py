@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol, Sequence
 
-from .models import Claim, Evidence, StanceEdge
+from .models import Claim, Evidence
 
 _TOKEN_RE = re.compile(r"[\wÀ-ÿ]+", re.UNICODE)
 _STOPWORDS = frozenset(
