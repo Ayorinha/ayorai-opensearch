@@ -13,13 +13,39 @@ from ayorai_attractor.evaluation.golden import FixtureRetriever, _legacy_predict
 from ayorai_attractor.evaluation.stats import balanced_accuracy, bootstrap_accuracy, confusion_matrix, mcnemar_exact_pvalue
 from ayorai_attractor.verification.claim_pipeline import ClaimVerificationPipeline, RuleScopeClassifier
 from ayorai_attractor.verification.nli import EVAL_ONLY_LEVEL, EVAL_ONLY_MODEL, EVAL_ONLY_REVISION, TransformersNLIBackend
-from ayorai_attractor.verification.stance import NLIStanceDetector, RuleStanceDetector
+from ayorai_attractor.verification.stance import (
+    NLIStanceDetector,
+    RuleStanceDetector,
+    TranslatedNLIStanceDetector,
+)
+from ayorai_attractor.verification.translation import MarianTranslationBackend
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "evals/golden/v0.jsonl"
 CORPUS = ROOT / "evals/corpus/documents.jsonl"
 OUT_JSON = ROOT / "reports/f1-results.json"
+CONFIG = ROOT / "configs/f1-thresholds.json"
 OUT_MD = ROOT / "reports/F1-RESULTS.md"
+B_TRANSLATOR_MODEL = "Helsinki-NLP/opus-mt-ROMANCE-en"
+B_TRANSLATOR_REVISION = "ddfee805aaa57f4bd198f88e8832ba2b012f9ae2"
+B_NLI_MODEL = "cross-encoder/nli-deberta-v3-base"
+B_NLI_REVISION = "dcaec5ddc7a9456405d53c33bb2d4050ca4f75cf"
+
+
+def _load_config() -> dict[str, Any]:
+    config = json.loads(CONFIG.read_text(encoding="utf-8"))
+    window = config["evidence_windows"]
+    required = {
+        "max_characters",
+        "overlap_characters",
+        "aggregation",
+        "tie_precedence",
+    }
+    if set(window) != required:
+        raise ValueError("f1-thresholds.json evidence_windows schema mismatch")
+    if window["aggregation"] != "maximum_confidence_per_stance":
+        raise ValueError("unsupported evidence aggregation")
+    return config
 
 
 def _ece(confidences: list[float], correct: list[bool], bins: int = 10) -> float:
@@ -134,42 +160,109 @@ def _markdown(report: dict[str, Any]) -> str:
 
 
 def main() -> None:
+    config = _load_config()
+    window = config["evidence_windows"]
     cases = _load_jsonl(GOLDEN)
     corpus = {str(row["doc_id"]): row for row in _load_jsonl(CORPUS)}
+
     rule_report = _evaluate(RuleStanceDetector(), cases, corpus)
-    backend = TransformersNLIBackend(EVAL_ONLY_MODEL, EVAL_ONLY_REVISION, license_level=EVAL_ONLY_LEVEL, evaluation_mode=True)
-    nli_report = _evaluate(NLIStanceDetector(backend, model=EVAL_ONLY_MODEL, version=backend.provenance_version), cases, corpus)
+
+    a_backend = TransformersNLIBackend(
+        EVAL_ONLY_MODEL,
+        EVAL_ONLY_REVISION,
+        license_level=EVAL_ONLY_LEVEL,
+        evaluation_mode=True,
+    )
+    a_detector = NLIStanceDetector(
+        a_backend,
+        model=EVAL_ONLY_MODEL,
+        version=a_backend.provenance_version,
+        window_size=int(window["max_characters"]),
+        window_overlap=int(window["overlap_characters"]),
+        tie_precedence=str(window["tie_precedence"]),
+    )
+    a_report = _evaluate(a_detector, cases, corpus)
+
+    b_backend = TransformersNLIBackend(
+        B_NLI_MODEL,
+        B_NLI_REVISION,
+        license_level="EVAL_ONLY",
+        evaluation_mode=True,
+    )
+    b_translator = MarianTranslationBackend(
+        B_TRANSLATOR_MODEL,
+        B_TRANSLATOR_REVISION,
+    )
+    b_detector = TranslatedNLIStanceDetector(
+        b_backend,
+        b_translator,
+        model=f"{B_TRANSLATOR_MODEL}+{B_NLI_MODEL}",
+        version=f"{b_translator.provenance_version}+{b_backend.provenance_version}",
+        window_size=int(window["max_characters"]),
+        window_overlap=int(window["overlap_characters"]),
+        tie_precedence=str(window["tie_precedence"]),
+    )
+    b_report = _evaluate(b_detector, cases, corpus)
+
     gold = [str(case["global"]).upper() for case in cases if "global" in case]
     f0_predictions = rule_report["_predictions"]
-    nli_predictions = nli_report["_predictions"]
-    a_vs_f0 = {
-        "f0_correct_nli_wrong": sum(g == f0 and g != nli for g, f0, nli in zip(gold, f0_predictions, nli_predictions, strict=True)),
-        "nli_correct_f0_wrong": sum(g != f0 and g == nli for g, f0, nli in zip(gold, f0_predictions, nli_predictions, strict=True)),
-        "exact_p": mcnemar_exact_pvalue(gold, f0_predictions, nli_predictions),
-    }
-    for report_item in (rule_report, nli_report):
+    a_predictions = a_report["_predictions"]
+    b_predictions = b_report["_predictions"]
+
+    def paired(left: list[str], right: list[str]) -> dict[str, float | int]:
+        return {
+            "left_correct_right_wrong": sum(
+                g == old and g != new
+                for g, old, new in zip(gold, left, right, strict=True)
+            ),
+            "right_correct_left_wrong": sum(
+                g != old and g == new
+                for g, old, new in zip(gold, left, right, strict=True)
+            ),
+            "exact_p": mcnemar_exact_pvalue(gold, left, right),
+        }
+
+    a_vs_f0 = paired(f0_predictions, a_predictions)
+    b_vs_f0 = paired(f0_predictions, b_predictions)
+    for report_item in (rule_report, a_report, b_report):
         report_item.pop("_predictions", None)
+
     report = {
-        "suite": "golden-v0", "seed": 20261003, "golden_cases": len(gold),
+        "suite": "golden-v0",
+        "seed": 20261003,
+        "golden_cases": len(gold),
         "golden_sha256": hashlib.sha256(GOLDEN.read_bytes()).hexdigest(),
         "corpus_sha256": hashlib.sha256(CORPUS.read_bytes()).hexdigest(),
-        "thresholds_sha256": hashlib.sha256((ROOT / "configs/f1-thresholds.json").read_bytes()).hexdigest(),
-        "paths": {"A": "EVAL_ONLY multilingual direct NLI", "B": "BLOCKED: translation checkpoint training-data license inventory is incomplete", "C": "rules-only ablation"},
-        "A": nli_report,
-        "B": {"status": "BLOCKED", "reason": "No complete per-source OPUS training-data license inventory for the selected PT to EN checkpoint."},
+        "thresholds_sha256": hashlib.sha256(CONFIG.read_bytes()).hexdigest(),
+        "config": config,
+        "A": a_report,
+        "B": b_report,
         "C": rule_report,
         "mcnemar_A_vs_F0_C": a_vs_f0,
+        "mcnemar_B_vs_F0_C": b_vs_f0,
+        "A_error_analysis": {},
         "limitations": [
             "Golden v0 contains 30 scored cases; four ABSTAIN contracts are outside global-verdict accuracy.",
-            "A is EVAL_ONLY and is never a commercial default.",
-            "B is not measured because its translation license chain is not sufficiently evidenced.",
-            "NLI inference uses the fixed model revision and argmax; no case-specific threshold tuning is performed.",
+            "A and B are EVAL_ONLY and are not commercial defaults.",
+            "B uses Helsinki-NLP/opus-mt-ROMANCE-en and cross-encoder/nli-deberta-v3-base.",
+            "The original source excerpt remains the audit evidence; translation is model input only.",
+            "With n=30, approximately 60% accuracy is needed to exceed the 43.33% majority baseline with p<0.05; A's IC95% includes the baseline.",
         ],
     }
-    stable = json.dumps(report, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    report["A_error_analysis"] = _error_analysis(a_report)
+    stable = json.dumps(
+        report,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
     report["report_sha256"] = hashlib.sha256(stable).hexdigest()
+
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
-    OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    OUT_JSON.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     OUT_MD.write_text(_markdown(report), encoding="utf-8")
     print(OUT_MD.read_text(encoding="utf-8"))
 
