@@ -8,7 +8,7 @@
 
 ## Current status
 
-**Reference implementation in active development.** Phase 0 and the R1 deterministic verification core are implemented. R2–R13 provide tested engineering foundations, R14 adds provider-neutral tracing context, R15 adds durable worker execution over JobStore, R16 adds automated dependency review, R17 adds a provider-neutral trace export boundary, and R18 propagates a trusted TenantContext from the runtime boundary into AgentContext. Production deployment, transport-level MCP, external telemetry adapters and deployment-specific authorization remain explicit hardening work.
+**Reference implementation in active development.** Phase 0 and the R1 deterministic verification core are implemented. R2–R13 provide tested engineering foundations, R14 adds provider-neutral tracing context, R15 adds durable worker execution over JobStore, R16 adds automated dependency review, R17 adds a provider-neutral trace export boundary, R18 propagates a trusted TenantContext from the runtime boundary into AgentContext, R19 makes comparative evaluation reports JSON-ready and deterministic, and R20 adds semantic SHA-256 digests to Golden reports. Production deployment, transport-level MCP, external telemetry adapters and deployment-specific authorization remain explicit hardening work.
 
 Golden v0 remains **34 cases / 52 synthetic documents** with SHA-256 recorded in evals/golden/MANIFEST.json. The original baseline is **43.3333%**, exactly equal to the PARTIALLY_SUPPORTED majority-class baseline. This baseline is not evidence of a capable verifier.
 
@@ -91,10 +91,12 @@ This is intentionally a **reference architecture and research/engineering platfo
 - R16 automated Dependency Review workflow
 - R17 provider-neutral TraceSink export boundary
 - R18 trusted TenantContext propagation into AgentContext with automated coverage
+- R19 deterministic JSON-ready ArenaReport serialization without winner/ranking selection
+- R20 semantic SHA-256 digest for Golden reports with volatile runtime fields excluded and CI assertions
 
 ## Roadmap
 
-**Phase 0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9 → R10 → R11 → R12 → R13 → R14 → R15 → R16 → R17 → R18**
+**Phase 0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9 → R10 → R11 → R12 → R13 → R14 → R15 → R16 → R17 → R18 → R19 → R20**
 
 The roadmap is implemented in layers rather than declared complete from documentation alone. Remaining hardening increments are the executable Golden statistical harness, an optional OpenTelemetry adapter behind TraceSink, transport-level MCP deployment and isolation, provider adapters, deployment/release hardening, and final CI/security evidence review.
 
@@ -120,7 +122,7 @@ Run the complete frozen suite locally:
 
     attractor eval --suite golden-v0 --out reports/golden-v0.json
 
-The suite contains 34 cases and 52 synthetic documents. Always report the commit SHA and suite version alongside any result. The CI pipeline executes the complete suite and stores the generated report as a workflow artifact.
+The suite contains 34 cases and 52 synthetic documents. Always report the commit SHA, suite version and `content_sha256` alongside any result. The digest is computed from semantic report content while excluding volatile runtime fields such as latency and workflow SHA. The CI pipeline executes the complete suite, asserts the digest shape, and stores the generated report as a workflow artifact.
 
 See docs/eval/LOCAL-EVALUATION.md, docs/STATUS.md, docs/architecture.md, docs/eval/TRACEABILITY.md and evals/golden/REVIEW.md.
 
