@@ -4,7 +4,8 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
-from typing import Any, Protocol, Sequence
+from collections.abc import Sequence
+from typing import Any, Protocol
 from .extraction import ComponentProvenance, ExtractedClaim
 from .models import Evidence, Stance, StanceEdge
 from .numeric import DEFAULT_RELATIVE_TOLERANCE, NumericLocale, numeric_conflicts
