@@ -50,7 +50,8 @@ def bootstrap_accuracy(
     if iterations < 1:
         raise ValueError("iterations must be positive")
     outcomes = [gold == guess for gold, guess in zip(expected, predicted, strict=True)]
-    rng = Random(seed)
+    # Deterministic PRNG is intentional: bootstrap sampling is statistical, not security-sensitive.
+    rng = Random(seed)  # nosec B311
     samples: list[float] = []
     size = len(outcomes)
     for _ in range(iterations):
