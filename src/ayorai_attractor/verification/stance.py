@@ -226,23 +226,21 @@ class RuleStanceDetector:
                     if len(token) > 2
                 }
                 lexical = len(claim_tokens & evidence_tokens) / max(len(claim_tokens), 1)
-                if lexical < 0.25:
+                numeric_conflict, numeric_agreement = _numeric_relation(
+                    claim_item.claim.text, item.excerpt
+                )
+                date_conflict = self._date_conflict(claim_item.claim.text, item.excerpt)
+                negation_conflict = _has_negation(claim_item.claim.text) != _has_negation(
+                    item.excerpt
+                )
+                if numeric_conflict or date_conflict or negation_conflict:
+                    stance = Stance.CONTRADICTS
+                elif numeric_agreement:
+                    stance = Stance.SUPPORTS
+                elif lexical < 0.25:
                     stance = Stance.NEUTRAL
                 else:
-                    numeric_conflict, numeric_agreement = _numeric_relation(
-                        claim_item.claim.text, item.excerpt
-                    )
-                    contradiction = (
-                        numeric_conflict
-                        or self._date_conflict(claim_item.claim.text, item.excerpt)
-                        or _has_negation(claim_item.claim.text) != _has_negation(item.excerpt)
-                    )
-                    if contradiction:
-                        stance = Stance.CONTRADICTS
-                    elif numeric_agreement:
-                        stance = Stance.SUPPORTS
-                    else:
-                        stance = Stance.SUPPORTS
+                    stance = Stance.SUPPORTS
                 payload = f"{claim_item.claim.id}|{item.id}|{stance.value}"
                 output.append(
                     DetectedStance(
