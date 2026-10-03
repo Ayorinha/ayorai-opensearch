@@ -153,71 +153,17 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             unit = f"{currency}:{scale_alias.get(scale, scale or 'base')}"
         elif "ms" in context:
             unit = "ms"
-        elif (\n            "year" in local_context\n            or "fiscal" in local_context\n            or (\n                token.isdigit()\n                and 1900 <= int(token) <= 2100\n                and not any(\n                    value in local_context\n                    for value in ("employees", "people", "customers", "offices")\n                )\n            )\n        ):
-            unit = "year"
-        elif any(value in context for value in ("employees", "people", "customers", "offices")):
-            word = next(
-                value
-                for value in ("employees", "people", "customers", "offices")
-                if value in context
+        elif (
+            "year" in local_context
+            or "fiscal" in local_context
+            or (
+                token.isdigit()
+                and 1900 <= int(token) <= 2100
+                and not any(
+                    value in local_context
+                    for value in ("employees", "people", "customers", "offices")
+                )
             )
-            unit = f"count:{word}"
-        else:
-            unit = "scalar"
-        aliases = {
-            "receita": "revenue",
-            "faturamento": "revenue",
-            "revenue": "revenue",
-            "lucro": "profit",
-            "profit": "profit",
-            "custo": "cost",
-            "cost": "cost",
-        }
-        context_candidates = before + after
-        matched_attribute = next(
-            (aliases[value] for value in context_candidates if value in aliases),
-            None,
-        )
-        attribute = (
-            "year"
-            if unit == "year"
-            else matched_attribute
-            or next(
-                (
-                    value
-                    for value in reversed(context_candidates)
-                    if (
-                        value not in _STOPWORDS
-                        and value not in _UNIT_WORDS
-                        and value not in _entities(text)
-                    )
-                ),
-                "unknown",
-            )
-        )
-        facts.append((token, unit, attribute))
-    return facts
-
-
-def _numeric_relation(claim_text: str, evidence_text: str) -> tuple[bool, bool]:
-    conflict = False
-    agreement = False
-    for left, left_unit, left_attribute in _numeric_facts(claim_text):
-        matches = [
-            right
-            for right, right_unit, right_attribute in _numeric_facts(evidence_text)
-            if right_unit == left_unit and right_attribute == left_attribute
-        ]
-        if not matches:
-            continue
-        if any(
-            not numeric_conflicts(
-                left,
-                right,
-                locale=NumericLocale.EN_US,
-                tolerance=DEFAULT_RELATIVE_TOLERANCE,
-            )
-            for right in matches
         ):
             agreement = True
         else:
