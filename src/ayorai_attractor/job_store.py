@@ -92,10 +92,10 @@ class JobStore:
         return self._from_row(row)
 
     @staticmethod
-    def _from_row(row: tuple[object, ...]) -> Job:
+    def _from_row(row: tuple[str, str, str, int]) -> Job:
         return Job(
-            job_id=str(row[0]),
-            idempotency_key=str(row[1]),
-            status=JobStatus(str(row[2])),
-            attempts=int(row[3]),
+            job_id=row[0],
+            idempotency_key=row[1],
+            status=JobStatus(row[2]),
+            attempts=row[3],
         )
