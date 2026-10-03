@@ -23,4 +23,16 @@ def test_golden_v0_runner_is_deterministic_and_closed_world() -> None:
         "accuracy": 0.433333,
     }
     assert report["network"] is False
-    assert report["abstention_accuracy"] == {"correct": 0, "total": 4, "accuracy": 0.0}
+    assert report["abstention_contracts"] == {
+        "case_count": 4,
+        "expected_statuses": {
+            "ABSTAIN/NO_ANSWER": 2,
+            "ABSTAIN/OUT_OF_SCOPE": 2,
+        },
+        "evaluated": False,
+        "reason": (
+            "Golden cases declare ResponseStatus contracts, but SearchResponse "
+            "does not expose ResponseStatus. Contract evaluation belongs to "
+            "the structured /v1/verify API and its dedicated tests."
+        ),
+    }
