@@ -29,7 +29,7 @@ jobs:
           set -o pipefail
           rm -rf reports
           mkdir -p reports
-          python scripts/run_f1_eval.py | tee reports/f1-eval-console.txt
+          python scripts/run_f1_eval.py --suite golden-v0.1 | tee reports/f1-eval-console.txt
       - name: Verify report hashes
         run: |
           test -s reports/f1-results.json
@@ -44,6 +44,7 @@ jobs:
           assert actual == expected, (actual, expected)
           print("report_sha256=", expected)
           PY
+          sha256sum reports/f1-results.json reports/F1-RESULTS.md reports/f1-eval-console.txt
       - name: Upload F1 evidence
         uses: actions/upload-artifact@v7
         with:

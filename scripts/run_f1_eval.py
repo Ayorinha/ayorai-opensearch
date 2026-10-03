@@ -302,11 +302,14 @@ def _markdown(report: dict[str, Any]) -> str:
             item = suite[key]
             lines.append(
                 f"| {key} | {item['accuracy']:.4f} | {item['balanced_accuracy']:.4f} | "
-                f"[{item['bootstrap_95_ci']['lower']:.4f}, {item['bootstrap_95_ci']['upper']:.4f}] | "
-                f"{item['ece']:.4f} | {item['latency_ms']['p50']:.3f} | {item['latency_ms']['p95']:.3f} |"
+                f"[{item['bootstrap_95_ci']['lower']:.4f}, "
+                f"{item['bootstrap_95_ci']['upper']:.4f}] | "
+                f"{item['ece']:.4f} | {item['latency_ms']['p50']:.3f} | "
+                f"{item['latency_ms']['p95']:.3f} |"
             )
         lines.append(
-            f"| Majority baseline | {suite['A']['majority_class_baseline']['accuracy']:.4f} | — | — | — | — | — |"
+            "| Majority baseline | "
+            f"{suite['A']['majority_class_baseline']['accuracy']:.4f} | — | — | — | — | — |"
         )
         lines.append("")
     lines += [

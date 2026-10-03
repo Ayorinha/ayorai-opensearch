@@ -40,7 +40,9 @@ def eval_suite(
     """Run a deterministic evaluation suite."""
     if suite not in {"golden-v0", "golden-v0.1", "smoke-v0"}:
         raise typer.BadParameter("Only golden-v0, golden-v0.1 and smoke-v0 are implemented.")
-    golden_path = Path("evals/golden/v0.1.jsonl" if suite == "golden-v0.1" else "evals/golden/v0.jsonl")
+    golden_path = Path(
+        "evals/golden/v0.1.jsonl" if suite == "golden-v0.1" else "evals/golden/v0.jsonl"
+    )
     report = evaluate_golden_v0(
         golden_path,
         Path("evals/corpus/documents.jsonl"),
