@@ -133,3 +133,17 @@ def test_pipeline_does_not_upgrade_incomplete_provenance() -> None:
     )
     assert result.verdict.value == "supported"
     assert result.judgments[0].provenance_complete is False
+
+
+def test_pipeline_contract_rejects_retriever_as_verification_input() -> None:
+    import inspect
+
+    signature = inspect.signature(ClaimVerificationPipeline.verify)
+    assert list(signature.parameters) == ["self", "claims", "documents"]
+    assert "retriever" not in signature.parameters
+    result = pipeline().verify(
+        ["AtlasGrid revenue was USD 120 million."],
+        [document("e1", "AtlasGrid revenue was USD 120 million.", origin="o1")],
+    )
+    assert result.claims[0].claim.text == "AtlasGrid revenue was USD 120 million."
+    assert result.claims[0].claim.text != result.evidence[0].excerpt
