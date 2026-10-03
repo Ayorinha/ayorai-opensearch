@@ -54,7 +54,9 @@ class FixtureRetriever:
                     source_id=document_id,
                     source_location=str(item["url"]),
                     retrieved_at=datetime.fromisoformat(
-                        str(item.get("retrieved_at", RETRIEVED_AT.isoformat())).replace("Z", "+00:00")
+                        str(item.get("retrieved_at", RETRIEVED_AT.isoformat())).replace(
+                            "Z", "+00:00"
+                        )
                     ),
                     end_offset=len(content),
                     origin_id=str(item["origin_id"]),
@@ -105,7 +107,10 @@ def main() -> None:
         gold == predicted
         for gold, predicted in zip(expected, pipeline_labels, strict=True)
     )
-    legacy_correct = sum(gold == predicted for gold, predicted in zip(expected, legacy_labels, strict=True))
+    legacy_correct = sum(
+        gold == predicted
+        for gold, predicted in zip(expected, legacy_labels, strict=True)
+    )
     legacy_right_new_wrong = sum(
         gold == old and gold != new
         for gold, old, new in zip(expected, legacy_labels, pipeline_labels, strict=True)
