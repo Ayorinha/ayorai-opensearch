@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 from typing import Any
 
 from .models import Stance
@@ -40,6 +39,8 @@ class TransformersNLIBackend:
             return self._label_map
 
         try:
+            import importlib
+
             torch = importlib.import_module("torch")
             transformers = importlib.import_module("transformers")
         except ImportError as exc:
