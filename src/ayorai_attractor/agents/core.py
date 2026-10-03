@@ -4,6 +4,7 @@ from ayorai_attractor.evidence.core import EvidenceStore
 from ayorai_attractor.failure_engine.core import FailureEngine
 from ayorai_attractor.models import AgentResult, FailureType
 from ayorai_attractor.providers.base import Provider
+from ayorai_attractor.tenant import TenantContext
 
 
 @dataclass
@@ -13,6 +14,7 @@ class AgentContext:
     search_provider: Provider | None
     evidence: EvidenceStore
     failures: FailureEngine
+    tenant_context: TenantContext | None = None
 
 
 class Agent:
