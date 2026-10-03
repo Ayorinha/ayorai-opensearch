@@ -1,8 +1,8 @@
 # AYORAI ATTRACTOR — Progress
 
-**Estado atual:** Fase 0 concluída; R1 core implementado; R2–R13 possuem fundamentos de engenharia testados no main. R14 adiciona contexto de tracing provider-neutral integrado ao orquestrador. R15 adiciona a fronteira de execução durável sobre o JobStore. R16 adiciona revisão automatizada de dependências em pull requests. R17 adiciona uma fronteira provider-neutral para exportação de eventos de tracing. R18 propaga um TenantContext confiável da fronteira de runtime para o AgentContext. R19 torna os relatórios comparativos do Arena JSON-ready e determinísticos para integração em harnesses e artefatos, sem selecionar vencedor.
+**Estado atual:** Fase 0 concluída; R1 core implementado; R2–R13 possuem fundamentos de engenharia testados no main. R14 adiciona contexto de tracing provider-neutral integrado ao orquestrador. R15 adiciona a fronteira de execução durável sobre o JobStore. R16 adiciona revisão automatizada de dependências em pull requests. R17 adiciona uma fronteira provider-neutral para exportação de eventos de tracing. R18 propaga um TenantContext confiável da fronteira de runtime para o AgentContext. R19 torna os relatórios comparativos do Arena JSON-ready e determinísticos para integração em harnesses e artefatos, sem selecionar vencedor. R20 adiciona um SHA-256 semântico aos relatórios Golden, excluindo campos voláteis como latência e SHA do workflow.
 
-**Main de referência atual:** 48a9a78f55e029861a408421178b8070fdbdb2e0 (merge de R19).
+**Main de referência atual:** 55bc8d75541a6a5cd395d383b5f736e7ba2c6fe6 (merge de R20).
 
 **Ground Truth:** 34 casos / 52 documentos sintéticos.
 **Baseline:** 43,3333%, exatamente igual à classe majoritária PARTIALLY_SUPPORTED. Esse número não demonstra capacidade de verificação.
@@ -31,6 +31,7 @@
 | R17 | implementação integrada | TraceSink export boundary + testes |
 | R18 | implementação integrada | TenantContext propagado ao AgentContext + teste |
 | R19 | implementação integrada | ArenaReport.to_dict + teste de serialização |
+| R20 | implementação integrada | digest SHA-256 semântico + assertions no CI + testes de estabilidade |
 
 ## Princípio de conclusão
 
