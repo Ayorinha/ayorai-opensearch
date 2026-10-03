@@ -610,11 +610,7 @@ class LLMStanceDetector:
                         ),
                     )
                 )
-        return StanceDetectionResult(tuple(output))    tokens = re.findall(
-        r"(?<!\w)[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?|[\wÀ-ÿ]+",
-        text.casefold(),
-        re.UNICODE,
-    )
+        return StanceDetectionResult(tuple(output))
     facts = []
     for index, token in enumerate(tokens):
         if not _NUMBER_RE.fullmatch(token):
