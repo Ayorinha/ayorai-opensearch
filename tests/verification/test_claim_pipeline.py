@@ -53,7 +53,11 @@ def test_pipeline_reaches_deterministic_judge_for_two_independent_sources() -> N
         ["AtlasGrid revenue in 2025 was USD 120 million."],
         [
             document("e1", "AtlasGrid revenue in 2025 was USD 120 million.", origin="o1"),
-            document("e2", "The AtlasGrid annual filing reports USD 120 million of 2025 revenue.", origin="o2"),
+            document(
+                "e2",
+                "The AtlasGrid annual filing reports USD 120 million of 2025 revenue.",
+                origin="o2",
+            ),
         ],
     )
     assert result.verdict.value == "verified"

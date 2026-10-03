@@ -1,4 +1,5 @@
 from enum import StrEnum
+
 from pydantic import BaseModel, ConfigDict, Field
 
 class ResponseStatus(StrEnum):
@@ -28,4 +29,8 @@ class VerificationResponse(BaseModel):
 
     @classmethod
     def processing_error(cls, rationale: str) -> "VerificationResponse":
-        return cls(status=ResponseStatus.ABSTAIN_PROCESSING_ERROR, verdict=None, rationale=rationale)
+        return cls(
+            status=ResponseStatus.ABSTAIN_PROCESSING_ERROR,
+            verdict=None,
+            rationale=rationale,
+        )
