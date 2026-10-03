@@ -20,7 +20,6 @@ from ayorai_attractor.evaluation.stats import (
     bootstrap_accuracy,
     confusion_matrix,
     mcnemar_exact_pvalue,
-    VERDICT_ORDER,
 )
 from ayorai_attractor.verification.claim_pipeline import (
     ClaimVerificationPipeline,
@@ -91,7 +90,10 @@ def _selective_metrics(
     output = {}
     for label in ("VERIFIED", "SUPPORTED"):
         predicted_target = sum(p == label for p in predicted)
-        correct_target = sum(g == label and p == label for g, p in zip(expected, predicted, strict=True))
+        correct_target = sum(
+            g == label and p == label
+            for g, p in zip(expected, predicted, strict=True)
+        )
         output[label] = {
             "precision": round(correct_target / predicted_target, 6)
             if predicted_target
