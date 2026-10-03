@@ -71,6 +71,7 @@ class RetrievedDocument:
     normalized_content_hash: str | None = None
     cited_origin_id: str | None = None
     locale: str = "en-US"
+    provenance_complete: bool = True
 
     def to_evidence(self, claim_id: str) -> Evidence:
         end = self.end_offset if self.end_offset is not None else len(self.content)
@@ -87,7 +88,7 @@ class RetrievedDocument:
             canonical_url=self.canonical_url,
             normalized_content_hash=self.normalized_content_hash or _sha256(self.content),
             cited_origin_id=self.cited_origin_id,
-            provenance_complete=True,
+            provenance_complete=self.provenance_complete,
         )
 
 
