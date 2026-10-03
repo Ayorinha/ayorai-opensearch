@@ -20,6 +20,7 @@ from ayorai_attractor.evaluation.stats import (
     bootstrap_accuracy,
     confusion_matrix,
     mcnemar_exact_pvalue,
+    VERDICT_ORDER,
 )
 from ayorai_attractor.verification.claim_pipeline import (
     ClaimVerificationPipeline,
@@ -64,6 +65,41 @@ def _load_config() -> dict[str, Any]:
     if window["aggregation"] != "maximum_confidence_per_stance":
         raise ValueError("unsupported evidence aggregation")
     return config
+
+
+def _macro_f1(expected: list[str], predicted: list[str]) -> float:
+    labels = sorted(set(expected))
+    scores = []
+    for label in labels:
+        tp = sum(g == label and p == label for g, p in zip(expected, predicted, strict=True))
+        fp = sum(g != label and p == label for g, p in zip(expected, predicted, strict=True))
+        fn = sum(g == label and p != label for g, p in zip(expected, predicted, strict=True))
+        precision = tp / (tp + fp) if tp + fp else 0.0
+        recall = tp / (tp + fn) if tp + fn else 0.0
+        scores.append(
+            2 * precision * recall / (precision + recall)
+            if precision + recall
+            else 0.0
+        )
+    return round(sum(scores) / len(scores), 6) if scores else 0.0
+
+
+def _selective_metrics(
+    expected: list[str], predicted: list[str]
+) -> dict[str, dict[str, float | int]]:
+    total = len(expected)
+    output = {}
+    for label in ("VERIFIED", "SUPPORTED"):
+        predicted_target = sum(p == label for p in predicted)
+        correct_target = sum(g == label and p == label for g, p in zip(expected, predicted, strict=True))
+        output[label] = {
+            "precision": round(correct_target / predicted_target, 6)
+            if predicted_target
+            else 0.0,
+            "coverage": round(predicted_target / total, 6) if total else 0.0,
+            "predicted_count": predicted_target,
+        }
+    return output
 
 
 def _ece(confidences: list[float], correct: list[bool], bins: int = 10) -> float:
@@ -149,6 +185,16 @@ def _evaluate(
         "case_count": len(expected),
         "accuracy": round(sum(correct) / len(correct), 6),
         "balanced_accuracy": round(balanced_accuracy(expected, predicted), 6),
+        "macro_f1": _macro_f1(expected, predicted),
+        "selective_verified_supported": _selective_metrics(expected, predicted),
+        "abstention": {
+            "count": sum(not bool(item["predicted"]) for item in results),
+            "rate": round(
+                sum(not bool(item["predicted"]) for item in results) / len(results), 6
+            )
+            if results
+            else 0.0,
+        },
         "bootstrap_95_ci": {
             "lower": boot[0],
             "upper": boot[1],
@@ -296,13 +342,14 @@ def _markdown(report: dict[str, Any]) -> str:
         lines += [
             f"## {title}", "",
             f"Golden SHA-256: {suite['golden_sha256']}", "",
-            "| Path | Accuracy | Balanced | IC95% | ECE | p50 ms | p95 ms |",
-            "|---|---:|---:|---:|---:|---:|---:|",
+            "| Path | Accuracy | Balanced | Macro-F1 | IC95% | ECE | p50 ms | p95 ms |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|",
         ]
         for key in ("A", "B", "C"):
             item = suite[key]
             lines.append(
                 f"| {key} | {item['accuracy']:.4f} | {item['balanced_accuracy']:.4f} | "
+                f"{item['macro_f1']:.4f} | "
                 f"[{item['bootstrap_95_ci']['lower']:.4f}, "
                 f"{item['bootstrap_95_ci']['upper']:.4f}] | "
                 f"{item['ece']:.4f} | {item['latency_ms']['p50']:.3f} | "
@@ -310,10 +357,36 @@ def _markdown(report: dict[str, Any]) -> str:
             )
         lines.append(
             "| Majority baseline | "
-            f"{suite['A']['majority_class_baseline']['accuracy']:.4f} | — | — | — | — | — |"
+            f"{suite['A']['majority_class_baseline']['accuracy']:.4f} | — | — | — | — | — | — |"
+        )
+        lines.append("")
+        lines.append(
+            f"Abstention A/B/C: {suite['A']['abstention']['rate']:.4f} / "
+            f"{suite['B']['abstention']['rate']:.4f} / "
+            f"{suite['C']['abstention']['rate']:.4f}"
+        )
+        lines.append(
+            f"Selective precision VERIFIED/SUPPORTED (A): "
+            f"{suite['A']['selective_verified_supported']['VERIFIED']['precision']:.4f} / "
+            f"{suite['A']['selective_verified_supported']['SUPPORTED']['precision']:.4f}"
         )
         lines.append("")
     lines += [
+        "## McNemar — each suite vs C",
+        "",
+        "| Suite | Path | Path correct / C wrong | C correct / Path wrong | Exact p |",
+        "|---|---|---:|---:|---:|",
+    ]
+    for suite_key, title in (("golden_v0", "v0"), ("golden_v0_1", "v0.1")):
+        suite = report[suite_key]
+        for key in ("A", "B"):
+            item = suite[f"mcnemar_{key}_vs_C"]
+            lines.append(
+                f"| {title} | {key} | {item['left_correct_c_wrong']} | "
+                f"{item['c_correct_left_wrong']} | {item['exact_p']:.6g} |"
+            )
+    lines += [
+        "",
         "## Paired McNemar — v0 vs v0.1", "",
         "| Path | v0 correct / v0.1 wrong | v0.1 correct / v0 wrong | Exact p |",
         "|---|---:|---:|---:|",
@@ -383,11 +456,33 @@ def main() -> None:
             "B": b_report.pop("_predictions"),
             "C": rule_report.pop("_predictions"),
         }
+
+        def paired_with_c(left: list[str]) -> dict[str, float | int]:
+            gold = [
+                str(case["global"]).upper()
+                for case in cases
+                if "global" in case
+            ]
+            return {
+                "case_count": len(gold),
+                "left_correct_c_wrong": sum(
+                    g == x and g != y
+                    for g, x, y in zip(gold, left, predictions["C"], strict=True)
+                ),
+                "c_correct_left_wrong": sum(
+                    g != x and g == y
+                    for g, x, y in zip(gold, left, predictions["C"], strict=True)
+                ),
+                "exact_p": mcnemar_exact_pvalue(gold, left, predictions["C"]),
+            }
+
         return {
             "golden_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "A": a_report,
             "B": b_report,
             "C": rule_report,
+            "mcnemar_A_vs_C": paired_with_c(predictions["A"]),
+            "mcnemar_B_vs_C": paired_with_c(predictions["B"]),
             "_predictions": predictions,
         }
 
