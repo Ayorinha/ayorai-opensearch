@@ -292,6 +292,28 @@ def _markdown(report: dict[str, Any]) -> str:
             f"| Majority baseline | "
             f"{report['A']['majority_class_baseline']['accuracy']:.4f} | — | — | — | — | — |",
             "",
+            "## Confusion matrices",
+            "",
+        ]
+    )
+    for key in ("A", "B"):
+        lines.extend(
+            [
+                f"### {key}",
+                "",
+                "| Expected \\ Predicted | "
+                + " | ".join(report[key]["confusion_matrix"]["labels"])
+                + " |",
+                "|---|" + "|".join(["---"] * len(report[key]["confusion_matrix"]["labels"])) + "|",
+            ]
+        )
+        labels = report[key]["confusion_matrix"]["labels"]
+        matrix = report[key]["confusion_matrix"]["matrix"]
+        for label, row in zip(labels, matrix, strict=True):
+            lines.append(f"| {label} | " + " | ".join(str(value) for value in row) + " |")
+        lines.append("")
+    lines.extend(
+        [
             "## McNemar",
             "",
             f"A vs F0/C: {report['mcnemar_A_vs_F0_C']}",
@@ -313,6 +335,22 @@ def _markdown(report: dict[str, Any]) -> str:
         [
             "",
             f"Upper-bound errors by cause: {report['A_error_analysis']['upper_bound_by_cause']}",
+            "",
+            "## B error analysis",
+            "",
+            "| Case | Category | Expected | Predicted | Cause | Max resolvable |",
+            "|---|---|---|---|---|---:|",
+        ]
+    )
+    for item in report["B_error_analysis"]["case_errors"]:
+        lines.append(
+            f"| {item['id']} | {item['category']} | {item['expected']} | "
+            f"{item['predicted']} | {item['cause']} | {item['maximum_resolvable']} |"
+        )
+    lines.extend(
+        [
+            "",
+            f"Upper-bound errors by cause: {report['B_error_analysis']['upper_bound_by_cause']}",
             "",
             "## Statistical limitation",
             "",
@@ -425,6 +463,7 @@ def main() -> None:
         ],
     }
     report["A_error_analysis"] = _error_analysis(a_report)
+    report["B_error_analysis"] = _error_analysis(b_report)
     stable = json.dumps(
         report,
         ensure_ascii=False,
