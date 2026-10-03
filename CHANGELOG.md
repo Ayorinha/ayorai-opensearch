@@ -9,8 +9,9 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - Versioned pre-fix Golden reproduction records the 9/30 claim-pipeline result.
 - Claim verification accepts caller-supplied claims separately from evidence.
 - Claim extraction is response-only and cannot read evidence.
-- ADR-003 adds the explicit NEUTRAL stance state and deterministic Judge
-  semantics.
+- ADR-003 adds NEUTRAL stance semantics.
+- Numeric contradiction detection now aligns unit and attribute context and
+  does not compare evidence documents against an arbitrary baseline.
 
 ### Engineering
 

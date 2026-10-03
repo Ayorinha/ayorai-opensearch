@@ -4,18 +4,22 @@ Updated: 2026-10-03
 
 ## Current verification boundary
 
-The claim-level API now treats caller-supplied claims as the object of
-verification: verify(claims, documents).
+The claim-level API treats caller-supplied claims as the object of verification:
+verify(claims, documents).
 
-ClaimExtractor is reserved for decomposing a model response into atomic claims.
-It never receives evidence.
+ClaimExtractor is response-only and never receives evidence.
 
-ADR-003 adds SUPPORTS, CONTRADICTS and NEUTRAL. Neutral edges are ignored by
-the deterministic Judge; zero support and zero contradiction yields UNVERIFIED.
+ADR-003 defines SUPPORTS, CONTRADICTS and NEUTRAL. Neutral edges are ignored
+by the deterministic Judge; zero support and zero contradiction yields
+UNVERIFIED.
+
+Numeric contradiction checks now require matching numeric unit and attribute
+context. Evidence-vs-evidence baseline comparison is removed from the stance
+detector.
 
 ## Evaluation truth
 
-Golden v0 is now DEV data. The versioned pre-fix reproduction is:
+Golden v0 is DEV data. The versioned pre-fix reproduction is:
 scripts/reproduce_p0c_prefixed_golden.py
 
 Observed pre-fix result:
