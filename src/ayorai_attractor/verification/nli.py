@@ -4,7 +4,6 @@ from typing import Any
 
 from .models import Stance
 
-
 _LABEL_TO_STANCE = {
     "entailment": Stance.SUPPORTS,
     "contradiction": Stance.CONTRADICTS,
