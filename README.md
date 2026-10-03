@@ -8,7 +8,7 @@
 
 ## Current status
 
-**Reference implementation in active development.** Phase 0 is complete and the deterministic R1 verification core is implemented; R2/R3/R4/R5/R6/R8/R9/R10/R13 engineering cores are also present and tested. The repository deliberately distinguishes verified capabilities from roadmap work.
+**Reference implementation in active development.** Phase 0 and the R1 deterministic verification core are implemented. R2–R13 now have tested engineering foundations on main, and the core R1→R6 path has an explicit end-to-end verification/synthesis composition. Production-grade distributed execution, telemetry export, external queue adapters, advanced GEPA proposal loops, transport-level MCP deployment and deployment-specific authorization remain hardening work.
 
 Golden v0 remains **34 cases / 52 synthetic documents** with SHA-256 recorded in evals/golden/MANIFEST.json. The original baseline is **43.3333%**, exactly equal to the PARTIALLY_SUPPORTED majority-class baseline. This baseline is not evidence of a capable verifier.
 
@@ -37,7 +37,7 @@ The Judge does not delegate verdict decisions to an LLM. Instruction-like text i
 
 ## R2 Audit API
 
-The deterministic audit core is exposed through `POST /v1/audit`. It executes the same request contract as `/v1/opensearch` and returns a typed audit report containing the trace ID, verification state, evidence counts, failure count and deterministic findings. Audit output describes the response; it does not alter the verdict.
+The deterministic audit core is exposed through POST /v1/audit. It executes the same request contract as /v1/opensearch and returns a typed audit report containing the trace ID, verification state, evidence counts, failure count and deterministic findings. Audit output describes the response; it does not alter the verdict.
 
 ## Architecture
 
@@ -45,10 +45,13 @@ The deterministic audit core is exposed through `POST /v1/audit`. It executes th
 - Planner, Researcher, Critic, Fact Checker and Judge extension point
 - Evidence Store and Evidence Graph
 - Failure Engine
-- MCP Gateway and plugin registry
+- governed MCP Gateway and plugin registry
 - OpenSearch-compatible and OpenAI-compatible adapters
 - deterministic mock provider
 - FastAPI API and CLI
+- durable audit/replay state
+- deterministic metrics and comparative evaluation
+- tenant-scoping primitives
 - CI, coverage ratchet, strict typing and security scanning
 
 ## Why ATTRACTOR is designed for reference use
@@ -62,6 +65,8 @@ ATTRACTOR treats verification as an engineering boundary rather than a prompt co
 - **Closed-world evaluation:** Golden v0 is frozen, hashed and executable in CI.
 - **Quality gates:** linting, typing, tests, coverage ratcheting, dependency audit, Bandit and CodeQL are part of the development loop.
 - **Provider isolation:** retrieval/model integrations are kept behind provider contracts.
+- **Governed tool execution:** MCP/plugin dispatch is allowlisted and trusted-only by default.
+- **Explicit tenant boundaries:** tenant scope is carried by control-plane context, never inferred from model output.
 
 This is intentionally a **reference architecture and research/engineering platform**, not a claim of universal factual accuracy.
 
@@ -71,12 +76,20 @@ This is intentionally a **reference architecture and research/engineering platfo
 - frozen golden v0: 34 cases / 52 documents / SHA-256 manifest
 - baseline accuracy: **43.3333%**, equal to the majority-class baseline
 - R1 deterministic verification core with unit and property tests
+- R7 adversarial corpus with CI Security/CodeQL coverage
+- R8 deterministic metrics primitives
+- R9 durable job state primitive
+- R10 confusion-matrix/bootstrap/McNemar arena reporting
+- R11 deterministic evaluator-driven optimization core
+- R12 governed MCP/plugin boundary
+- R13 explicit tenant isolation primitive
+- R1→R6 end-to-end verification pipeline with grounded synthesis gate
 
 ## Roadmap
 
 **Phase 0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9 → R10 → R11 → R12 → R13**
 
-R1 deterministic core is implemented and exposed through POST /v1/verify, with an independent six-verdict Judge regression suite and a post-v0 Golden v1 provenance edge case. Frozen Golden v0 remains the end-to-end engine fixture suite. R2 adds audit/replay operation; R3 adds controlled multi-model deliberation; R5 introduces real hybrid retrieval.
+The roadmap is implemented in layers rather than declared complete from documentation alone. Each stage distinguishes tested foundations from production integration work. The next hardening increments are OpenTelemetry export, durable worker/lease adapters, real comparative harness execution, richer GEPA proposal/evaluation loops, transport-level MCP deployment, and deployment-specific authorization/isolation.
 
 ## Quickstart
 
@@ -102,7 +115,7 @@ Run the complete frozen suite locally:
 
 The suite contains 34 cases and 52 synthetic documents. Always report the commit SHA and suite version alongside any result. The CI pipeline executes the complete suite and stores the generated report as a workflow artifact.
 
-See [`docs/eval/LOCAL-EVALUATION.md`](docs/eval/LOCAL-EVALUATION.md), [`docs/STATUS.md`](docs/STATUS.md), [`docs/architecture.md`](docs/architecture.md), [`docs/eval/TRACEABILITY.md`](docs/eval/TRACEABILITY.md) and [`evals/golden/REVIEW.md`](evals/golden/REVIEW.md).
+See docs/eval/LOCAL-EVALUATION.md, docs/STATUS.md, docs/architecture.md, docs/eval/TRACEABILITY.md and evals/golden/REVIEW.md.
 
 ## Security
 
