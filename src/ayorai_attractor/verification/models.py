@@ -1,24 +1,18 @@
-"""Strict Pydantic contracts for the R1 verification engine."""
-
 from datetime import datetime
 from enum import StrEnum
-
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
-
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-
 
 class Claim(StrictModel):
     id: str = Field(min_length=1)
     text: str = Field(min_length=1)
 
-
 class Stance(StrEnum):
     SUPPORTS = "supports"
     CONTRADICTS = "contradicts"
-
+    NEUTRAL = "neutral"
 
 class Evidence(StrictModel):
     id: str = Field(min_length=1)
@@ -38,7 +32,6 @@ class Evidence(StrictModel):
     @field_validator("retrieved_at", mode="before")
     @classmethod
     def parse_rfc3339_timestamp(cls, value: object) -> object:
-        """Accept JSON RFC3339 timestamps without enabling general coercion."""
         if isinstance(value, str):
             try:
                 return datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -49,7 +42,6 @@ class Evidence(StrictModel):
     @field_validator("canonical_url", mode="before")
     @classmethod
     def parse_http_url(cls, value: object) -> object:
-        """Accept a JSON URL string while retaining HttpUrl validation."""
         if isinstance(value, str):
             return HttpUrl(value)
         return value
@@ -62,24 +54,11 @@ class Evidence(StrictModel):
             raise ValueError("end_offset must be greater than start_offset")
         return self
 
-
 class StanceEdge(StrictModel):
     id: str = Field(min_length=1)
     claim_id: str = Field(min_length=1)
     evidence_id: str = Field(min_length=1)
     stance: Stance
-
-    @field_validator("stance", mode="before")
-    @classmethod
-    def parse_stance(cls, value: object) -> object:
-        """Parse only the declared wire values; reject arbitrary coercion."""
-        if isinstance(value, str):
-            try:
-                return Stance(value)
-            except ValueError as exc:
-                raise ValueError("stance must be supports or contradicts") from exc
-        return value
-
 
 class Verdict(StrEnum):
     VERIFIED = "verified"
@@ -89,8 +68,6 @@ class Verdict(StrEnum):
     REFUTED = "refuted"
     CONFLICTING = "conflicting"
 
-
-# Compatibility mapping only; no Judge decision logic lives here.
 INSUFFICIENT_EVIDENCE_TO_VERDICT: dict[str, Verdict] = {
     "insufficient_evidence": Verdict.UNVERIFIED,
 }
