@@ -8,7 +8,7 @@
 
 ## Current status
 
-**Reference implementation in active development.** Phase 0 and the R1 deterministic verification core are implemented. R2–R13 now have tested engineering foundations on main, and the core R1→R6 path has an explicit end-to-end verification/synthesis composition. Production-grade distributed execution, telemetry export, external queue adapters, advanced GEPA proposal loops, transport-level MCP deployment and deployment-specific authorization remain hardening work.
+**Reference implementation in active development.** Phase 0 and the R1 deterministic verification core are implemented. R2–R13 now have tested engineering foundations on main, R14 adds provider-neutral tracing context integrated with orchestration, and R15 adds a durable worker execution boundary over JobStore, and the core R1→R6 path has an explicit end-to-end verification/synthesis composition. Production-grade distributed execution, telemetry export, external queue adapters, advanced GEPA proposal loops, transport-level MCP deployment and deployment-specific authorization remain hardening work.
 
 Golden v0 remains **34 cases / 52 synthetic documents** with SHA-256 recorded in evals/golden/MANIFEST.json. The original baseline is **43.3333%**, exactly equal to the PARTIALLY_SUPPORTED majority-class baseline. This baseline is not evidence of a capable verifier.
 
@@ -52,6 +52,8 @@ The deterministic audit core is exposed through POST /v1/audit. It executes the 
 - durable audit/replay state
 - deterministic metrics and comparative evaluation
 - tenant-scoping primitives
+- provider-neutral trace events
+- durable JobExecutor over the leased JobStore
 - CI, coverage ratchet, strict typing and security scanning
 
 ## Why ATTRACTOR is designed for reference use
