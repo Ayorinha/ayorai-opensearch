@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import importlib
 
 from .models import Stance
 
@@ -38,18 +39,18 @@ class TransformersNLIBackend:
             return pipeline, label_map
 
         try:
-            import torch
-            from transformers import AutoModelForSequenceClassification, AutoTokenizer
+            torch = importlib.import_module("torch")
+            transformers = importlib.import_module("transformers")
         except ImportError as exc:
             raise RuntimeError(
                 "install the optional 'nli' extra to use TransformersNLIBackend"
             ) from exc
 
-        tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer = transformers.AutoTokenizer.from_pretrained(
             self.model_revision,
             revision=self.model_revision,
         )
-        model = AutoModelForSequenceClassification.from_pretrained(
+        model = transformers.AutoModelForSequenceClassification.from_pretrained(
             self.model_revision,
             revision=self.model_revision,
         )
