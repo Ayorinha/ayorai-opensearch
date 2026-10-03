@@ -462,7 +462,7 @@ class RuleStanceDetector:
                             self.component,
                             self.model,
                             self.version,
-                            _sha256(claim_item.claim.text + "" + item.excerpt),
+                            _sha256(claim_item.claim.text + "\n" + item.excerpt),
                             _sha256(payload),
                         ),
                     )
@@ -556,7 +556,7 @@ class NLIStanceDetector(StanceDetector):
                             self.model,
                             f"{self.version}|window={start}:{end}",
                             _sha256(
-                                claim_item.claim.text + ""
+                                claim_item.claim.text + "\n"
                                 + item.excerpt[local_start:local_end]
                             ),
                             _sha256(f"{stance}|{confidence:.12f}|{start}|{end}"),
