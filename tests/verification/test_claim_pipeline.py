@@ -103,4 +103,4 @@ def test_pipeline_preserves_provenance_as_part_of_judge_input() -> None:
     ).verify("Does VectorLabs block unsigned model artifacts before deployment?")
 
     assert result.verdict.value == "verified"
-    assert all(item.evidence.provenance_complete if hasattr(item, "evidence") else True for item in result.claims)
+    assert all(item.provenance_complete for item in result.evidence)
