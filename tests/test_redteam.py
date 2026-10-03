@@ -17,7 +17,7 @@ def test_red_team_covers_core_threat_classes() -> None:
         ThreatClass.PROMPT_INJECTION,
         ThreatClass.EVIDENCE_POISONING,
         ThreatClass.CITATION_MANIPULATION,
-        ThreatClass.SECRET_EXPOSURE,
+        ThreatClass.SENSITIVE_INPUT,
     }
 
 
