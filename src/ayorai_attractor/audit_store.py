@@ -24,7 +24,7 @@ class AuditTraceStore:
         self.path = configured
         if configured != ":memory:":
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
-        self._connection = sqlite3.connect(self.path)
+        self._connection = sqlite3.connect(self.path, check_same_thread=False)
         connection = self._connection
         connection.execute(
                 """
