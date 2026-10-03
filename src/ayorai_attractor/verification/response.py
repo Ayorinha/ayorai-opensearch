@@ -2,6 +2,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+
 class ResponseStatus(StrEnum):
     VERIFIED = "verified"
     SUPPORTED = "supported"
