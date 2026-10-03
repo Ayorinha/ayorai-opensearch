@@ -1,4 +1,3 @@
-# ruff: noqa
 """Claim extraction contracts: decompose model responses, never evidence."""
 
 from __future__ import annotations
@@ -6,9 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from collections.abc import Sequence
 from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
@@ -27,6 +26,7 @@ class LLMClaimResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     claims: list[LLMClaimPayload] = Field(min_length=1)
+
 
 _SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
 _TOKEN_RE = re.compile(r"[\wÀ-ÿ]+", re.UNICODE)

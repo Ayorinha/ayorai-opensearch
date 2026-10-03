@@ -1,18 +1,23 @@
-# ruff: noqa
 """Claim-level verification: claims are inputs; evidence is never a claim source."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Protocol
 
-from .extraction import ClaimExtractor, ComponentProvenance, ExtractedClaim, RetrievedDocument
+from pydantic import ValidationError
+
+from .extraction import (
+    ClaimExtractor,
+    ComponentProvenance,
+    ExtractedClaim,
+    RetrievedDocument,
+)
 from .judge import ClaimJudgment, judge
 from .models import Claim, Evidence, StanceEdge, Verdict
 from .response import ResponseStatus
 from .stance import StanceDetector
-from pydantic import ValidationError
 
 
 class ScopeClassifier(Protocol):
