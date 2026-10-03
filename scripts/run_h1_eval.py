@@ -23,7 +23,6 @@ from ayorai_attractor.verification.stance import (
     TranslatedNLIStanceDetector,
 )
 from ayorai_attractor.verification.translation import MarianTranslationBackend
-from run_f1_eval import _evaluate
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "evals/corpus/documents.jsonl"
