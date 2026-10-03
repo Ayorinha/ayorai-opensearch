@@ -81,7 +81,7 @@ _PT_MARKERS = frozenset(
     {"não", "nao", "uma", "para", "com", "que", "foi", "são", "sao",
      "empresa", "receita", "ano", "dos", "das", "em", "por"}
 )
-_ENTITY_RE = re.compile(r"\b(?:company|empresa)\s+([A-Z][\w-]*)\b", re.UNICODE)
+_ENTITY_RE = re.compile(r"\b(?:company|empresa)\s+[A-Z][\w-]*\b", re.UNICODE)
 _EN_MARKERS = frozenset(
     {"the", "was", "were", "with", "that", "company", "revenue", "year",
      "from", "for", "and", "not", "this", "reported"}
@@ -198,7 +198,7 @@ def _numeric_relation(claim_text: str, evidence_text: str) -> tuple[bool, bool]:
 
 
 def _entities(text: str) -> set[str]:
-    return {match.group(1).casefold() for match in _ENTITY_RE.finditer(text)}
+    return {match.group(0).casefold() for match in _ENTITY_RE.finditer(text)}
 
 
 def _numeric_facts_align(
