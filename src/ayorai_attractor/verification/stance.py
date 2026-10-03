@@ -70,7 +70,8 @@ _PT_MARKERS = frozenset(
     {"não", "nao", "uma", "para", "com", "que", "foi", "são", "sao",
      "empresa", "receita", "ano", "dos", "das", "em", "por"}
 )
-_ENTITY_RE = re.compile(r"\b(?:company|empresa)\s+([A-Z][\w-]*)\b", re.UNICODE)\n_EN_MARKERS = frozenset(
+_ENTITY_RE = re.compile(r"\b(?:company|empresa)\s+([A-Z][\w-]*)\b", re.UNICODE)
+_EN_MARKERS = frozenset(
     {"the", "was", "were", "with", "that", "company", "revenue", "year",
      "from", "for", "and", "not", "this", "reported"}
 )
