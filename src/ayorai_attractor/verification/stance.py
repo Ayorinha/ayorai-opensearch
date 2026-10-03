@@ -63,7 +63,7 @@ _STOPWORDS = frozenset(
 _UNIT_WORDS = frozenset(
     {
         "usd", "eur", "brl", "ms", "million", "millions", "billion", "billions",
-        "employees", "people", "customers", "offices", "percent", "rate", "year",
+        "employees", "people", "customers", "offices", "percent", "rate", "year", "mil", "milhão", "milhões", "bilhão", "bilhões",
     }
 )
 _PT_MARKERS = frozenset(
@@ -100,7 +100,7 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
         before = tokens[max(0, index - 6) : index]
         after = tokens[index + 1 : index + 4]
         context = before + after
-        if "%" in token or "percent" in context:
+        if "%" in token or "percent" in context or "porcento" in context:
             unit = "percent"
         elif any(value in context for value in ("usd", "eur", "brl")):
             currency = next(
@@ -109,7 +109,7 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             scale = next(
                 (
                     value
-                    for value in ("million", "millions", "billion", "billions")
+                    for value in ("million", "millions", "milhão", "milhões", "billion", "billions", "bilhão", "bilhões")
                     if value in context
                 ),
                 "",
@@ -135,11 +135,12 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
                 (
                     value
                     for value in reversed(before)
-                    if value not in _STOPWORDS and value not in _UNIT_WORDS
+                    if value not in _STOPWORDS and value not in _UNIT_WORDS and value not in _entities(text)
                 ),
                 "unknown",
             )
         )
+        attribute = {"receita": "revenue", "faturamento": "revenue", "revenue": "revenue", "lucro": "profit", "profit": "profit", "custo": "cost", "cost": "cost"}.get(attribute, attribute)
         facts.append((token, unit, attribute))
     return facts
 
