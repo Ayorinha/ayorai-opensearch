@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ayorai-opensearch"
-version = "0.1.0"
+version = "0.2.0"
 description = "AYORAI ATTRACTOR adaptive multi-agent intelligence and verification engine."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -32,6 +32,7 @@ dev = [
   "mcp>=2,<3",
   "openai-agents>=0.1,<1",
   "hypothesis>=6.100,<7",
+  "PyYAML>=6.0,<7",
 ]
 
 [project.scripts]
@@ -65,7 +66,6 @@ check_untyped_defs = true
 disallow_untyped_defs = true
 no_implicit_optional = true
 warn_unused_ignores = true
-
 
 # Strict typing ratchet: this list only grows.
 [[tool.mypy.overrides]]

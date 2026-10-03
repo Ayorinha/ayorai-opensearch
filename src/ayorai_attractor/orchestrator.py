@@ -1,4 +1,3 @@
-# ruff: noqa: I001
 from ayorai_attractor.agents.core import (
     AgentContext,
     CriticAgent,
@@ -10,14 +9,13 @@ from ayorai_attractor.agents.core import (
 from ayorai_attractor.evidence.core import EvidenceStore
 from ayorai_attractor.failure_engine.core import FailureEngine
 from ayorai_attractor.observability.tracing import TraceContext
+from ayorai_attractor.providers.base import Provider
 from ayorai_attractor.providers.factory import build_default_provider, build_search_provider
 from ayorai_attractor.providers.registry import ProviderRegistry
-from ayorai_attractor.providers.base import Provider
 
 from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
 from .router import AdaptiveRouter
 from .tenant import TenantContext
-
 
 IMPLEMENTED_AGENTS = {
     "planner": PlannerAgent,
