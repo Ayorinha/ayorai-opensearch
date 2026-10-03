@@ -41,13 +41,9 @@ class FixtureSearchProvider(Provider):
         excerpts = [str(doc["content"]) for doc in selected]
         source_ids = ",".join(str(doc["doc_id"]) for doc in selected)
         return ProviderResponse(
-            text="
-
-".join(excerpts),
+            text="\n\n".join(excerpts),
             source=f"fixture://golden-v0/{source_ids or 'empty'}",
-            excerpt="
-
-".join(excerpts),
+            excerpt="\n\n".join(excerpts),
             independent=bool(selected),
         )
 
