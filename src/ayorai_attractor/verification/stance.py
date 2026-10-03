@@ -132,6 +132,10 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
         context = before + after
         if "%" in token or "percent" in context or "porcento" in context:
             unit = "percent"
+        elif token.isdigit() and 1900 <= int(token) <= 2100 and not any(
+            value in context for value in ("usd", "eur", "brl")
+        ):
+            unit = "year"
         elif any(value in context for value in ("usd", "eur", "brl")):
             currency = next(value for value in ("usd", "eur", "brl") if value in context)
             scale = next(
