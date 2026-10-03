@@ -337,7 +337,7 @@ class RuleStanceDetector:
                     item.excerpt
                 )
                 unverified_structured_fact = (
-                    (claim_has_numeric and not numeric_matched)
+                    (claim_has_numeric and (not numeric_matched or not numeric_agreement))
                     or (claim_has_date and not evidence_has_date)
                     or entity_mismatch
                 )
