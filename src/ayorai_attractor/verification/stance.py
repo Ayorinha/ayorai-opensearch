@@ -13,8 +13,8 @@ from .extraction import ComponentProvenance, ExtractedClaim
 from .models import Evidence, Stance, StanceEdge
 from .numeric import DEFAULT_RELATIVE_TOLERANCE, NumericLocale, numeric_conflicts
 
-_NUMBER_RE = re.compile(r"(?<![\w])[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?")
-_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+_NUMBER_RE = re.compile(r"(?<![\\w])[-+]?\\d+(?:[.,]\\d+|[.,]\\d{3})*(?:\\s*%)?")
+_DATE_RE = re.compile(r"\\b\\d{4}-\\d{2}-\\d{2}\\b")
 _NEGATIONS = frozenset(
     {"not", "no", "didn't", "doesn't", "never", "não", "nao", "nunca", "sem", "não foi", "nao foi"}
 )
@@ -26,6 +26,29 @@ def _sha256(value: str) -> str:
 
 def _numbers(text: str) -> list[str]:
     return _NUMBER_RE.findall(text)
+
+
+def _number_mentions(text: str) -> list[tuple[str, str]]:
+    """Return numeric mentions keyed by their local textual context.
+
+    Numbers are not comparable merely because they co-occur in two documents.
+    The key keeps nearby non-numeric tokens so a year such as 2025 is not
+    compared with an amount such as 120 million.
+    """
+    mentions: list[tuple[str, str]] = []
+    token_re = re.compile(r"[\\wÀ-ÿ]+", re.UNICODE)
+    for match in _NUMBER_RE.finditer(text):
+        prefix = text[max(0, match.start() - 32):match.start()]
+        suffix = text[match.end():match.end() + 32]
+        context = " ".join(
+            token.casefold()
+            for token in token_re.findall(prefix + " " + suffix)
+            if not token.isdigit()
+        )
+        context_tokens = context.split()
+        key = " ".join(context_tokens[-2:] + context_tokens[:2])
+        mentions.append((match.group(0), key))
+    return mentions
 
 
 def _has_negation(text: str) -> bool:
@@ -67,16 +90,21 @@ class RuleStanceDetector:
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
-        claim_numbers = _numbers(claim_text)
-        evidence_numbers = _numbers(evidence_text)
+        claim_numbers = _number_mentions(claim_text)
+        evidence_numbers = _number_mentions(evidence_text)
         if not claim_numbers or not evidence_numbers:
             return False
-        for left in claim_numbers:
-            for right in evidence_numbers:
+
+        evidence_by_context: dict[str, list[str]] = {}
+        for value, context in evidence_numbers:
+            evidence_by_context.setdefault(context, []).append(value)
+
+        for value, context in claim_numbers:
+            for evidence_value in evidence_by_context.get(context, []):
                 try:
                     if numeric_conflicts(
-                        left,
-                        right,
+                        value,
+                        evidence_value,
                         locale=NumericLocale.EN_US,
                         tolerance=DEFAULT_RELATIVE_TOLERANCE,
                     ):
