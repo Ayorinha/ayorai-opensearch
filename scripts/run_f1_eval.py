@@ -9,10 +9,27 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from ayorai_attractor.evaluation.golden import FixtureRetriever, _legacy_prediction, _load_jsonl
-from ayorai_attractor.evaluation.stats import balanced_accuracy, bootstrap_accuracy, confusion_matrix, mcnemar_exact_pvalue
-from ayorai_attractor.verification.claim_pipeline import ClaimVerificationPipeline, RuleScopeClassifier
-from ayorai_attractor.verification.nli import EVAL_ONLY_LEVEL, EVAL_ONLY_MODEL, EVAL_ONLY_REVISION, TransformersNLIBackend
+from ayorai_attractor.evaluation.golden import (
+    FixtureRetriever,
+    _legacy_prediction,
+    _load_jsonl,
+)
+from ayorai_attractor.evaluation.stats import (
+    balanced_accuracy,
+    bootstrap_accuracy,
+    confusion_matrix,
+    mcnemar_exact_pvalue,
+)
+from ayorai_attractor.verification.claim_pipeline import (
+    ClaimVerificationPipeline,
+    RuleScopeClassifier,
+)
+from ayorai_attractor.verification.nli import (
+    EVAL_ONLY_LEVEL,
+    EVAL_ONLY_MODEL,
+    EVAL_ONLY_REVISION,
+    TransformersNLIBackend,
+)
 from ayorai_attractor.verification.stance import (
     NLIStanceDetector,
     RuleStanceDetector,
@@ -56,7 +73,12 @@ def _ece(confidences: list[float], correct: list[bool], bins: int = 10) -> float
     for index in range(bins):
         low = index / bins
         high = (index + 1) / bins
-        members = [i for i, score in enumerate(confidences) if low <= score < high or (index == bins - 1 and score == high)]
+        members = [
+            i
+            for i, score in enumerate(confidences)
+            if low <= score < high
+            or (index == bins - 1 and score == high)
+        ]
         if not members:
             continue
         accuracy = sum(correct[i] for i in members) / len(members)
@@ -65,8 +87,14 @@ def _ece(confidences: list[float], correct: list[bool], bins: int = 10) -> float
     return round(value, 6)
 
 
-def _evaluate(detector: object, cases: list[dict[str, Any]], corpus: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    scope = RuleScopeClassifier(("medical diagnosis", "diagnóstico", "legal strategy", "estratégia jurídica"))
+def _evaluate(
+    detector: object,
+    cases: list[dict[str, Any]],
+    corpus: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    scope = RuleScopeClassifier(
+        ("medical diagnosis", "diagnóstico", "legal strategy", "estratégia jurídica")
+    )
     pipeline = ClaimVerificationPipeline(detector, scope_classifier=scope)
     expected: list[str] = []
     predicted: list[str] = []
