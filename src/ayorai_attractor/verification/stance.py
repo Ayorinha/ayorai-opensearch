@@ -155,13 +155,28 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             unit = f"count:{word}"
         else:
             unit = "scalar"
+        aliases = {
+            "receita": "revenue",
+            "faturamento": "revenue",
+            "revenue": "revenue",
+            "lucro": "profit",
+            "profit": "profit",
+            "custo": "cost",
+            "cost": "cost",
+        }
+        context_candidates = before + after
+        matched_attribute = next(
+            (aliases[value] for value in context_candidates if value in aliases),
+            None,
+        )
         attribute = (
             "year"
             if unit == "year"
-            else next(
+            else matched_attribute
+            or next(
                 (
                     value
-                    for value in reversed(before)
+                    for value in reversed(context_candidates)
                     if (
                         value not in _STOPWORDS
                         and value not in _UNIT_WORDS
@@ -171,15 +186,6 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
                 "unknown",
             )
         )
-        attribute = {
-            "receita": "revenue",
-            "faturamento": "revenue",
-            "revenue": "revenue",
-            "lucro": "profit",
-            "profit": "profit",
-            "custo": "cost",
-            "cost": "cost",
-        }.get(attribute, attribute)
         facts.append((token, unit, attribute))
     return facts
 
