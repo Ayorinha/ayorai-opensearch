@@ -84,6 +84,7 @@ class TransformersNLIBackend:
         tokenizer = transformers.AutoTokenizer.from_pretrained(
             self.model_id,
             revision=self.model_revision,
+            use_fast=False,
         )
         model = transformers.AutoModelForSequenceClassification.from_pretrained(
             self.model_id,
