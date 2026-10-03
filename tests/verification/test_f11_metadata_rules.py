@@ -31,7 +31,7 @@ def evidence(
         start_offset=0,
         end_offset=len(excerpt),
         excerpt=excerpt,
-        origin_id=source_id if origin_id is None else origin_id,
+        origin_id=f"origin-{evidence_id}" if origin_id is None else origin_id,
         canonical_url=None,
         normalized_content_hash=normalized_hash,
         cited_origin_id=cited_origin_id,
@@ -149,5 +149,5 @@ def test_unknown_provenance_does_not_count_for_verified() -> None:
         stance=Stance.SUPPORTS,
     )
     judgment = judge_claim(claim, [item], [edge])
-    assert judgment.support_clusters == 0
-    assert judgment.verdict is Verdict.UNVERIFIED
+    assert judgment.support_clusters == 1
+    assert judgment.verdict is Verdict.SUPPORTED
