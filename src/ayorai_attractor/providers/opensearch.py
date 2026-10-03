@@ -2,6 +2,7 @@ import os
 
 import httpx
 
+from ayorai_attractor.hybrid import RankedHit, rrf_fuse
 from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 
@@ -128,8 +129,6 @@ class HybridOpenSearchProvider(OpenSearchProvider):
                 },
             }
         )
-        from ayorai_attractor.hybrid import RankedHit, rrf_fuse
-
         lexical_hits = [
             RankedHit(str(hit.get("_id", "")), float(hit.get("_score") or 0.0))
             for hit in lexical
