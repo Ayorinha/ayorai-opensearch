@@ -21,6 +21,7 @@ dependencies = [
 nli = [
   "transformers>=4.55,<5",
   "torch>=2.7,<3",
+  "protobuf>=5,<7",
 ]
 telemetry = [
   "opentelemetry-api>=1.45,<2",
