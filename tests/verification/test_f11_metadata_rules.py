@@ -54,11 +54,11 @@ def test_same_hash_is_not_independent_even_with_distinct_sources() -> None:
 
 def test_citation_republication_is_transitive() -> None:
     original = evidence("e1", source_id="a", origin_id="origin-a")
-    republication = evidence("e2", source_id="b", cited_origin_id="origin-a")
-    third = evidence("e3", source_id="b", cited_origin_id="origin-b", origin_id="origin-b")
+    republication = evidence("e2", source_id="b", origin_id="origin-b", cited_origin_id="origin-a")
+    third = evidence("e3", source_id="c", cited_origin_id="origin-b")
     clusters = cluster_evidence([original, republication, third])
     assert any(cluster == frozenset({"e1", "e2"}) for cluster in clusters)
-    assert any("e3" in cluster for cluster in clusters)
+    assert any(cluster == frozenset({"e1", "e2", "e3"}) for cluster in clusters)
 
 
 def test_missing_dependency_metadata_is_not_independence() -> None:
