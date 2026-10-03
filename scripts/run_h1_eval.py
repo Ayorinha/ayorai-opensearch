@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from run_f1_eval import _evaluate
+
 from ayorai_attractor.evaluation.golden import _load_jsonl
 from ayorai_attractor.evaluation.stats import mcnemar_exact_pvalue
 from ayorai_attractor.verification.nli import (
@@ -93,7 +95,7 @@ def main() -> None:
     parser.add_argument(
         "--suite", choices=("golden-v0", "golden-v0.1"), default="golden-v0.1"
     )
-    args = parser.parse_args()
+    parser.parse_args()
     corpus = {str(x["doc_id"]): x for x in _load_jsonl(CORPUS)}
     paths = {
         "golden-v0": ROOT / "evals/golden/v0.jsonl",
@@ -117,7 +119,10 @@ def main() -> None:
         },
         "seed": 20261003,
         "bootstrap_iterations": 10000,
-        "method": "sentence-level evidence, claim x sentence, max confidence, contradicts tie precedence",
+        "method": (
+            "sentence-level evidence, claim x sentence, max confidence, "
+            "contradicts tie precedence"
+        ),
         "golden_v0": results["golden-v0"],
         "golden_v0_1": results["golden-v0.1"],
     }
@@ -150,7 +155,10 @@ def main() -> None:
             )
         for key in ("A", "B"):
             x = results[suite][f"mcnemar_{key}_baseline_vs_{key}_H1"]
-            lines.append(f"McNemar {key}: {x['baseline_correct_h1_wrong']}/{x['h1_correct_baseline_wrong']} p={x['exact_p']:.6g}")
+            lines.append(
+                f"McNemar {key}: {x['baseline_correct_h1_wrong']}/"
+                f"{x['h1_correct_baseline_wrong']} p={x['exact_p']:.6g}"
+            )
         lines.append("")
     OUT_MD.write_text("\n".join(lines), encoding="utf-8")
     report["json_sha256"] = hashlib.sha256(OUT_JSON.read_bytes()).hexdigest()
