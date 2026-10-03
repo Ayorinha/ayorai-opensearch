@@ -87,3 +87,22 @@ def test_numeric_value_beyond_tolerance_contradicts_even_with_low_lexical_overla
     item = evidence("e1", source_id="source-a", excerpt="The figure is 120 million USD.")
     result = RuleStanceDetector().detect([claim], [item])
     assert result.edges[0].edge.stance is Stance.CONTRADICTS
+
+
+def test_incomplete_retrieval_metadata_is_preserved() -> None:
+    from ayorai_attractor.evaluation.golden import FixtureRetriever
+
+    docs = {
+        "doc-a": {
+            "doc_id": "doc-a",
+            "content": "VectorLabs blocks unsigned model artifacts before deployment.",
+            "url": "https://example.test/a",
+            "origin_id": "origin-a",
+            "offsets": [0, 57],
+        }
+    }
+    evidence = FixtureRetriever(docs, ["doc-a"]).retrieve("query")[0].to_evidence(
+        "c1",
+        evidence_id="e1",
+    )
+    assert evidence.provenance_complete is False
