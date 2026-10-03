@@ -4,7 +4,7 @@ from typing import Any
 import httpx
 import pytest
 
-from ayorai_attractor.providers.opensearch import OpenSearchProvider
+from ayorai_attractor.providers.opensearch import HybridOpenSearchProvider, OpenSearchProvider
 
 
 def test_opensearch_builds_read_only_query_and_auth_header(
@@ -99,3 +99,45 @@ def test_opensearch_propagates_http_errors(monkeypatch: pytest.MonkeyPatch) -> N
 
     with pytest.raises(httpx.HTTPStatusError):
         OpenSearchProvider("https://search.example.test", "documents").execute("query")
+
+
+
+def test_hybrid_opensearch_fuses_lexical_and_neural_hits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[dict[str, Any]] = []
+
+    def fake_post(*args: Any, **kwargs: Any) -> SimpleNamespace:
+        captured.append(kwargs["json"])
+        if len(captured) == 1:
+            hits = [
+                {"_id": "a", "_score": 3.0, "_source": {"title": "A", "content": "lexical"}},
+                {"_id": "b", "_score": 2.0, "_source": {"title": "B", "content": "both"}},
+            ]
+        else:
+            hits = [
+                {"_id": "b", "_score": 5.0, "_source": {"title": "B", "content": "both"}},
+                {"_id": "c", "_score": 4.0, "_source": {"title": "C", "content": "semantic"}},
+            ]
+        return SimpleNamespace(
+            raise_for_status=lambda: None,
+            json=lambda: {"hits": {"hits": hits}},
+        )
+
+    monkeypatch.setattr(
+        "ayorai_attractor.providers.opensearch.httpx.post",
+        fake_post,
+    )
+
+    response = HybridOpenSearchProvider(
+        "https://search.example.test",
+        "documents",
+        semantic_field="embedding",
+        model_id="model-1",
+    ).execute("verification")
+
+    assert captured[0]["query"]["multi_match"]["query"] == "verification"
+    assert captured[1]["query"]["neural"]["embedding"]["model_id"] == "model-1"
+    assert response.text.startswith("B: both")
+    assert "A: lexical" in response.text
+    assert "C: semantic" in response.text
