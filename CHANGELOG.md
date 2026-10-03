@@ -4,6 +4,14 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-03
+
+### Verification
+
+- F0 stabilization release candidate: deterministic claim-as-input verification boundary, provenance-preserving evidence, and auditable Golden evaluation.
+- File-wide Ruff suppression removed from the verification and evaluation paths.
+- ADR-004 records the claim-as-input contract.
+
 ### Verification
 
 - F0 stabilization: fixed numeric cross-evidence comparison, duplicate verification exports, and stale Golden abstention assertions; CI evidence pending on the updated P0 branch.
@@ -35,4 +43,5 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - deterministic verification foundation;
 - security and community health files.
 
+[0.2.0]: https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.1.0
