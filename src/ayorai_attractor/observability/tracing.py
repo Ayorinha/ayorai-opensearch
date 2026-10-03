@@ -8,7 +8,7 @@ verification semantics.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import uuid4
 
 
@@ -50,7 +50,7 @@ class OpenTelemetrySink:
 
     def __init__(
         self,
-        tracer: object | None = None,
+        tracer: Any | None = None,
         *,
         instrumentation_name: str = "ayorai-attractor",
     ) -> None:
