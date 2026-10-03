@@ -97,8 +97,8 @@ def test_pipeline_supports_explicit_out_of_scope_boundary() -> None:
 def test_pipeline_preserves_provenance_as_part_of_judge_input() -> None:
     result = pipeline(
         [
-            document("e1", "VectorLabs blocks unsigned model artifacts before deployment.", origin="o1"),
-            document("e2", "VectorLabs blocks unsigned model artifacts before deployment.", origin="o2"),
+            document(\n                "e1",\n                "VectorLabs blocks unsigned model artifacts before deployment.",\n                origin="o1",\n            ),
+            document(\n                "e2",\n                "VectorLabs blocks unsigned model artifacts before deployment.",\n                origin="o2",\n            ),
         ]
     ).verify("Does VectorLabs block unsigned model artifacts before deployment?")
 
