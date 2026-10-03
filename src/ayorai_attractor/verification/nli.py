@@ -5,6 +5,7 @@ from typing import Any
 
 from .models import Stance
 
+
 _LABEL_TO_STANCE = {
     "entailment": Stance.SUPPORTS,
     "contradiction": Stance.CONTRADICTS,
@@ -24,19 +25,19 @@ def _resolve_label_map(id2label: dict[int, str]) -> dict[int, Stance]:
 class TransformersNLIBackend:
     """CPU-only three-class NLI backend with an explicit label-map contract."""
 
-    model_revision: str
+    def __init__(self, model_id: str, model_revision: str) -> None:
+        if not model_id.strip() or not model_revision.strip():
+            raise ValueError("model_id and model_revision are required")
+        self.model_id = model_id
+        self.model_revision = model_revision
+        self._label_map: dict[int, Stance] | None = None
+        self._tokenizer: Any = None
+        self._model: Any = None
+        self._torch: Any = None
 
-    def __post_init__(self) -> None:
-        if not self.model_revision.strip():
-            raise ValueError("model_revision is required")
-        object.__setattr__(self, "_pipeline", None)
-        object.__setattr__(self, "_label_map", None)
-
-    def _load(self) -> tuple[Any, dict[int, Stance]]:
-        pipeline = self._pipeline
-        label_map = self._label_map
-        if pipeline is not None and label_map is not None:
-            return pipeline, label_map
+    def _load(self) -> dict[int, Stance]:
+        if self._label_map is not None:
+            return self._label_map
 
         try:
             torch = importlib.import_module("torch")
@@ -47,38 +48,35 @@ class TransformersNLIBackend:
             ) from exc
 
         tokenizer = transformers.AutoTokenizer.from_pretrained(
-            self.model_revision,
+            self.model_id,
             revision=self.model_revision,
         )
         model = transformers.AutoModelForSequenceClassification.from_pretrained(
-            self.model_revision,
+            self.model_id,
             revision=self.model_revision,
         )
         model.eval()
         label_map = _resolve_label_map(
             {int(index): str(label) for index, label in model.config.id2label.items()}
         )
-        object.__setattr__(self, "_tokenizer", tokenizer)
-        object.__setattr__(self, "_model", model)
-        object.__setattr__(self, "_torch", torch)
-        object.__setattr__(self, "_label_map", label_map)
-        return self, label_map
+        self._tokenizer = tokenizer
+        self._model = model
+        self._torch = torch
+        self._label_map = label_map
+        return label_map
 
     def classify(self, claim_text: str, evidence_text: str) -> dict[str, float | str]:
-        backend, label_map = self._load()
-        torch = backend._torch
-        tokenizer = backend._tokenizer
-        model = backend._model
-        encoded = tokenizer(
+        label_map = self._load()
+        encoded = self._tokenizer(
             claim_text,
             evidence_text,
             return_tensors="pt",
             truncation=True,
         )
-        with torch.inference_mode():
-            logits = model(**encoded).logits[0]
-            probabilities = torch.softmax(logits, dim=-1)
-        index = int(torch.argmax(probabilities).item())
+        with self._torch.inference_mode():
+            logits = self._model(**encoded).logits[0]
+            probabilities = self._torch.softmax(logits, dim=-1)
+        index = int(self._torch.argmax(probabilities).item())
         return {
             "stance": label_map[index].value,
             "confidence": float(probabilities[index].item()),
