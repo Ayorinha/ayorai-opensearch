@@ -27,7 +27,7 @@ class TransformersNLIBackend:
     def _load(self) -> dict[int, str]:
         label_map = self.__dict__["_label_map"]
         if label_map is not None:
-            return label_map
+            return {int(index): str(label) for index, label in label_map.items()}
 
         try:
             import importlib
