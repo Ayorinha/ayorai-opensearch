@@ -150,4 +150,4 @@ def test_unknown_provenance_does_not_count_for_verified() -> None:
     )
     judgment = judge_claim(claim, [item], [edge])
     assert judgment.support_clusters == 1
-    assert judgment.verdict is Verdict.SUPPORTED
+    assert judgment.verdict is Verdict.PARTIALLY_SUPPORTED
