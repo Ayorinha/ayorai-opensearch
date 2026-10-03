@@ -2,7 +2,8 @@ from datetime import UTC, datetime
 
 from ayorai_attractor.verification.clusters import cluster_evidence, dependency_reason
 from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
-from ayorai_attractor.verification.judge import judge_claim\nfrom ayorai_attractor.verification.models import Claim, Evidence, Stance, StanceEdge, Verdict
+from ayorai_attractor.verification.judge import judge_claim
+from ayorai_attractor.verification.models import (\n    Claim,\n    Evidence,\n    Stance,\n    StanceEdge,\n    Verdict,\n)
 from ayorai_attractor.verification.stance import RuleStanceDetector
 
 
@@ -118,7 +119,7 @@ def test_numeric_mismatch_with_different_attribute_is_neutral() -> None:
 
 def test_same_number_with_different_entity_is_neutral() -> None:
     claim = claim_item("Company X revenue was 100 million USD.")
-    item = evidence("e1", source_id="source-a", excerpt="Company Y revenue was 100 million USD.")
+    item = evidence(\n        "e1", source_id="source-a", excerpt="Company Y revenue was 100 million USD."\n    )
     result = RuleStanceDetector().detect([claim], [item])
     assert result.edges[0].edge.stance is Stance.NEUTRAL
 
