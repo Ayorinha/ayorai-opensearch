@@ -1,3 +1,12 @@
+## Unreleased
+
+- R8: stable Prometheus text metrics export.
+- R9: restart-safe SQLite job leases and expiry requeue.
+- R10: deterministic comparative evaluation arena with bootstrap and McNemar statistics.
+- R11: bounded model-agnostic candidate optimization extension point.
+- R13: immutable tenant isolation context primitive.
+- Golden v0: removed obsolete fixture-canary contract wording.
+
 # Changelog
 
 All notable changes to AYORAI ATTRACTOR are documented here.
