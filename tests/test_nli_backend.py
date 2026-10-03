@@ -1,4 +1,3 @@
-from ayorai_attractor.verification.models import Stance
 from ayorai_attractor.verification.nli import _resolve_label_map
 
 
@@ -6,16 +5,16 @@ def test_resolve_three_class_label_map() -> None:
     assert _resolve_label_map(
         {0: "entailment", 1: "neutral", 2: "contradiction"}
     ) == {
-        0: Stance.SUPPORTS,
-        1: Stance.NEUTRAL,
-        2: Stance.CONTRADICTS,
+        0: "supports",
+        1: "neutral",
+        2: "contradicts",
     }
 
 
 def test_resolve_label_map_is_case_insensitive() -> None:
     assert _resolve_label_map(
         {0: "CONTRADICTION", 1: "Entailment", 2: "Neutral"}
-    )[1] is Stance.SUPPORTS
+    )[1] == "supports"
 
 
 def test_resolve_label_map_rejects_missing_class() -> None:
