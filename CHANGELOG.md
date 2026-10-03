@@ -6,6 +6,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ### Verification
 
+- F0 stabilization: fixed numeric cross-evidence comparison, duplicate verification exports, and stale Golden abstention assertions; CI evidence pending on the updated P0 branch.
 - Versioned pre-fix Golden reproduction records the 9/30 claim-pipeline result.
 - Claim verification accepts caller-supplied claims separately from evidence.
 - Claim extraction is response-only and cannot read evidence.
