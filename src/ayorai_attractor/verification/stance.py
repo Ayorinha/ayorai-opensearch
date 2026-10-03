@@ -154,17 +154,17 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             unit = f"{currency}:{scale_alias.get(scale, scale or 'base')}"
         elif "ms" in context:
             unit = "ms"
-        elif "year" in context or "fiscal" in context or (
-            token.isdigit() and 1900 <= int(token) <= 2100
-        ):
-            unit = "year"
-        elif any(value in context for value in ("employees", "people", "customers", "offices")):
+        elif any(value in local_context for value in ("employees", "people", "customers", "offices")):
             word = next(
                 value
                 for value in ("employees", "people", "customers", "offices")
-                if value in context
+                if value in local_context
             )
             unit = f"count:{word}"
+        elif "year" in local_context or "fiscal" in local_context or (
+            token.isdigit() and 1900 <= int(token) <= 2100
+        ):
+            unit = "year"
         else:
             unit = "scalar"
 
