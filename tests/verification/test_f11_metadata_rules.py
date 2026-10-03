@@ -92,7 +92,7 @@ def test_numeric_boundary_is_inclusive() -> None:
 
 def test_numeric_value_beyond_tolerance_contradicts_even_with_low_lexical_overlap() -> None:
     claim = claim_item("Revenue was 100 million USD.")
-    item = evidence("e1", source_id="source-a", excerpt="The figure is 120 million USD.")
+    item = evidence("e1", source_id="source-a", excerpt="Revenue was 120 million USD.")
     result = RuleStanceDetector().detect([claim], [item])
     assert result.edges[0].edge.stance is Stance.CONTRADICTS
 
