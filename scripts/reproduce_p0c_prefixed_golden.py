@@ -29,7 +29,11 @@ OUT_OF_SCOPE_TERMS = ("diagnóstico", "diagnostico", "estratégia jurídica", "e
 
 
 def load_jsonl(path: Path) -> list[dict[str, object]]:
-    return [\n        json.loads(line)\n        for line in path.read_text(encoding="utf-8").splitlines()\n        if line.strip()\n    ]
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
 
 
 class FixtureRetriever:
@@ -97,7 +101,10 @@ def main() -> None:
         legacy_labels.append(str(legacy_by_id[case_id]).upper())
         pipeline_labels.append(predicted)
 
-    correct = sum(\n        gold == predicted\n        for gold, predicted in zip(expected, pipeline_labels, strict=True)\n    )
+    correct = sum(
+        gold == predicted
+        for gold, predicted in zip(expected, pipeline_labels, strict=True)
+    )
     legacy_correct = sum(gold == predicted for gold, predicted in zip(expected, legacy_labels, strict=True))
     legacy_right_new_wrong = sum(
         gold == old and gold != new
