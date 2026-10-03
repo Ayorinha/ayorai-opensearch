@@ -134,13 +134,3 @@ Never place secrets, personal data, financial records or confidential institutio
 ## License
 
 Apache-2.0. See LICENSE.
-
-
-## Authorship & Citation
-
-**Author and technical direction:** Anderson Leon Ayora.
-
-- [Authorship & technical direction](docs/AUTHORSHIP.md)
-- [Trademark policy](TRADEMARKS.md)
-- [Citation metadata](CITATION.cff)
-- Zenodo DOI: **pending activation**. No DOI is asserted until the repository is connected to Zenodo and a release is archived.
