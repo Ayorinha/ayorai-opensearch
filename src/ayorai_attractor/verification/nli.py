@@ -68,7 +68,7 @@ class TransformersNLIBackend:
         return f"{self.model_revision}|license={self.license_level}|{gate}"
 
     def _load(self) -> dict[int, str]:
-        self.provenance_version
+        _ = self.provenance_version
         label_map = self.__dict__["_label_map"]
         if label_map is not None:
             return {int(index): str(label) for index, label in label_map.items()}
