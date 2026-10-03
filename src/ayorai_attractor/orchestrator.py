@@ -16,6 +16,7 @@ from ayorai_attractor.providers.base import Provider
 
 from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
 from .router import AdaptiveRouter
+from .tenant import TenantContext
 
 
 IMPLEMENTED_AGENTS = {
@@ -33,9 +34,20 @@ class Attractor:
         self.router = AdaptiveRouter()
         self.search_provider = search_provider
 
-    def run(self, request: SearchRequest) -> SearchResponse:
+    def run(
+        self,
+        request: SearchRequest,
+        *,
+        tenant_context: TenantContext | None = None,
+    ) -> SearchResponse:
         trace = TraceContext()
         trace.event("request.started", mode=request.mode.value)
+        if tenant_context is not None:
+            trace.event(
+                "tenant.context.bound",
+                tenant_id=tenant_context.tenant_id,
+                authorization_scope=tenant_context.authorization_scope,
+            )
         evidence = EvidenceStore()
         failures = FailureEngine()
         try:
@@ -70,6 +82,7 @@ class Attractor:
             ),
             evidence=evidence,
             failures=failures,
+            tenant_context=tenant_context,
         )
 
         decision = self.router.select(
