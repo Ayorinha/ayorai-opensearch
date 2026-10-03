@@ -98,19 +98,39 @@ def _accuracy(correct: int, total: int) -> dict[str, float | int]:
 
 
 def _git_sha() -> str:
+    """Return the commit SHA without spawning a subprocess.
+
+    Order: GITHUB_SHA (CI), then .git/HEAD resolved via loose refs or
+    packed-refs. Returns "unknown" when no git metadata is available.
+    """
     configured = os.getenv("GITHUB_SHA")
     if configured:
         return configured
+    for parent in (Path.cwd(), *Path.cwd().parents):
+        git_dir = parent / ".git"
+        if git_dir.is_dir():
+            return _resolve_git_head(git_dir)
+    return "unknown"
+
+
+def _resolve_git_head(git_dir: Path) -> str:
     try:
-        result = subprocess.run(  # nosec B603 - fixed local git argv
-            ["git", "rev-parse", "HEAD"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except (OSError, subprocess.CalledProcessError):
+        head = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+    except OSError:
         return "unknown"
-    return result.stdout.strip() or "unknown"
+    if not head.startswith("ref: "):
+        return head or "unknown"
+    ref = head[len("ref: ") :]
+    loose = git_dir / ref
+    if loose.is_file():
+        return loose.read_text(encoding="utf-8").strip() or "unknown"
+    packed = git_dir / "packed-refs"
+    if packed.is_file():
+        for line in packed.read_text(encoding="utf-8").splitlines():
+            parts = line.split()
+            if len(parts) == 2 and parts[1] == ref:
+                return parts[0]
+    return "unknown"
 
 
 def _content_digest(report: dict[str, Any]) -> str:
