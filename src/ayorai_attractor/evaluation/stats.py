@@ -7,9 +7,9 @@ choose a verdict and never call an LLM.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Sequence
 from math import comb
 from random import Random
-from collections.abc import Sequence
 
 from ayorai_attractor.verification.models import Verdict
 
