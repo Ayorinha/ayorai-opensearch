@@ -26,6 +26,7 @@ jobs:
           HF_HUB_DISABLE_TELEMETRY: "1"
           TOKENIZERS_PARALLELISM: "false"
         run: |
+          rm -rf reports
           mkdir -p reports
           python scripts/run_f1_eval.py | tee reports/f1-eval-console.txt
       - name: Verify report hashes
