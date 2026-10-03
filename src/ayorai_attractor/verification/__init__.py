@@ -42,9 +42,9 @@ from .stance import (
     DetectedStance,
     LLMStanceDetector,
     NLIStanceDetector,
+    RuleStanceDetector,
     SentenceNLIStanceDetector,
     SentenceTranslatedNLIStanceDetector,
-    RuleStanceDetector,
     StanceDetectionResult,
     StanceDetector,
 )

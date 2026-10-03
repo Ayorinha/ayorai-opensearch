@@ -133,13 +133,14 @@ def test_sentence_h1_splits_and_preserves_offsets() -> None:
     spans = detector._windows(evidence)
     assert [item[2] for item in spans] == ["First sentence.", "Second sentence!"]
     assert spans[0][:2] == (0, 15)
-    assert spans[1][:2] == (16, 33)
+    assert spans[1][:2] == (16, 32)
 
 
 def test_sentence_h1_tie_prefers_contradicts() -> None:
     class TieNLI:
         def classify(self, claim: str, evidence: str) -> dict[str, object]:
-            return {"stance": "contradicts" if "second" in evidence else "supports", "confidence": 0.8}
+            stance = "contradicts" if "second" in evidence else "supports"
+            return {"stance": stance, "confidence": 0.8}
 
     detector = SentenceNLIStanceDetector(
         TieNLI(), model="fake", version="1", tie_precedence="contradicts"
