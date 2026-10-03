@@ -1,21 +1,5 @@
 """Strict verification contracts for R1."""
 
-from .clusters import cluster_evidence, dependency_reason, has_known_dependency
-from .judge import (
-    ClaimJudgment,
-    aggregate_verdict,
-    has_complete_provenance,
-    judge,
-    judge_claim,
-)
-from .models import (
-    INSUFFICIENT_EVIDENCE_TO_VERDICT,
-    Claim,
-    Evidence,
-    Stance,
-    StanceEdge,
-    Verdict,
-)
 from .claim_pipeline import ClaimVerificationPipeline, ClaimVerificationResult, RuleScopeClassifier
 from .clusters import cluster_evidence, dependency_reason, has_known_dependency
 from .extraction import (
