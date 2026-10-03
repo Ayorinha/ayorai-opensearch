@@ -4,13 +4,19 @@ import hashlib
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from .extraction import ComponentProvenance, ExtractedClaim
 from .models import Evidence, Stance, StanceEdge
-from .numeric import DEFAULT_RELATIVE_TOLERANCE, NumericLocale, numeric_conflicts
+from .numeric import (
+    DEFAULT_RELATIVE_TOLERANCE,
+    NumericLocale,
+    parse_number,
+    relative_difference,
+)
 
 
 class LLMStancePayload(BaseModel):
@@ -108,137 +114,185 @@ def _has_negation(text: str) -> bool:
 
 
 _FACT_TOKEN_RE = re.compile(
-    r"(?<!\w)[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?|[\wÀ-ÿ]+",
+    r"(?<![\w-])[-+]?\d+(?:[.,]\d+)*(?:\s*%)?|[\wÀ-ÿ]+",
     re.UNICODE,
 )
+# Currency symbols are rewritten to ISO codes before tokenization so that
+# "R$ 10", "US$ 10", "$10" and "10 USD" share one representation.
+_CURRENCY_SYMBOLS = (
+    (re.compile(r"R\$"), " brl "),
+    (re.compile(r"US\$"), " usd "),
+    (re.compile(r"\$"), " usd "),
+    (re.compile(r"€"), " eur "),
+)
+_CURRENCIES = frozenset({"usd", "eur", "brl"})
+_SCALES: dict[str, tuple[str, Decimal]] = {
+    "thousand": ("thousand", Decimal(10) ** 3),
+    "mil": ("thousand", Decimal(10) ** 3),
+    "million": ("million", Decimal(10) ** 6),
+    "millions": ("million", Decimal(10) ** 6),
+    "milhão": ("million", Decimal(10) ** 6),
+    "milhao": ("million", Decimal(10) ** 6),
+    "milhões": ("million", Decimal(10) ** 6),
+    "milhoes": ("million", Decimal(10) ** 6),
+    "billion": ("billion", Decimal(10) ** 9),
+    "billions": ("billion", Decimal(10) ** 9),
+    "bilhão": ("billion", Decimal(10) ** 9),
+    "bilhao": ("billion", Decimal(10) ** 9),
+    "bilhões": ("billion", Decimal(10) ** 9),
+    "bilhoes": ("billion", Decimal(10) ** 9),
+}
+_SCALE_FACTORS = {"base": Decimal(1), **{name: factor for name, factor in _SCALES.values()}}
+_CONNECTORS = frozenset({"de", "of", "em", "in"})
+_MILLISECOND_WORDS = frozenset(
+    {"ms", "millisecond", "milliseconds", "milissegundo", "milissegundos"}
+)
+_PERCENT_WORDS = frozenset({"percent", "porcento", "pct"})
+_COUNT_NOUNS: dict[str, str] = {
+    "employees": "employees",
+    "funcionários": "employees",
+    "funcionarios": "employees",
+    "colaboradores": "employees",
+    "people": "people",
+    "pessoas": "people",
+    "customers": "customers",
+    "clientes": "customers",
+    "offices": "offices",
+    "escritórios": "offices",
+    "escritorios": "offices",
+}
+_ATTRIBUTE_ALIASES = {
+    "receita": "revenue",
+    "faturamento": "revenue",
+    "revenue": "revenue",
+    "lucro": "profit",
+    "profit": "profit",
+    "custo": "cost",
+    "custos": "cost",
+    "cost": "cost",
+    "costs": "cost",
+    "margem": "margin",
+    "margin": "margin",
+}
+_YEAR_MIN = 1900
+_YEAR_MAX = 2100
+
+
+def _fact_tokens(text: str) -> list[str]:
+    normalized = _DATE_RE.sub(" ", text)
+    for pattern, replacement in _CURRENCY_SYMBOLS:
+        normalized = pattern.sub(replacement, normalized)
+    return _FACT_TOKEN_RE.findall(normalized.casefold())
+
+
+def _is_number(token: str) -> bool:
+    return any(character.isdigit() for character in token)
+
+
+def _currency_and_scale(tokens: list[str], index: int) -> tuple[str, str] | None:
+    """Return (currency, scale) only when a currency is bound to this number.
+
+    Accepted shapes: `USD 120 [million]` and `120 [million] [de|of] USD`.
+    A currency elsewhere in the sentence never binds, so years and counts
+    near a monetary value are not misread as money.
+    """
+    scale = "base"
+    cursor = index + 1
+    if cursor < len(tokens) and tokens[cursor] in _SCALES:
+        scale = _SCALES[tokens[cursor]][0]
+        cursor += 1
+    if index > 0 and tokens[index - 1] in _CURRENCIES:
+        return tokens[index - 1], scale
+    if cursor < len(tokens) and tokens[cursor] in _CONNECTORS:
+        cursor += 1
+    if cursor < len(tokens) and tokens[cursor] in _CURRENCIES:
+        return tokens[cursor], scale
+    return None
+
+
+def _attribute(tokens: list[str], index: int, entities: set[str]) -> str:
+    """Nearest attribute alias in the clause, else nearest content word before."""
+    for distance in range(1, 9):
+        for position in (index - distance, index + distance):
+            if 0 <= position < len(tokens) and tokens[position] in _ATTRIBUTE_ALIASES:
+                return _ATTRIBUTE_ALIASES[tokens[position]]
+    for position in range(index - 1, max(-1, index - 5), -1):
+        value = tokens[position]
+        if (
+            not _is_number(value)
+            and value not in _STOPWORDS
+            and value not in _UNIT_WORDS
+            and value not in _CURRENCIES
+            and value not in _SCALES
+            and value not in _CONNECTORS
+            and value not in entities
+        ):
+            return value
+    return "unknown"
+
 
 def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
-    tokens = _FACT_TOKEN_RE.findall(text.casefold())
+    """Extract (raw value, unit, attribute) facts deterministically.
+
+    `unit` is `currency:scale` for money, `percent`, `year`, `ms`,
+    `count:<noun>` or `scalar`. Extraction never raises on free text.
+    """
+    tokens = _fact_tokens(text)
+    entities = _entities(text)
     facts: list[tuple[str, str, str]] = []
-    aliases = {
-        "receita": "revenue",
-        "faturamento": "revenue",
-        "revenue": "revenue",
-        "lucro": "profit",
-        "profit": "profit",
-        "custo": "cost",
-        "cost": "cost",
-    }
     for index, token in enumerate(tokens):
-        if not any(character.isdigit() for character in token):
+        if not _is_number(token):
             continue
-        before = tokens[max(0, index - 6) : index]
-        after = tokens[index + 1 : index + 7]
-        context = before + after
-        context = tokens[max(0, index - 3) : index + 4]
-        if "%" in token or "percent" in context or "porcento" in context:
+        following = tokens[index + 1] if index + 1 < len(tokens) else ""
+        money = _currency_and_scale(tokens, index)
+        if "%" in token or following in _PERCENT_WORDS or (
+            following == "por" and index + 2 < len(tokens) and tokens[index + 2] == "cento"
+        ):
             unit = "percent"
-        elif (
-            token.isdigit()
-            and 1900 <= int(token) <= 2100
-            and (
-                "year" in context
-                or "fiscal" in context
-                or any(value in context for value in aliases)
-            )
-        ):
-            unit = "year"
-        elif any(value in context for value in ("usd", "eur", "brl")) and (
-            any(value in context for value in (
-                "million", "millions", "milhão", "milhões",
-                "billion", "billions", "bilhão", "bilhões",
-            ))
-            or any(
-                value in (tokens[max(0, index - 1) : index + 2])
-                for value in ("usd", "eur", "brl")
-            )
-        ):
-            currency = next(value for value in ("usd", "eur", "brl") if value in context)
-            scale = next(
-                (
-                    value
-                    for value in (
-                        "million", "millions", "milhão", "milhões",
-                        "billion", "billions", "bilhão", "bilhões",
-                    )
-                    if value in context
-                ),
-                "",
-            )
-            scale_alias = {
-                "million": "million", "millions": "million",
-                "milhão": "million", "milhões": "million",
-                "billion": "billion", "billions": "billion",
-                "bilhão": "billion", "bilhões": "billion",
-            }
-            unit = f"{currency}:{scale_alias.get(scale, scale or 'base')}"
-        elif "ms" in context:
+        elif money is not None:
+            unit = f"{money[0]}:{money[1]}"
+        elif following in _MILLISECOND_WORDS:
             unit = "ms"
-        elif any(value in context for value in ("employees", "people", "customers", "offices")):
-            word = next(
-                value
-                for value in ("employees", "people", "customers", "offices")
-                if value in context
-            )
-            unit = f"count:{word}"
-        elif "year" in context or "fiscal" in context or (
-            token.isdigit() and 1900 <= int(token) <= 2100
-        ):
+        elif following in _COUNT_NOUNS:
+            unit = f"count:{_COUNT_NOUNS[following]}"
+        elif token.isdigit() and len(token) == 4 and _YEAR_MIN <= int(token) <= _YEAR_MAX:
             unit = "year"
         else:
             unit = "scalar"
-
-        context_candidates = before + after
-        attribute_candidates = [
-            (abs(position - index), aliases[token_value])
-            for position, token_value in enumerate(tokens)
-            for _alias in (aliases.get(token_value),)
-            if _alias is not None
-            and max(0, index - 10) <= position <= min(len(tokens) - 1, index + 10)
-        ]
-        matched_attribute = min(attribute_candidates)[1] if attribute_candidates else None
-        attribute = (
-            "year"
-            if unit == "year"
-            else matched_attribute
-            or next(
-                (
-                    value
-                    for value in reversed(context_candidates)
-                    if value not in _STOPWORDS
-                    and value not in _UNIT_WORDS
-                    and value not in _entities(text)
-                ),
-                "unknown",
-            )
-        )
-        facts.append((token, unit, attribute))
+        if unit == "year":
+            attribute = "year"
+        elif unit.startswith("count:"):
+            attribute = unit.split(":", 1)[1]
+        else:
+            attribute = _attribute(tokens, index, entities)
+        facts.append((token.replace(" ", ""), unit, attribute))
     return facts
 
 
+def _locale_for(text: str) -> NumericLocale:
+    return NumericLocale.PT_BR if detect_language(text) == "pt" else NumericLocale.EN_US
+
+
+def _fact_value(raw: str, unit: str, locale: NumericLocale) -> Decimal | None:
+    try:
+        value = parse_number(raw, locale=locale)
+    except (ValueError, ArithmeticError):
+        return None
+    if ":" in unit and not unit.startswith("count:"):
+        value *= _SCALE_FACTORS.get(unit.split(":", 1)[1], Decimal(1))
+    return value
+
+
+def _comparable(left_unit: str, right_unit: str) -> bool:
+    if left_unit == right_unit:
+        return True
+    left_money = left_unit.split(":", 1)[0] in _CURRENCIES
+    right_money = right_unit.split(":", 1)[0] in _CURRENCIES
+    return left_money and right_money and left_unit.split(":")[0] == right_unit.split(":")[0]
+
+
 def _numeric_relation(claim_text: str, evidence_text: str) -> tuple[bool, bool]:
-    conflict = False
-    agreement = False
-    claim_facts = _numeric_facts(claim_text)
-    evidence_facts = _numeric_facts(evidence_text)
-    for left, left_unit, left_attribute in claim_facts:
-        matches = [
-            right
-            for right, right_unit, right_attribute in evidence_facts
-            if right_unit == left_unit and right_attribute == left_attribute
-        ]
-        if not matches:
-            continue
-        if any(
-            not numeric_conflicts(
-                left, right, locale=NumericLocale.EN_US,
-                tolerance=DEFAULT_RELATIVE_TOLERANCE,
-            )
-            for right in matches
-        ):
-            agreement = True
-        else:
-            conflict = True
+    conflict, agreement, _ = _numeric_facts_align(claim_text, evidence_text)
     return conflict, agreement
 
 
@@ -249,38 +303,48 @@ def _entities(text: str) -> set[str]:
 def _numeric_facts_align(
     claim_text: str, evidence_text: str
 ) -> tuple[bool, bool, bool]:
+    """Return (conflict, agreement, every_claim_fact_matched).
+
+    Facts match only on equal attribute and comparable unit; `unknown`
+    attributes never match, so an unverifiable number cannot yield SUPPORTS.
+    Each side is parsed with the locale of its own text (pt-BR vs en-US).
+    """
     claim_entities = _entities(claim_text)
     evidence_entities = _entities(evidence_text)
     if claim_entities and not claim_entities.intersection(evidence_entities):
         return False, False, False
 
     claim_facts = _numeric_facts(claim_text)
-    evidence_facts = _numeric_facts(evidence_text)
     if not claim_facts:
         return False, False, True
+    evidence_facts = _numeric_facts(evidence_text)
+    claim_locale = _locale_for(claim_text)
+    evidence_locale = _locale_for(evidence_text)
 
     conflict = False
     agreement = False
     matched_claim_facts = 0
     for left, left_unit, left_attribute in claim_facts:
+        left_value = _fact_value(left, left_unit, claim_locale)
+        if left_value is None or left_attribute == "unknown":
+            continue
         matches = [
-            right
+            value
             for right, right_unit, right_attribute in evidence_facts
-            if right_unit == left_unit and right_attribute == left_attribute
+            if right_attribute == left_attribute and _comparable(left_unit, right_unit)
+            for value in [_fact_value(right, right_unit, evidence_locale)]
+            if value is not None
         ]
         if not matches:
             continue
         matched_claim_facts += 1
-        if any(
-            not numeric_conflicts(
-                left, right, locale=NumericLocale.EN_US,
-                tolerance=DEFAULT_RELATIVE_TOLERANCE,
-            )
-            for right in matches
-        ):
-            agreement = True
-        else:
-            conflict = True
+        # Calendar years are identifiers, not magnitudes: they must match exactly.
+        tolerance = Decimal(0) if left_unit == "year" else DEFAULT_RELATIVE_TOLERANCE
+        for right_value in matches:
+            if relative_difference(left_value, right_value) > tolerance:
+                conflict = True
+            else:
+                agreement = True
 
     return conflict, agreement, matched_claim_facts == len(claim_facts)
 
@@ -368,7 +432,13 @@ class RuleStanceDetector:
                     or (claim_has_date and not evidence_has_date)
                     or entity_mismatch
                 )
-                if numeric_conflict or date_conflict or negation_conflict:
+                # Numeric conflicts are already gated by attribute/entity alignment.
+                # Polarity and date mismatches only count when claim and evidence
+                # describe the same proposition; otherwise they are unrelated text.
+                same_proposition = lexical >= 0.25
+                if numeric_conflict or (
+                    same_proposition and (date_conflict or negation_conflict)
+                ):
                     stance = Stance.CONTRADICTS
                 elif unverified_structured_fact:
                     stance = Stance.NEUTRAL
@@ -392,8 +462,7 @@ class RuleStanceDetector:
                             self.component,
                             self.model,
                             self.version,
-                            _sha256(claim_item.claim.text + "\
-" + item.excerpt),
+                            _sha256(claim_item.claim.text + "" + item.excerpt),
                             _sha256(payload),
                         ),
                     )
@@ -401,7 +470,7 @@ class RuleStanceDetector:
         return StanceDetectionResult(tuple(output))
 
 
-class NLIStanceDetector:
+class NLIStanceDetector(StanceDetector):
     component = "stance_detector.nli"
 
     def __init__(
@@ -487,8 +556,7 @@ class NLIStanceDetector:
                             self.model,
                             f"{self.version}|window={start}:{end}",
                             _sha256(
-                                claim_item.claim.text + "\
-"
+                                claim_item.claim.text + ""
                                 + item.excerpt[local_start:local_end]
                             ),
                             _sha256(f"{stance}|{confidence:.12f}|{start}|{end}"),
