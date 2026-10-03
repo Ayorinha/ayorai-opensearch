@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "verified_on": "2026-10-03",
+  "seed": 20261003,
+  "bootstrap_iterations": 10000,
+  "nli": {
+    "decision": "argmax",
+    "confidence_threshold": null,
+    "tuning_allowed": false
+  },
+  "evidence_windows": {
+    "max_characters": 512,
+    "overlap_characters": 64,
+    "aggregation": "maximum_confidence_per_stance",
+    "tie_precedence": "contradicts"
+  }
+}

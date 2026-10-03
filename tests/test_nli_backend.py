@@ -1,4 +1,11 @@
-from ayorai_attractor.verification.nli import _resolve_label_map
+from ayorai_attractor.verification.nli import (
+    EVAL_ONLY_LEVEL,
+    EVAL_ONLY_MODEL,
+    EVAL_ONLY_REVISION,
+    TransformersNLIBackend,
+    _license_guard,
+    _resolve_label_map,
+)
 
 
 def test_resolve_three_class_label_map() -> None:
@@ -33,3 +40,28 @@ def test_resolve_label_map_rejects_unknown_class() -> None:
         assert "exactly entailment, contradiction and neutral" in str(exc)
     else:
         raise AssertionError("expected ValueError")
+
+
+def test_eval_only_model_requires_evaluation_or_opt_in() -> None:
+    try:
+        _license_guard(EVAL_ONLY_LEVEL, evaluation_mode=False, license_opt_in=False)
+    except PermissionError as exc:
+        assert "EVAL_ONLY model rejected" in str(exc)
+    else:
+        raise AssertionError("expected PermissionError")
+
+
+def test_eval_only_gate_allows_evaluation_mode() -> None:
+    assert _license_guard(EVAL_ONLY_LEVEL, evaluation_mode=True, license_opt_in=False) == (
+        "evaluation_mode=true"
+    )
+
+
+def test_eval_only_gate_records_explicit_opt_in() -> None:
+    backend = TransformersNLIBackend(
+        EVAL_ONLY_MODEL,
+        EVAL_ONLY_REVISION,
+        license_level=EVAL_ONLY_LEVEL,
+        license_opt_in=True,
+    )
+    assert backend.provenance_version.endswith("license_opt_in=true")
