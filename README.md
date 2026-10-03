@@ -8,7 +8,7 @@
 
 ## Current status
 
-**Reference implementation in active development.** Phase 0 and the R1 deterministic verification core are implemented. R2–R13 provide tested engineering foundations, R14 adds provider-neutral tracing context, R15 adds durable worker execution over JobStore, R16 adds automated dependency review, R17 adds a provider-neutral trace export boundary, R18 propagates a trusted TenantContext from the runtime boundary into AgentContext, R19 makes comparative evaluation reports JSON-ready and deterministic, and R20 adds semantic SHA-256 digests to Golden reports. Production deployment, transport-level MCP, external telemetry adapters and deployment-specific authorization remain explicit hardening work.
+**Reference implementation in active development.** Phase 0 and the R1 deterministic verification core are implemented. R2–R13 provide tested engineering foundations, R14 adds provider-neutral tracing context, R15 adds durable worker execution over JobStore, R16 adds automated dependency review, R17 adds a provider-neutral trace export boundary, R18 propagates a trusted TenantContext from the runtime boundary into AgentContext, R19 makes comparative evaluation reports JSON-ready and deterministic, R20 adds semantic SHA-256 digests to Golden reports, and the optional telemetry adapter now exports TraceSink events to OpenTelemetry. Production deployment, transport-level MCP, external telemetry adapters and deployment-specific authorization remain explicit hardening work.
 
 Golden v0 remains **34 cases / 52 synthetic documents** with SHA-256 recorded in evals/golden/MANIFEST.json. The original baseline is **43.3333%**, exactly equal to the PARTIALLY_SUPPORTED majority-class baseline. This baseline is not evidence of a capable verifier.
 
@@ -93,6 +93,7 @@ This is intentionally a **reference architecture and research/engineering platfo
 - R18 trusted TenantContext propagation into AgentContext with automated coverage
 - R19 deterministic JSON-ready ArenaReport serialization without winner/ranking selection
 - R20 semantic SHA-256 digest for Golden reports with volatile runtime fields excluded and CI assertions
+- optional OpenTelemetry `TraceSink` adapter, isolated from verification semantics
 
 ## Roadmap
 

@@ -18,6 +18,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+telemetry = [
+  "opentelemetry-api>=1.45,<2",
+]
 dev = [
   "pytest>=9.0.3,<10",
   "pytest-cov>=6,<7",

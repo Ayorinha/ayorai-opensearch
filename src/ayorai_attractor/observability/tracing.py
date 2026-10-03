@@ -8,7 +8,7 @@ verification semantics.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import uuid4
 
 
@@ -43,3 +43,31 @@ class TraceContext:
 
     def snapshot(self) -> tuple[TraceEvent, ...]:
         return tuple(self._events)
+
+
+class OpenTelemetrySink:
+    """Optional OpenTelemetry adapter for the provider-neutral TraceSink."""
+
+    def __init__(
+        self,
+        tracer: Any | None = None,
+        *,
+        instrumentation_name: str = "ayorai-attractor",
+    ) -> None:
+        if tracer is None:
+            try:
+                from opentelemetry import trace
+            except ImportError as exc:
+                raise RuntimeError(
+                    "OpenTelemetry support requires the optional 'telemetry' extra"
+                ) from exc
+            tracer = trace.get_tracer(instrumentation_name)
+        self._tracer = tracer
+
+    def emit(self, trace_id: str, event: TraceEvent) -> None:
+        span_name = f"ayorai.{event.name}"
+        with self._tracer.start_as_current_span(span_name) as span:
+            span.set_attribute("ayorai.trace_id", trace_id)
+            span.set_attribute("ayorai.event_name", event.name)
+            for key, value in event.attributes:
+                span.set_attribute(f"ayorai.{key}", value)
