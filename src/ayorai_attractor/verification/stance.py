@@ -220,28 +220,33 @@ def _numeric_facts_align(
     evidence_entities = _entities(evidence_text)
     if claim_entities and not claim_entities.intersection(evidence_entities):
         return False, False, False
+
     claim_facts = _numeric_facts(claim_text)
     evidence_facts = _numeric_facts(evidence_text)
     if not claim_facts:
         return False, False, True
+
     conflict = False
     agreement = False
-    matched = False
+    matched_claim_facts = 0
     for left, left_unit, left_attribute in claim_facts:
-        for right, right_unit, right_attribute in evidence_facts:
-            if left_unit != right_unit or left_attribute != right_attribute:
-                continue
-            matched = True
+        matches = [
+            right
+            for right, right_unit, right_attribute in evidence_facts
+            if right_unit == left_unit and right_attribute == left_attribute
+        ]
+        if not matches:
+            continue
+        matched_claim_facts += 1
+        for right in matches:
             if numeric_conflicts(
-                left, right,
-                locale=NumericLocale.EN_US,
-                tolerance=DEFAULT_RELATIVE_TOLERANCE,
+                left, right, locale=NumericLocale.EN_US, tolerance=DEFAULT_RELATIVE_TOLERANCE
             ):
                 conflict = True
             else:
                 agreement = True
-    return conflict, agreement, matched
 
+    return conflict, agreement, matched_claim_facts == len(claim_facts)
 
 def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
     return _numeric_relation(claim_text, evidence_text)[0]
