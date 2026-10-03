@@ -8,7 +8,7 @@
 
 ## Current status
 
-**Reference implementation in active development.** Phase 0 and the R1 deterministic verification core are implemented. R2–R13 now have tested engineering foundations on main, R14 adds provider-neutral tracing context integrated with orchestration, and R15 adds a durable worker execution boundary over JobStore, and the core R1→R6 path has an explicit end-to-end verification/synthesis composition. Production-grade distributed execution, telemetry export, external queue adapters, advanced GEPA proposal loops, transport-level MCP deployment and deployment-specific authorization remain hardening work.
+**Reference implementation in active development.** Phase 0 and the R1 deterministic verification core are implemented. R2–R13 provide tested engineering foundations, R14 adds provider-neutral tracing context, R15 adds durable worker execution over JobStore, R16 adds automated dependency review, R17 adds a provider-neutral trace export boundary, and R18 propagates a trusted TenantContext from the runtime boundary into AgentContext. Production deployment, transport-level MCP, external telemetry adapters and deployment-specific authorization remain explicit hardening work.
 
 Golden v0 remains **34 cases / 52 synthetic documents** with SHA-256 recorded in evals/golden/MANIFEST.json. The original baseline is **43.3333%**, exactly equal to the PARTIALLY_SUPPORTED majority-class baseline. This baseline is not evidence of a capable verifier.
 
@@ -51,9 +51,10 @@ The deterministic audit core is exposed through POST /v1/audit. It executes the 
 - FastAPI API and CLI
 - durable audit/replay state
 - deterministic metrics and comparative evaluation
-- tenant-scoping primitives
-- provider-neutral trace events
+- tenant-scoping primitives with explicit runtime propagation
+- provider-neutral trace events and export boundary
 - durable JobExecutor over the leased JobStore
+- dependency review and security scanning
 - CI, coverage ratchet, strict typing and security scanning
 
 ## Why ATTRACTOR is designed for reference use
@@ -68,7 +69,7 @@ ATTRACTOR treats verification as an engineering boundary rather than a prompt co
 - **Quality gates:** linting, typing, tests, coverage ratcheting, dependency audit, Bandit and CodeQL are part of the development loop.
 - **Provider isolation:** retrieval/model integrations are kept behind provider contracts.
 - **Governed tool execution:** MCP/plugin dispatch is allowlisted and trusted-only by default.
-- **Explicit tenant boundaries:** tenant scope is carried by control-plane context, never inferred from model output.
+- **Explicit tenant boundaries:** trusted control-plane context is propagated explicitly and is never inferred from model output or request text.
 
 This is intentionally a **reference architecture and research/engineering platform**, not a claim of universal factual accuracy.
 
@@ -83,18 +84,19 @@ This is intentionally a **reference architecture and research/engineering platfo
 - R9 durable job state with idempotency, atomic claims and restart-safe leases
 - R10 deterministic comparative evaluation arena with bootstrap and paired McNemar statistics
 - R11 bounded candidate optimization extension point with explicit evaluation budgets
-- R13 immutable tenant isolation context primitive for authorization/routing boundaries
-- R10 confusion-matrix/bootstrap/McNemar arena reporting
-- R11 deterministic evaluator-driven optimization core
 - R12 governed MCP/plugin boundary
-- R13 explicit tenant isolation primitive
-- R1→R6 end-to-end verification pipeline with grounded synthesis gate
+- R13 immutable tenant context primitive
+- R14 provider-neutral tracing context integrated with orchestration
+- R15 JobExecutor lifecycle over JobStore
+- R16 automated Dependency Review workflow
+- R17 provider-neutral TraceSink export boundary
+- R18 trusted TenantContext propagation into AgentContext with automated coverage
 
 ## Roadmap
 
-**Phase 0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9 → R10 → R11 → R12 → R13**
+**Phase 0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9 → R10 → R11 → R12 → R13 → R14 → R15 → R16 → R17 → R18**
 
-The roadmap is implemented in layers rather than declared complete from documentation alone. Each stage distinguishes tested foundations from production integration work. The next hardening increments are OpenTelemetry export, durable worker/lease adapters, real comparative harness execution, richer GEPA proposal/evaluation loops, transport-level MCP deployment, and deployment-specific authorization/isolation.
+The roadmap is implemented in layers rather than declared complete from documentation alone. Remaining hardening increments are the executable Golden statistical harness, an optional OpenTelemetry adapter behind TraceSink, transport-level MCP deployment and isolation, provider adapters, deployment/release hardening, and final CI/security evidence review.
 
 ## Quickstart
 
@@ -124,7 +126,7 @@ See docs/eval/LOCAL-EVALUATION.md, docs/STATUS.md, docs/architecture.md, docs/ev
 
 ## Security
 
-Never place secrets, personal data, financial records or confidential institutional material in examples or tests. Production integrations must enforce authorization, audit logging, rate limits and data minimization.
+Never place secrets, personal data, financial records or confidential institutional material in examples or tests. Production integrations must enforce authorization, audit logging, rate limits and data minimization. TenantContext is a propagation primitive; production authorization must be enforced by a trusted control-plane boundary.
 
 ## License
 
