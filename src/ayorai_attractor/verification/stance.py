@@ -81,7 +81,7 @@ _PT_MARKERS = frozenset(
     {"não", "nao", "uma", "para", "com", "que", "foi", "são", "sao",
      "empresa", "receita", "ano", "dos", "das", "em", "por"}
 )
-_ENTITY_RE = re.compile(r"\b(?:company|empresa)\s+[A-Z][\w-]*\b", re.UNICODE)
+_ENTITY_RE = re.compile(r"\b(?:company|empresa)\s+[A-Za-zÀ-ÿ][\wÀ-ÿ-]*\b", re.IGNORECASE | re.UNICODE)
 _EN_MARKERS = frozenset(
     {"the", "was", "were", "with", "that", "company", "revenue", "year",
      "from", "for", "and", "not", "this", "reported"}
@@ -144,7 +144,7 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             unit = f"{currency}:{scale_alias.get(scale, scale or 'base')}"
         elif "ms" in context:
             unit = "ms"
-        elif "year" in context:
+        elif "year" in context or (token.isdigit() and 1900 <= int(token) <= 2100):
             unit = "year"
         elif any(value in context for value in ("employees", "people", "customers", "offices")):
             word = next(
