@@ -431,3 +431,65 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
                 )
         return StanceDetectionResult(tuple(output))
 
+
+
+class LLMStancePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    evidence_id: str = Field(min_length=1)
+    stance: Literal["supports", "contradicts", "neutral"]
+    confidence: float = Field(ge=0.0, le=1.0)
+
+
+class LLMStanceDetector:
+    component = "stance_detector.llm"
+
+    def __init__(self, provider: Any, *, model: str, version: str) -> None:
+        self.provider, self.model, self.version = provider, model, version
+
+    def detect(
+        self,
+        claims: Sequence[ExtractedClaim],
+        evidence: Sequence[Evidence],
+    ) -> StanceDetectionResult:
+        import json
+
+        output = []
+        for claim_item in claims:
+            for item in (x for x in evidence if x.claim_id == claim_item.claim.id):
+                prompt = json.dumps(
+                    {
+                        "task": "classify stance only",
+                        "claim": claim_item.claim.text,
+                        "evidence": item.excerpt,
+                        "allowed_stance": ["supports", "contradicts", "neutral"],
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+                response = self.provider.execute(prompt)
+                try:
+                    result = LLMStancePayload.model_validate(json.loads(response.text))
+                except Exception as exc:
+                    raise ValueError(f"invalid stance payload: {exc}") from exc
+                if result.evidence_id != item.id:
+                    raise ValueError(f"unknown evidence id: {result.evidence_id}")
+                output.append(
+                    DetectedStance(
+                        StanceEdge(
+                            id=f"ste_{claim_item.claim.id}_{item.id}",
+                            claim_id=claim_item.claim.id,
+                            evidence_id=item.id,
+                            stance=Stance(result.stance),
+                        ),
+                        result.confidence,
+                        ComponentProvenance(
+                            self.component,
+                            self.model,
+                            self.version,
+                            _sha256(prompt),
+                            _sha256(response.text),
+                        ),
+                    )
+                )
+        return StanceDetectionResult(tuple(output))
