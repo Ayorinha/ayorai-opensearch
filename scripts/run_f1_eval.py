@@ -297,20 +297,19 @@ def _markdown(report: dict[str, Any]) -> str:
         ]
     )
     for key in ("A", "B"):
+        labels = list(report[key]["confusion_matrix"])
         lines.extend(
             [
                 f"### {key}",
                 "",
-                "| Expected \\ Predicted | "
-                + " | ".join(report[key]["confusion_matrix"]["labels"])
-                + " |",
-                "|---|" + "|".join(["---"] * len(report[key]["confusion_matrix"]["labels"])) + "|",
+                "| Expected \\ Predicted | " + " | ".join(labels) + " |",
+                "|---|" + "|".join(["---"] * len(labels)) + "|",
             ]
         )
-        labels = report[key]["confusion_matrix"]["labels"]
-        matrix = report[key]["confusion_matrix"]["matrix"]
-        for label, row in zip(labels, matrix, strict=True):
-            lines.append(f"| {label} | " + " | ".join(str(value) for value in row) + " |")
+        matrix = report[key]["confusion_matrix"]
+        for label in labels:
+            row = matrix[label]
+            lines.append(f"| {label} | " + " | ".join(str(row[guess]) for guess in labels) + " |")
         lines.append("")
     lines.extend(
         [
