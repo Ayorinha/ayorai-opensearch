@@ -8,7 +8,8 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Protocol, Sequence
+from collections.abc import Sequence
+from typing import Any, Protocol
 
 from .models import Claim, Evidence
 
