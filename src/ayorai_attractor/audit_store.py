@@ -12,13 +12,13 @@ import sqlite3
 from pathlib import Path
 
 from ayorai_attractor.audit import AuditReport
-from ayorai_attractor.models import SearchResponse
+from ayorai_attractor.models import AuditTraceResponse, SearchResponse
 from ayorai_attractor.replay import ReplayBundle
 
 
 class AuditTraceStore:
     def __init__(self, path: str | None = None) -> None:
-        configured = path or os.getenv("ATTRACTOR_AUDIT_DB", ".attractor/audit.sqlite3")
+        configured: str = path if path is not None else os.getenv("ATTRACTOR_AUDIT_DB", ".attractor/audit.sqlite3")
         self.path = configured
         if configured != ":memory:":
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
@@ -71,7 +71,7 @@ class AuditTraceStore:
         )
         return replay.digest
 
-    def get(self, trace_id: str) -> dict[str, object] | None:
+    def get(self, trace_id: str) -> AuditTraceResponse | None:
         connection = self._connection
         row = connection.execute(
             """
@@ -84,13 +84,13 @@ class AuditTraceStore:
         ).fetchone()
         if row is None:
             return None
-        return {
-            "trace_id": row[0],
-            "verification": row[1],
-            "evidence_count": row[2],
-            "independent_evidence_count": row[3],
-            "verified_evidence_count": row[4],
-            "failure_count": row[5],
-            "finding_count": row[6],
-            "replay_digest": row[7],
-        }
+        return AuditTraceResponse(
+            trace_id=str(row[0]),
+            verification=str(row[1]),
+            evidence_count=int(row[2]),
+            independent_evidence_count=int(row[3]),
+            verified_evidence_count=int(row[4]),
+            failure_count=int(row[5]),
+            finding_count=int(row[6]),
+            replay_digest=str(row[7]),
+        )
