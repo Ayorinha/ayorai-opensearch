@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 title: "AYORAI ATTRACTOR"
-message: "If you use AYORAI ATTRACTOR in research or software, please cite this repository."
+message: "If you use AYORAI ATTRACTOR in research or software, please cite this repository."\nabstract: "AYORAI ATTRACTOR is an evidence-first verification layer for claims made by LLMs and autonomous agents. It combines deterministic verdicts, claim-level evidence provenance and reproducible audit trails for Portuguese and English workflows. The project is designed for auditable AI use in regulated environments, including LGPD-aware and financial-domain contexts."
 type: software
 authors:
   - family-names: Ayora
@@ -16,4 +16,4 @@ keywords:
   - evidence verification
   - provenance
   - RAG
-  - trustworthy AI
+  - trustworthy AI\n  - claim verification\n  - fact-checking\n  - hallucination detection\n  - Portuguese\n  - LGPD\n  - auditability
