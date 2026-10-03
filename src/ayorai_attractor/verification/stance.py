@@ -111,12 +111,18 @@ class RuleStanceDetector:
                 }
                 overlap = len(claim_tokens & evidence_tokens)
                 lexical = overlap / max(len(claim_tokens), 1)
-                contradiction = self._numeric_conflict(claim.text, item.excerpt) or self._date_conflict(
-                    claim.text, item.excerpt
+                baseline = by_id[claim_item.evidence_ids[0]]
+                contradiction = (
+                    self._numeric_conflict(claim.text, item.excerpt)
+                    or self._date_conflict(claim.text, item.excerpt)
+                    or self._numeric_conflict(baseline.excerpt, item.excerpt)
+                    or self._date_conflict(baseline.excerpt, item.excerpt)
                 )
                 if _has_negation(claim.text) != _has_negation(item.excerpt):
                     if lexical >= 0.25:
                         contradiction = True
+                if item.id != baseline.id and _has_negation(baseline.excerpt) != _has_negation(item.excerpt):
+                    contradiction = True
                 stance = Stance.CONTRADICTS if contradiction else Stance.SUPPORTS
                 confidence = min(1.0, max(0.5, 0.5 + lexical / 2))
                 payload = f"{claim.id}|{item.id}|{stance.value}"
