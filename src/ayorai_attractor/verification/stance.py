@@ -14,7 +14,9 @@ from .numeric import DEFAULT_RELATIVE_TOLERANCE, NumericLocale, numeric_conflict
 
 _NUMBER_RE = re.compile(r"(?<![\w])[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?")
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
-_NEGATIONS = frozenset({"not", "no", "didn't", "doesn't", "never", "não", "nao", "nunca", "sem", "não foi", "nao foi"})
+_NEGATIONS = frozenset(
+    {"not", "no", "didn't", "doesn't", "never", "não", "nao", "nunca", "sem", "não foi", "nao foi"}
+)
 
 
 def _sha256(value: str) -> str:
@@ -121,7 +123,8 @@ class RuleStanceDetector:
                 if _has_negation(claim.text) != _has_negation(item.excerpt):
                     if lexical >= 0.25:
                         contradiction = True
-                if item.id != baseline.id and _has_negation(baseline.excerpt) != _has_negation(item.excerpt):
+                baseline_negated = _has_negation(baseline.excerpt)
+                if item.id != baseline.id and baseline_negated != _has_negation(item.excerpt):
                     contradiction = True
                 stance = Stance.CONTRADICTS if contradiction else Stance.SUPPORTS
                 confidence = min(1.0, max(0.5, 0.5 + lexical / 2))
