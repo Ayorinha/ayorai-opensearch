@@ -3,7 +3,6 @@ from pydantic import ValidationError
 
 from ayorai_attractor.verification.claim_pipeline import ClaimVerificationPipeline
 from ayorai_attractor.verification.extraction import LLMClaimExtractor, RetrievedDocument
-from ayorai_attractor.verification.models import Stance
 from ayorai_attractor.verification.response import ResponseStatus
 from ayorai_attractor.verification.stance import LLMStanceDetector
 
@@ -25,7 +24,11 @@ class BadClaimProvider:
 
 class BadStanceProvider:
     def execute(self,prompt:str):
-        return type("R",(),{"text":'{"evidence_id":"forged","stance":"supports","confidence":1.0}'})()
+        return type(
+            "R",
+            (),
+            {"text": '{"evidence_id":"forged","stance":"supports","confidence":1.0}'},
+        )()
 
 def test_llm_claim_schema_is_strict() -> None:
     try:

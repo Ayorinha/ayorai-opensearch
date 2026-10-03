@@ -28,7 +28,8 @@ def balanced_accuracy(expected:Sequence[str],predicted:Sequence[str])->float:
 def bootstrap_accuracy(expected:Sequence[str],predicted:Sequence[str],*,iterations:int=10000,seed:int=20261003)->tuple[float,float]:
     if len(expected)!=len(predicted): raise ValueError("expected and predicted must have the same length")
     if not expected or iterations<1: raise ValueError("invalid bootstrap inputs")
-    outcomes=[a==b for a,b in zip(expected,predicted,strict=True)]; rng=Random(seed); samples=[]
+    outcomes=[a==b for a,b in zip(expected,predicted,strict=True)]; rng=Random(seed)  # nosec B311 - deterministic statistical bootstrap, not cryptography
+    samples=[]
     for _ in range(iterations):
         samples.append(sum(outcomes[rng.randrange(len(outcomes))] for _ in outcomes)/len(outcomes))
     samples.sort(); return samples[int(.025*(iterations-1))],samples[int(.975*(iterations-1))]

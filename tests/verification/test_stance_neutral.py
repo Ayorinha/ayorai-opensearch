@@ -1,9 +1,6 @@
 from datetime import UTC, datetime
 
-from ayorai_attractor.verification.extraction import (
-    ComponentProvenance,
-    ExtractedClaim,
-)
+from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
 from ayorai_attractor.verification.judge import judge
 from ayorai_attractor.verification.models import Claim, Evidence, Stance, StanceEdge
 from ayorai_attractor.verification.stance import RuleStanceDetector

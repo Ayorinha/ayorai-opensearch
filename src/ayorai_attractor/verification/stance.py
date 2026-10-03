@@ -120,7 +120,10 @@ class LLMStanceDetector:
             for item in (x for x in evidence if x.claim_id==claim_item.claim.id):
                 prompt=json.dumps({"task":"classify stance only","claim":claim_item.claim.text,"evidence":item.excerpt,"allowed_stance":["supports","contradicts","neutral"]},ensure_ascii=False,sort_keys=True)
                 response = self.provider.execute(prompt)
-                result = LLMStancePayload.model_validate(json.loads(response.text))
+                try:
+                    result = LLMStancePayload.model_validate(json.loads(response.text))
+                except Exception as exc:
+                    raise ValueError(f"invalid stance payload: {exc}") from exc
                 if result.evidence_id != item.id:
                     raise ValueError(f"unknown evidence id: {result.evidence_id}")
                 output.append(

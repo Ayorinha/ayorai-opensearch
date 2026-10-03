@@ -53,7 +53,7 @@ def test_pipeline_reaches_deterministic_judge_for_two_independent_sources() -> N
         ["AtlasGrid revenue in 2025 was USD 120 million."],
         [
             document("e1", "AtlasGrid revenue in 2025 was USD 120 million.", origin="o1"),
-            document("e2", "AtlasGrid revenue in 2025 was USD 120 million.", origin="o2"),
+            document("e2", "The AtlasGrid annual filing reports USD 120 million of 2025 revenue.", origin="o2"),
         ],
     )
     assert result.verdict.value == "verified"
@@ -104,7 +104,7 @@ def test_pipeline_preserves_provenance_as_part_of_judge_input() -> None:
             ),
             document(
                 "e2",
-                "VectorLabs blocks unsigned model artifacts before deployment.",
+                "VectorLabs prevents deployment of unsigned model artifacts.",
                 origin="o2",
             ),
         ],
