@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ayorai_attractor.verification.clusters import cluster_evidence, dependency_reason
 from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
@@ -20,7 +20,7 @@ def evidence(
         claim_id="c1",
         source_id=source_id,
         source_location="body",
-        retrieved_at=datetime(2026, 10, 3, tzinfo=timezone.utc),
+        retrieved_at=datetime(2026, 10, 3, tzinfo=UTC),
         start_offset=0,
         end_offset=len(excerpt),
         excerpt=excerpt,
@@ -57,13 +57,14 @@ def test_citation_republication_is_transitive() -> None:
     republication = evidence("e2", source_id="b", origin_id="origin-b", cited_origin_id="origin-a")
     third = evidence("e3", source_id="c", cited_origin_id="origin-b")
     clusters = cluster_evidence([original, republication, third])
-    assert any(cluster == frozenset({"e1", "e2"}) for cluster in clusters)
-    assert any(cluster == frozenset({"e1", "e2", "e3"}) for cluster in clusters)
+    assert clusters == [frozenset({"e1", "e2", "e3"})]
 
 
-def test_missing_dependency_metadata_is_not_independence() -> None:
+def test_missing_dependency_metadata_is_unknown_and_not_a_cluster() -> None:
     left = evidence("e1", source_id="source-a")
     right = evidence("e2", source_id="source-b")
+    left = left.model_copy(update={"origin_id": None})
+    right = right.model_copy(update={"origin_id": None})
     assert dependency_reason(left, right) is None
     assert len(cluster_evidence([left, right])) == 2
 
@@ -106,3 +107,24 @@ def test_incomplete_retrieval_metadata_is_preserved() -> None:
         evidence_id="e1",
     )
     assert evidence.provenance_complete is False
+
+
+def test_numeric_mismatch_with_different_attribute_is_neutral() -> None:
+    claim = claim_item("Revenue was 100 million USD.")
+    item = evidence("e1", source_id="source-a", excerpt="Profit was 120 million USD.")
+    result = RuleStanceDetector().detect([claim], [item])
+    assert result.edges[0].edge.stance is Stance.NEUTRAL
+
+
+def test_same_number_with_different_entity_is_neutral() -> None:
+    claim = claim_item("Company X revenue was 100 million USD.")
+    item = evidence("e1", source_id="source-a", excerpt="Company Y revenue was 100 million USD.")
+    result = RuleStanceDetector().detect([claim], [item])
+    assert result.edges[0].edge.stance is Stance.NEUTRAL
+
+
+def test_pt_en_numeric_conflict_is_contradiction() -> None:
+    claim = claim_item("A receita da Empresa X foi de 100 milhões de USD.")
+    item = evidence("e1", source_id="source-a", excerpt="Company X revenue was 120 million USD.")
+    result = RuleStanceDetector().detect([claim], [item])
+    assert result.edges[0].edge.stance is Stance.CONTRADICTS
