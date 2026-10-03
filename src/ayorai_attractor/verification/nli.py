@@ -71,6 +71,6 @@ class TransformersNLIBackend:
             probabilities = torch.softmax(logits, dim=-1)
         index = int(torch.argmax(probabilities).item())
         return {
-            "stance": label_map[index].value,
+            "stance": label_map[index],
             "confidence": float(probabilities[index].item()),
         }
