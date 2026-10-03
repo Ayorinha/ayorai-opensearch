@@ -4,7 +4,7 @@ from typing import Any
 import httpx
 import pytest
 
-from ayorai_attractor.providers.opensearch import OpenSearchProvider
+from ayorai_attractor.providers.opensearch import HybridOpenSearchProvider, OpenSearchProvider
 
 
 def test_opensearch_builds_read_only_query_and_auth_header(
@@ -119,14 +119,17 @@ def test_hybrid_opensearch_fuses_lexical_and_neural_hits(
                 {"_id": "b", "_score": 5.0, "_source": {"title": "B", "content": "both"}},
                 {"_id": "c", "_score": 4.0, "_source": {"title": "C", "content": "semantic"}},
             ]
-        return SimpleNamespace(raise_for_status=lambda: None, json=lambda: {"hits": {"hits": hits}})
+        return SimpleNamespace(
+            raise_for_status=lambda: None,
+            json=lambda: {"hits": {"hits": hits}},
+        )
 
     monkeypatch.setattr(
         "ayorai_attractor.providers.opensearch.httpx.post",
         fake_post,
     )
 
-    response = OpenSearchProvider.__subclasses__()[0](
+    response = HybridOpenSearchProvider(
         "https://search.example.test",
         "documents",
         semantic_field="embedding",
