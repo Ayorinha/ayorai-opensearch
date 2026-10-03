@@ -70,7 +70,7 @@ _PT_MARKERS = frozenset(
     {"não", "nao", "uma", "para", "com", "que", "foi", "são", "sao",
      "empresa", "receita", "ano", "dos", "das", "em", "por"}
 )
-_EN_MARKERS = frozenset(
+_ENTITY_RE = re.compile(r"\b(?:company|empresa)\s+([A-Z][\\w-]*)\b", re.UNICODE)\n\n_EN_MARKERS = frozenset(
     {"the", "was", "were", "with", "that", "company", "revenue", "year",
      "from", "for", "and", "not", "this", "reported"}
 )
@@ -163,6 +163,40 @@ def _numeric_relation(claim_text: str, evidence_text: str) -> tuple[bool, bool]:
     return conflict, agreement
 
 
+def _entities(text: str) -> set[str]:
+    return {match.group(1).casefold() for match in _ENTITY_RE.finditer(text)}
+
+
+def _numeric_facts_align(
+    claim_text: str, evidence_text: str
+) -> tuple[bool, bool, bool]:
+    claim_entities = _entities(claim_text)
+    evidence_entities = _entities(evidence_text)
+    if claim_entities and not claim_entities.intersection(evidence_entities):
+        return False, False, False
+    claim_facts = _numeric_facts(claim_text)
+    evidence_facts = _numeric_facts(evidence_text)
+    if not claim_facts:
+        return False, False, True
+    conflict = False
+    agreement = False
+    matched = False
+    for left, left_unit, left_attribute in claim_facts:
+        for right, right_unit, right_attribute in evidence_facts:
+            if left_unit != right_unit or left_attribute != right_attribute:
+                continue
+            matched = True
+            if numeric_conflicts(
+                left, right,
+                locale=NumericLocale.EN_US,
+                tolerance=DEFAULT_RELATIVE_TOLERANCE,
+            ):
+                conflict = True
+            else:
+                agreement = True
+    return conflict, agreement, matched
+
+
 def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
     return _numeric_relation(claim_text, evidence_text)[0]
 
@@ -226,15 +260,30 @@ class RuleStanceDetector:
                     if len(token) > 2
                 }
                 lexical = len(claim_tokens & evidence_tokens) / max(len(claim_tokens), 1)
-                numeric_conflict, numeric_agreement = _numeric_relation(
+                numeric_conflict, numeric_agreement, numeric_matched = _numeric_facts_align(
                     claim_item.claim.text, item.excerpt
                 )
+                claim_has_numeric = bool(_numeric_facts(claim_item.claim.text))
+                claim_has_date = bool(_DATE_RE.findall(claim_item.claim.text))
+                claim_entities = _entities(claim_item.claim.text)
+                evidence_entities = _entities(item.excerpt)
+                entity_mismatch = bool(
+                    claim_entities and not claim_entities.intersection(evidence_entities)
+                )
                 date_conflict = self._date_conflict(claim_item.claim.text, item.excerpt)
+                evidence_has_date = bool(_DATE_RE.findall(item.excerpt))
                 negation_conflict = _has_negation(claim_item.claim.text) != _has_negation(
                     item.excerpt
                 )
+                unverified_structured_fact = (
+                    (claim_has_numeric and not numeric_matched)
+                    or (claim_has_date and not evidence_has_date)
+                    or entity_mismatch
+                )
                 if numeric_conflict or date_conflict or negation_conflict:
                     stance = Stance.CONTRADICTS
+                elif unverified_structured_fact:
+                    stance = Stance.NEUTRAL
                 elif numeric_agreement:
                     stance = Stance.SUPPORTS
                 elif lexical < 0.25:
