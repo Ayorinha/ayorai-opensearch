@@ -700,7 +700,7 @@ class SentenceTranslatedNLIStanceDetector(TranslatedNLIStanceDetector):
     component = "stance_detector.translate_nli_sentence"
 
     def _windows(self, evidence: Evidence) -> list[tuple[int, int, str]]:
-        return SentenceNLIStanceDetector._windows(self, evidence)
+        return _sentence_windows(evidence)
 
 
 class LLMStanceDetector:
