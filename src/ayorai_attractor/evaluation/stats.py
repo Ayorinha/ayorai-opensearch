@@ -40,4 +40,4 @@ def mcnemar_exact_pvalue(expected:Sequence[str],predicted_a:Sequence[str],predic
     c=sum(a!=g and d==g for g,a,d in zip(expected,predicted_a,predicted_b,strict=True))
     n=b+c
     if n==0:return 1.0
-    return min(1.0,2*sum(comb(n,k) for k in range(min(b,c)+1))/2**n)
+    return float(min(1.0, 2 * sum(comb(n, k) for k in range(min(b, c) + 1)) / 2**n))

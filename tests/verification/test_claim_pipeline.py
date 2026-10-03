@@ -120,7 +120,7 @@ def test_pipeline_preserves_provenance_as_part_of_judge_input() -> None:
 def test_pipeline_does_not_upgrade_incomplete_provenance() -> None:
     second = document(
         "e2",
-        "VectorLabs blocks unsigned model artifacts before deployment.",
+        "VectorLabs prevents deployment of unsigned model artifacts.",
         origin="o2",
     )
     second = RetrievedDocument(**{**second.__dict__, "provenance_complete": False})

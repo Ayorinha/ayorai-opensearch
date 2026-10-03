@@ -77,7 +77,7 @@ def evaluate_golden_v0(golden_path:Path,corpus_path:Path,suite:str="golden-v0")-
             abstain_expected.append(str(expected_status).upper()); abstain_actual.append(actual_status)
         item={"id":str(case["id"]),"category":str(case["category"]),"expected":case.get("global"),"predicted":result.verdict.value.upper() if result.verdict else None,"response_status":actual_status,"expected_response_status":expected_status,"correct":False,"latency_ms":round(latency,3)}
         if "global" in case:
-            gold=str(case["global"]).upper(); guess=item["predicted"]; correct=gold==guess; item["correct"]=correct
+            gold=str(case["global"]).upper(); guess=str(item["predicted"]); correct=gold==guess; item["correct"]=correct
             expected.append(gold); predicted.append(guess); legacy.append(_legacy_prediction(case,documents))
             category=str(case["category"]); category_totals[category]+=1; state_totals[gold]+=1
             if correct: category_correct[category]+=1; state_correct[gold]+=1
