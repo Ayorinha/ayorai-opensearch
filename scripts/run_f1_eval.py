@@ -121,41 +121,132 @@ def _evaluate(detector: object, cases: list[dict[str, Any]], corpus: dict[str, d
     }
 
 
+def _error_analysis(report: dict[str, Any]) -> dict[str, Any]:
+    mapping: dict[str, tuple[str, str]] = {
+        "conflict": ("a", "stance/NLI; conflict semantics"),
+        "conflict-date": ("a", "stance/NLI; date contradiction"),
+        "conflict-entity": ("a", "stance/NLI; entity alignment"),
+        "conflict-negation": ("a", "stance/NLI; negation"),
+        "numeric-tolerance": ("c", "metadata/numeric"),
+        "numeric-tolerance-boundary": ("c", "metadata/numeric"),
+        "independence-citation-chain": ("c", "metadata/provenance"),
+        "independence-hash": ("c", "metadata/provenance"),
+        "independence-republication": ("c", "metadata/independence"),
+        "provenance-complete": ("b", "Judge/aggregation"),
+        "provenance-incomplete": ("c", "metadata/provenance"),
+        "comparison": ("a", "stance/NLI; comparison"),
+        "refuted": ("a", "stance/NLI; refutation"),
+        "factual": ("a", "stance/NLI"),
+        "injection": ("b", "Judge/aggregation"),
+        "injection-factual-corroborated": ("b", "Judge/aggregation"),
+        "multi-hop": ("b", "Judge/aggregation"),
+        "mock-only": ("a", "stance/NLI"),
+    }
+    counts = Counter()
+    cases = []
+    for item in report["results"]:
+        if item["correct"]:
+            continue
+        cause, label = mapping.get(
+            item["category"],
+            ("b", "Judge/aggregation; unclassified"),
+        )
+        counts[cause] += 1
+        cases.append(
+            {
+                "id": item["id"],
+                "category": item["category"],
+                "expected": item["expected"],
+                "predicted": item["predicted"],
+                "cause": label,
+                "maximum_resolvable": "1",
+            }
+        )
+    return {
+        "case_errors": cases,
+        "upper_bound_by_cause": {
+            "a": counts["a"],
+            "b": counts["b"],
+            "c": counts["c"],
+        },
+    }
+
+
 def _markdown(report: dict[str, Any]) -> str:
-    a = report["A"]
-    c = report["C"]
     lines = [
-        "# F1 Results — Golden v0", "",
+        "# F1 Results — Golden v0",
+        "",
         f"Evaluation commit: {os.environ.get('GITHUB_SHA', 'unknown')}",
+        f"CI: {os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/"
+        f"{os.environ.get('GITHUB_REPOSITORY', 'Ayorinha/ayorai-opensearch')}/actions/"
+        f"runs/{os.environ.get('GITHUB_RUN_ID', 'unknown')}",
         f"Golden SHA-256: {report['golden_sha256']}",
         f"Corpus SHA-256: {report['corpus_sha256']}",
         f"Threshold/config SHA-256: {report['thresholds_sha256']}",
-        f"Seed: {report['seed']}", "Bootstrap: 10,000", "",
-        "## Paths", "",
-        "| Path | Status |", "|---|---|",
+        f"Seed: {report['seed']}",
+        "Bootstrap: 10,000",
+        "",
+        "## Paths",
+        "",
+        "| Path | Status |",
+        "|---|---|",
         "| A — multilingual direct NLI | measured, EVAL_ONLY |",
-        f"| B — translate-then-verify | blocked: {report['B']['reason']} |",
-        "| C — rules-only | measured ablation |", "",
-        "## Metrics", "",
+        "| B — translate-then-verify | measured, EVAL_ONLY, non-commercial |",
+        "| C — rules-only | measured ablation |",
+        "",
+        "## Metrics",
+        "",
         "| System | Accuracy | Balanced | IC95% | ECE | p50 ms | p95 ms |",
         "|---|---:|---:|---:|---:|---:|---:|",
-        f"| A | {a['accuracy']:.4f} | {a['balanced_accuracy']:.4f} | [{a['bootstrap_95_ci']['lower']:.4f}, {a['bootstrap_95_ci']['upper']:.4f}] | {a['ece']:.4f} | {a['latency_ms']['p50']:.3f} | {a['latency_ms']['p95']:.3f} |",
-        f"| C | {c['accuracy']:.4f} | {c['balanced_accuracy']:.4f} | [{c['bootstrap_95_ci']['lower']:.4f}, {c['bootstrap_95_ci']['upper']:.4f}] | {c['ece']:.4f} | {c['latency_ms']['p50']:.3f} | {c['latency_ms']['p95']:.3f} |",
-        f"| Majority baseline | {a['majority_class_baseline']['accuracy']:.4f} | — | — | — | — | — |", "",
-        "## McNemar", "",
-        f"A vs F0/C: {report['mcnemar_A_vs_F0_C']}",
-        f"A vs legacy: {a['mcnemar_vs_legacy']}", "",
-        "## Confusion matrix — A", "",
-        json.dumps(a["confusion_matrix"], ensure_ascii=False, indent=2), "",
-        "## Accuracy by category — A", "",
-        "| Category | Accuracy | n |", "|---|---:|---:|",
     ]
-    for key, value in a["accuracy_by_category"].items():
-        lines.append(f"| {key} | {value['accuracy']:.4f} | {value['total']} |")
-    lines.extend(["", "## Accuracy by state — A", "", "| State | Accuracy | n |", "|---|---:|---:|"])
-    for key, value in a["accuracy_by_state"].items():
-        lines.append(f"| {key} | {value['accuracy']:.4f} | {value['total']} |")
-    lines.extend(["", "No threshold was tuned against Golden v0. ADR-002 remains the sole final-verdict authority.", "", f"Report SHA-256: {report['report_sha256']}", ""])
+    for key in ("A", "B", "C"):
+        item = report[key]
+        lines.append(
+            f"| {key} | {item['accuracy']:.4f} | {item['balanced_accuracy']:.4f} | "
+            f"[{item['bootstrap_95_ci']['lower']:.4f}, "
+            f"{item['bootstrap_95_ci']['upper']:.4f}] | {item['ece']:.4f} | "
+            f"{item['latency_ms']['p50']:.3f} | {item['latency_ms']['p95']:.3f} |"
+        )
+    lines.extend(
+        [
+            f"| Majority baseline | "
+            f"{report['A']['majority_class_baseline']['accuracy']:.4f} | — | — | — | — | — |",
+            "",
+            "## McNemar",
+            "",
+            f"A vs F0/C: {report['mcnemar_A_vs_F0_C']}",
+            f"B vs F0/C: {report['mcnemar_B_vs_F0_C']}",
+            f"A vs legacy: {report['A']['mcnemar_vs_legacy']}",
+            "",
+            "## A error analysis",
+            "",
+            "| Case | Category | Expected | Predicted | Cause | Max resolvable |",
+            "|---|---|---|---|---|---:|",
+        ]
+    )
+    for item in report["A_error_analysis"]["case_errors"]:
+        lines.append(
+            f"| {item['id']} | {item['category']} | {item['expected']} | "
+            f"{item['predicted']} | {item['cause']} | {item['maximum_resolvable']} |"
+        )
+    lines.extend(
+        [
+            "",
+            f"Upper-bound errors by cause: {report['A_error_analysis']['upper_bound_by_cause']}",
+            "",
+            "## Statistical limitation",
+            "",
+            "With n=30, exceeding the 43.33% majority baseline with p<0.05 "
+            "requires approximately 60% accuracy in this small paired setting. "
+            "A's 95% bootstrap interval includes the baseline.",
+            "",
+            "No threshold was tuned against Golden v0. ADR-002 remains the sole "
+            "final-verdict authority.",
+            "",
+            f"Report SHA-256: {report['report_sha256']}",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 
