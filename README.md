@@ -79,6 +79,9 @@ This is intentionally a **reference architecture and research/engineering platfo
 - R7 adversarial corpus with CI Security/CodeQL coverage
 - R8 deterministic metrics primitives with stable Prometheus text export
 - R9 durable job state with idempotency, atomic claims and restart-safe leases
+- R10 deterministic comparative evaluation arena with bootstrap and paired McNemar statistics
+- R11 bounded candidate optimization extension point with explicit evaluation budgets
+- R13 immutable tenant isolation context primitive for authorization/routing boundaries
 - R10 confusion-matrix/bootstrap/McNemar arena reporting
 - R11 deterministic evaluator-driven optimization core
 - R12 governed MCP/plugin boundary
