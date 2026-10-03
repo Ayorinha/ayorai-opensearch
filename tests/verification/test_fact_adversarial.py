@@ -101,4 +101,4 @@ def test_fact_layer_never_raises_on_free_text() -> None:
 def test_provenance_input_hash_preserves_separator() -> None:
     first = RuleStanceDetector().detect([_claim("ab")], [_evidence("c")])
     second = RuleStanceDetector().detect([_claim("a")], [_evidence("bc")])
-    assert first.edges[0].provenance.input_hash != second.edges[0].provenance.input_hash
+    assert first.edges[0].provenance.input_sha256 != second.edges[0].provenance.input_sha256
