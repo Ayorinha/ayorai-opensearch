@@ -109,9 +109,15 @@ def _evaluate(
         if "global" not in case:
             continue
         claims = [str(item["text"]) for item in case.get("expected_claims", [])]
-        docs = FixtureRetriever(corpus, [str(x) for x in case.get("evidence_pool", [])]).retrieve(str(case["query"]))
+        docs = FixtureRetriever(
+            corpus,
+            [str(x) for x in case.get("evidence_pool", [])],
+        ).retrieve(str(case["query"]))
         started = time.perf_counter()
-        result = pipeline.verify(claims or [str(case["query"])], docs)
+        result = pipeline.verify(
+            claims or [str(case["query"])],
+            docs,
+        )
         latency = (time.perf_counter() - started) * 1000
         guess = result.verdict.value.upper() if result.verdict else "UNVERIFIED"
         gold = str(case["global"]).upper()
@@ -124,7 +130,17 @@ def _evaluate(
         latencies.append(latency)
         by_category.setdefault(str(case["category"]), []).append(ok)
         by_state.setdefault(gold, []).append(ok)
-        results.append({"id": str(case["id"]), "category": str(case["category"]), "expected": gold, "predicted": guess, "confidence": round(float(result.confidence), 6), "correct": ok, "latency_ms": round(latency, 3)})
+        results.append(
+            {
+                "id": str(case["id"]),
+                "category": str(case["category"]),
+                "expected": gold,
+                "predicted": guess,
+                "confidence": round(float(result.confidence), 6),
+                "correct": ok,
+                "latency_ms": round(latency, 3),
+            }
+        )
     majority = Counter(expected).most_common(1)[0]
     boot = bootstrap_accuracy(expected, predicted, iterations=10000, seed=20261003)
     return {
@@ -132,18 +148,54 @@ def _evaluate(
         "case_count": len(expected),
         "accuracy": round(sum(correct) / len(correct), 6),
         "balanced_accuracy": round(balanced_accuracy(expected, predicted), 6),
-        "bootstrap_95_ci": {"lower": boot[0], "upper": boot[1], "iterations": 10000, "seed": 20261003},
-        "majority_class_baseline": {"label": majority[0], "accuracy": round(majority[1] / len(expected), 6)},
+        "bootstrap_95_ci": {
+            "lower": boot[0],
+            "upper": boot[1],
+            "iterations": 10000,
+            "seed": 20261003,
+        },
+        "majority_class_baseline": {
+            "label": majority[0],
+            "accuracy": round(majority[1] / len(expected), 6),
+        },
         "confusion_matrix": confusion_matrix(expected, predicted),
         "mcnemar_vs_legacy": {
-            "legacy_correct_new_wrong": sum(g == old and g != new for g, old, new in zip(expected, legacy, predicted, strict=True)),
-            "new_correct_legacy_wrong": sum(g != old and g == new for g, old, new in zip(expected, legacy, predicted, strict=True)),
+            "legacy_correct_new_wrong": sum(
+                g == old and g != new
+                for g, old, new in zip(expected, legacy, predicted, strict=True)
+            ),
+            "new_correct_legacy_wrong": sum(
+                g != old and g == new
+                for g, old, new in zip(expected, legacy, predicted, strict=True)
+            ),
             "exact_p": mcnemar_exact_pvalue(expected, legacy, predicted),
         },
-        "accuracy_by_category": {key: {"correct": sum(values), "total": len(values), "accuracy": round(sum(values) / len(values), 6)} for key, values in sorted(by_category.items())},
-        "accuracy_by_state": {key: {"correct": sum(values), "total": len(values), "accuracy": round(sum(values) / len(values), 6)} for key, values in sorted(by_state.items())},
+        "accuracy_by_category": {
+            key: {
+                "correct": sum(values),
+                "total": len(values),
+                "accuracy": round(sum(values) / len(values), 6),
+            }
+            for key, values in sorted(by_category.items())
+        },
+        "accuracy_by_state": {
+            key: {
+                "correct": sum(values),
+                "total": len(values),
+                "accuracy": round(sum(values) / len(values), 6),
+            }
+            for key, values in sorted(by_state.items())
+        },
         "ece": _ece(confidences, correct),
-        "latency_ms": {"p50": round(statistics.median(latencies), 3), "p95": round(sorted(latencies)[min(len(latencies) - 1, int(len(latencies) * 0.95))], 3)},
+        "latency_ms": {
+            "p50": round(statistics.median(latencies), 3),
+            "p95": round(
+                sorted(latencies)[
+                    min(len(latencies) - 1, int(len(latencies) * 0.95))
+                ],
+                3,
+            ),
+        },
         "results": results,
         "_predictions": predicted,
     }
@@ -361,11 +413,15 @@ def main() -> None:
         "mcnemar_B_vs_F0_C": b_vs_f0,
         "A_error_analysis": {},
         "limitations": [
-            "Golden v0 contains 30 scored cases; four ABSTAIN contracts are outside global-verdict accuracy.",
+            "Golden v0 contains 30 scored cases; four ABSTAIN contracts are "
+            "outside global-verdict accuracy.",
             "A and B are EVAL_ONLY and are not commercial defaults.",
-            "B uses Helsinki-NLP/opus-mt-ROMANCE-en and cross-encoder/nli-deberta-v3-base.",
-            "The original source excerpt remains the audit evidence; translation is model input only.",
-            "With n=30, approximately 60% accuracy is needed to exceed the 43.33% majority baseline with p<0.05; A's IC95% includes the baseline.",
+            "B uses Helsinki-NLP/opus-mt-ROMANCE-en and "
+            "cross-encoder/nli-deberta-v3-base.",
+            "The original source excerpt remains the audit evidence; "
+            "translation is model input only.",
+            "With n=30, approximately 60% accuracy is needed to exceed the "
+            "43.33% majority baseline with p<0.05; A's IC95% includes the baseline.",
         ],
     }
     report["A_error_analysis"] = _error_analysis(a_report)
