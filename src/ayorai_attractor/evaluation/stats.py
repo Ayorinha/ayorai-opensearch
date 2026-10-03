@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections import Counter
 from math import comb
 from random import Random
-from typing import Sequence
+from collections.abc import Sequence
 
 from ayorai_attractor.verification.models import Verdict
 
