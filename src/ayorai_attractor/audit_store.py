@@ -18,7 +18,9 @@ from ayorai_attractor.replay import ReplayBundle
 
 class AuditTraceStore:
     def __init__(self, path: str | None = None) -> None:
-        configured: str = path if path is not None else os.getenv("ATTRACTOR_AUDIT_DB", ".attractor/audit.sqlite3")
+        configured: str = path if path is not None else os.getenv(
+            "ATTRACTOR_AUDIT_DB", ".attractor/audit.sqlite3"
+        )
         self.path = configured
         if configured != ":memory:":
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
