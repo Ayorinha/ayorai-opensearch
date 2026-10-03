@@ -1,4 +1,3 @@
-# ruff: noqa
 #!/usr/bin/env python3
 """Reproduce the pre-fix P0 claim-pipeline Golden v0 result.
 
@@ -10,8 +9,7 @@ this point; do not tune production rules against these cases.
 from __future__ import annotations
 
 import json
-from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ayorai_attractor.evaluation.golden import evaluate_golden_v0
@@ -26,7 +24,7 @@ from ayorai_attractor.verification.stance import RuleStanceDetector
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "evals/golden/v0.jsonl"
 CORPUS = ROOT / "evals/corpus/documents.jsonl"
-RETRIEVED_AT = datetime(2026, 9, 30, 12, 0, tzinfo=timezone.utc)
+RETRIEVED_AT = datetime(2026, 9, 30, 12, 0, tzinfo=UTC)
 OUT_OF_SCOPE_TERMS = ("diagnóstico", "diagnostico", "estratégia jurídica", "estrategia juridica")
 
 
