@@ -13,8 +13,12 @@ the deterministic Judge.
 Numeric contradiction checks require matching numeric unit and attribute
 context. Evidence-vs-evidence baseline comparison is removed.
 
-Negation detection is token-based and cannot treat substrings such as "ano",
-"novembro" or "sempre" as negation.
+Negation detection is token-based and cannot treat substrings as negation.
+
+Production parsing/mapping failures now return an explicit processing-error
+abstention with a recorded reason. LLM claim and stance payloads use strict
+Pydantic schemas, and stance evidence IDs are checked against the allowed
+current evidence ID.
 
 ## Evaluation truth
 

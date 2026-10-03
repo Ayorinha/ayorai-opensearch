@@ -11,7 +11,10 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - Claim extraction is response-only and cannot read evidence.
 - ADR-003 adds NEUTRAL stance semantics.
 - Numeric contradiction detection aligns unit and attribute context.
-- Negation detection uses token boundaries rather than substring matching.
+- Negation detection uses token boundaries.
+- Production parsing/mapping failures abstain with a recorded reason.
+- LLM claim and stance payloads are validated with strict Pydantic schemas and
+  stance evidence IDs are restricted to the current evidence item.
 
 ### Engineering
 

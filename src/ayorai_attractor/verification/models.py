@@ -1,18 +1,25 @@
+"""Strict Pydantic contracts for the deterministic verification core."""
+
 from datetime import datetime
 from enum import StrEnum
+
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
+
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
+
 
 class Claim(StrictModel):
     id: str = Field(min_length=1)
     text: str = Field(min_length=1)
 
+
 class Stance(StrEnum):
     SUPPORTS = "supports"
     CONTRADICTS = "contradicts"
     NEUTRAL = "neutral"
+
 
 class Evidence(StrictModel):
     id: str = Field(min_length=1)
@@ -54,11 +61,25 @@ class Evidence(StrictModel):
             raise ValueError("end_offset must be greater than start_offset")
         return self
 
+
 class StanceEdge(StrictModel):
     id: str = Field(min_length=1)
     claim_id: str = Field(min_length=1)
     evidence_id: str = Field(min_length=1)
     stance: Stance
+
+    @field_validator("stance", mode="before")
+    @classmethod
+    def parse_stance(cls, value: object) -> object:
+        if isinstance(value, str):
+            try:
+                return Stance(value)
+            except ValueError as exc:
+                raise ValueError(
+                    "stance must be supports, contradicts or neutral"
+                ) from exc
+        return value
+
 
 class Verdict(StrEnum):
     VERIFIED = "verified"
@@ -67,6 +88,7 @@ class Verdict(StrEnum):
     UNVERIFIED = "unverified"
     REFUTED = "refuted"
     CONFLICTING = "conflicting"
+
 
 INSUFFICIENT_EVIDENCE_TO_VERDICT: dict[str, Verdict] = {
     "insufficient_evidence": Verdict.UNVERIFIED,
