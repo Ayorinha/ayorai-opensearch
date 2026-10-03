@@ -135,7 +135,8 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
                 ),
                 "",
             )
-            unit = f"{currency}:{scale or 'base'}"
+            scale_alias = {"million": "million", "millions": "million", "milhão": "million", "milhões": "million", "billion": "billion", "billions": "billion", "bilhão": "billion", "bilhões": "billion"}
+            unit = f"{currency}:{scale_alias.get(scale, scale or 'base')}"
         elif "ms" in context:
             unit = "ms"
         elif "year" in context:
