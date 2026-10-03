@@ -109,4 +109,4 @@ def audit_trace(trace_id: str) -> AuditTraceResponse:
         from fastapi import HTTPException
 
         raise HTTPException(status_code=404, detail="audit trace not found")
-    return AuditTraceResponse(**saved)
+    return saved
