@@ -7,7 +7,8 @@ comes from the deterministic ADR-002 Judge.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, Sequence
+from collections.abc import Sequence
+from typing import Protocol
 
 from .extraction import ClaimExtractor, ExtractedClaim, RetrievedDocument
 from .judge import ClaimJudgment, judge
