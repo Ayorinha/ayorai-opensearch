@@ -143,7 +143,10 @@ def evaluate_golden_v0(
     corpus = _load_jsonl(corpus_path)
     if suite == "smoke-v0":
         wanted = {"factual", "conflict", "injection", "no-answer", "out-of-scope"}
-        cases = [next(c for c in cases if c.get("category") == category) for category in sorted(wanted)]
+        cases = [
+            next(c for c in cases if c.get("category") == category)
+            for category in sorted(wanted)
+        ]
     elif suite != "golden-v0":
         raise ValueError(f"Unsupported suite: {suite}")
     documents = {str(x["doc_id"]): x for x in corpus}
