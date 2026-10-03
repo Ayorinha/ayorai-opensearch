@@ -6,7 +6,7 @@ import os
 import time
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from ayorai_attractor.evaluation.stats import (
     balanced_accuracy,
@@ -67,6 +67,7 @@ class FixtureRetriever:
             content = str(item["content"])
             offsets = item.get("offsets")
             retrieved_at = item.get("retrieved_at")
+            offset_pair = cast(list[int], offsets) if isinstance(offsets, list) else []
             complete_offsets = (
                 isinstance(offsets, list)
                 and len(offsets) == 2
@@ -84,8 +85,8 @@ class FixtureRetriever:
                     retrieved_at=datetime.fromisoformat(
                         str(retrieved_at or "2026-09-30T12:00:00+00:00").replace("Z", "+00:00")
                     ),
-                    start_offset=offsets[0] if complete_offsets else 0,
-                    end_offset=offsets[1] if complete_offsets else len(content),
+                    start_offset=offset_pair[0] if complete_offsets else 0,
+                    end_offset=offset_pair[1] if complete_offsets else len(content),
                     origin_id=str(item["origin_id"]),
                     canonical_url=str(item["url"]),
                     provenance_complete=bool(retrieved_at and complete_offsets),
