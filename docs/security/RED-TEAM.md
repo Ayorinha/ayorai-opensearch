@@ -1,27 +1,27 @@
-# ATTRACTOR Red-Team Contract
+# R7 — Deterministic red-team corpus
 
-R7 establishes a deterministic, executable security corpus for the verification
-boundary. Attack-shaped text is treated as untrusted data; it is never promoted
-to system instructions.
+R7 adds a small, deterministic adversarial corpus for the ATTRACTOR security
+boundary. The corpus is intentionally executable as a unit-test contract:
+attack-shaped text remains data and never becomes an instruction to the
+verification runtime.
 
-## Covered classes
+## Threat classes
 
-- prompt injection;
-- evidence poisoning;
-- citation manipulation;
-- secret leakage.
+- Prompt injection: instruction-shaped evidence is treated as evidence data.
+- Evidence poisoning: hostile claims inside a source do not override the Judge.
+- Citation manipulation: unknown citation identifiers are rejected.
+- Secret exposure: secret-shaped payloads are never persisted by the red-team
+  contract.
 
-Each case has an explicit safe-handling action and a stable identifier. The
-corpus is intentionally small at this stage so failures remain reviewable and
-reproducible.
+## Safety invariant
 
-## Security boundary
+The red-team evaluator checks explicit safe-handling actions only. It does not
+execute payloads, call tools, follow instructions from evidence, or make a
+verification decision. R7 therefore exercises the boundary without introducing
+an attacker-controlled execution path.
 
-The red-team corpus is a regression contract, not a claim that the system is
-secure against all attacks. Production deployments still require authorization,
-least privilege, secret management, isolation, rate limits, dependency
-management and continuous adversarial testing.
+## Scope
 
-A future expansion should add tool abuse, indirect prompt injection, retrieval
-poisoning, multi-tenant isolation and protocol-level attacks, with each case
-mapped to an identified threat taxonomy and an executable expected outcome.
+This corpus is a deterministic security regression layer. It complements, but
+does not replace, dependency scanning, Bandit, CodeQL, runtime isolation, or
+future property-based/adversarial testing.
