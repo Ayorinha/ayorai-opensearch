@@ -11,7 +11,20 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - explicit abstention response contracts;
 - full Golden v0 regression added to CI;
 - CI action majors updated for the current GitHub Actions runtime;
-- evidence-based engineering status documentation refreshed.
+- evidence-based engineering status documentation refreshed;
+- R2 audit trace persistence and replay digest storage added;
+- R3 explicit multi-model Council aggregation added without replacing the deterministic Judge;
+- R4 content-addressed replay storage added;
+- R5 lexical/neural OpenSearch hybrid retrieval with deterministic RRF added;
+- R6 grounded synthesis gate connected to claim-level evidence;
+- R7 deterministic adversarial red-team corpus added;
+- R8 deterministic latency, success/failure and cost metrics added;
+- R9 durable idempotent job state added;
+- R10 comparative arena statistics added with confusion matrix, bootstrap and McNemar reporting;
+- R11 evaluator-driven deterministic optimization foundation added;
+- R12 governed MCP/plugin dispatch boundary documented and regression-tested;
+- R13 explicit tenant isolation context added;
+- R1→R6 end-to-end verification pipeline added.
 
 ## [0.1.0] - 2026-09-30
 
