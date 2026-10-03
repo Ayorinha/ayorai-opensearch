@@ -6,11 +6,12 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass
-from typing import Any, Protocol, Sequence
+from collections.abc import Sequence
+from typing import Any, Protocol
 
 from .extraction import ComponentProvenance, ExtractedClaim
 from .models import Evidence, Stance, StanceEdge
-from .numeric import DEFAULT_RELATIVE_TOLERANCE, NumericLocale, numeric_conflicts, parse_number
+from .numeric import DEFAULT_RELATIVE_TOLERANCE, NumericLocale, numeric_conflicts
 
 _NUMBER_RE = re.compile(r"(?<![\w])[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?")
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
