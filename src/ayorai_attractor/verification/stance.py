@@ -81,7 +81,7 @@ _PT_MARKERS = frozenset(
     {"não", "nao", "uma", "para", "com", "que", "foi", "são", "sao",
      "empresa", "receita", "ano", "dos", "das", "em", "por"}
 )
-_ENTITY_RE = re.compile(r"\b(?:company|empresa)\s+[A-Za-zÀ-ÿ][\wÀ-ÿ-]*\b", re.IGNORECASE | re.UNICODE)
+_ENTITY_RE = re.compile(\n    r"\\b(?:company|empresa)\\s+(?P<name>[A-Za-zÀ-ÿ][\\wÀ-ÿ-]*)\\b",\n    re.IGNORECASE | re.UNICODE,\n)
 _EN_MARKERS = frozenset(
     {"the", "was", "were", "with", "that", "company", "revenue", "year",
      "from", "for", "and", "not", "this", "reported"}
@@ -104,7 +104,7 @@ def _has_negation(text: str) -> bool:
 
 
 def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
-    tokens = re.findall(r"(?<!\\w)[-+]?\\d+(?:[.,]\\d+|[.,]\\d{3})*(?:\\s*%)?|[\\wÀ-ÿ]+", text.casefold(), re.UNICODE)
+    tokens = re.findall(\n        r"(?<!\\w)[-+]?\\d+(?:[.,]\\d+|[.,]\\d{3})*(?:\\s*%)?|[\\wÀ-ÿ]+",\n        text.casefold(),\n        re.UNICODE,\n    )
     facts = []
     for index, token in enumerate(tokens):
         if not _NUMBER_RE.fullmatch(token):
@@ -211,7 +211,7 @@ def _numeric_relation(claim_text: str, evidence_text: str) -> tuple[bool, bool]:
 
 
 def _entities(text: str) -> set[str]:
-    return {match.group(0).casefold() for match in _ENTITY_RE.finditer(text)}
+    return {match.group("name").casefold() for match in _ENTITY_RE.finditer(text)}
 
 
 def _numeric_facts_align(
