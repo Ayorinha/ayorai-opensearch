@@ -1,4 +1,11 @@
-from ayorai_attractor.council import CouncilDecision, CouncilVote, CouncilOrchestrator, ProviderParticipant, deliberate, parse_vote_response
+from ayorai_attractor.council import (
+    CouncilDecision,
+    CouncilOrchestrator,
+    CouncilVote,
+    ProviderParticipant,
+    deliberate,
+    parse_vote_response,
+)
 from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 
@@ -39,7 +46,10 @@ class VoteProvider(Provider):
 
 
 def test_provider_adapter_parses_explicit_vote() -> None:
-    result = parse_vote_response("m1", ProviderResponse(text="DECISION=refuted\nThe evidence contradicts the claim."))
+    result = parse_vote_response(
+        "m1",
+        ProviderResponse(text="DECISION=refuted\nThe evidence contradicts the claim."),
+    )
     assert result.model_id == "m1"
     assert result.decision is CouncilDecision.REFUTED
     assert result.rationale.startswith("The evidence")
