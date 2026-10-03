@@ -287,7 +287,8 @@ def _markdown(report: dict[str, Any]) -> str:
         f"Seed: {report['seed']}",
         "Bootstrap: 10,000",
         "",
-        "Both frozen development Goldens were evaluated with identical code, thresholds and models.",
+        "Both frozen development Goldens were evaluated with identical code, "
+        "thresholds and models.",
         "",
     ]
     for suite_key, title in (("golden_v0", "Golden v0"), ("golden_v0_1", "Golden v0.1")):
