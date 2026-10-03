@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 # No file-wide Ruff suppressions are currently justified.
 ALLOWED_FILE_WIDE_RUFF_NOQA: dict[str, str] = {}
 

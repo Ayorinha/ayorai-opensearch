@@ -17,7 +17,6 @@ from .models import FailureType, SearchRequest, SearchResponse, VerificationStat
 from .router import AdaptiveRouter
 from .tenant import TenantContext
 
-
 IMPLEMENTED_AGENTS = {
     "planner": PlannerAgent,
     "researcher": ResearchAgent,
