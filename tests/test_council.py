@@ -1,11 +1,5 @@
-from ayorai_attractor.council import (
-    CouncilDecision,
-    CouncilOrchestrator,
-    ProviderParticipant,
-    parse_vote_response,
-)
+from ayorai_attractor.council import CouncilDecision, CouncilVote, CouncilOrchestrator, ProviderParticipant, deliberate, parse_vote_response
 from ayorai_attractor.providers.base import Provider, ProviderResponse
-from ayorai_attractor.council import CouncilDecision, CouncilVote, deliberate
 
 
 def vote(model: str, decision: CouncilDecision) -> CouncilVote:
@@ -19,35 +13,21 @@ def test_empty_council_abstains() -> None:
 
 
 def test_plurality_is_deterministic() -> None:
-    result = deliberate(
-        [
-            vote("m1", CouncilDecision.VERIFIED),
-            vote("m2", CouncilDecision.VERIFIED),
-            vote("m3", CouncilDecision.SUPPORTED),
-        ]
-    )
+    result = deliberate([
+        vote("m1", CouncilDecision.VERIFIED),
+        vote("m2", CouncilDecision.VERIFIED),
+        vote("m3", CouncilDecision.SUPPORTED),
+    ])
     assert result.decision is CouncilDecision.VERIFIED
     assert result.agreement_ratio == 2 / 3
 
 
 def test_tie_abstains_instead_of_using_a_hidden_tiebreaker() -> None:
-    result = deliberate(
-        [
-            vote("m1", CouncilDecision.VERIFIED),
-            vote("m2", CouncilDecision.REFUTED)
-            if hasattr(CouncilDecision, "REFUTED")
-            else vote("m2", CouncilDecision.CONFLICTING),
-        ]
-    )
+    result = deliberate([
+        vote("m1", CouncilDecision.VERIFIED),
+        vote("m2", CouncilDecision.REFUTED),
+    ])
     assert result.decision is CouncilDecision.ABSTAIN
-
-
-    CouncilDecision,
-    CouncilOrchestrator,
-    ProviderParticipant,
-    parse_vote_response,
-)
-from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 
 class VoteProvider(Provider):
@@ -59,13 +39,10 @@ class VoteProvider(Provider):
 
 
 def test_provider_adapter_parses_explicit_vote() -> None:
-    vote = parse_vote_response(
-        "m1",
-        ProviderResponse(text="DECISION=refuted\nThe evidence contradicts the claim."),
-    )
-    assert vote.model_id == "m1"
-    assert vote.decision is CouncilDecision.REFUTED
-    assert vote.rationale.startswith("The evidence")
+    result = parse_vote_response("m1", ProviderResponse(text="DECISION=refuted\nThe evidence contradicts the claim."))
+    assert result.model_id == "m1"
+    assert result.decision is CouncilDecision.REFUTED
+    assert result.rationale.startswith("The evidence")
 
 
 def test_provider_adapter_rejects_implicit_vote() -> None:
@@ -85,9 +62,7 @@ def test_orchestrator_aggregates_votes_and_isolates_failures() -> None:
         ProviderParticipant("m3", VoteProvider("not structured")),
     ]
     result = CouncilOrchestrator(participants).run("test")
-
     assert result.result.decision is CouncilDecision.SUPPORTED
     assert result.result.agreement_ratio == 1.0
     assert len(result.result.votes) == 2
     assert len(result.failures) == 1
-
