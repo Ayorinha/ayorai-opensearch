@@ -144,19 +144,31 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
     return facts
 
 
+def _numeric_relation(claim_text: str, evidence_text: str) -> tuple[bool, bool]:
+    conflict = False
+    agreement = False
+    for left, left_unit, left_attribute in _numeric_facts(claim_text):
+        for right, right_unit, right_attribute in _numeric_facts(evidence_text):
+            if left_unit != right_unit or left_attribute != right_attribute:
+                continue
+            if numeric_conflicts(
+                left,
+                right,
+                locale=NumericLocale.EN_US,
+                tolerance=DEFAULT_RELATIVE_TOLERANCE,
+            ):
+                conflict = True
+            else:
+                agreement = True
+    return conflict, agreement
+
+
 def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
-    return any(
-        left_unit == right_unit
-        and left_attribute == right_attribute
-        and numeric_conflicts(
-            left,
-            right,
-            locale=NumericLocale.EN_US,
-            tolerance=DEFAULT_RELATIVE_TOLERANCE,
-        )
-        for left, left_unit, left_attribute in _numeric_facts(claim_text)
-        for right, right_unit, right_attribute in _numeric_facts(evidence_text)
-    )
+    return _numeric_relation(claim_text, evidence_text)[0]
+
+
+def _numeric_agreement(claim_text: str, evidence_text: str) -> bool:
+    return _numeric_relation(claim_text, evidence_text)[1]
 
 
 @dataclass(frozen=True)
@@ -217,12 +229,20 @@ class RuleStanceDetector:
                 if lexical < 0.25:
                     stance = Stance.NEUTRAL
                 else:
+                    numeric_conflict, numeric_agreement = _numeric_relation(
+                        claim_item.claim.text, item.excerpt
+                    )
                     contradiction = (
-                        self._numeric_conflict(claim_item.claim.text, item.excerpt)
+                        numeric_conflict
                         or self._date_conflict(claim_item.claim.text, item.excerpt)
                         or _has_negation(claim_item.claim.text) != _has_negation(item.excerpt)
                     )
-                    stance = Stance.CONTRADICTS if contradiction else Stance.SUPPORTS
+                    if contradiction:
+                        stance = Stance.CONTRADICTS
+                    elif numeric_agreement:
+                        stance = Stance.SUPPORTS
+                    else:
+                        stance = Stance.SUPPORTS
                 payload = f"{claim_item.claim.id}|{item.id}|{stance.value}"
                 output.append(
                     DetectedStance(
