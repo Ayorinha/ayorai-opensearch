@@ -56,8 +56,17 @@ def evaluate_golden_v0(golden_path:Path,corpus_path:Path,suite:str="golden-v0")-
     documents={str(x["doc_id"]):x for x in corpus}
     scope=RuleScopeClassifier(("medical diagnosis","diagnóstico","legal strategy","estratégia jurídica"))
     pipeline=ClaimVerificationPipeline(RuleStanceDetector(),scope_classifier=scope)
-    expected=[]; predicted=[]; legacy=[]; results=[]; abstain_expected=[]; abstain_actual=[]; latencies=[]
-    category_totals=Counter(); category_correct=Counter(); state_totals=Counter(); state_correct=Counter()
+    expected: list[str] = []
+    predicted: list[str] = []
+    legacy: list[str] = []
+    results: list[dict[str, Any]] = []
+    abstain_expected: list[str] = []
+    abstain_actual: list[str] = []
+    latencies: list[float] = []
+    category_totals: Counter[str] = Counter()
+    category_correct: Counter[str] = Counter()
+    state_totals: Counter[str] = Counter()
+    state_correct: Counter[str] = Counter()
     for case in cases:
         claims=[str(item["text"]) for item in case.get("expected_claims",[])]
         if not claims: claims=[str(case["query"])]

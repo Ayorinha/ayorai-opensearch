@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from collections.abc import Sequence
 from typing import Protocol
 
-from .extraction import ClaimExtractor, ExtractedClaim, RetrievedDocument
+from .extraction import ClaimExtractor, ComponentProvenance, ExtractedClaim, RetrievedDocument
 from .judge import ClaimJudgment, judge
 from .models import Claim, Evidence, StanceEdge, Verdict
 from .response import ResponseStatus
@@ -184,8 +184,7 @@ class ClaimVerificationPipeline:
         )
 
 
-def _input_provenance(text: str):
-    from .extraction import ComponentProvenance
+def _input_provenance(text: str) -> ComponentProvenance:
     import hashlib
 
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()

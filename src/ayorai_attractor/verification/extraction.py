@@ -11,7 +11,7 @@ from datetime import datetime
 from collections.abc import Sequence
 from typing import Any, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 from .models import Claim, Evidence
 
@@ -86,7 +86,7 @@ class RetrievedDocument:
             end_offset=end,
             excerpt=self.content,
             origin_id=self.origin_id,
-            canonical_url=self.canonical_url,
+            canonical_url=HttpUrl(self.canonical_url) if self.canonical_url else None,
             normalized_content_hash=self.normalized_content_hash or _sha256(self.content),
             cited_origin_id=self.cited_origin_id,
             provenance_complete=self.provenance_complete,

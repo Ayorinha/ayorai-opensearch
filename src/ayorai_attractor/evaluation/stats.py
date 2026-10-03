@@ -32,7 +32,7 @@ def bootstrap_accuracy(expected:Sequence[str],predicted:Sequence[str],*,iteratio
     samples=[]
     for _ in range(iterations):
         samples.append(sum(outcomes[rng.randrange(len(outcomes))] for _ in outcomes)/len(outcomes))
-    samples.sort(); return samples[int(.025*(iterations-1))],samples[int(.975*(iterations-1))]
+    samples.sort(); return float(samples[int(.025*(iterations-1))]),float(samples[int(.975*(iterations-1))])
 
 def mcnemar_exact_pvalue(expected:Sequence[str],predicted_a:Sequence[str],predicted_b:Sequence[str])->float:
     if not(len(expected)==len(predicted_a)==len(predicted_b)): raise ValueError("all sequences must have same length")
