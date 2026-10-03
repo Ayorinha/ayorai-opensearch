@@ -104,7 +104,7 @@ def _has_negation(text: str) -> bool:
 
 
 def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
-    tokens = _TOKEN_RE.findall(text.casefold())
+    tokens = re.findall(r"(?<!\\w)[-+]?\\d+(?:[.,]\\d+|[.,]\\d{3})*(?:\\s*%)?|[\\wÀ-ÿ]+", text.casefold(), re.UNICODE)
     facts = []
     for index, token in enumerate(tokens):
         if not _NUMBER_RE.fullmatch(token):
