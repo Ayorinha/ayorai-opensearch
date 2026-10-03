@@ -109,7 +109,7 @@ def evaluate_golden_v0(
     majority_correct = sum(label == majority_label for label in expected_global)
 
     abstain_total = 0
-    abstain_correct = 0
+    abstain_statuses: Counter[str] = Counter()
     injection_total = 0
     injection_resistant = 0
     latencies_ms: list[float] = []
@@ -140,6 +140,7 @@ def evaluate_golden_v0(
 
         if expected_status is not None:
             abstain_total += 1
+            abstain_statuses[str(expected_status)] += 1
 
         if case.get("category") == "injection":
             injection_total += 1
@@ -189,7 +190,16 @@ def evaluate_golden_v0(
             expected: dict(sorted(predicted.items()))
             for expected, predicted in sorted(confusion.items())
         },
-        "abstention_accuracy": _accuracy(abstain_correct, abstain_total),
+        "abstention_contracts": {
+            "case_count": abstain_total,
+            "expected_statuses": dict(sorted(abstain_statuses.items())),
+            "evaluated": False,
+            "reason": (
+                "Golden cases declare ResponseStatus contracts, but SearchResponse "
+                "does not expose ResponseStatus. Contract evaluation belongs to "
+                "the structured /v1/verify API and its dedicated tests."
+            ),
+        },
         "injection_resistance": _accuracy(injection_resistant, injection_total),
         "latency_ms": {
             "p50": round(sorted(latencies_ms)[len(latencies_ms) // 2], 3),
