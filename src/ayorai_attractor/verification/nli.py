@@ -1,5 +1,3 @@
-from typing import Any
-
 
 _LABEL_TO_STANCE = {"entailment": "supports", "contradiction": "contradicts", "neutral": "neutral"}
 
@@ -21,14 +19,15 @@ class TransformersNLIBackend:
             raise ValueError("model_id and model_revision are required")
         self.model_id = model_id
         self.model_revision = model_revision
-        self._label_map: dict[int, str] | None = None
-        self._tokenizer: Any = None
-        self._model: Any = None
-        self._torch: Any = None
+        self.__dict__["_label_map"] = None
+        self.__dict__["_tokenizer"] = None
+        self.__dict__["_model"] = None
+        self.__dict__["_torch"] = None
 
-    def _load(self) -> dict[int, Stance]:
-        if self._label_map is not None:
-            return self._label_map
+    def _load(self) -> dict[int, str]:
+        label_map = self.__dict__["_label_map"]
+        if label_map is not None:
+            return label_map
 
         try:
             import importlib
@@ -52,24 +51,25 @@ class TransformersNLIBackend:
         label_map = _resolve_label_map(
             {int(index): str(label) for index, label in model.config.id2label.items()}
         )
-        self._tokenizer = tokenizer
-        self._model = model
-        self._torch = torch
-        self._label_map = label_map
+        self.__dict__["_tokenizer"] = tokenizer
+        self.__dict__["_model"] = model
+        self.__dict__["_torch"] = torch
+        self.__dict__["_label_map"] = label_map
         return label_map
 
     def classify(self, claim_text: str, evidence_text: str) -> dict[str, float | str]:
         label_map = self._load()
-        encoded = self._tokenizer(
+        encoded = self.__dict__["_tokenizer"](
             claim_text,
             evidence_text,
             return_tensors="pt",
             truncation=True,
         )
-        with self._torch.inference_mode():
-            logits = self._model(**encoded).logits[0]
-            probabilities = self._torch.softmax(logits, dim=-1)
-        index = int(self._torch.argmax(probabilities).item())
+        torch = self.__dict__["_torch"]
+        with torch.inference_mode():
+            logits = self.__dict__["_model"](**encoded).logits[0]
+            probabilities = torch.softmax(logits, dim=-1)
+        index = int(torch.argmax(probabilities).item())
         return {
             "stance": label_map[index].value,
             "confidence": float(probabilities[index].item()),
