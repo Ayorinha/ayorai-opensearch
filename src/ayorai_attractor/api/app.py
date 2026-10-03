@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 
 from ayorai_attractor.audit import AuditReport
+from ayorai_attractor.audit_store import AuditTraceStore
 from ayorai_attractor.models import (
     AuditFindingResponse,
     AuditResponse,
+    AuditTraceResponse,
     SearchRequest,
     SearchResponse,
 )
@@ -24,6 +26,7 @@ app = FastAPI(
     description="Adaptive multi-agent intelligence and verification engine.",
 )
 engine = Attractor()
+audit_store = AuditTraceStore()
 
 
 @app.get("/health")
@@ -41,6 +44,7 @@ def audit(request: SearchRequest) -> AuditResponse:
     """Run the engine and expose a deterministic audit of its evidence."""
     response = engine.run(request)
     report = AuditReport.from_response(response)
+    audit_store.record(response, report)
     return AuditResponse(
         trace_id=report.trace_id,
         verification=report.verification,
@@ -95,3 +99,14 @@ def verify(request: VerificationRequest) -> VerificationAPIResponse:
             rules=["§1", "§2", "§3", "§4", "§5", "§9"],
         ),
     )
+
+
+@app.get("/v1/audit/{trace_id}", response_model=AuditTraceResponse)
+def audit_trace(trace_id: str) -> AuditTraceResponse:
+    """Return persisted audit metadata without exposing raw evidence or prompts."""
+    saved = audit_store.get(trace_id)
+    if saved is None:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="audit trace not found")
+    return AuditTraceResponse(**saved)

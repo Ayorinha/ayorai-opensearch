@@ -90,3 +90,14 @@ class AuditResponse(BaseModel):
     verified_evidence_count: int = Field(ge=0)
     failure_count: int = Field(ge=0)
     findings: list[AuditFindingResponse] = Field(default_factory=list)
+
+
+class AuditTraceResponse(BaseModel):
+    trace_id: str
+    verification: str
+    evidence_count: int = Field(ge=0)
+    independent_evidence_count: int = Field(ge=0)
+    verified_evidence_count: int = Field(ge=0)
+    failure_count: int = Field(ge=0)
+    finding_count: int = Field(ge=0)
+    replay_digest: str
