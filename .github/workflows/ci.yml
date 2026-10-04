@@ -114,6 +114,12 @@ jobs:
           sha256sum evals/golden/v0.jsonl
           sha256sum evals/golden/v0.1.jsonl
           sha256sum configs/f1-thresholds.json
+          sha256sum pyproject.toml
+          sha256sum src/ayorai_attractor/__init__.py
+          sha256sum CHANGELOG.md
+          sha256sum CITATION.cff
+          sha256sum docs/release/v0.3.0.md
+          sha256sum .github/workflows/ci.yml
 
   test:
     runs-on: ubuntu-latest
