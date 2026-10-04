@@ -172,11 +172,10 @@ jobs:
         run: |
           set +e
           mypy --strict src/ayorai_attractor > /tmp/mypy-strict.log 2>&1
-          rc=$?
           set -e
           cat /tmp/mypy-strict.log
           python -c 'import re; from collections import Counter; from pathlib import Path; text=Path("/tmp/mypy-strict.log").read_text(encoding="utf-8"); rows=[re.match(r"^(src/ayorai_attractor/[^:]+\\.py):\\d+: error:", line) for line in text.splitlines()]; counts=Counter(m.group(1) for m in rows if m); total=sum(counts.values()); print(f"STRICT_MYPY_TOTAL_ERRORS={total}"); [print(f"STRICT_MYPY_MODULE {module} {count}") for module, count in sorted(counts.items())]'
-          exit 0
+          true
 
 
   namespace-compatibility:
