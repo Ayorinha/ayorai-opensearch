@@ -9,8 +9,15 @@ REQUIRED = ("source", "license", "license_status", "sha256", "provenance_url")
 
 def check_manifest(data: dict) -> list[str]:
     errors: list[str] = []
-    entries = data.get("entries", [])
+    if "entries" not in data:
+        return ["manifest: missing entries"]
+    entries = data["entries"]
+    if not isinstance(entries, list):
+        return ["manifest: entries must be a list"]
     for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            errors.append(f"entry {index}: must be an object")
+            continue
         for field in REQUIRED:
             if field not in entry:
                 errors.append(f"entry {index}: missing field {field}")

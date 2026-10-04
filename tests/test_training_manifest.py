@@ -52,3 +52,18 @@ def test_eval_source_error() -> None:
     entry["source"] = "evals/golden.jsonl"
     errors = check_manifest({"version": 1, "entries": [entry]})
     assert any("evals/" in error for error in errors)
+
+
+def test_missing_entries() -> None:
+    errors = check_manifest({"version": 1})
+    assert errors == ["manifest: missing entries"]
+
+
+def test_entries_must_be_list() -> None:
+    errors = check_manifest({"version": 1, "entries": {}})
+    assert errors == ["manifest: entries must be a list"]
+
+
+def test_entry_must_be_object() -> None:
+    errors = check_manifest({"version": 1, "entries": ["invalid"]})
+    assert errors == ["entry 0: must be an object"]
