@@ -202,3 +202,100 @@ def test_validator_rejects_non_text_difficulty_without_exception(tmp_path: Path)
     path = tmp_path / "object-difficulty.jsonl"
     write_jsonl(path, [{**VALID_CASE, "difficulty": [{}]}])
     assert validate(path)
+
+
+
+def write_corpus(path: Path, sources: list[dict[str, str]]) -> None:
+    path.write_text(
+        "".join(json.dumps(source, ensure_ascii=False) + "\n" for source in sources),
+        encoding="utf-8",
+    )
+
+
+def test_validator_corpus_accepts_present_excerpt(tmp_path: Path) -> None:
+    case_path = tmp_path / "cases.jsonl"
+    corpus_path = tmp_path / "corpus.jsonl"
+    case = {**VALID_CASE, "source_excerpt": "Texto completo da fonte."}
+    source = {
+        "source_id": "src-001",
+        "source_url": "https://example.com/source",
+        "source_license": "CC-BY-4.0",
+        "retrieved_at": "2026-10-04T12:00:00Z",
+        "text": "Início. Texto completo da fonte. Fim.",
+    }
+    write_jsonl(case_path, [case])
+    write_corpus(corpus_path, [source])
+
+    assert validate(case_path, corpus_path) == []
+
+
+def test_validator_corpus_rejects_missing_excerpt(tmp_path: Path) -> None:
+    case_path = tmp_path / "cases.jsonl"
+    corpus_path = tmp_path / "corpus.jsonl"
+    case = {**VALID_CASE, "source_excerpt": "Trecho inexistente."}
+    source = {
+        "source_id": "src-001",
+        "source_url": "https://example.com/source",
+        "source_license": "CC-BY-4.0",
+        "retrieved_at": "2026-10-04T12:00:00Z",
+        "text": "Texto diferente da fonte.",
+    }
+    write_jsonl(case_path, [case])
+    write_corpus(corpus_path, [source])
+
+    errors = validate(case_path, corpus_path)
+    assert errors
+    assert any("source_excerpt não encontrado" in error for error in errors)
+
+
+def test_validator_corpus_rejects_unknown_source_id(tmp_path: Path) -> None:
+    case_path = tmp_path / "cases.jsonl"
+    corpus_path = tmp_path / "corpus.jsonl"
+    write_jsonl(case_path, [VALID_CASE])
+    write_corpus(
+        corpus_path,
+        [{
+            "source_id": "src-other",
+            "source_url": VALID_CASE["source_url"],
+            "source_license": VALID_CASE["source_license"],
+            "retrieved_at": "2026-10-04T12:00:00Z",
+            "text": VALID_CASE["source_excerpt"],
+        }],
+    )
+
+    errors = validate(case_path, corpus_path)
+    assert errors
+    assert any("source_id não encontrado" in error for error in errors)
+
+
+def test_validator_corpus_rejects_license_mismatch(tmp_path: Path) -> None:
+    case_path = tmp_path / "cases.jsonl"
+    corpus_path = tmp_path / "corpus.jsonl"
+    write_jsonl(case_path, [VALID_CASE])
+    write_corpus(
+        corpus_path,
+        [{
+            "source_id": VALID_CASE["source_id"],
+            "source_url": VALID_CASE["source_url"],
+            "source_license": "CC0-1.0",
+            "retrieved_at": "2026-10-04T12:00:00Z",
+            "text": VALID_CASE["source_excerpt"],
+        }],
+    )
+
+    errors = validate(case_path, corpus_path)
+    assert errors
+    assert any("source_license diferente da fonte" in error for error in errors)
+
+
+def test_validator_corpus_rejects_malformed_corpus_without_exception(
+    tmp_path: Path,
+) -> None:
+    case_path = tmp_path / "cases.jsonl"
+    corpus_path = tmp_path / "corpus.jsonl"
+    write_jsonl(case_path, [VALID_CASE])
+    corpus_path.write_text("{not-json}\\n", encoding="utf-8")
+
+    errors = validate(case_path, corpus_path)
+    assert errors
+    assert any("corpus linha 1" in error for error in errors)
