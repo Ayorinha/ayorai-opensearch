@@ -5,10 +5,12 @@
 ## Preparação
 
 ~~~bash
+git clone https://github.com/Ayorinha/ayorai-opensearch.git
+cd ayorai-opensearch
 git checkout feat/f1-multilingual-stance
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e ".[dev,nli]"
 ~~~
 
 No Windows, ative o ambiente virtual pelo mecanismo equivalente.
@@ -20,7 +22,7 @@ Execute:
 ~~~bash
 pytest
 ruff check .
-mypy .
+mypy src/ayorai_attractor
 ~~~
 
 O estado documentado desta revisão espera **235 testes passando**.
@@ -52,7 +54,7 @@ O manifesto deve ser conferido antes de qualquer avaliação.
 O caminho C é a ablação determinística baseada em regras.
 
 ~~~bash
-attractor eval --suite golden-v0.1 --path C
+attractor eval --suite golden-v0.1 --out reports/golden-v0.1.json
 ~~~
 
 Resultado esperado documentado: **33.33%**.
@@ -62,8 +64,8 @@ Resultado esperado documentado: **33.33%**.
 A é o caminho de pesquisa; B é o caminho candidato comercial.
 
 ~~~bash
-attractor eval --suite golden-v0.1 --path A
-attractor eval --suite golden-v0.1 --path B
+pip install -e ".[dev,nli]"
+python scripts/run_f1_eval.py --suite golden-v0.1
 ~~~
 
 Resultados esperados:
