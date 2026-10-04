@@ -70,3 +70,56 @@ threshold optimization, or architecture promotion occurs in E3.
 
 E3 is authorized after the audited E2 result. The negative H1 result is known before
 this preregistration and is not a criterion for selecting or tuning LettuceDetect.
+
+## Amendment — 2026-10-03
+
+This amendment preserves the original E3 preregistration above and corrects its
+evaluation scenario to match the actual Golden corpus.
+
+### Actual corpus scenario
+
+The current Golden corpus contains English (en-US) documents and Portuguese claims
+(34 PT claims and 3 EN claims in Golden v0.1). There are no Portuguese documents in
+the current Golden corpus. Therefore the originally preregistered PT-document arms
+cannot be measured on the current corpus.
+
+### Authorized E3 arms
+
+- **D1 — PT claim / EN document:** use the original Portuguese claim as the
+  LettuceDetect "answer" and the English document as "context".
+- **D2 — translated claim / EN document:** translate the same Portuguese claim
+  from PT→EN using the same Opus-MT translation path/revision already used in the
+  evaluated B path, then use the translated claim as "answer" and the same English
+  document as "context".
+- **MADLAD-400 is removed from E3.** It is not used because the current Golden has
+  no Portuguese documents. MADLAD-400 remains reserved for a future evaluation when
+  the Golden contains Portuguese documents.
+
+### Fixed decision rule
+
+Use the LettuceDetect library default threshold without any adjustment or tuning.
+If LettuceDetect marks any portion of the claim as unsupported, classify D as
+**NAO_SUSTENTADO**. Otherwise classify D as **SUSTENTADO**.
+
+### Binary gold
+
+Map the expected stance to the binary target:
+- SUPPORTS → **SUSTENTADO**
+- CONTRADICTS or NEUTRAL → **NAO_SUSTENTADO**
+
+Span precision/recall/F1 are **not applicable**, because the current Golden corpus
+does not contain gold span labels.
+
+### Primary metric and paired comparisons
+
+The primary metric for D1 and D2 is **binary balanced accuracy**.
+Report McNemar D1 vs D2.
+
+Also reduce A, B, and C to the same binary rule and report exact paired McNemar
+comparisons of D against A, B, and C on the same eligible cases.
+
+### Project limitation
+
+The current Golden does not contain documents in Portuguese. Golden v1 must include
+Portuguese documents so that true PT-document evaluation, including a PT-direct arm,
+can be measured.
