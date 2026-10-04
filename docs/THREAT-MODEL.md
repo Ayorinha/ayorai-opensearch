@@ -63,7 +63,7 @@ Out of scope:
 
 **Threat:** An attacker modifies a stored replay or causes a requested digest to resolve to content with a different internal digest.
 
-**GAP:** `ReplayStore.get(digest)` verifies the integrity of the content, but it does not verify that the digest requested by the caller is equal to the digest stored inside the replay file.
+**Current defense:** `ReplayStore.get` accepts only 64-character lowercase hex digests (blocking path traversal) and rejects files whose internal digest differs from the requested digest.
 
 **Code:** `src/ayorai_attractor/replay_store.py`.
 
@@ -112,7 +112,6 @@ Out of scope:
 | ID | Gap | Priority |
 |---|---|---|
 | B | Original-source citation/excerpt is not independently revalidated against the source at verification time. | high |
-| D | ReplayStore does not compare requested digest with the digest stored inside the replay file. | medium |
 | E | No technical isolation gate prevents hidden Golden v1 leakage into development/training. | high |
 | F | No automated training-data license manifest gate prevents EVAL_ONLY contamination before training. | high |
 | G | No technical control prevents tuning against visible evaluation results. | medium |

@@ -7,9 +7,12 @@ bundle always re-verifies its digest before returning it.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from ayorai_attractor.replay import ReplayBundle
+
+_DIGEST_RE = re.compile(r"[0-9a-f]{64}")
 
 
 class ReplayStore:
@@ -41,10 +44,15 @@ class ReplayStore:
         return bundle.digest
 
     def get(self, digest: str) -> ReplayBundle | None:
+        if not _DIGEST_RE.fullmatch(digest):
+            raise ValueError("invalid replay digest")
         target = self.directory / f"{digest}.json"
         if not target.exists():
             return None
-        return self._read(target)
+        bundle = self._read(target)
+        if bundle.digest != digest:
+            raise ValueError("replay digest mismatch")
+        return bundle
 
     @staticmethod
     def _read(path: Path) -> ReplayBundle:
