@@ -85,7 +85,7 @@ Out of scope:
 
 **GAP:** There is no automated repository-wide training-data manifest gate that proves every future training input is license-cleared before training starts. The current controls are policy/documentation plus the runtime backend guard.
 
-**Code/docs:** `docs/legal/MODEL-LICENSE-POLICY.md`, `docs/eval/ADR-008.md`.
+**Code/docs:** `src/ayorai_attractor/verification/nli.py` (`_license_guard`), `docs/legal/MODEL-LICENSE-POLICY.md`, `docs/eval/ADR-008.md`.
 
 ### G. Evaluation overfitting
 
