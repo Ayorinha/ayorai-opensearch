@@ -80,3 +80,16 @@ Claude audit approved commit `22579cfbec65351d7a95b795ad8bf9e10786de27`.
 - H1 is **not promoted**. It will be retested on the hidden Golden v1 or in F3 with genuinely long multi-sentence documents. H1 must not be rerun on this Golden.
 - The prior translation diagnosis was incorrect: the document is translated in full before sentence splitting, and the 5 affected documents are en-US and therefore not translated.
 - **Limitação:** em documentos traduzidos, a proveniência aponta para a evidência original inteira, não para a frase exata. Alinhamento frase a frase fica para a F2.
+
+
+## E3 Audit Reconciliation
+
+Claude audit approved E3 measurement at commit `7309a24107d736395c2b64f48fc737370e28ceb8`.
+
+- **Gold-label deviation:** E3 used the case-level **GLOBAL** verdict as the binary gold, not the claim-level stance specified by the E3 amendment. The implemented binary mapping is `SUPPORTS/SUPPORTED/VERIFIED -> SUSTENTADO`; all other global verdicts, including `PARTIALLY_SUPPORTED` and `CONFLICTING`, map to `NAO_SUSTENTADO`. The E3 measurement remains valid as a measurement of this explicitly documented case-level binary task; it is **not** a claim-level rerun and will not be rerun on this Golden.
+- **Binary majority baseline:** 23/30 = **76.67%**. Any binary A/B/C accuracy cited for the E3 comparison must be read against this baseline.
+- **E3 amendment provenance:** commit `e566c856af415ef2bd55b342560434ff5dcdc471` was **not isolated**; it included the preregistration amendment plus the E3 script/CI work. The E3 measurement occurred later, and this provenance correction does not invalidate the measurement.
+- The E3 evaluator now computes binary A/B/C **accuracy, balanced accuracy, and bootstrap IC95% (10,000; seed 20261003)** from the same case-level binary rule. No rule, threshold, or historical E3 measurement was changed by this code move.
+- E3 JSON confirmation: **D1 unsupported_case_count = 18 (v0), 8 (v0.1); D2 = 14 (v0), 1 (v0.1)**.
+- **Interpretation:** LettuceDetect is a detector of unsupported/invented content, not a source-conflict resolver. Of the 23 negative cases under the global binary gold, **21 are PARTIALLY_SUPPORTED or CONFLICTING**, so most negatives are outside the detector's intended semantic target.
+- The preregistered D1 expectation was wrong in the opposite direction: the English-only detector was expected to tend toward `NAO_SUSTENTADO` for Portuguese claims, but the observed D1 behavior did not produce that expected failure mode. This is recorded as an outcome, not used to adjust the method.
