@@ -138,7 +138,7 @@ def evaluate_detector(
     ci = bootstrap_balanced_accuracy(gold, predictions)
     return {
         "case_count": len(gold),
-        "accuracy": round(sum(x == y for x, y in zip(gold, predictions, strict=True)) / len(gold), 6),
+        "accuracy": round(\n            sum(x == y for x, y in zip(gold, predictions, strict=True)) / len(gold),\n            6,\n        ),
         "balanced_accuracy": round(balanced_accuracy(gold, predictions), 6),
         "bootstrap_95_ci_balanced_accuracy": {
             "lower": ci[0],
