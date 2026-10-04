@@ -49,6 +49,8 @@ Out of scope:
 
 **GAP:** The current verification core does not independently re-open the original source and verify that the cited excerpt exactly matches the source content at the recorded offsets. A caller can construct an Evidence record containing an invented excerpt while satisfying the schema.
 
+**Mitigation:** `verification/excerpt.py` locates each excerpt in the original source and drops evidence not found verbatim (`tests/verification/test_excerpt_revalidation.py`).
+
 **Code:** `src/ayorai_attractor/synthesis.py`, `src/ayorai_attractor/verification/models.py`, `src/ayorai_attractor/verification/claim_pipeline.py`.
 
 ### C. Wrong provenance in translated documents
