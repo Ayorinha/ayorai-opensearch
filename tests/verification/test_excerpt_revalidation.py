@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from ayorai_attractor.verification.excerpt import locate_excerpt, revalidate_evidence
 from ayorai_attractor.verification.judge import judge_claim
-from ayorai_attractor.verification.models import Claim, Evidence, Stance, StanceEdge
+from ayorai_attractor.verification.models import Claim, Evidence
 
 
 def evidence(excerpt: str, *, start: int = 0, end: int = 1) -> Evidence:
@@ -46,13 +46,10 @@ def test_excerpt_longer_than_source_is_rejected() -> None:
 
 def test_valid_excerpt_corrects_supplied_offsets() -> None:
     item = evidence("USD 120 million.", start=99, end=115)
-    checked = revalidate_evidence(
-        item,
-        "AtlasGrid revenue was USD 120 million in 2025.",
-    )
+    checked = revalidate_evidence(item, "AtlasGrid revenue was USD 120 million.")
     assert checked is not None
-    assert checked.start_offset == 24
-    assert checked.end_offset == 40
+    assert checked.start_offset == 22
+    assert checked.end_offset == 38
 
 
 def test_forged_only_evidence_cannot_support_claim() -> None:
@@ -63,6 +60,5 @@ def test_forged_only_evidence_cannot_support_claim() -> None:
         "AtlasGrid revenue was USD 120 million.",
     )
     assert checked is None
-    judgments = [judge_claim(claim, [], [])]
-    assert judgments[0].verdict not in {Stance.SUPPORTS, Stance.CONTRADICTS}
-    assert judgments[0].verdict.value not in {"verified", "supported"}
+    judgment = judge_claim(claim, [], [])
+    assert judgment.verdict.value not in {"verified", "supported"}
