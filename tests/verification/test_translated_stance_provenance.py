@@ -60,7 +60,7 @@ def test_translated_document_provenance_uses_original_offsets_and_text() -> None
 
     provenance = result.edges[0].provenance
     assert provenance.version == (
-        "fixture-version|window=37:55|"
+        "fixture-version|window=37:56|"
         "translation="
         + hashlib.sha256(
             f"{document}\nRevenue increased.".encode()
