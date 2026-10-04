@@ -175,23 +175,9 @@ jobs:
           rc=$?
           set -e
           cat /tmp/mypy-strict.log
-          python - <<'PY'
-          from collections import Counter
-          import re
-          from pathlib import Path
+          python -c 'import re; from collections import Counter; from pathlib import Path; text=Path("/tmp/mypy-strict.log").read_text(encoding="utf-8"); rows=[re.match(r"^(src/ayorai_attractor/[^:]+\\.py):\\d+: error:", line) for line in text.splitlines()]; counts=Counter(m.group(1) for m in rows if m); total=sum(counts.values()); print(f"STRICT_MYPY_TOTAL_ERRORS={total}"); [print(f"STRICT_MYPY_MODULE {module} {count}") for module, count in sorted(counts.items())]'
+          exit 0
 
-          text = Path("/tmp/mypy-strict.log").read_text(encoding="utf-8")
-          counts: Counter[str] = Counter()
-          total = 0
-          for line in text.splitlines():
-              match = re.match(r"^(src/ayorai_attractor/[^:]+\.py):\d+: error:", line)
-              if match:
-                  counts[match.group(1)] += 1
-                  total += 1
-          print(f"STRICT_MYPY_TOTAL_ERRORS={total}")
-          for module, count in sorted(counts.items()):
-              print(f"STRICT_MYPY_MODULE {module} {count}")
-          raise SystemExit(0)
 
   namespace-compatibility:
     runs-on: ubuntu-latest
