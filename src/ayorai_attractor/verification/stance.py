@@ -657,11 +657,11 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
                             f"{self.version}|window={provenance_start}:{provenance_end}|"
                             f"translation={translation_hash}",
                             _sha256(
-                                translated_claim + "\n"
-                                + translated_document[local_start:local_end]
+                                claim + "\n" + provenance_excerpt
                             ),
                             _sha256(
-                                f"{stance}|{confidence:.12f}|{start}|{end}|{translation_hash}"
+                                f"{stance}|{confidence:.12f}|{provenance_start}|"
+                                f"{provenance_end}|{translation_hash}"
                             ),
                         ),
                     )
