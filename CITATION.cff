@@ -6,13 +6,14 @@ abstract: >-
   LLMs and autonomous agents. It combines deterministic verdicts, claim-level
   evidence provenance and reproducible audit trails for Portuguese and English
   workflows. The project is designed for auditable AI use in regulated
-  environments, including LGPD-aware and financial-domain contexts.
+  environments, including data-protection and financial-domain contexts.
 type: software
 authors:
   - family-names: Ayora
     given-names: Anderson Leon
 repository-code: "https://github.com/Ayorinha/ayorai-opensearch"
 url: "https://github.com/Ayorinha/ayorai-opensearch"
+doi: "10.5281/zenodo.23125083"
 license: "Apache-2.0"
 version: "0.3.0"
 keywords:
@@ -26,5 +27,4 @@ keywords:
   - "fact-checking"
   - "hallucination detection"
   - "Portuguese"
-  - "LGPD"
   - "auditability"
