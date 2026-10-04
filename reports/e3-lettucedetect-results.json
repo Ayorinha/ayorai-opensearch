@@ -1,0 +1,87 @@
+{
+  "schema_version": "e3-audit-reconciled-v1",
+  "measurement_commit": "7309a24107d736395c2b64f48fc737370e28ceb8",
+  "ci_run": 37169537921,
+  "job_id": 111339521364,
+  "task_gold": "case-level GLOBAL verdict mapped to binary",
+  "binary_rule": {
+    "SUSTENTADO": [
+      "SUPPORTS",
+      "SUPPORTED",
+      "VERIFIED"
+    ],
+    "NAO_SUSTENTADO": "all other global verdicts, including PARTIALLY_SUPPORTED and CONFLICTING"
+  },
+  "majority_baseline": {
+    "cases": 30,
+    "negative_cases": 23,
+    "accuracy": 0.766667
+  },
+  "historical_report_hashes": {
+    "json": "b6c6458e6463c97febc39769dff3b8651b1ddfa8ee15c4c4547977d43bf2bf6f",
+    "markdown": "3c1495da3d53f9e7edf13489a0d91df2bd48fd2a34e734040eb0e90b33f71150",
+    "f1_json": "17e080bbc2b0a41fa37a654f6d7090da3bf868352fb8f38eae47687528630e1b",
+    "internal_report_sha256": "c63fad52d704e2b8326baca154cc84159829fc806edf7a82b699c62bd4404b47",
+    "artifact_zip_sha256": "610de685a08fa91ab7d8477e5487b9171bb68d2b25b2c87288932ce203cc04bf"
+  },
+  "golden": {
+    "golden-v0": {
+      "D1": {
+        "accuracy": 0.5,
+        "balanced_accuracy": 0.425466,
+        "bootstrap_95_ci_balanced_accuracy": {
+          "lower": 0.23076923076923078,
+          "upper": 0.6481481481481481,
+          "iterations": 10000,
+          "seed": 20261003
+        },
+        "unsupported_case_count": 18
+      },
+      "D2": {
+        "accuracy": 0.433333,
+        "balanced_accuracy": 0.431677,
+        "bootstrap_95_ci_balanced_accuracy": {
+          "lower": 0.21153846153846154,
+          "upper": 0.6634615384615384,
+          "iterations": 10000,
+          "seed": 20261003
+        },
+        "unsupported_case_count": 14
+      }
+    },
+    "golden-v0.1": {
+      "D1": {
+        "accuracy": 0.366667,
+        "balanced_accuracy": 0.487578,
+        "bootstrap_95_ci_balanced_accuracy": {
+          "lower": 0.2708333333333333,
+          "upper": 0.6730769230769231,
+          "iterations": 10000,
+          "seed": 20261003
+        },
+        "unsupported_case_count": 8
+      },
+      "D2": {
+        "accuracy": 0.266667,
+        "balanced_accuracy": 0.521739,
+        "bootstrap_95_ci_balanced_accuracy": {
+          "lower": 0.5,
+          "upper": 0.5714285714285714,
+          "iterations": 10000,
+          "seed": 20261003
+        },
+        "unsupported_case_count": 1
+      }
+    }
+  },
+  "audit_reconciliation": {
+    "claim_level_gold_not_used": true,
+    "no_claim_level_rerun": true,
+    "amendment_commit": "e566c856af415ef2bd55b342560434ff5dcdc471",
+    "amendment_commit_was_isolated": false,
+    "amendment_provenance_correction": "The commit included preregistration amendment plus script/CI work; measurement occurred later.",
+    "interpretation": "LettuceDetect detects unsupported/invented content, not source conflict. 21 of the 23 negative cases are PARTIALLY_SUPPORTED or CONFLICTING.",
+    "preregistered_d1_expectation": "Expected English-only detector to tend toward NAO_SUSTENTADO on PT claims.",
+    "observed_expectation_result": "The observed D1 behavior did not fail in that expected direction; recorded without adjustment."
+  }
+}
