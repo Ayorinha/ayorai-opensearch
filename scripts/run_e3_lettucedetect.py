@@ -83,6 +83,23 @@ def balanced_accuracy(gold: list[str], pred: list[str]) -> float:
     return sum(recalls) / 2
 
 
+def binary_metrics(gold: list[str], pred: list[str]) -> dict[str, Any]:
+    ci = bootstrap_balanced_accuracy(gold, pred)
+    return {
+        "accuracy": round(
+            sum(x == y for x, y in zip(gold, pred, strict=True)) / len(gold),
+            6,
+        ),
+        "balanced_accuracy": round(balanced_accuracy(gold, pred), 6),
+        "bootstrap_95_ci_balanced_accuracy": {
+            "lower": ci[0],
+            "upper": ci[1],
+            "iterations": BOOTSTRAP,
+            "seed": SEED,
+        },
+    }
+
+
 def evaluate_detector(
     detector: Any,
     cases: list[dict[str, Any]],
@@ -259,8 +276,16 @@ def main() -> None:
 
         gold = d1["_gold"]
         preds = {"D1": d1["_predictions"], "D2": d2["_predictions"], **f1_by_path}
+        binary_comparison = {
+            key: binary_metrics(gold, preds[key]) for key in ("A", "B", "C")
+        }
+        majority_accuracy = max(
+            sum(label == value for label in gold) for value in ("SUSTENTADO", "NAO_SUSTENTADO")
+        ) / len(gold)
         report["golden"][suite] = {
             "eligible_case_count": len(gold),
+            "binary_majority_baseline_accuracy": round(majority_accuracy, 6),
+            "binary_A_B_C": binary_comparison,
             "D1": {k: v for k, v in d1.items() if not k.startswith("_")},
             "D2": {k: v for k, v in d2.items() if not k.startswith("_")},
             "mcnemar_D1_vs_D2": paired(gold, preds["D1"], preds["D2"]),
