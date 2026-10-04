@@ -17,6 +17,7 @@ from ayorai_attractor.verification.models import Claim, Evidence, Stance
 from ayorai_attractor.verification.stance import (
     RuleStanceDetector,
     SentenceNLIStanceDetector,
+    TranslatedNLIStanceDetector,
     _numeric_facts_align,
 )
 
@@ -134,6 +135,32 @@ def test_sentence_h1_splits_and_preserves_offsets() -> None:
     assert [item[2] for item in spans] == ["First sentence.", "Second sentence!"]
     assert spans[0][:2] == (0, 15)
     assert spans[1][:2] == (16, 32)
+
+
+class _FakeTranslator:
+    def translate(self, text: str) -> str:
+        return "English sentence. Another sentence."
+
+    def provenance_hash(self, source: str, translated: str) -> str:
+        return "translation-hash"
+
+
+def test_translated_pt_document_preserves_original_offsets() -> None:
+    document = "Frase em português. Outra frase."
+    evidence = _evidence(document)
+    claim = _claim("The claim.")
+    detector = TranslatedNLIStanceDetector(
+        _FakeNLI(),
+        _FakeTranslator(),
+        model="fake",
+        version="1",
+    )
+    result = detector.detect([claim], [evidence])
+    provenance = result.edges[0].provenance
+    assert f"window=0:{len(document)}" in provenance.version
+    import hashlib
+    expected = hashlib.sha256(("The claim." + "\n" + document).encode("utf-8")).hexdigest()
+    assert provenance.input_sha256 == expected
 
 
 def test_sentence_h1_tie_prefers_contradicts() -> None:

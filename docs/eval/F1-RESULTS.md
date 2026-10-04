@@ -70,3 +70,12 @@ Report SHA-256: 0c7fad3b4bc4db96f888ac0b26f45bb4b0f7616a6e63e8df5bfb7d73a30342a9
 - **A** is EVAL_ONLY because its model license is not cleared for commercial use; **B is the candidate commercial path** subject to independent license verification.
 - **Golden v0 and v0.1 are development sets.** The v0.1 rewrite was authored after the author had seen per-case Path C results, as disclosed in the pre-registration. Generalization is reserved for the hidden Golden v1.
 - **Path C nearly did not improve on v0.1:** the deterministic reference reproduced locally at 10/30 (balanced accuracy 0.481838; 95% bootstrap CI [0.1667, 0.5000]).
+
+## E2 Audit Conclusion
+
+Claude audit approved commit `22579cfbec65351d7a95b795ad8bf9e10786de27`.
+
+- H1 is **inconclusive for long documents**: 35/40 Golden documents have one sentence and none exceeds 512 characters, so H1 is equivalent to the existing 512-character window on those cases.
+- On the 5 two-sentence documents, H1 was harmful for path B (**-3 cases**).
+- H1 is **not promoted**. It will be retested on the hidden Golden v1 or in F3 with genuinely long multi-sentence documents. H1 must not be rerun on this Golden.
+- The prior translation diagnosis was incorrect: the document is translated in full before sentence splitting, and the 5 affected documents are en-US and therefore not translated.

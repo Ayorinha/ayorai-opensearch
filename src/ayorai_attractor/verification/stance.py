@@ -629,8 +629,19 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
                         )
                     )
                 stance, confidence, start, end = self._choose(candidates)
-                local_start = start - temp_evidence.start_offset
-                local_end = end - temp_evidence.start_offset
+                if translated_document != document:
+                    # Translated-text offsets cannot be mapped to the source document
+                    # without an alignment layer. Preserve source provenance
+                    # conservatively by recording the complete original evidence span.
+                    provenance_start = item.start_offset
+                    provenance_end = item.end_offset
+                    provenance_excerpt = document
+                else:
+                    provenance_start = start
+                    provenance_end = end
+                    local_start = start - temp_evidence.start_offset
+                    local_end = end - temp_evidence.start_offset
+                    provenance_excerpt = document[local_start:local_end]
                 output.append(
                     DetectedStance(
                         StanceEdge(
@@ -643,7 +654,8 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
                         ComponentProvenance(
                             self.component,
                             self.model,
-                            f"{self.version}|window={start}:{end}|translation={translation_hash}",
+                            f"{self.version}|window={provenance_start}:{provenance_end}|"
+                            f"translation={translation_hash}",
                             _sha256(
                                 translated_claim + "\n"
                                 + translated_document[local_start:local_end]
