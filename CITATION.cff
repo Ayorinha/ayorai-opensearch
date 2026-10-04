@@ -16,6 +16,7 @@ url: "https://github.com/Ayorinha/ayorai-opensearch"
 doi: "10.5281/zenodo.23125083"
 license: "Apache-2.0"
 version: "0.3.0"
+date-released: "2026-10-04"
 keywords:
   - "artificial intelligence"
   - "AI safety"

@@ -8,7 +8,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 - Added authorship, trademark, DCO, licensing and release-provenance documentation.
 
-## [0.3.0] - unreleased
+## [0.3.0] - 2026-10-04
 
 ### Verification
 
