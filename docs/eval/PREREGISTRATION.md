@@ -34,4 +34,4 @@ External evaluation is kept separate from Golden v0 and is never used to tune F1
 
 `ruff check .`, strict `mypy` and the complete `pytest` suite are mandatory gates before Golden measurement.
 
-Broad lint suppressions such as `# ruff: noqa` are prohibited. The P0c reproducer must pass Ruff without suppressing the file.\n## Public fixture naming reservation\n\nThe public one-case deterministic Judge smoke fixture is named `evals/golden/judge-smoke.jsonl`. The filename **Golden v1** / `evals/golden/v1.jsonl` is reserved exclusively for the future hidden Portuguese Golden v1 evaluation set and must not be used by public smoke fixtures.\n\n
+Broad lint suppressions such as `# ruff: noqa` are prohibited. The P0c reproducer must pass Ruff without suppressing the file.
