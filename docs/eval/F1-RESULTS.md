@@ -79,13 +79,4 @@ Claude audit approved commit `22579cfbec65351d7a95b795ad8bf9e10786de27`.
 - On the 5 two-sentence documents, H1 was harmful for path B (**-3 cases**).
 - H1 is **not promoted**. It will be retested on the hidden Golden v1 or in F3 with genuinely long multi-sentence documents. H1 must not be rerun on this Golden.
 - The prior translation diagnosis was incorrect: the document is translated in full before sentence splitting, and the 5 affected documents are en-US and therefore not translated.
-
-## E2 Audit Conclusion
-
-Claude audit approved commit `22579cfbec65351d7a95b795ad8bf9e10786de27`.
-
-- H1 is **inconclusive for long documents**: 35/40 Golden documents have one sentence and none exceeds 512 characters, so H1 is equivalent to the existing 512-character window on those cases.
-- H1 was **harmful on the 5 two-sentence documents for path B (-3 cases)**.
-- H1 is **not promoted**. It will be retested only on the hidden Golden v1 or in F3 with genuinely long multi-sentence documents. H1 must not be rerun on this Golden.
-- The prior translation diagnosis was incorrect: the document is translated in full before sentence splitting, and the 5 affected documents are en-US and therefore are not translated.
-\n
+- **Limitação:** em documentos traduzidos, a proveniência aponta para a evidência original inteira, não para a frase exata. Alinhamento frase a frase fica para a F2.
