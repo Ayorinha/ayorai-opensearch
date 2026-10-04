@@ -8,13 +8,13 @@ from typing import Protocol
 
 from pydantic import ValidationError
 
+from .excerpt import revalidate_evidence
 from .extraction import (
     ClaimExtractor,
     ComponentProvenance,
     ExtractedClaim,
     RetrievedDocument,
 )
-from .excerpt import revalidate_evidence
 from .judge import ClaimJudgment, judge
 from .models import Claim, Evidence, StanceEdge, Verdict
 from .response import ResponseStatus
