@@ -75,6 +75,8 @@ Out of scope:
 
 **GAP:** The repository does not provide a technical access-control or training-pipeline enforcement mechanism that prevents a future developer, job, or dataset-construction process from reading or using the hidden Golden v1 material.
 
+**Partial mitigation:** `.gitignore` patterns and `tests/test_golden_v1_isolation.py` block committing hidden Golden v1 files.
+
 **Code/docs:** `docs/eval/GOLDEN-NAMING.md`, `docs/eval/ADR-007.md`, `docs/eval/ADR-008.md`.
 
 ### F. License contamination
@@ -85,6 +87,8 @@ Out of scope:
 
 **GAP:** There is no automated repository-wide training-data manifest gate that proves every future training input is license-cleared before training starts. The current controls are policy/documentation plus the runtime backend guard.
 
+**Partial mitigation:** `scripts/check_training_manifest.py` rejects non-COMMERCIAL_DEFAULT or evaluation-set entries; any future training job must call it.
+
 **Code/docs:** `src/ayorai_attractor/verification/nli.py` (`_license_guard`), `docs/legal/MODEL-LICENSE-POLICY.md`, `docs/eval/ADR-008.md`.
 
 ### G. Evaluation overfitting
@@ -94,6 +98,8 @@ Out of scope:
 **Current defense:** v0/v0.1 are explicitly development sets; H1 and F1 documentation records development-set limitations; Golden v1 is reserved for generalization and preregistration requirements prohibit tuning on it.
 
 **GAP:** These controls are primarily procedural/documentary. The repository does not technically prevent a developer from running an evaluation, inspecting per-case results, and changing code or thresholds based on those results.
+
+**Partial mitigation:** `tests/test_frozen_artifacts.py` fails if frozen evaluation sets or thresholds change.
 
 **Code/docs:** `docs/eval/PREREGISTRATION-GOLDEN-v0.1.md`, `docs/eval/PREREGISTRATION-H1.md`, `docs/eval/ADR-008.md`.
 
