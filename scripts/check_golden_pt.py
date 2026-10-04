@@ -61,6 +61,9 @@ def validate(path: Path) -> list[str]:
     except OSError as exc:
         return [f"arquivo: não foi possível ler: {exc}"]
 
+    if not lines:
+        return ["arquivo: nenhum caso encontrado"]
+
     for line_number, raw_line in enumerate(lines, start=1):
         try:
             case = json.loads(raw_line)
@@ -94,7 +97,7 @@ def validate(path: Path) -> list[str]:
                     'texto não vazio diferente de "unknown" esperado'
                 )
 
-        if "label" in case and case["label"] not in LABELS:
+        if "label" in case and (not isinstance(case["label"], str) or case["label"] not in LABELS):
             errors.append(f"linha {line_number}: valor inválido em label: {case['label']!r}")
 
         if "difficulty" in case:
@@ -102,7 +105,7 @@ def validate(path: Path) -> list[str]:
             if (
                 not isinstance(difficulty, list)
                 or not difficulty
-                or any(item not in DIFFICULTIES for item in difficulty)
+                or any(not isinstance(item, str) or item not in DIFFICULTIES for item in difficulty)
             ):
                 errors.append(f"linha {line_number}: valor inválido em difficulty: {difficulty!r}")
 
