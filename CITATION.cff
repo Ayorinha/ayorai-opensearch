@@ -6,7 +6,7 @@ abstract: >-
   LLMs and autonomous agents. It combines deterministic verdicts, claim-level
   evidence provenance and reproducible audit trails for Portuguese and English
   workflows. The project is designed for auditable AI use in regulated
-  environments, including data-protection and financial-domain contexts.
+  environments, including LGPD-aware and financial-domain contexts.
 type: software
 authors:
   - family-names: Ayora
@@ -28,3 +28,4 @@ keywords:
   - "hallucination detection"
   - "Portuguese"
   - "auditability"
+  - "LGPD"
