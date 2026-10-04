@@ -25,7 +25,7 @@ ruff check .
 mypy src/ayorai_attractor
 ~~~
 
-O estado documentado desta revisão espera **235 testes passando**.
+Todos os testes devem passar; o número atual aparece no resultado do CI.
 
 ## Conferir hashes
 
