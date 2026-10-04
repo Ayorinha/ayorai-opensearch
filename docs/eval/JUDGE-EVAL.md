@@ -30,4 +30,4 @@ The CI gate requires all six fixtures to pass.
 
 ## Scope
 
-This suite validates the deterministic decision layer. It does not measure retrieval recall, claim extraction quality, or source ranking. Those metrics remain separate so a Judge regression cannot be hidden by upstream model behavior.\n## Public smoke fixture\n\nThe single-case public Judge smoke fixture is `evals/golden/judge-smoke.jsonl`. The name **Golden v1** is reserved for the future hidden Portuguese Golden v1 set and is intentionally not used by this public fixture.\n\n
+This suite validates the deterministic decision layer. It does not measure retrieval recall, claim extraction quality, or source ranking. Those metrics remain separate so a Judge regression cannot be hidden by upstream model behavior.
