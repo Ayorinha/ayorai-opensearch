@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
 from ayorai_attractor.verification.models import Claim, Evidence
@@ -44,7 +44,7 @@ def test_translated_document_provenance_uses_original_offsets_and_text() -> None
         claim_id="clm_001",
         source_id="src_001",
         source_location="fixture",
-        retrieved_at=datetime(2026, 10, 3, tzinfo=timezone.utc),
+        retrieved_at=datetime(2026, 10, 3, tzinfo=UTC),
         start_offset=37,
         end_offset=37 + len(document),
         excerpt=document,
