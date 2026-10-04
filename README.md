@@ -35,6 +35,43 @@ The frozen v0 is a **motor-verification fixture suite**, not a retrieval benchma
 
 The Judge does not delegate verdict decisions to an LLM. Instruction-like text inside a retrieved document remains document data; it does not become an instruction to the system.
 
+## F1 evaluation evidence
+
+The current F1 evaluation extends the frozen Golden v0 baseline with Golden v0.1 and explicit disclosure:
+
+| Path | Accuracy | Role |
+|---|---:|---|
+| **A** | **76.67%** | **EVAL_ONLY** |
+| **B** | **66.67%** | **candidate commercial path** |
+| C | **33.33%** | deterministic ablation |
+| Majority baseline | **43.33%** | frozen baseline |
+
+Against the frozen baseline, the exact one-sided binomial results are **p = 0.0002 for A** and **p = 0.0085 for B**.
+
+**Limitations:** Golden v0/v0.1 are development evaluation sets, not production-generalization benchmarks. The current corpus contains English documents with Portuguese claims. Generalization to genuinely Portuguese documents is reserved for the hidden **Golden v1**.
+
+## Verification flow
+
+```text
+Claim
+  │
+  ▼
+Evidence ──► Stance ──► Provenance
+  │              │          │
+  └──────────────┴──────────┘
+                 ▼
+        Evidence Clusters
+                 │
+                 ▼
+      Deterministic Judge
+                 │
+                 ▼
+ VERIFIED · SUPPORTED · PARTIALLY_SUPPORTED
+ CONFLICTING · REFUTED · UNVERIFIED · ABSTAIN
+```
+
+**Design principle: LLM ≠ Judge.** Models may assist evaluation stages, but the final verification state is derived by explicit deterministic rules over structured evidence.
+
 ## R2 Audit API
 
 The deterministic audit core is exposed through POST /v1/audit. It executes the same request contract as /v1/opensearch and returns a typed audit report containing the trace ID, verification state, evidence counts, failure count and deterministic findings. Audit output describes the response; it does not alter the verdict.
