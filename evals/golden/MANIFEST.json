@@ -9,5 +9,10 @@
     "evals/corpus/documents.jsonl": {
       "sha256": "ce2333ccfe4003ebfc90819400beaf6a245620754deb8572c7611bd8bbb7dea3"
     }
+  },
+  "public_judge_smoke": {
+    "path": "evals/golden/judge-smoke.jsonl",
+    "sha256": "4012c75a3e667b1ca0bd0714fc299626d9e4cffb89f5d0dc0b5010e4fbc98f68",
+    "note": "Public deterministic Judge smoke fixture; not Golden v1. Golden v1 is reserved for the hidden Portuguese evaluation set."
   }
 }

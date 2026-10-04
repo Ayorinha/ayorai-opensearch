@@ -43,6 +43,8 @@ from .stance import (
     LLMStanceDetector,
     NLIStanceDetector,
     RuleStanceDetector,
+    SentenceNLIStanceDetector,
+    SentenceTranslatedNLIStanceDetector,
     StanceDetectionResult,
     StanceDetector,
 )
@@ -65,6 +67,8 @@ __all__ = [
     "StanceDetector",
     "RuleStanceDetector",
     "NLIStanceDetector",
+    "SentenceNLIStanceDetector",
+    "SentenceTranslatedNLIStanceDetector",
     "LLMStanceDetector",
     "Evidence",
     "Stance",

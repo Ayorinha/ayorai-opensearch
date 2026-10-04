@@ -13,9 +13,9 @@ authors:
     given-names: Anderson Leon
 repository-code: "https://github.com/Ayorinha/ayorai-opensearch"
 url: "https://github.com/Ayorinha/ayorai-opensearch"
+doi: "10.5281/zenodo.23125083"
 license: "Apache-2.0"
-version: "0.2.0"
-date-released: "2026-10-03"
+version: "0.3.0"
 keywords:
   - "artificial intelligence"
   - "AI safety"
@@ -27,5 +27,5 @@ keywords:
   - "fact-checking"
   - "hallucination detection"
   - "Portuguese"
-  - "LGPD"
   - "auditability"
+  - "LGPD"

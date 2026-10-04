@@ -1,146 +1,188 @@
+<div align="center">
+
 # AYORAI ATTRACTOR
 
-[![CI](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/ci.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/ci.yml) [![Security](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/security.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/security.yml) [![CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/codeql.yml)
+**Auditable verification for AI answers.**
+*Every claim checked against its source. Every verdict reproducible.*
 
-**AYORAI ATTRACTOR — Evidence-first claim-level verification engine**
+[![CI](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/ci.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/ci.yml)
+[![Security](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/security.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/security.yml)
+[![CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/codeql.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23125083.svg)](https://doi.org/10.5281/zenodo.23125083)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)
+![Tests](https://img.shields.io/badge/tests-235%20passing-brightgreen)
 
-> Many Models. One Intelligence Layer. Verified Results.
+🇧🇷 [Português](#em-português) · 📘 [Guia passo a passo](docs/GUIA-PASSO-A-PASSO.md) · ⚖️ [Conformidade no Brasil](docs/CONFORMIDADE-BRASIL.md) · 💼 [Para investidores e parceiros](docs/INVESTIDORES.md)
 
-## Current status
+</div>
 
-**Reference implementation in active development.** Phase 0 and the R1 deterministic verification core are implemented. R2–R13 provide tested engineering foundations, R14 adds provider-neutral tracing context, R15 adds durable worker execution over JobStore, R16 adds automated dependency review, R17 adds a provider-neutral trace export boundary, R18 propagates a trusted TenantContext from the runtime boundary into AgentContext, R19 makes comparative evaluation reports JSON-ready and deterministic, R20 adds semantic SHA-256 digests to Golden reports, and the optional telemetry adapter now exports TraceSink events to OpenTelemetry. Production deployment, transport-level MCP, external telemetry adapters and deployment-specific authorization remain explicit hardening work.
+---
 
-Golden v0 remains **34 cases / 52 synthetic documents** with SHA-256 recorded in evals/golden/MANIFEST.json. The original baseline is **43.3333%**, exactly equal to the PARTIALLY_SUPPORTED majority-class baseline. This baseline is not evidence of a capable verifier.
+## The problem
 
-Baseline evidence: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/36759101933
-Baseline report: docs/eval/BASELINE-v0.md
-Progress: docs/PROGRESS.md
+Generative AI can produce fluent answers with citations that do not actually support the claims attached to them. For an organization that needs traceability, this creates an audit gap: when someone asks why a system reached a conclusion, a narrative response is not enough.
 
-## What problem does it solve?
+## The answer
 
-LLM-generated citations can exist without actually supporting the claim they are attached to. ATTRACTOR makes verification explicit: evidence is modeled separately from model output, source independence and provenance are first-class concepts, conflicts are represented, and the verdict is derived by deterministic rules.
+ATTRACTOR separates an AI answer into individual **claims**, connects each claim to **evidence**, derives **stance** from explicit rules or model-assisted analysis, and lets a **deterministic Judge** decide the final verification state.
 
-The frozen v0 is a **motor-verification fixture suite**, not a retrieval benchmark. It does not claim real-web search quality or generalization.
+> **Intelligence ≠ Authorization ≠ Execution**
 
-## R1 verification core
+~~~mermaid
+flowchart LR
+    A["AI answer"] --> B["Claim extraction"]
+    B --> C["Evidence<br/>sources, offsets, provenance"]
+    C --> D["Stance<br/>supports / contradicts / neutral"]
+    D --> E{"Deterministic Judge<br/>fixed, versioned rules"}
+    E --> F["Verdict"]
+    E --> G["Proof trail<br/>claim → source span → SHA-256"]
+~~~
 
-- deterministic evidence dependency clustering;
-- locale-bound numeric parsing and 1% relative tolerance;
-- day/month/year date conflict rules;
-- deterministic six-state Judge;
-- global verdict precedence;
-- explicit provenance completeness;
-- ABSTAIN/NO_ANSWER and ABSTAIN/OUT_OF_SCOPE contracts;
-- recursive evaluation-secret leakage detection.
+| Layer | Responsibility | Can decide the final verdict? |
+|---|---|---|
+| Intelligence | language-model assistance for claim/evidence analysis | ❌ No |
+| Authorization | deterministic Judge and explicit rules | ✅ Yes — the only component |
+| Execution | consuming application | ❌ No |
 
-The Judge does not delegate verdict decisions to an LLM. Instruction-like text inside a retrieved document remains document data; it does not become an instruction to the system.
+The model may read, classify or assist evidence analysis. It does not become the authority that selects the final verdict.
 
-## R2 Audit API
+## Six possible verdicts
 
-The deterministic audit core is exposed through POST /v1/audit. It executes the same request contract as /v1/opensearch and returns a typed audit report containing the trace ID, verification state, evidence counts, failure count and deterministic findings. Audit output describes the response; it does not alter the verdict.
+<code>VERIFIED</code> · <code>SUPPORTED</code> · <code>PARTIALLY_SUPPORTED</code> · <code>UNVERIFIED</code> · <code>REFUTED</code> · <code>CONFLICTING</code>
 
-## Architecture
+When evidence conflicts, ATTRACTOR can return <code>CONFLICTING</code> instead of silently selecting a preferred source. When evidence is insufficient, it can return <code>UNVERIFIED</code> instead of guessing.
 
-- adaptive orchestration and quality modes
-- Planner, Researcher, Critic, Fact Checker and Judge extension point
-- Evidence Store and Evidence Graph
-- Failure Engine
-- governed MCP Gateway and plugin registry
-- OpenSearch-compatible and OpenAI-compatible adapters
-- deterministic mock provider
-- FastAPI API and CLI
-- durable audit/replay state
-- deterministic metrics and comparative evaluation
-- tenant-scoping primitives with explicit runtime propagation
-- provider-neutral trace events and export boundary
-- durable JobExecutor over the leased JobStore
-- dependency review and security scanning
-- CI, coverage ratchet, strict typing and security scanning
+## Why it matters
 
-## Why ATTRACTOR is designed for reference use
+- **Reproducible:** the same structured input and rules produce the same verification state.
+- **Auditable:** each result can retain claim, evidence, provenance and source-span references.
+- **Tamper-evident:** evaluation inputs and outputs can be content-addressed with SHA-256.
+- **Multilingual by design:** Portuguese is a primary future evaluation target while English documents remain explicitly disclosed in the current development evidence.
+- **Prompt-injection aware:** instruction-like text inside retrieved evidence remains data.
+- **Open core:** the verification boundary, evaluation methodology and engineering evidence are publicly inspectable.
+- **Governance-oriented:** the architecture is designed to support traceability, evidence preservation and controlled AI-assisted workflows.
 
-ATTRACTOR treats verification as an engineering boundary rather than a prompt convention:
+## Where it applies
 
-- **Deterministic verdicts:** model output cannot directly choose the final verification state.
-- **Evidence as data:** provenance, source identity, offsets, independence and stance are explicit structures.
-- **Abstention is first-class:** unsupported and out-of-scope requests have explicit contracts.
-- **Replayability:** runs can be content-addressed and verified rather than trusted by narrative logs.
-- **Closed-world evaluation:** Golden v0 is frozen, hashed and executable in CI.
-- **Quality gates:** linting, typing, tests, coverage ratcheting, dependency audit, Bandit and CodeQL are part of the development loop.
-- **Provider isolation:** retrieval/model integrations are kept behind provider contracts.
-- **Governed tool execution:** MCP/plugin dispatch is allowlisted and trusted-only by default.
-- **Explicit tenant boundaries:** trusted control-plane context is propagated explicitly and is never inferred from model output or request text.
+| Sector | Example use |
+|---|---|
+| Financial services | verify that an AI explanation matches approved evidence and policy |
+| Capital markets | verify that AI summaries preserve reported facts and figures |
+| Insurance | validate answers against policy wording and supporting evidence |
+| Legal and compliance | detect citations that do not support the argument being made |
+| Public sector | preserve evidence trails for AI-assisted answers to citizens |
+| Internal audit | maintain a reproducible evidence record for AI-assisted conclusions |
 
-This is intentionally a **reference architecture and research/engineering platform**, not a claim of universal factual accuracy.
+## Evidence v0.3.0
 
-## Verified engineering evidence
+Measured on **Golden v0.1**. The frozen majority baseline is **43.33%**.
 
-- Python 3.11–3.13 CI
-- frozen golden v0: 34 cases / 52 documents / SHA-256 manifest
-- baseline accuracy: **43.3333%**, equal to the majority-class baseline
-- R1 deterministic verification core with unit and property tests
-- R7 adversarial corpus with CI Security/CodeQL coverage
-- R8 deterministic metrics primitives with stable Prometheus text export
-- R9 durable job state with idempotency, atomic claims and restart-safe leases
-- R10 deterministic comparative evaluation arena with bootstrap and paired McNemar statistics
-- R11 bounded candidate optimization extension point with explicit evaluation budgets
-- R12 governed MCP/plugin boundary
-- R13 immutable tenant context primitive
-- R14 provider-neutral tracing context integrated with orchestration
-- R15 JobExecutor lifecycle over JobStore
-- R16 automated Dependency Review workflow
-- R17 provider-neutral TraceSink export boundary
-- R18 trusted TenantContext propagation into AgentContext with automated coverage
-- R19 deterministic JSON-ready ArenaReport serialization without winner/ranking selection
-- R20 semantic SHA-256 digest for Golden reports with volatile runtime fields excluded and CI assertions
-- optional OpenTelemetry `TraceSink` adapter, isolated from verification semantics
+| Path | Accuracy | Interpretation |
+|---|---:|---|
+| A | **76.67%** | research only |
+| B | **66.67%** | commercial candidate |
+| C | **33.33%** | deterministic ablation |
 
-## Roadmap
+For the commercial-candidate comparison, **B = 66.67% vs baseline 43.33% (p=0.0085)**.
 
-**Phase 0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9 → R10 → R11 → R12 → R13 → R14 → R15 → R16 → R17 → R18 → R19 → R20**
+### What these numbers do not show
 
-The roadmap is implemented in layers rather than declared complete from documentation alone. Remaining hardening increments are the executable Golden statistical harness, an optional OpenTelemetry adapter behind TraceSink, transport-level MCP deployment and isolation, provider adapters, deployment/release hardening, and final CI/security evidence review.
+- They are **development-set results**, not production-generalization evidence.
+- The current development corpus contains **English documents**.
+- Portuguese-document generalization is reserved for the **hidden Golden v1**.
+- A is **research only**; B is the **commercial candidate**.
+- The results do not establish regulatory certification, legal compliance or universal factual accuracy.
+
+## Golden integrity
+
+The frozen evaluation artifacts are content-addressed and must not be silently replaced.
+
+| Artifact | SHA-256 |
+|---|---|
+| Golden v0 | <code>2613aefccf232989833b80c0d23257e6e9f312e0f6b720801a0658407b2f1c75</code> |
+| Golden v0.1 | <code>a7076512196c1ee9670478f036f7a3996fe89a483efad140ec7b985a54846fb9</code> |
+| Corpus | <code>ce2333ccfe4003ebfc90819400beaf6a245620754deb8572c7611bd8bbb7dea3</code> |
+
+## Roadmap F0–F6
+
+~~~mermaid
+flowchart LR
+    F0["F0<br/>Deterministic verification"] --> F1["F1<br/>Multilingual stance"]
+    F1 --> F2["F2<br/>Span-level evidence"]
+    F2 --> F3["F3<br/>Public benchmarks"]
+    F3 --> F4["F4<br/>Hidden Golden v1 in Portuguese"]
+    F4 --> F5["F5<br/>Adoption"]
+    F5 --> F6["F6<br/>Hardened release"]
+    PT["AYORAI-PT-NLI<br/>Portuguese stance path"] --> F2
+    F1 --> PT
+~~~
+
+The roadmap keeps the deterministic Judge outside the model. **AYORAI-PT-NLI** is a future stance-classification path; it does not become the final adjudicator.
 
 ## Quickstart
 
-    python -m venv .venv
-    pip install -e ".[dev]"
-    uvicorn ayorai_attractor.api.app:app --reload
+~~~bash
+git clone https://github.com/Ayorinha/ayorai-opensearch.git
+cd ayorai-opensearch
+git checkout feat/f1-multilingual-stance
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev,nli]"
+pytest
+ruff check .
+mypy src/ayorai_attractor
+~~~
 
-CLI:
+For the frozen evaluation:
 
-    opensearch "compare RAG and fine-tuning"
+~~~bash
+attractor eval --suite golden-v0 --out reports/golden-v0.json
+~~~
 
-API:
+Always record the commit SHA, suite version and semantic report digest with an evaluation result.
 
-    POST /v1/opensearch
-    POST /v1/audit
-    POST /v1/verify
+## ADRs
 
-## Reproducible evaluation
+| ADR | Decision |
+|---|---|
+| ADR-001 | namespace and package boundary |
+| ADR-002 | deterministic Judge rules and final-verdict authority |
+| ADR-003 | three-state stance semantics |
+| ADR-004 | claim-as-input contract |
+| ADR-005 | hybrid multilingual stance detection |
+| ADR-006 | metadata, independence and numeric semantics |
+| ADR-007 | Portuguese unsupported-span research path |
+| ADR-008 | AYORAI-PT-NLI commercial stance path |
 
-Run the complete frozen suite locally:
+## Status
 
-    attractor eval --suite golden-v0 --out reports/golden-v0.json
+**Research and engineering reference implementation.**
 
-The suite contains 34 cases and 52 synthetic documents. Always report the commit SHA, suite version and `content_sha256` alongside any result. The digest is computed from semantic report content while excluding volatile runtime fields such as latency and workflow SHA. The CI pipeline executes the complete suite, asserts the digest shape, and stores the generated report as a workflow artifact.
+ATTRACTOR is **not certified**, does not constitute legal advice, and does not by itself establish regulatory compliance. It is designed to support evidence traceability, reproducibility, auditability and controlled AI-assisted verification.
 
-See docs/eval/LOCAL-EVALUATION.md, docs/STATUS.md, docs/architecture.md, docs/eval/TRACEABILITY.md and evals/golden/REVIEW.md.
+## Em português
 
-## Security
+O ATTRACTOR é uma camada de verificação baseada em evidências para respostas de IA. Ele separa **afirmação, evidência, posicionamento, proveniência e decisão final**.
 
-Never place secrets, personal data, financial records or confidential institutional material in examples or tests. Production integrations must enforce authorization, audit logging, rate limits and data minimization. TenantContext is a propagation primitive; production authorization must be enforced by a trusted control-plane boundary.
+O princípio central é:
+
+> **Inteligência ≠ Autorização ≠ Execução**
+
+Modelos podem ajudar a analisar evidências, mas o **Judge determinístico** permanece como a única autoridade para o veredito final.
+
+Os resultados atuais são de desenvolvimento. A generalização para documentos genuinamente em português permanece reservada ao **Golden v1 oculto**.
+
+---
 
 ## License
 
-Apache-2.0. See LICENSE.
+Apache-2.0. See [LICENSE](LICENSE).
 
-
-## Authorship & Citation
+## Authorship and citation
 
 **Author and technical direction:** Anderson Leon Ayora.
 
-- [Authorship & technical direction](docs/AUTHORSHIP.md)
-- [Trademark policy](TRADEMARKS.md)
+- [Authorship and technical direction](docs/AUTHORSHIP.md)
 - [Citation metadata](CITATION.cff)
-- Zenodo DOI: **pending activation**. No DOI is asserted until the repository is connected to Zenodo and a release is archived.
+- DOI: [10.5281/zenodo.23125083](https://doi.org/10.5281/zenodo.23125083)

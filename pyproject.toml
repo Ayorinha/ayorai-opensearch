@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ayorai-opensearch"
-version = "0.2.0"
+version = "0.3.0"
 description = "AYORAI ATTRACTOR adaptive multi-agent intelligence and verification engine."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,6 +18,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+nli = [
+  "transformers>=4.55,<5",
+  "torch>=2.7,<3",
+  "protobuf>=5,<7",
+  "sentencepiece>=0.2,<1",
+]
 telemetry = [
   "opentelemetry-api>=1.45,<2",
 ]

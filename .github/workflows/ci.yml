@@ -71,7 +71,26 @@ jobs:
       - name: Execute deterministic Judge suite
         run: |
           python -c 'from pathlib import Path; from ayorai_attractor.evaluation.judge import evaluate_judge_suite; r=evaluate_judge_suite(Path("evals/judge/v0.jsonl")); assert r["case_count"] == 6; assert r["correct"] == 6; assert r["accuracy"] == 1.0; print("JUDGE_V0: PASS", r["confusion_matrix"])'
-          python -c 'from pathlib import Path; from ayorai_attractor.evaluation.judge import evaluate_judge_suite; r=evaluate_judge_suite(Path("evals/golden/v1.jsonl")); assert r["case_count"] == 1; assert r["correct"] == 1; assert r["results"][0]["predicted"] == "SUPPORTED"; print("GOLDEN_V1: PASS", r["results"][0])'
+          python -c 'from pathlib import Path; from ayorai_attractor.evaluation.judge import evaluate_judge_suite; r=evaluate_judge_suite(Path("evals/golden/judge-smoke.jsonl")); assert r["case_count"] == 1; assert r["correct"] == 1; assert r["results"][0]["predicted"] == "SUPPORTED"; print("JUDGE_SMOKE: PASS", r["results"][0])'
+
+  workflow-lint:
+    name: workflow-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: "1.7.12"
+          ACTIONLINT_ARCHIVE: "actionlint_1.7.12_linux_amd64.tar.gz"
+        run: |
+          set -euo pipefail
+          curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${ACTIONLINT_ARCHIVE}"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  ${ACTIONLINT_ARCHIVE}" | sha256sum -c -
+          tar -xzf "${ACTIONLINT_ARCHIVE}" actionlint
+          install -m 0755 actionlint /usr/local/bin/actionlint
+      - name: Validate all GitHub Actions workflows
+        run: actionlint
 
   golden-lint:
     name: golden-lint
@@ -89,6 +108,18 @@ jobs:
         run: pipx run --spec cffconvert==2.0.0 cffconvert --validate
       - name: Reject file-wide Ruff suppression
         run: python -m pytest -q tests/test_ruff_suppression_guard.py
+      - name: Print frozen evaluation SHA-256 evidence
+        run: |
+          set -euo pipefail
+          sha256sum evals/golden/v0.jsonl
+          sha256sum evals/golden/v0.1.jsonl
+          sha256sum configs/f1-thresholds.json
+          sha256sum pyproject.toml
+          sha256sum src/ayorai_attractor/__init__.py
+          sha256sum CHANGELOG.md
+          sha256sum CITATION.cff
+          sha256sum docs/release/v0.3.0.md
+          sha256sum .github/workflows/ci.yml
 
   test:
     runs-on: ubuntu-latest
@@ -151,26 +182,11 @@ jobs:
         run: |
           set +e
           mypy --strict src/ayorai_attractor > /tmp/mypy-strict.log 2>&1
-          rc=$?
           set -e
           cat /tmp/mypy-strict.log
-          python - <<'PY'
-          from collections import Counter
-          import re
-          from pathlib import Path
+          python -c 'import re; from collections import Counter; from pathlib import Path; text=Path("/tmp/mypy-strict.log").read_text(encoding="utf-8"); rows=[re.match(r"^(src/ayorai_attractor/[^:]+\\.py):\\d+: error:", line) for line in text.splitlines()]; counts=Counter(m.group(1) for m in rows if m); total=sum(counts.values()); print(f"STRICT_MYPY_TOTAL_ERRORS={total}"); [print(f"STRICT_MYPY_MODULE {module} {count}") for module, count in sorted(counts.items())]'
+          true
 
-          text = Path("/tmp/mypy-strict.log").read_text(encoding="utf-8")
-          counts: Counter[str] = Counter()
-          total = 0
-          for line in text.splitlines():
-              match = re.match(r"^(src/ayorai_attractor/[^:]+\.py):\d+: error:", line)
-              if match:
-                  counts[match.group(1)] += 1
-                  total += 1
-          print(f"STRICT_MYPY_TOTAL_ERRORS={total}")
-          for module, count in sorted(counts.items()):
-              print(f"STRICT_MYPY_MODULE {module} {count}")
-          raise SystemExit(0)
 
   namespace-compatibility:
     runs-on: ubuntu-latest

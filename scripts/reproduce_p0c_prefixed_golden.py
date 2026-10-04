@@ -1,4 +1,3 @@
-# ruff: noqa
 #!/usr/bin/env python3
 """Reproduce the pre-fix P0 claim-pipeline Golden v0 result.
 
@@ -10,8 +9,7 @@ this point; do not tune production rules against these cases.
 from __future__ import annotations
 
 import json
-from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ayorai_attractor.evaluation.golden import evaluate_golden_v0
@@ -26,12 +24,21 @@ from ayorai_attractor.verification.stance import RuleStanceDetector
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "evals/golden/v0.jsonl"
 CORPUS = ROOT / "evals/corpus/documents.jsonl"
-RETRIEVED_AT = datetime(2026, 9, 30, 12, 0, tzinfo=timezone.utc)
-OUT_OF_SCOPE_TERMS = ("diagnóstico", "diagnostico", "estratégia jurídica", "estrategia juridica")
+RETRIEVED_AT = datetime(2026, 9, 30, 12, 0, tzinfo=UTC)
+OUT_OF_SCOPE_TERMS = (
+    "diagnóstico",
+    "diagnostico",
+    "estratégia jurídica",
+    "estrategia juridica",
+)
 
 
 def load_jsonl(path: Path) -> list[dict[str, object]]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
 
 
 class FixtureRetriever:
@@ -52,7 +59,9 @@ class FixtureRetriever:
                     source_id=document_id,
                     source_location=str(item["url"]),
                     retrieved_at=datetime.fromisoformat(
-                        str(item.get("retrieved_at", RETRIEVED_AT.isoformat())).replace("Z", "+00:00")
+                        str(item.get("retrieved_at", RETRIEVED_AT.isoformat())).replace(
+                            "Z", "+00:00"
+                        )
                     ),
                     end_offset=len(content),
                     origin_id=str(item["origin_id"]),
@@ -99,8 +108,14 @@ def main() -> None:
         legacy_labels.append(str(legacy_by_id[case_id]).upper())
         pipeline_labels.append(predicted)
 
-    correct = sum(gold == predicted for gold, predicted in zip(expected, pipeline_labels, strict=True))
-    legacy_correct = sum(gold == predicted for gold, predicted in zip(expected, legacy_labels, strict=True))
+    correct = sum(
+        gold == predicted
+        for gold, predicted in zip(expected, pipeline_labels, strict=True)
+    )
+    legacy_correct = sum(
+        gold == predicted
+        for gold, predicted in zip(expected, legacy_labels, strict=True)
+    )
     legacy_right_new_wrong = sum(
         gold == old and gold != new
         for gold, old, new in zip(expected, legacy_labels, pipeline_labels, strict=True)
