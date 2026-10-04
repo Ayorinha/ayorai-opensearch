@@ -8,6 +8,40 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 - Added authorship, trademark, DCO, licensing and release-provenance documentation.
 
+## [0.3.0] - 2026-10-04
+
+### Verification
+
+- NLI is loaded lazily under ADR-005, keeping the optional model stack out of the base import path.
+- FACT was rewritten with adversarial tests covering numeric, entity, date, negation, comparison and provenance-sensitive cases.
+- Provenance handling was corrected across evidence and stance paths.
+- Golden v0.1 was frozen with a pre-registration and explicit development-set disclosure.
+- E1 was measured on Golden v0.1 against the 43.33% majority baseline.
+- E2 and E3 negative findings are documented; E3 remains a manual/audit-only negative evaluation rather than a promotion result.
+- ADR-006, ADR-007 and ADR-008 record the subsequent evaluation, Portuguese span-detection and commercial NLI design decisions.
+- E3 manual reconciliation and disclosure were recorded without changing the historical measurement.
+- `actionlint 1.7.12` is pinned by direct archive SHA-256 verification.
+- `judge-smoke.jsonl` is the public deterministic Judge smoke fixture; the name **Golden v1** remains reserved for the future hidden Portuguese evaluation set.
+
+### E1 measurement
+
+Golden v0.1 baseline: **43.33%**.
+
+| Path | Accuracy | Role |
+|---|---:|---|
+| A | **76.67%** | EVAL_ONLY |
+| B | **66.67%** | candidate commercial path |
+| C | **33.33%** | deterministic ablation |
+
+Exact one-sided binomial tests versus the 43.33% baseline: **A p=0.0002**; **B p=0.0085**.
+
+### Mandatory limitations
+
+- **A is EVAL_ONLY. B is the candidate commercial path.**
+- **Golden v0 and v0.1 are development/evaluation-development sets**, not evidence of production generalization.
+- The current corpus contains **English documents with Portuguese claims**. It is therefore not a Portuguese-document generalization benchmark.
+- Generalization is reserved for the **hidden Golden v1**, which must contain genuinely Portuguese documents and remain untouched during development.
+
 ## [0.2.0] - 2026-10-03
 
 ### Verification
