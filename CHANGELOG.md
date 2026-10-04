@@ -16,6 +16,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - Frozen evaluation sets and F1 thresholds are now enforced by SHA-256 tests.
 - Added a guard against committing hidden Golden v1 files.
 - Added a training-data license manifest gate (`scripts/check_training_manifest.py`).
+- Evidence excerpts are now located in the original source; evidence not found verbatim is dropped and recorded in the audit trail (GAP B).
 
 ## [0.3.0] - 2026-10-04
 

@@ -127,7 +127,7 @@ class ClaimVerificationPipeline:
                 source_text = sources.get(item.source_id, "")
                 checked = revalidate_evidence(item, source_text)
                 if checked is None:
-                    audit_reasons.append("excerpt_not_in_source")
+                    audit_reasons.append(f"excerpt_not_in_source:{item.id}")
                     continue
                 revalidated.append(checked)
             evidence = tuple(revalidated)

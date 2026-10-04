@@ -47,9 +47,7 @@ Out of scope:
 
 **Current defense:** The synthesis gate only accepts citation IDs that are present in the available evidence set. Evidence records carry source identity, source location, canonical URL where available, retrieval time and offsets.
 
-**GAP:** The current verification core does not independently re-open the original source and verify that the cited excerpt exactly matches the source content at the recorded offsets. A caller can construct an Evidence record containing an invented excerpt while satisfying the schema.
-
-**Mitigation:** `verification/excerpt.py` locates each excerpt in the original source and drops evidence not found verbatim (`tests/verification/test_excerpt_revalidation.py`).
+**Current defense:** `verification/excerpt.py` locates each excerpt in the original source (offsets mapped to the original text after NFC matching) and drops evidence not found verbatim; dropped evidence is recorded in the audit trail.
 
 **Code:** `src/ayorai_attractor/synthesis.py`, `src/ayorai_attractor/verification/models.py`, `src/ayorai_attractor/verification/claim_pipeline.py`.
 
@@ -119,7 +117,6 @@ Out of scope:
 
 | ID | Gap | Priority |
 |---|---|---|
-| B | Original-source citation/excerpt is not independently revalidated against the source at verification time. | high |
 | E | No technical isolation gate prevents hidden Golden v1 leakage into development/training. | high |
 | F | No automated training-data license manifest gate prevents EVAL_ONLY contamination before training. | high |
 | G | No technical control prevents tuning against visible evaluation results. | medium |
