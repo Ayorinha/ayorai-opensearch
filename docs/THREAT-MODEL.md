@@ -103,7 +103,7 @@ Out of scope:
 
 **Current defense:** CI runs dependency auditing, Bandit, CodeQL and workflow linting. Dependabot tracks both Python dependencies and GitHub Actions. The workflow-lint job pins actionlint to version 1.7.12 and verifies its SHA-256 archive hash.
 
-**GAP:** GitHub Actions in the workflows are referenced by mutable version tags such as `@v7` and `@v4`, rather than immutable commit SHAs. Dependabot reduces maintenance risk but does not make action references immutable.
+**Current defense:** All GitHub Actions are pinned to full commit SHAs with version comments; Dependabot proposes SHA updates.
 
 **Code:** `.github/workflows/ci.yml`, `.github/workflows/security.yml`, `.github/workflows/codeql.yml`, `.github/dependabot.yml`.
 
@@ -115,7 +115,6 @@ Out of scope:
 | E | No technical isolation gate prevents hidden Golden v1 leakage into development/training. | high |
 | F | No automated training-data license manifest gate prevents EVAL_ONLY contamination before training. | high |
 | G | No technical control prevents tuning against visible evaluation results. | medium |
-| H | GitHub Actions use mutable version tags instead of immutable commit SHAs. | medium |
 
 ## 5. Non-goals
 
