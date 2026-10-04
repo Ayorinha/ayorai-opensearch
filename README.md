@@ -13,7 +13,7 @@
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)
 ![Tests](https://img.shields.io/badge/tests-235%20passing-brightgreen)
 
-🇧🇷 [Português](#-em-português) · 📘 [Guia passo a passo](docs/GUIA-PASSO-A-PASSO.md) · ⚖️ [Conformidade no Brasil](docs/CONFORMIDADE-BRASIL.md) · 💼 [Para investidores e parceiros](docs/INVESTIDORES.md)
+🇧🇷 [Português](#em-português) · 📘 [Guia passo a passo](docs/GUIA-PASSO-A-PASSO.md) · ⚖️ [Conformidade no Brasil](docs/CONFORMIDADE-BRASIL.md) · 💼 [Para investidores e parceiros](docs/INVESTIDORES.md)
 
 </div>
 
@@ -109,11 +109,11 @@ The frozen evaluation artifacts are content-addressed and must not be silently r
 ~~~mermaid
 flowchart LR
     F0["F0<br/>Deterministic verification"] --> F1["F1<br/>Multilingual stance"]
-    F1 --> F2["F2<br/>Portuguese robustness"]
-    F2 --> F3["F3<br/>Long-context evidence"]
-    F3 --> F4["F4<br/>Production evaluation"]
-    F4 --> F5["F5<br/>Governed deployment"]
-    F5 --> F6["F6<br/>Auditable adoption"]
+    F1 --> F2["F2<br/>Span-level evidence"]
+    F2 --> F3["F3<br/>Public benchmarks"]
+    F3 --> F4["F4<br/>Hidden Golden v1 in Portuguese"]
+    F4 --> F5["F5<br/>Adoption"]
+    F5 --> F6["F6<br/>Hardened release"]
     PT["AYORAI-PT-NLI<br/>Portuguese stance path"] --> F2
     F1 --> PT
 ~~~
@@ -123,11 +123,15 @@ The roadmap keeps the deterministic Judge outside the model. **AYORAI-PT-NLI** i
 ## Quickstart
 
 ~~~bash
+git clone https://github.com/Ayorinha/ayorai-opensearch.git
+cd ayorai-opensearch
+git checkout feat/f1-multilingual-stance
 python -m venv .venv
-pip install -e ".[dev]"
+source .venv/bin/activate
+pip install -e ".[dev,nli]"
 pytest
 ruff check .
-mypy .
+mypy src/ayorai_attractor
 ~~~
 
 For the frozen evaluation:
