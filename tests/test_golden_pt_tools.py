@@ -186,7 +186,6 @@ def test_kappa_rejects_different_id_sets(tmp_path: Path) -> None:
     assert "conjuntos de ids são diferentes" in result.stderr
 
 
-
 def test_validator_rejects_empty_file(tmp_path: Path) -> None:
     path = tmp_path / "empty.jsonl"
     path.write_text("", encoding="utf-8")
@@ -196,12 +195,10 @@ def test_validator_rejects_empty_file(tmp_path: Path) -> None:
 def test_validator_rejects_list_label_without_exception(tmp_path: Path) -> None:
     path = tmp_path / "list-label.jsonl"
     write_jsonl(path, [{**VALID_CASE, "label": ["VERIFIED"]}])
-    from scripts.check_golden_pt import validate
     assert validate(path)
 
 
 def test_validator_rejects_non_text_difficulty_without_exception(tmp_path: Path) -> None:
     path = tmp_path / "object-difficulty.jsonl"
     write_jsonl(path, [{**VALID_CASE, "difficulty": [{}]}])
-    from scripts.check_golden_pt import validate
     assert validate(path)
