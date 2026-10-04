@@ -4,7 +4,6 @@ from runpy import run_path
 
 import pytest
 
-
 _MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "check_training_manifest.py"
 check_manifest = run_path(str(_MODULE_PATH))["check_manifest"]
 
