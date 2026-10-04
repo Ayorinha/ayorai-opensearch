@@ -15,7 +15,6 @@ repository-code: "https://github.com/Ayorinha/ayorai-opensearch"
 url: "https://github.com/Ayorinha/ayorai-opensearch"
 license: "Apache-2.0"
 version: "0.3.0"
-date-released: ""
 keywords:
   - "artificial intelligence"
   - "AI safety"
