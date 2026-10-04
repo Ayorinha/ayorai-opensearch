@@ -25,6 +25,8 @@ OUT_JSON = ROOT / "reports/e3-lettucedetect-results.json"
 OUT_MD = ROOT / "reports/E3-LETTUCEDETECT-RESULTS.md"
 TRANSLATOR_MODEL = "Helsinki-NLP/opus-mt-ROMANCE-en"
 TRANSLATOR_REVISION = "ddfee805aaa57f4bd198f88e8832ba2b012f9ae2"
+LETTUCE_MODEL = "KRLabsOrg/lettucedect-base-modernbert-en-v1"
+LETTUCE_REVISION = "a81b29223b1b58eed5efc0ac8e7ebafac966e5f2"
 SEED = 20261003
 BOOTSTRAP = 10000
 
@@ -203,9 +205,10 @@ def main() -> None:
 
     hf = importlib.import_module("huggingface_hub")
     lettuce = importlib.import_module("lettucedetect.models.inference")
-    detector = lettuce.HallucinationDetector(method="transformer")
-    model_id = "KRLabsOrg/lettucedect-base-modernbert-en-v1"
-    model_revision = str(hf.HfApi().model_info(model_id).sha)
+    model_id = LETTUCE_MODEL
+    model_revision = LETTUCE_REVISION
+    model_path = hf.snapshot_download(repo_id=model_id, revision=model_revision)
+    detector = lettuce.HallucinationDetector(method="transformer", model_path=model_path)
     translator = MarianTranslationBackend(TRANSLATOR_MODEL, TRANSLATOR_REVISION)
 
     corpus = {str(row["doc_id"]): row for row in _load_jsonl(CORPUS)}
@@ -220,11 +223,12 @@ def main() -> None:
             "threshold": "library default; min_confidence not supplied",
             "license": "MIT",
             "license_status": "EVAL_ONLY",
+            "loaded_revision": model_revision,
         },
         "translation": {
             "model": TRANSLATOR_MODEL,
             "revision": TRANSLATOR_REVISION,
-            "license_status": "EVAL_ONLY",
+            "license_status": "COMMERCIAL_DEFAULT",
         },
         "golden": {},
         "golden_sha256": {},
@@ -282,7 +286,8 @@ def main() -> None:
         f"Package: {report['lettucedetect']['package']}",
         f"Translation: {TRANSLATOR_MODEL}@{TRANSLATOR_REVISION}",
         "Threshold: library default; no min_confidence override.",
-        "License status: EVAL_ONLY.",
+        "LettuceDetect license status: EVAL_ONLY.",
+        "Translation license status: COMMERCIAL_DEFAULT.",
         "",
     ]
     for suite, title in (("golden-v0", "Golden v0"), ("golden-v0.1", "Golden v0.1")):
