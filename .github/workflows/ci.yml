@@ -108,6 +108,12 @@ jobs:
         run: pipx run --spec cffconvert==2.0.0 cffconvert --validate
       - name: Reject file-wide Ruff suppression
         run: python -m pytest -q tests/test_ruff_suppression_guard.py
+      - name: Print frozen evaluation SHA-256 evidence
+        run: |
+          set -euo pipefail
+          sha256sum evals/golden/v0.jsonl
+          sha256sum evals/golden/v0.1.jsonl
+          sha256sum configs/f1-thresholds.json
 
   test:
     runs-on: ubuntu-latest
