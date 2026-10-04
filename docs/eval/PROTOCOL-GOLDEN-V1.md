@@ -26,3 +26,6 @@ Antes de qualquer modelo ser rodado, 30% dos casos são sorteados (seed 20261003
 - Durante a anotação, o anotador não roda o sistema nos casos nem vê saídas de modelos sobre eles.
 - Nenhum caso do Golden v1 é usado para treinar ou ajustar limiares.
 - Os resultados seguem as regras da F1: accuracy, balanced accuracy, macro-F1, IC95% por bootstrap (10.000, seed 20261003) e publicação de resultados negativos.
+
+## Emenda 1 (2026-10-04)
+As fontes ficam em um arquivo separado, uma linha por documento, com os campos source_id, source_url, source_license, retrieved_at e text (texto completo). O sistema avaliado recebe o documento completo, nunca o trecho, o rótulo ou a justificativa do caso. Todo source_excerpt deve aparecer literalmente no texto da sua fonte; caso contrário, o caso é inválido.
