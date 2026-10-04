@@ -143,7 +143,7 @@ def test_pipeline_contract_rejects_retriever_as_verification_input() -> None:
     import inspect
 
     signature = inspect.signature(ClaimVerificationPipeline.verify)
-    assert list(signature.parameters) == ["self", "claims", "documents"]
+    assert list(signature.parameters) == ["self", "claims", "documents", "sources"]
     assert "retriever" not in signature.parameters
     result = pipeline().verify(
         ["AtlasGrid revenue was USD 120 million."],

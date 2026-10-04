@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
 from pydantic import ValidationError
 
+from .excerpt import revalidate_evidence
 from .extraction import (
     ClaimExtractor,
     ComponentProvenance,
@@ -46,6 +47,7 @@ class ClaimVerificationResult:
     confidence: float
     rationale: str
     abstention_reason: str | None = None
+    audit_reasons: tuple[str, ...] = ()
 
 
 class ClaimVerificationPipeline:
@@ -64,6 +66,7 @@ class ClaimVerificationPipeline:
         self,
         claims: Sequence[str],
         documents: Sequence[RetrievedDocument],
+        sources: Mapping[str, str] | None = None,
     ) -> ClaimVerificationResult:
         """Verify caller-supplied claims against the closed-world documents.
 
@@ -109,14 +112,27 @@ class ClaimVerificationPipeline:
                 rationale="No retrievable evidence was available for the supplied claims.",
             )
 
-        evidence = tuple(
+        evidence_items = [
             document.to_evidence(
                 item.claim.id,
                 evidence_id=f"{document.id}::{item.claim.id}",
             )
             for item in extracted
             for document in documents
-        )
+        ]
+        audit_reasons: list[str] = []
+        if sources is not None:
+            revalidated: list[Evidence] = []
+            for item in evidence_items:
+                source_text = sources.get(item.source_id, "")
+                checked = revalidate_evidence(item, source_text)
+                if checked is None:
+                    audit_reasons.append(f"excerpt_not_in_source:{item.id}")
+                    continue
+                revalidated.append(checked)
+            evidence = tuple(revalidated)
+        else:
+            evidence = tuple(evidence_items)
         try:
             stance_result = self.stance_detector.detect(extracted, evidence)
             stances = tuple(item.edge for item in stance_result.edges)
@@ -137,6 +153,7 @@ class ClaimVerificationPipeline:
                 confidence=1.0,
                 rationale=f"{type(exc).__name__}: {exc}",
                 abstention_reason=type(exc).__name__,
+                audit_reasons=tuple(audit_reasons),
             )
         confidence = min(
             (item.confidence for item in extracted),
@@ -155,6 +172,7 @@ class ClaimVerificationPipeline:
             verdict=verdict,
             status=ResponseStatus(verdict.value),
             confidence=confidence,
+            audit_reasons=tuple(audit_reasons),
             rationale=(
                 f"Deterministic ADR-002 Judge returned {verdict.value} from "
                 f"{len(extracted)} claim(s), {len(evidence)} evidence item(s) "
@@ -166,6 +184,7 @@ class ClaimVerificationPipeline:
         self,
         response: str,
         documents: Sequence[RetrievedDocument],
+        sources: Mapping[str, str] | None = None,
     ) -> ClaimVerificationResult:
         """Decompose a model response, then verify the resulting claims."""
         if self.claim_extractor is None:
@@ -186,6 +205,7 @@ class ClaimVerificationPipeline:
         return self.verify(
             [item.claim.text for item in extraction.claims],
             documents,
+            sources=sources,
         )
 
 

@@ -204,7 +204,8 @@ def evaluate_golden_v0(
             [str(x) for x in case.get("evidence_pool", [])],
         ).retrieve(str(case["query"]))
         started = time.perf_counter()
-        result = pipeline.verify(claims, docs)
+        sources = {doc_id: str(item["content"]) for doc_id, item in documents.items()}
+        result = pipeline.verify(claims, docs, sources=sources)
         latency = (time.perf_counter() - started) * 1000
         latencies.append(latency)
         actual_status = result.status.value.upper()
