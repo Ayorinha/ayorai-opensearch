@@ -20,8 +20,8 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - E2 and E3 negative findings are documented; E3 remains a manual/audit-only negative evaluation rather than a promotion result.
 - ADR-006, ADR-007 and ADR-008 record the subsequent evaluation, Portuguese span-detection and commercial NLI design decisions.
 - E3 manual reconciliation and disclosure were recorded without changing the historical measurement.
-- actionlint 1.7.12 is pinned by direct archive SHA-256 verification.
-- judge-smoke.jsonl is the public deterministic Judge smoke fixture; the name Golden v1 remains reserved for the future hidden Portuguese evaluation set.
+- `actionlint 1.7.12` is pinned by direct archive SHA-256 verification.
+- `judge-smoke.jsonl` is the public deterministic Judge smoke fixture; the name Golden v1 remains reserved for the future hidden Portuguese evaluation set.
 
 ### E1 measurement
 
@@ -50,7 +50,7 @@ Exact one-sided binomial tests versus the 43.33% baseline: **A p=0.0002**; **B p
 - File-wide Ruff suppression removed from the verification and evaluation paths.
 - ADR-004 records the claim-as-input contract.
 - F0 stabilization: fixed numeric cross-evidence comparison, duplicate verification exports, and stale Golden abstention assertions; CI evidence pending on the updated P0 branch.
-- Versioned pre-fix Golden reproduction records the claim-pipeline result.
+- Versioned pre-fix Golden reproduction records the 9/30 claim-pipeline result.
 - Claim verification accepts caller-supplied claims separately from evidence.
 - Claim extraction is response-only and cannot read evidence.
 - ADR-003 adds NEUTRAL stance semantics.
