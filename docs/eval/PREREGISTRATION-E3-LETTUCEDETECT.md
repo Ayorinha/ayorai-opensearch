@@ -123,3 +123,36 @@ comparisons of D against A, B, and C on the same eligible cases.
 The current Golden does not contain documents in Portuguese. Golden v1 must include
 Portuguese documents so that true PT-document evaluation, including a PT-direct arm,
 can be measured.
+
+## Second Amendment — 2026-10-03
+
+This second amendment preserves the original preregistration and the first
+amendment above. It freezes the exact LettuceDetect model revision before the
+E3 rerun and records the known language-coverage limitation.
+
+### Frozen LettuceDetect model
+
+- Model: `KRLabsOrg/lettucedect-base-modernbert-en-v1`
+- Revision: `a81b29223b1b58eed5efc0ac8e7ebafac966e5f2`
+- The same frozen model revision is used for both D1 and D2.
+- The model is English-only. D1 intentionally measures a Portuguese claim
+  against an English-trained model and is expected to classify much of the
+  Portuguese claim as unsupported. This expected limitation is declared
+  before measurement and must not be adjusted post hoc.
+
+### Frozen loading and reproducibility rule
+
+The E3 implementation must download the model with
+`snapshot_download(revision="a81b29223b1b58eed5efc0ac8e7ebafac966e5f2")`
+and pass the resulting local snapshot path as `model_path` to
+`HallucinationDetector(method="transformer", model_path=...)`.
+
+The report must record exactly the same revision SHA that was loaded by the
+detector. No floating `main` or latest-HF revision is permitted.
+
+### Translation licensing status
+
+The D2 Opus-MT translator follows the status recorded in
+`docs/legal/MODEL-LICENSE-POLICY.md`: `COMMERCIAL_DEFAULT`.
+It is not classified as EVAL_ONLY for this E3 rerun.
+
