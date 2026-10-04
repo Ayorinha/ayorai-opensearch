@@ -30,7 +30,7 @@ BOOTSTRAP = 10000
 
 
 def binary(label: str) -> str:
-    return "SUSTENTADO" if label.upper() in {"SUPPORTS", "SUPPORTED", "VERIFIED"} else "NAO_SUSTENTADO"
+    return (        "SUSTENTADO"        if label.upper() in {"SUPPORTS", "SUPPORTED", "VERIFIED"}        else "NAO_SUSTENTADO"    )
 
 
 def bootstrap_balanced_accuracy(gold: list[str], pred: list[str]) -> tuple[float, float]:
@@ -47,7 +47,7 @@ def bootstrap_balanced_accuracy(gold: list[str], pred: list[str]) -> tuple[float
         for label in ("SUSTENTADO", "NAO_SUSTENTADO"):
             total = sum(x == label for x in sampled_g)
             if total:
-                recalls.append(sum(x == label and y == label for x, y in zip(sampled_g, sampled_p)) / total)
+                recalls.append(                    sum(                        x == label and y == label                        for x, y in zip(sampled_g, sampled_p, strict=True)                    )                    / total                )
         values.append(sum(recalls) / len(recalls) if recalls else 0.0)
     values.sort()
     return values[int(0.025 * (BOOTSTRAP - 1))], values[int(0.975 * (BOOTSTRAP - 1))]
@@ -57,12 +57,12 @@ def balanced_accuracy(gold: list[str], pred: list[str]) -> float:
     recalls = []
     for label in ("SUSTENTADO", "NAO_SUSTENTADO"):
         total = sum(x == label for x in gold)
-        recalls.append(sum(x == label and y == label for x, y in zip(gold, pred)) / total if total else 0.0)
+        recalls.append(            (                sum(                    x == label and y == label                    for x, y in zip(gold, pred, strict=True)                )                / total            )            if total            else 0.0        )
     return sum(recalls) / 2
 
 
-def evaluate_detector(detector: Any, cases: list[dict[str, Any]], corpus: dict[str, dict[str, Any]], translator: Any | None) -> dict[str, Any]:
-    eligible = [c for c in cases if "global" in c and c.get("expected_claims") and c.get("evidence_pool")]
+def evaluate_detector(    detector: Any,    cases: list[dict[str, Any]],    corpus: dict[str, dict[str, Any]],    translator: Any | None,) -> dict[str, Any]:
+    eligible = [        c        for c in cases        if "global" in c and c.get("expected_claims") and c.get("evidence_pool")    ]
     results = []
     predictions = []
     gold = []
@@ -72,7 +72,7 @@ def evaluate_detector(detector: Any, cases: list[dict[str, Any]], corpus: dict[s
     for case in eligible:
         docs = [corpus[str(doc_id)]["content"] for doc_id in case["evidence_pool"]]
         claim_texts = [str(item["text"]) for item in case["expected_claims"]]
-        answer_texts = claim_texts if translator is None else [translator.translate(x) for x in claim_texts]
+        answer_texts = (            claim_texts            if translator is None            else [translator.translate(x) for x in claim_texts]        )
         started = time.perf_counter()
         spans = []
         for answer in answer_texts:
@@ -107,10 +107,10 @@ def evaluate_detector(detector: Any, cases: list[dict[str, Any]], corpus: dict[s
         "case_count": len(gold),
         "accuracy": round(sum(x == y for x, y in zip(gold, predictions)) / len(gold), 6),
         "balanced_accuracy": round(balanced_accuracy(gold, predictions), 6),
-        "bootstrap_95_ci_balanced_accuracy": {"lower": ci[0], "upper": ci[1], "iterations": BOOTSTRAP, "seed": SEED},
+        "bootstrap_95_ci_balanced_accuracy": {            "lower": ci[0],            "upper": ci[1],            "iterations": BOOTSTRAP,            "seed": SEED,        },
         "latency_ms": {
             "p50": round(statistics.median(latencies), 3),
-            "p95": round(sorted(latencies)[min(len(latencies) - 1, math.ceil(0.95 * len(latencies)) - 1)], 3),
+            "p95": round(                sorted(latencies)[                    min(                        len(latencies) - 1,                        math.ceil(0.95 * len(latencies)) - 1,                    )                ],                3,            ),
         },
         "unsupported_case_count": sum(p == "NAO_SUSTENTADO" for p in predictions),
         "coverage": 1.0,
@@ -128,8 +128,8 @@ def evaluate_detector(detector: Any, cases: list[dict[str, Any]], corpus: dict[s
 def paired(gold: list[str], left: list[str], right: list[str]) -> dict[str, Any]:
     return {
         "case_count": len(gold),
-        "left_correct_right_wrong": sum(g == a and g != b for g, a, b in zip(gold, left, right)),
-        "right_correct_left_wrong": sum(g != a and g == b for g, a, b in zip(gold, left, right)),
+        "left_correct_right_wrong": sum(            g == a and g != b            for g, a, b in zip(gold, left, right, strict=True)        ),
+        "right_correct_left_wrong": sum(            g != a and g == b            for g, a, b in zip(gold, left, right, strict=True)        ),
         "exact_p": mcnemar_exact_pvalue(gold, left, right),
     }
 
@@ -175,7 +175,7 @@ def main() -> None:
         "golden_sha256": {},
         "notes": [
             "D1: original PT claim as answer, EN documents as context.",
-            "D2: same PT claim translated PT->EN with the frozen B Opus-MT path, then used as answer against the same EN documents.",
+            (                "D2: same PT claim translated PT->EN with the frozen B Opus-MT path, "                "then used as answer against the same EN documents."            ),
             "MADLAD-400 not used.",
             "Span precision/recall/F1 not applicable because Golden has no gold span labels.",
         ],
@@ -238,11 +238,11 @@ def main() -> None:
         for arm in ("D1", "D2"):
             x = s[arm]
             ci = x["bootstrap_95_ci_balanced_accuracy"]
-            lines.append(f"| {arm} | {x['balanced_accuracy']:.4f} | [{ci['lower']:.4f}, {ci['upper']:.4f}] | {x['accuracy']:.4f} | {x['latency_ms']['p50']:.3f} | {x['latency_ms']['p95']:.3f} |")
-        lines += ["", "| Comparison | Left correct / right wrong | Right correct / left wrong | Exact p |", "|---|---:|---:|---:|"]
-        for key in ("mcnemar_D1_vs_D2","mcnemar_D1_vs_A","mcnemar_D1_vs_B","mcnemar_D1_vs_C","mcnemar_D2_vs_A","mcnemar_D2_vs_B","mcnemar_D2_vs_C"):
+            lines.append(                f"| {arm} | {x['balanced_accuracy']:.4f} | "                f"[{ci['lower']:.4f}, {ci['upper']:.4f}] | "                f"{x['accuracy']:.4f} | {x['latency_ms']['p50']:.3f} | "                f"{x['latency_ms']['p95']:.3f} |"            )
+        lines += [            "",            "| Comparison | Left correct / right wrong | Right correct / left wrong | Exact p |",            "|---|---:|---:|---:|",        ]
+        for key in (            "mcnemar_D1_vs_D2",            "mcnemar_D1_vs_A",            "mcnemar_D1_vs_B",            "mcnemar_D1_vs_C",            "mcnemar_D2_vs_A",            "mcnemar_D2_vs_B",            "mcnemar_D2_vs_C",        ):
             x=s[key]
-            lines.append(f"| {key} | {x['left_correct_right_wrong']} | {x['right_correct_left_wrong']} | {x['exact_p']:.6g} |")
+            lines.append(                f"| {key} | {x['left_correct_right_wrong']} | "                f"{x['right_correct_left_wrong']} | {x['exact_p']:.6g} |"            )
         lines.append("")
     lines.append(f"Report SHA-256: {report['report_sha256']}")
     OUT_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
