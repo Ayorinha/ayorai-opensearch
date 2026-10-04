@@ -8,6 +8,15 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 - Added authorship, trademark, DCO, licensing and release-provenance documentation.
 
+### Security
+
+- Added `docs/THREAT-MODEL.md` with scope, assets, threats, current defenses and known gaps.
+- `ReplayStore.get` now accepts only 64-character lowercase hex digests (blocking path traversal) and rejects replay files whose internal digest differs from the requested digest.
+- All GitHub Actions are pinned to full commit SHAs with version comments.
+- Frozen evaluation sets and F1 thresholds are now enforced by SHA-256 tests.
+- Added a guard against committing hidden Golden v1 files.
+- Added a training-data license manifest gate (`scripts/check_training_manifest.py`).
+
 ## [0.3.0] - 2026-10-04
 
 ### Verification
