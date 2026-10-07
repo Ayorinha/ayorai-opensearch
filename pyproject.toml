@@ -19,7 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 nli = [
-  "transformers>=4.55,<5",
+  "transformers>=4.55,<6",
   "torch>=2.7,<3",
   "protobuf>=5,<7",
   "sentencepiece>=0.2,<1",
