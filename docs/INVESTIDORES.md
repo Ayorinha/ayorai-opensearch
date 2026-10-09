@@ -36,22 +36,30 @@ A adoção de IA aumenta a necessidade de:
 - identificar conflitos entre fontes;
 - reduzir dependência de respostas narrativas não auditáveis.
 
-## O que já está provado
+## O que a engenharia demonstra
 
-A engenharia pública já demonstra:
+A implementação pública permite inspecionar e auditar:
 
-- Judge determinístico separado do modelo;
-- evidência e proveniência como estruturas explícitas;
-- avaliação congelada e endereçada por SHA-256;
-- caminho A com **76.67%**;
-- caminho B com **66.67%**;
-- baseline de **43.33%**;
-- caminho C com **33.33%**;
-- **B: p=0.0085** frente ao baseline indicado.
+- separação entre assistência do modelo e autoridade do Judge determinístico;
+- registros explícitos de evidência e proveniência;
+- integridade dos artefatos congelados, endereçados por SHA-256;
+- pré-registros e documentação das limitações das avaliações;
+- regras e contratos de verificação versionados e testáveis.
 
-### Ressalvas
+Esses elementos demonstram decisões e controles de engenharia. Eles não equivalem a validação independente, generalização em produção, certificação regulatória ou comprovação de precisão universal.
 
-Esses números são resultados de desenvolvimento. O corpus atual contém documentos em inglês, e a generalização para documentos genuinamente em português permanece reservada ao **Golden v1 oculto**.
+## Resultados de desenvolvimento (não generalização)
+
+As medições disponíveis devem ser lidas lado a lado. Golden v0.1 foi reescrito após o autor ter visto resultados por caso, fato declarado no [pré-registro](eval/PREREGISTRATION-GOLDEN-v0.1.md).
+
+| Caminho | Golden v0 | Golden v0.1 |
+|---|---:|---:|
+| A | **40,00%** | **76,67%** |
+| B | **43,33%** | **66,67%** |
+| C | **26,67%** | **33,33%** |
+| Baseline majoritária | **43,33%** | **43,33%** |
+
+**Limitações:** conjunto de desenvolvimento; 52 documentos sintéticos, todos `en-US`; n=30 casos avaliados. No Golden v0, os ICs de 95% de A e B incluem o baseline de 43,33%. O Golden v0.1 foi reescrito após a inspeção de resultados por caso, portanto seus números não devem ser apresentados isoladamente como evidência confirmatória. A generalização para documentos genuinamente em português continua reservada ao Golden v1 oculto.
 
 ## Diferencial frente à "IA juíza"
 

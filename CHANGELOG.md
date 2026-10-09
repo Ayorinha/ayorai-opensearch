@@ -35,15 +35,16 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ### E1 measurement
 
-Golden v0.1 baseline: **43.33%**.
+| Path / reference | Golden v0 | Golden v0.1 |
+|---|---:|---:|
+| A | **40.00%** | **76.67%** |
+| B | **43.33%** | **66.67%** |
+| C | **26.67%** | **33.33%** |
+| Majority baseline | **43.33%** | **43.33%** |
 
-| Path | Accuracy | Role |
-|---|---:|---|
-| A | **76.67%** | EVAL_ONLY |
-| B | **66.67%** | candidate commercial path |
-| C | **33.33%** | deterministic ablation |
+Golden v0.1's previously reported one-sided exact binomial comparisons versus the 43.33% baseline are A p=0.0002 and B p=0.0085. These values are historical measurements, not a new evaluation.
 
-Exact one-sided binomial tests versus the 43.33% baseline: **A p=0.0002**; **B p=0.0085**.
+**Disclosure:** Golden v0.1 was rewritten after the author had seen per-case Path C results, as disclosed in `docs/eval/PREREGISTRATION-GOLDEN-v0.1.md`. Both versions are development sets (n=30); the corpus has 52 synthetic documents, all tagged `en-US`. On v0, the 95% confidence intervals for A and B include the 43.33% baseline. Report both versions and do not interpret v0.1 alone as confirmatory evidence.
 
 ### Mandatory limitations
 
@@ -88,5 +89,6 @@ Exact one-sided binomial tests versus the 43.33% baseline: **A p=0.0002**; **B p
 - deterministic verification foundation;
 - security and community health files.
 
+[0.3.0]: https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.1.0

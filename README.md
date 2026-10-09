@@ -75,23 +75,18 @@ When evidence conflicts, ATTRACTOR can return <code>CONFLICTING</code> instead o
 
 ## Evidence v0.3.0
 
-Measured on **Golden v0.1**. The frozen majority baseline is **43.33%**.
+The development measurements are reported side by side; neither set establishes production generalization.
 
-| Path | Accuracy | Interpretation |
-|---|---:|---|
-| A | **76.67%** | research only |
-| B | **66.67%** | commercial candidate |
-| C | **33.33%** | deterministic ablation |
+| Path | Golden v0 | Golden v0.1 |
+|---|---:|---:|
+| A | **40.00%** | **76.67%** |
+| B | **43.33%** | **66.67%** |
+| C | **26.67%** | **33.33%** |
+| Majority baseline | **43.33%** | **43.33%** |
 
-For the commercial-candidate comparison, **B = 66.67% vs baseline 43.33% (p=0.0085)**.
+**Limitations that apply to both columns:** these are development sets, not a production-generalization benchmark; the corpus has 52 synthetic documents, all tagged `en-US`, and the reported evaluation uses **n=30** cases. Golden v0.1 was rewritten after its author had seen per-case results, as disclosed in [its pre-registration](docs/eval/PREREGISTRATION-GOLDEN-v0.1.md). On Golden v0, the 95% confidence intervals for A and B include the 43.33% majority baseline. The results do not establish Portuguese-document generalization, regulatory certification, legal compliance or universal factual accuracy.
 
-### What these numbers do not show
-
-- They are **development-set results**, not production-generalization evidence.
-- The current development corpus contains **English documents**.
-- Portuguese-document generalization is reserved for the **hidden Golden v1**.
-- A is **research only**; B is the **commercial candidate**.
-- The results do not establish regulatory certification, legal compliance or universal factual accuracy.
+Path A is **research-only / EVAL_ONLY**. Path B is described elsewhere in the project as a candidate commercial path, subject to the project's model-license policy and independent verification; these accuracy figures alone do not establish commercial clearance.
 
 ## Golden integrity
 
