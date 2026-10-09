@@ -47,7 +47,7 @@ Every emitted stance edge records component, model/backend, version, input SHA-2
 
 ## Model license policy
 
-The normative policy is docs/legal/MODEL-LICENSE-POLICY.md. A is EVAL_ONLY because its declared training includes XNLI. B is EVAL_ONLY by project policy even though its components have permissive weight licenses; ATTRACTOR does not treat the OPUS source-license chain as commercial clearance.
+The normative policy is docs/legal/MODEL-LICENSE-POLICY.md. A is EVAL_ONLY because its declared training includes XNLI. B is COMMERCIAL_DEFAULT under the policy's uniform declared-data rule; the OPUS source-license inventory remains incomplete and is recorded as a legal risk, not silently reclassified as NC. This policy classification is not legal advice or a guarantee of unrestricted commercial use.
 
 ## Evaluation controls
 
