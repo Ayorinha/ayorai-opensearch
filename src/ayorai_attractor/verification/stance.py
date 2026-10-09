@@ -4,6 +4,7 @@ import hashlib
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from typing import Any, Literal, Protocol
 
@@ -30,9 +31,89 @@ class LLMStancePayload(BaseModel):
 _NUMBER_RE = re.compile(r"(?<![\w])[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?")
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 _TOKEN_RE = re.compile(r"[\wÀ-ÿ]+", re.UNICODE)
-_NEGATION_TOKENS = frozenset(
-    {"not", "no", "didn't", "doesn't", "never", "não", "nao", "nunca", "sem"}
+# Negation is language dependent. In Portuguese "no"/"na"/"nos"/"nas" are
+# contractions of em + article ("no fim de 2025") and "sem" ("sem custo")
+# does not negate the predicate, so neither counts as negation there.
+_NEGATION_TOKENS_EN = frozenset({"not", "no", "didn't", "doesn't", "never"})
+_NEGATION_TOKENS_PT = frozenset(
+    {"não", "nao", "nunca", "jamais", "nem", "nenhum", "nenhuma", "ninguém", "ninguem"}
 )
+_NEGATION_TOKENS = _NEGATION_TOKENS_EN | _NEGATION_TOKENS_PT
+# Portuguese-only function words used solely to decide whether "no" is English.
+_PT_FUNCTION_WORDS = frozenset(
+    {"de", "do", "da", "dos", "das", "um", "os", "as", "ao", "aos", "pelo", "pela", "também"}
+)
+
+_PT_MONTHS = {
+    "janeiro": 1,
+    "fevereiro": 2,
+    "março": 3,
+    "marco": 3,
+    "abril": 4,
+    "maio": 5,
+    "junho": 6,
+    "julho": 7,
+    "agosto": 8,
+    "setembro": 9,
+    "outubro": 10,
+    "novembro": 11,
+    "dezembro": 12,
+}
+_PT_MONTH_PATTERN = "|".join(sorted(_PT_MONTHS, key=len, reverse=True))
+_PT_DAY_DATE_RE = re.compile(
+    rf"\b(?P<day>\d{{1,2}})(?:º|°|o)?\s+de\s+(?P<month>{_PT_MONTH_PATTERN})\s+de\s+(?P<year>\d{{4}})\b",
+    re.IGNORECASE,
+)
+_PT_MONTH_DATE_RE = re.compile(
+    rf"\b(?P<month>{_PT_MONTH_PATTERN})\s+de\s+(?P<year>\d{{4}})\b",
+    re.IGNORECASE,
+)
+_SLASH_DATE_RE = re.compile(r"\b(?P<a>\d{1,2})/(?P<b>\d{1,2})/(?P<year>\d{4})\b")
+
+# Directional predicates: (axis, polarity). Opposite polarity on the same axis
+# for the same proposition is a contradiction even when the numbers coincide.
+_DIRECTION_TERMS: dict[str, tuple[str, int]] = {
+    **dict.fromkeys(
+        (
+            "subiu", "subiram", "sobe", "sobem", "subir",
+            "aumentou", "aumentaram", "aumenta", "aumentam", "aumentar", "aumento",
+            "cresceu", "cresceram", "cresce", "crescem", "crescer", "crescimento",
+            "increased", "increase", "increases", "rose", "rise", "rises",
+            "grew", "grow", "grows",
+        ),
+        ("change", 1),
+    ),
+    **dict.fromkeys(
+        (
+            "caiu", "caíram", "cairam", "cai", "caem", "cair", "queda",
+            "diminuiu", "diminuíram", "diminuiram", "diminui", "diminuem", "diminuir",
+            "diminuição", "diminuicao",
+            "reduziu", "reduziram", "reduz", "reduzem", "redução", "reducao",
+            "encolheu", "encolheram", "encolhe", "encolhem",
+            "decreased", "decrease", "decreases", "fell", "fall", "falls",
+            "declined", "decline", "declines", "dropped", "drop", "drops",
+        ),
+        ("change", -1),
+    ),
+    **dict.fromkeys(
+        (
+            "aprovou", "aprovaram", "aprova", "aprovam", "aprovado", "aprovada",
+            "aprovados", "aprovadas", "aprovação", "aprovacao",
+            "approved", "approves", "approve",
+        ),
+        ("approval", 1),
+    ),
+    **dict.fromkeys(
+        (
+            "rejeitou", "rejeitaram", "rejeita", "rejeitam", "rejeitado", "rejeitada",
+            "rejeitados", "rejeitadas", "rejeição", "rejeicao",
+            "reprovou", "reprovaram", "reprovado", "reprovada",
+            "vetou", "vetaram", "vetado", "vetada",
+            "rejected", "rejects", "reject",
+        ),
+        ("approval", -1),
+    ),
+}
 _STOPWORDS = frozenset(
     {
         "the",
@@ -98,10 +179,15 @@ _EN_MARKERS = frozenset(
 )
 
 
-def detect_language(text: str) -> str:
+def _language_scores(text: str) -> tuple[int, int]:
     tokens = {token.casefold() for token in _TOKEN_RE.findall(text)}
     pt = len(tokens & _PT_MARKERS) + sum(char in text for char in "ãõáéíóúç")
     en = len(tokens & _EN_MARKERS)
+    return pt, en
+
+
+def detect_language(text: str) -> str:
+    pt, en = _language_scores(text)
     return "pt" if pt > en else "en"
 
 
@@ -110,7 +196,125 @@ def _sha256(value: str) -> str:
 
 
 def _has_negation(text: str) -> bool:
-    return bool({token.casefold() for token in _TOKEN_RE.findall(text)} & _NEGATION_TOKENS)
+    """Return True when the text negates its predicate.
+
+    Portuguese negators always count. The English-only token "no" counts only
+    when the text is more English than Portuguese, so Portuguese contractions
+    ("no fim de 2025") and "sem" ("sem custo adicional") are not negation.
+    """
+    tokens = {token.casefold() for token in _TOKEN_RE.findall(text)}
+    if tokens & _NEGATION_TOKENS_PT:
+        return True
+    pt, en = _language_scores(text)
+    pt += len(tokens & _PT_FUNCTION_WORDS)
+    if en >= pt:
+        return bool(tokens & _NEGATION_TOKENS_EN)
+    return bool(tokens & (_NEGATION_TOKENS_EN - {"no"}))
+
+
+def _directions(text: str) -> dict[str, set[int]]:
+    """Return the directional polarities asserted per axis."""
+    found: dict[str, set[int]] = {}
+    for token in _TOKEN_RE.findall(text):
+        term = _DIRECTION_TERMS.get(token.casefold())
+        if term is not None:
+            found.setdefault(term[0], set()).add(term[1])
+    return found
+
+
+def _direction_conflict(claim_text: str, evidence_text: str) -> bool:
+    """Opposite direction on a shared axis, with no same-direction support.
+
+    Negated text is excluded: polarity reasoning under negation is left to the
+    negation rule, so "não caiu" is never treated as "subiu".
+    """
+    if _has_negation(claim_text) or _has_negation(evidence_text):
+        return False
+    claim_directions = _directions(claim_text)
+    evidence_directions = _directions(evidence_text)
+    for axis, claim_polarities in claim_directions.items():
+        evidence_polarities = evidence_directions.get(axis)
+        if not evidence_polarities or len(claim_polarities) != 1:
+            continue
+        if not claim_polarities & evidence_polarities:
+            return True
+    return False
+
+
+DateKey = tuple[str, int, int, int]
+
+
+def _slash_date(first: int, second: int, year: int, language: str) -> DateKey | None:
+    day, month = (first, second) if language == "pt" else (second, first)
+    try:
+        date(year, month, day)
+    except ValueError:
+        return None
+    return ("day", year, month, day)
+
+
+def _extract_dates(text: str) -> set[DateKey]:
+    """Extract dates with the granularity the text asserts.
+
+    Supports ISO `2026-03-10`, `10 de março de 2026`, `1º de abril de 2026`,
+    `10/03/2026` (day/month in Portuguese, month/day in English) and
+    `março de 2026` (month granularity). Invalid calendar dates are ignored.
+    """
+    found: set[DateKey] = set()
+    for match in _DATE_RE.finditer(text):
+        try:
+            parsed = date.fromisoformat(match.group(0))
+        except ValueError:
+            continue
+        found.add(("day", parsed.year, parsed.month, parsed.day))
+    day_spans: list[tuple[int, int]] = []
+    for match in _PT_DAY_DATE_RE.finditer(text):
+        year = int(match.group("year"))
+        month = _PT_MONTHS[match.group("month").casefold()]
+        day = int(match.group("day"))
+        day_spans.append(match.span())
+        try:
+            date(year, month, day)
+        except ValueError:
+            continue
+        found.add(("day", year, month, day))
+    for match in _PT_MONTH_DATE_RE.finditer(text):
+        start = match.start()
+        if any(left <= start < right for left, right in day_spans):
+            continue
+        month = _PT_MONTHS[match.group("month").casefold()]
+        found.add(("month", int(match.group("year")), month, 0))
+    language = detect_language(text)
+    for match in _SLASH_DATE_RE.finditer(text):
+        key = _slash_date(
+            int(match.group("a")), int(match.group("b")), int(match.group("year")), language
+        )
+        if key is not None:
+            found.add(key)
+    return found
+
+
+def _same_date(left: DateKey, right: DateKey) -> bool:
+    """Compare at the coarser of the two asserted granularities."""
+    if left[0] == "month" or right[0] == "month":
+        return left[1:3] == right[1:3]
+    return left == right
+
+
+def _dates_conflict(claim_text: str, evidence_text: str) -> bool:
+    claim_dates = _extract_dates(claim_text)
+    evidence_dates = _extract_dates(evidence_text)
+    if not claim_dates or not evidence_dates:
+        return False
+    return not any(
+        _same_date(left, right) for left in claim_dates for right in evidence_dates
+    )
+
+
+def _strip_dates(text: str) -> str:
+    for pattern in (_DATE_RE, _PT_DAY_DATE_RE, _PT_MONTH_DATE_RE, _SLASH_DATE_RE):
+        text = pattern.sub(" ", text)
+    return text
 
 
 _FACT_TOKEN_RE = re.compile(
@@ -179,7 +383,7 @@ _YEAR_MAX = 2100
 
 
 def _fact_tokens(text: str) -> list[str]:
-    normalized = _DATE_RE.sub(" ", text)
+    normalized = _strip_dates(text)
     for pattern, replacement in _CURRENCY_SYMBOLS:
         normalized = pattern.sub(replacement, normalized)
     return _FACT_TOKEN_RE.findall(normalized.casefold())
@@ -381,7 +585,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "4"
+    version = "5"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
@@ -389,9 +593,7 @@ class RuleStanceDetector:
 
     @staticmethod
     def _date_conflict(claim_text: str, evidence_text: str) -> bool:
-        claim_dates = set(_DATE_RE.findall(claim_text))
-        evidence_dates = set(_DATE_RE.findall(evidence_text))
-        return bool(claim_dates and evidence_dates and claim_dates.isdisjoint(evidence_dates))
+        return _dates_conflict(claim_text, evidence_text)
 
     def detect(
         self,
@@ -416,17 +618,18 @@ class RuleStanceDetector:
                     claim_item.claim.text, item.excerpt
                 )
                 claim_has_numeric = bool(_numeric_facts(claim_item.claim.text))
-                claim_has_date = bool(_DATE_RE.findall(claim_item.claim.text))
+                claim_has_date = bool(_extract_dates(claim_item.claim.text))
                 claim_entities = _entities(claim_item.claim.text)
                 evidence_entities = _entities(item.excerpt)
                 entity_mismatch = bool(
                     claim_entities and not claim_entities.intersection(evidence_entities)
                 )
                 date_conflict = self._date_conflict(claim_item.claim.text, item.excerpt)
-                evidence_has_date = bool(_DATE_RE.findall(item.excerpt))
+                evidence_has_date = bool(_extract_dates(item.excerpt))
                 negation_conflict = _has_negation(claim_item.claim.text) != _has_negation(
                     item.excerpt
                 )
+                direction_conflict = _direction_conflict(claim_item.claim.text, item.excerpt)
                 unverified_structured_fact = (
                     (claim_has_numeric and (not numeric_matched or not numeric_agreement))
                     or (claim_has_date and not evidence_has_date)
@@ -437,7 +640,7 @@ class RuleStanceDetector:
                 # describe the same proposition; otherwise they are unrelated text.
                 same_proposition = lexical >= 0.25
                 if numeric_conflict or (
-                    same_proposition and (date_conflict or negation_conflict)
+                    same_proposition and (date_conflict or negation_conflict or direction_conflict)
                 ):
                     stance = Stance.CONTRADICTS
                 elif unverified_structured_fact:
