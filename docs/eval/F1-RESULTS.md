@@ -13,7 +13,7 @@ Bootstrap: 10,000
 | Path | Status |
 |---|---|
 | A — multilingual direct NLI | measured, EVAL_ONLY |
-| B — translate-then-verify | measured, EVAL_ONLY, non-commercial |
+| B — translate-then-verify | measured; EVAL_ONLY pending completion of OPUS source-license inventory |
 | C — rules-only | measured ablation |
 
 ## Metrics
@@ -102,3 +102,8 @@ The status row above describing Path B as EVAL_ONLY, non-commercial is corrected
 The implementation defect was that MarianTranslationBackend.provenance_version hard-coded license=EVAL_ONLY, contradicting the registry. The backend now accepts an explicit license_level parameter and defaults to COMMERCIAL_DEFAULT, matching the current Path B registry; restricted uses can explicitly pass EVAL_ONLY. Regression tests assert both provenance values and reject unknown levels.
 
 **Measurement integrity:** this is a dated policy/provenance correction only. No Golden, corpus, threshold, metric, historical evaluation, or result has been rewritten or rerun. The F1 numbers above remain exactly as measured; interpret the former Path B status label as superseded by this correction.
+
+
+## E5 Path B precautionary license status — 2026-10-09
+
+The runtime classification for Path B is temporarily **EVAL_ONLY until the OPUS source-license inventory is complete**. This supersedes the E4 operational classification of Path B as COMMERCIAL_DEFAULT for current use, while preserving the historical F1 measurement and its original metrics. This temporary restriction is a conservative operational decision; it is not a finding that OPUS is non-commercial (NC). The normative registry, ADR-005 and all translation call sites now use this status explicitly. No evaluation was run, and no Golden, corpus, threshold, manifest, or historical metric was changed.
