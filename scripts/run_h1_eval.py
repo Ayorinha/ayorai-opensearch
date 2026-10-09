@@ -62,7 +62,10 @@ def _suite(cases: list[dict[str, Any]], corpus: dict[str, dict[str, Any]]) -> di
     b_backend = TransformersNLIBackend(
         B_MODEL, B_REVISION, license_level="EVAL_ONLY", evaluation_mode=True
     )
-    translator = MarianTranslationBackend(B_TRANSLATOR, B_TRANSLATOR_REVISION)
+    translator = MarianTranslationBackend(
+        B_TRANSLATOR, B_TRANSLATOR_REVISION,
+        license_level=EVAL_ONLY_LEVEL, evaluation_mode=True,
+    )
     a_base = NLIStanceDetector(
         a_backend, model=A_MODEL, version=a_backend.provenance_version,
         window_size=512, window_overlap=64, tie_precedence="contradicts"
