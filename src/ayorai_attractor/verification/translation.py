@@ -3,21 +3,41 @@ from __future__ import annotations
 import hashlib
 import importlib
 
+_ALLOWED_LICENSE_LEVELS = frozenset({"COMMERCIAL_DEFAULT", "EVAL_ONLY"})
+
 
 class MarianTranslationBackend:
-    """Lazy CPU MarianMT backend pinned to an immutable model revision."""
+    """Lazy CPU MarianMT backend pinned to an immutable model revision.
 
-    def __init__(self, model_id: str, model_revision: str) -> None:
+    The license level must follow docs/legal/MODEL-LICENSE-POLICY.md.
+    The default reflects the current Path B registry classification; callers
+    can pass EVAL_ONLY when using a separately restricted model.
+    """
+
+    def __init__(
+        self,
+        model_id: str,
+        model_revision: str,
+        *,
+        license_level: str = "COMMERCIAL_DEFAULT",
+    ) -> None:
         if not model_id.strip() or not model_revision.strip():
             raise ValueError("model_id and model_revision are required")
+        if license_level not in _ALLOWED_LICENSE_LEVELS:
+            allowed = ", ".join(sorted(_ALLOWED_LICENSE_LEVELS))
+            raise ValueError(f"license_level must be one of: {allowed}")
         self.model_id = model_id
         self.model_revision = model_revision
+        self.license_level = license_level
         self.__dict__["_tokenizer"] = None
         self.__dict__["_model"] = None
 
     @property
     def provenance_version(self) -> str:
-        return f"{self.model_id}@{self.model_revision}|license=EVAL_ONLY"
+        return (
+            f"{self.model_id}@{self.model_revision}"
+            f"|license={self.license_level}"
+        )
 
     def _load(self) -> None:
         if self.__dict__["_model"] is not None:
