@@ -10,6 +10,16 @@ def test_translation_backend_requires_explicit_license_level() -> None:
         MarianTranslationBackend("fixture-model", "immutable-revision")
 
 
+def test_translation_commercial_default_records_guard_state() -> None:
+    backend = MarianTranslationBackend(
+        "fixture-model",
+        "immutable-revision",
+        license_level="COMMERCIAL_DEFAULT",
+    )
+
+    assert backend.provenance_version.endswith("license_opt_in=false")
+
+
 def test_translation_eval_only_is_rejected_without_evaluation_or_opt_in() -> None:
     backend = MarianTranslationBackend(
         "fixture-model",
