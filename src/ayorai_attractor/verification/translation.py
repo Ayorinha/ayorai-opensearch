@@ -3,15 +3,17 @@ from __future__ import annotations
 import hashlib
 import importlib
 
+from .nli import _license_guard
+
 _ALLOWED_LICENSE_LEVELS = frozenset({"COMMERCIAL_DEFAULT", "EVAL_ONLY"})
 
 
 class MarianTranslationBackend:
     """Lazy CPU MarianMT backend pinned to an immutable model revision.
 
-    The license level must follow docs/legal/MODEL-LICENSE-POLICY.md.
-    The default reflects the current Path B registry classification; callers
-    can pass EVAL_ONLY when using a separately restricted model.
+    The license level must be supplied explicitly from
+    docs/legal/MODEL-LICENSE-POLICY.md. Restricted models use the shared NLI
+    license guard; provenance records the active guard state.
     """
 
     def __init__(
@@ -19,7 +21,9 @@ class MarianTranslationBackend:
         model_id: str,
         model_revision: str,
         *,
-        license_level: str = "COMMERCIAL_DEFAULT",
+        license_level: str,
+        evaluation_mode: bool = False,
+        license_opt_in: bool = False,
     ) -> None:
         if not model_id.strip() or not model_revision.strip():
             raise ValueError("model_id and model_revision are required")
@@ -29,14 +33,21 @@ class MarianTranslationBackend:
         self.model_id = model_id
         self.model_revision = model_revision
         self.license_level = license_level
+        self.evaluation_mode = evaluation_mode
+        self.license_opt_in = license_opt_in
         self.__dict__["_tokenizer"] = None
         self.__dict__["_model"] = None
 
     @property
     def provenance_version(self) -> str:
+        gate = _license_guard(
+            self.license_level,
+            evaluation_mode=self.evaluation_mode,
+            license_opt_in=self.license_opt_in,
+        )
         return (
             f"{self.model_id}@{self.model_revision}"
-            f"|license={self.license_level}"
+            f"|license={self.license_level}|{gate}"
         )
 
     def _load(self) -> None:
