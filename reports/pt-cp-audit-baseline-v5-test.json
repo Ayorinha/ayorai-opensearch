@@ -1,0 +1,64 @@
+{
+  "detector": "RuleStanceDetector v5",
+  "cases": 68,
+  "cases_sha256": "3aa702bc7bd04185389d9201e619ca7637508a5fb1aac774bdf642bf4362382c",
+  "accuracy": 0.7647,
+  "macro_f1": 0.7508,
+  "per_class": {
+    "supports": {
+      "precision": 0.7586,
+      "recall": 0.8148,
+      "f1": 0.7857,
+      "support": 27
+    },
+    "contradicts": {
+      "precision": 0.8,
+      "recall": 0.8,
+      "f1": 0.8,
+      "support": 25
+    },
+    "neutral": {
+      "precision": 0.7143,
+      "recall": 0.625,
+      "f1": 0.6667,
+      "support": 16
+    }
+  },
+  "confusion": {
+    "supports": {
+      "supports": 22,
+      "contradicts": 2,
+      "neutral": 3
+    },
+    "contradicts": {
+      "supports": 4,
+      "contradicts": 20,
+      "neutral": 1
+    },
+    "neutral": {
+      "supports": 3,
+      "contradicts": 3,
+      "neutral": 10
+    }
+  },
+  "false_support_rate": 0.1707,
+  "false_contradiction_rate": 0.1163,
+  "predicted_distribution": {
+    "neutral": 14,
+    "supports": 29,
+    "contradicts": 25
+  },
+  "accuracy_by_type": {
+    "armadilha-condicao": "1/2",
+    "armadilha-numero": "0/1",
+    "direcao": "1/1",
+    "fracao": "2/2",
+    "mutacao-numero": "13/14",
+    "negacao": "3/3",
+    "numero": "4/9",
+    "parafrase": "5/8",
+    "recuperacao-errada": "9/13",
+    "regra-antiga": "1/1",
+    "verbatim": "13/14"
+  }
+}

@@ -6,12 +6,16 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ### Verification
 
+- Rule stance (detector version 6): Portuguese number words, legal duplicates `40 (quarenta)`, fractions and multipliers, duration conversion (1 ano = 12 meses), `vezes`/`dias-multa`, set semantics per fact, comparative bounds not read as negation, competing named actors block support. New module `verification/pt_normalize.py`.
+
 - Rule stance (detector version 5): negation is now language dependent; Portuguese contractions (`no`, `na`, `nos`, `nas`) and `sem` are no longer read as negation, and `jamais`, `nem`, `nenhum(a)`, `ninguém` are.
 - Rule stance: dates are recognised in Portuguese written form (`10 de março de 2026`, `1º de abril de 2026`), slash form (`10/03/2026`, day/month in Portuguese and month/day in English) and month form (`março de 2026`), compared only at the asserted granularity.
 - Rule stance: opposite directional predicates on the same proposition (`subiu`/`caiu`, `aumentou`/`diminuiu`, `aprovou`/`rejeitou`, `rose`/`fell`) are classified as CONTRADICTS even when the numbers coincide.
 - These fixes come from code review and new adversarial tests; no Golden case, threshold or frozen artifact was used or changed, and no new evaluation was run.
 
 ### Evaluation
+
+- PT-CP-Audit: realistic audit simulation on the real Brazilian Penal Code (152 cases, dev/test by provision). Rule stance v5 → v6 on the held-out test (hand-written cases): false-support rate 25.9% → 14.8%, accuracy 65.0% → 72.5%, McNemar p ≈ 0.45 (directional). See `evals/pt-cp-audit/RESULTS.md`.
 
 - F1.2 (pre-registered in `docs/eval/PREREGISTRATION-F1.2.md`, measured once): rule path C v4 → v5 left balanced accuracy unchanged on Golden v0 (42.73%) and v0.1 (48.18%), McNemar p = 1.0, with no regression. Four wrong `REFUTED` verdicts became wrong `UNVERIFIED`. Current path C accuracy on Golden v0 is 23.33% (the 26.67% in F1 was measured on older rule code). See `docs/eval/F1.2-RESULTS.md`.
 
