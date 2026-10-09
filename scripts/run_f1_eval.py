@@ -443,6 +443,7 @@ def main() -> None:
         )
         b_translator = MarianTranslationBackend(
             B_TRANSLATOR_MODEL, B_TRANSLATOR_REVISION,
+            license_level=EVAL_ONLY_LEVEL, evaluation_mode=True,
         )
         b_detector = TranslatedNLIStanceDetector(
             b_backend, b_translator,
