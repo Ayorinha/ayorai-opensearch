@@ -4,6 +4,13 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+### Verification
+
+- Rule stance (detector version 5): negation is now language dependent; Portuguese contractions (`no`, `na`, `nos`, `nas`) and `sem` are no longer read as negation, and `jamais`, `nem`, `nenhum(a)`, `ninguém` are.
+- Rule stance: dates are recognised in Portuguese written form (`10 de março de 2026`, `1º de abril de 2026`), slash form (`10/03/2026`, day/month in Portuguese and month/day in English) and month form (`março de 2026`), compared only at the asserted granularity.
+- Rule stance: opposite directional predicates on the same proposition (`subiu`/`caiu`, `aumentou`/`diminuiu`, `aprovou`/`rejeitou`, `rose`/`fell`) are classified as CONTRADICTS even when the numbers coincide.
+- These fixes come from code review and new adversarial tests; no Golden case, threshold or frozen artifact was used or changed, and no new evaluation was run.
+
 ### Governance
 
 - Added authorship, trademark, DCO, licensing and release-provenance documentation.
