@@ -93,3 +93,12 @@ Claude audit approved E3 measurement at commit `7309a24107d736395c2b64f48fc73737
 - E3 JSON confirmation: **D1 unsupported_case_count = 18 (v0), 8 (v0.1); D2 = 14 (v0), 1 (v0.1)**.
 - **Interpretation:** LettuceDetect is a detector of unsupported/invented content, not a source-conflict resolver. Of the 23 negative cases under the global binary gold, **21 are PARTIALLY_SUPPORTED or CONFLICTING**, so most negatives are outside the detector's intended semantic target.
 - The preregistered D1 expectation was wrong in the opposite direction: the English-only detector was expected to tend toward `NAO_SUSTENTADO` for Portuguese claims, but the observed D1 behavior did not produce that expected failure mode. This is recorded as an outcome, not used to adjust the method.
+
+
+## E4 License-policy correction — 2026-10-08
+
+The status row above describing Path B as EVAL_ONLY, non-commercial is corrected by the normative registry at docs/legal/MODEL-LICENSE-POLICY.md, verified 2026-10-03. Under its uniform eligibility rule, the registered Path B translation model and NLI model are COMMERCIAL_DEFAULT; the registry retains an explicit legal-risk note for the translation model because the OPUS source-license inventory is incomplete. This classification is a policy classification, not legal advice or a guarantee of unrestricted commercial use.
+
+The implementation defect was that MarianTranslationBackend.provenance_version hard-coded license=EVAL_ONLY, contradicting the registry. The backend now accepts an explicit license_level parameter and defaults to COMMERCIAL_DEFAULT, matching the current Path B registry; restricted uses can explicitly pass EVAL_ONLY. Regression tests assert both provenance values and reject unknown levels.
+
+**Measurement integrity:** this is a dated policy/provenance correction only. No Golden, corpus, threshold, metric, historical evaluation, or result has been rewritten or rerun. The F1 numbers above remain exactly as measured; interpret the former Path B status label as superseded by this correction.
