@@ -18,6 +18,13 @@ from .numeric import (
     parse_number,
     relative_difference,
 )
+from .pt_normalize import (
+    GENERIC_NAME_WORDS,
+    extract_quantities,
+    named_entities,
+    normalize_numerals,
+    strip_accents,
+)
 
 
 class LLMStancePayload(BaseModel):
@@ -203,13 +210,92 @@ def _has_negation(text: str) -> bool:
     ("no fim de 2025") and "sem" ("sem custo adicional") are not negation.
     """
     tokens = {token.casefold() for token in _TOKEN_RE.findall(text)}
-    if tokens & _NEGATION_TOKENS_PT:
+    if _predicate_negators(text) & _NEGATION_TOKENS_PT:
         return True
     pt, en = _language_scores(text)
     pt += len(tokens & _PT_FUNCTION_WORDS)
     if en >= pt:
         return bool(tokens & _NEGATION_TOKENS_EN)
     return bool(tokens & (_NEGATION_TOKENS_EN - {"no"}))
+
+
+# "não superior a", "não pode ser superior", "não excede", "nem superior": a
+# bound on a quantity, not a negated predicate.
+_COMPARATIVES = frozenset(
+    {
+        "superior", "superiores", "inferior", "inferiores", "excede", "exceder",
+        "exceda", "excedam", "ultrapassa", "ultrapassar", "ultrapasse", "maior",
+        "maiores", "menor", "menores", "mais", "menos",
+    }
+)
+_FUNCTION_WORDS = frozenset(
+    {
+        "das", "dos", "para", "com", "que", "pela", "pelo", "pelos", "pelas", "uma",
+        "por", "entre", "sobre", "até", "ate", "sem", "mais", "menos", "seu", "sua",
+        "seus", "suas", "ser", "ter", "foi", "são", "sao", "não", "nao", "quando",
+        "como", "este", "esta", "esse", "essa", "nos", "nas", "aos", "the", "and",
+        "for", "with", "was", "were", "from", "that", "this",
+    }
+)
+
+
+def _content_overlap(claim_text: str, evidence_text: str) -> float:
+    """Share of claim content words found in the evidence.
+
+    Numbers, number words, units and function words are excluded, so a shared
+    quantity ("seis meses") does not count as a shared subject.
+    """
+
+    def content(text: str) -> set[str]:
+        return {
+            word
+            for word in (strip_accents(t.casefold()) for t in _TOKEN_RE.findall(text))
+            if len(word) > 2
+            and not word.isdigit()
+            and word not in _STOPWORDS
+            and word not in _FUNCTION_WORDS
+            and word not in _DURATION_WORDS
+            and word not in _MEASURE_WORDS
+            and normalize_numerals(word) == word
+        }
+
+    claim_words = content(claim_text)
+    if not claim_words:
+        return 0.0
+    return len(claim_words & content(evidence_text)) / len(claim_words)
+
+
+def _predicate_negators(text: str) -> set[str]:
+    """Negator tokens that negate a predicate (comparative bounds excluded)."""
+    tokens = [token.casefold() for token in _TOKEN_RE.findall(text)]
+    found: set[str] = set()
+    for index, token in enumerate(tokens):
+        if token not in _NEGATION_TOKENS_PT:
+            continue
+        window = tokens[index + 1 : index + 5]
+        if any(word in _COMPARATIVES for word in window):
+            continue
+        found.add(token)
+    return found
+
+
+def _competing_entity(claim_text: str, evidence_text: str) -> bool:
+    """The evidence names actors and none of the claim's named actors is among them."""
+    claim_names = named_entities(claim_text)
+    evidence_names = named_entities(evidence_text)
+    if not claim_names or not evidence_names:
+        return False
+    evidence_words = set(_TOKEN_RE.findall(strip_accents(evidence_text.casefold())))
+
+    def present(name: str) -> bool:
+        distinctive = [
+            word
+            for word in name.split()
+            if word not in GENERIC_NAME_WORDS and word not in {"de", "do", "da", "dos", "das", "e"}
+        ]
+        return bool(distinctive) and all(word in evidence_words for word in distinctive)
+
+    return not any(present(name) for name in claim_names)
 
 
 def _directions(text: str) -> dict[str, set[int]]:
@@ -378,6 +464,24 @@ _ATTRIBUTE_ALIASES = {
     "margem": "margin",
     "margin": "margin",
 }
+# Durations share one scale per family so "1 ano" and "12 meses" compare.
+_DURATION_WORDS: dict[str, tuple[str, Decimal]] = {
+    "ano": ("months", Decimal(12)), "anos": ("months", Decimal(12)),
+    "year": ("months", Decimal(12)), "years": ("months", Decimal(12)),
+    "mês": ("months", Decimal(1)), "mes": ("months", Decimal(1)),
+    "meses": ("months", Decimal(1)), "month": ("months", Decimal(1)),
+    "months": ("months", Decimal(1)),
+    "dia": ("days", Decimal(1)), "dias": ("days", Decimal(1)),
+    "day": ("days", Decimal(1)), "days": ("days", Decimal(1)),
+    "hora": ("hours", Decimal(1)), "horas": ("hours", Decimal(1)),
+    "hour": ("hours", Decimal(1)), "hours": ("hours", Decimal(1)),
+}
+_MEASURE_WORDS = {
+    "vez": "times", "vezes": "times", "times": "times",
+    "diasmulta": "day_fines", "diamulta": "day_fines",
+}
+_DAY_FINE_RE = re.compile(r"\bdias?-multa\b", re.IGNORECASE)
+_EXACT_UNITS = frozenset({"year", "fraction", "multiplier"})
 _YEAR_MIN = 1900
 _YEAR_MAX = 2100
 
@@ -441,9 +545,10 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
     `unit` is `currency:scale` for money, `percent`, `year`, `ms`,
     `count:<noun>` or `scalar`. Extraction never raises on free text.
     """
-    tokens = _fact_tokens(text)
+    quantity_facts, remaining = extract_quantities(_DAY_FINE_RE.sub(" diasmulta ", text))
+    tokens = _fact_tokens(normalize_numerals(remaining))
     entities = _entities(text)
-    facts: list[tuple[str, str, str]] = []
+    facts: list[tuple[str, str, str]] = list(quantity_facts)
     for index, token in enumerate(tokens):
         if not _is_number(token):
             continue
@@ -459,14 +564,21 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             unit = "ms"
         elif following in _COUNT_NOUNS:
             unit = f"count:{_COUNT_NOUNS[following]}"
+        elif following in _DURATION_WORDS:
+            family, factor = _DURATION_WORDS[following]
+            unit = f"duration:{family}:{factor}"
+        elif following in _MEASURE_WORDS:
+            unit = f"measure:{_MEASURE_WORDS[following]}"
         elif token.isdigit() and len(token) == 4 and _YEAR_MIN <= int(token) <= _YEAR_MAX:
             unit = "year"
         else:
             unit = "scalar"
         if unit == "year":
             attribute = "year"
-        elif unit.startswith("count:"):
-            attribute = unit.split(":", 1)[1]
+        elif unit.startswith("duration:"):
+            attribute = unit.rsplit(":", 1)[0]
+        elif unit.startswith(("count:", "measure:")):
+            attribute = unit
         else:
             attribute = _attribute(tokens, index, entities)
         facts.append((token.replace(" ", ""), unit, attribute))
@@ -477,11 +589,21 @@ def _locale_for(text: str) -> NumericLocale:
     return NumericLocale.PT_BR if detect_language(text) == "pt" else NumericLocale.EN_US
 
 
-def _fact_value(raw: str, unit: str, locale: NumericLocale) -> Decimal | None:
+def _fact_value(
+    raw: str, unit: str, locale: NumericLocale, *, as_written: bool = False
+) -> Decimal | None:
+    """Numeric value of a fact; durations are scaled to their family unless as_written."""
+    if unit in {"fraction", "multiplier"}:
+        numerator, _, denominator = raw.partition("/")
+        return Decimal(numerator) / Decimal(denominator or "1")
     try:
         value = parse_number(raw, locale=locale)
     except (ValueError, ArithmeticError):
         return None
+    if unit.startswith("duration:"):
+        return value if as_written else value * Decimal(unit.rsplit(":", 1)[1])
+    if unit.startswith("measure:"):
+        return value
     if ":" in unit and not unit.startswith("count:"):
         value *= _SCALE_FACTORS.get(unit.split(":", 1)[1], Decimal(1))
     return value
@@ -490,6 +612,8 @@ def _fact_value(raw: str, unit: str, locale: NumericLocale) -> Decimal | None:
 def _comparable(left_unit: str, right_unit: str) -> bool:
     if left_unit == right_unit:
         return True
+    if left_unit.startswith("duration:") and right_unit.startswith("duration:"):
+        return left_unit.rsplit(":", 1)[0] == right_unit.rsplit(":", 1)[0]
     left_money = left_unit.split(":", 1)[0] in _CURRENCIES
     right_money = right_unit.split(":", 1)[0] in _CURRENCIES
     return left_money and right_money and left_unit.split(":")[0] == right_unit.split(":")[0]
@@ -504,30 +628,63 @@ def _entities(text: str) -> set[str]:
     return {match.group("name").casefold() for match in _ENTITY_RE.finditer(text)}
 
 
-def _numeric_facts_align(
-    claim_text: str, evidence_text: str
-) -> tuple[bool, bool, bool]:
-    """Return (conflict, agreement, every_claim_fact_matched).
+@dataclass(frozen=True)
+class NumericAlignment:
+    """Outcome of comparing claim facts with evidence facts.
 
-    Facts match only on equal attribute and comparable unit; `unknown`
-    attributes never match, so an unverifiable number cannot yield SUPPORTS.
-    Each side is parsed with the locale of its own text (pt-BR vs en-US).
+    `generic_*` flags come from units whose attribute is the unit itself
+    (durations, measures, fractions, multipliers). They carry no subject, so the
+    detector only trusts them when claim and evidence share the proposition.
+    """
+
+    specific_conflict: bool = False
+    generic_conflict: bool = False
+    specific_agreement: bool = False
+    generic_agreement: bool = False
+    all_matched: bool = True
+
+    @property
+    def conflict(self) -> bool:
+        return self.specific_conflict or self.generic_conflict
+
+    @property
+    def agreement(self) -> bool:
+        return self.specific_agreement or self.generic_agreement
+
+
+def _is_generic(unit: str) -> bool:
+    return unit.startswith(("duration:", "measure:")) or unit in {"fraction", "multiplier"}
+
+
+def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
+    """Compare every claim fact with the evidence facts (set semantics).
+
+    A claim fact agrees when some comparable evidence fact is equal within
+    tolerance, and conflicts only when comparable facts exist and none is equal.
+    `unknown` attributes never match. Bare evidence numbers may confirm a claim
+    fact, but only when another claim fact already agreed on a typed unit, and
+    they never contradict. Each side is parsed with its own locale.
     """
     claim_entities = _entities(claim_text)
     evidence_entities = _entities(evidence_text)
     if claim_entities and not claim_entities.intersection(evidence_entities):
-        return False, False, False
+        return NumericAlignment(all_matched=False)
 
     claim_facts = _numeric_facts(claim_text)
     if not claim_facts:
-        return False, False, True
+        return NumericAlignment()
     evidence_facts = _numeric_facts(evidence_text)
     claim_locale = _locale_for(claim_text)
     evidence_locale = _locale_for(evidence_text)
 
-    conflict = False
-    agreement = False
-    matched_claim_facts = 0
+    flags = {
+        "specific_conflict": False,
+        "generic_conflict": False,
+        "specific_agreement": False,
+        "generic_agreement": False,
+    }
+    matched = 0
+    pending_confirmations = 0
     for left, left_unit, left_attribute in claim_facts:
         left_value = _fact_value(left, left_unit, claim_locale)
         if left_value is None or left_attribute == "unknown":
@@ -539,18 +696,57 @@ def _numeric_facts_align(
             for value in [_fact_value(right, right_unit, evidence_locale)]
             if value is not None
         ]
-        if not matches:
+        # Calendar years, fractions and multipliers are exact; magnitudes allow
+        # the ADR-002 relative tolerance.
+        tolerance = Decimal(0) if left_unit in _EXACT_UNITS else DEFAULT_RELATIVE_TOLERANCE
+        kind = "generic" if _is_generic(left_unit) else "specific"
+        if any(relative_difference(left_value, v) <= tolerance for v in matches):
+            matched += 1
+            flags[f"{kind}_agreement"] = True
             continue
-        matched_claim_facts += 1
-        # Calendar years are identifiers, not magnitudes: they must match exactly.
-        tolerance = Decimal(0) if left_unit == "year" else DEFAULT_RELATIVE_TOLERANCE
-        for right_value in matches:
-            if relative_difference(left_value, right_value) > tolerance:
-                conflict = True
-            else:
-                agreement = True
+        if _confirmed_as_written(
+            left, left_unit, claim_locale, evidence_facts, evidence_locale, tolerance
+        ):
+            pending_confirmations += 1
+            continue
+        if matches:
+            matched += 1
+            flags[f"{kind}_conflict"] = True
+    typed_agreement = flags["specific_agreement"] or flags["generic_agreement"]
+    if typed_agreement:
+        matched += pending_confirmations
+    return NumericAlignment(**flags, all_matched=matched == len(claim_facts))
 
-    return conflict, agreement, matched_claim_facts == len(claim_facts)
+
+def _confirmed_as_written(
+    left: str,
+    left_unit: str,
+    claim_locale: NumericLocale,
+    evidence_facts: list[tuple[str, str, str]],
+    evidence_locale: NumericLocale,
+    tolerance: Decimal,
+) -> bool:
+    """A claim duration/scalar equals a bare evidence number as written."""
+    if not (left_unit.startswith("duration:") or left_unit == "scalar"):
+        return False
+    written = _fact_value(left, left_unit, claim_locale, as_written=True)
+    if written is None:
+        return False
+    for right, right_unit, _ in evidence_facts:
+        if right_unit not in {"scalar", "year"} and not right_unit.startswith("duration:"):
+            continue
+        value = _fact_value(right, right_unit, evidence_locale, as_written=True)
+        if value is not None and relative_difference(written, value) <= tolerance:
+            return True
+    return False
+
+
+def _numeric_facts_align(
+    claim_text: str, evidence_text: str
+) -> tuple[bool, bool, bool]:
+    """Return (conflict, agreement, every_claim_fact_matched)."""
+    alignment = _numeric_alignment(claim_text, evidence_text)
+    return alignment.conflict, alignment.agreement, alignment.all_matched
 
 
 def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
@@ -585,7 +781,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "5"
+    version = "6"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
@@ -614,16 +810,26 @@ class RuleStanceDetector:
                     if len(token) > 2
                 }
                 lexical = len(claim_tokens & evidence_tokens) / max(len(claim_tokens), 1)
-                numeric_conflict, numeric_agreement, numeric_matched = _numeric_facts_align(
-                    claim_item.claim.text, item.excerpt
+                alignment = _numeric_alignment(claim_item.claim.text, item.excerpt)
+                # Generic units (durations, fractions, measures) carry no subject:
+                # they decide only when claim and evidence share the proposition.
+                shares_proposition = (
+                    _content_overlap(claim_item.claim.text, item.excerpt) >= 0.25
                 )
+                numeric_conflict = alignment.specific_conflict or (
+                    alignment.generic_conflict and shares_proposition
+                )
+                numeric_agreement = alignment.specific_agreement or (
+                    alignment.generic_agreement and shares_proposition
+                )
+                numeric_matched = alignment.all_matched
                 claim_has_numeric = bool(_numeric_facts(claim_item.claim.text))
                 claim_has_date = bool(_extract_dates(claim_item.claim.text))
                 claim_entities = _entities(claim_item.claim.text)
                 evidence_entities = _entities(item.excerpt)
                 entity_mismatch = bool(
                     claim_entities and not claim_entities.intersection(evidence_entities)
-                )
+                ) or _competing_entity(claim_item.claim.text, item.excerpt)
                 date_conflict = self._date_conflict(claim_item.claim.text, item.excerpt)
                 evidence_has_date = bool(_extract_dates(item.excerpt))
                 negation_conflict = _has_negation(claim_item.claim.text) != _has_negation(
