@@ -1,0 +1,90 @@
+{"evidence_id": "art75", "label": "supports", "type": "parafrase", "claim": "Pelo Código Penal, ninguém pode cumprir pena de prisão por mais de 40 anos."}
+{"evidence_id": "art27", "label": "supports", "type": "parafrase", "claim": "Menores de dezoito anos não respondem criminalmente pelo Código Penal e ficam sujeitos à legislação especial."}
+{"evidence_id": "art49", "label": "supports", "type": "numero", "claim": "A multa penal varia entre 10 e 360 dias-multa."}
+{"evidence_id": "art50", "label": "supports", "type": "numero", "claim": "O condenado tem 10 dias, depois do trânsito em julgado, para pagar a multa."}
+{"evidence_id": "art103", "label": "supports", "type": "numero", "claim": "O ofendido perde o direito de queixa ou representação se não o exercer em seis meses contados do dia em que soube quem é o autor do crime."}
+{"evidence_id": "art103_paru", "label": "supports", "type": "numero", "claim": "Nos crimes de violência doméstica e familiar contra a mulher, a ofendida tem 12 meses para exercer o direito de queixa ou de representação."}
+{"evidence_id": "art109_inc1", "label": "supports", "type": "numero-extenso", "claim": "Se a pena máxima for superior a 12 anos, a prescrição ocorre em 20 anos."}
+{"evidence_id": "art109_inc6", "label": "supports", "type": "numero", "claim": "Crimes cuja pena máxima é inferior a um ano prescrevem em três anos."}
+{"evidence_id": "art115", "label": "supports", "type": "parafrase", "claim": "Os prazos de prescrição caem pela metade quando o autor tinha menos de 21 anos na época do crime."}
+{"evidence_id": "art83_inc1", "label": "supports", "type": "fracao", "claim": "Para obter livramento condicional, o condenado não reincidente em crime doloso e com bons antecedentes precisa ter cumprido mais de um terço da pena."}
+{"evidence_id": "art83_inc2", "label": "supports", "type": "fracao", "claim": "O reincidente em crime doloso só obtém livramento condicional depois de cumprir mais da metade da pena."}
+{"evidence_id": "art83_inc5", "label": "supports", "type": "fracao", "claim": "Nos crimes hediondos, o livramento condicional exige o cumprimento de mais de dois terços da pena, se o apenado não for reincidente específico."}
+{"evidence_id": "art77", "label": "supports", "type": "numero", "claim": "A suspensão condicional da pena alcança penas de até dois anos e pode durar de dois a quatro anos."}
+{"evidence_id": "art77_par2", "label": "supports", "type": "numero", "claim": "Para condenados maiores de setenta anos, a pena de até quatro anos pode ser suspensa por quatro a seis anos."}
+{"evidence_id": "art33_par2_alin-a", "label": "supports", "type": "parafrase", "claim": "Quem é condenado a pena superior a oito anos deve começar a cumpri-la em regime fechado."}
+{"evidence_id": "art33_par2_alin-c", "label": "supports", "type": "parafrase", "claim": "O condenado não reincidente com pena igual ou inferior a quatro anos pode começar a cumpri-la no regime aberto."}
+{"evidence_id": "art44_inc1", "label": "supports", "type": "parafrase", "claim": "A pena de prisão não superior a quatro anos pode ser substituída por restritiva de direitos quando o crime não é cometido com violência ou grave ameaça."}
+{"evidence_id": "art60_par1", "label": "supports", "type": "parafrase", "claim": "O juiz pode aumentar a multa até o triplo se, mesmo aplicada no máximo, ela for ineficaz diante da situação econômica do réu."}
+{"evidence_id": "art60_par2", "label": "supports", "type": "numero", "claim": "Uma pena privativa de liberdade não superior a seis meses pode ser substituída por multa."}
+{"evidence_id": "art49_par1", "label": "supports", "type": "numero", "claim": "O valor do dia-multa não pode ser superior a cinco vezes o maior salário mínimo vigente."}
+{"evidence_id": "art100_par1", "label": "supports", "type": "entidade", "claim": "A ação penal pública é promovida pelo Ministério Público."}
+{"evidence_id": "art26_paru", "label": "supports", "type": "fracao", "claim": "Em caso de perturbação da saúde mental, a pena pode ser reduzida de um a dois terços."}
+{"evidence_id": "art110", "label": "supports", "type": "fracao", "claim": "Depois do trânsito em julgado, os prazos de prescrição aumentam de um terço se o condenado for reincidente."}
+{"evidence_id": "art117_inc1", "label": "supports", "type": "parafrase", "claim": "O recebimento da denúncia ou da queixa interrompe o curso da prescrição."}
+{"evidence_id": "art1", "label": "supports", "type": "negacao", "claim": "Pelo princípio da anterioridade, não há crime sem lei anterior que o defina."}
+{"evidence_id": "art83_inc3_alin-b", "label": "supports", "type": "numero", "claim": "Para o livramento condicional, é preciso comprovar que o condenado não cometeu falta grave nos últimos 12 meses."}
+{"evidence_id": "art44_par4", "label": "supports", "type": "numero", "claim": "Na conversão da pena restritiva de direitos em prisão, deve ser respeitado o saldo mínimo de trinta dias de detenção ou reclusão."}
+{"evidence_id": "art109_inc3", "label": "supports", "type": "numero-extenso", "claim": "A prescrição ocorre em doze anos quando o máximo da pena é superior a quatro anos e não excede oito."}
+{"evidence_id": "art33_par1_alin-c", "label": "supports", "type": "parafrase", "claim": "O regime aberto é cumprido em casa de albergado ou estabelecimento adequado."}
+{"evidence_id": "art75_par1", "label": "supports", "type": "parafrase", "claim": "Se a soma das penas passar de 40 anos, elas devem ser unificadas para respeitar o limite máximo."}
+{"evidence_id": "art75", "label": "contradicts", "type": "regra-antiga", "claim": "O tempo máximo de cumprimento de pena no Brasil é de 30 anos."}
+{"evidence_id": "art27", "label": "contradicts", "type": "numero", "claim": "A maioridade penal no Brasil começa aos 16 anos."}
+{"evidence_id": "art49", "label": "contradicts", "type": "numero", "claim": "A pena de multa vai de no mínimo 10 a no máximo 100 dias-multa."}
+{"evidence_id": "art50", "label": "contradicts", "type": "numero", "claim": "A multa deve ser paga em até 30 dias depois do trânsito em julgado da sentença."}
+{"evidence_id": "art103", "label": "contradicts", "type": "numero", "claim": "O ofendido tem um ano para exercer o direito de queixa, contado do dia em que soube quem é o autor do crime."}
+{"evidence_id": "art109_inc1", "label": "contradicts", "type": "numero-extenso", "claim": "Se o máximo da pena é superior a doze anos, a prescrição ocorre em quinze anos."}
+{"evidence_id": "art109_inc6", "label": "contradicts", "type": "regra-antiga", "claim": "Crimes com pena máxima inferior a um ano prescrevem em dois anos."}
+{"evidence_id": "art115", "label": "contradicts", "type": "numero", "claim": "Os prazos de prescrição são reduzidos de metade quando o criminoso, na data da sentença, é maior de 60 anos."}
+{"evidence_id": "art83_inc1", "label": "contradicts", "type": "fracao", "claim": "O condenado não reincidente e com bons antecedentes obtém livramento condicional depois de cumprir um quarto da pena."}
+{"evidence_id": "art83_inc2", "label": "contradicts", "type": "fracao", "claim": "O reincidente em crime doloso precisa cumprir mais de dois terços da pena para obter o livramento condicional."}
+{"evidence_id": "art77", "label": "contradicts", "type": "numero", "claim": "A suspensão condicional da pena se aplica a penas privativas de liberdade de até quatro anos, por dois a quatro anos."}
+{"evidence_id": "art33_par2_alin-a", "label": "contradicts", "type": "parafrase", "claim": "O condenado a pena superior a oito anos pode começar a cumpri-la em regime semiaberto."}
+{"evidence_id": "art44_inc1", "label": "contradicts", "type": "negacao", "claim": "A substituição por pena restritiva de direitos é permitida mesmo quando o crime é cometido com violência ou grave ameaça à pessoa."}
+{"evidence_id": "art60_par1", "label": "contradicts", "type": "fracao", "claim": "A multa pode ser aumentada até o dobro em razão da situação econômica do réu."}
+{"evidence_id": "art49_par1", "label": "contradicts", "type": "numero", "claim": "O valor do dia-multa pode chegar a dez vezes o maior salário mínimo vigente."}
+{"evidence_id": "art100_par1", "label": "contradicts", "type": "entidade", "claim": "A ação penal pública é promovida pela Defensoria Pública."}
+{"evidence_id": "art26_paru", "label": "contradicts", "type": "fracao", "claim": "Em caso de perturbação da saúde mental, a pena pode ser reduzida de metade a dois terços."}
+{"evidence_id": "art110", "label": "contradicts", "type": "direcao", "claim": "Depois do trânsito em julgado, os prazos de prescrição diminuem de um terço se o condenado for reincidente."}
+{"evidence_id": "art103_paru", "label": "contradicts", "type": "numero", "claim": "Nos crimes de violência doméstica e familiar contra a mulher, a ofendida decai do direito de queixa se não o exercer em seis meses."}
+{"evidence_id": "art83_inc3_alin-b", "label": "contradicts", "type": "numero", "claim": "O livramento condicional exige que o condenado não tenha cometido falta grave nos últimos 24 meses."}
+{"evidence_id": "art44_par4", "label": "contradicts", "type": "numero", "claim": "Na conversão da pena restritiva de direitos em prisão, deve ser respeitado o saldo mínimo de sessenta dias de detenção ou reclusão."}
+{"evidence_id": "art109_inc3", "label": "contradicts", "type": "numero-extenso", "claim": "A prescrição ocorre em dez anos quando o máximo da pena é superior a quatro anos e não excede oito."}
+{"evidence_id": "art1", "label": "contradicts", "type": "negacao", "claim": "Pode haver crime mesmo sem lei anterior que o defina."}
+{"evidence_id": "art77_par2", "label": "contradicts", "type": "numero", "claim": "Condenados maiores de 60 anos podem ter a pena de até quatro anos suspensa por quatro a seis anos."}
+{"evidence_id": "art60_par2", "label": "contradicts", "type": "numero", "claim": "Uma pena privativa de liberdade de até um ano pode ser substituída pela de multa."}
+{"evidence_id": "art33_par2_alin-c", "label": "contradicts", "type": "numero", "claim": "O condenado não reincidente com pena de até seis anos pode começar a cumpri-la no regime aberto."}
+{"evidence_id": "art75_par1", "label": "contradicts", "type": "negacao", "claim": "Se a soma das penas passar de 40 anos, elas não precisam ser unificadas."}
+{"evidence_id": "art117_inc1", "label": "contradicts", "type": "negacao", "claim": "O recebimento da denúncia não interrompe o curso da prescrição."}
+{"evidence_id": "art50", "label": "contradicts", "type": "negacao", "claim": "O pagamento da multa nunca pode ser feito em parcelas mensais."}
+{"evidence_id": "art27", "label": "contradicts", "type": "negacao", "claim": "Os menores de 18 anos não são penalmente inimputáveis e respondem pelo Código Penal."}
+{"evidence_id": "art83_inc1", "label": "neutral", "type": "recuperacao-errada", "claim": "O tempo máximo de cumprimento das penas privativas de liberdade é de 40 anos."}
+{"evidence_id": "art50", "label": "neutral", "type": "armadilha-numero", "claim": "A pena de multa vai de 10 a 360 dias-multa."}
+{"evidence_id": "art49", "label": "neutral", "type": "armadilha-numero", "claim": "A multa deve ser paga dentro de 10 dias depois do trânsito em julgado da sentença."}
+{"evidence_id": "art109_inc2", "label": "neutral", "type": "armadilha-numero", "claim": "A prescrição ocorre em vinte anos se o máximo da pena é superior a doze."}
+{"evidence_id": "art83_inc2", "label": "neutral", "type": "armadilha-condicao", "claim": "O condenado não reincidente e com bons antecedentes obtém livramento condicional após cumprir mais de um terço da pena."}
+{"evidence_id": "art26", "label": "neutral", "type": "recuperacao-errada", "claim": "Os menores de 18 anos são penalmente inimputáveis."}
+{"evidence_id": "art78", "label": "neutral", "type": "recuperacao-errada", "claim": "A suspensão condicional da pena vale para penas de até dois anos, por dois a quatro anos."}
+{"evidence_id": "art33_par1_alin-a", "label": "neutral", "type": "recuperacao-errada", "claim": "O condenado a pena superior a oito anos deve começar a cumpri-la em regime fechado."}
+{"evidence_id": "art103_paru", "label": "neutral", "type": "armadilha-condicao", "claim": "Fora dos casos especiais, o ofendido decai do direito de queixa em seis meses contados do dia em que soube quem é o autor."}
+{"evidence_id": "art110", "label": "neutral", "type": "recuperacao-errada", "claim": "Os prazos de prescrição são reduzidos de metade quando o criminoso era menor de 21 anos ao tempo do crime."}
+{"evidence_id": "art100_par2", "label": "neutral", "type": "recuperacao-errada", "claim": "A ação penal pública é promovida pelo Ministério Público."}
+{"evidence_id": "art60", "label": "neutral", "type": "recuperacao-errada", "claim": "A multa pode ser aumentada até o triplo se for ineficaz, embora aplicada no máximo."}
+{"evidence_id": "art49", "label": "neutral", "type": "recuperacao-errada", "claim": "O valor do dia-multa não pode ser superior a cinco vezes o maior salário mínimo."}
+{"evidence_id": "art117_par2", "label": "neutral", "type": "recuperacao-errada", "claim": "O recebimento da denúncia interrompe a prescrição."}
+{"evidence_id": "art1", "label": "neutral", "type": "recuperacao-errada", "claim": "A lei posterior que de qualquer modo favorecer o agente aplica-se aos fatos anteriores."}
+{"evidence_id": "art44_par5", "label": "neutral", "type": "recuperacao-errada", "claim": "Na conversão da pena restritiva em prisão, deve ser respeitado o saldo mínimo de trinta dias."}
+{"evidence_id": "art83_inc3_alin-a", "label": "neutral", "type": "recuperacao-errada", "claim": "O livramento condicional exige que não tenha havido falta grave nos últimos 12 meses."}
+{"evidence_id": "art75_par2", "label": "neutral", "type": "recuperacao-errada", "claim": "O tempo de cumprimento das penas privativas de liberdade não pode ser superior a 40 anos."}
+{"evidence_id": "art77", "label": "neutral", "type": "armadilha-numero", "claim": "Para condenados maiores de setenta anos, a pena de até quatro anos pode ser suspensa por quatro a seis anos."}
+{"evidence_id": "art109_paru", "label": "neutral", "type": "recuperacao-errada", "claim": "A prescrição ocorre em três anos se o máximo da pena é inferior a um ano."}
+{"evidence_id": "art83_paru", "label": "neutral", "type": "recuperacao-errada", "claim": "Nos crimes hediondos, o livramento condicional exige o cumprimento de mais de dois terços da pena."}
+{"evidence_id": "art33_par1_alin-b", "label": "neutral", "type": "recuperacao-errada", "claim": "O regime aberto é cumprido em casa de albergado ou estabelecimento adequado."}
+{"evidence_id": "art26", "label": "neutral", "type": "armadilha-condicao", "claim": "Em caso de perturbação da saúde mental, a pena pode ser reduzida de um a dois terços."}
+{"evidence_id": "art50_par2", "label": "neutral", "type": "recuperacao-errada", "claim": "A multa deve ser paga dentro de 10 dias depois de transitada em julgado a sentença."}
+{"evidence_id": "art27", "label": "neutral", "type": "armadilha-numero", "claim": "Os prazos de prescrição são reduzidos de metade quando o criminoso era menor de 21 anos ao tempo do crime."}
+{"evidence_id": "art33_par2_alin-b", "label": "neutral", "type": "armadilha-condicao", "claim": "O condenado a pena superior a oito anos deve começar a cumpri-la em regime fechado."}
+{"evidence_id": "art100_par4", "label": "neutral", "type": "recuperacao-errada", "claim": "A ação de iniciativa privada pode ser proposta nos crimes de ação pública se o Ministério Público não oferecer denúncia no prazo legal."}
+{"evidence_id": "art49_par2", "label": "neutral", "type": "recuperacao-errada", "claim": "O juiz pode permitir que a multa seja paga em parcelas mensais."}
+{"evidence_id": "art44_par2", "label": "neutral", "type": "recuperacao-errada", "claim": "As penas restritivas de direitos não podem ser aplicadas se o réu for reincidente em crime doloso."}
+{"evidence_id": "art115", "label": "neutral", "type": "armadilha-numero", "claim": "A suspensão condicional da pena pode ser concedida a condenados maiores de setenta anos."}
