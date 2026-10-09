@@ -11,6 +11,10 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - Rule stance: opposite directional predicates on the same proposition (`subiu`/`caiu`, `aumentou`/`diminuiu`, `aprovou`/`rejeitou`, `rose`/`fell`) are classified as CONTRADICTS even when the numbers coincide.
 - These fixes come from code review and new adversarial tests; no Golden case, threshold or frozen artifact was used or changed, and no new evaluation was run.
 
+### Evaluation
+
+- F1.2 (pre-registered in `docs/eval/PREREGISTRATION-F1.2.md`, measured once): rule path C v4 → v5 left balanced accuracy unchanged on Golden v0 (42.73%) and v0.1 (48.18%), McNemar p = 1.0, with no regression. Four wrong `REFUTED` verdicts became wrong `UNVERIFIED`. Current path C accuracy on Golden v0 is 23.33% (the 26.67% in F1 was measured on older rule code). See `docs/eval/F1.2-RESULTS.md`.
+
 ### Governance
 
 - Added authorship, trademark, DCO, licensing and release-provenance documentation.
