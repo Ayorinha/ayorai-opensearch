@@ -12,7 +12,7 @@ The stance layer is hybrid. Deterministic rules for numbers, dates, units and ne
 F1 measures three frozen paths:
 
 - A: direct multilingual NLI, EVAL_ONLY.
-- B: translate-then-verify, EVAL_ONLY and deliberately non-commercial. When languages differ, the Portuguese side is translated to English before NLI.
+- B: translate-then-verify, EVAL_ONLY until the OPUS source-license inventory is complete. This is a temporary precaution, not a finding that OPUS is NC. When languages differ, the Portuguese side is translated to English before NLI.
 - C: rules-only ablation.
 
 The evidence shown to the audit trail remains the original source excerpt; translated text is used only as model input.
@@ -47,7 +47,7 @@ Every emitted stance edge records component, model/backend, version, input SHA-2
 
 ## Model license policy
 
-The normative policy is docs/legal/MODEL-LICENSE-POLICY.md. A is EVAL_ONLY because its declared training includes XNLI. B is EVAL_ONLY by project policy even though its components have permissive weight licenses; ATTRACTOR does not treat the OPUS source-license chain as commercial clearance.
+The normative policy is docs/legal/MODEL-LICENSE-POLICY.md. A is EVAL_ONLY because its declared training includes XNLI. B is temporarily EVAL_ONLY until the OPUS source-license inventory is complete. This is a precautionary operational restriction, not a claim that OPUS is NC and not legal advice. Reconsider the classification only after the inventory is documented and reviewed.
 
 ## Evaluation controls
 

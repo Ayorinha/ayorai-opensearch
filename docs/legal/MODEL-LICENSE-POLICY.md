@@ -32,7 +32,7 @@ The runtime rejects EVAL_ONLY backends outside evaluation mode unless an explici
 | Component | Model / family | Revision | Weights | Declared training data / evidence | Level | Verification |
 |---|---|---|---|---|---|---|
 | A NLI | MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7 | b5113eb38ab63efdd7f280f8c144ea8b13f978ce | MIT | XNLI declared; XNLI is CC BY-NC 4.0 | EVAL_ONLY | 2026-10-03 |
-| B translation | Helsinki-NLP/opus-mt-ROMANCE-en | ddfee805aaa57f4bd198f88e8832ba2b012f9ae2 | Apache-2.0 | OPUS declared; no NC dataset declared in reviewed model metadata; source-license inventory remains incomplete | COMMERCIAL_DEFAULT under the uniform rule; legal-risk note retained | 2026-10-03 |
+| B translation | Helsinki-NLP/opus-mt-ROMANCE-en | ddfee805aaa57f4bd198f88e8832ba2b012f9ae2 | Apache-2.0 | OPUS declared; source-license inventory remains incomplete | EVAL_ONLY as a temporary precaution until the OPUS source-license inventory is complete; this is an operational restriction, not a finding that OPUS is NC | 2026-10-09 |
 | B NLI | cross-encoder/nli-deberta-v3-base | dcaec5ddc7a9456405d53c33bb2d4050ca4f75cf | Apache-2.0 | SNLI (CC BY-SA 4.0); MultiNLI (majority OANC/permissive, with share-alike/permissive components declared); no NC term identified in reviewed metadata | COMMERCIAL_DEFAULT under the uniform rule | 2026-10-03 |
 | Candidate | google/madlad400-3b-mt | fa184c675da0b5c9e1c8694fccd4e12e2d422094 | Apache-2.0 | MADLAD-400; model card says publicly available data; no NC dataset declared | COMMERCIAL_DEFAULT under the uniform rule | 2026-10-03 |
 | Candidate | ibm-granite/granite-guardian-3.3-8b | fixed revision required before activation | Apache-2.0 | IBM/HF model card: English; training-data details are not a dataset-by-dataset NC declaration; no NC dataset declared | COMMERCIAL_DEFAULT under the uniform rule; external comparator only | 2026-10-03 |
@@ -48,7 +48,7 @@ The MiniCheck paper states that **MiniCheck-DBTA and MiniCheck-FT5** use 21K sel
 
 ## Runtime enforcement
 
-The optional NLI backend has a license guard. EVAL_ONLY backends are rejected unless evaluation mode or an explicit opt-in is active. Provenance records the gate state.
+Both optional NLI and Marian translation backends use the same _license_guard. The license_level parameter is required and keyword-only in both constructors. EVAL_ONLY backends are rejected unless evaluation mode or an explicit opt-in is active. Provenance records the gate state. Path B remains EVAL_ONLY until the OPUS source-license inventory is complete; do not infer an NC license from this precautionary status.
 
 ## Legal notice
 

@@ -226,7 +226,10 @@ def main() -> None:
     model_revision = LETTUCE_REVISION
     model_path = hf.snapshot_download(repo_id=model_id, revision=model_revision)
     detector = lettuce.HallucinationDetector(method="transformer", model_path=model_path)
-    translator = MarianTranslationBackend(TRANSLATOR_MODEL, TRANSLATOR_REVISION)
+    translator = MarianTranslationBackend(
+        TRANSLATOR_MODEL, TRANSLATOR_REVISION,
+        license_level="EVAL_ONLY", evaluation_mode=True,
+    )
 
     corpus = {str(row["doc_id"]): row for row in _load_jsonl(CORPUS)}
     f1 = json.loads(F1_REPORT.read_text(encoding="utf-8"))

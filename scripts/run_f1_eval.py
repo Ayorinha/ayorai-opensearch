@@ -439,10 +439,11 @@ def main() -> None:
 
         b_backend = TransformersNLIBackend(
             B_NLI_MODEL, B_NLI_REVISION,
-            license_level="EVAL_ONLY", evaluation_mode=True,
+            license_level="COMMERCIAL_DEFAULT",
         )
         b_translator = MarianTranslationBackend(
             B_TRANSLATOR_MODEL, B_TRANSLATOR_REVISION,
+            license_level=EVAL_ONLY_LEVEL, evaluation_mode=True,
         )
         b_detector = TranslatedNLIStanceDetector(
             b_backend, b_translator,

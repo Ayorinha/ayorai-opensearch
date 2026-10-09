@@ -8,6 +8,13 @@ from ayorai_attractor.verification.nli import (
 )
 
 
+def test_nli_backend_requires_explicit_license_level() -> None:
+    import pytest
+
+    with pytest.raises(TypeError, match="license_level"):
+        TransformersNLIBackend("fixture-model", "immutable-revision")
+
+
 def test_resolve_three_class_label_map() -> None:
     assert _resolve_label_map(
         {0: "entailment", 1: "neutral", 2: "contradiction"}

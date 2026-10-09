@@ -42,7 +42,7 @@ class TransformersNLIBackend:
         model_id: str,
         model_revision: str,
         *,
-        license_level: str = "COMMERCIAL_DEFAULT",
+        license_level: str,
         evaluation_mode: bool = False,
         license_opt_in: bool = False,
     ) -> None:
