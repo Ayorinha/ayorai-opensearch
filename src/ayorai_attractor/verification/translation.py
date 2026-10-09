@@ -51,6 +51,7 @@ class MarianTranslationBackend:
         )
 
     def _load(self) -> None:
+        _ = self.provenance_version
         if self.__dict__["_model"] is not None:
             return
         try:
