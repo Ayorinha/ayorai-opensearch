@@ -18,7 +18,7 @@ def test_translation_eval_only_is_rejected_without_evaluation_or_opt_in() -> Non
     )
 
     with pytest.raises(PermissionError, match="EVAL_ONLY model rejected"):
-        _ = backend.provenance_version
+        backend.translate("this must fail before model loading")
 
 
 def test_translation_eval_only_in_evaluation_mode_records_gate_state() -> None:
