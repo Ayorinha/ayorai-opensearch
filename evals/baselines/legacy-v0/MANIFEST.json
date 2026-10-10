@@ -1,0 +1,18 @@
+{
+  "format_version": "1",
+  "source_commit": "3be512b8ae60e6a1b98524b005c8bf1e1d22aaf4",
+  "tag": "baseline-legacy-v0",
+  "historical_measurement_run": 36759101933,
+  "equivalence_verified_against": "8e596f5a6c674592698d2c0294cb40b8a2d2b05b",
+  "frozen_in_pr": 123,
+  "files": {
+    "evals/baselines/legacy-v0/predictions.jsonl": {
+      "sha256": "f9f24efae95153abbe406127401150f34bd952aa2be9e10557ec44b99acb35b3"
+    }
+  },
+  "regeneration_command": "python scripts/regenerate_legacy_baseline.py --check",
+  "notes": [
+    "historical_measurement_run identifies the September baseline measurement artifact golden-v0-baseline-0d64694e760e1afa3e4e6f9e0df509302d74976b; it is not the Golden v0 freeze workflow.",
+    "After PR 1.2 removes EvidenceStore.status, reproducing the historical predictions requires checking out tag baseline-legacy-v0 at source_commit before running the regeneration command."
+  ]
+}

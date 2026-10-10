@@ -15,7 +15,7 @@
 The freeze workflow calculated SHA-256 values with `sha256sum` and published them in `evals/golden/MANIFEST.json`:
 
 - `evals/golden/v0.jsonl`: `2613aefccf232989833b80c0d23257e6e9f312e0f6b720801a0658407b2f1c75`
-- `evals/corpus/documents.jsonl`: `ce2333ccfe4003ebfc90819400beaf6a245620754deb8572c7611bd8bbb7dea3\n`
+- `evals/corpus/documents.jsonl`: `ce2333ccfe4003ebfc90819400beaf6a245620754deb8572c7611bd8bbb7dea3`
 
 See the Actions log for the authoritative freeze calculation. The repository manifest records the same two SHA-256 values.
 
@@ -91,3 +91,7 @@ The four abstention cases are outside this global-verdict confusion matrix.
 ## Limites do baseline
 
 Este baseline mede o sistema atual contra o golden v0 fechado. Não mede recuperação em corpus inteiro, busca externa, generalização ou capacidade do futuro Chief Judge. O conjunto v0 foi construído junto com o ADR-002; portanto, desempenho alto nele não seria evidência suficiente de generalização.
+
+## Frozen legacy prediction baseline (Phase 1.1)
+
+The legacy comparator is a frozen, hash-verified fixture at `evals/baselines/legacy-v0/predictions.jsonl`, with independent provenance in `evals/baselines/legacy-v0/MANIFEST.json`, keyed by `(suite, case_id)`. It contains 68 records: all 34 cases from Golden v0 and all 34 from Golden v0.1. Each suite has 30 `PARTIALLY_SUPPORTED` predictions for global-verdict cases and `UNVERIFIED` for `n01`, `n02`, `o01`, and `o02`. Historical equivalence was independently verified before this freeze against commits `3be512b8ae60e6a1b98524b005c8bf1e1d22aaf4` and `8e596f5a6c674592698d2c0294cb40b8a2d2b05b`: 68/68 predictions matched, with no divergences. The historical measurement is run `36759101933`; it identifies the September baseline artifact, not the Golden v0 freeze workflow. This is one-time provenance evidence, not a CI assertion.
