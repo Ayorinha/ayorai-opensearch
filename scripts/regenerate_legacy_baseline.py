@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate and verify frozen legacy predictions without overwriting the fixture."""
+"""Verify legacy predictions from the pre-1.2a baseline checkout only."""
 from __future__ import annotations
 
 import argparse
@@ -31,6 +31,12 @@ def predict(case: dict[str, Any], documents: dict[str, dict[str, Any]]) -> str:
     response = Attractor(search_provider=provider).run(
         SearchRequest(query=str(case["query"]), max_agents=5)
     )
+    if response.verification is None:
+        raise SystemExit(
+            "Este código não produz mais o veredito legado. Execute a partir de "
+            "um checkout da tag baseline-legacy-v0 "
+            "(3be512b8ae60e6a1b98524b005c8bf1e1d22aaf4)."
+        )
     return response.verification.value.upper()
 
 
