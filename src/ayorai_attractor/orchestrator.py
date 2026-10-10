@@ -13,7 +13,7 @@ from ayorai_attractor.providers.base import Provider
 from ayorai_attractor.providers.factory import build_default_provider, build_search_provider
 from ayorai_attractor.providers.registry import ProviderRegistry
 
-from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
+from .models import FailureType, SearchRequest, SearchResponse
 from .router import AdaptiveRouter
 from .tenant import TenantContext
 
@@ -65,7 +65,8 @@ class Attractor:
                     "Execution stopped because the configured provider "
                     "is unavailable."
                 ),
-                verification=VerificationStatus.FAILED,
+                verification=None,
+                operation_status="failed",
                 confidence=0.0,
                 failures=failures.failures,
                 trace_id=trace.trace_id,
@@ -94,31 +95,33 @@ class Attractor:
             if role.id in IMPLEMENTED_AGENTS
         ]
         trace.event("agents.selected", count=len(selected))
-        outputs = [agent.run(context) for agent in selected]
+        for agent in selected:
+            agent.run(context)
 
-        status = evidence.status()
         trace.event(
-            "verification.completed",
-            status=status.value,
+            "analysis.completed",
             evidence_count=len(evidence.all()),
         )
-        if status is VerificationStatus.UNVERIFIED:
-            answer = (
-                f"Preliminary result for '{request.query}'. "
-                "The MVP generated a local analysis, but independent external "
-                "evidence is not configured, so the result is not verified."
-            )
-            confidence = 0.35
-        else:
-            answer = outputs[-1].output if outputs else "No result."
-            confidence = 0.9
+        answer = (
+            f"Analysis generated for '{request.query}'. "
+            "No factual verdict was adjudicated. Submit structured claims "
+            "and evidence to /v1/verify for formal verification."
+        )
+        operation_status = (
+            "failed"
+            if any(not failure.recoverable for failure in failures.failures)
+            else "completed"
+        )
 
         return SearchResponse(
             query=request.query,
             mode=request.mode,
             answer=answer,
-            verification=status,
-            confidence=confidence,
+            verification=None,
+            verdict_authority="not_adjudicated",
+            formal_verification_endpoint="/v1/verify",
+            operation_status=operation_status,
+            confidence=0.0,
             evidence=evidence.all(),
             failures=failures.failures,
             agents_used=[agent.name for agent in selected],
