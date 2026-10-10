@@ -10,7 +10,8 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ### Verification
 
-- Search and audit responses no longer claim a factual verdict: `verification` is deprecated and returned as `null`, `verdict_authority` is `not_adjudicated`, and `/v1/verify` is the canonical formal-verification endpoint. Operational failures are reported separately in `operation_status`. The deprecated response field is scheduled for removal in v0.5.0.
+- Search and audit responses no longer claim a factual verdict: `verification` is deprecated and returned as `null`, `verdict_authority` is `not_adjudicated`, and `/v1/verify` is the canonical formal-verification endpoint. Operational failures are reported separately in `operation_status`. The deprecated `verification` and `confidence` response fields are scheduled for removal in v0.5.0.
+- Audit replay digests use `r2-v1` for records created before PR 1.2a with legacy verification values and `r2-v2` for new records whose verification event is `not_adjudicated`.
 
 - Rule stance (detector version 6): Portuguese number words, legal duplicates `40 (quarenta)`, fractions and multipliers, duration conversion (1 ano = 12 meses), `vezes`/`dias-multa`, set semantics per fact, comparative bounds not read as negation, competing named actors block support. New module `verification/pt_normalize.py`.
 
