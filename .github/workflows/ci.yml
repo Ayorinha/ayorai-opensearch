@@ -67,7 +67,7 @@ jobs:
           assert r["mcnemar_vs_legacy"]["exact_p"] == 0.1795654296875
           assert len(r["content_sha256"]) == 64
           assert r["semantic_digest_version"] == "1"
-          assert r["semantic_sha256"] == "64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608"
+          assert r["semantic_sha256"] == "21abb816facce73fc924842d12b373b8792abc2e7389e129c35bb58bab806632"
           print("GOLDEN_V0: PASS", r["global_accuracy"], r["balanced_accuracy"], r["mcnemar_vs_legacy"], "content_sha256=" + r["content_sha256"], "semantic_sha256=" + r["semantic_sha256"])
           PY
           attractor eval --suite golden-v0.1 --out reports/golden-v0.1.json
@@ -86,7 +86,7 @@ jobs:
           assert r["mcnemar_vs_legacy"]["exact_p"] == 0.60723876953125
           assert len(r["content_sha256"]) == 64
           assert r["semantic_digest_version"] == "1"
-          assert len(r["semantic_sha256"]) == 64
+          assert r["semantic_sha256"] == "64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608"
           print("GOLDEN_V0_1: PASS", r["global_accuracy"], r["balanced_accuracy"], r["mcnemar_vs_legacy"], "content_sha256=" + r["content_sha256"], "semantic_sha256=" + r["semantic_sha256"])
           PY
       - name: Upload reproducible evaluation report
