@@ -2,11 +2,11 @@ import hashlib
 import json
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = ROOT / "evals/golden/legacy-baseline-v0.jsonl"
-MANIFEST = ROOT / "evals/golden/MANIFEST.json"
+BASELINE = ROOT / "evals/baselines/legacy-v0/predictions.jsonl"
+MANIFEST = ROOT / "evals/baselines/legacy-v0/MANIFEST.json"
+GOLDEN_MANIFEST = ROOT / "evals/golden/MANIFEST.json"
+GOLDEN_MANIFEST_SHA256 = "748b08dbb39fcab9cd0f7d1f9a1a875aba1a5b67a94f54c6a153f9b84179f74f"
 EXPECTED_IDS = (
     "f01", "f02", "f03", "f04", "m01", "m02", "m03", "c01", "c02", "c03",
     "x01", "x02", "x03", "n01", "n02", "i01", "i02", "i03", "o01", "o02",
@@ -26,8 +26,13 @@ def _records() -> list[dict[str, str]]:
 
 def test_legacy_baseline_hash_matches_manifest() -> None:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    expected = manifest["legacy_baseline"]["files"]["evals/golden/legacy-baseline-v0.jsonl"]["sha256"]
+    expected = manifest["files"]["evals/baselines/legacy-v0/predictions.jsonl"]["sha256"]
     assert hashlib.sha256(BASELINE.read_bytes()).hexdigest() == expected
+
+
+def test_frozen_golden_manifest_sha256_is_unchanged() -> None:
+    actual = hashlib.sha256(GOLDEN_MANIFEST.read_bytes()).hexdigest()
+    assert actual == GOLDEN_MANIFEST_SHA256
 
 
 def test_legacy_baseline_has_exactly_68_unique_suite_case_keys() -> None:
@@ -38,7 +43,10 @@ def test_legacy_baseline_has_exactly_68_unique_suite_case_keys() -> None:
     for suite in ("golden-v0", "golden-v0.1"):
         suite_records = [record for record in records if record["suite"] == suite]
         assert [record["case_id"] for record in suite_records] == list(EXPECTED_IDS)
-        assert sum(record["prediction"] == "PARTIALLY_SUPPORTED" for record in suite_records) == 30
+        assert sum(
+            record["prediction"] == "PARTIALLY_SUPPORTED"
+            for record in suite_records
+        ) == 30
         assert {
             record["case_id"] for record in suite_records
             if record["prediction"] == "UNVERIFIED"
@@ -63,7 +71,10 @@ def test_legacy_baseline_historical_metrics_remain_coherent() -> None:
         global_cases = [case for case in cases if "global" in case]
         abstain_cases = [case for case in cases if "response_status" in case]
         assert len(global_cases) == 30
-        assert sum(str(case["global"]).upper() == predictions[str(case["id"])] for case in global_cases) == 13
+        assert sum(
+            str(case["global"]).upper() == predictions[str(case["id"])]
+            for case in global_cases
+        ) == 13
         assert len(abstain_cases) == 4
         assert sum(
             str(case["response_status"]).upper() == predictions[str(case["id"])]
