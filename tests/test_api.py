@@ -76,7 +76,9 @@ def test_audit_trace_lookup_returns_persisted_metadata(monkeypatch, tmp_path) ->
     monkeypatch.setattr(api, "engine", FakeEngine())
     from ayorai_attractor.audit_store import AuditTraceStore
 
-    monkeypatch.setattr(api, "audit_store", AuditTraceStore(str(tmp_path / "audit.sqlite3")))
+    monkeypatch.setattr(
+        api, "audit_store", AuditTraceStore(str(tmp_path / "audit.sqlite3"))
+    )
     client = TestClient(api.app)
 
     response = client.post("/v1/audit", json={"query": "test query"})
