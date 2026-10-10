@@ -95,3 +95,8 @@ Este baseline mede o sistema atual contra o golden v0 fechado. Não mede recuper
 ## Frozen legacy prediction baseline (Phase 1.1)
 
 The legacy comparator is a frozen, hash-verified fixture at `evals/baselines/legacy-v0/predictions.jsonl`, with independent provenance in `evals/baselines/legacy-v0/MANIFEST.json`, keyed by `(suite, case_id)`. It contains 68 records: all 34 cases from Golden v0 and all 34 from Golden v0.1. Each suite has 30 `PARTIALLY_SUPPORTED` predictions for global-verdict cases and `UNVERIFIED` for `n01`, `n02`, `o01`, and `o02`. Historical equivalence was independently verified before this freeze against commits `3be512b8ae60e6a1b98524b005c8bf1e1d22aaf4` and `8e596f5a6c674592698d2c0294cb40b8a2d2b05b`: 68/68 predictions matched, with no divergences. The historical measurement is run `36759101933`; it identifies the September baseline artifact, not the Golden v0 freeze workflow. This is one-time provenance evidence, not a CI assertion.
+
+
+## Legacy regeneration after PR 1.2a
+
+The current response contract no longer emits legacy verdicts. Do not regenerate the frozen legacy predictions from the current branch. Run the legacy script only from a checkout of tag `baseline-legacy-v0` at commit `3be512b8ae60e6a1b98524b005c8bf1e1d22aaf4`. The frozen `evals/baselines/legacy-v0/MANIFEST.json` is unchanged.
