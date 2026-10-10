@@ -90,6 +90,12 @@ The development measurements are reported side by side; neither set establishes 
 
 Path A is **research-only / EVAL_ONLY**. Path B is described elsewhere in the project as a candidate commercial path, subject to the project's model-license policy and independent verification; these accuracy figures alone do not establish commercial clearance.
 
+## CI environment reproducibility
+
+All GitHub Actions workflow jobs explicitly use `ubuntu-24.04`; they do not rely on the moving `ubuntu-latest` alias. This pins the runner's Ubuntu release, not every package or external service installed during a workflow.
+
+Any future operating-system change must be proposed in a dedicated pull request. Before that change is accepted, compare the three evaluation `semantic_sha256` values (Golden v0, Golden v0.1 and smoke-v0) against the frozen references, and investigate any difference. Frozen inputs, thresholds and expected digests must not be edited to make a runner migration pass.
+
 ## Golden integrity
 
 The frozen evaluation artifacts are content-addressed and must not be silently replaced.
