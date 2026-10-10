@@ -94,6 +94,8 @@ Path A is **research-only / EVAL_ONLY**. Path B is described elsewhere in the pr
 
 The frozen evaluation artifacts are content-addressed and must not be silently replaced.
 
+Local `.attractor/` audit and replay data must not be versioned; evidence requiring traceability should be deliberately exported as a reviewed report, never committed directly from that runtime directory.
+
 | Artifact | SHA-256 |
 |---|---|
 | Golden v0 | <code>2613aefccf232989833b80c0d23257e6e9f312e0f6b720801a0658407b2f1c75</code> |

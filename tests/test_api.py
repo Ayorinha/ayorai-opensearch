@@ -41,8 +41,13 @@ class FakeEngine:
         )
 
 
-def test_audit_endpoint_returns_deterministic_report(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+def test_audit_endpoint_returns_deterministic_report(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from ayorai_attractor.audit_store import AuditTraceStore
+
     monkeypatch.setattr(api, "engine", FakeEngine())
+    monkeypatch.setattr(
+        api, "audit_store", AuditTraceStore(str(tmp_path / "audit.sqlite3"))
+    )
     client = TestClient(api.app)
 
     response = client.post("/v1/audit", json={"query": "test query"})
@@ -67,11 +72,13 @@ def test_audit_endpoint_rejects_short_query() -> None:
     assert response.status_code == 422
 
 
-def test_audit_trace_lookup_returns_persisted_metadata(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+def test_audit_trace_lookup_returns_persisted_metadata(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.setattr(api, "engine", FakeEngine())
     from ayorai_attractor.audit_store import AuditTraceStore
 
-    monkeypatch.setattr(api, "audit_store", AuditTraceStore(":memory:"))
+    monkeypatch.setattr(
+        api, "audit_store", AuditTraceStore(str(tmp_path / "audit.sqlite3"))
+    )
     client = TestClient(api.app)
 
     response = client.post("/v1/audit", json={"query": "test query"})
@@ -85,10 +92,12 @@ def test_audit_trace_lookup_returns_persisted_metadata(monkeypatch) -> None:  # 
     assert body["evidence_count"] == 2
 
 
-def test_audit_trace_lookup_returns_404_for_unknown_trace(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+def test_audit_trace_lookup_returns_404_for_unknown_trace(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
     from ayorai_attractor.audit_store import AuditTraceStore
 
-    monkeypatch.setattr(api, "audit_store", AuditTraceStore(":memory:"))
+    monkeypatch.setattr(
+        api, "audit_store", AuditTraceStore(str(tmp_path / "audit.sqlite3"))
+    )
     client = TestClient(api.app)
 
     response = client.get("/v1/audit/missing")
