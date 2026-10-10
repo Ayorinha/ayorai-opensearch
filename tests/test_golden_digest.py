@@ -45,6 +45,14 @@ def test_content_digest_changes_for_semantic_results() -> None:
     assert _content_digest(report) != first
 
 
+def test_semantic_digest_uses_canonical_utf8_json() -> None:
+    report = {"semantic_digest_version": "1", "claim": "ação"}
+    assert (
+        semantic_sha256(report)
+        == "fd0460a3f7bb1170bb31cbf90708f350fd87059e07a21f9e13ee4551cb85565e"
+    )
+
+
 def test_semantic_digest_recursively_ignores_execution_metadata() -> None:
     report = {
         "semantic_digest_version": "1",
