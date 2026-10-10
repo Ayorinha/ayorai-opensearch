@@ -12,7 +12,6 @@ from ayorai_attractor.models import (
     Failure,
     QualityMode,
     SearchResponse,
-    VerificationStatus,
 )
 
 
@@ -104,8 +103,6 @@ def audit_evidence(
         query="audit",
         mode=QualityMode.BALANCED,
         answer="audit",
-        verification=VerificationStatus.UNVERIFIED,
-        confidence=0.0,
         evidence=evidence,
         failures=failures or [],
         agents_used=[],
