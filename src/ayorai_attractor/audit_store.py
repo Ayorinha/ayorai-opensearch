@@ -53,7 +53,7 @@ class AuditTraceStore:
                 "failure_count": report.failure_count,
             }
         ]
-        replay = ReplayBundle.build(response.trace_id, events, version="r2-v1")
+        replay = ReplayBundle.build(response.trace_id, events, version="r2-v2")
         connection = self._connection
         connection.execute(
             """
@@ -92,7 +92,7 @@ class AuditTraceStore:
             verification=None,
             verdict_authority="not_adjudicated",
             formal_verification_endpoint="/v1/verify",
-            operation_status="completed",
+            operation_status="not_recorded",
             evidence_count=int(row[2]),
             independent_evidence_count=int(row[3]),
             verified_evidence_count=int(row[4]),
