@@ -69,3 +69,24 @@ def test_legacy_baseline_historical_metrics_remain_coherent() -> None:
             str(case["response_status"]).upper() == predictions[str(case["id"])]
             for case in abstain_cases
         ) == 0
+
+
+def test_semantic_digests_are_unchanged_for_all_three_suites() -> None:
+    from ayorai_attractor.evaluation.golden import evaluate_golden_v0
+
+    expected = {
+        "golden-v0": "21abb816facce73fc924842d12b373b8792abc2e7389e129c35bb58bab806632",
+        "golden-v0.1": "64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608",
+        "smoke-v0": "969ec61a4aee4e4426f5d217819bd185ebba248743e7721714a3123f5df67c3d",
+    }
+    for suite, golden_name in (
+        ("golden-v0", "v0.jsonl"),
+        ("golden-v0.1", "v0.1.jsonl"),
+        ("smoke-v0", "v0.jsonl"),
+    ):
+        report = evaluate_golden_v0(
+            ROOT / "evals/golden" / golden_name,
+            ROOT / "evals/corpus/documents.jsonl",
+            suite=suite,
+        )
+        assert report["semantic_sha256"] == expected[suite]
