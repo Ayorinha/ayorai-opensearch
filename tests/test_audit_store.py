@@ -1,6 +1,6 @@
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
-from ayorai_attractor.models import SearchResponse, VerificationStatus
+from ayorai_attractor.models import SearchResponse
 
 
 def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
@@ -8,7 +8,7 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
         query="test query",
         mode="balanced",
         answer="test",
-        verification=VerificationStatus.UNVERIFIED,
+        verification=None,
         confidence=0.0,
         trace_id="tr_persisted",
     )
@@ -22,7 +22,9 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
 
     assert saved is not None
     assert saved.trace_id == "tr_persisted"
-    assert saved.verification == "unverified"
+    assert saved.verification is None
+    assert saved.verdict_authority == "not_adjudicated"
+    assert saved.formal_verification_endpoint == "/v1/verify"
     assert saved.replay_digest == digest
 
 
