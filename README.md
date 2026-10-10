@@ -142,9 +142,17 @@ For the frozen evaluation:
 
 ~~~bash
 attractor eval --suite golden-v0 --out reports/golden-v0.json
+attractor eval --suite golden-v0.1 --out reports/golden-v0.1.json
 ~~~
 
-Always record the commit SHA, suite version and semantic report digest with an evaluation result.
+Evaluation reports expose two deliberately distinct hashes:
+
+- `content_sha256` is the legacy digest and its semantics are unchanged. It excludes the top-level `latency_ms` and `git_sha`, but includes per-result timing such as `results[].latency_ms`; therefore, it may differ between otherwise equivalent executions.
+- `semantic_sha256` uses version `semantic_digest_version="1"`. It recursively excludes execution-volatile fields (`latency_ms`, `git_sha`, both digest fields, and wall-clock timestamp fields) while retaining predictions, labels and metrics. It hashes canonical UTF-8 JSON with sorted keys, compact separators and `ensure_ascii=False`.
+
+Use `semantic_sha256` to compare semantic evaluation results across repeated runs; do not treat it as a substitute for frozen-input hashes or as proof of replay correctness by itself. The reference metrics and reproduction commands are recorded in [Semantic Digest v1 Reference](docs/eval/SEMANTIC-DIGEST-V1-REFERENCE.md).
+
+Always record the commit SHA, suite version and both report digests with an evaluation result.
 
 ## ADRs
 
