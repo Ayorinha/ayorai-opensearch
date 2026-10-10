@@ -1,3 +1,5 @@
+import sqlite3
+
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
 from ayorai_attractor.models import SearchResponse
@@ -26,6 +28,13 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
     assert saved.verdict_authority == "not_adjudicated"
     assert saved.formal_verification_endpoint == "/v1/verify"
     assert saved.replay_digest == digest
+
+    with sqlite3.connect(tmp_path / "audit.sqlite3") as connection:
+        stored = connection.execute(
+            "SELECT verification FROM audit_traces WHERE trace_id = ?",
+            ("tr_persisted",),
+        ).fetchone()
+    assert stored == ("not_adjudicated",)
 
 
 def test_missing_trace_returns_none(tmp_path) -> None:
