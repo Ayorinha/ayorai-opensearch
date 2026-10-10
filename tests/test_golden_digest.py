@@ -76,15 +76,18 @@ def test_semantic_digest_recursively_ignores_execution_metadata() -> None:
 
 def test_semantic_digest_changes_when_evidence_dates_change_at_any_level() -> None:
     for field in ("retrieved_at", "published_at", "collected_at"):
-        report = {
+        top_level = {"semantic_digest_version": "1", field: "2026-01-01"}
+        first_top_level = semantic_sha256(top_level)
+        top_level[field] = "2020-05-05"
+        assert semantic_sha256(top_level) != first_top_level, field
+
+        nested = {
             "semantic_digest_version": "1",
-            field: "2026-01-01",
             "results": [{"evidence": {field: "2026-01-01"}}],
         }
-        first = semantic_sha256(report)
-        report[field] = "2020-05-05"
-        report["results"][0]["evidence"][field] = "2020-05-05"
-        assert semantic_sha256(report) != first, field
+        first_nested = semantic_sha256(nested)
+        nested["results"][0]["evidence"][field] = "2020-05-05"
+        assert semantic_sha256(nested) != first_nested, field
 
 
 def test_semantic_digest_ignores_only_explicit_volatile_keys_recursively() -> None:
