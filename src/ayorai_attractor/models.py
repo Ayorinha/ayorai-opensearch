@@ -68,7 +68,10 @@ class SearchResponse(BaseModel):
     query: str
     mode: QualityMode
     answer: str
-    verification: VerificationStatus
+    verification: VerificationStatus | None = None
+    verdict_authority: str = "not_adjudicated"
+    formal_verification_endpoint: str = "/v1/verify"
+    operation_status: str = "completed"
     confidence: float = Field(ge=0, le=1)
     evidence: list[Evidence] = Field(default_factory=list)
     failures: list[Failure] = Field(default_factory=list)
@@ -84,7 +87,10 @@ class AuditFindingResponse(BaseModel):
 
 class AuditResponse(BaseModel):
     trace_id: str
-    verification: str
+    verification: str | None = None
+    verdict_authority: str = "not_adjudicated"
+    formal_verification_endpoint: str = "/v1/verify"
+    operation_status: str = "completed"
     evidence_count: int = Field(ge=0)
     independent_evidence_count: int = Field(ge=0)
     verified_evidence_count: int = Field(ge=0)
@@ -94,7 +100,10 @@ class AuditResponse(BaseModel):
 
 class AuditTraceResponse(BaseModel):
     trace_id: str
-    verification: str
+    verification: str | None = None
+    verdict_authority: str = "not_adjudicated"
+    formal_verification_endpoint: str = "/v1/verify"
+    operation_status: str = "completed"
     evidence_count: int = Field(ge=0)
     independent_evidence_count: int = Field(ge=0)
     verified_evidence_count: int = Field(ge=0)
