@@ -1,11 +1,13 @@
 """Versioned, deterministic digest for semantic evaluation results.
 
 The semantic digest is intentionally separate from the legacy content_sha256.
-Recursively exclude execution-volatile metadata: latency_ms, git_sha,
-content_sha256, semantic_sha256, and wall-clock fields (timestamp/datetime
-keys and keys ending in _at or _time). These values can vary between equivalent
-runs and are not part of the evaluated result. Keep semantic_digest_version in
-the canonical payload so digest-version changes are explicit.
+The only excluded keys are the explicit, closed set: latency_ms, git_sha,
+content_sha256, and semantic_sha256. Each is excluded because it is execution
+metadata or a digest of the same report rather than semantic evaluation data.
+Any additional volatile field must be added explicitly in a reviewed change
+with a documented justification; never infer volatility from key-name patterns.
+Keep semantic_digest_version in the canonical payload so digest-version changes
+are explicit.
 
 Canonicalization is UTF-8 JSON with sorted keys, compact separators, and
 ensure_ascii=False. This module is pure: it performs no I/O and reads no clock,
@@ -27,34 +29,17 @@ _VOLATILE_KEYS = frozenset(
         "git_sha",
         "content_sha256",
         "semantic_sha256",
-        "time",
-        "timestamp",
-        "datetime",
-        "date_time",
-        "wall_clock_time",
-        "wallclock_time",
-        "execution_time",
-        "elapsed_time",
-        "duration_time",
-        "elapsed_ms",
-        "duration_ms",
-        "runtime_ms",
     }
 )
 
 
 def _is_volatile_key(key: str) -> bool:
-    """Return whether a field is execution-specific rather than semantic."""
-    normalized = key.casefold().replace("-", "_")
-    return (
-        normalized in _VOLATILE_KEYS
-        or normalized.endswith(("_at", "_time", "_timestamp", "_datetime"))
-        or normalized.endswith(("timestamp", "datetime"))
-    )
+    """Return whether a key is in the explicitly approved volatile-field set."""
+    return key in _VOLATILE_KEYS
 
 
 def _without_volatile_fields(value: Any) -> Any:
-    """Recursively remove execution-volatile keys from JSON-compatible data."""
+    """Recursively remove only explicitly approved volatile keys."""
     if isinstance(value, Mapping):
         return {
             key: _without_volatile_fields(item)
@@ -71,10 +56,9 @@ def _without_volatile_fields(value: Any) -> Any:
 def semantic_sha256(report: Mapping[str, Any]) -> str:
     """Hash semantic report content using canonical UTF-8 JSON.
 
-    Volatile fields are removed recursively at every nesting level. Semantic
-    fields such as predictions, expected labels, metrics, and the digest
-    version remain part of the hash. The caller should set
-    semantic_digest_version before computing this digest.
+    Only latency_ms, git_sha, content_sha256, and semantic_sha256 are removed,
+    recursively at every nesting level. All other fields—including evidence
+    retrieval, publication, and collection dates—remain semantic inputs.
     """
     canonical = json.dumps(
         _without_volatile_fields(report),
