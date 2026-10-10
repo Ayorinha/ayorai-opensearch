@@ -48,7 +48,7 @@ class AuditTraceStore:
         events = [
             {
                 "event": "audit.completed",
-                "verification": report.verification,
+                "verification": "not_adjudicated",
                 "evidence_count": report.evidence_count,
                 "failure_count": report.failure_count,
             }
