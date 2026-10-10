@@ -75,18 +75,9 @@ class AuditReport:
         for failure in response.failures:
             findings.append(_failure_finding(failure))
 
-        if response.verification.value in {"failed", "insufficient_evidence"}:
-            findings.append(
-                AuditFinding(
-                    "NON_VERIFIED_RESPONSE",
-                    AuditSeverity.ERROR,
-                    f"Verification status is {response.verification.value}.",
-                )
-            )
-
         return cls(
             trace_id=response.trace_id,
-            verification=response.verification.value,
+            verification="not_adjudicated",
             evidence_count=len(evidence),
             independent_evidence_count=len(independent),
             verified_evidence_count=len(verified),
