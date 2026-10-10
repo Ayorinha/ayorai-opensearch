@@ -30,7 +30,7 @@ jobs:
       - name: Run five-category golden smoke eval
         run: |
           attractor eval --suite smoke-v0 --out /tmp/golden-smoke.json
-          python -c "import json; r=json.load(open('/tmp/golden-smoke.json')); assert r['case_count']==5; assert len(r['content_sha256'])==64; assert r['semantic_digest_version']=='1'; assert len(r['semantic_sha256'])==64; print('GOLDEN_SMOKE: PASS cases=5 content_sha256='+r['content_sha256']+' semantic_sha256='+r['semantic_sha256'])"
+          python -c "import json; r=json.load(open('/tmp/golden-smoke.json')); assert r['case_count']==5; assert len(r['content_sha256'])==64; assert r['semantic_digest_version']=='1'; assert r['semantic_sha256']=='969ec61a4aee4e4426f5d217819bd185ebba248743e7721714a3123f5df67c3d'; print('GOLDEN_SMOKE: PASS cases=5 content_sha256='+r['content_sha256']+' semantic_sha256='+r['semantic_sha256'])"
 
   golden-regression:
     name: golden-regression
@@ -67,7 +67,7 @@ jobs:
           assert r["mcnemar_vs_legacy"]["exact_p"] == 0.1795654296875
           assert len(r["content_sha256"]) == 64
           assert r["semantic_digest_version"] == "1"
-          assert len(r["semantic_sha256"]) == 64
+          assert r["semantic_sha256"] == "64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608"
           print("GOLDEN_V0: PASS", r["global_accuracy"], r["balanced_accuracy"], r["mcnemar_vs_legacy"], "content_sha256=" + r["content_sha256"], "semantic_sha256=" + r["semantic_sha256"])
           PY
           attractor eval --suite golden-v0.1 --out reports/golden-v0.1.json
