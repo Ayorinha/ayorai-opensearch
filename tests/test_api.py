@@ -45,7 +45,9 @@ def test_audit_endpoint_returns_deterministic_report(monkeypatch, tmp_path) -> N
     from ayorai_attractor.audit_store import AuditTraceStore
 
     monkeypatch.setattr(api, "engine", FakeEngine())
-    monkeypatch.setattr(api, "audit_store", AuditTraceStore(str(tmp_path / "audit.sqlite3")))
+    monkeypatch.setattr(
+        api, "audit_store", AuditTraceStore(str(tmp_path / "audit.sqlite3"))
+    )
     client = TestClient(api.app)
 
     response = client.post("/v1/audit", json={"query": "test query"})
@@ -91,7 +93,9 @@ def test_audit_trace_lookup_returns_persisted_metadata(monkeypatch, tmp_path) ->
 def test_audit_trace_lookup_returns_404_for_unknown_trace(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
     from ayorai_attractor.audit_store import AuditTraceStore
 
-    monkeypatch.setattr(api, "audit_store", AuditTraceStore(":memory:"))
+    monkeypatch.setattr(
+        api, "audit_store", AuditTraceStore(str(tmp_path / "audit.sqlite3"))
+    )
     client = TestClient(api.app)
 
     response = client.get("/v1/audit/missing")
