@@ -3,6 +3,7 @@ import sqlite3
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
 from ayorai_attractor.models import SearchResponse
+from ayorai_attractor.replay import ReplayBundle
 
 
 def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
@@ -11,7 +12,7 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
         mode="balanced",
         answer="test",
         verification=None,
-        confidence=0.0,
+        confidence=None,
         trace_id="tr_persisted",
     )
     report = AuditReport.from_response(response)
@@ -27,6 +28,7 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
     assert saved.verification is None
     assert saved.verdict_authority == "not_adjudicated"
     assert saved.formal_verification_endpoint == "/v1/verify"
+    assert saved.operation_status == "not_recorded"
     assert saved.replay_digest == digest
 
     with sqlite3.connect(tmp_path / "audit.sqlite3") as connection:
@@ -35,6 +37,16 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
             ("tr_persisted",),
         ).fetchone()
     assert stored == ("not_adjudicated",)
+    assert ReplayBundle.build(
+        "tr_persisted",
+        [{
+            "event": "audit.completed",
+            "verification": "not_adjudicated",
+            "evidence_count": 0,
+            "failure_count": 0,
+        }],
+        version="r2-v2",
+    ).digest == digest
 
 
 def test_missing_trace_returns_none(tmp_path) -> None:
