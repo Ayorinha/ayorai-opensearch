@@ -50,11 +50,7 @@ def audit(request: SearchRequest) -> AuditResponse:
         verification=None,
         verdict_authority="not_adjudicated",
         formal_verification_endpoint="/v1/verify",
-        operation_status=(
-            "failed"
-            if any(not failure.recoverable for failure in response.failures)
-            else "completed"
-        ),
+        operation_status=response.operation_status,
         evidence_count=report.evidence_count,
         independent_evidence_count=report.independent_evidence_count,
         verified_evidence_count=report.verified_evidence_count,
@@ -116,11 +112,4 @@ def audit_trace(trace_id: str) -> AuditTraceResponse:
         from fastapi import HTTPException
 
         raise HTTPException(status_code=404, detail="audit trace not found")
-    return saved.model_copy(
-        update={
-            "verification": None,
-            "verdict_authority": "not_adjudicated",
-            "formal_verification_endpoint": "/v1/verify",
-            "operation_status": "completed",
-        }
-    )
+    return saved
