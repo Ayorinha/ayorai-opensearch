@@ -89,7 +89,10 @@ class AuditTraceStore:
             return None
         return AuditTraceResponse(
             trace_id=str(row[0]),
-            verification=str(row[1]),
+            verification=None,
+            verdict_authority="not_adjudicated",
+            formal_verification_endpoint="/v1/verify",
+            operation_status="completed",
             evidence_count=int(row[2]),
             independent_evidence_count=int(row[3]),
             verified_evidence_count=int(row[4]),
