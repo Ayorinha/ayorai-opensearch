@@ -76,6 +76,44 @@ def test_semantic_digest_recursively_ignores_execution_metadata() -> None:
     assert semantic_sha256(report) == first
 
 
+def test_semantic_digest_changes_when_evidence_dates_change_at_any_level() -> None:
+    for field in ("retrieved_at", "published_at", "collected_at"):
+        report = {
+            "semantic_digest_version": "1",
+            field: "2026-01-01",
+            "results": [{"evidence": {field: "2026-01-01"}}],
+        }
+        first = semantic_sha256(report)
+        report[field] = "2020-05-05"
+        report["results"][0]["evidence"][field] = "2020-05-05"
+        assert semantic_sha256(report) != first, field
+
+
+def test_semantic_digest_ignores_only_explicit_volatile_keys_recursively() -> None:
+    report = {
+        "semantic_digest_version": "1",
+        "latency_ms": 10,
+        "results": [
+            {
+                "latency_ms": 20,
+                "git_sha": "first",
+                "content_sha256": "legacy-first",
+                "semantic_sha256": "semantic-first",
+                "evidence": {"latency_ms": 30, "retrieved_at": "2026-01-01"},
+            }
+        ],
+    }
+    first = semantic_sha256(report)
+    report["latency_ms"] = 999
+    result = report["results"][0]
+    result["latency_ms"] = 888
+    result["git_sha"] = "second"
+    result["content_sha256"] = "legacy-second"
+    result["semantic_sha256"] = "semantic-second"
+    result["evidence"]["latency_ms"] = 777
+    assert semantic_sha256(report) == first
+
+
 def test_semantic_digest_changes_when_prediction_or_metric_changes() -> None:
     report = {
         "semantic_digest_version": "1",
