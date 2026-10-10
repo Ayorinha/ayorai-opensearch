@@ -5,7 +5,6 @@ from ayorai_attractor.models import (
     Evidence,
     QualityMode,
     SearchResponse,
-    VerificationStatus,
 )
 
 
@@ -15,7 +14,7 @@ class FakeEngine:
             query=request.query,
             mode=QualityMode.BALANCED,
             answer="test",
-            verification=VerificationStatus.SUPPORTED,
+            verification=None,
             confidence=0.9,
             evidence=[
                 Evidence(
