@@ -99,4 +99,7 @@ The legacy comparator is a frozen, hash-verified fixture at `evals/baselines/leg
 
 ## Legacy regeneration after PR 1.2a
 
-The current response contract no longer emits legacy verdicts. Do not regenerate the frozen legacy predictions from the current branch. Run the legacy script only from a checkout of tag `baseline-legacy-v0` at commit `3be512b8ae60e6a1b98524b005c8bf1e1d22aaf4`. The frozen `evals/baselines/legacy-v0/MANIFEST.json` is unchanged.
+The current response contract no longer emits legacy verdicts. Do not regenerate the frozen legacy
+predictions from the current branch. Run the legacy script only from a checkout of tag
+`baseline-legacy-v0` at commit `3be512b8ae60e6a1b98524b005c8bf1e1d22aaf4`. The frozen
+`evals/baselines/legacy-v0/MANIFEST.json` is unchanged.
