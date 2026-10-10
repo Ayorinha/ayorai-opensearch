@@ -166,11 +166,11 @@ def _legacy_prediction(
         raise ValueError(f"Unsupported legacy baseline suite: {source_suite}")
 
     root = Path(__file__).resolve().parents[3]
-    baseline_path = root / "evals/golden/legacy-baseline-v0.jsonl"
-    manifest_path = root / "evals/golden/MANIFEST.json"
+    baseline_path = root / "evals/baselines/legacy-v0/predictions.jsonl"
+    manifest_path = root / "evals/baselines/legacy-v0/MANIFEST.json"
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        expected_hash = manifest["legacy_baseline"]["files"]["evals/golden/legacy-baseline-v0.jsonl"]["sha256"]
+        expected_hash = manifest["files"]["evals/baselines/legacy-v0/predictions.jsonl"]["sha256"]
         raw = baseline_path.read_bytes()
     except (OSError, KeyError, TypeError, json.JSONDecodeError) as exc:
         raise RuntimeError("Frozen legacy baseline or its manifest is missing/invalid") from exc
@@ -273,7 +273,8 @@ def evaluate_golden_v0(
             item["correct"] = correct
             expected.append(gold)
             predicted.append(guess)
-            legacy.append(_legacy_prediction(case, documents, "golden-v0.1" if suite == "golden-v0.1" else "golden-v0"))
+            legacy_suite = "golden-v0.1" if suite == "golden-v0.1" else "golden-v0"
+            legacy.append(_legacy_prediction(case, documents, legacy_suite))
             category = str(case["category"])
             category_totals[category] += 1
             state_totals[gold] += 1
