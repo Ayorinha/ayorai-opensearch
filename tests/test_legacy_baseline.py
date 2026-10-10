@@ -26,7 +26,7 @@ def _records() -> list[dict[str, str]]:
 
 def test_legacy_baseline_hash_matches_manifest() -> None:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    expected = manifest["files"]["evals/golden/legacy-baseline-v0.jsonl"]["sha256"]
+    expected = manifest["legacy_baseline"]["files"]["evals/golden/legacy-baseline-v0.jsonl"]["sha256"]
     assert hashlib.sha256(BASELINE.read_bytes()).hexdigest() == expected
 
 

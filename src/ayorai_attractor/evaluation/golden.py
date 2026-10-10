@@ -170,7 +170,7 @@ def _legacy_prediction(
     manifest_path = root / "evals/golden/MANIFEST.json"
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        expected_hash = manifest["files"]["evals/golden/legacy-baseline-v0.jsonl"]["sha256"]
+        expected_hash = manifest["legacy_baseline"]["files"]["evals/golden/legacy-baseline-v0.jsonl"]["sha256"]
         raw = baseline_path.read_bytes()
     except (OSError, KeyError, TypeError, json.JSONDecodeError) as exc:
         raise RuntimeError("Frozen legacy baseline or its manifest is missing/invalid") from exc

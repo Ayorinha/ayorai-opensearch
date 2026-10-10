@@ -66,7 +66,7 @@ def main() -> int:
         if frozen[key] != generated[key]
     ]
     raw = BASELINE.read_bytes()
-    expected_hash = json.loads(MANIFEST.read_text(encoding="utf-8"))["files"][
+    expected_hash = json.loads(MANIFEST.read_text(encoding="utf-8"))["legacy_baseline"]["files"][
         "evals/golden/legacy-baseline-v0.jsonl"
     ]["sha256"]
     actual_hash = hashlib.sha256(raw).hexdigest()
