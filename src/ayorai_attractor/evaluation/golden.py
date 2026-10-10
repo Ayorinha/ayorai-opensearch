@@ -18,8 +18,6 @@ from ayorai_attractor.evaluation.stats import (
     confusion_matrix,
     mcnemar_exact_pvalue,
 )
-from ayorai_attractor.models import SearchRequest
-from ayorai_attractor.orchestrator import Attractor
 from ayorai_attractor.providers.base import Provider, ProviderResponse
 from ayorai_attractor.verification.claim_pipeline import (
     ClaimVerificationPipeline,
@@ -157,15 +155,56 @@ def _content_digest(report: dict[str, Any]) -> str:
     ).hexdigest()
 
 
-def _legacy_prediction(case: dict[str, Any], documents: dict[str, dict[str, Any]]) -> str:
-    provider = FixtureSearchProvider(
-        documents,
-        [str(x) for x in case.get("evidence_pool", [])],
-    )
-    response = Attractor(search_provider=provider).run(
-        SearchRequest(query=str(case["query"]), max_agents=5)
-    )
-    return response.verification.value.upper()
+def _legacy_prediction(
+    case: dict[str, Any],
+    documents: dict[str, dict[str, Any]],
+    source_suite: str,
+) -> str:
+    """Read the frozen historical prediction; never re-run legacy code at evaluation time."""
+    del documents
+    if source_suite not in {"golden-v0", "golden-v0.1"}:
+        raise ValueError(f"Unsupported legacy baseline suite: {source_suite}")
+
+    root = Path(__file__).resolve().parents[3]
+    baseline_path = root / "evals/golden/legacy-baseline-v0.jsonl"
+    manifest_path = root / "evals/golden/MANIFEST.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        expected_hash = manifest["files"]["evals/golden/legacy-baseline-v0.jsonl"]["sha256"]
+        raw = baseline_path.read_bytes()
+    except (OSError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Frozen legacy baseline or its manifest is missing/invalid") from exc
+
+    actual_hash = hashlib.sha256(raw).hexdigest()
+    if actual_hash != expected_hash:
+        raise RuntimeError(
+            "Frozen legacy baseline SHA-256 mismatch: "
+            f"expected {expected_hash}, got {actual_hash}"
+        )
+
+    matches: list[str] = []
+    for line in raw.decode("utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("Frozen legacy baseline contains invalid JSONL") from exc
+        if record.get("suite") == source_suite and record.get("case_id") == str(case["id"]):
+            matches.append(str(record.get("prediction", "")))
+
+    if len(matches) != 1:
+        raise RuntimeError(
+            "Frozen legacy baseline key must exist exactly once: "
+            f"({source_suite!r}, {str(case['id'])!r}); found {len(matches)}"
+        )
+    prediction = matches[0]
+    if prediction not in {
+        "VERIFIED", "SUPPORTED", "PARTIALLY_SUPPORTED",
+        "UNVERIFIED", "REFUTED", "CONFLICTING",
+    }:
+        raise RuntimeError(f"Invalid frozen legacy prediction: {prediction!r}")
+    return prediction
 
 
 def evaluate_golden_v0(
@@ -234,7 +273,7 @@ def evaluate_golden_v0(
             item["correct"] = correct
             expected.append(gold)
             predicted.append(guess)
-            legacy.append(_legacy_prediction(case, documents))
+            legacy.append(_legacy_prediction(case, documents, "golden-v0.1" if suite == "golden-v0.1" else "golden-v0"))
             category = str(case["category"])
             category_totals[category] += 1
             state_totals[gold] += 1
