@@ -74,7 +74,8 @@ class SearchResponse(BaseModel):
     formal_verification_endpoint: str = "/v1/verify"
     operation_status: Literal["completed", "failed", "not_recorded"] = "completed"
     confidence: float | None = Field(default=None, ge=0, le=1)
-    notice: str = (        "No factual verdict was adjudicated. Submit structured claims and evidence "
+    notice: str = (
+        "No factual verdict was adjudicated. Submit structured claims and evidence "
         "to /v1/verify for formal verification."
     )
     evidence: list[Evidence] = Field(default_factory=list)
@@ -92,9 +93,9 @@ class AuditFindingResponse(BaseModel):
 class AuditResponse(BaseModel):
     trace_id: str
     verification: None = None
-    verdict_authority: str = "not_adjudicated"
+    verdict_authority: Literal["not_adjudicated"] = "not_adjudicated"
     formal_verification_endpoint: str = "/v1/verify"
-    operation_status: str = "completed"
+    operation_status: Literal["completed", "failed", "not_recorded"] = "completed"
     evidence_count: int = Field(ge=0)
     independent_evidence_count: int = Field(ge=0)
     verified_evidence_count: int = Field(ge=0)
