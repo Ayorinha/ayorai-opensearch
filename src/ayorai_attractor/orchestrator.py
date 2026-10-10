@@ -119,7 +119,7 @@ class Attractor:
             verdict_authority="not_adjudicated",
             formal_verification_endpoint="/v1/verify",
             operation_status=operation_status,
-            confidence=0.0,
+            confidence=None,
             evidence=evidence.all(),
             failures=failures.failures,
             agents_used=[agent.name for agent in selected],
