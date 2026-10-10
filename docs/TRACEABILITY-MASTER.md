@@ -74,18 +74,18 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 
 ### 2.4 Arquitetura — seção 5 (itens 5.1 a 5.8)
 
-Os oito itens da arquitetura devem permanecer individualmente rastreáveis. A atribuição abaixo é uma estrutura de auditoria; o nome exato e o escopo de cada item 5.1–5.8 devem ser reconciliados com a especificação-fonte antes de declarar conformidade integral.
-
 | Requisito / etapa | Referência | Código candidato | Teste candidato | Status / limitação |
 |---|---|---|---|---|
-| Arquitetura 5.1 | Especificação canônica §5.1 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]; não inferir o requisito detalhado sem conferir a fonte. |
-| Arquitetura 5.2 | Especificação canônica §5.2 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
-| Arquitetura 5.3 | Especificação canônica §5.3 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
-| Arquitetura 5.4 — replay / integridade | Especificação canônica §5.4 | `src/ayorai_attractor/replay.py`; `src/ayorai_attractor/replay_store.py` | `tests/test_replay.py`; `tests/test_replay_store.py` | [PARCIAL — PR 0.9]; `content_sha256` reportado como não reprodutível. |
-| Arquitetura 5.5 | Especificação canônica §5.5 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
-| Arquitetura 5.6 | Especificação canônica §5.6 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
-| Arquitetura 5.7 | Especificação canônica §5.7 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
-| Arquitetura 5.8 | Especificação canônica §5.8 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
+| 5.1 Entrada e validação: identificador único, idioma, afirmação, documentos, metadados, classificação de privacidade e versão do protocolo; rejeitar entradas inválidas com mensagem explícita | §5.1 | `src/ayorai_attractor/verification/models.py` (Pydantic strict); `api_models.py` | `tests/test_verification_models.py` | [PARCIAL]; o Judge atualmente lança `ValueError` em vez de devolver resultado estruturado. |
+| 5.2 Normalização: preservar texto original e registrar transformações | §5.2 | `src/ayorai_attractor/verification/pt_normalize.py`; `numeric.py` | `tests/test_verification_numeric.py`; **sem teste identificado para registro das transformações** | [PARCIAL]; testes de normalização numérica não demonstram, por si só, que toda transformação é registrada. |
+| 5.3 Afirmações atômicas: separar proposições e avaliá-las individualmente | §5.3; ADR-004; ADR-009 futuro | `src/ayorai_attractor/verification/claim_pipeline.py` | `tests/verification/test_claim_pipeline.py` | [PARCIAL]; não há decomposição atômica com cobertura integral; vincular a lacuna à futura ADR-009. |
+| 5.4 Recuperação: registrar consulta, filtros, resultados e configuração; distinguir falha de recuperação, extração, proveniência, avaliação de evidência, Judge e relatório | §5.4 | `src/ayorai_attractor/providers/opensearch.py`; `http_search.py`; `mock.py`; `hybrid.py` | `tests/test_opensearch_provider.py`; `tests/test_providers.py`; `tests/test_hybrid.py` | [PARCIAL]; diagnóstico e distinção de falhas por etapa relacionados à pergunta 18: [NÃO IMPLEMENTADO / NÃO COMPROVADO]. |
+| 5.5 Evidências: documento, trecho identificável, hashes, posições, método de extração, relação com a afirmação e data de coleta | §5.5 | `src/ayorai_attractor/verification/models.py` (Evidence: offsets, retrieved_at, normalized_content_hash); `extraction.py`; `excerpt.py` | `tests/verification/test_excerpt_revalidation.py` | [PARCIAL]; confirmar cobertura de todos os campos e de sua persistência/proveniência. |
+| 5.6 Proveniência: fontes primárias, republicações e origem comum; URLs diferentes não provam independência | §5.6; ADR-006 | `src/ayorai_attractor/verification/clusters.py`; `src/ayorai_attractor/evidence/graph.py` | `tests/test_verification_clusters.py`; `tests/verification/test_f11_metadata_rules.py`; `tests/test_evidence_graph_properties.py` | [PARCIAL]; a independência inferida depende de metadados e relações efetivamente disponíveis. |
+| 5.7 Judge determinístico: regras formais, versionadas e testadas; registrar condições satisfeitas/não satisfeitas e motivo | §5.7; ADR-002 | `src/ayorai_attractor/verification/judge.py` | `tests/test_verification_judge.py` | [PARCIAL]; o resultado não registra hoje `rule_id` nem versão das regras. [RISCO — Fase 1]: `EvidenceStore.status()` atua como segunda autoridade de status. |
+| 5.8 Relatórios: gerar a partir de registros estruturados validados, em formato legível por máquina e documentado por esquema | §5.8 | `src/ayorai_attractor/evaluation/golden.py`; `src/ayorai_attractor/replay.py` | Testes de avaliação/replay pertinentes; **sem teste de conformidade a JSON Schema versionado** | [NÃO IMPLEMENTADO: esquema]; não existe JSON Schema versionado identificado. `content_sha256` não reprodutível permanece como pendência da PR 0.9. |
+
+**Nota de escopo:** replay e integridade não constituem um item separado da arquitetura §5. Rastreá-los na pergunta 10 (reprodutibilidade) e na §2.3 (proveniência integral), sem rotulá-los como §5.4.
 
 ### 2.5 Taxonomia de vereditos — seção 6
 
@@ -97,11 +97,13 @@ Os oito itens da arquitetura devem permanecer individualmente rastreáveis. A at
 
 ### 2.6 Benchmark PT-BR — seção 7
 
-| Requisito | Referência | Código / artefato | Teste / evidência | Status | Limitação |
-|---|---|---|---|---|---|
-| Números e datas são normalizados de modo determinístico | §7 | `src/ayorai_attractor/verification/numeric.py`; `stance.py` e `pt_normalize.py`, se aplicáveis | `tests/test_verification_numeric.py`; `tests/verification/test_f11_metadata_rules.py` | [DECLARADO; confirmar no commit revisado] | Não atribuir esta regra a `judge.py`; cobertura depende de formatos e casos testados. |
-| Regras PT-BR e metadados são cobertos por testes pertinentes | §7 | `src/ayorai_attractor/verification/numeric.py` e normalizadores aplicáveis | `tests/test_verification_numeric.py`; `tests/verification/test_f11_metadata_rules.py` | [PARCIAL] | Não presumir cobertura de todo formato regional. |
-| Resultados e métricas são publicados com tamanho, composição e incerteza | §7; `docs/eval/BASELINE-v0.md` | Artefatos e documentação de avaliação | `tests/test_judge_evaluation.py`; `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py` | [LIMITAÇÃO DOCUMENTADA] | n=30 e intervalos de confiança incluem o baseline; evitar afirmações generalizadas. |
+| Requisito | Referência canônica | Artefato / evidência | Status | Limitação |
+|---|---|---|---|---|
+| Benchmark `ATTRACTOR-PTBR-BENCH` versão `0.1.0` disponível no repositório | §7 | `evals/`; `docs/eval/`; corpus e Golden existentes | [NÃO IMPLEMENTADO] | O corpus atual contém 52 documentos sintéticos en-US; ainda não existe Golden v1 em português. |
+| Vinte categorias de casos com critérios, exemplos e métricas | §7.1 | Golden v0 e artefatos de avaliação | [NÃO IMPLEMENTADO] | As categorias atualmente identificadas cobrem apenas parte do escopo, incluindo `factual`, `multi-hop`, `injection` e `independence-*`; não equivalem às 20 categorias especificadas. |
+| Piloto com 50 a 100 casos documentados | §7.2 | Golden atual | [NÃO IMPLEMENTADO] | O conjunto atual contém 34 casos, abaixo da faixa de 50–100. |
+| Fontes com origem, licença, finalidade e data registradas | §7.3 | Corpus atual | [NÃO IMPLEMENTADO para documentos reais] | O corpus atual é sintético; não constitui o conjunto de fontes reais documentadas previsto pela especificação. |
+| Resultados e métricas publicados com tamanho, composição e incerteza | §7 | `docs/eval/BASELINE-v0.md`; artefatos de avaliação | `tests/test_judge_evaluation.py`; `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py` | [LIMITAÇÃO DOCUMENTADA] | n=30 no baseline avaliado; os intervalos de confiança incluem o baseline. Não generalizar para além dos dados avaliados. |
 
 ## 3. Achados que exigem etapas futuras
 
@@ -111,7 +113,7 @@ Os oito itens da arquitetura devem permanecer individualmente rastreáveis. A at
 4. **`content_sha256` — PR 0.9:** reprodutibilidade reportada como pendente. Só encerrar com teste determinístico, execução repetível e evidência vinculada ao commit.
 5. **Baseline legado:** `orchestrator.py` + `evidence/core.py` (`EvidenceStore.status`) + `evaluation/golden.py` (`_legacy_prediction`, linhas 156–164). A documentação `docs/eval/BASELINE-v0.md`, linha 85, informa PARTIALLY_SUPPORTED em 30/30 e 13/30 corretos (43,3333%), igual à classe majoritária. Não citar `judge.py` como origem desta predição legada.
 6. **Artefatos Golden congelados:** incluir `tests/test_frozen_artifacts.py` e `tests/test_golden_digest.py` na rastreabilidade de integridade, além dos testes específicos de avaliação.
-7. **Rótulos de verificação:** o commit `d311619` foi reportado pelo Cláudio como testado localmente com `pytest` (348 passed), 34 caminhos existentes e hashes congelados inalterados. Esta evidência aplica-se somente àquele commit; as correções desta revisão precisam de nova execução e novo SHA antes de usar o rótulo [VERIFICADO por execução local — Cláudio, commit X].
+7. **Rótulos de verificação:** **[VERIFICADO por execução local — Cláudio, commit `1d5d7fa`]** — `pytest -p no:cacheprovider`: 348 passed; nenhum artefato congelado tocado e hashes idênticos; 20/20 perguntas literais conferidas palavra por palavra contra a especificação-fonte; zero linhas de tabela com número de células divergente do cabeçalho. Esta verificação aplica-se somente ao commit `1d5d7fa`; a nova correção ainda precisa ser reverificada e receber seu próprio SHA antes de receber rótulo de verificação.
 
 ## 4. Manutenção e critérios de aceite
 
