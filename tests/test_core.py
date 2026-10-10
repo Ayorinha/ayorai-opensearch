@@ -2,10 +2,12 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
-from ayorai_attractor.api.app import app
 import ayorai_attractor.orchestrator as orchestrator
-from ayorai_attractor.models import AgentResult, SearchRequest
+from ayorai_attractor.agents.core import ResearchAgent
+from ayorai_attractor.api.app import app
+from ayorai_attractor.models import SearchRequest
 from ayorai_attractor.orchestrator import Attractor
+from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 
 def test_orchestrator_is_unverified_without_external_sources() -> None:
@@ -43,25 +45,23 @@ def test_opensearch() -> None:
 
 
 def test_orchestrator_preserves_agent_output_and_notice(monkeypatch) -> None:
-    class FakeAgent:
-        name = "fake"
+    class FakeProvider(Provider):
+        def execute(self, prompt: str) -> ProviderResponse:
+            return ProviderResponse(text="Provider-generated analysis.")
 
-        def run(self, context: object) -> AgentResult:
-            return AgentResult(agent=self.name, output="Provider-generated analysis.")
-
-    monkeypatch.setattr(orchestrator, "build_default_provider", lambda: object())
+    monkeypatch.setattr(orchestrator, "build_default_provider", FakeProvider)
     monkeypatch.setattr(orchestrator, "build_search_provider", lambda: None)
     monkeypatch.setattr(
         orchestrator,
         "IMPLEMENTED_AGENTS",
-        {"planner": FakeAgent},
+        {"researcher": ResearchAgent},
     )
     monkeypatch.setattr(
         orchestrator,
         "AdaptiveRouter",
         lambda: SimpleNamespace(
             select=lambda **kwargs: SimpleNamespace(
-                roles=[SimpleNamespace(id="planner")]
+                roles=[SimpleNamespace(id="researcher")]
             )
         ),
     )
