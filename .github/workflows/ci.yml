@@ -30,7 +30,7 @@ jobs:
       - name: Run five-category golden smoke eval
         run: |
           attractor eval --suite smoke-v0 --out /tmp/golden-smoke.json
-          python -c "import json; r=json.load(open('/tmp/golden-smoke.json')); assert r['case_count']==5; assert len(r['content_sha256'])==64; print('GOLDEN_SMOKE: PASS cases=5 digest='+r['content_sha256'])"
+          python -c "import json; r=json.load(open('/tmp/golden-smoke.json')); assert r['case_count']==5; assert len(r['content_sha256'])==64; assert r['semantic_digest_version']=='1'; assert r['semantic_sha256']=='969ec61a4aee4e4426f5d217819bd185ebba248743e7721714a3123f5df67c3d'; print('GOLDEN_SMOKE: PASS cases=5 content_sha256='+r['content_sha256']+' semantic_sha256='+r['semantic_sha256'])"
 
   golden-regression:
     name: golden-regression
@@ -46,11 +46,49 @@ jobs:
       - run: pip install -e ".[dev]"
       - name: Validate frozen Golden v0
         run: python scripts/lint_golden.py
-      - name: Execute all 34 Golden v0 cases
+      - name: Execute Golden v0 and v0.1 metric references
         run: |
           mkdir -p reports
           attractor eval --suite golden-v0 --out reports/golden-v0.json
-          python -c 'import json; from pathlib import Path; r=json.loads(Path("reports/golden-v0.json").read_text()); assert r["case_count"] == 34; assert r["corpus_document_count"] == 52; assert r["cases_with_global_verdict"] == 30; assert r["majority_class_baseline"]["accuracy"] == 0.433333; assert set(r["confusion_matrix"]) == {"VERIFIED","SUPPORTED","PARTIALLY_SUPPORTED","UNVERIFIED","REFUTED","CONFLICTING"}; assert len(r["content_sha256"]) == 64; print("GOLDEN_V0: PASS", r["global_accuracy"], r["balanced_accuracy"], r["mcnemar_vs_legacy"], "digest="+r["content_sha256"])'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("reports/golden-v0.json").read_text(encoding="utf-8"))
+          assert r["case_count"] == 34
+          assert r["corpus_document_count"] == 52
+          assert r["cases_with_global_verdict"] == 30
+          assert r["majority_class_baseline"]["accuracy"] == 0.433333
+          assert set(r["confusion_matrix"]) == {"VERIFIED", "SUPPORTED", "PARTIALLY_SUPPORTED", "UNVERIFIED", "REFUTED", "CONFLICTING"}
+          assert r["global_accuracy"] == {"correct": 7, "total": 30, "accuracy": 0.233333}
+          assert r["balanced_accuracy"] == 0.42735
+          assert r["legacy_accuracy"] == {"correct": 13, "total": 30, "accuracy": 0.433333}
+          assert r["mcnemar_vs_legacy"]["legacy_correct_new_wrong"] == 10
+          assert r["mcnemar_vs_legacy"]["new_correct_legacy_wrong"] == 4
+          assert r["mcnemar_vs_legacy"]["exact_p"] == 0.1795654296875
+          assert len(r["content_sha256"]) == 64
+          assert r["semantic_digest_version"] == "1"
+          assert r["semantic_sha256"] == "21abb816facce73fc924842d12b373b8792abc2e7389e129c35bb58bab806632"
+          print("GOLDEN_V0: PASS", r["global_accuracy"], r["balanced_accuracy"], r["mcnemar_vs_legacy"], "content_sha256=" + r["content_sha256"], "semantic_sha256=" + r["semantic_sha256"])
+          PY
+          attractor eval --suite golden-v0.1 --out reports/golden-v0.1.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("reports/golden-v0.1.json").read_text(encoding="utf-8"))
+          assert r["case_count"] == 34
+          assert r["corpus_document_count"] == 52
+          assert r["cases_with_global_verdict"] == 30
+          assert r["global_accuracy"] == {"correct": 10, "total": 30, "accuracy": 0.333333}
+          assert r["balanced_accuracy"] == 0.481838
+          assert r["legacy_accuracy"] == {"correct": 13, "total": 30, "accuracy": 0.433333}
+          assert r["mcnemar_vs_legacy"]["legacy_correct_new_wrong"] == 9
+          assert r["mcnemar_vs_legacy"]["new_correct_legacy_wrong"] == 6
+          assert r["mcnemar_vs_legacy"]["exact_p"] == 0.60723876953125
+          assert len(r["content_sha256"]) == 64
+          assert r["semantic_digest_version"] == "1"
+          assert r["semantic_sha256"] == "64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608"
+          print("GOLDEN_V0_1: PASS", r["global_accuracy"], r["balanced_accuracy"], r["mcnemar_vs_legacy"], "content_sha256=" + r["content_sha256"], "semantic_sha256=" + r["semantic_sha256"])
+          PY
       - name: Upload reproducible evaluation report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

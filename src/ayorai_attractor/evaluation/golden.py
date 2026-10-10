@@ -8,6 +8,10 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, cast
 
+from ayorai_attractor.evaluation.digest import (
+    SEMANTIC_DIGEST_VERSION,
+    semantic_sha256,
+)
 from ayorai_attractor.evaluation.stats import (
     balanced_accuracy,
     bootstrap_accuracy,
@@ -308,4 +312,6 @@ def evaluate_golden_v0(
         "git_sha": _git_sha(),
     }
     report["content_sha256"] = _content_digest(report)
+    report["semantic_digest_version"] = SEMANTIC_DIGEST_VERSION
+    report["semantic_sha256"] = semantic_sha256(report)
     return report
