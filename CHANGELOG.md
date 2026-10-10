@@ -10,6 +10,8 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ### Verification
 
+- Search and audit responses no longer claim a factual verdict: `verification` is deprecated and returned as `null`, `verdict_authority` is `not_adjudicated`, and `/v1/verify` is the canonical formal-verification endpoint. Operational failures are reported separately in `operation_status`. The deprecated response field is scheduled for removal in v0.5.0.
+
 - Rule stance (detector version 6): Portuguese number words, legal duplicates `40 (quarenta)`, fractions and multipliers, duration conversion (1 ano = 12 meses), `vezes`/`dias-multa`, set semantics per fact, comparative bounds not read as negation, competing named actors block support. New module `verification/pt_normalize.py`.
 
 - Rule stance (detector version 5): negation is now language dependent; Portuguese contractions (`no`, `na`, `nos`, `nas`) and `sem` are no longer read as negation, and `jamais`, `nem`, `nenhum(a)`, `ninguém` are.
