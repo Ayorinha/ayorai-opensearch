@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+import pytest
 from fastapi.testclient import TestClient
 
 import ayorai_attractor.orchestrator as orchestrator
@@ -44,7 +45,9 @@ def test_opensearch() -> None:
     assert payload["trace_id"].startswith("tr_")
 
 
-def test_orchestrator_preserves_agent_output_and_notice(monkeypatch) -> None:
+def test_orchestrator_preserves_agent_output_and_notice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class FakeProvider(Provider):
         def execute(self, prompt: str) -> ProviderResponse:
             return ProviderResponse(text="Provider-generated analysis.")
@@ -56,15 +59,13 @@ def test_orchestrator_preserves_agent_output_and_notice(monkeypatch) -> None:
         "IMPLEMENTED_AGENTS",
         {"researcher": ResearchAgent},
     )
-    monkeypatch.setattr(
-        orchestrator,
-        "AdaptiveRouter",
-        lambda: SimpleNamespace(
-            select=lambda **kwargs: SimpleNamespace(
-                roles=[SimpleNamespace(id="researcher")]
-            )
-        ),
-    )
+    class FakeRouter:
+        def select(
+            self, query: str, mode: str, max_agents: int
+        ) -> SimpleNamespace:
+            return SimpleNamespace(roles=[SimpleNamespace(id="researcher")])
+
+    monkeypatch.setattr(orchestrator, "AdaptiveRouter", FakeRouter)
 
     result = Attractor().run(SearchRequest(query="test query"))
 
