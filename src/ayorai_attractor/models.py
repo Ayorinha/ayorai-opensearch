@@ -1,4 +1,5 @@
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -69,10 +70,13 @@ class SearchResponse(BaseModel):
     mode: QualityMode
     answer: str
     verification: None = None
-    verdict_authority: str = "not_adjudicated"
+    verdict_authority: Literal["not_adjudicated"] = "not_adjudicated"
     formal_verification_endpoint: str = "/v1/verify"
-    operation_status: str = "completed"
-    confidence: float = Field(ge=0, le=1)
+    operation_status: Literal["completed", "failed", "not_recorded"] = "completed"
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    notice: str = (        "No factual verdict was adjudicated. Submit structured claims and evidence "
+        "to /v1/verify for formal verification."
+    )
     evidence: list[Evidence] = Field(default_factory=list)
     failures: list[Failure] = Field(default_factory=list)
     agents_used: list[str] = Field(default_factory=list)
