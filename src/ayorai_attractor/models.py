@@ -68,7 +68,7 @@ class SearchResponse(BaseModel):
     query: str
     mode: QualityMode
     answer: str
-    verification: VerificationStatus | None = None
+    verification: None = None
     verdict_authority: str = "not_adjudicated"
     formal_verification_endpoint: str = "/v1/verify"
     operation_status: str = "completed"
@@ -87,7 +87,7 @@ class AuditFindingResponse(BaseModel):
 
 class AuditResponse(BaseModel):
     trace_id: str
-    verification: str | None = None
+    verification: None = None
     verdict_authority: str = "not_adjudicated"
     formal_verification_endpoint: str = "/v1/verify"
     operation_status: str = "completed"
@@ -100,7 +100,7 @@ class AuditResponse(BaseModel):
 
 class AuditTraceResponse(BaseModel):
     trace_id: str
-    verification: str | None = None
+    verification: None = None
     verdict_authority: str = "not_adjudicated"
     formal_verification_endpoint: str = "/v1/verify"
     operation_status: str = "completed"
