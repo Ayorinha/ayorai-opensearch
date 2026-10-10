@@ -8,6 +8,9 @@
     },
     "evals/corpus/documents.jsonl": {
       "sha256": "ce2333ccfe4003ebfc90819400beaf6a245620754deb8572c7611bd8bbb7dea3"
+    },
+    "evals/golden/legacy-baseline-v0.jsonl": {
+      "sha256": "f9f24efae95153abbe406127401150f34bd952aa2be9e10557ec44b99acb35b3"
     }
   },
   "public_judge_smoke": {

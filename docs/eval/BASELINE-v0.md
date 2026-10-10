@@ -91,3 +91,7 @@ The four abstention cases are outside this global-verdict confusion matrix.
 ## Limites do baseline
 
 Este baseline mede o sistema atual contra o golden v0 fechado. Não mede recuperação em corpus inteiro, busca externa, generalização ou capacidade do futuro Chief Judge. O conjunto v0 foi construído junto com o ADR-002; portanto, desempenho alto nele não seria evidência suficiente de generalização.
+
+## Frozen legacy prediction baseline (Phase 1.1)
+
+The legacy comparator is a frozen, hash-verified fixture keyed by `(source_suite, case_id)`. It contains 68 records: all 34 cases from Golden v0 and all 34 from Golden v0.1. Each suite has 30 `PARTIALLY_SUPPORTED` predictions for global-verdict cases and `UNVERIFIED` for `n01`, `n02`, `o01`, and `o02`. Historical equivalence was independently verified before this freeze against commits `3be512b8ae60e6a1b98524b005c8bf1e1d22aaf4` and `8e596f5a6c674592698d2c0294cb40b8a2d2b05b`: 68/68 predictions matched, with no divergences. The historical workflow is run `36759101933`; this is one-time provenance evidence, not a CI assertion.
