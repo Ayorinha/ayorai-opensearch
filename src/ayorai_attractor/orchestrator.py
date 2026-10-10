@@ -67,7 +67,7 @@ class Attractor:
                 ),
                 verification=None,
                 operation_status="failed",
-                confidence=0.0,
+                confidence=None,
                 failures=failures.failures,
                 trace_id=trace.trace_id,
             )
@@ -95,17 +95,15 @@ class Attractor:
             if role.id in IMPLEMENTED_AGENTS
         ]
         trace.event("agents.selected", count=len(selected))
-        for agent in selected:
-            agent.run(context)
+        outputs = [agent.run(context) for agent in selected]
 
         trace.event(
             "analysis.completed",
             evidence_count=len(evidence.all()),
         )
-        answer = (
-            f"Analysis generated for '{request.query}'. "
-            "No factual verdict was adjudicated. Submit structured claims "
-            "and evidence to /v1/verify for formal verification."
+        answer = next(
+            (item.output for item in reversed(outputs) if item.output.strip()),
+            f"Analysis completed for '{request.query}'. No agent produced output.",
         )
         operation_status = (
             "failed"
