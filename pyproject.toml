@@ -21,7 +21,7 @@ dependencies = [
 nli = [
   "transformers>=4.55,<5",
   "torch>=2.7,<3",
-  "protobuf>=5,<7",
+  "protobuf>=5,<8",
   "sentencepiece>=0.2,<1",
 ]
 telemetry = [
