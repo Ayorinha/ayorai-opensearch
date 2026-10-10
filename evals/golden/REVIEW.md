@@ -1,3 +1,7 @@
+> **Nota de estado — 2026-10-10:** o texto abaixo é o registro histórico da revisão humana anterior ao congelamento do Golden v0; sua declaração de que o conjunto ainda não estava congelado não descreve o estado atual. O Golden v0 foi posteriormente congelado e versionado. Consulte [MANIFEST.json](MANIFEST.json) para os hashes dos artefatos congelados e o identificador do workflow de congelamento (**36758457083**). O commit de referência utilizado nas verificações atuais do repositório é [`3be512b8ae60e6a1b98524b005c8bf1e1d22aaf4`](https://github.com/Ayorinha/ayorai-opensearch/commit/3be512b8ae60e6a1b98524b005c8bf1e1d22aaf4); a origem registrada no manifesto é `40b98f1ce2c6f68c6a7c704d1f8f10342178c045`. Esta nota atualiza o contexto temporal, não altera nem reescreve o conteúdo histórico abaixo.
+
+---
+
 # Golden Set v0 — Human Review
 
 **Status:** DRAFT — **não congelado, não hasheado e não executado**.  
