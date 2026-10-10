@@ -141,3 +141,13 @@ Rótulos e conceitos anteriormente associados ao “Prompt Mestre v3”, incluin
 - Testes de contrato atualizados; execução, digests semânticos e hashes de artefatos congelados dependem de verificação independente do Cláudio no SHA exato.
 - Limitação: `VerificationStatus` e `EvidenceStore.status()` permanecem no código até a PR 1.3; não devem ser usados como autoridade de decisão.
 - Estado: [PROPOSTO] até revisão independente, CI verde e confirmação da tag `baseline-legacy-v0`.
+
+
+## PR 1.2a — contrato sem adjudicação factual [PENDENTE DE REVISÃO]
+
+- O orquestrador preserva a análise produzida pelos agentes, mas a separa do veredito factual; `notice` informa que nenhum veredito foi adjudicado e direciona a `/v1/verify`.
+- `verification=null`, `verdict_authority=not_adjudicated`; falhas operacionais são expostas em `operation_status`.
+- `confidence` é depreciado e retorna `null`; remoção planejada para v0.5.0.
+- `r2-v1` identifica eventos históricos com semântica legada; `r2-v2` identifica novos eventos `not_adjudicated`. Consultas de auditoria retornam `not_recorded` até a migração de persistência da PR 1.2b.
+- A regeneração do baseline legado é bloqueada nesta versão e orienta a execução a partir da tag histórica; manifesto congelado não é alterado.
+- Verificação de testes, lint, tipos, hashes congelados e semantic_sha256: pendente do Cláudio no SHA final da PR.
