@@ -103,7 +103,7 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 | Vinte categorias de casos com critérios, exemplos e métricas | §7.1 | Golden v0 e artefatos de avaliação | [NÃO IMPLEMENTADO] | As categorias atualmente identificadas cobrem apenas parte do escopo, incluindo `factual`, `multi-hop`, `injection` e `independence-*`; não equivalem às 20 categorias especificadas. |
 | Piloto com 50 a 100 casos documentados | §7.2 | Golden atual | [NÃO IMPLEMENTADO] | O conjunto atual contém 34 casos, abaixo da faixa de 50–100. |
 | Fontes com origem, licença, finalidade e data registradas | §7.3 | Corpus atual | [NÃO IMPLEMENTADO para documentos reais] | O corpus atual é sintético; não constitui o conjunto de fontes reais documentadas previsto pela especificação. |
-| Resultados e métricas publicados com tamanho, composição e incerteza | §7 | `docs/eval/BASELINE-v0.md`; artefatos de avaliação | `tests/test_judge_evaluation.py`; `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py` | [LIMITAÇÃO DOCUMENTADA] | n=30 no baseline avaliado; os intervalos de confiança incluem o baseline. Não generalizar para além dos dados avaliados. |
+| Resultados e métricas publicados com tamanho, composição e incerteza | §7; `docs/eval/BASELINE-v0.md` | Artefatos de avaliação; `tests/test_judge_evaluation.py`; `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py` | [LIMITAÇÃO DOCUMENTADA] | n=30 no baseline avaliado; os intervalos de confiança incluem o baseline. Não generalizar para além dos dados avaliados. |
 
 ## 3. Achados que exigem etapas futuras
 
