@@ -84,6 +84,8 @@ The development measurements are reported side by side; neither set establishes 
 | C | **26.67%** | **33.33%** |
 | Majority baseline | **43.33%** | **43.33%** |
 
+**Important metric/version note:** the 26.67% Path C value in the historical E1 table was measured with older code at commit `c4b73f4` (2026-10-03); it is not the current Path C accuracy on Golden v0. With the current rule code evaluated in F1.2, Path C accuracy on Golden v0 is **23.33%** (both baseline v4 and candidate v5). The historical E1 figure is retained above as a historical measurement, not relabelled as a current result. See [`docs/eval/F1.2-RESULTS.md`](docs/eval/F1.2-RESULTS.md) for the version-specific comparison.
+
 **Limitations that apply to both columns:** these are development sets, not a production-generalization benchmark; the corpus has 52 synthetic documents, all tagged `en-US`, and the reported evaluation uses **n=30** cases. Golden v0.1 was rewritten after its author had seen per-case results, as disclosed in [its pre-registration](docs/eval/PREREGISTRATION-GOLDEN-v0.1.md). On Golden v0, the 95% confidence intervals for A and B include the 43.33% majority baseline. The results do not establish Portuguese-document generalization, regulatory certification, legal compliance or universal factual accuracy.
 
 Path A is **research-only / EVAL_ONLY**. Path B is described elsewhere in the project as a candidate commercial path, subject to the project's model-license policy and independent verification; these accuracy figures alone do not establish commercial clearance.
