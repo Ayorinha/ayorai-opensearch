@@ -16,8 +16,8 @@ from ayorai_attractor.evaluation.golden import FixtureSearchProvider, _load_json
 from ayorai_attractor.models import SearchRequest  # noqa: E402
 from ayorai_attractor.orchestrator import Attractor  # noqa: E402
 
-BASELINE = ROOT / "evals/golden/legacy-baseline-v0.jsonl"
-MANIFEST = ROOT / "evals/golden/MANIFEST.json"
+BASELINE = ROOT / "evals/baselines/legacy-v0/predictions.jsonl"
+MANIFEST = ROOT / "evals/baselines/legacy-v0/MANIFEST.json"
 SUITES = {
     "golden-v0": ROOT / "evals/golden/v0.jsonl",
     "golden-v0.1": ROOT / "evals/golden/v0.1.jsonl",
@@ -66,8 +66,8 @@ def main() -> int:
         if frozen[key] != generated[key]
     ]
     raw = BASELINE.read_bytes()
-    expected_hash = json.loads(MANIFEST.read_text(encoding="utf-8"))["legacy_baseline"]["files"][
-        "evals/golden/legacy-baseline-v0.jsonl"
+    expected_hash = json.loads(MANIFEST.read_text(encoding="utf-8"))["files"][
+        "evals/baselines/legacy-v0/predictions.jsonl"
     ]["sha256"]
     actual_hash = hashlib.sha256(raw).hexdigest()
     if actual_hash != expected_hash:
