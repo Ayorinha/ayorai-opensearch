@@ -63,7 +63,6 @@ def test_semantic_digest_recursively_ignores_execution_metadata() -> None:
                 "predicted": "SUPPORTED",
                 "latency_ms": 10.0,
                 "git_sha": "first",
-                "generated_at": "2026-10-10T10:00:00Z",
                 "nested": {"semantic_sha256": "first", "metric": 0.75},
             }
         ],
@@ -71,7 +70,6 @@ def test_semantic_digest_recursively_ignores_execution_metadata() -> None:
     first = semantic_sha256(report)
     report["results"][0]["latency_ms"] = 999.0
     report["results"][0]["git_sha"] = "second"
-    report["results"][0]["generated_at"] = "2026-10-11T10:00:00Z"
     report["results"][0]["nested"]["semantic_sha256"] = "second"
     assert semantic_sha256(report) == first
 
