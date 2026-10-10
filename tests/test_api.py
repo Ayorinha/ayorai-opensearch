@@ -55,7 +55,10 @@ def test_audit_endpoint_returns_deterministic_report(monkeypatch, tmp_path) -> N
     assert response.status_code == 200
     assert response.json() == {
         "trace_id": "tr_api",
-        "verification": "supported",
+        "verification": None,
+        "verdict_authority": "not_adjudicated",
+        "formal_verification_endpoint": "/v1/verify",
+        "operation_status": "completed",
         "evidence_count": 2,
         "independent_evidence_count": 2,
         "verified_evidence_count": 1,
@@ -88,6 +91,10 @@ def test_audit_trace_lookup_returns_persisted_metadata(monkeypatch, tmp_path) ->
     assert lookup.status_code == 200
     body = lookup.json()
     assert body["trace_id"] == "tr_api"
+    assert body["verification"] is None
+    assert body["verdict_authority"] == "not_adjudicated"
+    assert body["formal_verification_endpoint"] == "/v1/verify"
+    assert body["operation_status"] == "completed"
     assert body["replay_digest"]
     assert body["evidence_count"] == 2
 
