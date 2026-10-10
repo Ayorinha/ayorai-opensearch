@@ -3,10 +3,9 @@ from types import SimpleNamespace
 from fastapi.testclient import TestClient
 
 from ayorai_attractor.api.app import app
-from ayorai_attractor.models import SearchRequest
-from ayorai_attractor.models import AgentResult
-from ayorai_attractor.orchestrator import Attractor
 import ayorai_attractor.orchestrator as orchestrator
+from ayorai_attractor.models import AgentResult, SearchRequest
+from ayorai_attractor.orchestrator import Attractor
 
 
 def test_orchestrator_is_unverified_without_external_sources() -> None:
@@ -47,7 +46,7 @@ def test_orchestrator_preserves_agent_output_and_notice(monkeypatch) -> None:
     class FakeAgent:
         name = "fake"
 
-        def run(self, context):
+        def run(self, context: object) -> AgentResult:
             return AgentResult(agent=self.name, output="Provider-generated analysis.")
 
     monkeypatch.setattr(orchestrator, "build_default_provider", lambda: object())
