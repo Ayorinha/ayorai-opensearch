@@ -1,96 +1,130 @@
 # TRACEABILITY MASTER — AYORAI ATTRACTOR
 
-**Estado:** [PROPOSTO] matriz documental para revisão.  
-**Base:** main após PR #119, commit `c4dc36162d8231d78535d1ca1cb00bfdefb9fd4c`.  
-**Escopo desta PR:** somente documentação; nenhum código, teste, fixture, Golden ou manifesto alterado.
+**Estado:** [PROPOSTO] matriz documental em revisão; não autoriza, por si só, declaração de implementação.
+**Especificação canônica:** *AYORAI ATTRACTOR — ESPECIFICAÇÃO MESTRA DO LABORATÓRIO BRASILEIRO DE AUDITORIA, BENCHMARK E RASTREABILIDADE DE INTELIGÊNCIA ARTIFICIAL*; identificador `AYORAI-ATTRACTOR-BAL`; versão `1.0.0`.
+**Origem da especificação:** documento-fonte fornecido pelo mantenedor; ainda não versionado neste repositório. Proposta futura: versionar em `docs/spec/`, mediante decisão do mantenedor.
+**Base da PR:** `main` após PR #119, commit `c4dc36162d8231d78535d1ca1cb00bfdefb9fd4c`.
+**Escopo:** somente documentação. Não alterar código, testes, fixtures, Golden, corpus, manifestos ou hashes congelados.
 
-## Regras de classificação
+## Regras de classificação e evidência
 
-- **[VERIFICADO]** confirmado por execução ou consulta direta, com fonte indicada.
-- **[DECLARADO]** consta em ADR, documentação ou relato, sem verificação independente aqui.
-- **[PROPOSTO]** trabalho futuro ou decisão pendente.
-- Cada linha contém requisito, ADR/especificação, código, teste, evidência, status e limitação.
-- Não marcar “implementado” sem caminho real de código, teste correspondente e evidência. Se não houver teste, escrever **sem teste**.
+- **[VERIFICADO por execução local — Cláudio, commit `d311619`]** significa que o comando foi executado localmente sobre aquele commit. O relato disponível registra `pytest: 348 passed`, os 34 caminhos citados existentes na árvore e os hashes congelados inalterados. Isso **não** valida automaticamente o conteúdo desta revisão nem transfere a verificação para um commit posterior.
+- Toda nova afirmação [VERIFICADO] precisa indicar comando, check-run, SHA/commit ou fonte diretamente consultada. Separar execução local, consulta ao GitHub e afirmação declarada por documentação.
+- **[DECLARADO]** significa que consta em código/documentação ou foi relatado, mas a alegação específica não foi verificada de forma independente nesta linha.
+- **[PARCIAL]** significa que há implementação/teste para parte do requisito, com lacuna explícita.
+- **[NÃO IMPLEMENTADO]** ou **[SEM TESTE]** deve ser usado quando aplicável; não preencher lacunas por inferência.
+- **[PROPOSTO]** indica trabalho futuro ou decisão pendente.
+- Não declarar “implementado” sem apontar código real, teste pertinente e evidência. Existência de arquivo ou teste, isoladamente, não prova o comportamento completo.
+- Em cada linha, registrar requisito, referência, caminho de código, teste, evidência/status e limitação. Quando não houver teste pertinente identificado, escrever **sem teste identificado**.
 
-## 1. Perguntas de auditoria
+## 1. As 20 perguntas literais da seção 1.1 da especificação canônica
 
-**Nota de fidelidade:** a especificação mestra canônica com a seção 1.1 e sua lista literal de 20 perguntas não foi localizada na árvore de arquivos da main consultada. Para não inventar uma transcrição, esta é uma lista operacional derivada do Prompt Mestre v3, não uma cópia literal. A lista deve ser comparada com o documento-fonte antes de ser considerada transcrição fiel.
+A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especificação `AYORAI-ATTRACTOR-BAL` v1.0.0. A especificação ainda não está versionada no repositório. Os mapeamentos técnicos são provisórios e devem ser confirmados contra o código e os testes antes de declarar cobertura.
 
-| # | Pergunta de auditoria | Código | Teste | Status / limitação |
+| # | Pergunta literal | Referência / código candidato | Teste candidato | Status / limitação |
 |---:|---|---|---|---|
-| 1 | Toda afirmação factual é ligada a evidência ou marcada como não suportada? | `src/ayorai_attractor/verification/claim_pipeline.py` | `tests/verification/test_claim_pipeline.py` | [DECLARADO]; cobertura depende dos caminhos testados. |
-| 2 | LLM, mocks e caches derivados de LLM são excluídos da independência epistêmica? | `src/ayorai_attractor/evidence/graph.py` | `tests/test_evidence_graph.py`; `tests/test_evidence_graph_properties.py` | [DECLARADO]; metadados de origem podem limitar a conclusão. |
-| 3 | VERIFIED exige evidência independente, concordância e proveniência completa? | ADR-002; `src/ayorai_attractor/verification/judge.py` | `tests/test_verification_judge.py` | [DECLARADO]; não prova todos os cenários possíveis. |
-| 4 | O Judge é a única autoridade do veredito? | ADR-002; `src/ayorai_attractor/verification/judge.py`; `src/ayorai_attractor/evidence/core.py` | `tests/test_verification_judge.py`; **sem teste de exclusividade da autoridade** | [RISCO Fase 1]: `EvidenceStore.status()` calcula status próprio e atua como segunda autoridade. |
-| 5 | A agregação global respeita a precedência de vereditos? | ADR-002 §4; `src/ayorai_attractor/verification/judge.py` | `tests/test_verification_judge.py` | [DECLARADO]; §4 será substituída pelo futuro ADR-009. |
-| 6 | No-answer e out-of-scope resultam em abstenção sem veredito global indevido? | ADR-002 §5; `src/ayorai_attractor/verification/claim_pipeline.py` | `tests/verification/test_claim_pipeline.py` | [DECLARADO]; restrito aos casos cobertos. |
-| 7 | Documentos com prompt injection são tratados como dados, não instruções? | ADR-002 §6 | `src/ayorai_attractor/verification/claim_pipeline.py` | `tests/verification/test_claim_pipeline.py`; `tests/test_judge_evaluation.py` | [DECLARADO]; baseline antigo não prova robustez geral. |
-| 8 | Números e datas seguem regras determinísticas e locale da fonte? | ADR-002 §7–7.2; ADR-006 | `src/ayorai_attractor/verification/judge.py` | `tests/test_verification_judge.py`; `tests/test_judge_evaluation.py` | [DECLARADO]; limitado aos locales/casos testados. |
-| 9 | Golden v0 é fechado por caso e seus artefatos permanecem congelados? | ADR-002 §7.1 | `evals/golden/v0.jsonl`; `evals/corpus/documents.jsonl`; `evals/golden/MANIFEST.json` | `tests/test_judge_evaluation.py`; workflows Golden | [VERIFICADO por relato do Cláudio]; hashes informados preservados. Não mede recuperação geral. |
-| 10 | Um replay verifica a integridade do bundle e reproduz o digest? | Prompt Mestre §5.4 | `src/ayorai_attractor/replay.py`; `src/ayorai_attractor/replay_store.py` | `tests/test_replay.py`; `tests/test_replay_store.py` | [DECLARADO]; replay integral end-to-end precisa de prova adicional. |
-| 11 | O namespace oficial é resolvido sem sombrear namespaces externos? | ADR-001 | `src/ayorai_attractor/` | `tests/test_namespace.py` | [VERIFICADO: arquivos existem]; status da ADR-001 desatualizado; decisão do mantenedor pendente. |
-| 12 | Recuperação e fetcher preservam proveniência e respeitam limites/termos? | Prompt Mestre §3/L2 | `src/ayorai_attractor/providers/`; `src/ayorai_attractor/evidence/` | **sem teste único do fluxo completo** | [PARCIAL]; não comprovados em conjunto todos os controles de fetch. |
-| 13 | Orquestração impõe orçamento, isolamento e autonomia limitada? | Prompt Mestre §3/L4 | `src/ayorai_attractor/orchestrator.py`; `src/ayorai_attractor/agents/` | **sem teste único de todos os controles** | [PARCIAL]; testar cada fronteira separadamente. |
-| 14 | A síntese final passa por verificação pós-escrita? | Prompt Mestre §3/L5 | `src/ayorai_attractor/verification/claim_pipeline.py` | `tests/verification/test_claim_pipeline.py` | [PARCIAL]; demonstrar todos os caminhos de resposta. |
-| 15 | Audit Mode liga claims às citações e verifica suporte factual de ponta a ponta? | Prompt Mestre §3/L6 | Módulo específico não confirmado nesta matriz | **sem teste end-to-end identificado** | [PROPOSTO/PARCIAL]; localizar módulo e teste antes de declarar completo. |
-| 16 | Logs e bundles preservam integridade sem expor dados sensíveis? | Prompt Mestre §3/L7–L9 | `src/ayorai_attractor/replay.py`; `src/ayorai_attractor/observability/` | `tests/test_replay.py`; **sem teste dedicado de redação de PII identificado** | [PARCIAL]; integridade não prova privacidade dos logs. |
-| 17 | Segurança cobre injection, isolamento de ferramentas e supply chain? | Prompt Mestre §3/L8 | `src/ayorai_attractor/security/`; `.github/workflows/` | Vincular teste a cada controle OWASP ASI; **sem teste único abrangente** | [PARCIAL]; CI/CodeQL verde não prova todos os riscos. |
-| 18 | Avaliação compara o sistema ao baseline sem alterar Golden após observar resultados? | Prompt Mestre §3/L10; `docs/eval/BASELINE-v0.md` | `tests/test_judge_evaluation.py`; checks `golden-smoke` e `golden-regression` | [VERIFICADO por docs/checks identificados]; baseline constante não prova capacidade geral. |
-| 19 | Promoções de prompt/modelo exigem valset separado e gates de qualidade/segurança? | Prompt Mestre §3/L11 | Módulo de promoção não confirmado | **sem teste de promoção GEPA identificado** | [PROPOSTO]; não declarar self-improvement com gates implementado. |
-| 20 | API, CLI, MCP, multi-tenancy, SLO e governança estão comprovados por contratos e testes? | Prompt Mestre §3/L12–L14 | `src/ayorai_attractor/`; `docs/security/` | **sem teste único para o conjunto integral** | [PARCIAL]; cada interface/controle precisa de linha e prova própria. |
+| 1 | A afirmação avaliada é sustentada pelas evidências disponíveis? | `src/ayorai_attractor/verification/claim_pipeline.py`; Judge | `tests/verification/test_claim_pipeline.py`; `tests/test_verification_judge.py` | [PARCIAL]; confirmar que o teste cobre suporte da afirmação, não apenas presença de evidência. |
+| 2 | A citação realmente corresponde ao documento de origem? | `src/ayorai_attractor/verification/excerpt.py` | `tests/verification/test_excerpt_revalidation.py` | [DECLARADO]; mapeamento indicado pelo mantenedor; confirmar execução para o commit revisado. |
+| 3 | O trecho citado sustenta toda a afirmação ou apenas parte dela? | Judge e lógica de cobertura da afirmação | ADR-009 ainda não redigido; **sem teste de cobertura integral identificado** | [NÃO IMPLEMENTADO — ADR-009]; o Judge atual não mede cobertura completa; `S=1 → PARTIALLY_SUPPORTED` não resolve cobertura semântica. |
+| 4 | Existem evidências que contradizem a conclusão? | `src/ayorai_attractor/verification/judge.py`; grafo de evidências | `tests/test_verification_judge.py`; testes de grafo, se aplicáveis | [PARCIAL]; verificar explicitamente detecção e precedência de evidência contraditória. |
+| 5 | As fontes são independentes ou reproduzem uma origem comum? | `src/ayorai_attractor/verification/clusters.py`; `src/ayorai_attractor/evidence/graph.py` | `tests/test_verification_clusters.py`; `tests/verification/test_f11_metadata_rules.py` | [DECLARADO]; a conclusão depende da qualidade e completude dos metadados de proveniência. |
+| 6 | O sistema utilizou informações desatualizadas? | Recuperação/fetch e metadados temporais; confirmar caminho concreto | **sem teste específico de atualidade identificado** | [SEM TESTE IDENTIFICADO]; não inferir verificação temporal a partir da existência de timestamps. |
+| 7 | A ausência de evidência foi tratada corretamente? | `src/ayorai_attractor/verification/judge.py`; pipeline de claims | `tests/test_verification_judge.py`; `tests/verification/test_claim_pipeline.py` | [PARCIAL]; confirmar casos de ausência, insuficiência e abstenção. |
+| 8 | O sistema reconheceu quando deveria se abster? | `src/ayorai_attractor/verification/claim_pipeline.py`; Judge | `tests/verification/test_claim_pipeline.py`; `tests/test_verification_judge.py` | [PARCIAL]; cobertura limitada aos cenários testados. |
+| 9 | O resultado permaneceu consistente diante de paráfrases equivalentes? | Normalização e avaliação; confirmar caminho exato | **sem teste específico de invariância a paráfrases identificado** | [SEM TESTE IDENTIFICADO]; não alegar consistência sem conjunto e critério de equivalência versionados. |
+| 10 | A decisão pode ser reproduzida com os mesmos artefatos e as mesmas regras? | `src/ayorai_attractor/replay.py`; `src/ayorai_attractor/replay_store.py`; serialização/digest | `tests/test_replay.py`; `tests/test_replay_store.py` | [PARCIAL — PR 0.9]; `content_sha256` foi reportado como não reprodutível; exige correção e prova determinística. |
+| 11 | A proveniência dos documentos pode ser verificada? | `src/ayorai_attractor/evidence/`; `src/ayorai_attractor/replay_store.py` | Testes de evidência e replay pertinentes; confirmar cobertura específica | [PARCIAL]; não presumir proveniência integral só porque existe um bundle. |
+| 12 | A execução respeitou as restrições de privacidade configuradas? | `src/ayorai_attractor/observability/`; configuração de privacidade a localizar | **sem teste específico de cumprimento das restrições de privacidade identificado** | [SEM TESTE IDENTIFICADO]; não afirmar conformidade LGPD ou ausência de vazamento sem evidência específica. |
+| 13 | Alterações no código, nos dados ou nas regras modificaram o resultado? | Replay, avaliação Golden e digests | `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py`; testes de replay pertinentes | [PARCIAL]; integridade de artefatos não demonstra, sozinha, sensibilidade a toda mudança de código/regra. |
+| 14 | O sistema é vulnerável a instruções maliciosas inseridas em documentos? | `src/ayorai_attractor/verification/security.py` | `tests/test_verification_response_security.py` | [DECLARADO]; testar no commit revisado; testes específicos não provam imunidade geral a prompt injection. |
+| 15 | Um terceiro consegue reconstruir a justificativa técnica do veredito? | Judge, evidências, clusters e replay | Testes de Judge/replay; **sem teste único de reconstrução independente end-to-end identificado** | [PARCIAL]; precisa de procedimento reproduzível por terceiro com artefatos e regras fixados. |
+| 16 | O sistema consegue identificar quando a informação disponível é insuficiente? | Judge e pipeline de claims | `tests/test_verification_judge.py`; `tests/verification/test_claim_pipeline.py` | [PARCIAL]; distinguir insuficiência explícita de ausência acidental de dados. |
+| 17 | O resultado depende excessivamente de um modelo ou fornecedor específico? | Adaptadores de modelos/provedores e avaliação comparativa | **sem teste específico de dependência de fornecedor identificado** | [SEM TESTE IDENTIFICADO]; exige avaliação cruzada com modelos/provedores e protocolo comparável. |
+| 18 | É possível identificar em qual etapa ocorreu uma falha? | Orquestração, pipeline, logs e observabilidade | **sem teste de diagnóstico por etapa identificado** | [NÃO IMPLEMENTADO / NÃO COMPROVADO]; confirmar a implementação antes de alterar o rótulo. |
+| 19 | O sistema apresenta desempenho consistente em diferentes categorias de casos? | `src/ayorai_attractor/evaluation/golden.py`; conjuntos de avaliação | Testes de avaliação existentes; **sem evidência de cobertura representativa de todas as categorias** | [PARCIAL]; publicar resultados por categoria, tamanho e composição do conjunto. |
+| 20 | As conclusões estatísticas são sustentadas pelo tamanho e pela composição do conjunto avaliado? | `docs/eval/BASELINE-v0.md`; protocolo Golden | `tests/test_judge_evaluation.py`; `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py` | [LIMITAÇÃO DOCUMENTADA]; n=30; intervalos de confiança incluem o baseline. Não generalizar além do conjunto avaliado. |
 
-## 2. Matriz principal de rastreabilidade
+## 2. Matriz principal de rastreabilidade da especificação canônica
 
-| Requisito | ADR / referência | Arquivo de código | Teste | Evidência | Status | Limitação |
-|---|---|---|---|---|---|---|
-| Namespace isolado | ADR-001 | `src/ayorai_attractor/` | `tests/test_namespace.py` | Check `namespace-compatibility` e teste presente | [VERIFICADO: artefatos presentes] | Status declarado na ADR-001 desatualizado. |
-| Judge determinístico | ADR-002 §1–3 | `src/ayorai_attractor/verification/judge.py` | `tests/test_verification_judge.py` | ADR e teste no repo | [DECLARADO] | Não inferir cobertura além dos casos testados. |
-| Agregação global | ADR-002 §4 | `src/ayorai_attractor/verification/judge.py` | `tests/test_verification_judge.py` | `docs/eval/TRACEABILITY.md` | [DECLARADO] | Futuro ADR-009 substituirá §1 e §4; ainda não redigido. |
-| Evidência e independência | ADR-002 §2–3; ADR-005 | `src/ayorai_attractor/evidence/graph.py` | `tests/test_evidence_graph.py`; `tests/test_evidence_graph_properties.py` | Testes e matriz R1 existente | [DECLARADO] | Dependência da qualidade dos metadados de origem. |
-| Pipeline de claims | ADR-004 | `src/ayorai_attractor/verification/claim_pipeline.py` | `tests/verification/test_claim_pipeline.py` | Testes de pipeline presentes | [DECLARADO] | Verificar todos os caminhos de API antes de afirmar cobertura completa. |
-| Replay e digest | Prompt Mestre §5.4; R20 | `src/ayorai_attractor/replay.py`; `src/ayorai_attractor/replay_store.py` | `tests/test_replay.py`; `tests/test_replay_store.py` | Código usa JSON canônico e SHA-256 | [DECLARADO — limitação reportada] | **PR 0.9:** `content_sha256` informado como não reprodutível; pendente de teste determinístico e prova ligada a commit. |
-| Exclusividade do Judge | ADR-002 | `src/ayorai_attractor/verification/judge.py`; `src/ayorai_attractor/evidence/core.py` | **sem teste dedicado para exclusividade da autoridade** | `EvidenceStore.status()` calcula `VerificationStatus` próprio | [RISCO Fase 1] | Segunda autoridade de veredito; corrigir em etapa separada. |
-| Golden v0 e manifesto | ADR-002 §7.1 | `evals/golden/v0.jsonl`; `evals/corpus/documents.jsonl`; `evals/golden/MANIFEST.json` | `tests/test_judge_evaluation.py`; workflows Golden | Hashes informados pelo Cláudio; checks da PR #119 consultados | [VERIFICADO por fontes identificadas] | Não editar artefatos congelados nem resultados históricos. |
-| Baseline legado | `docs/eval/BASELINE-v0.md` | `src/ayorai_attractor/verification/judge.py` | `tests/test_judge_evaluation.py` | Baseline: 13/30 corretos; 43,3333% | [VERIFICADO na documentação do baseline] | Predição PARTIALLY_SUPPORTED em 30/30; acurácia igual à classe majoritária, sem evidência de capacidade geral. |
-| Segurança e supply chain | Prompt Mestre §3/L0/L8 | `.github/workflows/`; `src/ayorai_attractor/security/` | Workflows e testes específicos por controle | Checks da PR #119 consultados no GitHub | [PARCIALMENTE VERIFICADO] | Resultado vale para o commit consultado; não comprova toda cobertura OWASP ASI. |
-| Audit Mode completo | Prompt Mestre §3/L6 | Módulo específico não confirmado | **sem teste end-to-end identificado** | Requisito documentado | [PROPOSTO/PARCIAL] | Localizar implementação e teste antes de marcar como implementado. |
-| OpenSearch híbrido / reranking | Prompt Mestre §3/L2 | `src/ayorai_attractor/providers/`; `src/ayorai_attractor/evidence/` | **sem teste único do fluxo completo** | Estrutura e docs | [PARCIAL] | Validar BM25+kNN+RRF+reranking ponta a ponta. |
-| Observabilidade sem PII | Prompt Mestre §3/L9 | `src/ayorai_attractor/observability/` | **sem teste dedicado de redação de PII identificado** | Módulos de observabilidade | [PARCIAL] | Não declarar privacidade de logs sem teste explícito. |
-| Promoção GEPA com gates | Prompt Mestre §3/L11 | Módulo não confirmado | **sem teste de promoção identificado** | Requisito futuro | [PROPOSTO] | Exige valset separado, gates e registro reproduzível. |
-| API, CLI, MCP e Studio | Prompt Mestre §3/L12 | `src/ayorai_attractor/` | **sem teste único para todas as interfaces** | Árvore do repositório | [PARCIAL] | Rastrear cada contrato individualmente. |
-| Multi-tenant, SLO e governança | Prompt Mestre §3/L13–L14 | `src/ayorai_attractor/`; `docs/security/`; `docs/` | **sem teste único para o conjunto integral** | Documentação e estrutura | [PARCIAL] | Documentação não prova isolamento, quotas, SLO ou conformidade operacional. |
+### 2.1 Princípios fundamentais — seção 2
 
-## 3. Princípios das seções 2 a 7 do Prompt Mestre v3
+| Requisito | Referência canônica | Código | Teste | Evidência / status | Limitação |
+|---|---|---|---|---|---|
+| LLM não é autoridade final do veredito | §2.1 — LLM ≠ Judge | `src/ayorai_attractor/verification/judge.py`; `src/ayorai_attractor/evidence/core.py` | `tests/test_verification_judge.py`; **sem teste dedicado de exclusividade da autoridade** | [RISCO — Fase 1]; `EvidenceStore.status()` calcula status próprio | Há risco de segunda autoridade; não corrigir nesta PR documental. |
+| Evidência precede conclusão | §2.2 | `src/ayorai_attractor/verification/claim_pipeline.py`; módulos de evidência | `tests/verification/test_claim_pipeline.py` e testes pertinentes de evidência | [PARCIAL]; confirmar relação explícita entre cada conclusão e evidência | A existência de pipeline não prova suporte integral de cada claim. |
+| Proveniência integral | §2.3 | `src/ayorai_attractor/evidence/`; `src/ayorai_attractor/replay.py`; `src/ayorai_attractor/replay_store.py` | Testes de evidência/replay; confirmar cobertura ponta a ponta | [PARCIAL]; `content_sha256` pendente de reprodutibilidade (PR 0.9) | Não afirmar proveniência integral até resolver e testar o digest. |
+| Separação entre desenvolvimento, avaliação e validação | §2.4 | `evals/`; `docs/eval/` | `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py`; workflows Golden | [PARCIAL]; verificar segregação real dos conjuntos e processos | Golden congelado não prova, sozinho, independência de todos os conjuntos. |
+| Transparência sobre limitações | §2.5 | `docs/eval/BASELINE-v0.md`; esta matriz | **sem teste automatizado de completude das limitações** | [DECLARADO]; limitações do baseline e dos requisitos sem teste são registradas | Depende de atualização honesta e contínua da documentação. |
 
-| Princípio | Referência | Código | Teste | Evidência | Status | Limitação |
-|---|---|---|---|---|---|---|
-| Estado real separado do declarado | §2; `docs/PROGRESS.md`; `docs/STATUS.md` | Por requisito nas tabelas acima | Por requisito nas tabelas acima | Esta matriz registra divergências | [EM ANDAMENTO] | Documentação pode ficar desatualizada. |
-| Cada camada deve ter contrato, implementação, testes, métricas e docs | §3, L0–L14 | Módulos `src/ayorai_attractor/` | Testes associados por requisito | Árvore real do repo | [PARCIAL] | Nem todas as camadas têm prova integral. |
-| Ordem do roadmap não deve ser pulada | §4 | N/A — processo | **sem teste automatizado** | Histórico de PRs | [DECLARADO] | Regra de processo, não comportamento runtime. |
-| Arena honesta, conjunto congelado e revisão humana | §5 | `evals/`; `docs/eval/` | Testes de avaliação disponíveis | Baseline e Golden v0 | [PARCIAL] | Não alegar comparação externa sem dados/scripts/versionamento reproduzíveis. |
-| Não selecionar perguntas após ver resultados nem alegar superioridade fora do escopo | §5.6 | N/A — governança | **sem teste automatizado** | Regra documental | [DECLARADO] | Exige revisão humana e disciplina de versionamento. |
-| PRs documentam motivação, risco, rollback e teste | §6 | N/A — processo | **sem teste automatizado** | Descrição de PR | [DECLARADO] | Não há validação automática de completude identificada. |
-| Testes adequados por tipo de mudança | §6 | Por requisito | Testes listados acima | Suíte e CI | [DECLARADO/PARCIAL] | Ausências permanecem explicitamente “sem teste”. |
-| mypy strict bloqueante em código novo | §6 | Código novo | Workflow de typing | PR #119 tinha check `typecheck-strict (non-blocking)` | [PARCIAL] | Check não bloqueante não prova exigência bloqueante. |
-| Smoke eval sem regressão | §6 | `evals/`; workflows | `golden-smoke`; `golden-regression` | Checks da PR #119 concluídos com sucesso | [VERIFICADO para o SHA da PR #119] | Não se transfere automaticamente a commits posteriores. |
-| ADR para decisões de arquitetura | §6; `docs/adr/README.md` | N/A — documentação | **sem teste automatizado** | Índice ADR da PR #119 | [VERIFICADO no GitHub] | ADR-009 pendente; ADR-001 exige decisão de status. |
-| Conquistas somente com prova | §6 | N/A — documentação | **sem teste automatizado** | Links de runs/releases | [DECLARADO] | Não registrar conquista apenas por texto descritivo. |
-| Respostas classificam [VERIFICADO]/[DECLARADO]/[PROPOSTO] e não inventam métricas | §7; regras de honestidade v3 | N/A — processo | **sem teste automatizado** | Política documental e relatórios com fontes | [DECLARADO] | Depende de disciplina operacional em cada relatório. |
+### 2.2 Independência tecnológica — seção 3
 
-## 4. Achados reservados para etapas futuras
+| Requisito | Referência canônica | Código / artefato | Teste / evidência | Status | Limitação |
+|---|---|---|---|---|---|
+| Inventário de dependências e SBOM | §3.2 | Manifestos e workflows de dependências a conferir no repositório | **sem verificação de SBOM anexada a esta linha** | [PENDENTE DE CONFIRMAÇÃO] | Não afirmar SBOM completo sem arquivo, ferramenta, comando e resultado identificados. |
+| Modo offline testado com rede bloqueada | §3.3 | Implementação/configuração offline a localizar | **sem teste com rede efetivamente bloqueada identificado** | [SEM TESTE IDENTIFICADO] | Execução sem uso aparente de rede não equivale a teste com rede bloqueada. |
+| Modelos nacionais e estrangeiros | §3.4 | Adaptadores e configuração de modelos a conferir | **sem matriz comparativa nacional/estrangeira identificada** | [PENDENTE DE CONFIRMAÇÃO] | Não inferir suporte ou paridade a partir da existência de adaptadores. |
 
-1. **ADR-001:** status declarado desatualizado; atualização pendente de decisão do mantenedor. Não editar nesta PR.
-2. **ADR-009:** ADR-002 §1 e §4 serão substituídas pelo futuro ADR-009, ainda não redigido. Não antecipar sua decisão.
-3. **EvidenceStore.status() — Fase 1:** `src/ayorai_attractor/evidence/core.py` calcula status próprio. Registrar como segunda autoridade de veredito; não há teste dedicado de exclusividade identificado. Não alterar nesta PR.
-4. **content_sha256 — PR 0.9:** reprodutibilidade reportada como pendente. Só marcar resolvido com teste determinístico, execução reproduzível e evidência ligada ao commit.
-5. **Baseline legado:** PARTIALLY_SUPPORTED em 30/30 claims com veredito global; 13/30 corretos (43,3333%), igual à classe majoritária. Não representa capacidade geral de verificação.
-6. **20 perguntas da seção 1.1:** localizar a especificação mestra canônica e comparar sua redação com a lista operacional da seção 1 antes de alegar transcrição literal.
+### 2.3 Escopo do benchmark — seção 4
 
-## 5. Manutenção
+| Requisito | Referência canônica | Código / artefato | Teste / evidência | Status | Limitação |
+|---|---|---|---|---|---|
+| Escopo, população, exclusões e limites do benchmark explicitados | §4 | `evals/`; `docs/eval/` | `tests/test_judge_evaluation.py`; protocolo e resultados a conferir | [PARCIAL] | Não generalizar além dos casos, categorias e condições documentadas. |
+| Baseline legado corretamente contextualizado | §4; `docs/eval/BASELINE-v0.md`, linha 85 | `src/ayorai_attractor/orchestrator.py`; `src/ayorai_attractor/evidence/core.py` (`EvidenceStore.status`); `src/ayorai_attractor/evaluation/golden.py` (`_legacy_prediction`, linhas 156–164) | `tests/test_judge_evaluation.py` | [DECLARADO NA DOCUMENTAÇÃO DO BASELINE]; 13/30 = 43,3333%; PARTIALLY_SUPPORTED em 30/30 | Igual à classe majoritária; não representa evidência de capacidade geral de verificação. |
+| Tamanho e composição sustentam as conclusões estatísticas | §4; §7 | `docs/eval/BASELINE-v0.md`; artefatos de avaliação | `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py` | [LIMITAÇÃO DOCUMENTADA] | n=30; intervalos de confiança incluem o baseline; conclusões devem permanecer restritas. |
 
-- Atualizar a matriz na mesma PR que altera o requisito correspondente.
-- Usar caminhos reais de código e teste. Se não houver teste, escrever “sem teste”.
-- Nunca declarar “implementado” sem teste e evidência.
-- Anexar SHA, comando ou URL de check-run para alegações de CI, testes e métricas.
-- Preservar Golden, manifestos, hashes e resultados históricos.
-- Esta matriz documenta rastreabilidade; não substitui ADRs nem aprova automaticamente arquitetura pendente.
+### 2.4 Arquitetura — seção 5 (itens 5.1 a 5.8)
+
+Os oito itens da arquitetura devem permanecer individualmente rastreáveis. A atribuição abaixo é uma estrutura de auditoria; o nome exato e o escopo de cada item 5.1–5.8 devem ser reconciliados com a especificação-fonte antes de declarar conformidade integral.
+
+| Requisito / etapa | Referência | Código candidato | Teste candidato | Status / limitação |
+|---|---|---|---|---|
+| Arquitetura 5.1 | Especificação canônica §5.1 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]; não inferir o requisito detalhado sem conferir a fonte. |
+| Arquitetura 5.2 | Especificação canônica §5.2 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
+| Arquitetura 5.3 | Especificação canônica §5.3 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
+| Arquitetura 5.4 — replay / integridade | Especificação canônica §5.4 | `src/ayorai_attractor/replay.py`; `src/ayorai_attractor/replay_store.py` | `tests/test_replay.py`; `tests/test_replay_store.py` | [PARCIAL — PR 0.9]; `content_sha256` reportado como não reprodutível. |
+| Arquitetura 5.5 | Especificação canônica §5.5 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
+| Arquitetura 5.6 | Especificação canônica §5.6 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
+| Arquitetura 5.7 | Especificação canônica §5.7 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
+| Arquitetura 5.8 | Especificação canônica §5.8 | `src/ayorai_attractor/` — módulo específico a confirmar | **sem teste mapeado com confiança nesta revisão** | [PENDENTE DE MAPEAMENTO]. |
+
+### 2.5 Taxonomia de vereditos — seção 6
+
+| Requisito | Referência | Código | Teste | Status / limitação |
+|---|---|---|---|---|
+| Taxonomia e semântica dos vereditos correspondem à especificação | §6 | `src/ayorai_attractor/verification/judge.py`; `src/ayorai_attractor/evidence/core.py` | `tests/test_verification_judge.py`; **sem teste dedicado de conformidade integral à taxonomia** | [PARCIAL]; reconciliar rótulos e regras com a especificação-fonte. |
+| Cobertura parcial não é confundida com suporte integral | §6; futura ADR-009 | Judge e lógica de cobertura, a confirmar | **sem teste de cobertura integral identificado** | [NÃO IMPLEMENTADO — ADR-009]; registrar explicitamente a lacuna. |
+| Abstenção e insuficiência são tratadas sem inflar o veredito | §6 | Judge e pipeline de claims | `tests/test_verification_judge.py`; `tests/verification/test_claim_pipeline.py` | [PARCIAL]; limitado aos casos cobertos. |
+
+### 2.6 Benchmark PT-BR — seção 7
+
+| Requisito | Referência | Código / artefato | Teste / evidência | Status | Limitação |
+|---|---|---|---|---|---|
+| Números e datas são normalizados de modo determinístico | §7 | `src/ayorai_attractor/verification/numeric.py`; `stance.py` e `pt_normalize.py`, se aplicáveis | `tests/test_verification_numeric.py`; `tests/verification/test_f11_metadata_rules.py` | [DECLARADO; confirmar no commit revisado] | Não atribuir esta regra a `judge.py`; cobertura depende de formatos e casos testados. |
+| Regras PT-BR e metadados são cobertos por testes pertinentes | §7 | `src/ayorai_attractor/verification/numeric.py` e normalizadores aplicáveis | `tests/test_verification_numeric.py`; `tests/verification/test_f11_metadata_rules.py` | [PARCIAL] | Não presumir cobertura de todo formato regional. |
+| Resultados e métricas são publicados com tamanho, composição e incerteza | §7; `docs/eval/BASELINE-v0.md` | Artefatos e documentação de avaliação | `tests/test_judge_evaluation.py`; `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py` | [LIMITAÇÃO DOCUMENTADA] | n=30 e intervalos de confiança incluem o baseline; evitar afirmações generalizadas. |
+
+## 3. Achados que exigem etapas futuras
+
+1. **ADR-001:** status declarado desatualizado; atualizar somente após decisão do mantenedor. Não editar a ADR nesta PR.
+2. **ADR-009:** substituirá futuramente ADR-002 §§1 e 4; ainda não foi redigida. Não antecipar conteúdo ou decisão.
+3. **Segunda autoridade de veredito:** `EvidenceStore.status()`, em `src/ayorai_attractor/evidence/core.py`, calcula status próprio. Registrar como risco de arquitetura; sem teste dedicado de exclusividade identificado. Não alterar nesta PR documental.
+4. **`content_sha256` — PR 0.9:** reprodutibilidade reportada como pendente. Só encerrar com teste determinístico, execução repetível e evidência vinculada ao commit.
+5. **Baseline legado:** `orchestrator.py` + `evidence/core.py` (`EvidenceStore.status`) + `evaluation/golden.py` (`_legacy_prediction`, linhas 156–164). A documentação `docs/eval/BASELINE-v0.md`, linha 85, informa PARTIALLY_SUPPORTED em 30/30 e 13/30 corretos (43,3333%), igual à classe majoritária. Não citar `judge.py` como origem desta predição legada.
+6. **Artefatos Golden congelados:** incluir `tests/test_frozen_artifacts.py` e `tests/test_golden_digest.py` na rastreabilidade de integridade, além dos testes específicos de avaliação.
+7. **Rótulos de verificação:** o commit `d311619` foi reportado pelo Cláudio como testado localmente com `pytest` (348 passed), 34 caminhos existentes e hashes congelados inalterados. Esta evidência aplica-se somente àquele commit; as correções desta revisão precisam de nova execução e novo SHA antes de usar o rótulo [VERIFICADO por execução local — Cláudio, commit X].
+
+## 4. Manutenção e critérios de aceite
+
+- Atualizar esta matriz junto com a alteração do requisito correspondente.
+- Usar somente caminhos reais; vincular cada afirmação ao teste realmente pertinente.
+- Se não houver teste, escrever “sem teste identificado”; não transformar ausência de evidência em aprovação.
+- Toda linha [VERIFICADO] precisa indicar comando, check-run, commit/SHA ou fonte consultada e delimitar exatamente o que foi verificado.
+- Preservar Golden, corpus, manifestos, hashes e resultados históricos.
+- Conferir a renderização de todas as tabelas no GitHub: cada linha deve ter o mesmo número de células do cabeçalho.
+- A PR #120 não deve ser mesclada antes da revisão do conteúdo corrigido e da reverificação local pelo Cláudio, mesmo que os checks de CI estejam verdes.
+
+## 5. Fonte complementar — não canônica
+
+**Estado:** referência complementar; status e autoridade ainda aguardam confirmação do mantenedor. Nenhuma linha da matriz principal depende deste documento.
+
+Rótulos e conceitos anteriormente associados ao “Prompt Mestre v3”, incluindo §3/L0–L14, GEPA, OWASP ASI, Studio, BM25+kNN+RRF e demais itens desse documento, ficam isolados nesta seção. Não são fonte normativa da matriz canônica `AYORAI-ATTRACTOR-BAL` v1.0.0 e não devem ser usados para declarar conformidade com ela. Caso o mantenedor confirme sua relevância, registrar sua identidade, versão e relação com a especificação canônica antes de reintegrar qualquer requisito.
