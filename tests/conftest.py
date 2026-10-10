@@ -28,7 +28,11 @@ def snapshot_runtime_data(directory: Path) -> tuple[bool, Snapshot]:
             relative = path.relative_to(directory).as_posix()
             data = path.read_bytes()
             stat = path.stat()
-            files[relative] = (stat.st_size, stat.st_mtime_ns, hashlib.sha256(data).hexdigest())
+            files[relative] = (
+                stat.st_size,
+                stat.st_mtime_ns,
+                hashlib.sha256(data).hexdigest(),
+            )
     return True, files
 
 
@@ -60,4 +64,5 @@ def assert_no_repository_runtime_data() -> Iterator[None]:
     yield
     after = snapshot_runtime_data(directory)
     changes = runtime_data_changes(before, after)
-    assert not changes, "Repository runtime data changed during tests:\n- " + "\n- ".join(changes)
+    message = "Repository runtime data changed during tests:\n- " + "\n- ".join(changes)
+    assert not changes, message
