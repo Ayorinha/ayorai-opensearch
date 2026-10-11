@@ -6,10 +6,13 @@ are derived from the validated Evidence objects carried by GateResult.
 from __future__ import annotations
 
 import hashlib
+import math
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Literal, cast
+from datetime import date, datetime, timezone
+from types import MappingProxyType
+from typing import Any, Literal
 
 from ayorai_attractor.verification.clusters import cluster_evidence
 from ayorai_attractor.verification.models import Evidence
@@ -243,10 +246,10 @@ class AdjudicationResult:
     rules_sha256: str
     input_sha256: str
     verdict: str | None
-    coverage: dict[str, int]
+    coverage: Mapping[str, int]
     robustness: str
-    atoms: tuple[dict[str, Any], ...]
-    rule_trace: tuple[dict[str, str], ...]
+    atoms: tuple[Mapping[str, Any], ...]
+    rule_trace: tuple[Mapping[str, str], ...]
     output_sha256: str
     atomic_decisions: tuple[AtomicDecision, ...]
     composite_decision: CompositeDecision | None
@@ -260,10 +263,10 @@ class AdjudicationResult:
             "decision_state": self.decision_state,
             "reason_codes": list(self.reason_codes),
             "verdict": self.verdict,
-            "coverage": dict(self.coverage),
+            "coverage": _deep_thaw(self.coverage),
             "robustness": self.robustness,
-            "atoms": [dict(atom) for atom in self.atoms],
-            "rule_trace": [dict(item) for item in self.rule_trace],
+            "atoms": [_deep_thaw(atom) for atom in self.atoms],
+            "rule_trace": [_deep_thaw(item) for item in self.rule_trace],
             "output_sha256": self.output_sha256,
         }
 
@@ -274,22 +277,85 @@ class AdjudicationResult:
         return canonical_json_bytes(self.to_dict())
 
 
-def _json_safe(value: Any) -> Any:
-    """Convert supported input values to stable JSON-compatible values."""
-    if hasattr(value, "model_dump"):
-        return value.model_dump(mode="json")
+def _deep_freeze(value: Any) -> Any:
+    """Recursively freeze mappings and sequences so hashed results cannot drift."""
     if isinstance(value, Mapping):
-        return {str(key): _json_safe(item) for key, item in value.items()}
+        return MappingProxyType({key: _deep_freeze(item) for key, item in value.items()})
     if isinstance(value, (list, tuple)):
-        return [_json_safe(item) for item in value]
-    if value is None or isinstance(value, (str, int, float, bool)):
+        return tuple(_deep_freeze(item) for item in value)
+    return value
+
+
+def _deep_thaw(value: Any) -> Any:
+    """Return fresh JSON-compatible containers from an immutable result."""
+    if isinstance(value, Mapping):
+        return {key: _deep_thaw(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_deep_thaw(item) for item in value]
+    return value
+
+
+def verify_output(result_dict: Mapping[str, Any]) -> bool:
+    """Verify output_sha256 against canonical JSON excluding the digest field."""
+    if not isinstance(result_dict, Mapping):
+        return False
+    digest = result_dict.get("output_sha256")
+    if not isinstance(digest, str):
+        return False
+    payload = {key: value for key, value in result_dict.items() if key != "output_sha256"}
+    try:
+        from . import canonical_json_bytes
+
+        actual = hashlib.sha256(canonical_json_bytes(payload)).hexdigest()
+    except (TypeError, ValueError):
+        return False
+    return actual == digest
+
+
+def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
+    """Convert explicitly supported values to stable JSON-compatible values."""
+    if hasattr(value, "model_dump"):
+        return _json_safe(value.model_dump(mode="python"), allow_unsupported=allow_unsupported)
+    if isinstance(value, datetime):
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise TypeError("naive datetime is not supported; provide an explicit timezone")
+        return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, Mapping):
+        if any(not isinstance(key, str) for key in value):
+            raise TypeError("canonical JSON objects require string keys")
+        return {
+            key: _json_safe(item, allow_unsupported=allow_unsupported)
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item, allow_unsupported=allow_unsupported) for item in value]
+    if value is None or isinstance(value, (str, bool, int)):
         return value
-    return {"unsupported_type": f"{type(value).__module__}.{type(value).__qualname__}"}
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise TypeError("non-finite floats are not supported in canonical JSON")
+        return value
+    if allow_unsupported:
+        try:
+            representation = repr(value)
+        except Exception:
+            representation = "<repr-unavailable>"
+        return {
+            "unsupported_type": f"{type(value).__module__}.{type(value).__qualname__}",
+            "representation": representation,
+        }
+    raise TypeError(
+        f"unsupported input type: {type(value).__module__}.{type(value).__qualname__}"
+    )
 
 
-def _canonical_input(request: Mapping[str, Any]) -> dict[str, Any]:
+def _canonical_input(
+    request: Mapping[str, Any], *, allow_unsupported: bool = False
+) -> dict[str, Any]:
     """Normalize order-insensitive collections before hashing the request."""
-    payload = cast(dict[str, Any], _json_safe(request))
+    payload = _json_safe(request, allow_unsupported=allow_unsupported)
     for field, keys in (
         ("atoms", ("id",)),
         ("evidence", ("id",)),
@@ -314,12 +380,16 @@ def _build_result(
     atomic_decisions: tuple[AtomicDecision, ...] = (),
     composite_decision: CompositeDecision | None = None,
     gates: GateResult | None = None,
+    input_sha256_override: str | None = None,
 ) -> AdjudicationResult:
     """Build and hash a canonical result; the output digest excludes itself."""
     from . import canonical_json_bytes
 
-    canonical_input = canonical_json_bytes(_canonical_input(request))
-    input_digest = hashlib.sha256(canonical_input).hexdigest()
+    if input_sha256_override is None:
+        canonical_input = canonical_json_bytes(_canonical_input(request))
+        input_digest = hashlib.sha256(canonical_input).hexdigest()
+    else:
+        input_digest = input_sha256_override
     if decision_state == "DECIDED":
         if composite_decision is None:
             raise ValueError("DECIDED result must contain a composite decision")
@@ -382,7 +452,14 @@ def _build_result(
             "unverified": 0, "total": 0,
         }
         robustness = "R0"
-        trace = []
+        rules, _ = load_rules()
+        section = "input_gate" if decision_state == "INVALID_INPUT" else "abstention"
+        entries_by_code = {item["code"]: item for item in rules[section]}
+        trace = [
+            {"rule_id": entries_by_code[code]["rule_id"], "label": "gate"}
+            for code in reason_codes
+            if code in entries_by_code
+        ]
 
     base: dict[str, Any] = {
         "judge_rules_version": "2.0.0",
@@ -404,10 +481,10 @@ def _build_result(
         rules_sha256=rules_sha256,
         input_sha256=input_digest,
         verdict=verdict,
-        coverage=coverage,
+        coverage=_deep_freeze(coverage),
         robustness=robustness,
-        atoms=tuple(output_atoms),
-        rule_trace=tuple(trace),
+        atoms=tuple(_deep_freeze(atom) for atom in output_atoms),
+        rule_trace=tuple(_deep_freeze(item) for item in trace),
         output_sha256=output_digest,
         atomic_decisions=atomic_decisions,
         composite_decision=composite_decision,
@@ -421,6 +498,20 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
     """
     if not isinstance(request, Mapping):
         raise TypeError("request must be a mapping")
+    try:
+        canonical_input = canonical_json_bytes(_canonical_input(request))
+    except TypeError:
+        rejection_input = canonical_json_bytes(
+            _canonical_input(request, allow_unsupported=True)
+        )
+        _, contract_sha256 = load_rules()
+        return _build_result(
+            request=request,
+            decision_state="INVALID_INPUT",
+            reason_codes=("SCHEMA_VIOLATION",),
+            rules_sha256=contract_sha256,
+            input_sha256_override=hashlib.sha256(rejection_input).hexdigest(),
+        )
     required = {
         "protocol_version", "claim_id", "claim_text", "atoms",
         "evidence", "stances", "source_texts",
