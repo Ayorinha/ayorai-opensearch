@@ -42,7 +42,7 @@ ResponsePolicy belongs to PR #136, and structured HTTP 422 belongs to PR #139. H
 
 ## Remaining gates before declaring Phase 1 closed
 
-1. **Q1 — PR #147:** merged by SQUASH at `da05861e249a53d8a2f9ee57eb1a5e2a811e2651`. The maintainer supplied formal independent approval in this conversation for exact head `69cdee7a3c9549ff7c9a41a6c14b8cca18993a91`. The independent review's local verification recorded 448 passed, 91% total coverage, 100% for `security.py`, `translation.py` and `nli.py`, plus Ruff, mypy and `lint_golden` passing. GitHub Actions was green on that head; frozen artifacts were not changed.
+1. **Q1 — PR #147:** merged by SQUASH at `da05861e249a53d8a2f9ee57eb1a5e2a811e2651`. Independent review approved exact head `69cdee7a3c9549ff7c9a41a6c14b8cca18993a91`; the approval was recorded by the maintainer. The independent review's local verification recorded 448 passed, 91% total coverage, 100% for `security.py`, `translation.py` and `nli.py`, plus Ruff, mypy and `lint_golden` passing. GitHub Actions was green on that head; frozen artifacts were not changed.
 2. **F1.5 — this documentation change:** version metadata, migration/release notes, traceability updates and this checklist must pass CI and review. A version number in source metadata is not a release or a tag.
 3. **DEC-007:** explicit maintainer decision is still required before creating a GitHub release or tag. The technical recommendation is to publish v0.4.0 only after F1.5 is reviewed and merged and Phase 1 is formally checked.
 
