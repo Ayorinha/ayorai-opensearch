@@ -197,3 +197,16 @@ Esta fila complementa o plano de execução v5. **Não altera a ordem das Ondas 
 - **F4.5 — novo, após F4.3:** parser determinístico de referências normativas em português, cobrindo artigo, inciso, parágrafo, alínea, `caput`, plural `§§`, incisos romanos e referências como “Resolução nº 765/2023”. Produzir forma canônica e testes de propriedade e casos-limite (`º/o`, abreviações e pontuação). Não interpretar conteúdo jurídico, hierarquia, revogação ou vigência; a data de vigência é apenas metadado/âncora temporal.
 - **DEC-006:** decisão pendente de priorização do motor de stance em português (ADR-008) após a Onda 2; não bloqueia as Ondas 1–2.
 
+
+
+## Onda 2 — Judge 2.0.0 contract identity and pre-adjudication gates
+
+- **Contrato normativo 2.0.0:** `rules/judge-2.0.0.json`; `rules_sha256` canônico registrado: `493cce66ce45fcb432b8345e7567cfb39858492bfe46d5fa6b584991e79e9efc`. O hash é recalculado a partir das regras carregadas; cada `GateResult` registra o digest efetivamente carregado.
+- **Base da fundação:** PR #150, SQUASH commit `07e95680a24b5ffcbba903314929c261cdcc4c88`. A identidade do contrato deve permanecer estável; mudanças no documento de regras exigem novo hash e rastreabilidade explícita.
+- **Item 2.2 — estado:** [IMPLEMENTAÇÃO EM REVISÃO; NÃO VERIFICADO ATÉ CI VERDE E APROVAÇÃO INDEPENDENTE DO SHA FINAL].
+- **G1:** `src/ayorai_attractor/verification/judge2/gates.py`; testes dedicados para os oito códigos em `tests/verification/test_judge2_gates.py`. Os erros reutilizam `InvalidJudgeInput` e resultam em `decision_state=INVALID_INPUT`.
+- **G2:** os cinco motivos normativos têm testes dedicados; o resultado é `decision_state=ABSTAINED`, sem veredito factual.
+- **E1–E3:** os motivos `SOURCE_UNAVAILABLE`, `OFFSET_INVALID`, `EXCERPT_MISMATCH` e `NEUTRAL_STANCE` são registrados por par evidência/átomo. E2 sempre compara o trecho normalizado em NFC com a fatia da fonte; o hash da fonte inteira é uma verificação adicional. Testes negativos cobrem excerpt fabricado sem hash, deslocamento de um caractere, equivalência NFC/NFD e offsets Unicode por code point em `tests/verification/test_judge2_gates.py`.
+- **Relatório de implementação:** `docs/reports/JUDGE-2.0.0-GATES-REPORT.md`.
+- **Limite explícito:** a saída do item 2.2 não contém campo `verdict`; o estado `decision_state=null` com `admissible=true` significa apenas que os portões não bloquearam a entrada. Nenhuma adjudicação factual é feita nesta etapa.
+- **Integridade:** Goldens, corpus, manifestos, thresholds e hashes congelados não devem ser modificados por este item. A classificação só poderá mudar para [VERIFICADO] após CI verde, revisão independente do SHA exato e conferência do diff.

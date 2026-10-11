@@ -29,6 +29,7 @@ def test_rules_load_with_version_and_canonical_content_hash() -> None:
     assert rules["judge_rules_version"] == RULES_VERSION == "2.0.0"
     assert rules["authority"] == "deterministic_judge_only"
     assert digest == hashlib.sha256(canonical_json_bytes(rules)).hexdigest()
+    assert digest == "493cce66ce45fcb432b8345e7567cfb39858492bfe46d5fa6b584991e79e9efc"
     assert rules_sha256(_rules_path()) == digest
 
 

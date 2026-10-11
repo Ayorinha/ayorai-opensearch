@@ -10,6 +10,15 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .gates import (
+    IMPLEMENTED_E_REJECTIONS,
+    IMPLEMENTED_G1_CODES,
+    IMPLEMENTED_G2_CODES,
+    EvidenceDisposition,
+    GateResult,
+    evaluate_gates,
+)
+
 RULES_VERSION = "2.0.0"
 _RULES_PATH = Path(__file__).resolve().parents[4] / "rules" / "judge-2.0.0.json"
 
@@ -49,7 +58,7 @@ _COMPOSITE_PREDICATES = {
 _RULE_FIELDS = {
     "input_gate": {"id", "rule_id", "code", "outcome"},
     "abstention": {"id", "rule_id", "code", "outcome"},
-    "evidence_admissibility": {"id", "criterion", "rejection"},
+    "evidence_admissibility": {"id", "criterion", "rejection", "source_unavailable_rejection"},
     "atomic_rules": {"id", "when", "verdict"},
     "robustness_rules": {"id", "when", "value", "label"},
     "composite_rules": {"id", "when", "verdict", "robustness_atoms", "robustness"},
@@ -124,6 +133,10 @@ def _validate_rules(rules: dict[str, Any]) -> None:
             required_fields = allowed_fields
             if section in {"input_gate", "abstention"}:
                 required_fields = allowed_fields
+            elif section == "evidence_admissibility":
+                required_fields = {"id", "criterion", "rejection"}
+                if entry.get("id") == "E1":
+                    required_fields.add("source_unavailable_rejection")
             elif section == "composite_rules":
                 required_fields = {"id", "when", "verdict"}
                 if not ({"robustness_atoms", "robustness"} & set(entry)):
@@ -183,6 +196,10 @@ def _validate_rules(rules: dict[str, Any]) -> None:
                 raise JudgeRulesError(
                     f"invalid rule_id for {entry['code']}: expected {expected_rule_id}"
                 )
+
+    e1 = next(item for item in rules["evidence_admissibility"] if item["id"] == "E1")
+    if e1.get("source_unavailable_rejection") != "SOURCE_UNAVAILABLE":
+        raise JudgeRulesError("E1 source_unavailable_rejection must be SOURCE_UNAVAILABLE")
 
     for section, expected_ids in _EXPECTED_IDS.items():
         entries = rules[section]
@@ -247,7 +264,17 @@ def rules_sha256(path: str | Path | None = None) -> str:
     return load_rules(path)[1]
 
 
+RULES_SHA256 = rules_sha256()
+
+
 __all__ = [
+    "EvidenceDisposition",
+    "GateResult",
+    "IMPLEMENTED_E_REJECTIONS",
+    "IMPLEMENTED_G1_CODES",
+    "IMPLEMENTED_G2_CODES",
+    "RULES_SHA256",
+    "evaluate_gates",
     "JudgeRulesError",
     "RULES_VERSION",
     "canonical_json_bytes",
