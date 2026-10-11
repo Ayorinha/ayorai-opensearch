@@ -127,12 +127,12 @@ def test_r1_a_response_bytes_match_pre_policy_baseline() -> None:
         assert response.status_code == case["expected_status_code"], case["name"]
         assert response.headers["content-type"] == case["expected_content_type"], case["name"]
         assert response.content.decode("utf-8") == case["expected_body"], case["name"]
-        assert response.content.decode("utf-8") == case["expected_body"], case["name"]
 
     for case in baseline["invalid_requests"]:
         response = client.post("/v1/verify", json=case["request"])
         assert response.status_code == case["expected_status_code"], case["name"]
         assert response.headers["content-type"] == case["expected_content_type"], case["name"]
+        assert response.content.decode("utf-8") == case["expected_body"], case["name"]
 
 
 def test_r1_a_known_invalid_inputs_are_frozen_as_current_500_defects() -> None:
