@@ -1,0 +1,265 @@
+{
+  "schema_version": "judge-rules/2.0.0",
+  "judge_rules_version": "2.0.0",
+  "normative_source": "docs/adr/ADR-009-deterministic-adjudication-contract.md",
+  "authority": "deterministic_judge_only",
+  "invariants": {
+    "verdict_null_iff_decision_state_not_decided": true,
+    "robustness_never_changes_verdict": true,
+    "probabilistic_signals_never_select_verdict": true,
+    "atom_weights": "equal"
+  },
+  "enums": {
+    "decision_state": [
+      "DECIDED",
+      "ABSTAINED",
+      "INVALID_INPUT"
+    ],
+    "verdict": [
+      "SUPPORTED",
+      "PARTIALLY_SUPPORTED",
+      "REFUTED",
+      "UNVERIFIED",
+      "CONFLICTING"
+    ],
+    "robustness": [
+      "R0",
+      "R1",
+      "R2",
+      "R3"
+    ]
+  },
+  "input_gate": [
+    {
+      "id": "G1",
+      "code": "SCHEMA_VIOLATION",
+      "outcome": "INVALID_INPUT"
+    },
+    {
+      "id": "G2",
+      "code": "EMPTY_CLAIM",
+      "outcome": "INVALID_INPUT"
+    },
+    {
+      "id": "G3",
+      "code": "NO_ATOMS",
+      "outcome": "INVALID_INPUT"
+    },
+    {
+      "id": "G4",
+      "code": "DUPLICATE_ID",
+      "outcome": "INVALID_INPUT"
+    },
+    {
+      "id": "G5",
+      "code": "DANGLING_REFERENCE",
+      "outcome": "INVALID_INPUT"
+    },
+    {
+      "id": "G6",
+      "code": "DUPLICATE_STANCE",
+      "outcome": "INVALID_INPUT"
+    },
+    {
+      "id": "G7",
+      "code": "ATOM_SPAN_OUT_OF_RANGE",
+      "outcome": "INVALID_INPUT"
+    },
+    {
+      "id": "G8",
+      "code": "UNSUPPORTED_PROTOCOL_VERSION",
+      "outcome": "INVALID_INPUT"
+    }
+  ],
+  "abstention": [
+    {
+      "code": "OUT_OF_SCOPE",
+      "outcome": "ABSTAINED"
+    },
+    {
+      "code": "NON_FACTUAL_CLAIM",
+      "outcome": "ABSTAINED"
+    },
+    {
+      "code": "MISSING_TEMPORAL_ANCHOR",
+      "outcome": "ABSTAINED"
+    },
+    {
+      "code": "RETRIEVAL_FAILURE",
+      "outcome": "ABSTAINED"
+    },
+    {
+      "code": "EVIDENCE_POOL_INTEGRITY_FAILURE",
+      "outcome": "ABSTAINED"
+    }
+  ],
+  "evidence_admissibility": [
+    {
+      "id": "E1",
+      "criterion": "valid_offsets_within_source",
+      "rejection": "OFFSET_INVALID"
+    },
+    {
+      "id": "E2",
+      "criterion": "excerpt_matches_normalized_content_hash_when_present",
+      "rejection": "EXCERPT_MISMATCH"
+    },
+    {
+      "id": "E3",
+      "criterion": "explicit_SUPPORTS_or_CONTRADICTS_edge_to_atom",
+      "rejection": "NEUTRAL_STANCE"
+    }
+  ],
+  "atomic_rules": [
+    {
+      "id": "A1",
+      "when": {
+        "support_clusters": 0,
+        "contradiction_clusters": 0
+      },
+      "verdict": "UNVERIFIED"
+    },
+    {
+      "id": "A2",
+      "when": {
+        "support_clusters": ">=1",
+        "contradiction_clusters": 0
+      },
+      "verdict": "SUPPORTED"
+    },
+    {
+      "id": "A3",
+      "when": {
+        "support_clusters": 0,
+        "contradiction_clusters": ">=1"
+      },
+      "verdict": "REFUTED"
+    },
+    {
+      "id": "A4",
+      "when": {
+        "support_clusters": ">=1",
+        "contradiction_clusters": ">=1"
+      },
+      "verdict": "CONFLICTING"
+    }
+  ],
+  "robustness_rules": [
+    {
+      "id": "R0",
+      "when": "no_admissible_decision_cluster",
+      "value": "R0",
+      "label": "NONE"
+    },
+    {
+      "id": "R1",
+      "when": "exactly_one_decision_cluster_on_evaluated_side",
+      "value": "R1",
+      "label": "SINGLE_SOURCE"
+    },
+    {
+      "id": "R2",
+      "when": "at_least_two_clusters_and_any_relevant_provenance_incomplete",
+      "value": "R2",
+      "label": "INDEPENDENCE_UNKNOWN"
+    },
+    {
+      "id": "R3",
+      "when": "at_least_two_clusters_and_all_relevant_provenance_complete",
+      "value": "R3",
+      "label": "CORROBORATED"
+    }
+  ],
+  "composite_rules": [
+    {
+      "id": "K1",
+      "when": "any_atom_REFUTED",
+      "verdict": "REFUTED",
+      "robustness_atoms": "REFUTED"
+    },
+    {
+      "id": "K2",
+      "when": "otherwise_any_atom_CONFLICTING",
+      "verdict": "CONFLICTING",
+      "robustness_atoms": "CONFLICTING"
+    },
+    {
+      "id": "K3",
+      "when": "all_atoms_SUPPORTED",
+      "verdict": "SUPPORTED",
+      "robustness_atoms": "SUPPORTED"
+    },
+    {
+      "id": "K4",
+      "when": "otherwise_any_atom_SUPPORTED",
+      "verdict": "PARTIALLY_SUPPORTED",
+      "robustness_atoms": "SUPPORTED"
+    },
+    {
+      "id": "K5",
+      "when": "otherwise",
+      "verdict": "UNVERIFIED",
+      "robustness": "R0"
+    }
+  ],
+  "output": {
+    "fields": [
+      "judge_rules_version",
+      "rules_sha256",
+      "input_sha256",
+      "decision_state",
+      "reason_codes",
+      "verdict",
+      "coverage",
+      "robustness",
+      "atoms",
+      "rule_trace",
+      "output_sha256"
+    ],
+    "canonical_json": {
+      "encoding": "UTF-8",
+      "sort_keys": true,
+      "separators": [
+        ",",
+        ":"
+      ],
+      "ensure_ascii": false,
+      "explicit_null": true
+    },
+    "output_sha256_excludes_self_field": true,
+    "rule_id_format": "2.0.0/<rule_id>"
+  },
+  "compatibility": {
+    "r1_a": "preserve_1x_wire_contract_until_v0.5.0",
+    "r2_a": "selects_judge_2.0.0",
+    "legacy_verdict_mapping": {
+      "VERIFIED": {
+        "verdict": "SUPPORTED",
+        "robustness": "R3"
+      },
+      "SUPPORTED": {
+        "verdict": "SUPPORTED",
+        "robustness": "R2"
+      },
+      "PARTIALLY_SUPPORTED_when_legacy_S_equals_1": {
+        "verdict": "SUPPORTED",
+        "robustness": "R1"
+      },
+      "other_atomic_labels": "unchanged",
+      "composite_labels": "recompute_using_K"
+    }
+  },
+  "protocol_tests": [
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "T6",
+    "T7",
+    "T8",
+    "T9",
+    "T10",
+    "T11"
+  ]
+}
