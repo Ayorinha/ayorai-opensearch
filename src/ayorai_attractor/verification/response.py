@@ -14,7 +14,7 @@ class ResponsePolicy(StrEnum):
 
 
 class ResponseStatus(StrEnum):
-    """Deprecated compatibility enum; new contracts use Verdict | ResponsePolicy."""
+    """Deprecated since v0.4.0; use Verdict or ResponsePolicy; removal in v0.5.0."""
 
     VERIFIED = "verified"
     SUPPORTED = "supported"
