@@ -93,9 +93,8 @@ Antes de uma implantação regulada, ainda são necessários, conforme o caso:
 ## Fontes normativas oficiais
 
 - **LGPD — Lei nº 13.709/2018, art. 20:** o titular tem o direito de solicitar a revisão de decisões tomadas unicamente com base em tratamento automatizado. A lei não deve ser descrita aqui como exigindo revisão humana. [Texto oficial no Planalto](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm). A aplicação depende do contexto concreto de tratamento.
-- **PL 2.338/2023:** [tramitação oficial na Câmara dos Deputados](https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2487262). Verificar o andamento atual no momento da consulta.
+- **PL 2.338/2023:** [ficha oficial de tramitação na Câmara dos Deputados](https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2487262); status consultado em 11/10/2026, conforme registrado acima.
 - **Regulamento Europeu de IA (Regulamento (UE) 2024/1689):** [texto oficial no EUR-Lex](https://eur-lex.europa.eu/eli/reg/2024/1689/oj). A aplicabilidade depende do âmbito e das datas de aplicação pertinentes.
 - **ISO/IEC 42001:** [página oficial da ISO](https://www.iso.org/standard/81230.html). A referência à norma não significa que o projeto seja certificado.
-- **NBC TA 500 e NBC TA 230:** confirmar edição vigente e contexto de aplicação junto às fontes profissionais oficiais antes de usar como fundamento formal de auditoria.
 
 **Status:** ferramenta de engenharia e pesquisa, não certificação.
