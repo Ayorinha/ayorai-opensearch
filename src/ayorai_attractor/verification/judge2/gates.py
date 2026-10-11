@@ -295,7 +295,11 @@ def _evidence_dispositions(
                 normalized_source = unicodedata.normalize("NFC", source_text)
                 actual_hash = hashlib.sha256(normalized_source.encode("utf-8")).hexdigest()
                 if actual_hash != item.normalized_content_hash:
-                    results.append(EvidenceDisposition(item.id, atom_id, False, "EXCERPT_MISMATCH"))
+                    results.append(
+                        EvidenceDisposition(
+                            item.id, atom_id, False, _e_rejection(rules, "E2")
+                        )
+                    )
                     continue
             stance = stance_by_pair.get((atom_id, item.id))
             if stance not in {"SUPPORTS", "CONTRADICTS"}:
