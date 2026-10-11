@@ -351,7 +351,9 @@ def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
             if allow_unsupported:
                 return {
                     "unsupported_type": "builtins.float",
-                    "representation": "nan" if math.isnan(value) else ("+inf" if value > 0 else "-inf"),
+                    "representation": (
+                        "nan" if math.isnan(value) else ("+inf" if value > 0 else "-inf")
+                    ),
                 }
             raise TypeError("non-finite floats are not supported in canonical JSON")
         return value
