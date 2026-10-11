@@ -25,10 +25,10 @@ As datas acima identificam a data do ato, não atestam a vigência atual. Na con
 Antes de alterar o estado de `candidate` para `verified`:
 
 1. Baixar ou capturar o conteúdo diretamente da URL oficial, registrando data/hora de coleta e ferramenta/método utilizado.
-2. Preservar os bytes exatos do artefato capturado; calcular SHA-256 desses bytes sem normalização silenciosa.
+2. Registrar `capture_method` (ferramenta/método), `artifact_path` (local do artefato preservado) e `content_type` (tipo de conteúdo), além da data/hora de coleta. Preservar os bytes exatos do artefato capturado; calcular SHA-256 desses bytes sem normalização silenciosa.
 3. Conferir título, órgão emissor, identificador do ato e data contra a própria fonte primária.
 4. Registrar o artefato preservado e seu hash em manifesto versionado. Se for necessário converter PDF/HTML para texto, calcular e registrar também o hash do texto derivado, mantendo ligação explícita ao hash do original.
-5. Atualizar o registro para `verified` somente depois da revisão. O esquema `evals/ptbr/SOURCES-REGISTRY.schema.json` exige hash de 64 caracteres hexadecimais, data de coleta e data de publicação para registros verificados.
+5. Atualizar o registro para `verified` somente depois da revisão. O arquivo estruturado `evals/ptbr/SOURCES-REGISTRY.json` mantém os três itens como `candidate`, com hash e data de coleta nulos. O esquema `evals/ptbr/SOURCES-REGISTRY.schema.json` exige hash SHA-256 de 64 caracteres hexadecimais, data de coleta, data de publicação e metadados de captura para registros `verified`; rejeita campos extras e exige hash próprio quando há texto derivado.
 6. Se a fonte não estiver acessível, divergir ou não permitir confirmar um campo, manter `candidate` e registrar a lacuna.
 
 ## Exclusões
