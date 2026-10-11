@@ -5,7 +5,6 @@ from typing import Any
 
 import pytest
 
-from ayorai_attractor.verification.judge import InvalidJudgeInput
 from ayorai_attractor.verification.judge2 import rules_sha256
 from ayorai_attractor.verification.judge2.gates import RULES_SHA256, evaluate_gates
 from ayorai_attractor.verification.models import Evidence
@@ -148,7 +147,3 @@ def test_multiple_g2_reasons_are_preserved_in_normative_order() -> None:
     )
 
 
-def test_invalid_judge_input_exception_is_reused() -> None:
-    with pytest.raises(InvalidJudgeInput) as caught:
-        raise InvalidJudgeInput("EMPTY_CLAIM", "claim_text", "empty")
-    assert caught.value.code == "EMPTY_CLAIM"
