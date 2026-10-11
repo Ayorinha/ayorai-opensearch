@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
@@ -87,7 +88,7 @@ def audit(request: SearchRequest) -> AuditResponse:
     )
 
 
-@app.post("/v1/verify", response_model=None)
+@app.post("/v1/verify", response_model=VerificationAPIResponse)
 def verify(payload: dict[str, Any]) -> Any:
     """Dispatch r1-a unchanged or expose the canonical Judge 2.0.0 result for r2-a."""
     version = payload.get("schema_version", "r1-a")
@@ -99,7 +100,10 @@ def verify(payload: dict[str, Any]) -> Any:
             )
         except ValidationError as exc:
             errors = [
-                {**error, "loc": ("body", *error["loc"])}
+                {
+                    **{key: value for key, value in error.items() if key != "url"},
+                    "loc": ("body", *error["loc"]),
+                }
                 for error in exc.errors()
             ]
             raise RequestValidationError(errors, body=payload) from exc
@@ -127,11 +131,13 @@ def verify(payload: dict[str, Any]) -> Any:
             )
         elif result.decision_state == "DECIDED" and result.verdict == "UNVERIFIED":
             response_policy = ResponsePolicy.ABSTAIN_NO_ANSWER.value
-        return {
-            "schema_version": "r2-a",
-            "result": result.to_dict(),
-            "response_policy": response_policy,
-        }
+        return JSONResponse(
+            content={
+                "schema_version": "r2-a",
+                "result": result.to_dict(),
+                "response_policy": response_policy,
+            }
+        )
 
     try:
         request = VerificationRequest.model_validate_json(
@@ -139,7 +145,10 @@ def verify(payload: dict[str, Any]) -> Any:
         )
     except ValidationError as exc:
         errors = [
-            {**error, "loc": ("body", *error["loc"])}
+            {
+                **{key: value for key, value in error.items() if key != "url"},
+                "loc": ("body", *error["loc"]),
+            }
             for error in exc.errors()
         ]
         raise RequestValidationError(errors, body=payload) from exc
