@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from ayorai_attractor.verification.clusters import cluster_evidence
 from ayorai_attractor.verification.models import Evidence
@@ -287,7 +287,7 @@ def _json_safe(value: Any) -> Any:
 
 def _canonical_input(request: Mapping[str, Any]) -> dict[str, Any]:
     """Normalize order-insensitive collections before hashing the request."""
-    payload = _json_safe(request)
+    payload = cast(dict[str, Any], _json_safe(request))
     for field, keys in (
         ("atoms", ("id",)),
         ("evidence", ("id",)),
@@ -319,9 +319,9 @@ def _build_result(
     canonical_input = canonical_json_bytes(_canonical_input(request))
     input_digest = __import__("hashlib").sha256(canonical_input).hexdigest()
     if decision_state == "DECIDED":
-        verdict = composite_decision.verdict if composite_decision is not None else None
-        if verdict is None:
-            raise ValueError("DECIDED result must contain a factual verdict")
+        if composite_decision is None:
+            raise ValueError("DECIDED result must contain a composite decision")
+        verdict = composite_decision.verdict
         atom_by_id = {item.atom_id: item for item in atomic_decisions}
         dispositions = gates.evidence if gates is not None else ()
         output_atoms: list[dict[str, Any]] = []
