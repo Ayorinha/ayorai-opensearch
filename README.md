@@ -2,7 +2,6 @@
 
 <p align="center"><img src="docs/assets/brand/ayorai-attractor-banner.png" alt="AYORAI ATTRACTOR" width="720"></p>
 
-
 # AYORAI ATTRACTOR
 
 **Auditable verification for AI answers.**
@@ -11,7 +10,7 @@
 [![CI](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/ci.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/ci.yml)
 [![Security](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/security.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/security.yml)
 [![CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/codeql.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23125083.svg)](https://doi.org/10.5281/zenodo.23125083)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23125082.svg)](https://doi.org/10.5281/zenodo.23125082)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)
 
@@ -47,7 +46,7 @@ flowchart LR
 | Authorization | deterministic Judge and explicit rules | ✅ Yes — the only component |
 | Execution | consuming application | ❌ No |
 
-The model may read, classify or assist evidence analysis. It does not become the authority that selects the final verdict.
+The model may read, classify or assist evidence analysis. It does not become the authority that selects the final verdict. This is scoped claim-evidence mismatch detection, not a guarantee that every hallucination will be detected.
 
 ## Six possible verdicts
 
@@ -67,14 +66,10 @@ When evidence conflicts, ATTRACTOR can return <code>CONFLICTING</code> instead o
 
 ## Where it applies
 
-| Sector | Example use |
+| Scope | Status |
 |---|---|
-| Financial services | verify that an AI explanation matches approved evidence and policy |
-| Capital markets | verify that AI summaries preserve reported facts and figures |
-| Insurance | validate answers against policy wording and supporting evidence |
-| Legal and compliance | detect citations that do not support the argument being made |
-| Public sector | preserve evidence trails for AI-assisted answers to citizens |
-| Internal audit | maintain a reproducible evidence record for AI-assisted conclusions |
+| **Current domain — Brazilian telecommunications regulation (D10)** | Evidence-based verification for claims concerning Anatel rules, initially focused on the General Consumer Rights Regulation (RGC). |
+| Other possible domains (outside current scope) | Insurance, legal and compliance, public sector, internal audit, financial services and capital markets are possible future applications, not validated current use cases. |
 
 ## Evidence (historical measurements, v0.3.0)
 
@@ -117,35 +112,33 @@ Local `.attractor/` audit and replay data must not be versioned; evidence requir
 - **macro-F1:** the macro-averaged F1 classification metric; report it separately from accuracy and balanced accuracy.
 - **E1:** the historical evaluation/reporting label for the global-verdict accuracy results described above.
 
-## Roadmap F0–F6
+## Roadmap — current execution sequence
 
-~~~mermaid
-flowchart LR
-    F0["F0<br/>Deterministic verification"] --> F1["F1<br/>Multilingual stance"]
-    F1 --> F2["F2<br/>Span-level evidence"]
-    F2 --> F3["F3<br/>Public benchmarks"]
-    F3 --> F4["F4<br/>Hidden Golden v1 in Portuguese"]
-    F4 --> F5["F5<br/>Adoption"]
-    F5 --> F6["F6<br/>Hardened release"]
-    PT["AYORAI-PT-NLI<br/>Portuguese stance path"] --> F2
-    F1 --> PT
-~~~
+1. **Phase 1 — completed (v0.4.0):** single deterministic Judge authority for the final verdict, tamper-evident audit trail, and structured HTTP 422 errors.
+2. **Phase 2 — Judge 2.0:** ADR-009 is the normative contract; item 2.1 (contract) and item 2.2 (pre-adjudication gates) are complete; item 2.3 (deterministic atomic and composite rules) is in progress.
+3. **Reproducibility:** strengthen deterministic replay, provenance and auditable execution records.
+4. **PT-BR benchmark:** build and document an evidence-based benchmark focused on Brazilian telecommunications regulation, starting with Anatel's General Consumer Rights Regulation (RGC).
+5. **Demonstration:** prepare a reproducible demonstration with explicit limitations and evidence.
+6. **Institutional package:** prepare technical and governance materials for research and institutional review.
 
-The roadmap keeps the deterministic Judge outside the model. **AYORAI-PT-NLI** is a future stance-classification path; it does not become the final adjudicator.
+The deterministic Judge remains **outside the model** and is the sole authority for the final verdict. Models may assist with analysis; they do not authorize or issue the final decision.
 
 ## Quickstart
 
 ~~~bash
 git clone https://github.com/Ayorinha/ayorai-opensearch.git
 cd ayorai-opensearch
-git checkout feat/f1-multilingual-stance
+git switch main
+# For the stable v0.4.0 release instead, use: git switch --detach v0.4.0
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev,nli]"
+pip install -e ".[dev]"
 pytest
 ruff check .
 mypy src/ayorai_attractor
 ~~~
+
+Optional NLI backends (downloads large model dependencies): `pip install -e ".[dev,nli]"`.
 
 For the frozen evaluation:
 
@@ -153,6 +146,8 @@ For the frozen evaluation:
 attractor eval --suite golden-v0 --out reports/golden-v0.json
 attractor eval --suite golden-v0.1 --out reports/golden-v0.1.json
 ~~~
+
+Evaluation commands write generated files to `reports/`; do not commit those generated report files.
 
 Evaluation reports expose two deliberately distinct hashes:
 
@@ -220,4 +215,5 @@ Apache-2.0. See [LICENSE](LICENSE).
 
 - [Authorship and technical direction](docs/AUTHORSHIP.md)
 - [Citation metadata](CITATION.cff)
-- DOI: [10.5281/zenodo.23125083](https://doi.org/10.5281/zenodo.23125083)
+- Concept DOI (all versions): [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082)
+- v0.4.0: [10.5281/zenodo.23300849](https://doi.org/10.5281/zenodo.23300849)

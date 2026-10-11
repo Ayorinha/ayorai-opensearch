@@ -7,11 +7,14 @@
 ~~~bash
 git clone https://github.com/Ayorinha/ayorai-opensearch.git
 cd ayorai-opensearch
-git checkout feat/f1-multilingual-stance
+git switch main
+# Para a versão estável v0.4.0, use: git switch --detach v0.4.0
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev,nli]"
+pip install -e ".[dev]"
 ~~~
+
+Optional NLI backends (downloads large model dependencies): `pip install -e ".[dev,nli]"`.
 
 No Windows, ative o ambiente virtual pelo mecanismo equivalente.
 
@@ -62,6 +65,8 @@ Resultado esperado documentado: **33.33%**.
 ## Executar os caminhos A e B
 
 A é o caminho de pesquisa; B é o caminho candidato comercial.
+
+The A/B paths use optional NLI backends. Install them only when running these evaluations:
 
 ~~~bash
 pip install -e ".[dev,nli]"

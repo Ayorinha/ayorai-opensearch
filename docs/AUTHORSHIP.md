@@ -22,4 +22,4 @@ AI tools have been used as assistants under Anderson Leon Ayora's direction and 
 
 ## Citation
 
-For research or software reuse, cite the repository using [CITATION.cff](../CITATION.cff). A Zenodo DOI will be added after the repository is connected and a release is archived.
+For research or software reuse, cite the repository using [CITATION.cff](../CITATION.cff). Cite all versions with DOI 10.5281/zenodo.23125082; cite a specific release with its version DOI (v0.4.0: 10.5281/zenodo.23300849).
