@@ -380,3 +380,25 @@ def test_public_adjudicate_runs_gates_and_returns_deterministic_verdict() -> Non
 
 def test_loaded_contract_hash_matches_approved_contract() -> None:
     assert rules_sha256() == "493cce66ce45fcb432b8345e7567cfb39858492bfe46d5fa6b584991e79e9efc"
+
+def test_public_adjudicate_does_not_admit_excerpt_absent_from_source() -> None:
+    from ayorai_attractor.verification.judge2 import adjudicate
+
+    item = source("e1")
+    fabricated = Evidence(**{**item.model_dump(), "excerpt": "not in source"})
+    result = adjudicate({
+        "protocol_version": "r2-a",
+        "claim_id": "c1",
+        "claim_text": "claim",
+        "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
+        "evidence": [fabricated],
+        "stances": [{
+            "id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS",
+        }],
+        "source_texts": {"source-e1": "x"},
+    })
+    assert result.decision_state is None
+    assert result.atomic_decisions[0].verdict == "UNVERIFIED"
+    assert result.composite_decision is not None
+    assert result.composite_decision.verdict == "UNVERIFIED"
+
