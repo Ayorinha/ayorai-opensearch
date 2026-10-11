@@ -5,13 +5,13 @@ from itertools import product
 
 import pytest
 
-from ayorai_attractor.verification.judge2 import adjudication, load_rules, rules_sha256
+from ayorai_attractor.verification.judge2 import adjudication, evaluate_gates, load_rules, rules_sha256
 from ayorai_attractor.verification.judge2.adjudication import (
     AtomicDecision,
     DecisionEvidence,
     _atomic_verdict,
-    adjudicate_atoms,
-    adjudicate_composite,
+    _adjudicate_atoms,
+    _adjudicate_composite,
 )
 from ayorai_attractor.verification.judge2.gates import EvidenceDisposition, GateResult
 from ayorai_attractor.verification.models import Evidence
@@ -41,27 +41,67 @@ def fixture(
     origins: dict[str, str] | None = None,
     incomplete: set[str] | None = None,
 ) -> tuple[list[DecisionEvidence], GateResult]:
+    atom_ids = list(dict.fromkeys(atom_id for _, atom_id, _ in stances))
+    segments = {atom_id: f"claim-{index}" for index, atom_id in enumerate(atom_ids)}
+    claim_text = " | ".join(segments.values())
+    atoms: list[dict[str, object]] = []
+    offset = 0
+    for atom_id in atom_ids:
+        text = segments[atom_id]
+        atoms.append({
+            "id": atom_id, "text": text,
+            "start_offset": offset, "end_offset": offset + len(text),
+        })
+        offset += len(text) + 3
+
+    evidence_by_id: dict[str, Evidence] = {}
+    source_texts: dict[str, str] = {}
     declared: list[DecisionEvidence] = []
-    dispositions: list[EvidenceDisposition] = []
-    for evidence_id, atom_id, stance in stances:
-        item = source(
-            evidence_id,
-            origin=(origins or {}).get(evidence_id),
-            complete=evidence_id not in (incomplete or set()),
-        )
-        declared.append(DecisionEvidence(evidence_id, atom_id, stance))  # type: ignore[arg-type]
-        dispositions.append(
-            EvidenceDisposition(
+    raw_stances: list[dict[str, str]] = []
+    for index, (evidence_id, atom_id, stance) in enumerate(stances):
+        item = evidence_by_id.get(evidence_id)
+        if item is None:
+            item = source(
                 evidence_id,
-                atom_id,
-                True,
-                None,
-                stance,
-                item,
+                origin=(origins or {}).get(evidence_id),
+                complete=evidence_id not in (incomplete or set()),
             )
-        )
-    gates = GateResult(None, (), True, tuple(dispositions), rules_sha256())
+            evidence_by_id[evidence_id] = item
+            source_texts[item.source_id] = "x"
+        declared.append(DecisionEvidence(evidence_id, atom_id, stance))  # type: ignore[arg-type]
+        raw_stances.append({
+            "id": f"stance-{index}", "atom_id": atom_id,
+            "evidence_id": evidence_id, "stance": stance,
+        })
+    gates = evaluate_gates(
+        protocol_version="r2-a",
+        claim_id="c1",
+        claim_text=claim_text,
+        atoms=atoms,
+        evidence=list(evidence_by_id.values()),
+        stances=raw_stances,
+        source_texts=source_texts,
+    )
     return declared, gates
+
+
+def _forge_gate_result(
+    original: GateResult,
+    *,
+    evidence: tuple[EvidenceDisposition, ...] | None = None,
+    rules_sha256: str | None = None,
+) -> GateResult:
+    """Simulate object-level tampering to verify the adjudicator fails closed."""
+    forged = object.__new__(GateResult)
+    object.__setattr__(forged, "decision_state", original.decision_state)
+    object.__setattr__(forged, "reason_codes", original.reason_codes)
+    object.__setattr__(forged, "admissible", original.admissible)
+    object.__setattr__(forged, "evidence", original.evidence if evidence is None else evidence)
+    object.__setattr__(
+        forged, "rules_sha256",
+        original.rules_sha256 if rules_sha256 is None else rules_sha256,
+    )
+    return forged
 
 
 def atomic(
@@ -105,7 +145,7 @@ def test_t1_provenance_selects_r2_or_r3_without_changing_verdict() -> None:
         [("s1", "a1", "SUPPORTS"), ("s2", "a1", "SUPPORTS")],
         incomplete={"s2"},
     )
-    good = adjudicate_atoms(["a1"], complete, gates_complete)[0]
+    good = _adjudicate_atoms(["a1"], complete, gates_complete)[0]
     uncertain = adjudicate_atoms(["a1"], incomplete, gates_incomplete)[0]
     assert good.verdict == uncertain.verdict == "SUPPORTED"
     assert good.robustness == "R3"
@@ -117,7 +157,7 @@ def test_t2_composite_truth_table_exhaustive_for_multisets_up_to_four_atoms() ->
     for size in range(1, 5):
         for values in product(VERDICTS, repeat=size):
             decisions = [atomic(str(index), value, "R0") for index, value in enumerate(values)]
-            result = adjudicate_composite(decisions)
+            result = _adjudicate_composite(decisions)
             if "REFUTED" in values:
                 assert result.verdict == "REFUTED"
             elif "CONFLICTING" in values:
@@ -169,7 +209,7 @@ def test_only_gate_admitted_evidence_contributes_to_verdict() -> None:
         "bad", "a1", False, "EXCERPT_MISMATCH", "CONTRADICTS", rejected_source
     )
     declared.append(DecisionEvidence("bad", "a1", "CONTRADICTS"))
-    gates = GateResult(None, (), True, gates.evidence + (rejected,), gates.rules_sha256)
+    gates = _forge_gate_result(gates, evidence=gates.evidence + (rejected,))
     result = adjudicate_atoms(["a1"], declared, gates)[0]
     assert result.verdict == "SUPPORTED"
     assert result.support_clusters == 1
@@ -255,3 +295,40 @@ def test_contract_rule_ids_are_versioned_and_robustness_enum_is_closed() -> None
     assert {item["id"] for item in rules["composite_rules"]} == {"K1", "K2", "K3", "K4", "K5"}
     with pytest.raises(ValueError, match="robustness enum"):
         adjudicate_composite([atomic("a1", "SUPPORTED", "R9")])
+
+def test_gate_result_constructor_is_restricted_to_gates_module() -> None:
+    with pytest.raises(TypeError, match="only be constructed by the gates module"):
+        GateResult(None, (), True, (), rules_sha256())
+
+
+def test_forged_gate_result_with_zero_rules_hash_is_rejected() -> None:
+    declared, gates = fixture([("e1", "a1", "SUPPORTS")])
+    forged = _forge_gate_result(gates, rules_sha256="0" * 64)
+    with pytest.raises(ValueError, match="rules hash"):
+        _adjudicate_atoms(["a1"], declared, forged)
+
+
+def test_public_adjudicate_does_not_accept_caller_supplied_gate_result() -> None:
+    from ayorai_attractor.verification.judge2.adjudication import adjudicate
+
+    with pytest.raises(ValueError, match="unknown=.*gates"):
+        adjudicate({
+            "protocol_version": "r2-a", "claim_id": "c1", "claim_text": "claim",
+            "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
+            "evidence": [], "stances": [], "source_texts": {}, "gates": object(),
+        })
+
+
+def test_public_adjudicate_rejects_stance_reference_missing_from_source_evidence() -> None:
+    from ayorai_attractor.verification.judge2.adjudication import adjudicate
+
+    result = adjudicate({
+        "protocol_version": "r2-a", "claim_id": "c1", "claim_text": "claim",
+        "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
+        "evidence": [], "stances": [{
+            "id": "st1", "atom_id": "a1", "evidence_id": "missing", "stance": "SUPPORTS",
+        }],
+        "source_texts": {},
+    })
+    assert result.decision_state == "INVALID_INPUT"
+    assert result.composite_decision is None
