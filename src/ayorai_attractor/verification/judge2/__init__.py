@@ -284,4 +284,4 @@ __all__ = [
     "rules_sha256",
 ]
 
-from .adjudication import AdjudicationResult, adjudicate
+from .adjudication import AdjudicationResult, adjudicate  # noqa: E402
