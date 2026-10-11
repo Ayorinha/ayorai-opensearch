@@ -1,7 +1,7 @@
 {
   "protocol": "r1-a",
   "captured_from_commit": "2ac98add366afa3324f92652423d4d7011a795bd",
-  "capture_note": "Expected HTTP response bytes recorded from the pre-ResponsePolicy implementation. Keep these snapshots unchanged; compare them after the ResponsePolicy refactor.",
+  "capture_note": "Frozen r1-a HTTP response baseline anchored to the pre-ResponsePolicy commit. Exact response bodies are asserted for every status reachable from valid r1-a requests; 422 validation cases assert status and Content-Type. Verify the expanded fixture against the pre-change implementation before ResponsePolicy work.",
   "cases": [
     {
       "name": "verified-two-independent-supporting-sources",
@@ -71,6 +71,232 @@
       },
       "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"abstain/no_answer\",\"verdict\":null,\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":0,\"contradiction_clusters\":0,\"provenance_complete\":false,\"verdict\":\"unverified\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}",
       "expected_status_code": 200,
+      "expected_content_type": "application/json"
+    },
+    {
+      "name": "supported-two-independent-sources-incomplete-provenance",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "The service launched in 2026."
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-a",
+            "source_location": "document:e1",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 29,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-a",
+            "provenance_complete": false
+          },
+          {
+            "id": "e2",
+            "claim_id": "c1",
+            "source_id": "source-b",
+            "source_location": "document:e2",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 29,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-b",
+            "provenance_complete": false
+          }
+        ],
+        "stances": [
+          {
+            "id": "s1",
+            "claim_id": "c1",
+            "evidence_id": "e1",
+            "stance": "supports"
+          },
+          {
+            "id": "s2",
+            "claim_id": "c1",
+            "evidence_id": "e2",
+            "stance": "supports"
+          }
+        ]
+      },
+      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"supported\",\"verdict\":\"supported\",\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":2,\"contradiction_clusters\":0,\"provenance_complete\":false,\"verdict\":\"supported\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}",
+      "expected_status_code": 200,
+      "expected_content_type": "application/json"
+    },
+    {
+      "name": "partially-supported-one-support-cluster",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "The service launched in 2026."
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-a",
+            "source_location": "document:e1",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 29,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-a",
+            "provenance_complete": true
+          }
+        ],
+        "stances": [
+          {
+            "id": "s1",
+            "claim_id": "c1",
+            "evidence_id": "e1",
+            "stance": "supports"
+          }
+        ]
+      },
+      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"partially_supported\",\"verdict\":\"partially_supported\",\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":1,\"contradiction_clusters\":0,\"provenance_complete\":true,\"verdict\":\"partially_supported\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}",
+      "expected_status_code": 200,
+      "expected_content_type": "application/json"
+    },
+    {
+      "name": "conflicting-support-and-contradiction",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "The service launched in 2026."
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-a",
+            "source_location": "document:e1",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 29,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-a",
+            "provenance_complete": true
+          },
+          {
+            "id": "e2",
+            "claim_id": "c1",
+            "source_id": "source-b",
+            "source_location": "document:e2",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 29,
+            "excerpt": "The service launched in 2025.",
+            "origin_id": "origin-b",
+            "provenance_complete": true
+          }
+        ],
+        "stances": [
+          {
+            "id": "s1",
+            "claim_id": "c1",
+            "evidence_id": "e1",
+            "stance": "supports"
+          },
+          {
+            "id": "s2",
+            "claim_id": "c1",
+            "evidence_id": "e2",
+            "stance": "contradicts"
+          }
+        ]
+      },
+      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"conflicting\",\"verdict\":\"conflicting\",\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":1,\"contradiction_clusters\":1,\"provenance_complete\":true,\"verdict\":\"conflicting\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}",
+      "expected_status_code": 200,
+      "expected_content_type": "application/json"
+    },
+    {
+      "name": "refuted-contradiction-without-support",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "The service launched in 2026."
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-b",
+            "source_location": "document:e1",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 29,
+            "excerpt": "The service launched in 2025.",
+            "origin_id": "origin-b",
+            "provenance_complete": true
+          }
+        ],
+        "stances": [
+          {
+            "id": "s1",
+            "claim_id": "c1",
+            "evidence_id": "e1",
+            "stance": "contradicts"
+          }
+        ]
+      },
+      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"refuted\",\"verdict\":\"refuted\",\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":0,\"contradiction_clusters\":1,\"provenance_complete\":false,\"verdict\":\"refuted\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}",
+      "expected_status_code": 200,
+      "expected_content_type": "application/json"
+    }
+  ],
+  "invalid_requests": [
+    {
+      "name": "extra-field-422",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "Unknown claim."
+          }
+        ],
+        "unexpected": true
+      },
+      "expected_status_code": 422,
+      "expected_content_type": "application/json"
+    },
+    {
+      "name": "invalid-schema-version-422",
+      "request": {
+        "schema_version": "r2",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "Unknown claim."
+          }
+        ]
+      },
+      "expected_status_code": 422,
+      "expected_content_type": "application/json"
+    },
+    {
+      "name": "empty-claims-422",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [],
+        "evidence": [],
+        "stances": []
+      },
+      "expected_status_code": 422,
       "expected_content_type": "application/json"
     }
   ]
