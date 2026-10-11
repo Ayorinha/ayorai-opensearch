@@ -2,7 +2,7 @@
 
 Status: frozen before any F1.2 measurement. Changes only by dated amendment at the end of this file.
 Date: 2026-10-09
-Author: Claude (Anthropic), at the request of the project owner.
+Author: Anderson Leon Ayora
 
 ## 1. What changed since F1
 
