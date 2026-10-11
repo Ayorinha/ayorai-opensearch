@@ -137,7 +137,10 @@ def _validate_rules(rules: dict[str, Any]) -> None:
                     f"unknown={sorted(unknown)}, missing={sorted(missing)}"
                 )
             if "id" in entry:
-                all_rule_ids.append(entry["rule_id"] if section in {"input_gate", "abstention"} else entry["id"])
+                if section in {"input_gate", "abstention"}:
+                    all_rule_ids.append(entry["rule_id"])
+                else:
+                    all_rule_ids.append(entry["id"])
 
             if "verdict" in entry and entry["verdict"] not in enums["verdict"]:
                 raise JudgeRulesError(
