@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import sys
 from itertools import product
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -32,8 +32,9 @@ def _atom_decision(index: int, verdict: str) -> AtomicDecision:
     )
 
 
-
-def _composite_from_contract(rules: dict[str, Any], decisions: list[AtomicDecision]) -> tuple[str, str]:
+def _composite_from_contract(
+    rules: dict[str, Any], decisions: list[AtomicDecision]
+) -> tuple[str, str]:
     by_id = {rule["id"]: rule for rule in rules["composite_rules"]}
     verdicts = [item.verdict for item in decisions]
     for rule_id in rules["composite_precedence"]:
