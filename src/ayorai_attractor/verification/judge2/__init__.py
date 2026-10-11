@@ -10,7 +10,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .gates import EvidenceDisposition, GateResult, evaluate_gates
+from .gates import (
+    IMPLEMENTED_E_REJECTIONS,
+    IMPLEMENTED_G1_CODES,
+    IMPLEMENTED_G2_CODES,
+    EvidenceDisposition,
+    GateResult,
+    evaluate_gates,
+)
 
 RULES_VERSION = "2.0.0"
 _RULES_PATH = Path(__file__).resolve().parents[4] / "rules" / "judge-2.0.0.json"
@@ -263,6 +270,9 @@ RULES_SHA256 = rules_sha256()
 __all__ = [
     "EvidenceDisposition",
     "GateResult",
+    "IMPLEMENTED_E_REJECTIONS",
+    "IMPLEMENTED_G1_CODES",
+    "IMPLEMENTED_G2_CODES",
     "RULES_SHA256",
     "evaluate_gates",
     "JudgeRulesError",
