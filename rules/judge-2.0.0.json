@@ -31,48 +31,42 @@
   },
   "input_gate": [
     {
-      "id": "G1",
       "code": "SCHEMA_VIOLATION",
       "outcome": "INVALID_INPUT"
     },
     {
-      "id": "G2",
       "code": "EMPTY_CLAIM",
       "outcome": "INVALID_INPUT"
     },
     {
-      "id": "G3",
       "code": "NO_ATOMS",
       "outcome": "INVALID_INPUT"
     },
     {
-      "id": "G4",
+      "id": "G1",
       "code": "DUPLICATE_ID",
       "outcome": "INVALID_INPUT"
     },
     {
-      "id": "G5",
       "code": "DANGLING_REFERENCE",
       "outcome": "INVALID_INPUT"
     },
     {
-      "id": "G6",
       "code": "DUPLICATE_STANCE",
       "outcome": "INVALID_INPUT"
     },
     {
-      "id": "G7",
       "code": "ATOM_SPAN_OUT_OF_RANGE",
       "outcome": "INVALID_INPUT"
     },
     {
-      "id": "G8",
       "code": "UNSUPPORTED_PROTOCOL_VERSION",
       "outcome": "INVALID_INPUT"
     }
   ],
   "abstention": [
     {
+      "id": "G2",
       "code": "OUT_OF_SCOPE",
       "outcome": "ABSTAINED"
     },
@@ -261,5 +255,12 @@
     "T9",
     "T10",
     "T11"
+  ],
+  "composite_precedence": [
+    "K1",
+    "K2",
+    "K3",
+    "K4",
+    "K5"
   ]
 }
