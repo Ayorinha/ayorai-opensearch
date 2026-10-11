@@ -97,7 +97,7 @@ def test_audit_trace_lookup_returns_persisted_metadata(
     assert body["verification"] is None
     assert body["verdict_authority"] == "not_adjudicated"
     assert body["formal_verification_endpoint"] == "/v1/verify"
-    assert body["operation_status"] == "not_recorded"
+    assert body["operation_status"] == "completed"
     assert body["replay_digest"]
     assert body["evidence_count"] == 2
 
