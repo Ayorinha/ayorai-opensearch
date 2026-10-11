@@ -6,7 +6,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 No unreleased entries yet.
 
-## [0.4.0] — data a definir pelo mantenedor
+## [0.4.0] — 2026-10-11
 
 ### CI reproducibility
 
