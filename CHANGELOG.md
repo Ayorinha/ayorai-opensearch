@@ -10,6 +10,10 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ### Verification
 
+### Fixed
+
+- `/v1/verify` now returns structured HTTP 422 responses when the deterministic Judge rejects duplicate evidence IDs, dangling evidence references, duplicate stances, duplicate claim IDs, or stances referencing nonexistent claims. The r1-a baseline fixture records the three previously observed 500 cases as 422 invalid requests; regression tests cover all five categories and a 250-example Hypothesis property check.
+
 - **Changed:** OpenAPI schema of the `/v1/verify` `status` field now references `Verdict` and `ResponsePolicy` via `anyOf`; accepted wire values are unchanged.
 
 - **Changed (F1.3):** Split transport-level abstention into `ResponsePolicy`; `VerificationResponse.status` now distinguishes `Verdict` from abstention policy, and `verdict` is typed as `Verdict | None`. The deprecated `ResponseStatus` compatibility enum remains available until v0.5.0; production contracts use `Verdict | ResponsePolicy`. The `/v1/verify` r1-a wire values are unchanged.
