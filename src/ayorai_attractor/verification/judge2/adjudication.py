@@ -236,6 +236,7 @@ def _adjudicate_composite(atom_decisions: list[AtomicDecision]) -> CompositeDeci
 class AdjudicationResult:
     """Canonical, deterministic public output of Judge 2.0.0."""
 
+    judge_rules_version: str
     decision_state: str
     reason_codes: tuple[str, ...]
     rules_sha256: str
@@ -252,7 +253,7 @@ class AdjudicationResult:
     def to_dict(self) -> dict[str, Any]:
         """Return the canonical result object, including its output digest."""
         return {
-            "judge_rules_version": "2.0.0",
+            "judge_rules_version": self.judge_rules_version,
             "rules_sha256": self.rules_sha256,
             "input_sha256": self.input_sha256,
             "decision_state": self.decision_state,
@@ -396,6 +397,7 @@ def _build_result(
     }
     output_digest = __import__("hashlib").sha256(canonical_json_bytes(base)).hexdigest()
     return AdjudicationResult(
+        judge_rules_version="2.0.0",
         decision_state=decision_state,
         reason_codes=reason_codes,
         rules_sha256=rules_sha256,
