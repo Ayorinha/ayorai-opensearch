@@ -109,15 +109,15 @@ def test_three_fixed_output_sha256_vectors() -> None:
     vectors = [
         (
             request_one(),
-            "0000000000000000000000000000000000000000000000000000000000000000",
+            "5ec33f593da6e702b79615e0cbf0e31fb2dae0ee5a445565d2fae4833c169c5f",
         ),
         (
             request_one(out_of_scope=True),
-            "0000000000000000000000000000000000000000000000000000000000000000",
+            "feb93c94f695bd06a2795728a471a08562946ca6a3e57e17f383ce9553ac6128",
         ),
         (
             request_one(invalid=True),
-            "0000000000000000000000000000000000000000000000000000000000000000",
+            "65e20b114e7ed7117191c94710423a2d61524ded3fa05b05ddecbc25f42c8b5f",
         ),
     ]
     actual = [adjudicate(request).output_sha256 for request, _ in vectors]
