@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from typing import Any
 
 import pytest
 
@@ -12,7 +10,7 @@ CLAIM = "Resolution 765 was published in 2023."
 ATOM = {"id": "a1", "text": CLAIM, "start_offset": 0, "end_offset": len(CLAIM)}
 
 
-def run_gates(**kwargs: Any) -> Any:
+def run_gates(**kwargs: object) -> object:
     from ayorai_attractor.verification.judge2 import evaluate_gates
 
     return evaluate_gates(**kwargs)
@@ -25,7 +23,8 @@ def evidence(
     start: int = 0,
     end: int = 10,
     normalized_hash: str | None = None,
-) -> Any:
+) -> object:
+    from datetime import UTC, datetime
     from ayorai_attractor.verification.models import Evidence
 
     return Evidence(
@@ -42,7 +41,7 @@ def evidence(
     )
 
 
-def valid_kwargs() -> dict[str, Any]:
+def valid_kwargs() -> dict[str, object]:
     return {
         "protocol_version": "r2-a",
         "claim_id": "c1",
@@ -92,7 +91,7 @@ def test_contract_digest_is_pinned_to_approved_judge_2_contract() -> None:
     ],
 )
 def test_t11_each_g1_code_has_a_specific_negative_case(
-    override: dict[str, Any], code: str
+    override: dict[str, object], code: str
 ) -> None:
     kwargs = valid_kwargs()
     kwargs.update(override)
@@ -118,7 +117,7 @@ def test_g2_returns_abstention_reason_without_verdict(
 ) -> None:
     kwargs = valid_kwargs()
     kwargs.update(override)
-    result = evaluate_gates(**kwargs)
+    result = run_gates(**kwargs)
     assert result.decision_state == "ABSTAINED"
     assert code in result.reason_codes
     assert result.admissible is False
@@ -144,7 +143,7 @@ def test_t11_each_evidence_rejection_reason_is_recorded(
 ) -> None:
     kwargs = valid_kwargs()
     kwargs.update(kwargs_update)
-    result = evaluate_gates(**kwargs)
+    result = run_gates(**kwargs)
     assert result.decision_state is None
     assert result.admissible is True
     assert len(result.evidence) == 1
