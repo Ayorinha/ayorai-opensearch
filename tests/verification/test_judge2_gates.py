@@ -5,7 +5,6 @@ from typing import Any
 
 import pytest
 
-from ayorai_attractor.verification.judge2 import rules_sha256
 from ayorai_attractor.verification.judge2.gates import RULES_SHA256, evaluate_gates
 from ayorai_attractor.verification.models import Evidence
 
@@ -50,6 +49,8 @@ def valid_kwargs() -> dict[str, Any]:
 
 
 def test_contract_digest_is_pinned_to_approved_judge_2_contract() -> None:
+    from ayorai_attractor.verification.judge2 import rules_sha256
+
     assert rules_sha256() == RULES_SHA256
     assert RULES_SHA256 == (
         "7bf2fd141bcc7cdd370364d3a162dfcdc4ea45e88182d27c4f3583b08616574e"
