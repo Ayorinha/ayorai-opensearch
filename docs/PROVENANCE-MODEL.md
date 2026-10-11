@@ -34,7 +34,7 @@ Os termos acima são conceitos de modelagem. A existência desta tabela não sig
 | Campo no ATTRACTOR ou artefato | Conceito PROV-O relacionado | Regra |
 |---|---|---|
 | `entity_id` / identificador estável | `prov:Entity` | Identificador estável dentro do escopo definido; não usar dados pessoais como identificador |
-| `content_sha256` | atributo de uma entidade | Hash calculado sobre bytes ou serialização canônica documentada |
+| `content_hash` | atributo de uma entidade | Hash calculado sobre bytes ou serialização canônica documentada; o algoritmo e a representação devem ser declarados |
 | `activity_id` | `prov:Activity` | Identifica uma execução específica, não apenas o nome do tipo de atividade |
 | `activity_type` | tipo de atividade | Nome controlado e versionado, por exemplo `judge.evaluate` |
 | `started_at`, `ended_at` | atributos temporais da atividade | Timestamp com fuso/UTC definido; ausência não deve ser preenchida por inferência |
@@ -47,6 +47,8 @@ Os termos acima são conceitos de modelagem. A existência desta tabela não sig
 | `workflow_run_id`, commit SHA | atividade de CI | Registrar links e resultado observados; não inferir sucesso antes do término |
 
 Os nomes da coluna de campos são recomendações de mapeamento, não uma declaração de que todos esses campos já existam no schema atual.
+
+**Nota sobre nomes de hash:** neste modelo de proveniência, `content_hash` é o nome genérico recomendado para o hash de uma entidade, com algoritmo e representação explicitamente documentados. Não confundir esse campo com `content_sha256` usado nos relatórios de avaliação, que pertence ao contrato específico desses relatórios. Para conteúdo semântico de avaliação, usar `semantic_sha256`; manter os campos distintos e não presumir equivalência entre bytes brutos, serialização canônica e conteúdo semântico.
 
 ## Regras de integridade e auditoria
 
