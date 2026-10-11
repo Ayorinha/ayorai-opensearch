@@ -393,7 +393,9 @@ def test_ast_guard_rejects_temporary_module_attribute_access(tmp_path: Path) -> 
     consumer.write_text(
         "\n".join([
             "import importlib",
-            "adjudication = importlib.import_module('ayorai_attractor.verification.judge2.adjudication')",
+            "adjudication = importlib.import_module(",
+            "    'ayorai_attractor.verification.judge2.adjudication'",
+            ")",
             "adjudication._adjudicate_atoms([], [], object())",
             "",
         ]),
