@@ -39,6 +39,8 @@ class EvidenceDisposition:
     atom_id: str
     admitted: bool
     reason: str | None = None
+    stance: str | None = None
+    source_evidence: Evidence | None = None
 
 
 @dataclass(frozen=True)
@@ -313,7 +315,7 @@ def _evidence_dispositions(
                     EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E3"))
                 )
                 continue
-            results.append(EvidenceDisposition(item.id, atom_id, True))
+            results.append(EvidenceDisposition(item.id, atom_id, True, None, stance, item))
     return tuple(results)
 
 
