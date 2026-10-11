@@ -58,3 +58,7 @@ The author of the rewrite had seen per-case results of path C on Golden v0 befor
 - Results are reported per category and per expected state.
 - No threshold, rule or model is changed between the v0 and v0.1 runs.
 - v0.1 is a development set. It is not used to claim generalization; that requires the hidden Golden v1.
+
+## Dated amendment — 2026-10-11
+
+- Metadata-only update: the author name was removed from the conflict-of-interest disclosure. The disclosure itself (the author of the rewrite had seen per-case results of path C on Golden v0), its mitigation, the rules, the files and their SHA-256 are unchanged.
