@@ -5,7 +5,10 @@
   "description": "Registry contract for source provenance. Candidate entries are not approved benchmark evidence until the exact source bytes are captured and hashed.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "sources"],
+  "required": [
+    "schema_version",
+    "sources"
+  ],
   "properties": {
     "schema_version": {
       "type": "string",
@@ -31,7 +34,12 @@
         "publication_date",
         "retrieved_at",
         "status",
-        "sha256"
+        "sha256",
+        "capture_method",
+        "artifact_path",
+        "content_type",
+        "derived_text_sha256",
+        "derived_text_present"
       ],
       "properties": {
         "source_id": {
@@ -44,7 +52,10 @@
         },
         "source_type": {
           "type": "string",
-          "enum": ["normative_act", "official_metadata"]
+          "enum": [
+            "normative_act",
+            "official_metadata"
+          ]
         },
         "issuing_authority": {
           "type": "string",
@@ -56,55 +67,209 @@
         },
         "publication_date": {
           "oneOf": [
-            {"type": "string", "format": "date"},
-            {"type": "null"}
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "retrieved_at": {
           "oneOf": [
-            {"type": "string", "format": "date-time"},
-            {"type": "null"}
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "status": {
           "type": "string",
-          "enum": ["candidate", "verified"]
+          "enum": [
+            "candidate",
+            "verified"
+          ]
         },
         "sha256": {
           "oneOf": [
-            {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-            {"type": "null"}
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "notes": {
           "type": "string"
+        },
+        "capture_method": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "artifact_path": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_type": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "derived_text_sha256": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "derived_text_present": {
+          "type": "boolean"
         }
       },
       "allOf": [
         {
           "if": {
-            "properties": {"status": {"const": "verified"}},
-            "required": ["status"]
+            "properties": {
+              "status": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "status"
+            ]
           },
           "then": {
             "properties": {
-              "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-              "retrieved_at": {"type": "string", "format": "date-time"},
-              "publication_date": {"type": "string", "format": "date"}
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "retrieved_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "publication_date": {
+                "type": "string",
+                "format": "date"
+              }
             }
           }
         },
         {
           "if": {
-            "properties": {"status": {"const": "candidate"}},
-            "required": ["status"]
+            "properties": {
+              "status": {
+                "const": "candidate"
+              }
+            },
+            "required": [
+              "status"
+            ]
           },
           "then": {
             "properties": {
               "sha256": {
                 "oneOf": [
-                  {"type": "null"},
-                  {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "capture_method": {
+                "type": "string",
+                "minLength": 1
+              },
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "content_type": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "derived_text_present": {
+                "const": true
+              }
+            },
+            "required": [
+              "derived_text_present"
+            ]
+          },
+          "then": {
+            "properties": {
+              "derived_text_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "derived_text_sha256": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
                 ]
               }
             }
