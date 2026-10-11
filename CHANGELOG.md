@@ -10,6 +10,8 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ### Verification
 
+- **Changed (F1.3):** Split transport-level abstention into `ResponsePolicy`; `VerificationResponse.status` now distinguishes `Verdict` from abstention policy, and `verdict` is typed as `Verdict | None`. The deprecated `ResponseStatus` name remains as a compatibility type alias. The `/v1/verify` r1-a wire response is preserved byte-for-byte.
+
 - **Removed (PR 1.3 / #129):** `VerificationStatus` (`src/ayorai_attractor/models.py`) and `EvidenceStore.status()` (`src/ayorai_attractor/evidence/core.py`) were removed. This is a breaking change for consumers importing `VerificationStatus`; migrate to the formal deterministic verdict contract at `/v1/verify` rather than deriving factual status from the evidence store. To reproduce the historical legacy baseline, check out the `baseline-legacy-v0` tag; do not regenerate it with current code.
 
 - Search and audit responses no longer claim a factual verdict: `verification` is deprecated and
