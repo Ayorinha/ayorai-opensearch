@@ -14,10 +14,22 @@ RULES_VERSION = "2.0.0"
 _RULES_PATH = Path(__file__).resolve().parents[4] / "rules" / "judge-2.0.0.json"
 
 _ROOT_FIELDS = {
-    "schema_version", "judge_rules_version", "normative_source", "authority",
-    "invariants", "enums", "input_gate", "abstention", "evidence_admissibility",
-    "atomic_rules", "robustness_rules", "composite_rules", "composite_precedence",
-    "output", "compatibility", "protocol_tests",
+    "schema_version",
+    "judge_rules_version",
+    "normative_source",
+    "authority",
+    "invariants",
+    "enums",
+    "input_gate",
+    "abstention",
+    "evidence_admissibility",
+    "atomic_rules",
+    "robustness_rules",
+    "composite_rules",
+    "composite_precedence",
+    "output",
+    "compatibility",
+    "protocol_tests",
 }
 _ATOMIC_WHEN_FIELDS = {"support_clusters", "contradiction_clusters"}
 _ATOMIC_WHEN_VALUES = {0, ">=1"}
@@ -76,11 +88,17 @@ def _validate_rules(rules: dict[str, Any]) -> None:
             if not isinstance(entry, dict):
                 raise JudgeRulesError(f"{section}[{index}] must be an object")
             unknown = set(entry) - allowed_fields
-            missing = allowed_fields - set(entry)
-            # Rule IDs are intentionally optional for legacy input codes that
-            # have not been assigned a normative rule identifier in ADR-009.
+            required_fields = allowed_fields
             if section in {"input_gate", "abstention"}:
-                missing.discard("id")
+                # Only identifiers explicitly assigned by ADR-009 are mandatory.
+                required_fields = allowed_fields - {"id"}
+            elif section == "composite_rules":
+                required_fields = {"id", "when", "verdict"}
+                if not ({"robustness_atoms", "robustness"} & set(entry)):
+                    raise JudgeRulesError(
+                        f"composite_rules[{index}] needs a robustness field"
+                    )
+            missing = required_fields - set(entry)
             if unknown or missing:
                 raise JudgeRulesError(
                     f"invalid fields in {section}[{index}]: "
@@ -97,7 +115,9 @@ def _validate_rules(rules: dict[str, Any]) -> None:
                 f"unknown atomic predicate fields: {sorted(unknown)}"
             )
         if any(value not in _ATOMIC_WHEN_VALUES for value in predicate.values()):
-            raise JudgeRulesError(f"unknown atomic predicate value in rule {rule['id']}")
+            raise JudgeRulesError(
+                f"unknown atomic predicate value in rule {rule['id']}"
+            )
 
     for section, predicates in (
         ("robustness_rules", _ROBUSTNESS_PREDICATES),
@@ -109,8 +129,11 @@ def _validate_rules(rules: dict[str, Any]) -> None:
                     f"unknown predicate in {section}: {rule['when']!r}"
                 )
 
-    if rules["composite_precedence"] != ["K1", "K2", "K3", "K4", "K5"]:
-        raise JudgeRulesError("composite_precedence must explicitly order K1 through K5")
+    expected_precedence = ["K1", "K2", "K3", "K4", "K5"]
+    if rules["composite_precedence"] != expected_precedence:
+        raise JudgeRulesError(
+            "composite_precedence must explicitly order K1 through K5"
+        )
     if [rule["id"] for rule in rules["composite_rules"]] != rules["composite_precedence"]:
         raise JudgeRulesError("composite rules must follow composite_precedence")
 
