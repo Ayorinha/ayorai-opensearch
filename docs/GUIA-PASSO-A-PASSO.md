@@ -7,7 +7,8 @@
 ~~~bash
 git clone https://github.com/Ayorinha/ayorai-opensearch.git
 cd ayorai-opensearch
-git checkout feat/f1-multilingual-stance
+git switch main
+# Para a versão estável v0.4.0, use: git switch --detach v0.4.0
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,nli]"
