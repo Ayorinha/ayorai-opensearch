@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .gates import EvidenceDisposition, GateResult, RULES_SHA256, evaluate_gates
+
 RULES_VERSION = "2.0.0"
 _RULES_PATH = Path(__file__).resolve().parents[4] / "rules" / "judge-2.0.0.json"
 
@@ -248,6 +250,10 @@ def rules_sha256(path: str | Path | None = None) -> str:
 
 
 __all__ = [
+    "EvidenceDisposition",
+    "GateResult",
+    "RULES_SHA256",
+    "evaluate_gates",
     "JudgeRulesError",
     "RULES_VERSION",
     "canonical_json_bytes",
