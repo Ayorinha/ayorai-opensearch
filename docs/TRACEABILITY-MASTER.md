@@ -125,7 +125,7 @@ Esta seção registra explicitamente o limite de evidência para módulos identi
 
 | Módulo | Tratamento atual | Condição para sair deste estado |
 |---|---|---|
-| `src/ayorai_attractor/cli/main.py` | Teste mínimo de contrato pendente na F1.4; não declarar comportamento verificado antes do teste. | Adicionar teste de contrato, executar a suíte e registrar o check-run/SHA. |
+| `src/ayorai_attractor/cli/main.py` | Teste mínimo de contrato incluído em `tests/test_cli_contract.py` na PR F1.4; comportamento ainda não classificado como verificado até CI no SHA final. | `tests/test_cli_contract.py`: ajuda lista `search`/`eval`, `eval` grava relatório JSON para suite suportada e rejeita suite desconhecida sem gravar saída. | [PENDENTE DE VERIFICAÇÃO]; aguarda suíte completa e check-run verde no SHA exato. |
 | `src/ayorai_attractor/memory/core.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
 | `src/ayorai_attractor/observability/audit.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
 | `src/ayorai_attractor/observability/opentelemetry.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
@@ -133,7 +133,7 @@ Esta seção registra explicitamente o limite de evidência para módulos identi
 | `src/ayorai_attractor/research_contract.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
 | `src/ayorai_attractor/security/policy.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
 
-Esta classificação não remove módulos, não altera contratos públicos e não afirma que os módulos são inseguros; apenas impede que sua existência seja confundida com cobertura ou validação. Remoção de qualquer módulo exige decisão nova e registrada. A situação de `cli/main.py` deve ser atualizada somente depois que o teste mínimo previsto for incorporado e verificado.
+Esta classificação não remove módulos, não altera contratos públicos e não afirma que os módulos são inseguros; apenas impede que sua existência seja confundida com cobertura ou validação. Remoção de qualquer módulo exige decisão nova e registrada. O teste mínimo de contrato de `cli/main.py` foi incorporado em `tests/test_cli_contract.py`; sua classificação só deve mudar para [VERIFICADO] depois da suíte completa e do check-run verde no SHA exato.
 
 ## 3. Achados que exigem etapas futuras
 
