@@ -179,7 +179,7 @@ Use the [TRACEABILITY-MASTER](docs/TRACEABILITY-MASTER.md) as the current implem
 
 | Public claim | Evidence and qualification |
 |---|---|
-| The deterministic Judge is the sole final-verdict authority | [ADR-002](docs/adr/ADR-002-judge-rules.md) and Judge implementation/tests; confirm against the exact release commit. |
+| The deterministic Judge is the sole final-verdict authority | [ADR-009](docs/adr/ADR-009-deterministic-adjudication-contract.md) (normative adjudication contract), [ADR-002](docs/adr/ADR-002-judge-rules.md) and Judge implementation/tests; confirm implementation against the exact release commit. |
 | Evaluation numbers describe development performance | [F1.2 results](docs/eval/F1.2-RESULTS.md) and [Golden v0.1 pre-registration](docs/eval/PREREGISTRATION-GOLDEN-v0.1.md); the sets are synthetic and not production-generalization evidence. |
 | Artifact integrity uses SHA-256 | Frozen hashes listed above and the evaluation digest reference; hashes establish byte/semantic integrity under their defined rules, not factual correctness. |
 | Injection resistance is addressed | [Threat Model](docs/THREAT-MODEL.md), security tests, and synthetic Golden injection cases; these do not establish immunity to all attacks. |
