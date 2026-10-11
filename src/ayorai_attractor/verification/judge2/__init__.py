@@ -170,9 +170,14 @@ def _validate_rules(rules: dict[str, Any]) -> None:
                 f"{section} must contain each expected G code exactly once"
             )
         expected_id = "G1" if section == "input_gate" else "G2"
+        expected_outcome = "INVALID_INPUT" if expected_id == "G1" else "ABSTAINED"
         for entry in entries:
             if entry.get("id") != expected_id:
                 raise JudgeRulesError(f"{section} entries must all use id {expected_id}")
+            if entry.get("outcome") != expected_outcome:
+                raise JudgeRulesError(
+                    f"{section} entries must all use outcome {expected_outcome}"
+                )
             expected_rule_id = f"2.0.0/{expected_id}:{entry['code']}"
             if entry.get("rule_id") != expected_rule_id:
                 raise JudgeRulesError(
