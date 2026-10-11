@@ -36,7 +36,6 @@ def test_executor_claims_runs_and_finishes_successfully(store: JobStore) -> None
 
 
 def test_executor_marks_handler_failure_as_failed(store: JobStore) -> None:
-    store = JobStore(":memory:")
     store.enqueue("j1", "id-1")
 
     result = JobExecutor(store, Handler(fail=True)).run("j1", now=100.0)
@@ -47,7 +46,6 @@ def test_executor_marks_handler_failure_as_failed(store: JobStore) -> None:
 
 
 def test_executor_rejects_a_non_queued_job(store: JobStore) -> None:
-    store = JobStore(":memory:")
     store.enqueue("j1", "id-1")
     JobExecutor(store, Handler()).run("j1", now=100.0)
 
