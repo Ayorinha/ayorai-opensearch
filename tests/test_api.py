@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from ayorai_attractor.api import app as api
@@ -118,3 +119,22 @@ def test_audit_trace_lookup_returns_404_for_unknown_trace(
     response = client.get("/v1/audit/missing")
 
     assert response.status_code == 404
+
+
+@pytest.fixture(scope="module", autouse=True)
+def close_original_global_audit_store():
+    yield
+    api.audit_store.close()
+
+
+def test_api_lifespan_closes_audit_store(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    closed: list[bool] = []
+
+    class CloseTracker:
+        def close(self) -> None:
+            closed.append(True)
+
+    monkeypatch.setattr(api, "audit_store", CloseTracker())
+    with TestClient(api.app):
+        pass
+    assert closed == [True]

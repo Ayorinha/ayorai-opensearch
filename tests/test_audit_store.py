@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 
 import pytest
 
@@ -34,7 +35,7 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
         assert saved.replay_version == "r2-v2"
         assert saved.replay_integrity == "valid"
 
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         stored = connection.execute(
             """
             SELECT verification, legacy_verification, operation_status,
@@ -60,7 +61,7 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
 
 
 def _create_legacy_schema(path, row) -> None:  # type: ignore[no-untyped-def]
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(
             """
             CREATE TABLE audit_traces (
@@ -102,7 +103,7 @@ def test_schema_v1_migration_preserves_legacy_value_and_digest(tmp_path) -> None
         assert saved.legacy_verification == "supported"
         assert saved.replay_version == "r2-v1"
         assert saved.replay_integrity == "valid"
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             migrated = connection.execute(
                 """
                 SELECT legacy_verification, verification, operation_status,
@@ -117,7 +118,7 @@ def test_schema_v1_migration_preserves_legacy_value_and_digest(tmp_path) -> None
 
     # Reopening an already migrated database must be idempotent.
     with AuditTraceStore(str(path)):
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             migrated_again = connection.execute(
                 """
                 SELECT legacy_verification, verification, operation_status,
@@ -149,7 +150,7 @@ def test_migration_recognizes_existing_r2_v2_rows(tmp_path) -> None:
         assert saved.legacy_verification is None
         assert saved.replay_version == "r2-v2"
         assert saved.replay_integrity == "valid"
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             migrated = connection.execute(
                 """
                 SELECT legacy_verification, verification, operation_status,

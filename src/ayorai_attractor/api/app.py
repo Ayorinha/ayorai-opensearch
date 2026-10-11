@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 
 from ayorai_attractor.audit import AuditReport
@@ -20,13 +23,25 @@ from ayorai_attractor.verification.judge import InvalidJudgeInput, judge
 from ayorai_attractor.verification.models import Verdict
 from ayorai_attractor.verification.response import ResponsePolicy
 
+engine = Attractor()
+audit_store = AuditTraceStore()
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    """Release persistent resources when the API process shuts down."""
+    try:
+        yield
+    finally:
+        audit_store.close()
+
+
 app = FastAPI(
     title="AYORAI ATTRACTOR",
     version="0.1.0",
     description="Adaptive multi-agent intelligence and verification engine.",
+    lifespan=lifespan,
 )
-engine = Attractor()
-audit_store = AuditTraceStore()
 
 
 @app.get("/health")
