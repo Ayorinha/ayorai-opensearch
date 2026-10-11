@@ -65,6 +65,10 @@ def _invalid(code: str, field: str, message: str) -> InvalidJudgeInput:
     return InvalidJudgeInput(normative, field, message)
 
 
+def _contract_code(rules: Mapping[str, Any], section: str, code: str) -> str:
+    return next(item["code"] for item in rules[section] if item["code"] == code)
+
+
 def _e_rejection(
     rules: Mapping[str, Any], rule_id: str, field: str = "rejection"
 ) -> str:
@@ -230,15 +234,15 @@ def _abstention_codes(
 ) -> tuple[str, ...]:
     codes: list[str] = []
     if out_of_scope:
-        codes.append(next(item["code"] for item in rules["abstention"] if item["code"] == "OUT_OF_SCOPE"))
+        codes.append(_contract_code(rules, "abstention", "OUT_OF_SCOPE"))
     if not factual_claim:
-        codes.append(next(item["code"] for item in rules["abstention"] if item["code"] == "NON_FACTUAL_CLAIM"))
+        codes.append(_contract_code(rules, "abstention", "NON_FACTUAL_CLAIM"))
     if not temporal_anchor_present:
-        codes.append(next(item["code"] for item in rules["abstention"] if item["code"] == "MISSING_TEMPORAL_ANCHOR"))
+        codes.append(_contract_code(rules, "abstention", "MISSING_TEMPORAL_ANCHOR"))
     if not retrieval_succeeded:
-        codes.append(next(item["code"] for item in rules["abstention"] if item["code"] == "RETRIEVAL_FAILURE"))
+        codes.append(_contract_code(rules, "abstention", "RETRIEVAL_FAILURE"))
     if not evidence_pool_integrity_ok:
-        codes.append(next(item["code"] for item in rules["abstention"] if item["code"] == "EVIDENCE_POOL_INTEGRITY_FAILURE"))
+        codes.append(_contract_code(rules, "abstention", "EVIDENCE_POOL_INTEGRITY_FAILURE"))
     return tuple(codes)
 
 
