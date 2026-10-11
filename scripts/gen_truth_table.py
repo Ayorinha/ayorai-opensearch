@@ -9,12 +9,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from ayorai_attractor.verification.judge2 import load_rules
-from ayorai_attractor.verification.judge2.adjudication import (
+from ayorai_attractor.verification.judge2.adjudication import (  # noqa: E402
     AtomicDecision,
     _atomic_verdict,
     adjudicate_composite,
 )
+from ayorai_attractor.verification.judge2 import load_rules  # noqa: E402
 
 VERDICTS = ("SUPPORTED", "PARTIALLY_SUPPORTED", "REFUTED", "UNVERIFIED", "CONFLICTING")
 
@@ -65,7 +65,9 @@ def render() -> str:
             decisions = [_atom_decision(index, value) for index, value in enumerate(values)]
             decision = adjudicate_composite(decisions)
             tuple_text = ", ".join(values)
-            lines.append(f"| {size} | `({tuple_text})` | {decision.verdict} | {decision.rule_id} |")
+            lines.append(
+                f"| {size} | `({tuple_text})` | {decision.verdict} | {decision.rule_id} |"
+            )
     lines.append("")
     return "\n".join(lines)
 
