@@ -31,16 +31,22 @@ def _verdict_constructor_violations(src_root: Path) -> list[str]:
             relative.startswith("verification/judge") and path.suffix == ".py"
         )
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
-        aliases = {"Verdict"}
+        verdict_aliases = {"Verdict"}
+        module_aliases: set[str] = set()
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
                 for alias in node.names:
                     if alias.name == "Verdict":
-                        aliases.add(alias.asname or alias.name)
+                        verdict_aliases.add(alias.asname or alias.name)
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name == "Verdict" or alias.name.endswith(".Verdict"):
-                        aliases.add(alias.asname or alias.name.split(".")[-1])
+                    imported_name = alias.name
+                    local_name = alias.asname or imported_name.split(".")[0]
+                    if imported_name == "Verdict" or imported_name.endswith(".Verdict"):
+                        verdict_aliases.add(alias.asname or imported_name.split(".")[-1])
+                    # Track module aliases so module.Verdict(...) and
+                    # module.Verdict.SUPPORTED cannot bypass the guard.
+                    module_aliases.add(local_name)
 
         parents: dict[ast.AST, ast.AST] = {}
         for parent in ast.walk(tree):
@@ -55,20 +61,31 @@ def _verdict_constructor_violations(src_root: Path) -> list[str]:
                 parent = parents.get(parent)
             return False
 
+        def is_verdict_expression(node: ast.AST) -> bool:
+            if isinstance(node, ast.Name):
+                return node.id in verdict_aliases
+            return (
+                isinstance(node, ast.Attribute)
+                and node.attr == "Verdict"
+                and isinstance(node.value, ast.Name)
+                and node.value.id in module_aliases
+            )
+
         if allowed:
             continue
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-                if node.func.id in aliases:
-                    violations.append(f"{relative}:{node.lineno}:constructor")
+            if isinstance(node, ast.Call) and (
+                (isinstance(node.func, ast.Name) and node.func.id in verdict_aliases)
+                or is_verdict_expression(node.func)
+            ):
+                violations.append(f"{relative}:{node.lineno}:constructor")
             elif isinstance(node, ast.Attribute):
-                if isinstance(node.value, ast.Name) and node.value.id in aliases and not inside_comparison(node):
+                if is_verdict_expression(node.value) and not inside_comparison(node):
                     violations.append(f"{relative}:{node.lineno}:member")
             elif isinstance(node, ast.Subscript):
-                if isinstance(node.value, ast.Name) and node.value.id in aliases and not inside_comparison(node):
+                if is_verdict_expression(node.value) and not inside_comparison(node):
                     violations.append(f"{relative}:{node.lineno}:subscript")
     return sorted(violations)
-
 
 def _judge_import_violations(src_root: Path) -> list[str]:
     violations: list[str] = []
@@ -194,6 +211,25 @@ def test_verdict_guard_detects_member_access_and_import_alias(tmp_path: Path) ->
     assert _verdict_constructor_violations(root) == [
         "api/alias.py:2:constructor",
         "api/member.py:1:member",
+    ]
+
+
+def test_verdict_guard_detects_module_alias_and_allows_comparison(tmp_path: Path) -> None:
+    root = tmp_path / "src" / "ayorai_attractor"
+    _write_source(
+        root,
+        "api/module_alias.py",
+        "import package.models as models\\n"
+        "result = models.Verdict('verified')\\n",
+    )
+    _write_source(
+        root,
+        "api/module_comparison.py",
+        "import package.models as models\\n"
+        "allowed = verdict is models.Verdict.UNVERIFIED\\n",
+    )
+    assert _verdict_constructor_violations(root) == [
+        "api/module_alias.py:2:constructor"
     ]
 
 
