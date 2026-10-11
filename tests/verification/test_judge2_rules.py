@@ -41,7 +41,7 @@ def test_reformatting_json_does_not_change_canonical_hash(tmp_path: Path) -> Non
     source = Path(__file__).resolve().parents[2] / "rules" / "judge-2.0.0.json"
     original = json.loads(source.read_text(encoding="utf-8"))
     compact_reordered = json.dumps(
-        original, ensure_ascii=False, sort_keys=False, separators=(",", ":")
+        original, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     )
     path = tmp_path / "rules.json"
     path.write_text(compact_reordered, encoding="utf-8")
