@@ -1,9 +1,9 @@
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
@@ -88,10 +88,31 @@ def audit(request: SearchRequest) -> AuditResponse:
     )
 
 
-@app.post("/v1/verify", response_model=VerificationAPIResponse)
-def verify(payload: dict[str, Any]) -> Any:
+_VERIFY_REQUEST_BODY: dict[str, Any] = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            "application/json": {
+                "schema": {
+                    "oneOf": [
+                        {"$ref": "#/components/schemas/VerificationRequest"},
+                        {"$ref": "#/components/schemas/Judge2VerificationRequest"},
+                    ]
+                }
+            }
+        },
+    }
+}
+
+
+@app.post(
+    "/v1/verify",
+    response_model=VerificationAPIResponse,
+    openapi_extra=_VERIFY_REQUEST_BODY,
+)
+def verify(payload: Annotated[Any, Body()]) -> Any:
     """Dispatch r1-a unchanged or expose the canonical Judge 2.0.0 result for r2-a."""
-    version = payload.get("schema_version", "r1-a")
+    version = payload.get("schema_version", "r1-a") if isinstance(payload, dict) else "r1-a"
 
     if version == "r2-a":
         try:
@@ -129,8 +150,6 @@ def verify(payload: dict[str, Any]) -> Any:
                 if "OUT_OF_SCOPE" in result.reason_codes
                 else ResponsePolicy.ABSTAIN_NO_ANSWER.value
             )
-        elif result.decision_state == "DECIDED" and result.verdict == "UNVERIFIED":
-            response_policy = ResponsePolicy.ABSTAIN_NO_ANSWER.value
         return JSONResponse(
             content={
                 "schema_version": "r2-a",
@@ -140,9 +159,7 @@ def verify(payload: dict[str, Any]) -> Any:
         )
 
     try:
-        request = VerificationRequest.model_validate_json(
-            json.dumps(payload, ensure_ascii=False)
-        )
+        request = VerificationRequest.model_validate(payload, from_attributes=True)
     except ValidationError as exc:
         errors = [
             {
@@ -209,3 +226,30 @@ def audit_trace(trace_id: str) -> AuditTraceResponse:
 
         raise HTTPException(status_code=404, detail="audit trace not found")
     return saved
+
+
+
+def _verify_contracts_schema_only(
+    body: Annotated[VerificationRequest | Judge2VerificationRequest, Body()],
+) -> None:  # pragma: no cover - documentation-only signature, never routed
+    """Expose both /v1/verify request contracts to OpenAPI generation."""
+
+
+def _openapi_with_verify_schemas() -> dict[str, Any]:
+    """Generate OpenAPI with FastAPI's own component names for both contracts."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    from fastapi.openapi.utils import get_openapi
+    from fastapi.routing import APIRoute
+
+    phantom_path = "/__verify_contracts__"
+    phantom = APIRoute(phantom_path, _verify_contracts_schema_only, methods=["POST"])
+    schema = get_openapi(
+        title=app.title, version=app.version, routes=[*app.routes, phantom]
+    )
+    schema["paths"].pop(phantom_path, None)
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _openapi_with_verify_schemas  # type: ignore[method-assign]
