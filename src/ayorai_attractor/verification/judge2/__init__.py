@@ -277,6 +277,7 @@ __all__ = [
     "evaluate_gates",
     "AdjudicationResult",
     "adjudicate",
+    "verify_output",
     "JudgeRulesError",
     "RULES_VERSION",
     "canonical_json_bytes",
@@ -284,4 +285,4 @@ __all__ = [
     "rules_sha256",
 ]
 
-from .adjudication import AdjudicationResult, adjudicate  # noqa: E402
+from .adjudication import AdjudicationResult, adjudicate, verify_output  # noqa: E402
