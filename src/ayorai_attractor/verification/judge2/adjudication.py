@@ -118,10 +118,13 @@ def adjudicate_atoms(
         dispositions[key] = disposition
 
     for key, item in declared.items():
-        disposition = dispositions.get(key)
-        if disposition is None:
+        matched_disposition = dispositions.get(key)
+        if matched_disposition is None:
             raise ValueError("decision evidence has no matching GateResult disposition")
-        if disposition.stance is not None and item.stance != disposition.stance:
+        if (
+            matched_disposition.stance is not None
+            and item.stance != matched_disposition.stance
+        ):
             raise ValueError("caller stance differs from stance validated by GateResult")
 
     by_atom_side: dict[str, dict[str, list[Evidence]]] = defaultdict(
