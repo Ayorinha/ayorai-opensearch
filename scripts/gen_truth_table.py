@@ -9,12 +9,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from ayorai_attractor.verification.judge2 import load_rules  # noqa: E402
 from ayorai_attractor.verification.judge2.adjudication import (  # noqa: E402
     AtomicDecision,
     _atomic_verdict,
     adjudicate_composite,
 )
-from ayorai_attractor.verification.judge2 import load_rules  # noqa: E402
 
 VERDICTS = ("SUPPORTED", "PARTIALLY_SUPPORTED", "REFUTED", "UNVERIFIED", "CONFLICTING")
 
@@ -42,7 +42,7 @@ def render() -> str:
         f"- Contract SHA-256: `{digest}`",
         "- Decision authority: deterministic contract rules only.",
         "- Input restriction: only evidence admitted by the item-2.2 gates may contribute.",
-        "- Atomic table covers 12 combinations: S∈{0..3}, C∈{0..2};",
+        "- Atomic table covers 12 combinations: S∈{0..3}, C∈{0..2}.",
         "- Provenance variants are tested under T1.",
         "- Exhaustive composite rows cover every ordered verdict tuple for 1–4 atoms (780 rows).",
         "",
