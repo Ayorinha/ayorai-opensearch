@@ -185,3 +185,19 @@ def test_rules_loader_rejects_invalid_robustness_enum(tmp_path: Path) -> None:
 
     with pytest.raises(JudgeRulesError, match="invalid robustness value"):
         load_rules(path)
+
+
+@pytest.mark.parametrize(
+    ("section", "expected_outcome"),
+    [("input_gate", "INVALID_INPUT"), ("abstention", "ABSTAINED")],
+)
+def test_rules_loader_rejects_non_normative_g_outcome(
+    tmp_path: Path, section: str, expected_outcome: str
+) -> None:
+    rules, _ = load_rules()
+    rules[section][0]["outcome"] = "DECIDED"
+    path = tmp_path / f"{section}.json"
+    _write_rules(path, rules)
+
+    with pytest.raises(JudgeRulesError, match=f"must all use outcome {expected_outcome}"):
+        load_rules(path)
