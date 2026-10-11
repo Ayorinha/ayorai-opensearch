@@ -2,7 +2,7 @@
 
 ## Measurement status
 
-Claude audit: **APPROVED as measurement** at commit `7309a24107d736395c2b64f48fc737370e28ceb8`.
+Independent review: **APPROVED as measurement** at commit `7309a24107d736395c2b64f48fc737370e28ceb8`.
 
 This report records the audit reconciliation **without rerunning E3**.
 

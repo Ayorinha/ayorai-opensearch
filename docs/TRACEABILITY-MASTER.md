@@ -8,7 +8,7 @@
 
 ## Regras de classificação e evidência
 
-- **[VERIFICADO por execução local — Cláudio, commit `d311619`]** significa que o comando foi executado localmente sobre aquele commit. O relato disponível registra `pytest: 348 passed`, os 34 caminhos citados existentes na árvore e os hashes congelados inalterados. Isso **não** valida automaticamente o conteúdo desta revisão nem transfere a verificação para um commit posterior.
+- **[VERIFICADO por execução local, commit `d311619`]** significa que o comando foi executado localmente sobre aquele commit. O relato disponível registra `pytest: 348 passed`, os 34 caminhos citados existentes na árvore e os hashes congelados inalterados. Isso **não** valida automaticamente o conteúdo desta revisão nem transfere a verificação para um commit posterior.
 - Toda nova afirmação [VERIFICADO] precisa indicar comando, check-run, SHA/commit ou fonte diretamente consultada. Separar execução local, consulta ao GitHub e afirmação declarada por documentação.
 - **[DECLARADO]** significa que consta em código/documentação ou foi relatado, mas a alegação específica não foi verificada de forma independente nesta linha.
 - **[PARCIAL]** significa que há implementação/teste para parte do requisito, com lacuna explícita.
@@ -113,7 +113,7 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 4. **Digest semântico — PR 0.9:** `semantic_sha256` v1 tem implementação isolada, testes de estabilidade em processo/subprocesso e referências de métricas Golden v0/v0.1. `content_sha256` permanece legado, sem alteração de semântica; sua variação por latência aninhada está documentada.
 5. **Baseline legado:** na tag `baseline-legacy-v0`, `orchestrator.py` e `evidence/core.py` (`EvidenceStore.status`) geravam a predição histórica; `evaluation/golden.py` mantém o comparador legado. A documentação `docs/eval/BASELINE-v0.md`, linha 85, informa PARTIALLY_SUPPORTED em 30/30 e 13/30 corretos (43,3333%), igual à classe majoritária. Não citar `judge.py` como origem desta predição legada.
 6. **Artefatos Golden congelados:** incluir `tests/test_frozen_artifacts.py` e `tests/test_golden_digest.py` na rastreabilidade de integridade, além dos testes específicos de avaliação.
-7. **Rótulos de verificação:** **[VERIFICADO por execução local — Cláudio, commit `1d5d7fa`]** — `pytest -p no:cacheprovider`: 348 passed; nenhum artefato congelado tocado e hashes idênticos; 20/20 perguntas literais conferidas palavra por palavra contra a especificação-fonte; zero linhas de tabela com número de células divergente do cabeçalho. Esta verificação aplica-se somente ao commit `1d5d7fa`; a nova correção ainda precisa ser reverificada e receber seu próprio SHA antes de receber rótulo de verificação.
+7. **Rótulos de verificação:** **[VERIFICADO por execução local, commit `1d5d7fa`]** — `pytest -p no:cacheprovider`: 348 passed; nenhum artefato congelado tocado e hashes idênticos; 20/20 perguntas literais conferidas palavra por palavra contra a especificação-fonte; zero linhas de tabela com número de células divergente do cabeçalho. Esta verificação aplica-se somente ao commit `1d5d7fa`; a nova correção ainda precisa ser reverificada e receber seu próprio SHA antes de receber rótulo de verificação.
 
 ## 4. Manutenção e critérios de aceite
 
@@ -123,7 +123,7 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 - Toda linha [VERIFICADO] precisa indicar comando, check-run, commit/SHA ou fonte consultada e delimitar exatamente o que foi verificado.
 - Preservar Golden, corpus, manifestos, hashes e resultados históricos.
 - Conferir a renderização de todas as tabelas no GitHub: cada linha deve ter o mesmo número de células do cabeçalho.
-- A PR #120 não deve ser mesclada antes da revisão do conteúdo corrigido e da reverificação local pelo Cláudio, mesmo que os checks de CI estejam verdes.
+- A PR #120 não deve ser mesclada antes da revisão do conteúdo corrigido e da reverificação local, mesmo que os checks de CI estejam verdes.
 
 ## 5. Fonte complementar — não canônica
 
@@ -138,7 +138,7 @@ Rótulos e conceitos anteriormente associados ao “Prompt Mestre v3”, incluin
 - API de busca e auditoria: `verification=null`, `verdict_authority=not_adjudicated`, `formal_verification_endpoint=/v1/verify`; falhas operacionais ficam em `operation_status`.
 - Orquestrador: não consulta `EvidenceStore.status()` para decidir o veredito e não reaproveita a saída dos agentes como declaração de verificação factual.
 - Persistência transitória: enquanto `verification` continuar `NOT NULL`, grava-se `not_adjudicated`; a resposta pública da consulta de auditoria não expõe esse marcador como veredito.
-- Testes de contrato atualizados; execução, digests semânticos e hashes de artefatos congelados dependem de verificação independente do Cláudio no SHA exato.
+- Testes de contrato atualizados; execução, digests semânticos e hashes de artefatos congelados dependem de verificação independente no SHA exato.
 - PR 1.3 remove `VerificationStatus` e `EvidenceStore.status()`; a classificação factual permanece exclusiva do Judge determinístico em `/v1/verify`. Essa remoção não declara a implementação completa do Judge 2.0.0.
 - Estado: [MESCLADA #125]; tag `baseline-legacy-v0` confirmada. A revisão independente e o CI da PR 1.3 são gates separados.
 
@@ -154,5 +154,5 @@ Rótulos e conceitos anteriormente associados ao “Prompt Mestre v3”, incluin
   da PR 1.2b.
 - A regeneração do baseline legado é bloqueada nesta versão e orienta a execução a partir da tag
   histórica; manifesto congelado não é alterado.
-- Verificação de testes, lint, tipos, hashes congelados e semantic_sha256: pendente do Cláudio
+- Verificação de testes, lint, tipos, hashes congelados e semantic_sha256: pendente de verificação independente
   no SHA final da PR.

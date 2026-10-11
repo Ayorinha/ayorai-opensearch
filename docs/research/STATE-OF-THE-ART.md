@@ -67,7 +67,7 @@ For ATTRACTOR, the useful research direction is **conformal acceptance/calibrati
 
 These are architectural differences, not accuracy claims.
 
-## 7. Where I disagree with the preliminary Claude assessment
+## 7. Where I disagree with the preliminary assessment
 
 1. **“77–80% is the real ceiling.”** I do not accept this as established. It is a benchmark observation, not a demonstrated ceiling.
 2. **“At least 6% of AggreFact labels are wrong.”** I accept the narrower primary-source statement from Laban et al.: their manual analysis found at least 6% erroneous labels in the **original AggreFact**. I do not generalize that figure to LLM-AggreFact.

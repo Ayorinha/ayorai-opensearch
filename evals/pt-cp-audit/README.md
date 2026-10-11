@@ -17,7 +17,7 @@ Cenário: um assistente jurídico com IA responde perguntas sobre a Parte Geral 
 
 ## Limitações declaradas
 
-- Autor dos casos e das melhorias: o mesmo (Claude). Mitigação: rótulos por construção contra o texto literal, divisão por dispositivo, teste reservado só medido em agregado, baseline congelado em commit antes de qualquer mudança (`e23732f`).
+- Autor dos casos e das melhorias: o mesmo. Mitigação: rótulos por construção contra o texto literal, divisão por dispositivo, teste reservado só medido em agregado, baseline congelado em commit antes de qualquer mudança (`e23732f`).
 - É uma simulação de desenvolvimento em português real, não o Golden v1 (que exige anotação independente e kappa ≥ 0,6).
 
 ## Protocolo da medição v5 → v6 (registrado antes de medir o test)

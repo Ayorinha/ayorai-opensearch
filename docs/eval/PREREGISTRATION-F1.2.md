@@ -2,7 +2,7 @@
 
 Status: frozen before any F1.2 measurement. Changes only by dated amendment at the end of this file.
 Date: 2026-10-09
-Author: Claude (Anthropic), at the request of the project owner.
+Author: Anderson Leon Ayora
 
 ## 1. What changed since F1
 
@@ -58,3 +58,7 @@ H1.2: on Golden v0 and on Golden v0.1, path C with `RuleStanceDetector` v5 has b
 3. In a worktree at the baseline commit: `PYTHONPATH=<worktree>/src python scripts/run_f1_2_eval.py measure --out reports/f1.2-baseline.json` (runner from step 1).
 4. `python scripts/run_f1_2_eval.py compare --baseline reports/f1.2-baseline.json --candidate reports/f1.2-candidate.json --preregistration-commit <sha> --out-json reports/f1.2-results.json --out-md docs/eval/F1.2-RESULTS.md`.
 5. Publish via PR, verbatim, with the interpretation required by §5.
+
+## Dated amendment — 2026-10-11
+
+- Metadata-only correction: the author line is updated to name the project maintainer, Anderson Leon Ayora, as the responsible author. No hypothesis, metric, threshold, decision rule, protocol step, disclosure, or measurement result is changed; the preregistered study design remains as frozen.
