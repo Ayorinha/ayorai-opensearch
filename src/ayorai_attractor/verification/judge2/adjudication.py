@@ -17,6 +17,7 @@ from . import load_rules
 from .gates import GateResult, evaluate_gates
 
 Stance = Literal["SUPPORTS", "CONTRADICTS"]
+EXPECTED_RULES_SHA256 = "493cce66ce45fcb432b8345e7567cfb39858492bfe46d5fa6b584991e79e9efc"
 _ROBUSTNESS_RANK = {"R0": 0, "R1": 1, "R2": 2, "R3": 3}
 
 
@@ -95,6 +96,8 @@ def _adjudicate_atoms(
 ) -> list[AtomicDecision]:
     """Adjudicate using gate-validated stance and provenance, never caller metadata."""
     _, contract_sha256 = load_rules()
+    if contract_sha256 != EXPECTED_RULES_SHA256:
+        raise ValueError("loaded Judge contract hash differs from the pinned contract")
     if gates.rules_sha256 != contract_sha256:
         raise ValueError("GateResult rules hash does not match the loaded Judge contract")
     if gates.decision_state is not None or not gates.admissible:
@@ -265,6 +268,8 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
     gate_input = {key: request[key] for key in required | (set(request) & optional)}
     gates = evaluate_gates(**gate_input)
     _, contract_sha256 = load_rules()
+    if contract_sha256 != EXPECTED_RULES_SHA256:
+        raise ValueError("loaded Judge contract hash differs from the pinned contract")
     if gates.rules_sha256 != contract_sha256:
         raise ValueError("GateResult rules hash does not match the loaded Judge contract")
     if gates.decision_state is not None:
