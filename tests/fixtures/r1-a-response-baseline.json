@@ -410,7 +410,7 @@
       },
       "expected_status_code": 422,
       "expected_content_type": "application/json",
-      "expected_body": "{\"detail\":{\"code\":\"invalid_verification_input\",\"message\":\"evidence ids must be unique\"}}"
+      "expected_body": "{\"detail\":[{\"type\":\"DUPLICATE_ID\",\"loc\":[\"body\",\"evidence\"],\"msg\":\"evidence ids must be unique\"}]}"
     },
     {
       "name": "stance-references-unknown-evidence-422",
@@ -463,7 +463,7 @@
       },
       "expected_status_code": 422,
       "expected_content_type": "application/json",
-      "expected_body": "{\"detail\":{\"code\":\"invalid_verification_input\",\"message\":\"stance references unknown evidence: missing-evidence\"}}"
+      "expected_body": "{\"detail\":[{\"type\":\"DANGLING_REFERENCE\",\"loc\":[\"body\",\"stances\"],\"msg\":\"stance references unknown evidence: missing-evidence\"}]}"
     },
     {
       "name": "duplicate-stances-for-evidence-422",
@@ -516,7 +516,13 @@
       },
       "expected_status_code": 422,
       "expected_content_type": "application/json",
-      "expected_body": "{\"detail\":{\"code\":\"invalid_verification_input\",\"message\":\"multiple stances for evidence: e1\"}}"
+      "expected_body": "{\"detail\":[{\"type\":\"DUPLICATE_STANCE\",\"loc\":[\"body\",\"stances\"],\"msg\":\"multiple stances for evidence: e1\"}]}"
+    }
+  ],
+  "amendments": [
+    {
+      "date": "2026-10-11",
+      "change": "3 known_defects (500) movidos para invalid_requests com 422 estruturado (DEC-005, PR #139); nenhum outro caso alterado."
     }
   ]
 }
