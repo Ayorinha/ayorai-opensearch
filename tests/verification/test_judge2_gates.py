@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 from ayorai_attractor.verification.judge2 import rules_sha256
-from ayorai_attractor.verification.judge2.gates import evaluate_gates, RULES_SHA256
+from ayorai_attractor.verification.judge2.gates import RULES_SHA256, evaluate_gates
 from ayorai_attractor.verification.models import Evidence
 
 
