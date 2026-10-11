@@ -14,7 +14,6 @@ from typing import Literal
 from ayorai_attractor.verification.judge import InvalidJudgeInput
 from ayorai_attractor.verification.models import Evidence
 
-RULES_SHA256 = "7bf2fd141bcc7cdd370364d3a162dfcdc4ea45e88182d27c4f3583b08616574e"
 SUPPORTED_PROTOCOL_VERSION = "r2-a"
 DecisionState = Literal["INVALID_INPUT", "ABSTAINED"]
 
@@ -37,7 +36,7 @@ class GateResult:
     reason_codes: tuple[str, ...]
     admissible: bool
     evidence: tuple[EvidenceDisposition, ...]
-    rules_sha256: str = RULES_SHA256
+    rules_sha256: str
 
 
 def _invalid(code: str, field: str, message: str) -> InvalidJudgeInput:
@@ -230,7 +229,7 @@ def _evidence_dispositions(
         for item in evidence:
             source_text = source_texts.get(item.source_id)
             if not isinstance(source_text, str):
-                results.append(EvidenceDisposition(item.id, atom_id, False, "OFFSET_INVALID"))
+                results.append(EvidenceDisposition(item.id, atom_id, False, "SOURCE_UNAVAILABLE"))
                 continue
             if (
                 item.start_offset < 0
@@ -239,13 +238,16 @@ def _evidence_dispositions(
             ):
                 results.append(EvidenceDisposition(item.id, atom_id, False, "OFFSET_INVALID"))
                 continue
+            excerpt_at_offsets = unicodedata.normalize(
+                "NFC", source_text[item.start_offset:item.end_offset]
+            ) == unicodedata.normalize("NFC", item.excerpt)
+            if not excerpt_at_offsets:
+                results.append(EvidenceDisposition(item.id, atom_id, False, "EXCERPT_MISMATCH"))
+                continue
             if item.normalized_content_hash is not None:
                 normalized_source = unicodedata.normalize("NFC", source_text)
                 actual_hash = hashlib.sha256(normalized_source.encode("utf-8")).hexdigest()
-                excerpt_at_offsets = unicodedata.normalize(
-                    "NFC", source_text[item.start_offset:item.end_offset]
-                ) == unicodedata.normalize("NFC", item.excerpt)
-                if actual_hash != item.normalized_content_hash or not excerpt_at_offsets:
+                if actual_hash != item.normalized_content_hash:
                     results.append(EvidenceDisposition(item.id, atom_id, False, "EXCERPT_MISMATCH"))
                     continue
             stance = stance_by_pair.get((atom_id, item.id))
@@ -278,6 +280,9 @@ def evaluate_gates(
     gate rejects the request, E1-E3 classify each evidence/atom pair. The
     result has no verdict field by design.
     """
+    from ayorai_attractor.verification.judge2 import load_rules
+
+    _, contract_sha256 = load_rules()
     invalid_input = _validate_g1(
         protocol_version=protocol_version,
         claim_id=claim_id,
@@ -292,6 +297,7 @@ def evaluate_gates(
             reason_codes=(invalid_input.code,),
             admissible=False,
             evidence=(),
+            rules_sha256=contract_sha256,
         )
 
     abstention = _abstention_codes(
@@ -307,6 +313,7 @@ def evaluate_gates(
             reason_codes=abstention,
             admissible=False,
             evidence=(),
+            rules_sha256=contract_sha256,
         )
 
     dispositions = _evidence_dispositions(atoms, evidence, stances, source_texts)
@@ -315,12 +322,12 @@ def evaluate_gates(
         reason_codes=(),
         admissible=True,
         evidence=dispositions,
+        rules_sha256=contract_sha256,
     )
 
 
 __all__ = [
     "EvidenceDisposition",
     "GateResult",
-    "RULES_SHA256",
     "evaluate_gates",
 ]
