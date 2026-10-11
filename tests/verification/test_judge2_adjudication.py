@@ -332,3 +332,25 @@ def test_public_adjudicate_rejects_stance_reference_missing_from_source_evidence
     })
     assert result.decision_state == "INVALID_INPUT"
     assert result.composite_decision is None
+
+def test_production_modules_do_not_import_private_judge2_adjudicators() -> None:
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    source_root = root / "src" / "ayorai_attractor"
+    forbidden = {"_adjudicate_atoms", "_adjudicate_composite"}
+    for path in source_root.rglob("*.py"):
+        if "/verification/judge2/" in path.as_posix():
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                assert not (forbidden & {alias.name for alias in node.names}), (
+                    f"{path} imports a private Judge 2 adjudicator"
+                )
+            if isinstance(node, ast.Name):
+                assert node.id not in forbidden, (
+                    f"{path} references a private Judge 2 adjudicator"
+                )
+
