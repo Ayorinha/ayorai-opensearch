@@ -234,13 +234,177 @@ def _adjudicate_composite(atom_decisions: list[AtomicDecision]) -> CompositeDeci
 
 @dataclass(frozen=True)
 class AdjudicationResult:
-    """Public result returned by the single adjudication entry point."""
+    """Canonical, deterministic public output of Judge 2.0.0."""
 
-    decision_state: str | None
+    decision_state: str
     reason_codes: tuple[str, ...]
     rules_sha256: str
+    input_sha256: str
+    verdict: str | None
+    coverage: dict[str, int]
+    robustness: str
+    atoms: tuple[dict[str, Any], ...]
+    rule_trace: tuple[dict[str, str], ...]
+    output_sha256: str
     atomic_decisions: tuple[AtomicDecision, ...]
     composite_decision: CompositeDecision | None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the canonical result object, including its output digest."""
+        return {
+            "judge_rules_version": "2.0.0",
+            "rules_sha256": self.rules_sha256,
+            "input_sha256": self.input_sha256,
+            "decision_state": self.decision_state,
+            "reason_codes": list(self.reason_codes),
+            "verdict": self.verdict,
+            "coverage": dict(self.coverage),
+            "robustness": self.robustness,
+            "atoms": [dict(atom) for atom in self.atoms],
+            "rule_trace": [dict(item) for item in self.rule_trace],
+            "output_sha256": self.output_sha256,
+        }
+
+    def canonical_bytes(self) -> bytes:
+        """Serialize the complete result using ADR-009's canonical UTF-8 JSON."""
+        from . import canonical_json_bytes
+
+        return canonical_json_bytes(self.to_dict())
+
+
+def _json_safe(value: Any) -> Any:
+    """Convert supported input values to stable JSON-compatible values."""
+    if hasattr(value, "model_dump"):
+        return value.model_dump(mode="json")
+    if isinstance(value, Mapping):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return {"unsupported_type": f"{type(value).__module__}.{type(value).__qualname__}"}
+
+
+def _canonical_input(request: Mapping[str, Any]) -> dict[str, Any]:
+    """Normalize order-insensitive collections before hashing the request."""
+    payload = _json_safe(request)
+    for field, keys in (
+        ("atoms", ("id",)),
+        ("evidence", ("id",)),
+        ("stances", ("atom_id", "evidence_id", "id")),
+    ):
+        items = payload.get(field)
+        if isinstance(items, list):
+            payload[field] = sorted(
+                items,
+                key=lambda item: tuple(str(item.get(key, "")) for key in keys)
+                if isinstance(item, Mapping) else ("",),
+            )
+    return payload
+
+
+def _build_result(
+    *,
+    request: Mapping[str, Any],
+    decision_state: str,
+    reason_codes: tuple[str, ...],
+    rules_sha256: str,
+    atomic_decisions: tuple[AtomicDecision, ...] = (),
+    composite_decision: CompositeDecision | None = None,
+    gates: GateResult | None = None,
+) -> AdjudicationResult:
+    """Build and hash a canonical result; the output digest excludes itself."""
+    from . import canonical_json_bytes
+
+    canonical_input = canonical_json_bytes(_canonical_input(request))
+    input_digest = __import__("hashlib").sha256(canonical_input).hexdigest()
+    if decision_state == "DECIDED":
+        verdict = composite_decision.verdict if composite_decision is not None else None
+        if verdict is None:
+            raise ValueError("DECIDED result must contain a factual verdict")
+        atom_by_id = {item.atom_id: item for item in atomic_decisions}
+        dispositions = gates.evidence if gates is not None else ()
+        output_atoms: list[dict[str, Any]] = []
+        for atom_id in sorted(atom_by_id):
+            decision = atom_by_id[atom_id]
+            admitted: list[dict[str, str]] = []
+            excluded: list[dict[str, str]] = []
+            for item in dispositions:
+                if item.atom_id != atom_id:
+                    continue
+                if item.admitted:
+                    admitted.append({
+                        "id": item.evidence_id,
+                        "stance": item.stance or "",
+                    })
+                else:
+                    excluded.append({
+                        "id": item.evidence_id,
+                        "reason": item.reason or "UNKNOWN_EXCLUSION",
+                    })
+            output_atoms.append({
+                "atom_id": decision.atom_id,
+                "verdict": decision.verdict,
+                "support_clusters": decision.support_clusters,
+                "contradiction_clusters": decision.contradiction_clusters,
+                "robustness": decision.robustness,
+                "rule_id": decision.rule_id,
+                "admitted_evidence": sorted(admitted, key=lambda item: (item["id"], item["stance"])),
+                "excluded_evidence": sorted(excluded, key=lambda item: (item["id"], item["reason"])),
+            })
+        counts = {name: 0 for name in (
+            "supported", "refuted", "conflicting", "unverified"
+        )}
+        for decision in atomic_decisions:
+            key = decision.verdict.lower()
+            if key in counts:
+                counts[key] += 1
+        coverage = {**counts, "total": len(atomic_decisions)}
+        robustness = composite_decision.robustness
+        trace = [
+            {"rule_id": item.rule_id, "label": "atomic"}
+            for item in sorted(atomic_decisions, key=lambda item: item.atom_id)
+        ]
+        trace.append({"rule_id": composite_decision.rule_id, "label": "derived"})
+    else:
+        if decision_state not in {"ABSTAINED", "INVALID_INPUT"}:
+            raise ValueError(f"unsupported decision state: {decision_state}")
+        verdict = None
+        output_atoms = []
+        coverage = {
+            "supported": 0, "refuted": 0, "conflicting": 0,
+            "unverified": 0, "total": 0,
+        }
+        robustness = "R0"
+        trace = []
+
+    base: dict[str, Any] = {
+        "judge_rules_version": "2.0.0",
+        "rules_sha256": rules_sha256,
+        "input_sha256": input_digest,
+        "decision_state": decision_state,
+        "reason_codes": list(reason_codes),
+        "verdict": verdict,
+        "coverage": coverage,
+        "robustness": robustness,
+        "atoms": output_atoms,
+        "rule_trace": trace,
+    }
+    output_digest = __import__("hashlib").sha256(canonical_json_bytes(base)).hexdigest()
+    return AdjudicationResult(
+        decision_state=decision_state,
+        reason_codes=reason_codes,
+        rules_sha256=rules_sha256,
+        input_sha256=input_digest,
+        verdict=verdict,
+        coverage=coverage,
+        robustness=robustness,
+        atoms=tuple(output_atoms),
+        rule_trace=tuple(trace),
+        output_sha256=output_digest,
+        atomic_decisions=atomic_decisions,
+        composite_decision=composite_decision,
+    )
 
 
 def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
@@ -273,12 +437,12 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
     if gates.rules_sha256 != contract_sha256:
         raise ValueError("GateResult rules hash does not match the loaded Judge contract")
     if gates.decision_state is not None:
-        return AdjudicationResult(
+        return _build_result(
+            request=request,
             decision_state=gates.decision_state,
             reason_codes=gates.reason_codes,
             rules_sha256=contract_sha256,
-            atomic_decisions=(),
-            composite_decision=None,
+            gates=gates,
         )
 
     raw_atoms = request["atoms"]
@@ -296,12 +460,14 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
             )
     atomic = _adjudicate_atoms(atom_ids, declared, gates)
     composite = _adjudicate_composite(atomic)
-    return AdjudicationResult(
-        decision_state=None,
+    return _build_result(
+        request=request,
+        decision_state="DECIDED",
         reason_codes=(),
         rules_sha256=contract_sha256,
         atomic_decisions=tuple(atomic),
         composite_decision=composite,
+        gates=gates,
     )
 
 
