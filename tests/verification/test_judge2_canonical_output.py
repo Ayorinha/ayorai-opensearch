@@ -107,9 +107,18 @@ def test_t9_adjudication_executes_without_network(monkeypatch: pytest.MonkeyPatc
 
 def test_three_fixed_output_sha256_vectors() -> None:
     vectors = [
-        (request_one(), "0000000000000000000000000000000000000000000000000000000000000000"),
-        (request_one(out_of_scope=True), "0000000000000000000000000000000000000000000000000000000000000000"),
-        (request_one(invalid=True), "0000000000000000000000000000000000000000000000000000000000000000"),
+        (
+            request_one(),
+            "0000000000000000000000000000000000000000000000000000000000000000",
+        ),
+        (
+            request_one(out_of_scope=True),
+            "0000000000000000000000000000000000000000000000000000000000000000",
+        ),
+        (
+            request_one(invalid=True),
+            "0000000000000000000000000000000000000000000000000000000000000000",
+        ),
     ]
     actual = [adjudicate(request).output_sha256 for request, _ in vectors]
     expected = [digest for _, digest in vectors]
