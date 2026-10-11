@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import pytest
@@ -93,10 +94,11 @@ def test_contains_secret_inspects_bytes_and_bytearray(value: bytes | bytearray) 
 
 
 @pytest.mark.parametrize("function", [contains_secret, assert_no_secret])
-@pytest.mark.parametrize("secret", ["", ""])
-def test_empty_secret_is_rejected(function: object, secret: str) -> None:
+def test_empty_secret_is_rejected(
+    function: Callable[[object, str], object],
+) -> None:
     with pytest.raises(ValueError, match="secret must be non-empty"):
-        function("texto público", secret)  # type: ignore[operator]
+        function("texto público", "")
 
 
 def test_assert_no_secret_accepts_response_without_secret() -> None:
