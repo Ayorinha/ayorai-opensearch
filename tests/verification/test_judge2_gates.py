@@ -6,7 +6,6 @@ from typing import Any
 import pytest
 
 from ayorai_attractor.verification.judge2 import RULES_SHA256, evaluate_gates
-from ayorai_attractor.verification.models import Evidence
 
 
 SOURCE = "The regulator published Resolution 765 in 2023."
@@ -22,6 +21,8 @@ def evidence(
     end: int = 10,
     normalized_hash: str | None = None,
 ) -> Evidence:
+    from ayorai_attractor.verification.models import Evidence
+
     return Evidence(
         id=item_id,
         claim_id="c1",
