@@ -92,7 +92,7 @@ A robustez é calculada no lado decisivo do átomo, isto é, suporte para `SUPPO
 - **R2 / INDEPENDENCE_UNKNOWN:** pelo menos dois clusters decisórios, com proveniência incompleta em uma ou mais evidências que impedem confirmar plenamente a independência.
 - **R3 / CORROBORATED:** pelo menos dois clusters decisórios, todos com proveniência completa.
 
-A robustez nunca promove nem rebaixa o veredito. Para resultado composto, a robustez é a menor robustez entre os átomos avaliados, conforme a ordem R0 < R1 < R2 < R3; o resultado deve manter a cobertura que explica quais átomos contribuíram.
+A robustez nunca promove nem rebaixa o veredito. Para resultado composto, a robustez é a menor robustez entre os átomos suportados, conforme a ordem R0 < R1 < R2 < R3; o resultado deve manter a cobertura que explica quais átomos contribuíram.
 
 ## 8. Agregação composta K
 
