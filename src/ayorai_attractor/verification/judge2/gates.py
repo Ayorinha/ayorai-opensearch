@@ -70,19 +70,19 @@ def _validate_g1(
             f"unsupported protocol version: {protocol_version}",
         )
     if not isinstance(claim_text, str):
-        raise _invalid("SCHEMA_VIOLATION", "claim_text", "claim_text must be a string")
+        return _invalid("SCHEMA_VIOLATION", "claim_text", "claim_text must be a string")
     if not claim_text.strip():
-        raise _invalid("EMPTY_CLAIM", "claim_text", "claim text must not be empty")
+        return _invalid("EMPTY_CLAIM", "claim_text", "claim text must not be empty")
     if not isinstance(claim_id, str) or not claim_id:
-        raise _invalid("SCHEMA_VIOLATION", "claim_id", "claim_id must be a non-empty string")
+        return _invalid("SCHEMA_VIOLATION", "claim_id", "claim_id must be a non-empty string")
     if not isinstance(atoms, Sequence) or isinstance(atoms, str | bytes):
-        raise _invalid("SCHEMA_VIOLATION", "atoms", "atoms must be a sequence")
+        return _invalid("SCHEMA_VIOLATION", "atoms", "atoms must be a sequence")
     if not atoms:
-        raise _invalid("NO_ATOMS", "atoms", "at least one atom is required")
+        return _invalid("NO_ATOMS", "atoms", "at least one atom is required")
     if not isinstance(evidence, Sequence) or isinstance(evidence, str | bytes):
-        raise _invalid("SCHEMA_VIOLATION", "evidence", "evidence must be a sequence")
+        return _invalid("SCHEMA_VIOLATION", "evidence", "evidence must be a sequence")
     if not isinstance(stances, Sequence) or isinstance(stances, str | bytes):
-        raise _invalid("SCHEMA_VIOLATION", "stances", "stances must be a sequence")
+        return _invalid("SCHEMA_VIOLATION", "stances", "stances must be a sequence")
 
     atom_ids: list[str] = []
     for index, raw_atom in enumerate(atoms):
@@ -94,54 +94,54 @@ def _validate_g1(
         start = atom.get("start_offset")
         end = atom.get("end_offset")
         if not isinstance(atom_id, str) or not atom_id:
-            raise _invalid("SCHEMA_VIOLATION", f"atoms[{index}].id", "atom id is required")
+            return _invalid("SCHEMA_VIOLATION", f"atoms[{index}].id", "atom id is required")
         if not isinstance(text, str) or not text:
-            raise _invalid("SCHEMA_VIOLATION", f"atoms[{index}].text", "atom text is required")
+            return _invalid("SCHEMA_VIOLATION", f"atoms[{index}].text", "atom text is required")
         if not isinstance(start, int) or isinstance(start, bool):
-            raise _invalid(
+            return _invalid(
                 "SCHEMA_VIOLATION",
                 f"atoms[{index}].start_offset",
                 "start_offset must be an integer",
             )
         if not isinstance(end, int) or isinstance(end, bool):
-            raise _invalid(
+            return _invalid(
                 "SCHEMA_VIOLATION",
                 f"atoms[{index}].end_offset",
                 "end_offset must be an integer",
             )
         if start < 0 or end <= start or end > len(claim_text):
-            raise _invalid(
+            return _invalid(
                 "ATOM_SPAN_OUT_OF_RANGE",
                 f"atoms[{index}]",
                 "atom offsets must be ordered and within claim_text",
             )
         if claim_text[start:end] != text:
-            raise _invalid(
+            return _invalid(
                 "ATOM_SPAN_OUT_OF_RANGE",
                 f"atoms[{index}]",
                 "atom text must match claim_text at its declared offsets",
             )
         atom_ids.append(atom_id)
     if len(atom_ids) != len(set(atom_ids)):
-        raise _invalid("DUPLICATE_ID", "atoms", "atom ids must be unique")
+        return _invalid("DUPLICATE_ID", "atoms", "atom ids must be unique")
 
     evidence_ids: list[str] = []
     for index, item in enumerate(evidence):
         if not isinstance(item, Evidence):
-            raise _invalid(
+            return _invalid(
                 "SCHEMA_VIOLATION",
                 f"evidence[{index}]",
                 "evidence entries must be validated Evidence objects",
             )
         if item.claim_id != claim_id:
-            raise _invalid(
+            return _invalid(
                 "DANGLING_REFERENCE",
                 f"evidence[{index}].claim_id",
                 "evidence must reference the evaluated claim",
             )
         evidence_ids.append(item.id)
     if len(evidence_ids) != len(set(evidence_ids)):
-        raise _invalid("DUPLICATE_ID", "evidence", "evidence ids must be unique")
+        return _invalid("DUPLICATE_ID", "evidence", "evidence ids must be unique")
 
     stance_ids: list[str] = []
     stance_pairs: list[tuple[str, str]] = []
@@ -156,9 +156,9 @@ def _validate_g1(
         evidence_id = stance.get("evidence_id")
         relation = stance.get("stance")
         if not isinstance(stance_id, str) or not stance_id:
-            raise _invalid("SCHEMA_VIOLATION", f"stances[{index}].id", "stance id is required")
+            return _invalid("SCHEMA_VIOLATION", f"stances[{index}].id", "stance id is required")
         if not isinstance(atom_id, str) or not isinstance(evidence_id, str):
-            raise _invalid(
+            return _invalid(
                 "SCHEMA_VIOLATION",
                 f"stances[{index}]",
                 "atom_id and evidence_id are required",
@@ -166,7 +166,7 @@ def _validate_g1(
         if not isinstance(relation, str) or relation not in {
             "SUPPORTS", "CONTRADICTS", "NEUTRAL", "supports", "contradicts", "neutral"
         }:
-            raise _invalid(
+            return _invalid(
                 "SCHEMA_VIOLATION",
                 f"stances[{index}].stance",
                 "stance value is invalid",
@@ -174,15 +174,15 @@ def _validate_g1(
         stance_ids.append(stance_id)
         stance_pairs.append((atom_id, evidence_id))
         if atom_id not in atom_id_set or evidence_id not in evidence_id_set:
-            raise _invalid(
+            return _invalid(
                 "DANGLING_REFERENCE",
                 f"stances[{index}]",
                 "stance must reference an existing atom and evidence item",
             )
     if len(stance_ids) != len(set(stance_ids)):
-        raise _invalid("DUPLICATE_ID", "stances", "stance ids must be unique")
+        return _invalid("DUPLICATE_ID", "stances", "stance ids must be unique")
     if len(stance_pairs) != len(set(stance_pairs)):
-        raise _invalid(
+        return _invalid(
             "DUPLICATE_STANCE",
             "stances",
             "only one stance is allowed for each atom/evidence pair",
