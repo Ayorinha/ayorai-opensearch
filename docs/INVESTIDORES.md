@@ -118,6 +118,15 @@ A estratégia é manter o núcleo de verificação observável e reproduzível, 
 | Latência e custo | caminhos graduais e medição de desempenho |
 | Excesso de confiança nos resultados | divulgação explícita de limitações e status |
 
+## Evidências públicas e limites das afirmações
+
+- **Estado técnico atual:** consulte a [matriz de rastreabilidade](TRACEABILITY-MASTER.md), que distingue implementação, teste, evidência parcial e lacunas conhecidas.
+- **Medições:** consulte [F1.2 Results](eval/F1.2-RESULTS.md) e o [pré-registro do Golden v0.1](eval/PREREGISTRATION-GOLDEN-v0.1.md). Os conjuntos são sintéticos e de desenvolvimento; não sustentam alegações de generalização em produção.
+- **Autoridade do veredito:** [ADR-002 — Judge Rules](adr/ADR-002-judge-rules.md) documenta a fronteira do Judge determinístico.
+- **Limites de segurança:** [Threat Model](THREAT-MODEL.md) descreve ameaças e controles conhecidos; não significa imunidade a ataques.
+
+Este documento não afirma clientes ativos, receita, implantação em produção, certificação regulatória ou validação independente. Qualquer alegação futura desse tipo deve apontar para evidência verificável específica e atualizada.
+
 ## Contato
 
 Para pilotos, anotação, fomento ou parceria técnica, utilize o perfil público do projeto e os canais de contato indicados no repositório.
