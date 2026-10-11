@@ -1,5 +1,7 @@
 <div align="center">
 
+<p align="center"><img src="docs/assets/brand/ayorai-attractor-banner.png" alt="AYORAI ATTRACTOR" width="720"></p>
+
 # AYORAI ATTRACTOR
 
 **Auditable verification for AI answers.**
