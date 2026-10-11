@@ -358,11 +358,9 @@
       "expected_status_code": 422,
       "expected_content_type": "application/json",
       "expected_body": "{\"detail\":[{\"type\":\"too_short\",\"loc\":[\"body\",\"claims\"],\"msg\":\"List should have at least 1 item after validation, not 0\",\"input\":[],\"ctx\":{\"field_type\":\"List\",\"min_length\":1,\"actual_length\":0}}]}"
-    }
-  ],
-  "known_defects": [
+    },
     {
-      "name": "duplicate-evidence-id-currently-500",
+      "name": "duplicate-evidence-id-422",
       "request": {
         "schema_version": "r1-a",
         "claims": [
@@ -410,13 +408,12 @@
           }
         ]
       },
-      "expected_status_code": 500,
-      "expected_content_type": "text/plain; charset=utf-8",
-      "expected_body": "Internal Server Error",
-      "defect": "judge raises ValueError: evidence ids must be unique; route does not translate it into a client error."
+      "expected_status_code": 422,
+      "expected_content_type": "application/json",
+      "expected_body": "{\"detail\":[{\"type\":\"DUPLICATE_ID\",\"loc\":[\"body\",\"evidence\"],\"msg\":\"evidence ids must be unique\"}]}"
     },
     {
-      "name": "stance-references-unknown-evidence-currently-500",
+      "name": "stance-references-unknown-evidence-422",
       "request": {
         "schema_version": "r1-a",
         "claims": [
@@ -464,13 +461,12 @@
           }
         ]
       },
-      "expected_status_code": 500,
-      "expected_content_type": "text/plain; charset=utf-8",
-      "expected_body": "Internal Server Error",
-      "defect": "judge raises ValueError for an unknown evidence reference; route does not translate it into a client error."
+      "expected_status_code": 422,
+      "expected_content_type": "application/json",
+      "expected_body": "{\"detail\":[{\"type\":\"DANGLING_REFERENCE\",\"loc\":[\"body\",\"stances\"],\"msg\":\"stance references unknown evidence: missing-evidence\"}]}"
     },
     {
-      "name": "duplicate-stances-for-evidence-currently-500",
+      "name": "duplicate-stances-for-evidence-422",
       "request": {
         "schema_version": "r1-a",
         "claims": [
@@ -518,10 +514,15 @@
           }
         ]
       },
-      "expected_status_code": 500,
-      "expected_content_type": "text/plain; charset=utf-8",
-      "expected_body": "Internal Server Error",
-      "defect": "judge raises ValueError for multiple stances for the same evidence; route does not translate it into a client error."
+      "expected_status_code": 422,
+      "expected_content_type": "application/json",
+      "expected_body": "{\"detail\":[{\"type\":\"DUPLICATE_STANCE\",\"loc\":[\"body\",\"stances\"],\"msg\":\"multiple stances for evidence: e1\"}]}"
+    }
+  ],
+  "amendments": [
+    {
+      "date": "2026-10-11",
+      "change": "3 known_defects (500) movidos para invalid_requests com 422 estruturado (DEC-005, PR #139); nenhum outro caso alterado."
     }
   ]
 }

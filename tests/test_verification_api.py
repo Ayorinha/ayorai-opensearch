@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from ayorai_attractor.api.app import app
 
@@ -135,13 +137,135 @@ def test_r1_a_response_bytes_match_pre_policy_baseline() -> None:
         assert response.content.decode("utf-8") == case["expected_body"], case["name"]
 
 
-def test_r1_a_known_invalid_inputs_are_frozen_as_current_500_defects() -> None:
-    fixture_path = Path(__file__).parent / "fixtures" / "r1-a-response-baseline.json"
-    baseline = json.loads(fixture_path.read_text(encoding="utf-8"))
-    client = TestClient(app, raise_server_exceptions=False)
+def test_r1_a_duplicate_claim_ids_return_structured_422() -> None:
+    client = TestClient(app)
+    response = client.post(
+        "/v1/verify",
+        json={
+            "schema_version": "r1-a",
+            "claims": [
+                {"id": "c1", "text": "Claim one."},
+                {"id": "c1", "text": "Duplicate claim."},
+            ],
+            "evidence": [],
+            "stances": [],
+        },
+    )
 
-    for case in baseline["known_defects"]:
-        response = client.post("/v1/verify", json=case["request"])
-        assert response.status_code == case["expected_status_code"], case["name"]
-        assert response.headers["content-type"] == case["expected_content_type"], case["name"]
-        assert response.content.decode("utf-8") == case["expected_body"], case["name"]
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": [
+            {
+                "type": "DUPLICATE_ID",
+                "loc": ["body", "claims"],
+                "msg": "claim ids must be unique",
+            }
+        ]
+    }
+
+
+def test_r1_a_stance_for_nonexistent_claim_returns_structured_422() -> None:
+    client = TestClient(app)
+    response = client.post(
+        "/v1/verify",
+        json={
+            "schema_version": "r1-a",
+            "claims": [{"id": "c1", "text": "Claim one."}],
+            "evidence": [],
+            "stances": [
+                {
+                    "id": "s1",
+                    "claim_id": "missing-claim",
+                    "evidence_id": "e1",
+                    "stance": "supports",
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": [
+            {
+                "type": "DANGLING_REFERENCE",
+                "loc": ["body", "stances"],
+                "msg": "stance references unknown claim",
+            }
+        ]
+    }
+
+
+def r1_a_schema_valid_request() -> st.SearchStrategy[dict[str, object]]:
+    claim_ids = st.sampled_from(["c1", "c2", "c3"])
+    evidence_ids = st.sampled_from(["e1", "e2", "e3"])
+    claim = st.fixed_dictionaries(
+        {
+            "id": claim_ids,
+            "text": st.sampled_from(["Claim one.", "Claim two.", "Claim three."]),
+        }
+    )
+    evidence = st.fixed_dictionaries(
+        {
+            "id": evidence_ids,
+            "claim_id": claim_ids,
+            "source_id": st.sampled_from(["source-a", "source-b"]),
+            "source_location": st.sampled_from(["document:1", "document:2"]),
+            "retrieved_at": st.just("2026-10-02T09:00:00Z"),
+            "start_offset": st.just(0),
+            "end_offset": st.just(3),
+            "excerpt": st.just("abc"),
+            "origin_id": st.sampled_from(["origin-a", "origin-b"]),
+        }
+    )
+    stance = st.fixed_dictionaries(
+        {
+            "id": st.sampled_from(["s1", "s2", "s3"]),
+            "claim_id": claim_ids,
+            "evidence_id": evidence_ids,
+            "stance": st.sampled_from(["supports", "contradicts", "neutral"]),
+        }
+    )
+    return st.fixed_dictionaries(
+        {
+            "schema_version": st.just("r1-a"),
+            "claims": st.lists(claim, min_size=1, max_size=3),
+            "evidence": st.lists(evidence, max_size=4),
+            "stances": st.lists(stance, max_size=5),
+        }
+    )
+
+
+@given(request=r1_a_schema_valid_request())
+@settings(max_examples=250, deadline=None)
+def test_r1_a_schema_valid_inputs_never_return_http_500(
+    request: dict[str, object],
+) -> None:
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.post("/v1/verify", json=request)
+    assert response.status_code != 500
+    assert response.status_code in {200, 422}
+
+
+
+def test_r1_a_unexpected_value_error_from_judge_remains_http_500(monkeypatch) -> None:
+    import importlib
+
+    api_module = importlib.import_module("ayorai_attractor.api.app")
+
+    def unexpected_failure(*args, **kwargs):
+        raise ValueError("unexpected internal programming error")
+
+    monkeypatch.setattr(api_module, "judge", unexpected_failure)
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.post(
+        "/v1/verify",
+        json={
+            "schema_version": "r1-a",
+            "claims": [{"id": "c1", "text": "A valid claim."}],
+            "evidence": [],
+            "stances": [],
+        },
+    )
+
+    assert response.status_code == 500
+    assert response.text == "Internal Server Error"

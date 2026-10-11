@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
@@ -16,7 +16,7 @@ from ayorai_attractor.verification.api_models import (
     VerificationAPIResponse,
     VerificationRequest,
 )
-from ayorai_attractor.verification.judge import judge
+from ayorai_attractor.verification.judge import InvalidJudgeInput, judge
 from ayorai_attractor.verification.models import Verdict
 from ayorai_attractor.verification.response import ResponsePolicy
 
@@ -77,7 +77,19 @@ def verify(request: VerificationRequest) -> VerificationAPIResponse:
             traceability=Traceability(adr="ADR-002", rules=["§5"]),
         )
 
-    judgments, verdict = judge(request.claims, request.evidence, request.stances)
+    try:
+        judgments, verdict = judge(request.claims, request.evidence, request.stances)
+    except InvalidJudgeInput as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=[
+                {
+                    "type": exc.code,
+                    "loc": ["body", exc.field],
+                    "msg": str(exc),
+                }
+            ],
+        ) from exc
     status = (
         ResponsePolicy.ABSTAIN_NO_ANSWER
         if verdict is Verdict.UNVERIFIED
