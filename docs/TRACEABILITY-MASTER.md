@@ -6,6 +6,16 @@
 **Base da PR:** `main` após PR #119, commit `c4dc36162d8231d78535d1ca1cb00bfdefb9fd4c`.
 **Escopo:** somente documentação. Não alterar código, testes, fixtures, Golden, corpus, manifestos ou hashes congelados.
 
+## Decisões de escopo
+
+As decisões abaixo são limites aprovados pelo mantenedor para o domínio técnico e não declaram capacidade já implementada.
+
+- **D10 — Foco de domínio:** a entrada do domínio jurídico será pela regulação de telecomunicações da Anatel, com referência ao Regulamento Geral de Direitos do Consumidor de Serviços de Telecomunicações (RGC), aprovado pela Resolução Anatel nº 765/2023. Não incluir TCU, CGU, Diário Oficial da União ou jurisprudência no escopo técnico nem como promessa no pacote institucional. Fonte primária da resolução: https://informacoes.anatel.gov.br/legislacao/resolucoes/2023/1900-resolucao-765%29.
+- **D11 — Limite do Judge:** o Judge não interpreta normas, não decide hierarquia normativa nem revogação. O escopo futuro pode representar deterministicamente a referência estrutural (artigo, inciso, parágrafo e alínea) e a data de vigência como metadado/âncora temporal, incluindo o estado `G2 MISSING_TEMPORAL_ANCHOR`; isso não constitui interpretação jurídica.
+- **D12 — Terminologia:** manter a formulação já adotada pelo projeto, **“LLM ≠ Judge”**. Não introduzir lemas novos nos documentos.
+- **Regra de evidência jurídica:** toda referência legal deve apontar para fonte primária conferida. Para a LGPD, art. 20, usar a formulação “direito de solicitar a revisão de decisões tomadas unicamente com base em tratamento automatizado”; não afirmar que a lei exige revisão humana. Fonte primária: https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm.
+- **Base autoral para material normativo:** Lei nº 9.610/1998, art. 8º, IV: https://www.planalto.gov.br/ccivil_03/leis/l9610.htm. Manter proveniência e metadados de coleta mesmo quando o texto normativo não for protegido por direito autoral.
+
 ## Regras de classificação e evidência
 
 - **[VERIFICADO por execução local, commit `d311619`]** significa que o comando foi executado localmente sobre aquele commit. O relato disponível registra `pytest: 348 passed`, os 34 caminhos citados existentes na árvore e os hashes congelados inalterados. Isso **não** valida automaticamente o conteúdo desta revisão nem transfere a verificação para um commit posterior.
@@ -160,3 +170,14 @@ Rótulos e conceitos anteriormente associados ao plano de execução v3, incluin
   histórica; manifesto congelado não é alterado.
 - Verificação de testes, lint, tipos, hashes congelados e semantic_sha256: pendente de verificação independente
   no SHA final da PR.
+
+## Fila futura — adendo de domínio jurídico, evidência e citações (11/10/2026)
+
+Esta fila complementa o plano de execução v5. **Não altera a ordem das Ondas 1–3 em andamento.** A sequência ativa permanece: fechar DEC-005 (500 → 422), F1.4, F1.5 e M5, respeitando os gates de revisão independente e CI; M5 já deve aplicar as regras de citação acima.
+
+- **F2.7 — acréscimo:** reportar métricas estratificadas por tipo de afirmação: numérica, data/prazo, remissão legal e conflito de fontes. Publicar `n` por estrato e IC 95%; não inferir desempenho de estratos com amostra insuficiente.
+- **F4.2 — acréscimo:** registrar a base legal da Lei nº 9.610/1998, art. 8º, IV, e exigir URL, órgão, data de publicação, data de coleta e hash para cada fonte normativa. Comentários doutrinários, livros e bases privadas continuam bloqueados pela DEC-002.
+- **F4.4 — acréscimo:** repetir a estratificação por tipo de afirmação (numérica, data/prazo, remissão legal, conflito de fontes), sempre com IC 95% e `n` explícito por estrato.
+- **F4.5 — novo, após F4.3:** parser determinístico de referências normativas em português, cobrindo artigo, inciso, parágrafo, alínea, `caput`, plural `§§`, incisos romanos e referências como “Resolução nº 765/2023”. Produzir forma canônica e testes de propriedade e casos-limite (`º/o`, abreviações e pontuação). Não interpretar conteúdo jurídico, hierarquia, revogação ou vigência; a data de vigência é apenas metadado/âncora temporal.
+- **DEC-006:** decisão pendente de priorização do motor de stance em português (ADR-008) após a Onda 2; não bloqueia as Ondas 1–2.
+
