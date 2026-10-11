@@ -5,9 +5,6 @@ from itertools import product
 
 import pytest
 
-from ayorai_attractor.verification.models import Evidence
-from ayorai_attractor.verification.judge2 import load_rules, rules_sha256
-from ayorai_attractor.verification.judge2 import adjudication
 from ayorai_attractor.verification.judge2.adjudication import (
     AtomicDecision,
     DecisionEvidence,
@@ -16,6 +13,8 @@ from ayorai_attractor.verification.judge2.adjudication import (
     adjudicate_composite,
 )
 from ayorai_attractor.verification.judge2.gates import EvidenceDisposition, GateResult
+from ayorai_attractor.verification.models import Evidence
+from ayorai_attractor.verification.judge2 import adjudication, load_rules, rules_sha256
 
 VERDICTS = ("SUPPORTED", "PARTIALLY_SUPPORTED", "REFUTED", "UNVERIFIED", "CONFLICTING")
 ROBUSTNESS = ("R0", "R1", "R2", "R3")
@@ -222,7 +221,9 @@ def test_t6_composite_result_is_invariant_to_input_order() -> None:
     assert adjudicate_composite(decisions) == adjudicate_composite(list(reversed(decisions)))
 
 
-def test_t6_precedence_uses_contract_order_even_if_rule_list_is_shuffled(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_t6_precedence_uses_contract_order_even_if_rule_list_is_shuffled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     rules, digest = load_rules()
     rules["composite_rules"] = list(reversed(rules["composite_rules"]))
     monkeypatch.setattr(adjudication, "load_rules", lambda: (rules, digest))
