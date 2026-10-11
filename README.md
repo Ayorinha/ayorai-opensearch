@@ -130,7 +130,9 @@ git switch main
 # For the stable v0.4.0 release instead, use: git switch --detach v0.4.0
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev,nli]"
+pip install -e ".[dev]"
+# Optional NLI backends (downloads large model dependencies):
+# pip install -e ".[dev,nli]"
 pytest
 ruff check .
 mypy src/ayorai_attractor
@@ -142,6 +144,8 @@ For the frozen evaluation:
 attractor eval --suite golden-v0 --out reports/golden-v0.json
 attractor eval --suite golden-v0.1 --out reports/golden-v0.1.json
 ~~~
+
+Evaluation commands write generated files to `reports/`; do not commit those generated report files.
 
 Evaluation reports expose two deliberately distinct hashes:
 
