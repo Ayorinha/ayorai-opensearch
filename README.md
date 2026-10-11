@@ -58,7 +58,7 @@ When evidence conflicts, ATTRACTOR can return <code>CONFLICTING</code> instead o
 - **Auditable:** each result can retain claim, evidence, provenance and source-span references.
 - **Tamper-evident:** evaluation inputs and outputs can be content-addressed with SHA-256.
 - **Multilingual by design:** Portuguese is a primary future evaluation target while English documents remain explicitly disclosed in the current development evidence.
-- **Prompt-injection aware:** instruction-like text inside retrieved evidence remains data.
+- **Injection-resilience design:** the threat model and evaluation corpus include instruction-like text in evidence; this is a tested risk area, not a claim of immunity. See [Threat Model](docs/THREAT-MODEL.md), [security tests](tests/test_verification_response_security.py), and the [traceability matrix](docs/TRACEABILITY-MASTER.md).
 - **Open core:** the verification boundary, evaluation methodology and engineering evidence are publicly inspectable.
 - **Governance-oriented:** the architecture is designed to support traceability, evidence preservation and controlled AI-assisted workflows.
 
@@ -172,6 +172,18 @@ Always record the commit SHA, suite version and both report digests with an eval
 | ADR-006 | metadata, independence and numeric semantics |
 | ADR-007 | Portuguese unsupported-span research path |
 | ADR-008 | AYORAI-PT-NLI commercial stance path |
+
+## Public-claim evidence map
+
+Use the [TRACEABILITY-MASTER](docs/TRACEABILITY-MASTER.md) as the current implementation/evidence register; a feature name or architecture diagram alone is not proof that every control is complete.
+
+| Public claim | Evidence and qualification |
+|---|---|
+| The deterministic Judge is the sole final-verdict authority | [ADR-002](docs/adr/ADR-002-judge-rules.md) and Judge implementation/tests; confirm against the exact release commit. |
+| Evaluation numbers describe development performance | [F1.2 results](docs/eval/F1.2-RESULTS.md) and [Golden v0.1 pre-registration](docs/eval/PREREGISTRATION-GOLDEN-v0.1.md); the sets are synthetic and not production-generalization evidence. |
+| Artifact integrity uses SHA-256 | Frozen hashes listed above and the evaluation digest reference; hashes establish byte/semantic integrity under their defined rules, not factual correctness. |
+| Injection resistance is addressed | [Threat Model](docs/THREAT-MODEL.md), security tests, and synthetic Golden injection cases; these do not establish immunity to all attacks. |
+| Regulatory compliance | No certification or legal compliance is claimed; see [Brazil compliance notes](docs/CONFORMIDADE-BRASIL.md). |
 
 ## Status
 
