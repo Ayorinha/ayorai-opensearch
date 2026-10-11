@@ -354,3 +354,22 @@ def test_production_modules_do_not_import_private_judge2_adjudicators() -> None:
                     f"{path} references a private Judge 2 adjudicator"
                 )
 
+def test_public_adjudicate_runs_gates_and_returns_deterministic_verdict() -> None:
+    from ayorai_attractor.verification.judge2 import adjudicate
+
+    result = adjudicate({
+        "protocol_version": "r2-a",
+        "claim_id": "c1",
+        "claim_text": "claim",
+        "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
+        "evidence": [source("e1")],
+        "stances": [{
+            "id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS",
+        }],
+        "source_texts": {"source-e1": "x"},
+    })
+    assert result.decision_state is None
+    assert result.atomic_decisions[0].verdict == "SUPPORTED"
+    assert result.composite_decision is not None
+    assert result.composite_decision.verdict == "SUPPORTED"
+
