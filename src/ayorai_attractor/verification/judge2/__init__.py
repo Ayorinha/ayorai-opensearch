@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .gates import EvidenceDisposition, GateResult, RULES_SHA256, evaluate_gates
+from .gates import RULES_SHA256, EvidenceDisposition, GateResult, evaluate_gates
 
 RULES_VERSION = "2.0.0"
 _RULES_PATH = Path(__file__).resolve().parents[4] / "rules" / "judge-2.0.0.json"
