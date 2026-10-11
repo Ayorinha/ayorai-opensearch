@@ -7,7 +7,9 @@
 ~~~bash
 git clone https://github.com/Ayorinha/ayorai-opensearch.git
 cd ayorai-opensearch
-git checkout feat/f1-multilingual-stance
+git checkout main
+# Optional: use the stable v0.4.0 release instead of the latest main branch
+# git checkout v0.4.0
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,nli]"
