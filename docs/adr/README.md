@@ -12,9 +12,11 @@
 | ADR-006 | Deterministic Metadata, Independence and Numeric Semantics | Accepted for F1.1 | 2026-10-03 | [`docs/adr/ADR-006-metadata-judge-rules.md`](ADR-006-metadata-judge-rules.md) |
 | ADR-007 | AYORAI-PT-span: detector de trechos não sustentados em português | Proposed | 2026-10-03 | [`docs/eval/ADR-007.md`](../eval/ADR-007.md) |
 | ADR-008 | AYORAI-PT-NLI: NLI comercial para português | Proposed | 2026-10-04 | [`docs/eval/ADR-008.md`](../eval/ADR-008.md) |
+| ADR-009 | Deterministic adjudication contract and claim coverage | Accepted — 2026-10-10, maintainer decision; independent review and implementation pending | 2026-10-10 | [`docs/adr/ADR-009-deterministic-adjudication-contract.md`](ADR-009-deterministic-adjudication-contract.md) |
 
 ## Regras de manutenção
 
 - Os arquivos ADR são a fonte de verdade para título, status, data e conteúdo.
 - Ao alterar um ADR, atualize este índice na mesma pull request quando necessário.
 - Não inferir aprovação, implementação, treinamento ou promoção a partir da presença de um ADR no índice.
+- ADR-009 foi aprovado pelo mantenedor em 2026-10-10 e substitui ADR-002 §§1 e 4; a revisão independente e a implementação permanecem pendentes.

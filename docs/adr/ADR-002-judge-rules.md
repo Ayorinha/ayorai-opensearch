@@ -4,11 +4,13 @@
 **Date:** 2026-09-30  
 **Scope:** R1 verification engine
 
+> **Nota de status (2026-10-10):** As seções 1 e 4 abaixo foram substituídas pelo contrato normativo aceito em [ADR-009](ADR-009-deterministic-adjudication-contract.md). O texto original é preservado integralmente como histórico; as demais seções continuam vigentes quando não conflitarem com ADR-009.
+
 ## Decision
 
 O Judge é determinístico. O veredito é derivado somente das contagens de clusters independentes e da completude da proveniência. Um LLM pode redigir rationale, mas nunca decide o veredito.
 
-### 1. Tabela determinística do Judge
+### 1. Tabela determinística do Judge — SUPERSEDIDA POR ADR-009 (texto histórico preservado)
 
 Para cada claim:
 
@@ -53,7 +55,7 @@ Domínios diferentes não implicam independência.
 
 Três documentos com o mesmo `origin_id` são um único cluster. Conteúdo idêntico em domínios diferentes também é um único cluster.
 
-### 4. Agregação global
+### 4. Agregação global — SUPERSEDIDA POR ADR-009 (texto histórico preservado)
 
 A precedência global, da maior para a menor prioridade, é:
 
