@@ -349,8 +349,12 @@ def _build_result(
                 "contradiction_clusters": decision.contradiction_clusters,
                 "robustness": decision.robustness,
                 "rule_id": decision.rule_id,
-                "admitted_evidence": sorted(admitted, key=lambda item: (item["id"], item["stance"])),
-                "excluded_evidence": sorted(excluded, key=lambda item: (item["id"], item["reason"])),
+                "admitted_evidence": sorted(
+                    admitted, key=lambda item: (item["id"], item["stance"])
+                ),
+                "excluded_evidence": sorted(
+                    excluded, key=lambda item: (item["id"], item["reason"])
+                ),
             })
         counts = {name: 0 for name in (
             "supported", "refuted", "conflicting", "unverified"
