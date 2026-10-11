@@ -118,6 +118,12 @@ def _validate_g1(
     for index, item in enumerate(evidence):
         if not isinstance(item, Evidence):
             raise _invalid("SCHEMA_VIOLATION", f"evidence[{index}]", "evidence entries must be validated Evidence objects")
+        if item.claim_id != claim_id:
+            raise _invalid(
+                "DANGLING_REFERENCE",
+                f"evidence[{index}].claim_id",
+                "evidence must reference the evaluated claim",
+            )
         evidence_ids.append(item.id)
     if len(evidence_ids) != len(set(evidence_ids)):
         raise _invalid("DUPLICATE_ID", "evidence", "evidence ids must be unique")
@@ -136,7 +142,9 @@ def _validate_g1(
             raise _invalid("SCHEMA_VIOLATION", f"stances[{index}].id", "stance id is required")
         if not isinstance(atom_id, str) or not isinstance(evidence_id, str):
             raise _invalid("SCHEMA_VIOLATION", f"stances[{index}]", "atom_id and evidence_id are required")
-        if relation not in {"SUPPORTS", "CONTRADICTS", "NEUTRAL", "supports", "contradicts", "neutral"}:
+        if not isinstance(relation, str) or relation not in {
+            "SUPPORTS", "CONTRADICTS", "NEUTRAL", "supports", "contradicts", "neutral"
+        }:
             raise _invalid("SCHEMA_VIOLATION", f"stances[{index}].stance", "stance value is invalid")
         stance_ids.append(stance_id)
         stance_pairs.append((atom_id, evidence_id))
