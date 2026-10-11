@@ -52,7 +52,9 @@
           }
         ]
       },
-      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"verified\",\"verdict\":\"verified\",\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":2,\"contradiction_clusters\":0,\"provenance_complete\":true,\"verdict\":\"verified\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}"
+      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"verified\",\"verdict\":\"verified\",\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":2,\"contradiction_clusters\":0,\"provenance_complete\":true,\"verdict\":\"verified\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}",
+      "expected_status_code": 200,
+      "expected_content_type": "application/json"
     },
     {
       "name": "unverified-claim-abstains-with-no-answer",
@@ -67,7 +69,9 @@
         "evidence": [],
         "stances": []
       },
-      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"abstain/no_answer\",\"verdict\":null,\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":0,\"contradiction_clusters\":0,\"provenance_complete\":false,\"verdict\":\"unverified\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}"
+      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"abstain/no_answer\",\"verdict\":null,\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":0,\"contradiction_clusters\":0,\"provenance_complete\":false,\"verdict\":\"unverified\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}",
+      "expected_status_code": 200,
+      "expected_content_type": "application/json"
     }
   ]
 }
