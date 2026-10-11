@@ -1,4 +1,4 @@
-""""Local append-only audit trace persistence for R2.
+"""Local append-only audit trace persistence for R2.
 
 The store persists audit metadata and a content-addressed replay digest. It does
 not persist raw prompts, evidence excerpts, credentials, or model outputs.
@@ -80,7 +80,7 @@ class AuditTraceStore:
             return
 
         # Schema v1 is copied into a new table. Existing verification text and
-        # replay digests are never rewritten; only their meaning is represented
+        # replay digests are never rewritten; their meaning is represented
         # explicitly in the v2 columns.
         rows = connection.execute(
             """
@@ -242,7 +242,7 @@ class AuditTraceStore:
             verification=None,
             verdict_authority="not_adjudicated",
             formal_verification_endpoint="/v1/verify",
-            operation_status=str(row[1]),
+            operation_status=row[1],
             evidence_count=int(row[2]),
             independent_evidence_count=int(row[3]),
             verified_evidence_count=int(row[4]),
