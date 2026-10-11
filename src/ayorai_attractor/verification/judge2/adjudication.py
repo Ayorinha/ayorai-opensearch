@@ -236,6 +236,7 @@ def _adjudicate_composite(atom_decisions: list[AtomicDecision]) -> CompositeDeci
         )
     raise ValueError("composite rules did not produce a decision")
 
+
 @dataclass(frozen=True)
 class AdjudicationResult:
     """Canonical, deterministic public output of Judge 2.0.0."""
@@ -321,6 +322,11 @@ def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
         )
     if isinstance(value, datetime):
         if value.tzinfo is None or value.utcoffset() is None:
+            if allow_unsupported:
+                return {
+                    "unsupported_type": "datetime.naive",
+                    "representation": value.isoformat(),
+                }
             raise TypeError(
                 "naive datetime is not supported; provide an explicit timezone"
             )
@@ -329,6 +335,8 @@ def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
         return value.isoformat()
     if isinstance(value, Mapping):
         if any(not isinstance(key, str) for key in value):
+            if allow_unsupported:
+                raise TypeError("canonical JSON objects require string keys")
             raise TypeError("canonical JSON objects require string keys")
         return {
             key: _json_safe(item, allow_unsupported=allow_unsupported)
@@ -340,6 +348,11 @@ def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
         return value
     if isinstance(value, float):
         if not math.isfinite(value):
+            if allow_unsupported:
+                return {
+                    "unsupported_type": "builtins.float",
+                    "representation": "nan" if math.isnan(value) else ("+inf" if value > 0 else "-inf"),
+                }
             raise TypeError("non-finite floats are not supported in canonical JSON")
         return value
     if allow_unsupported:
@@ -583,4 +596,3 @@ __all__ = [
     "DecisionEvidence",
     "adjudicate",
 ]
-
