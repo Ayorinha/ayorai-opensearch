@@ -66,7 +66,10 @@ def _invalid(code: str, field: str, message: str) -> InvalidJudgeInput:
 
 
 def _contract_code(rules: Mapping[str, Any], section: str, code: str) -> str:
-    return next(item["code"] for item in rules[section] if item["code"] == code)
+    value = next(item["code"] for item in rules[section] if item["code"] == code)
+    if not isinstance(value, str):
+        raise ValueError(f"contract code must be a string: {section}.{code}")
+    return value
 
 
 def _e_rejection(
@@ -74,7 +77,10 @@ def _e_rejection(
 ) -> str:
     entries = rules["evidence_admissibility"]
     entry = next(item for item in entries if item["id"] == rule_id)
-    return entry[field]
+    value = entry[field]
+    if not isinstance(value, str):
+        raise ValueError(f"contract rejection must be a string: {rule_id}.{field}")
+    return value
 
 
 def _require_mapping(
