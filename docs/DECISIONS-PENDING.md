@@ -74,6 +74,21 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
 - **Impact to assess:** Public discoverability, continuity of repository links, brand consistency, technical accuracy, and maintenance burden.
 - **Approval gate:** Anderson decides the name and positioning; revisor independente reviews factual claims and the documentation diff before publication.
 
+## DEC-005 — r1-a: entrada inválida retorna 500
+
+- **Data:** 11/10/2026
+- **Bloqueia:** nada da Fase 1; a correção deve ser uma PR própria logo após o ResponsePolicy.
+- **Recomendação técnica:** Opção A — corrigir para 422 com mensagem estruturada já na v0.4.0, como correção de bug documentada no CHANGELOG. Um 500 nunca foi contrato.
+- **Status:** Pending maintainer decision
+- **Decision area:** API input validation and error contract
+- **Question:** Should malformed but schema-valid requests that currently raise `ValueError` in the deterministic Judge be converted into structured HTTP 422 responses in v0.4.0, or should the behavior remain in r1-a until r2-a?
+- **Context:** The pre-ResponsePolicy baseline reproduced three invalid-input cases that currently return HTTP 500: duplicate evidence IDs, a stance referencing a nonexistent evidence ID, and multiple stances for one evidence item. The route does not catch these Judge `ValueError` exceptions. The baseline-only PR records these responses as known defects and must not fix them.
+- **Options:**
+  1. **A — Recommended:** Map these input-validation failures to structured HTTP 422 responses in v0.4.0; document the bug fix in the CHANGELOG and add regression tests in a separate PR after ResponsePolicy.
+  2. **B:** Preserve current r1-a behavior and defer correction to r2-a under `G1/INVALID_INPUT`.
+- **Impact to assess:** r1-a compatibility, API error consistency, structured error schema, test coverage, and CHANGELOG accuracy.
+- **Approval gate:** Anderson explicitly selects A or B. This entry records the recommendation only and does not authorize implementation; the correction must be a separate PR after ResponsePolicy.
+
 ## Queue rules
 
 - These are pending decisions, not accepted architecture or authorization to implement.
