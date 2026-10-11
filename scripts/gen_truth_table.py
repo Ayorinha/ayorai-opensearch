@@ -2,17 +2,34 @@
 """Generate the committed Judge 2.0.0 decision truth table deterministically."""
 from __future__ import annotations
 
+import sys
 from itertools import product
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
 from ayorai_attractor.verification.judge2 import load_rules
 from ayorai_attractor.verification.judge2.adjudication import (
+    AtomicDecision,
     _atomic_verdict,
     adjudicate_composite,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
 VERDICTS = ("SUPPORTED", "PARTIALLY_SUPPORTED", "REFUTED", "UNVERIFIED", "CONFLICTING")
+
+
+def _atom_decision(index: int, verdict: str) -> AtomicDecision:
+    return AtomicDecision(
+        atom_id=f"atom-{index}",
+        verdict=verdict,
+        robustness="R0",
+        robustness_support="R0",
+        robustness_contradiction="R0",
+        support_clusters=0,
+        contradiction_clusters=0,
+        rule_id="2.0.0/A1",
+    )
 
 
 def render() -> str:
@@ -25,6 +42,7 @@ def render() -> str:
         f"- Contract SHA-256: `{digest}`",
         "- Decision authority: deterministic contract rules only.",
         "- Input restriction: only evidence admitted by the item-2.2 gates may contribute.",
+        "- Atomic table covers 12 combinations: S∈{0..3}, C∈{0..2}; provenance variants are tested under T1.",
         "- Exhaustive composite rows cover every ordered verdict tuple for 1–4 atoms (780 rows).",
         "",
         "## Atomic rules (A1–A4)",
@@ -32,7 +50,7 @@ def render() -> str:
         "| Support clusters | Contradiction clusters | Verdict | Rule |",
         "|---:|---:|---|---|",
     ]
-    for supports, contradicts in product(range(3), repeat=2):
+    for supports, contradicts in product(range(4), range(3)):
         verdict, rule_id = _atomic_verdict(rules, supports, contradicts)
         lines.append(f"| {supports} | {contradicts} | {verdict} | 2.0.0/{rule_id} |")
     lines.extend([
@@ -44,7 +62,8 @@ def render() -> str:
     ])
     for size in range(1, 5):
         for values in product(VERDICTS, repeat=size):
-            decision = adjudicate_composite(list(values))
+            decisions = [_atom_decision(index, value) for index, value in enumerate(values)]
+            decision = adjudicate_composite(decisions)
             tuple_text = ", ".join(values)
             lines.append(f"| {size} | `({tuple_text})` | {decision.verdict} | {decision.rule_id} |")
     lines.append("")
