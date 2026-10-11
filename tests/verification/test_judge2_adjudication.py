@@ -5,13 +5,18 @@ from itertools import product
 
 import pytest
 
-from ayorai_attractor.verification.judge2 import adjudication, evaluate_gates, load_rules, rules_sha256
+from ayorai_attractor.verification.judge2 import (
+    adjudication,
+    evaluate_gates,
+    load_rules,
+    rules_sha256,
+)
 from ayorai_attractor.verification.judge2.adjudication import (
     AtomicDecision,
     DecisionEvidence,
-    _atomic_verdict,
     _adjudicate_atoms,
     _adjudicate_composite,
+    _atomic_verdict,
 )
 from ayorai_attractor.verification.judge2.gates import EvidenceDisposition, GateResult
 from ayorai_attractor.verification.models import Evidence
@@ -146,7 +151,7 @@ def test_t1_provenance_selects_r2_or_r3_without_changing_verdict() -> None:
         incomplete={"s2"},
     )
     good = _adjudicate_atoms(["a1"], complete, gates_complete)[0]
-    uncertain = adjudicate_atoms(["a1"], incomplete, gates_incomplete)[0]
+    uncertain = _adjudicate_atoms(["a1"], incomplete, gates_incomplete)[0]
     assert good.verdict == uncertain.verdict == "SUPPORTED"
     assert good.robustness == "R3"
     assert uncertain.robustness == "R2"
@@ -175,7 +180,7 @@ def test_t2_composite_truth_table_exhaustive_for_multisets_up_to_four_atoms() ->
 
 def test_t3_single_atomic_verdict_never_partially_supported() -> None:
     declared, gates = fixture([("s1", "a1", "SUPPORTS")])
-    decision = adjudicate_atoms(["a1"], declared, gates)[0]
+    decision = _adjudicate_atoms(["a1"], declared, gates)[0]
     assert decision.verdict == "SUPPORTED"
     assert decision.verdict != "PARTIALLY_SUPPORTED"
 
@@ -186,8 +191,8 @@ def test_t4_increasing_support_clusters_does_not_change_supported_verdict() -> N
         ("s1", "a1", "SUPPORTS"), ("s2", "a1", "SUPPORTS"),
         ("s3", "a1", "SUPPORTS"),
     ])
-    first = adjudicate_atoms(["a1"], one, one_gate)[0]
-    later = adjudicate_atoms(["a1"], many, many_gate)[0]
+    first = _adjudicate_atoms(["a1"], one, one_gate)[0]
+    later = _adjudicate_atoms(["a1"], many, many_gate)[0]
     assert first.verdict == later.verdict == "SUPPORTED"
     assert later.support_clusters >= first.support_clusters
 
@@ -197,7 +202,7 @@ def test_t5_republication_with_same_origin_does_not_increase_support_clusters() 
         [("s1", "a1", "SUPPORTS"), ("s2", "a1", "SUPPORTS")],
         origins={"s1": "shared-origin", "s2": "shared-origin"},
     )
-    result = adjudicate_atoms(["a1"], declared, gates)[0]
+    result = _adjudicate_atoms(["a1"], declared, gates)[0]
     assert result.support_clusters == 1
     assert result.robustness == "R1"
 
@@ -210,7 +215,7 @@ def test_only_gate_admitted_evidence_contributes_to_verdict() -> None:
     )
     declared.append(DecisionEvidence("bad", "a1", "CONTRADICTS"))
     gates = _forge_gate_result(gates, evidence=gates.evidence + (rejected,))
-    result = adjudicate_atoms(["a1"], declared, gates)[0]
+    result = _adjudicate_atoms(["a1"], declared, gates)[0]
     assert result.verdict == "SUPPORTED"
     assert result.support_clusters == 1
     assert result.contradiction_clusters == 0
@@ -220,7 +225,7 @@ def test_gate_validated_stance_cannot_be_overridden_by_caller() -> None:
     declared, gates = fixture([("e1", "a1", "CONTRADICTS")])
     declared[0] = DecisionEvidence("e1", "a1", "SUPPORTS")
     with pytest.raises(ValueError, match="stance differs"):
-        adjudicate_atoms(["a1"], declared, gates)
+        _adjudicate_atoms(["a1"], declared, gates)
 
 
 def test_conflicting_atomic_decision_exposes_both_sides_and_uses_minimum() -> None:
@@ -229,7 +234,7 @@ def test_conflicting_atomic_decision_exposes_both_sides_and_uses_minimum() -> No
         ("s2", "a1", "SUPPORTS"),
         ("c1", "a1", "CONTRADICTS"),
     ])
-    result = adjudicate_atoms(["a1"], declared, gates)[0]
+    result = _adjudicate_atoms(["a1"], declared, gates)[0]
     assert result.verdict == "CONFLICTING"
     assert result.robustness_support == "R3"
     assert result.robustness_contradiction == "R1"
@@ -237,15 +242,15 @@ def test_conflicting_atomic_decision_exposes_both_sides_and_uses_minimum() -> No
 
 
 def test_composite_robustness_is_minimum_of_atoms_selected_by_rule() -> None:
-    refuted = adjudicate_composite([
+    refuted = _adjudicate_composite([
         atomic("a1", "REFUTED", "R1"),
         atomic("a2", "SUPPORTED", "R3"),
     ])
-    supported = adjudicate_composite([
+    supported = _adjudicate_composite([
         atomic("a1", "SUPPORTED", "R3"),
         atomic("a2", "SUPPORTED", "R2"),
     ])
-    conflicting = adjudicate_composite([atomic("a1", "CONFLICTING", "R1")])
+    conflicting = _adjudicate_composite([atomic("a1", "CONFLICTING", "R1")])
     assert (refuted.verdict, refuted.robustness) == ("REFUTED", "R1")
     assert (supported.verdict, supported.robustness) == ("SUPPORTED", "R2")
     assert (conflicting.verdict, conflicting.robustness) == ("CONFLICTING", "R1")
@@ -258,7 +263,7 @@ def test_t6_composite_result_is_invariant_to_input_order() -> None:
         atomic("a2", "UNVERIFIED", "R1"),
         atomic("a3", "SUPPORTED", "R2"),
     ]
-    assert adjudicate_composite(decisions) == adjudicate_composite(list(reversed(decisions)))
+    assert _adjudicate_composite(decisions) == _adjudicate_composite(list(reversed(decisions)))
 
 
 def test_t6_precedence_uses_contract_order_even_if_rule_list_is_shuffled(
@@ -267,7 +272,7 @@ def test_t6_precedence_uses_contract_order_even_if_rule_list_is_shuffled(
     rules, digest = load_rules()
     rules["composite_rules"] = list(reversed(rules["composite_rules"]))
     monkeypatch.setattr(adjudication, "load_rules", lambda: (rules, digest))
-    result = adjudicate_composite([
+    result = _adjudicate_composite([
         atomic("a1", "REFUTED", "R1"),
         atomic("a2", "CONFLICTING", "R3"),
     ])
@@ -283,7 +288,7 @@ def test_t6_order_of_evidence_does_not_change_atomic_result() -> None:
     ]
     declared, gates = fixture(edges)
     reversed_declared, reversed_gates = fixture(list(reversed(edges)))
-    assert adjudicate_atoms(["a1"], declared, gates)[0] == adjudicate_atoms(
+    assert _adjudicate_atoms(["a1"], declared, gates)[0] == _adjudicate_atoms(
         ["a1"], reversed_declared, reversed_gates
     )[0]
 
@@ -294,7 +299,7 @@ def test_contract_rule_ids_are_versioned_and_robustness_enum_is_closed() -> None
     assert {item["id"] for item in rules["robustness_rules"]} == {"R0", "R1", "R2", "R3"}
     assert {item["id"] for item in rules["composite_rules"]} == {"K1", "K2", "K3", "K4", "K5"}
     with pytest.raises(ValueError, match="robustness enum"):
-        adjudicate_composite([atomic("a1", "SUPPORTED", "R9")])
+        _adjudicate_composite([atomic("a1", "SUPPORTED", "R9")])
 
 def test_gate_result_constructor_is_restricted_to_gates_module() -> None:
     with pytest.raises(TypeError, match="only be constructed by the gates module"):
