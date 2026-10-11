@@ -131,12 +131,12 @@ git switch main
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-# Optional NLI backends (downloads large model dependencies):
-# pip install -e ".[dev,nli]"
 pytest
 ruff check .
 mypy src/ayorai_attractor
 ~~~
+
+Optional NLI backends (downloads large model dependencies): `pip install -e ".[dev,nli]"`.
 
 For the frozen evaluation:
 
