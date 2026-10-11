@@ -151,6 +151,10 @@ def _validate_rules(rules: dict[str, Any]) -> None:
                 raise JudgeRulesError(
                     f"invalid robustness in {section}[{index}]: {entry['robustness']!r}"
                 )
+            if section == "robustness_rules" and entry.get("value") not in enums["robustness"]:
+                raise JudgeRulesError(
+                    f"invalid robustness value in {section}[{index}]: {entry.get('value')!r}"
+                )
 
     if len(all_rule_ids) != len(set(all_rule_ids)):
         raise JudgeRulesError("duplicate rule_id or rule id detected")
