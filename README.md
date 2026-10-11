@@ -44,7 +44,7 @@ flowchart LR
 | Authorization | deterministic Judge and explicit rules | ✅ Yes — the only component |
 | Execution | consuming application | ❌ No |
 
-The model may read, classify or assist evidence analysis. It does not become the authority that selects the final verdict.
+The model may read, classify or assist evidence analysis. It does not become the authority that selects the final verdict. This is scoped claim-evidence mismatch detection, not a guarantee that every hallucination will be detected.
 
 ## Six possible verdicts
 
