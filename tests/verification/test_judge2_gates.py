@@ -5,12 +5,17 @@ from typing import Any
 
 import pytest
 
-from ayorai_attractor.verification.judge2 import RULES_SHA256, evaluate_gates
 
 
 SOURCE = "The regulator published Resolution 765 in 2023."
 CLAIM = "Resolution 765 was published in 2023."
 ATOM = {"id": "a1", "text": CLAIM, "start_offset": 0, "end_offset": len(CLAIM)}
+
+
+def run_gates(**kwargs: Any) -> Any:
+    from ayorai_attractor.verification.judge2 import evaluate_gates
+
+    return evaluate_gates(**kwargs)
 
 
 def evidence(
@@ -50,7 +55,7 @@ def valid_kwargs() -> dict[str, Any]:
 
 
 def test_contract_digest_is_pinned_to_approved_judge_2_contract() -> None:
-    from ayorai_attractor.verification.judge2 import rules_sha256
+    from ayorai_attractor.verification.judge2 import RULES_SHA256, rules_sha256
 
     assert rules_sha256() == RULES_SHA256
     assert RULES_SHA256 == (
@@ -91,7 +96,7 @@ def test_t11_each_g1_code_has_a_specific_negative_case(
 ) -> None:
     kwargs = valid_kwargs()
     kwargs.update(override)
-    result = evaluate_gates(**kwargs)
+    result = run_gates(**kwargs)
     assert result.decision_state == "INVALID_INPUT"
     assert result.reason_codes == (code,)
     assert result.admissible is False
