@@ -39,17 +39,58 @@ class EvidenceDisposition:
     atom_id: str
     admitted: bool
     reason: str | None = None
+    stance: str | None = None
+    source_evidence: Evidence | None = None
 
 
-@dataclass(frozen=True)
+_GATE_RESULT_TOKEN = object()
+
+
+@dataclass(frozen=True, init=False)
 class GateResult:
-    """Pre-adjudication result; intentionally contains no verdict field."""
+    """Sealed immutable pre-adjudication result; intentionally has no verdict."""
 
     decision_state: DecisionState | None
     reason_codes: tuple[str, ...]
     admissible: bool
     evidence: tuple[EvidenceDisposition, ...]
     rules_sha256: str
+
+    def __init__(
+        self,
+        decision_state: DecisionState | None,
+        reason_codes: tuple[str, ...],
+        admissible: bool,
+        evidence: tuple[EvidenceDisposition, ...],
+        rules_sha256: str,
+        *,
+        _token: object | None = None,
+    ) -> None:
+        if _token is not _GATE_RESULT_TOKEN:
+            raise TypeError("GateResult can only be constructed by the gates module")
+        object.__setattr__(self, "decision_state", decision_state)
+        object.__setattr__(self, "reason_codes", tuple(reason_codes))
+        object.__setattr__(self, "admissible", admissible)
+        object.__setattr__(self, "evidence", tuple(evidence))
+        object.__setattr__(self, "rules_sha256", rules_sha256)
+
+
+def _make_gate_result(
+    decision_state: DecisionState | None,
+    reason_codes: tuple[str, ...],
+    admissible: bool,
+    evidence: tuple[EvidenceDisposition, ...],
+    rules_sha256: str,
+) -> GateResult:
+    """Create the sealed result from within the gate implementation."""
+    return GateResult(
+        decision_state,
+        reason_codes,
+        admissible,
+        evidence,
+        rules_sha256,
+        _token=_GATE_RESULT_TOKEN,
+    )
 
 
 def _invalid(code: str, field: str, message: str) -> InvalidJudgeInput:
@@ -313,7 +354,7 @@ def _evidence_dispositions(
                     EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E3"))
                 )
                 continue
-            results.append(EvidenceDisposition(item.id, atom_id, True))
+            results.append(EvidenceDisposition(item.id, atom_id, True, None, stance, item))
     return tuple(results)
 
 
@@ -351,7 +392,7 @@ def evaluate_gates(
         stances=stances,
     )
     if isinstance(invalid_input, InvalidJudgeInput):
-        return GateResult(
+        return _make_gate_result(
             decision_state="INVALID_INPUT",
             reason_codes=(invalid_input.code,),
             admissible=False,
@@ -368,7 +409,7 @@ def evaluate_gates(
         evidence_pool_integrity_ok=evidence_pool_integrity_ok,
     )
     if abstention:
-        return GateResult(
+        return _make_gate_result(
             decision_state="ABSTAINED",
             reason_codes=abstention,
             admissible=False,
@@ -377,7 +418,7 @@ def evaluate_gates(
         )
 
     dispositions = _evidence_dispositions(atoms, evidence, stances, source_texts, loaded_rules)
-    return GateResult(
+    return _make_gate_result(
         decision_state=None,
         reason_codes=(),
         admissible=True,
