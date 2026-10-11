@@ -36,6 +36,22 @@ Source: execution plan v5, work queue
 - **Impacto a avaliar:** desempenho por tipo de afirmação, qualidade do rótulo de referência, cobertura do português jurídico e risco de generalização indevida.
 - **Regra de escopo:** esta proposta não amplia a Onda 1–2, não altera a ordem atual das ondas e não autoriza interpretação jurídica pelo Judge.
 
+## DEC-007 — Publicar a release v0.4.0?
+
+- **Data da proposta:** 11/10/2026
+- **Bloqueia:** publicação/tag da v0.4.0; não bloqueia a preparação documental F1.5
+- **Status:** Pending maintainer decision
+- **Decision area:** Versioned milestone and release timing
+- **Question:** Após a conclusão e revisão independente da Fase 1, publicar a v0.4.0 como marco verificável ou aguardar o Judge 2.0?
+- **Context:** A v0.4.0 registra mudanças de contrato já implementadas — remoção de VerificationStatus e EvidenceStore.status(), separação de ResponsePolicy, schema OpenAPI atualizado e respostas 422 estruturadas para as cinco classes de entrada inválida. A release não deve sugerir que o Judge 2.0 esteja implementado, que os resultados atuais provem generalização em produção ou que os modelos tenham autorização comercial automática.
+- **Opções:**
+  - **A — recomendada tecnicamente:** publicar a v0.4.0 após a F1.5 ser mesclada, a Q1 passar no CI e na revisão independente, e a Fase 1 ser formalmente conferida. Isso oferece um marco versionado, citável e auditável sem esperar o Judge 2.0.
+  - **B:** aguardar o Judge 2.0 e agrupar as mudanças em uma versão posterior.
+- **Recomendação técnica:** A, porque separa o fechamento verificável da Fase 1 do trabalho futuro do Judge 2.0; a recomendação não é autorização para publicar.
+- **Impacto a avaliar:** clareza do contrato público, compatibilidade dos consumidores, citabilidade, manutenção da documentação e risco de comunicar maturidade além da evidência.
+- **Gate obrigatório:** decisão explícita de Anderson Leon Ayora. Não criar tag, release GitHub ou publicação automática antes da aprovação e da conclusão dos gates técnicos.
+- **Estado operacional atualizado em 11/10/2026:** Q1 PR #147 foi aprovada pelo revisor independente nesta conversa para o SHA exato `69cdee7a3c9549ff7c9a41a6c14b8cca18993a91`, passou CI e foi mesclada por SQUASH no commit `da05861e249a53d8a2f9ee57eb1a5e2a811e2651`. F1.5 (#148) permanece em revisão; nenhuma release/tag v0.4.0 foi criada. A decisão explícita de Anderson continua obrigatória.
+
 ## DEC-001 — F3.5: uv lockfile and Docker image digests
 
 - **Data:** 11/10/2026

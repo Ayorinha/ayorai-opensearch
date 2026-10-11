@@ -73,7 +73,7 @@ When evidence conflicts, ATTRACTOR can return <code>CONFLICTING</code> instead o
 | Public sector | preserve evidence trails for AI-assisted answers to citizens |
 | Internal audit | maintain a reproducible evidence record for AI-assisted conclusions |
 
-## Evidence v0.3.0
+## Evidence (historical measurements, v0.3.0)
 
 The development measurements are reported side by side; neither set establishes production generalization.
 
@@ -161,6 +161,8 @@ Use `semantic_sha256` to compare semantic evaluation results across repeated run
 Always record the commit SHA, suite version and both report digests with an evaluation result.
 
 ## ADRs
+
+[ADR-009 — Deterministic adjudication contract](docs/adr/ADR-009-deterministic-adjudication-contract.md) is the normative contract for Judge 2.0, which remains in development; this reference does not claim the future interpreter or rule-trace implementation is complete.
 
 | ADR | Decision |
 |---|---|
