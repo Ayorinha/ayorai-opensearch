@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
@@ -77,7 +77,16 @@ def verify(request: VerificationRequest) -> VerificationAPIResponse:
             traceability=Traceability(adr="ADR-002", rules=["§5"]),
         )
 
-    judgments, verdict = judge(request.claims, request.evidence, request.stances)
+    try:
+        judgments, verdict = judge(request.claims, request.evidence, request.stances)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_verification_input",
+                "message": str(exc),
+            },
+        ) from exc
     status = (
         ResponsePolicy.ABSTAIN_NO_ANSWER
         if verdict is Verdict.UNVERIFIED
