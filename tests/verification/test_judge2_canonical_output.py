@@ -72,7 +72,7 @@ def test_t7_canonical_bytes_are_identical_for_repeated_and_reordered_inputs() ->
 
 
 @pytest.mark.parametrize(
-    ("request", "expected_state"),
+    ("input_case", "expected_state"),
     [
         (request_one(), "DECIDED"),
         (request_one(out_of_scope=True), "ABSTAINED"),
@@ -80,9 +80,9 @@ def test_t7_canonical_bytes_are_identical_for_repeated_and_reordered_inputs() ->
     ],
 )
 def test_t8_invariant_i1_holds_for_every_decision_state(
-    request: dict[str, object], expected_state: str
+    input_case: dict[str, object], expected_state: str
 ) -> None:
-    result = adjudicate(request)
+    result = adjudicate(input_case)
     assert result.decision_state == expected_state
     assert (result.verdict is not None) is (result.decision_state == "DECIDED")
     assert result.to_dict()["output_sha256"] == result.output_sha256
