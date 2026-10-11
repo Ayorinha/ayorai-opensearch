@@ -61,4 +61,4 @@ H1.2: on Golden v0 and on Golden v0.1, path C with `RuleStanceDetector` v5 has b
 
 ## Dated amendment — 2026-10-11
 
-- Metadata-only correction: the author attribution is corrected to Anderson Leon Ayora. No hypothesis, metric, threshold, decision rule, protocol step, disclosure, or measurement result is changed; the preregistered study design remains as frozen.
+- Metadata-only correction: the author line is updated to name the project maintainer, Anderson Leon Ayora, as the responsible author. No hypothesis, metric, threshold, decision rule, protocol step, disclosure, or measurement result is changed; the preregistered study design remains as frozen.
