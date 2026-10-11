@@ -43,15 +43,54 @@ class EvidenceDisposition:
     source_evidence: Evidence | None = None
 
 
-@dataclass(frozen=True)
+_GATE_RESULT_TOKEN = object()
+
+
+@dataclass(frozen=True, init=False)
 class GateResult:
-    """Pre-adjudication result; intentionally contains no verdict field."""
+    """Sealed immutable pre-adjudication result; intentionally has no verdict."""
 
     decision_state: DecisionState | None
     reason_codes: tuple[str, ...]
     admissible: bool
     evidence: tuple[EvidenceDisposition, ...]
     rules_sha256: str
+
+    def __init__(
+        self,
+        decision_state: DecisionState | None,
+        reason_codes: tuple[str, ...],
+        admissible: bool,
+        evidence: tuple[EvidenceDisposition, ...],
+        rules_sha256: str,
+        *,
+        _token: object | None = None,
+    ) -> None:
+        if _token is not _GATE_RESULT_TOKEN:
+            raise TypeError("GateResult can only be constructed by the gates module")
+        object.__setattr__(self, "decision_state", decision_state)
+        object.__setattr__(self, "reason_codes", tuple(reason_codes))
+        object.__setattr__(self, "admissible", admissible)
+        object.__setattr__(self, "evidence", tuple(evidence))
+        object.__setattr__(self, "rules_sha256", rules_sha256)
+
+
+def _make_gate_result(
+    decision_state: DecisionState | None,
+    reason_codes: tuple[str, ...],
+    admissible: bool,
+    evidence: tuple[EvidenceDisposition, ...],
+    rules_sha256: str,
+) -> GateResult:
+    """Create the sealed result from within the gate implementation."""
+    return GateResult(
+        decision_state,
+        reason_codes,
+        admissible,
+        evidence,
+        rules_sha256,
+        _token=_GATE_RESULT_TOKEN,
+    )
 
 
 def _invalid(code: str, field: str, message: str) -> InvalidJudgeInput:
