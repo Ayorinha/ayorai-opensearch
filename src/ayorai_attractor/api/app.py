@@ -1,7 +1,11 @@
 from collections.abc import AsyncIterator
+import json
+from typing import Any
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
@@ -14,6 +18,7 @@ from ayorai_attractor.models import (
 )
 from ayorai_attractor.orchestrator import Attractor
 from ayorai_attractor.verification.api_models import (
+    Judge2VerificationRequest,
     ClaimJudgmentResponse,
     Traceability,
     VerificationAPIResponse,
@@ -22,6 +27,7 @@ from ayorai_attractor.verification.api_models import (
 from ayorai_attractor.verification.judge import InvalidJudgeInput, judge
 from ayorai_attractor.verification.models import Verdict
 from ayorai_attractor.verification.response import ResponsePolicy
+from ayorai_attractor.verification.judge2 import adjudicate
 
 engine = Attractor()
 audit_store = AuditTraceStore()
@@ -81,9 +87,63 @@ def audit(request: SearchRequest) -> AuditResponse:
     )
 
 
-@app.post("/v1/verify", response_model=VerificationAPIResponse)
-def verify(request: VerificationRequest) -> VerificationAPIResponse:
-    """Evaluate structured claims with the deterministic ADR-002 Judge."""
+@app.post("/v1/verify", response_model=None)
+def verify(payload: dict[str, Any]) -> Any:
+    """Dispatch r1-a unchanged or expose the canonical Judge 2.0.0 result for r2-a."""
+    version = payload.get("schema_version", "r1-a")
+
+    if version == "r2-a":
+        try:
+            request2 = Judge2VerificationRequest.model_validate_json(
+                json.dumps(payload, ensure_ascii=False)
+            )
+        except ValidationError as exc:
+            errors = [
+                {**error, "loc": ("body", *error["loc"])}
+                for error in exc.errors()
+            ]
+            raise RequestValidationError(errors, body=payload) from exc
+
+        result = adjudicate({
+            "protocol_version": request2.protocol_version,
+            "claim_id": request2.claim_id,
+            "claim_text": request2.claim_text,
+            "atoms": request2.atoms,
+            "evidence": request2.evidence,
+            "stances": request2.stances,
+            "source_texts": request2.source_texts,
+            "out_of_scope": request2.out_of_scope,
+            "factual_claim": request2.factual_claim,
+            "temporal_anchor_present": request2.temporal_anchor_present,
+            "retrieval_succeeded": request2.retrieval_succeeded,
+            "evidence_pool_integrity_ok": request2.evidence_pool_integrity_ok,
+        })
+        response_policy = None
+        if result.decision_state == "ABSTAINED":
+            response_policy = (
+                ResponsePolicy.ABSTAIN_OUT_OF_SCOPE.value
+                if "OUT_OF_SCOPE" in result.reason_codes
+                else ResponsePolicy.ABSTAIN_NO_ANSWER.value
+            )
+        elif result.decision_state == "DECIDED" and result.verdict == "UNVERIFIED":
+            response_policy = ResponsePolicy.ABSTAIN_NO_ANSWER.value
+        return {
+            "schema_version": "r2-a",
+            "result": result.to_dict(),
+            "response_policy": response_policy,
+        }
+
+    try:
+        request = VerificationRequest.model_validate_json(
+            json.dumps(payload, ensure_ascii=False)
+        )
+    except ValidationError as exc:
+        errors = [
+            {**error, "loc": ("body", *error["loc"])}
+            for error in exc.errors()
+        ]
+        raise RequestValidationError(errors, body=payload) from exc
+
     if not request.claims:
         return VerificationAPIResponse(
             status=ResponsePolicy.ABSTAIN_OUT_OF_SCOPE,
