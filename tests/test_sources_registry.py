@@ -67,3 +67,36 @@ def test_unknown_source_field_is_rejected() -> None:
     registry["sources"][0]["unreviewed_field"] = "not allowed"
     errors = list(_validator().iter_errors(registry))
     assert errors
+
+def test_format_checker_has_required_optional_validators() -> None:
+    checker = FormatChecker()
+    assert "date-time" in checker.checkers
+    assert "uri" in checker.checkers
+
+
+def test_invalid_retrieved_at_format_is_rejected() -> None:
+    registry = _load(REGISTRY_PATH)
+    source = _verified_source()
+    source["retrieved_at"] = "ontem"
+    registry["sources"][0] = source
+    errors = list(_validator().iter_errors(registry))
+    assert any("retrieved_at" in str(error.path) for error in errors)
+
+
+def test_invalid_publication_date_is_rejected() -> None:
+    registry = _load(REGISTRY_PATH)
+    source = _verified_source()
+    source["publication_date"] = "2023-13-40"
+    registry["sources"][0] = source
+    errors = list(_validator().iter_errors(registry))
+    assert any("publication_date" in str(error.path) for error in errors)
+
+
+def test_invalid_source_url_format_is_rejected() -> None:
+    registry = _load(REGISTRY_PATH)
+    source = _verified_source()
+    source["url"] = "nao eh url"
+    registry["sources"][0] = source
+    errors = list(_validator().iter_errors(registry))
+    assert any("url" in str(error.path) for error in errors)
+
