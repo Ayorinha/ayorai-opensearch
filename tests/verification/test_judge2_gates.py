@@ -165,7 +165,7 @@ def test_valid_supporting_evidence_is_admitted_without_verdict() -> None:
 def test_multiple_g2_reasons_are_preserved_in_normative_order() -> None:
     kwargs = valid_kwargs()
     kwargs.update(out_of_scope=True, factual_claim=False, retrieval_succeeded=False)
-    result = evaluate_gates(**kwargs)
+    result = run_gates(**kwargs)
     assert result.decision_state == "ABSTAINED"
     assert result.reason_codes == (
         "OUT_OF_SCOPE",
