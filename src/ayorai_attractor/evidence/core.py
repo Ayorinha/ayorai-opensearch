@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from ayorai_attractor.models import Evidence, VerificationStatus
+from ayorai_attractor.models import Evidence
 
 
 class EvidenceStore:
@@ -28,16 +28,3 @@ class EvidenceStore:
 
     def all(self) -> list[Evidence]:
         return list(self._items.values())
-
-    def status(self) -> VerificationStatus:
-        items = self.all()
-        if not items:
-            return VerificationStatus.INSUFFICIENT_EVIDENCE
-        independent = [item for item in items if item.independent]
-        if all(item.verified for item in items):
-            return VerificationStatus.VERIFIED
-        if len(independent) >= 2:
-            return VerificationStatus.SUPPORTED
-        if independent:
-            return VerificationStatus.PARTIALLY_SUPPORTED
-        return VerificationStatus.UNVERIFIED
