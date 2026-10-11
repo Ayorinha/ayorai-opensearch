@@ -284,13 +284,13 @@ def test_verdict_guard_detects_qualified_module_alias_and_comparison_is_allowed(
     root = tmp_path / "src" / "ayorai_attractor"
     _write_source(
         root, "api/qualified.py",
-        "import package.models as models\\n"
-        "result = models.Verdict.SUPPORTED\\n",
+        "import package.models as models\n"
+        "result = models.Verdict.SUPPORTED\n",
     )
     _write_source(
         root, "api/compare_alias.py",
-        "import package.models as models\\n"
-        "allowed = verdict is models.Verdict.UNVERIFIED\\n",
+        "import package.models as models\n"
+        "allowed = verdict is models.Verdict.UNVERIFIED\n",
     )
     assert _verdict_constructor_violations(root) == ["api/qualified.py:2:member"]
 
@@ -299,10 +299,10 @@ def test_judge_import_guard_detects_aliased_dynamic_imports(tmp_path: Path) -> N
     root = tmp_path / "src" / "ayorai_attractor"
     _write_source(
         root, "verification/judge_dyn.py",
-        "import importlib as il\\n"
-        "il.import_module('requests')\\n"
-        "from builtins import eval as evaluate\\n"
-        "evaluate('1 + 1')\\n",
+        "import importlib as il\n"
+        "il.import_module('requests')\n"
+        "from builtins import eval as evaluate\n"
+        "evaluate('1 + 1')\n",
     )
     violations = _judge_import_violations(root)
     assert any(":importlib" in item for item in violations)
