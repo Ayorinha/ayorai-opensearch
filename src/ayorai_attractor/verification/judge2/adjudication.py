@@ -17,7 +17,7 @@ from typing import Any, Literal
 from ayorai_attractor.verification.clusters import cluster_evidence
 from ayorai_attractor.verification.models import Evidence
 
-from . import load_rules
+from . import canonical_json_bytes, load_rules
 from .gates import GateResult, evaluate_gates
 
 Stance = Literal["SUPPORTS", "CONTRADICTS"]
@@ -315,10 +315,15 @@ def verify_output(result_dict: Mapping[str, Any]) -> bool:
 def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
     """Convert explicitly supported values to stable JSON-compatible values."""
     if hasattr(value, "model_dump"):
-        return _json_safe(value.model_dump(mode="python"), allow_unsupported=allow_unsupported)
+        return _json_safe(
+            value.model_dump(mode="python"),
+            allow_unsupported=allow_unsupported,
+        )
     if isinstance(value, datetime):
         if value.tzinfo is None or value.utcoffset() is None:
-            raise TypeError("naive datetime is not supported; provide an explicit timezone")
+            raise TypeError(
+                "naive datetime is not supported; provide an explicit timezone"
+            )
         return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
     if isinstance(value, date):
         return value.isoformat()
@@ -386,7 +391,7 @@ def _build_result(
     from . import canonical_json_bytes
 
     if input_sha256_override is None:
-        canonical_input = canonical_json_bytes(_canonical_input(request))
+        canonical_json_bytes(_canonical_input(request))
         input_digest = hashlib.sha256(canonical_input).hexdigest()
     else:
         input_digest = input_sha256_override
