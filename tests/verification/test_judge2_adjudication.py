@@ -442,7 +442,7 @@ def test_public_adjudicate_runs_gates_and_returns_deterministic_verdict() -> Non
         }],
         "source_texts": {"source-e1": "x"},
     })
-    assert result.decision_state is None
+    assert result.decision_state == "DECIDED"
     assert result.atomic_decisions[0].verdict == "SUPPORTED"
     assert result.composite_decision is not None
     assert result.composite_decision.verdict == "SUPPORTED"
@@ -466,7 +466,7 @@ def test_public_adjudicate_does_not_admit_excerpt_absent_from_source() -> None:
         }],
         "source_texts": {"source-e1": "x"},
     })
-    assert result.decision_state is None
+    assert result.decision_state == "DECIDED"
     assert result.atomic_decisions[0].verdict == "UNVERIFIED"
     assert result.composite_decision is not None
     assert result.composite_decision.verdict == "UNVERIFIED"
