@@ -16,6 +16,7 @@ No unreleased entries yet.
 
 ### Fixed
 
+- Secret-leak checks now inspect real Pydantic response models, dataclasses, `bytes`, and `bytearray`; empty secrets are rejected. The helper detects leakage of an exact known secret and is not a generic credential detector (PR #147).
 - `/v1/verify` now returns structured HTTP 422 responses only for the five classified invalid Judge input conditions: duplicate evidence IDs, dangling references, duplicate stances, duplicate claim IDs, and stances referencing nonexistent claims. Unexpected `ValueError` exceptions are not translated into client errors. The r1-a baseline fixture records the three previously observed 500 cases as structured 422 invalid requests; regression tests cover all five categories and a 250-example Hypothesis property check.
 
 ### Changed
@@ -30,9 +31,8 @@ No unreleased entries yet.
   returned as `null`, `verdict_authority` is `not_adjudicated`, and `/v1/verify` is the canonical
   formal-verification endpoint. Operational failures are reported separately in `operation_status`.
   The deprecated `verification` and `confidence` response fields are scheduled for removal in v0.5.0.
-- Audit replay digests use `r2-v1` for records created before PR 1.2a with legacy verification
-  values and `r2-v2` for new records whose verification event is `not_adjudicated`. Audit lookup
-  reports `operation_status=not_recorded` until the status is persisted by PR 1.2b.
+- SQLite audit storage uses a versioned schema via `PRAGMA user_version` and idempotent migration from existing databases. The migration preserves `legacy_verification` and does not rewrite historical digests. Replay records distinguish `r2-v1` (legacy verification values) and `r2-v2` (`not_adjudicated`); audit lookup exposes `replay_integrity` as `valid` or `invalid` so tampered records can be identified.
+- Audit replay digests use `r2-v1` for records created before PR 1.2a with legacy verification values and `r2-v2` for new records whose verification event is `not_adjudicated`. Audit lookup reports `operation_status=not_recorded` until the status is persisted by PR 1.2b.
 
 - Rule stance (detector version 6): Portuguese number words, legal duplicates `40 (quarenta)`, fractions and multipliers, duration conversion (1 ano = 12 meses), `vezes`/`dias-multa`, set semantics per fact, comparative bounds not read as negation, competing named actors block support. New module `verification/pt_normalize.py`.
 

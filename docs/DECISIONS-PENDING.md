@@ -50,7 +50,7 @@ Source: execution plan v5, work queue
 - **Recomendação técnica:** A, porque separa o fechamento verificável da Fase 1 do trabalho futuro do Judge 2.0; a recomendação não é autorização para publicar.
 - **Impacto a avaliar:** clareza do contrato público, compatibilidade dos consumidores, citabilidade, manutenção da documentação e risco de comunicar maturidade além da evidência.
 - **Gate obrigatório:** decisão explícita de Anderson Leon Ayora. Não criar tag, release GitHub ou publicação automática antes da aprovação e da conclusão dos gates técnicos.
-- **Estado operacional:** documentação da v0.4.0 em preparação; Q1 PR #147 e F1.5 ainda não estão concluídas; nenhuma release/tag v0.4.0 foi criada.
+- **Estado operacional atualizado em 11/10/2026:** Q1 PR #147 foi aprovada pelo revisor independente nesta conversa para o SHA exato `69cdee7a3c9549ff7c9a41a6c14b8cca18993a91`, passou CI e foi mesclada por SQUASH no commit `da05861e249a53d8a2f9ee57eb1a5e2a811e2651`. F1.5 (#148) permanece em revisão; nenhuma release/tag v0.4.0 foi criada. A decisão explícita de Anderson continua obrigatória.
 
 ## DEC-001 — F3.5: uv lockfile and Docker image digests
 
