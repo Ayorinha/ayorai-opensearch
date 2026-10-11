@@ -198,7 +198,7 @@ class ClaimVerificationPipeline:
                 stances=(),
                 judgments=(),
                 verdict=None,
-                status=ResponseStatus.ABSTAIN_NO_ANSWER,
+                status=ResponsePolicy.ABSTAIN_NO_ANSWER,
                 confidence=1.0,
                 rationale="No atomic claim could be extracted from the response.",
             )
