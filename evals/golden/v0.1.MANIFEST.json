@@ -1,0 +1,23 @@
+{
+  "version": "v0.1",
+  "source_commit": "deb1d50f1ed0c35a2b1f51b44991f764c5fd296b",
+  "freeze_workflow_run": 37160714959,
+  "files": {
+    "evals/golden/v0.1.jsonl": {
+      "sha256": "a7076512196c1ee9670478f036f7a3996fe89a483efad140ec7b985a54846fb9"
+    },
+    "evals/corpus/documents.jsonl": {
+      "sha256": "ce2333ccfe4003ebfc90819400beaf6a245620754deb8572c7611bd8bbb7dea3"
+    }
+  },
+  "public_judge_smoke": {
+    "path": "evals/golden/judge-smoke.jsonl",
+    "sha256": "4012c75a3e667b1ca0bd0714fc299626d9e4cffb89f5d0dc0b5010e4fbc98f68",
+    "note": "Public deterministic Judge smoke fixture; not Golden v1. Golden v1 is reserved for the hidden Portuguese evaluation set."
+  },
+  "notes": [
+    "This manifest is additive and applies only to Golden v0.1.",
+    "Do not modify evals/golden/v0.1.jsonl or evals/golden/MANIFEST.json as part of M2.",
+    "The v0.1 file SHA-256 is recorded from the existing frozen artifact; the source commit is the commit that introduced the v0.1 freeze."
+  ]
+}
