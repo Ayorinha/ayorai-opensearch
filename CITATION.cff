@@ -5,8 +5,8 @@ abstract: >-
   AYORAI ATTRACTOR is an evidence-first verification layer for claims made by
   LLMs and autonomous agents. It combines deterministic verdicts, claim-level
   evidence provenance and reproducible audit trails for Portuguese and English
-  workflows. The project is designed for auditable AI use in regulated
-  environments, including LGPD-aware and financial-domain contexts.
+  workflows, with an initial focus on Brazilian telecommunications regulation
+  (Anatel consumer rights rules) and LGPD-aware workflows.
 type: software
 authors:
   - family-names: Ayora
