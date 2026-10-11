@@ -505,20 +505,6 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
     """
     if not isinstance(request, Mapping):
         raise TypeError("request must be a mapping")
-    try:
-        canonical_json_bytes(_canonical_input(request))
-    except TypeError:
-        rejection_input = canonical_json_bytes(
-            _canonical_input(request, allow_unsupported=True)
-        )
-        _, contract_sha256 = load_rules()
-        return _build_result(
-            request=request,
-            decision_state="INVALID_INPUT",
-            reason_codes=("SCHEMA_VIOLATION",),
-            rules_sha256=contract_sha256,
-            input_sha256_override=hashlib.sha256(rejection_input).hexdigest(),
-        )
     required = {
         "protocol_version", "claim_id", "claim_text", "atoms",
         "evidence", "stances", "source_texts",
@@ -535,6 +521,20 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
             f"missing={sorted(missing)}"
         )
     gate_input = {key: request[key] for key in required | (set(request) & optional)}
+    try:
+        canonical_json_bytes(_canonical_input(request))
+    except TypeError:
+        rejection_input = canonical_json_bytes(
+            _canonical_input(request, allow_unsupported=True)
+        )
+        _, contract_sha256 = load_rules()
+        return _build_result(
+            request=request,
+            decision_state="INVALID_INPUT",
+            reason_codes=("SCHEMA_VIOLATION",),
+            rules_sha256=contract_sha256,
+            input_sha256_override=hashlib.sha256(rejection_input).hexdigest(),
+        )
     gates = evaluate_gates(**gate_input)
     _, contract_sha256 = load_rules()
     if contract_sha256 != EXPECTED_RULES_SHA256:
