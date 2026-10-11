@@ -392,7 +392,7 @@ def evaluate_gates(
         stances=stances,
     )
     if isinstance(invalid_input, InvalidJudgeInput):
-        return GateResult(
+        return _make_gate_result(
             decision_state="INVALID_INPUT",
             reason_codes=(invalid_input.code,),
             admissible=False,
@@ -409,7 +409,7 @@ def evaluate_gates(
         evidence_pool_integrity_ok=evidence_pool_integrity_ok,
     )
     if abstention:
-        return GateResult(
+        return _make_gate_result(
             decision_state="ABSTAINED",
             reason_codes=abstention,
             admissible=False,
@@ -418,7 +418,7 @@ def evaluate_gates(
         )
 
     dispositions = _evidence_dispositions(atoms, evidence, stances, source_texts, loaded_rules)
-    return GateResult(
+    return _make_gate_result(
         decision_state=None,
         reason_codes=(),
         admissible=True,
