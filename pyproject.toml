@@ -39,6 +39,7 @@ dev = [
   "openai-agents>=0.1,<1",
   "hypothesis>=6.100,<7",
   "PyYAML>=6.0,<7",
+  "jsonschema[format-nongpl]>=4.23,<5",
 ]
 
 [project.scripts]
