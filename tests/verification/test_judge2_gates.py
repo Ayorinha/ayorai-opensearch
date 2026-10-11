@@ -161,7 +161,8 @@ def test_g1_g2_and_e_codes_match_loaded_contract_exactly() -> None:
     assert IMPLEMENTED_G1_CODES == {item["code"] for item in rules["input_gate"]}
     assert IMPLEMENTED_G2_CODES == {item["code"] for item in rules["abstention"]}
     e_codes = {item["rejection"] for item in rules["evidence_admissibility"]}
-    e_codes.add(next(item for item in rules["evidence_admissibility"] if item["id"] == "E1")["source_unavailable_rejection"])
+    e1 = next(item for item in rules["evidence_admissibility"] if item["id"] == "E1")
+    e_codes.add(e1["source_unavailable_rejection"])
     assert IMPLEMENTED_E_REJECTIONS == e_codes
 
 
