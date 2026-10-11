@@ -95,7 +95,7 @@ def _adjudicate_atoms(
     gates: GateResult,
 ) -> list[AtomicDecision]:
     """Adjudicate using gate-validated stance and provenance, never caller metadata."""
-    _, contract_sha256 = load_rules()
+    rules, contract_sha256 = load_rules()
     if contract_sha256 != EXPECTED_RULES_SHA256:
         raise ValueError("loaded Judge contract hash differs from the pinned contract")
     if gates.rules_sha256 != contract_sha256:
