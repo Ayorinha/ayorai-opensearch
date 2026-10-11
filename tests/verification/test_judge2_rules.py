@@ -60,7 +60,7 @@ def test_changing_a_rule_changes_canonical_hash(tmp_path: Path) -> None:
 
 def test_canonical_json_bytes_are_stable_and_utf8() -> None:
     value = {"z": "ação", "a": None}
-    expected = b'{"a":null,"z":"a\\xc3\\xa7\\xc3\\xa3o"}'
+    expected = '{"a":null,"z":"ação"}'.encode("utf-8")
 
     assert canonical_json_bytes(value) == expected
     assert canonical_json_bytes(value) == canonical_json_bytes(value)
