@@ -9,7 +9,7 @@ import hashlib
 import unicodedata
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from ayorai_attractor.verification.judge import InvalidJudgeInput
 from ayorai_attractor.verification.models import Evidence
@@ -66,7 +66,7 @@ def _invalid(code: str, field: str, message: str) -> InvalidJudgeInput:
 
 
 def _e_rejection(
-    rules: Mapping[str, object], rule_id: str, field: str = "rejection"
+    rules: Mapping[str, Any], rule_id: str, field: str = "rejection"
 ) -> str:
     entries = rules["evidence_admissibility"]
     entry = next(item for item in entries if item["id"] == rule_id)
