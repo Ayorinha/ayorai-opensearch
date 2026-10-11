@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import pytest
 
-
-
 SOURCE = "The regulator published Resolution 765 in 2023."
 CLAIM = "Resolution 765 was published in 2023."
 ATOM = {"id": "a1", "text": CLAIM, "start_offset": 0, "end_offset": len(CLAIM)}
@@ -153,7 +151,7 @@ def test_t11_each_evidence_rejection_reason_is_recorded(
 
 
 def test_valid_supporting_evidence_is_admitted_without_verdict() -> None:
-    result = evaluate_gates(**valid_kwargs())
+    result = run_gates(**valid_kwargs())
     assert result.decision_state is None
     assert result.reason_codes == ()
     assert result.admissible is True
