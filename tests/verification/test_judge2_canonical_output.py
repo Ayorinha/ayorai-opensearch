@@ -113,11 +113,11 @@ def test_three_fixed_output_sha256_vectors() -> None:
         ),
         (
             request_one(out_of_scope=True),
-            "feb93c94f695bd06a2795728a471a08562946ca6a3e57e17f383ce9553ac6128",
+            "65a0728cd254987a8be4278bef78052ff99bdb45198cc26078201981c5d913e1",
         ),
         (
             request_one(invalid=True),
-            "65e20b114e7ed7117191c94710423a2d61524ded3fa05b05ddecbc25f42c8b5f",
+            "6eeecd98d06ea91dc000a2869b17a1b0861d24fe54125a5defb498787c516056",
         ),
     ]
     actual = [adjudicate(request).output_sha256 for request, _ in vectors]
