@@ -115,7 +115,7 @@ Local `.attractor/` audit and replay data must not be versioned; evidence requir
 ## Roadmap — current execution sequence
 
 1. **Phase 1 — completed (v0.4.0):** single deterministic Judge authority for the final verdict, tamper-evident audit trail, and structured HTTP 422 errors.
-2. **Phase 2 — Judge 2.0:** ADR-009 is the normative contract; item 2.1 (contract) and item 2.2 (pre-adjudication gates) are complete; item 2.3 (deterministic atomic and composite rules) is in progress.
+2. **Phase 2 — Judge 2.0:** ADR-009 is the normative contract; items 2.1 (contract), 2.2 (pre-adjudication gates) and 2.3 (deterministic atomic and composite rules) are complete. The next Phase 2 item is 2.4.
 3. **Reproducibility:** strengthen deterministic replay, provenance and auditable execution records.
 4. **PT-BR benchmark:** build and document an evidence-based benchmark focused on Brazilian telecommunications regulation, starting with Anatel's General Consumer Rights Regulation (RGC).
 5. **Demonstration:** prepare a reproducible demonstration with explicit limitations and evidence.
