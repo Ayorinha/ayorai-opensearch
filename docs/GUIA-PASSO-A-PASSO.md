@@ -11,7 +11,13 @@ git switch main
 # Para a versão estável v0.4.0, use: git switch --detach v0.4.0
 python -m venv .venv
 source .venv/bin/activate
+pip install -e ".[dev]"
+
+Optional NLI backends (downloads large model dependencies):
+
+~~~bash
 pip install -e ".[dev,nli]"
+~~~
 ~~~
 
 No Windows, ative o ambiente virtual pelo mecanismo equivalente.
@@ -65,7 +71,13 @@ Resultado esperado documentado: **33.33%**.
 A é o caminho de pesquisa; B é o caminho candidato comercial.
 
 ~~~bash
+pip install -e ".[dev]"
+
+Optional NLI backends (downloads large model dependencies):
+
+~~~bash
 pip install -e ".[dev,nli]"
+~~~
 python scripts/run_f1_eval.py --suite golden-v0.1
 ~~~
 
