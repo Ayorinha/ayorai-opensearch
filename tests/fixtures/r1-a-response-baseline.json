@@ -1,7 +1,7 @@
 {
   "protocol": "r1-a",
   "captured_from_commit": "2ac98add366afa3324f92652423d4d7011a795bd",
-  "capture_note": "Frozen r1-a HTTP response baseline anchored to the pre-ResponsePolicy commit. Exact response bodies are asserted for every status reachable from valid r1-a requests; 422 validation cases assert status and Content-Type. Verify the expanded fixture against the pre-change implementation before ResponsePolicy work.",
+  "capture_note": "Frozen r1-a HTTP response baseline anchored to pre-ResponsePolicy commit 2ac98add366afa3324f92652423d4d7011a795bd. Exact response bytes, status, and Content-Type are recorded for valid-request outcomes, composite claims, and 422 validation responses. The /v1/verify route does not invoke claim_pipeline/scope_classifier; abstain/out_of_scope is not reachable through valid requests (empty claims fail schema validation with 422), and abstain/processing_error is not emitted by this route. known_defects records three currently reproducible invalid-input paths that raise 500; they are documented here without fixing them in this baseline-only PR.",
   "cases": [
     {
       "name": "verified-two-independent-supporting-sources",
@@ -256,6 +256,63 @@
       "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"refuted\",\"verdict\":\"refuted\",\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":0,\"contradiction_clusters\":1,\"provenance_complete\":false,\"verdict\":\"refuted\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}",
       "expected_status_code": 200,
       "expected_content_type": "application/json"
+    },
+    {
+      "name": "composite-verified-claim-and-unverified-claim-global-abstains",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "The service launched in 2026."
+          },
+          {
+            "id": "c2",
+            "text": "Unknown claim."
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-a",
+            "source_location": "document:1",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 30,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-a"
+          },
+          {
+            "id": "e2",
+            "claim_id": "c1",
+            "source_id": "source-b",
+            "source_location": "document:2",
+            "retrieved_at": "2026-10-02T09:00:01Z",
+            "start_offset": 0,
+            "end_offset": 30,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-b"
+          }
+        ],
+        "stances": [
+          {
+            "id": "s1",
+            "claim_id": "c1",
+            "evidence_id": "e1",
+            "stance": "supports"
+          },
+          {
+            "id": "s2",
+            "claim_id": "c1",
+            "evidence_id": "e2",
+            "stance": "supports"
+          }
+        ]
+      },
+      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"abstain/no_answer\",\"verdict\":null,\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":2,\"contradiction_clusters\":0,\"provenance_complete\":true,\"verdict\":\"verified\"},{\"claim_id\":\"c2\",\"support_clusters\":0,\"contradiction_clusters\":0,\"provenance_complete\":false,\"verdict\":\"unverified\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}",
+      "expected_status_code": 200,
+      "expected_content_type": "application/json"
     }
   ],
   "invalid_requests": [
@@ -272,7 +329,8 @@
         "unexpected": true
       },
       "expected_status_code": 422,
-      "expected_content_type": "application/json"
+      "expected_content_type": "application/json",
+      "expected_body": "{\"detail\":[{\"type\":\"extra_forbidden\",\"loc\":[\"body\",\"unexpected\"],\"msg\":\"Extra inputs are not permitted\",\"input\":true}]}"
     },
     {
       "name": "invalid-schema-version-422",
@@ -286,7 +344,8 @@
         ]
       },
       "expected_status_code": 422,
-      "expected_content_type": "application/json"
+      "expected_content_type": "application/json",
+      "expected_body": "{\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"body\",\"schema_version\"],\"msg\":\"Input should be 'r1-a'\",\"input\":\"r2\",\"ctx\":{\"expected\":\"'r1-a'\"}}]}"
     },
     {
       "name": "empty-claims-422",
@@ -297,7 +356,172 @@
         "stances": []
       },
       "expected_status_code": 422,
-      "expected_content_type": "application/json"
+      "expected_content_type": "application/json",
+      "expected_body": "{\"detail\":[{\"type\":\"too_short\",\"loc\":[\"body\",\"claims\"],\"msg\":\"List should have at least 1 item after validation, not 0\",\"input\":[],\"ctx\":{\"field_type\":\"List\",\"min_length\":1,\"actual_length\":0}}]}"
+    }
+  ],
+  "known_defects": [
+    {
+      "name": "duplicate-evidence-id-currently-500",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "The service launched in 2026."
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-a",
+            "source_location": "document:1",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 30,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-a"
+          },
+          {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-b",
+            "source_location": "document:2",
+            "retrieved_at": "2026-10-02T09:00:01Z",
+            "start_offset": 0,
+            "end_offset": 30,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-b"
+          }
+        ],
+        "stances": [
+          {
+            "id": "s1",
+            "claim_id": "c1",
+            "evidence_id": "e1",
+            "stance": "supports"
+          },
+          {
+            "id": "s2",
+            "claim_id": "c1",
+            "evidence_id": "e2",
+            "stance": "supports"
+          }
+        ]
+      },
+      "expected_status_code": 500,
+      "expected_content_type": "text/plain; charset=utf-8",
+      "expected_body": "Internal Server Error",
+      "defect": "judge raises ValueError: evidence ids must be unique; route does not translate it into a client error."
+    },
+    {
+      "name": "stance-references-unknown-evidence-currently-500",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "The service launched in 2026."
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-a",
+            "source_location": "document:1",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 30,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-a"
+          },
+          {
+            "id": "e2",
+            "claim_id": "c1",
+            "source_id": "source-b",
+            "source_location": "document:2",
+            "retrieved_at": "2026-10-02T09:00:01Z",
+            "start_offset": 0,
+            "end_offset": 30,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-b"
+          }
+        ],
+        "stances": [
+          {
+            "id": "s1",
+            "claim_id": "c1",
+            "evidence_id": "missing-evidence",
+            "stance": "supports"
+          },
+          {
+            "id": "s2",
+            "claim_id": "c1",
+            "evidence_id": "e2",
+            "stance": "supports"
+          }
+        ]
+      },
+      "expected_status_code": 500,
+      "expected_content_type": "text/plain; charset=utf-8",
+      "expected_body": "Internal Server Error",
+      "defect": "judge raises ValueError for an unknown evidence reference; route does not translate it into a client error."
+    },
+    {
+      "name": "duplicate-stances-for-evidence-currently-500",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "The service launched in 2026."
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-a",
+            "source_location": "document:1",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 30,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-a"
+          },
+          {
+            "id": "e2",
+            "claim_id": "c1",
+            "source_id": "source-b",
+            "source_location": "document:2",
+            "retrieved_at": "2026-10-02T09:00:01Z",
+            "start_offset": 0,
+            "end_offset": 30,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-b"
+          }
+        ],
+        "stances": [
+          {
+            "id": "s1",
+            "claim_id": "c1",
+            "evidence_id": "e1",
+            "stance": "supports"
+          },
+          {
+            "id": "s2",
+            "claim_id": "c1",
+            "evidence_id": "e1",
+            "stance": "supports"
+          }
+        ]
+      },
+      "expected_status_code": 500,
+      "expected_content_type": "text/plain; charset=utf-8",
+      "expected_body": "Internal Server Error",
+      "defect": "judge raises ValueError for multiple stances for the same evidence; route does not translate it into a client error."
     }
   ]
 }
