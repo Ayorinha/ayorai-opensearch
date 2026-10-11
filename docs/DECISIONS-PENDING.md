@@ -4,7 +4,7 @@ This file records decisions that require explicit maintainer approval. It is a q
 
 Owner and final decision-maker: Anderson Leon Ayora  
 Independent reviewer: revisor independente  
-Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
+Source: execution plan v5, work queue
 
 ## Decisões aprovadas
 
@@ -13,6 +13,7 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
 - **Data da decisão:** 11/10/2026
 - **Decisor:** Anderson Leon Ayora
 - **Opção aprovada:** A
+- **Alternativa não escolhida:** B — manter 500 em r1-a e corrigir só em r2-a; rejeitada porque um 500 nunca foi contrato e um sistema de auditoria não pode falhar com entrada do usuário.
 - **Decisão:** Converter falhas de validação de entrada que hoje escapam como `ValueError` do Judge em respostas HTTP 422 estruturadas na v0.4.0, documentando a correção no CHANGELOG.
 - **Escopo conhecido:** IDs de evidência duplicados, referências a evidências inexistentes, stances duplicadas, IDs de claim duplicados e stances que apontem para claims inexistentes. Cada categoria deve ter teste específico e formato de erro compatível com o FastAPI.
 - **Sequenciamento obrigatório:** Implementar em PR própria após a PR do ResponsePolicy. A PR de baseline #132 permanece como fotografia histórica; a alteração posterior da fixture só poderá mover os três casos de `known_defects` para `invalid_requests` e registrar os corpos 422 esperados, junto com a correção correspondente.
