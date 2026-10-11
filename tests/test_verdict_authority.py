@@ -27,53 +27,77 @@ def _verdict_constructor_violations(src_root: Path) -> list[str]:
     violations: list[str] = []
     for path in _python_files(src_root):
         relative = _relative(path, src_root)
-        # Explicit allowlist: verdict construction belongs only to the Judge and models.
         allowed = relative == "verification/models.py" or (
             relative.startswith("verification/judge") and path.suffix == ".py"
         )
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
+        aliases = {"Verdict"}
         for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            func = node.func
-            name = (
-                func.id if isinstance(func, ast.Name)
-                else func.attr if isinstance(func, ast.Attribute)
-                else ""
-            )
-            if name == "Verdict" and not allowed:
-                violations.append(f"{relative}:{node.lineno}")
-    return violations
+            if isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    if alias.name == "Verdict":
+                        aliases.add(alias.asname or alias.name)
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name == "Verdict" or alias.name.endswith(".Verdict"):
+                        aliases.add(alias.asname or alias.name.split(".")[-1])
+
+        parents: dict[ast.AST, ast.AST] = {}
+        for parent in ast.walk(tree):
+            for child in ast.iter_child_nodes(parent):
+                parents[child] = parent
+
+        def inside_comparison(node: ast.AST) -> bool:
+            parent = parents.get(node)
+            while parent is not None:
+                if isinstance(parent, ast.Compare):
+                    return True
+                parent = parents.get(parent)
+            return False
+
+        if allowed:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in aliases:
+                    violations.append(f"{relative}:{node.lineno}:constructor")
+            elif isinstance(node, ast.Attribute):
+                if isinstance(node.value, ast.Name) and node.value.id in aliases and not inside_comparison(node):
+                    violations.append(f"{relative}:{node.lineno}:member")
+            elif isinstance(node, ast.Subscript):
+                if isinstance(node.value, ast.Name) and node.value.id in aliases and not inside_comparison(node):
+                    violations.append(f"{relative}:{node.lineno}:subscript")
+    return sorted(violations)
 
 
 def _judge_import_violations(src_root: Path) -> list[str]:
     violations: list[str] = []
+    dynamic_import_names = {"__import__", "exec", "eval"}
     for path in _python_files(src_root):
         relative = _relative(path, src_root)
         if not (relative.startswith("verification/judge") and path.suffix == ".py"):
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
+        imported: list[tuple[str, int]] = []
         for node in ast.walk(tree):
-            imported: list[str] = []
             if isinstance(node, ast.Import):
-                imported.extend(alias.name for alias in node.names)
+                imported.extend((alias.name, node.lineno) for alias in node.names)
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ""
-                imported.append(module)
-                imported.extend(
-                    f"{module}.{alias.name}" if module else alias.name
-                    for alias in node.names
-                )
-            for module in imported:
-                roots = set(module.split("."))
-                if (
-                    roots & NETWORK_MODEL_IMPORTS
-                    or roots & MODEL_IMPORTS
-                    or {"providers", "orchestrator"} & roots
-                ):
-                    violations.append(f"{relative}:{node.lineno}:{module}")
-    return violations
-
+                imported.append((module, node.lineno))
+                imported.extend((f"{module}.{alias.name}" if module else alias.name, node.lineno) for alias in node.names)
+            elif isinstance(node, ast.Call):
+                func = node.func
+                if isinstance(func, ast.Name) and func.id in dynamic_import_names:
+                    violations.append(f"{relative}:{node.lineno}:{func.id}")
+                elif isinstance(func, ast.Attribute) and func.attr == "import_module":
+                    if isinstance(func.value, ast.Name) and func.value.id == "importlib":
+                        violations.append(f"{relative}:{node.lineno}:importlib.import_module")
+        for module, lineno in imported:
+            roots = set(module.split("."))
+            if roots & NETWORK_MODEL_IMPORTS or roots & MODEL_IMPORTS or {"providers", "orchestrator", "importlib"} & roots or module in dynamic_import_names:
+                violations.append(f"{relative}:{lineno}:{module}")
+    return sorted(set(violations))
 
 def _legacy_reader_violations(src_root: Path) -> list[str]:
     violations: list[str] = []
@@ -159,8 +183,30 @@ def test_only_allowlisted_modules_construct_verdict() -> None:
 
 def test_verdict_guard_detects_synthetic_violation(tmp_path: Path) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
-    _write_source(root, "api/unauthorized.py", 'result = Verdict("verified")\n')
-    assert _verdict_constructor_violations(root) == ["api/unauthorized.py:1"]
+    _write_source(root, "api/unauthorized.py", 'result = Verdict("verified")\\n')
+    assert _verdict_constructor_violations(root) == ["api/unauthorized.py:1:constructor"]
+
+
+def test_verdict_guard_detects_member_access_and_import_alias(tmp_path: Path) -> None:
+    root = tmp_path / "src" / "ayorai_attractor"
+    _write_source(root, "api/member.py", "return_value = Verdict.SUPPORTED\\n")
+    _write_source(root, "api/alias.py", "from package import Verdict as V\\nresult = V('verified')\\n")
+    assert _verdict_constructor_violations(root) == [
+        "api/alias.py:2:constructor",
+        "api/member.py:1:member",
+    ]
+
+
+def test_verdict_guard_allows_member_comparison(tmp_path: Path) -> None:
+    root = tmp_path / "src" / "ayorai_attractor"
+    _write_source(root, "api/compare.py", "allowed = verdict is Verdict.UNVERIFIED\\n")
+    assert _verdict_constructor_violations(root) == []
+
+
+def test_verdict_guard_detects_subscript_and_imported_alias(tmp_path: Path) -> None:
+    root = tmp_path / "src" / "ayorai_attractor"
+    _write_source(root, "api/subscript.py", "from package import Verdict as V\\nallowed = V['SUPPORTED']\\n")
+    assert _verdict_constructor_violations(root) == ["api/subscript.py:2:subscript"]
 
 
 def test_judge_has_no_network_provider_model_or_orchestrator_imports() -> None:
@@ -169,8 +215,22 @@ def test_judge_has_no_network_provider_model_or_orchestrator_imports() -> None:
 
 def test_judge_import_guard_detects_synthetic_violation(tmp_path: Path) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
-    _write_source(root, "verification/judge_bad.py", "import requests\n")
+    _write_source(root, "verification/judge_bad.py", "import requests\\n")
     assert _judge_import_violations(root) == ["verification/judge_bad.py:1:requests"]
+
+
+def test_judge_import_guard_detects_dynamic_import_and_eval(tmp_path: Path) -> None:
+    root = tmp_path / "src" / "ayorai_attractor"
+    _write_source(
+        root, "verification/judge_dyn.py",
+        "import importlib\\nimportlib.import_module('requests')\\n"
+        "__import__('requests')\\neval('1 + 1')\\n",
+    )
+    violations = _judge_import_violations(root)
+    assert any(":importlib" in item for item in violations)
+    assert any(":importlib.import_module" in item for item in violations)
+    assert any(":__import__" in item for item in violations)
+    assert any(":eval" in item for item in violations)
 
 
 def test_only_golden_evaluation_reads_legacy_baseline() -> None:
