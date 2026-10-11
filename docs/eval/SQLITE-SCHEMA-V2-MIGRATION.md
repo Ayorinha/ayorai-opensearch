@@ -22,7 +22,7 @@ preservation, including a corrupted-digest fixture.
 
 The legacy baseline was measured in workflow run
 [36759101933](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/36759101933).
-Independent review (Cláudio) verified 68/68 predictions against `3be512b` and `8e596f5`.
+Independent review verified 68/68 predictions against `3be512b` and `8e596f5`.
 
 The `baseline-legacy-v0` reference is a **lightweight Git tag with a GitHub pre-release for
 provenance**, created through the GitHub web interface. Provenance is recorded in the release
