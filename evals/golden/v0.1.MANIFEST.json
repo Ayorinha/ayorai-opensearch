@@ -19,8 +19,14 @@
     "Do not modify evals/golden/v0.1.jsonl or evals/golden/MANIFEST.json as part of M2.",
     "The v0.1 file SHA-256 is recorded from the existing frozen artifact; the source commit is the commit that introduced the v0.1 freeze.",
     "CI run 37160714959 is the ordinary ci.yml run for PR #91 (feat(f1): multilingual hybrid stance engine), triggered by pull_request/synchronize on commit deb1d50f1ed0c35a2b1f51b44991f764c5fd296b; it is not a dedicated freeze workflow.",
-    "Commit deb1d50f1ed0c35a2b1f51b44991f764c5fd296b is not a direct ancestor of main; its content entered the main history through the squash/merge of PR #115 (commit 3be512b)."
+    "Commit deb1d50 is an ancestor of main (verified with full history on 2026-10-11)."
   ],
   "ci_run_at_source_commit": 37160714959,
-  "case_count": 34
+  "case_count": 34,
+  "amendments": [
+    {
+      "date": "2026-10-11",
+      "change": "Corrected an earlier note that wrongly stated deb1d50 was not an ancestor of main; the earlier check used a shallow clone. Hashes, case_count and source_commit unchanged."
+    }
+  ]
 }
