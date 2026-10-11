@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from ayorai_attractor.verification.judge2 import (
-    JudgeRulesError,
     RULES_VERSION,
+    JudgeRulesError,
     canonical_json_bytes,
     load_rules,
     rules_sha256,
@@ -60,7 +60,7 @@ def test_changing_a_rule_changes_canonical_hash(tmp_path: Path) -> None:
 
 def test_canonical_json_bytes_are_stable_and_utf8() -> None:
     value = {"z": "ação", "a": None}
-    expected = '{"a":null,"z":"ação"}'.encode("utf-8")
+    expected = '{"a":null,"z":"ação"}'.encode()
 
     assert canonical_json_bytes(value) == expected
     assert canonical_json_bytes(value) == canonical_json_bytes(value)
