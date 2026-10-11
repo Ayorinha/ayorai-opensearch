@@ -94,9 +94,17 @@ def _validate_g1(
         if not isinstance(text, str) or not text:
             raise _invalid("SCHEMA_VIOLATION", f"atoms[{index}].text", "atom text is required")
         if not isinstance(start, int) or isinstance(start, bool):
-            raise _invalid("SCHEMA_VIOLATION", f"atoms[{index}].start_offset", "start_offset must be an integer")
+            raise _invalid(
+                "SCHEMA_VIOLATION",
+                f"atoms[{index}].start_offset",
+                "start_offset must be an integer",
+            )
         if not isinstance(end, int) or isinstance(end, bool):
-            raise _invalid("SCHEMA_VIOLATION", f"atoms[{index}].end_offset", "end_offset must be an integer")
+            raise _invalid(
+                "SCHEMA_VIOLATION",
+                f"atoms[{index}].end_offset",
+                "end_offset must be an integer",
+            )
         if start < 0 or end <= start or end > len(claim_text):
             raise _invalid(
                 "ATOM_SPAN_OUT_OF_RANGE",
@@ -116,7 +124,11 @@ def _validate_g1(
     evidence_ids: list[str] = []
     for index, item in enumerate(evidence):
         if not isinstance(item, Evidence):
-            raise _invalid("SCHEMA_VIOLATION", f"evidence[{index}]", "evidence entries must be validated Evidence objects")
+            raise _invalid(
+                "SCHEMA_VIOLATION",
+                f"evidence[{index}]",
+                "evidence entries must be validated Evidence objects",
+            )
         if item.claim_id != claim_id:
             raise _invalid(
                 "DANGLING_REFERENCE",
@@ -140,11 +152,19 @@ def _validate_g1(
         if not isinstance(stance_id, str) or not stance_id:
             raise _invalid("SCHEMA_VIOLATION", f"stances[{index}].id", "stance id is required")
         if not isinstance(atom_id, str) or not isinstance(evidence_id, str):
-            raise _invalid("SCHEMA_VIOLATION", f"stances[{index}]", "atom_id and evidence_id are required")
+            raise _invalid(
+                "SCHEMA_VIOLATION",
+                f"stances[{index}]",
+                "atom_id and evidence_id are required",
+            )
         if not isinstance(relation, str) or relation not in {
             "SUPPORTS", "CONTRADICTS", "NEUTRAL", "supports", "contradicts", "neutral"
         }:
-            raise _invalid("SCHEMA_VIOLATION", f"stances[{index}].stance", "stance value is invalid")
+            raise _invalid(
+                "SCHEMA_VIOLATION",
+                f"stances[{index}].stance",
+                "stance value is invalid",
+            )
         stance_ids.append(stance_id)
         stance_pairs.append((atom_id, evidence_id))
         if atom_id not in atom_id_set or evidence_id not in evidence_id_set:
