@@ -180,7 +180,37 @@ jobs:
       - run: mypy src/ayorai_attractor
       - name: Strict mypy blocking — evidence
         run: mypy --strict src/ayorai_attractor/evidence
-      - run: pytest --cov=ayorai_attractor --cov-report=xml --cov-report=json --cov-report=term-missing
+      - name: Prove unclosed SQLite connections fail the warning gate
+        if: matrix.python-version == '3.13'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sentinel="tests/test_resource_warning_sentinel.py"
+          trap 'rm -f "$sentinel"' EXIT
+          cat > "$sentinel" <<'PY'
+          import gc
+          import sqlite3
+
+          def test_intentionally_unclosed_sqlite_connection() -> None:
+              connection = sqlite3.connect(":memory:")
+              del connection
+              gc.collect()
+          PY
+          set +e
+          pytest -q "$sentinel" > /tmp/resource-warning-sentinel.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/resource-warning-sentinel.log
+          if [ "$status" -eq 0 ]; then
+            echo "::error::The unclosed-connection sentinel unexpectedly passed."
+            exit 1
+          fi
+          if ! grep -Eq 'PytestUnraisableExceptionWarning|ResourceWarning' /tmp/resource-warning-sentinel.log; then
+            echo "::error::The sentinel failed for an unrelated reason; warning gate is not proven."
+            exit 1
+          fi
+          echo "RESOURCE_WARNING_SENTINEL: EXPECTED_FAILURE_CONFIRMED"
+      - run: pytest -W error::ResourceWarning -W error::pytest.PytestUnraisableExceptionWarning --cov=ayorai_attractor --cov-report=xml --cov-report=json --cov-report=term-missing
       - name: Enforce per-module verification backend coverage
         run: |
           python - <<'PY'

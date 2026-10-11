@@ -59,3 +59,7 @@ def eval_suite(
         "global_accuracy": report["global_accuracy"],
         "majority_class_baseline": report["majority_class_baseline"],
     }, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    app()
