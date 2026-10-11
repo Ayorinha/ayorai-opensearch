@@ -1,6 +1,6 @@
 # Launch post draft — v0.2.0
 
-> **Do not publish before R1 is complete and its Actions evaluation is verified.**
+> **Historical draft — not approved for publication.** Refresh all statements against the target release commit and verified Actions artifacts before use. The v0.2.0 figures below are historical baseline context, not current release metrics.
 
 ## Português
 
@@ -21,7 +21,7 @@ Depois do R1:
 - holdout h0: **[PREENCHER COM RESULTADO REAL]**
 - matriz de confusão: **[LINK PARA ARTIFACT/RELATÓRIO]**
 
-A regra permanece a mesma: números só entram aqui depois de medidos pelo GitHub Actions.
+A regra permanece a mesma: números só entram aqui depois de medidos pelo GitHub Actions. Consulte também [F1.2 Results](../eval/F1.2-RESULTS.md) e o [pré-registro do Golden v0.1](../eval/PREREGISTRATION-GOLDEN-v0.1.md); não misture resultados de versões diferentes nem apresente os conjuntos sintéticos como validação de produção.
 
 ## English
 
@@ -42,4 +42,4 @@ After R1:
 - holdout h0: **[FILL ONLY FROM VERIFIED RESULT]**
 - confusion matrix: **[ARTIFACT/REPORT LINK]**
 
-The rule remains simple: no number is published here until GitHub Actions measures it.
+The rule remains simple: no number is published here until GitHub Actions measures it. See [F1.2 Results](../eval/F1.2-RESULTS.md) and the [Golden v0.1 pre-registration](../eval/PREREGISTRATION-GOLDEN-v0.1.md); do not mix results from different versions or present synthetic sets as production validation.
