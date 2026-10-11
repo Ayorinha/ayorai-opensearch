@@ -4,6 +4,10 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+No unreleased entries yet.
+
+## [0.4.0] — data a definir pelo mantenedor
+
 ### CI reproducibility
 
 - Pin all GitHub Actions workflow runners to `ubuntu-24.04` instead of the moving `ubuntu-latest` alias. Any future operating-system change requires a dedicated pull request and verification of the three evaluation `semantic_sha256` values (Golden v0, Golden v0.1 and smoke-v0); frozen artifacts and expected digests must remain unchanged.
