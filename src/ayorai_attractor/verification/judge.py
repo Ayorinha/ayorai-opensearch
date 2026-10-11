@@ -5,6 +5,15 @@ from dataclasses import dataclass
 from .clusters import cluster_evidence
 from .models import Claim, Evidence, Stance, StanceEdge, Verdict
 
+
+class InvalidJudgeInput(ValueError):
+    """A validated request defect that may be returned as HTTP 422."""
+
+    def __init__(self, code: str, field: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.field = field
+
 _GLOBAL_PRECEDENCE = (
     Verdict.REFUTED,
     Verdict.CONFLICTING,
@@ -38,16 +47,24 @@ def judge_claim(
 ) -> ClaimJudgment:
     by_id = {item.id: item for item in evidence}
     if len(by_id) != len(evidence):
-        raise ValueError("evidence ids must be unique")
+        raise InvalidJudgeInput("DUPLICATE_ID", "evidence", "evidence ids must be unique")
     claim_evidence = [item for item in evidence if item.claim_id == claim.id]
     stance_by_evidence: dict[str, Stance] = {}
     for edge in stances:
         if edge.claim_id != claim.id:
             continue
         if edge.evidence_id not in by_id:
-            raise ValueError(f"stance references unknown evidence: {edge.evidence_id}")
+            raise InvalidJudgeInput(
+                "DANGLING_REFERENCE",
+                "stances",
+                f"stance references unknown evidence: {edge.evidence_id}",
+            )
         if edge.evidence_id in stance_by_evidence:
-            raise ValueError(f"multiple stances for evidence: {edge.evidence_id}")
+            raise InvalidJudgeInput(
+                "DUPLICATE_STANCE",
+                "stances",
+                f"multiple stances for evidence: {edge.evidence_id}",
+            )
         stance_by_evidence[edge.evidence_id] = edge.stance
     supporting = [
         item for item in claim_evidence if stance_by_evidence.get(item.id) is Stance.SUPPORTS
@@ -96,8 +113,10 @@ def judge(
 ) -> tuple[list[ClaimJudgment], Verdict]:
     claim_ids = {claim.id for claim in claims}
     if len(claim_ids) != len(claims):
-        raise ValueError("claim ids must be unique")
+        raise InvalidJudgeInput("DUPLICATE_ID", "claims", "claim ids must be unique")
     if any(edge.claim_id not in claim_ids for edge in stances):
-        raise ValueError("stance references unknown claim")
+        raise InvalidJudgeInput(
+            "DANGLING_REFERENCE", "stances", "stance references unknown claim"
+        )
     judgments = [judge_claim(claim, evidence, stances) for claim in claims]
     return judgments, aggregate_verdict(judgments)
