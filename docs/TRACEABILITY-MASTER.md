@@ -44,6 +44,10 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 | 19 | O sistema apresenta desempenho consistente em diferentes categorias de casos? | `src/ayorai_attractor/evaluation/golden.py`; conjuntos de avaliação | Testes de avaliação existentes; **sem evidência de cobertura representativa de todas as categorias** | [PARCIAL]; publicar resultados por categoria, tamanho e composição do conjunto. |
 | 20 | As conclusões estatísticas são sustentadas pelo tamanho e pela composição do conjunto avaliado? | `docs/eval/BASELINE-v0.md`; protocolo Golden | `tests/test_judge_evaluation.py`; `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py` | [LIMITAÇÃO DOCUMENTADA]; n=30; intervalos de confiança incluem o baseline. Não generalizar além do conjunto avaliado. |
 
+## Componentes de engenharia R1–R20
+
+O registro histórico de componentes R1–R20, com descrições de escopo e links para os runs históricos preservados, está em [docs/history/PROGRESS-2026-10-03.md](history/PROGRESS-2026-10-03.md). Esse arquivo é registro histórico e não declara o estado atual; a matriz abaixo continua sendo a fonte canônica para o estado atual, evidências e limitações.
+
 ## 2. Matriz principal de rastreabilidade da especificação canônica
 
 ### 2.1 Princípios fundamentais — seção 2
@@ -129,7 +133,7 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 
 **Estado:** referência complementar; status e autoridade ainda aguardam confirmação do mantenedor. Nenhuma linha da matriz principal depende deste documento.
 
-Rótulos e conceitos anteriormente associados ao “Prompt Mestre v3”, incluindo §3/L0–L14, GEPA, OWASP ASI, Studio, BM25+kNN+RRF e demais itens desse documento, ficam isolados nesta seção. Não são fonte normativa da matriz canônica `AYORAI-ATTRACTOR-BAL` v1.0.0 e não devem ser usados para declarar conformidade com ela. Caso o mantenedor confirme sua relevância, registrar sua identidade, versão e relação com a especificação canônica antes de reintegrar qualquer requisito.
+Rótulos e conceitos anteriormente associados ao plano de execução v3, incluindo §3/L0–L14, GEPA, OWASP ASI, Studio, BM25+kNN+RRF e demais itens desse documento, ficam isolados nesta seção. Não são fonte normativa da matriz canônica `AYORAI-ATTRACTOR-BAL` v1.0.0 e não devem ser usados para declarar conformidade com ela. Caso o mantenedor confirme sua relevância, registrar sua identidade, versão e relação com a especificação canônica antes de reintegrar qualquer requisito.
 
 
 ## PR 1.2a — contrato de não adjudicação [MESCLADA #125]
