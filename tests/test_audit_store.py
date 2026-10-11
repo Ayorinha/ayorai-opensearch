@@ -57,19 +57,7 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
     ).digest == digest
 
 
-def test_schema_v1_migration_preserves_legacy_value_and_digest(tmp_path) -> None:
-    path = tmp_path / "legacy.sqlite3"
-    trace_id = "tr_legacy"
-    events = [
-        {
-            "event": "audit.completed",
-            "verification": "supported",
-            "evidence_count": 3,
-            "failure_count": 1,
-        }
-    ]
-    legacy_digest = ReplayBundle.build(trace_id, events, version="r2-v1").digest
-
+def _create_legacy_schema(path, row) -> None:  # type: ignore[no-untyped-def]
     with sqlite3.connect(path) as connection:
         connection.execute(
             """
@@ -87,10 +75,25 @@ def test_schema_v1_migration_preserves_legacy_value_and_digest(tmp_path) -> None
         )
         connection.execute(
             "INSERT INTO audit_traces VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (trace_id, "supported", 3, 2, 1, 1, 2, legacy_digest),
+            row,
         )
 
-    first = AuditTraceStore(str(path))
+
+def test_schema_v1_migration_preserves_legacy_value_and_digest(tmp_path) -> None:
+    path = tmp_path / "legacy.sqlite3"
+    trace_id = "tr_legacy"
+    events = [
+        {
+            "event": "audit.completed",
+            "verification": "supported",
+            "evidence_count": 3,
+            "failure_count": 1,
+        }
+    ]
+    legacy_digest = ReplayBundle.build(trace_id, events, version="r2-v1").digest
+    _create_legacy_schema(path, (trace_id, "supported", 3, 2, 1, 1, 2, legacy_digest))
+
+    store = AuditTraceStore(str(path))
     with sqlite3.connect(path) as connection:
         migrated = connection.execute(
             """
@@ -101,8 +104,9 @@ def test_schema_v1_migration_preserves_legacy_value_and_digest(tmp_path) -> None
             (trace_id,),
         ).fetchone()
     assert migrated == ("supported", None, "not_recorded", legacy_digest, "r2-v1", 2)
-    assert first.get(trace_id) is not None
-    assert first.get(trace_id).operation_status == "not_recorded"
+    saved = store.get(trace_id)
+    assert saved is not None
+    assert saved.operation_status == "not_recorded"
 
     # Reopening an already migrated database must be idempotent.
     AuditTraceStore(str(path))
@@ -130,26 +134,7 @@ def test_migration_recognizes_existing_r2_v2_rows(tmp_path) -> None:
         }
     ]
     digest = ReplayBundle.build(trace_id, events, version="r2-v2").digest
-
-    with sqlite3.connect(path) as connection:
-        connection.execute(
-            """
-            CREATE TABLE audit_traces (
-                trace_id TEXT PRIMARY KEY,
-                verification TEXT NOT NULL,
-                evidence_count INTEGER NOT NULL,
-                independent_evidence_count INTEGER NOT NULL,
-                verified_evidence_count INTEGER NOT NULL,
-                failure_count INTEGER NOT NULL,
-                finding_count INTEGER NOT NULL,
-                replay_digest TEXT NOT NULL
-            )
-            """
-        )
-        connection.execute(
-            "INSERT INTO audit_traces VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (trace_id, "not_adjudicated", 1, 1, 0, 0, 0, digest),
-        )
+    _create_legacy_schema(path, (trace_id, "not_adjudicated", 1, 1, 0, 0, 0, digest))
 
     AuditTraceStore(str(path))
     with sqlite3.connect(path) as connection:
@@ -162,6 +147,26 @@ def test_migration_recognizes_existing_r2_v2_rows(tmp_path) -> None:
             (trace_id,),
         ).fetchone()
     assert migrated == (None, None, "not_recorded", digest, "r2-v2", 2)
+
+
+def test_migration_does_not_rewrite_corrupted_legacy_digest(tmp_path) -> None:
+    path = tmp_path / "corrupted.sqlite3"
+    trace_id = "tr_corrupted"
+    corrupted_digest = "0" * 64
+    _create_legacy_schema(
+        path, (trace_id, "supported", 1, 1, 0, 0, 0, corrupted_digest)
+    )
+
+    AuditTraceStore(str(path))
+    with sqlite3.connect(path) as connection:
+        migrated = connection.execute(
+            """
+            SELECT legacy_verification, replay_digest, replay_version, schema_version
+            FROM audit_traces WHERE trace_id = ?
+            """,
+            (trace_id,),
+        ).fetchone()
+    assert migrated == ("supported", corrupted_digest, "r2-v1", 2)
 
 
 def test_missing_trace_returns_none(tmp_path) -> None:
