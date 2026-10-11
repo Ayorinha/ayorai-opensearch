@@ -7,6 +7,7 @@ contains instruction-like text.
 """
 
 from dataclasses import asdict, is_dataclass
+
 from pydantic import BaseModel
 
 
