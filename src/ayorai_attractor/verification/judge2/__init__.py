@@ -275,9 +275,13 @@ __all__ = [
     "IMPLEMENTED_G2_CODES",
     "RULES_SHA256",
     "evaluate_gates",
+    "AdjudicationResult",
+    "adjudicate",
     "JudgeRulesError",
     "RULES_VERSION",
     "canonical_json_bytes",
     "load_rules",
     "rules_sha256",
 ]
+
+from .adjudication import AdjudicationResult, adjudicate
