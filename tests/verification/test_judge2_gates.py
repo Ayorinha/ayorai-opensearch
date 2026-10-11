@@ -202,6 +202,13 @@ def test_offsets_count_unicode_code_points_for_accented_source() -> None:
     result = run_gates(**kwargs)
     assert result.evidence[0].admitted is True
 
+def test_gate_result_records_digest_of_loaded_contract() -> None:
+    from ayorai_attractor.verification.judge2 import rules_sha256
+
+    result = run_gates(**valid_kwargs())
+    assert result.rules_sha256 == rules_sha256()
+
+
 def test_valid_supporting_evidence_is_admitted_without_verdict() -> None:
     result = run_gates(**valid_kwargs())
     assert result.decision_state is None
