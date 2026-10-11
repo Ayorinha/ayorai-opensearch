@@ -350,7 +350,7 @@ def test_r2_a_unverified_remains_decided_with_separate_response_policy() -> None
     body = response.json()
     assert body["result"]["decision_state"] == "DECIDED"
     assert body["result"]["verdict"] == "UNVERIFIED"
-    assert body["response_policy"] == "abstain/no_answer"
+    assert body["response_policy"] is None
 
 
 def test_unknown_schema_version_returns_structured_http_422() -> None:
@@ -369,3 +369,34 @@ def test_unknown_schema_version_returns_structured_http_422() -> None:
             "ctx": {"expected": "'r1-a'"},
         }
     ]
+
+
+def test_r1_a_error_responses_match_pre_r2_a_baseline_byte_for_byte() -> None:
+    fixture_path = Path(__file__).parent / "fixtures" / "r1-a-error-baseline.json"
+    baseline = json.loads(fixture_path.read_text(encoding="utf-8"))
+    assert baseline["captured_from"] == "c7e3868f3f6f34ce153d9ec6605645fad8681e2e"
+
+    client = TestClient(app, raise_server_exceptions=False)
+    for case in baseline["cases"]:
+        response = client.post(
+            "/v1/verify",
+            content=case["request"].encode("utf-8"),
+            headers={"content-type": "application/json"},
+        )
+        assert response.status_code == case["status"], case["name"]
+        assert response.content.decode("utf-8") == case["body"], case["name"]
+
+
+def test_openapi_documents_both_verify_request_contracts() -> None:
+    schema = TestClient(app).get("/openapi.json").json()
+    request_schema = schema["paths"]["/v1/verify"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    expected_refs = {
+        "#/components/schemas/VerificationRequest",
+        "#/components/schemas/Judge2VerificationRequest",
+    }
+    assert {item["$ref"] for item in request_schema["oneOf"]} == expected_refs
+    assert expected_refs <= {
+        f"#/components/schemas/{name}" for name in schema["components"]["schemas"]
+    }
