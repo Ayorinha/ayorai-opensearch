@@ -3,7 +3,7 @@
 This file records decisions that require explicit maintainer approval. It is a queue, not an approval record. No item below authorizes implementation or changes to an accepted ADR by itself.
 
 Owner and final decision-maker: Anderson Leon Ayora  
-Independent reviewer: Cláudio  
+Independent reviewer: revisor independente  
 Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
 
 ## DEC-001 — F3.5: uv lockfile and Docker image digests
@@ -21,7 +21,7 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
   2. Adopt the lockfile first and defer Docker digest pinning.
   3. Defer both until the reproducibility workflow and maintenance policy are specified.
 - **Impact to assess:** Developer setup, CI, container builds, security updates, reproducibility instructions, and dependency-update cadence.
-- **Approval gate:** Anderson selects an option; Cláudio reviews the implementation proposal before any implementation PR.
+- **Approval gate:** Anderson selects an option; revisor independente reviews the implementation proposal before any implementation PR.
 
 ## DEC-002 — F4.2: licensing and provenance of source material
 
@@ -44,7 +44,7 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
 
 - **Data:** 11/10/2026
 - **Bloqueia:** M1
-- **Recomendação técnica:** Manter o status atual de ADR-001 até confirmar que decisão, consequências, implementação e testes correspondem ao texto. Só mudar para `Accepted` após revisão explícita do mantenedor e conferência de rastreabilidade pelo Cláudio; não inferir aceitação a partir de implementação parcial.
+- **Recomendação técnica:** Manter o status atual de ADR-001 até confirmar que decisão, consequências, implementação e testes correspondem ao texto. Só mudar para `Accepted` após revisão explícita do mantenedor e conferência de rastreabilidade pelo revisor independente; não inferir aceitação a partir de implementação parcial.
 
 - **Status:** Pending maintainer decision
 - **Decision area:** Architecture decision governance
@@ -55,7 +55,7 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
   2. Keep its current status and revise the ADR or implementation evidence before reconsideration.
   3. Supersede it with a new ADR if the original decision is no longer appropriate, preserving historical traceability.
 - **Impact to assess:** Architectural consistency, traceability, links from implementation and tests, and the audit history of decisions.
-- **Approval gate:** Anderson explicitly approves the status change; Cláudio checks the exact ADR diff and its references.
+- **Approval gate:** Anderson explicitly approves the status change; revisor independente checks the exact ADR diff and its references.
 
 ## DEC-004 — M3: commercial documentation and repository name
 
@@ -72,7 +72,7 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
   2. Approve a new repository name and coordinate redirects, references, badges, and documentation in a dedicated change.
   3. Defer the naming decision and publish only technical documentation until positioning is approved.
 - **Impact to assess:** Public discoverability, continuity of repository links, brand consistency, technical accuracy, and maintenance burden.
-- **Approval gate:** Anderson decides the name and positioning; Cláudio reviews factual claims and the documentation diff before publication.
+- **Approval gate:** Anderson decides the name and positioning; revisor independente reviews factual claims and the documentation diff before publication.
 
 ## Queue rules
 
