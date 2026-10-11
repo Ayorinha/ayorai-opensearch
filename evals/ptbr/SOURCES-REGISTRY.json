@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "sources": [
+    {
+      "source_id": "anatel-res-765-2023",
+      "title": "Resolução Anatel nº 765, de 6 de novembro de 2023 — aprova o Regulamento Geral de Direitos do Consumidor de Serviços de Telecomunicações (RGC)",
+      "source_type": "normative_act",
+      "issuing_authority": "Agência Nacional de Telecomunicações (Anatel)",
+      "url": "https://informacoes.anatel.gov.br/legislacao/resolucoes/2023/1900-resolucao-765",
+      "publication_date": "2023-11-06",
+      "retrieved_at": null,
+      "status": "candidate",
+      "sha256": null,
+      "capture_method": null,
+      "artifact_path": null,
+      "content_type": null,
+      "derived_text_sha256": null,
+      "derived_text_present": false,
+      "notes": "Candidato; captura exata e verificação de vigência por dispositivo pendentes."
+    },
+    {
+      "source_id": "planalto-lei-9610-1998",
+      "title": "Lei nº 9.610, de 19 de fevereiro de 1998",
+      "source_type": "normative_act",
+      "issuing_authority": "Presidência da República — Planalto",
+      "url": "https://www.planalto.gov.br/ccivil_03/leis/l9610.htm",
+      "publication_date": "1998-02-19",
+      "retrieved_at": null,
+      "status": "candidate",
+      "sha256": null,
+      "capture_method": null,
+      "artifact_path": null,
+      "content_type": null,
+      "derived_text_sha256": null,
+      "derived_text_present": false,
+      "notes": "Candidato; captura exata e SHA-256 pendentes."
+    },
+    {
+      "source_id": "planalto-lgpd-13709-2018",
+      "title": "Lei nº 13.709, de 14 de agosto de 2018 — Lei Geral de Proteção de Dados Pessoais",
+      "source_type": "normative_act",
+      "issuing_authority": "Presidência da República — Planalto",
+      "url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm",
+      "publication_date": "2018-08-14",
+      "retrieved_at": null,
+      "status": "candidate",
+      "sha256": null,
+      "capture_method": null,
+      "artifact_path": null,
+      "content_type": null,
+      "derived_text_sha256": null,
+      "derived_text_present": false,
+      "notes": "Candidato; captura exata e SHA-256 pendentes."
+    }
+  ]
+}
