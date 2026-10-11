@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .gates import RULES_SHA256, EvidenceDisposition, GateResult, evaluate_gates
+from .gates import EvidenceDisposition, GateResult, evaluate_gates
 
 RULES_VERSION = "2.0.0"
 _RULES_PATH = Path(__file__).resolve().parents[4] / "rules" / "judge-2.0.0.json"
@@ -51,7 +51,7 @@ _COMPOSITE_PREDICATES = {
 _RULE_FIELDS = {
     "input_gate": {"id", "rule_id", "code", "outcome"},
     "abstention": {"id", "rule_id", "code", "outcome"},
-    "evidence_admissibility": {"id", "criterion", "rejection"},
+    "evidence_admissibility": {"id", "criterion", "rejection", "source_unavailable_rejection"},
     "atomic_rules": {"id", "when", "verdict"},
     "robustness_rules": {"id", "when", "value", "label"},
     "composite_rules": {"id", "when", "verdict", "robustness_atoms", "robustness"},
@@ -186,6 +186,10 @@ def _validate_rules(rules: dict[str, Any]) -> None:
                     f"invalid rule_id for {entry['code']}: expected {expected_rule_id}"
                 )
 
+    e1 = next(item for item in rules["evidence_admissibility"] if item["id"] == "E1")
+    if e1.get("source_unavailable_rejection") != "SOURCE_UNAVAILABLE":
+        raise JudgeRulesError("E1 source_unavailable_rejection must be SOURCE_UNAVAILABLE")
+
     for section, expected_ids in _EXPECTED_IDS.items():
         entries = rules[section]
         ids = [entry.get("id") for entry in entries]
@@ -247,6 +251,9 @@ def load_rules(path: str | Path | None = None) -> tuple[dict[str, Any], str]:
 def rules_sha256(path: str | Path | None = None) -> str:
     """Return the canonical content SHA-256 for the selected Judge rules."""
     return load_rules(path)[1]
+
+
+RULES_SHA256 = rules_sha256()
 
 
 __all__ = [
