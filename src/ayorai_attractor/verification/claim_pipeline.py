@@ -17,7 +17,7 @@ from .extraction import (
 )
 from .judge import ClaimJudgment, judge
 from .models import Claim, Evidence, StanceEdge, Verdict
-from .response import ResponseStatus
+from .response import ResponsePolicy
 from .stance import StanceDetector
 
 
@@ -43,7 +43,7 @@ class ClaimVerificationResult:
     stances: tuple[StanceEdge, ...]
     judgments: tuple[ClaimJudgment, ...]
     verdict: Verdict | None
-    status: ResponseStatus
+    status: Verdict | ResponsePolicy
     confidence: float
     rationale: str
     abstention_reason: str | None = None
@@ -86,7 +86,7 @@ class ClaimVerificationPipeline:
                 stances=(),
                 judgments=(),
                 verdict=None,
-                status=ResponseStatus.ABSTAIN_OUT_OF_SCOPE,
+                status=ResponsePolicy.ABSTAIN_OUT_OF_SCOPE,
                 confidence=1.0,
                 rationale="The configured scope classifier rejected the claims.",
             )
@@ -107,7 +107,7 @@ class ClaimVerificationPipeline:
                 stances=(),
                 judgments=(),
                 verdict=None,
-                status=ResponseStatus.ABSTAIN_NO_ANSWER,
+                status=ResponsePolicy.ABSTAIN_NO_ANSWER,
                 confidence=1.0,
                 rationale="No retrievable evidence was available for the supplied claims.",
             )
@@ -149,7 +149,7 @@ class ClaimVerificationPipeline:
                 stances=(),
                 judgments=(),
                 verdict=None,
-                status=ResponseStatus.ABSTAIN_PROCESSING_ERROR,
+                status=ResponsePolicy.ABSTAIN_PROCESSING_ERROR,
                 confidence=1.0,
                 rationale=f"{type(exc).__name__}: {exc}",
                 abstention_reason=type(exc).__name__,
@@ -170,7 +170,7 @@ class ClaimVerificationPipeline:
             stances=stances,
             judgments=tuple(judgments),
             verdict=verdict,
-            status=ResponseStatus(verdict.value),
+            status=verdict,
             confidence=confidence,
             audit_reasons=tuple(audit_reasons),
             rationale=(
