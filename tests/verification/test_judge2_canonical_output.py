@@ -125,7 +125,6 @@ def test_three_fixed_output_sha256_vectors() -> None:
     assert actual == expected
 
 
-
 def test_result_containers_are_deeply_immutable_and_digest_verifiable() -> None:
     result = adjudicate(request_one())
     with pytest.raises(TypeError):
@@ -177,3 +176,36 @@ def test_gate_outcomes_have_rule_trace(
     assert result.rule_trace
     assert result.rule_trace[0]["rule_id"] == expected_rule_id
     assert all(item["label"] == "gate" for item in result.rule_trace)
+
+
+def test_naive_datetime_fails_closed_as_schema_violation() -> None:
+    request = request_one(out_of_scope=True)
+    request["out_of_scope"] = datetime(2026, 10, 11)
+
+    result = adjudicate(request)
+
+    assert result.decision_state == "INVALID_INPUT"
+    assert result.reason_codes == ("SCHEMA_VIOLATION",)
+    assert result.rule_trace == (
+        {"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},
+    )
+    assert verify_output(result.to_dict())
+    assert len(result.output_sha256) == 64
+
+
+@pytest.mark.parametrize("non_finite", [float("nan"), float("inf")])
+def test_non_finite_float_fails_closed_as_schema_violation(
+    non_finite: float,
+) -> None:
+    request = request_one(out_of_scope=True)
+    request["out_of_scope"] = non_finite
+
+    result = adjudicate(request)
+
+    assert result.decision_state == "INVALID_INPUT"
+    assert result.reason_codes == ("SCHEMA_VIOLATION",)
+    assert result.rule_trace == (
+        {"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},
+    )
+    assert verify_output(result.to_dict())
+    assert len(result.output_sha256) == 64
