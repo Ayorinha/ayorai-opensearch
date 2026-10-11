@@ -1,7 +1,7 @@
-from collections.abc import AsyncIterator
 import json
-from typing import Any
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -18,16 +18,16 @@ from ayorai_attractor.models import (
 )
 from ayorai_attractor.orchestrator import Attractor
 from ayorai_attractor.verification.api_models import (
-    Judge2VerificationRequest,
     ClaimJudgmentResponse,
+    Judge2VerificationRequest,
     Traceability,
     VerificationAPIResponse,
     VerificationRequest,
 )
 from ayorai_attractor.verification.judge import InvalidJudgeInput, judge
+from ayorai_attractor.verification.judge2 import adjudicate
 from ayorai_attractor.verification.models import Verdict
 from ayorai_attractor.verification.response import ResponsePolicy
-from ayorai_attractor.verification.judge2 import adjudicate
 
 engine = Attractor()
 audit_store = AuditTraceStore()
