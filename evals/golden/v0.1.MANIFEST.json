@@ -1,7 +1,6 @@
 {
   "version": "v0.1",
   "source_commit": "deb1d50f1ed0c35a2b1f51b44991f764c5fd296b",
-  "freeze_workflow_run": 37160714959,
   "files": {
     "evals/golden/v0.1.jsonl": {
       "sha256": "a7076512196c1ee9670478f036f7a3996fe89a483efad140ec7b985a54846fb9"
@@ -18,6 +17,10 @@
   "notes": [
     "This manifest is additive and applies only to Golden v0.1.",
     "Do not modify evals/golden/v0.1.jsonl or evals/golden/MANIFEST.json as part of M2.",
-    "The v0.1 file SHA-256 is recorded from the existing frozen artifact; the source commit is the commit that introduced the v0.1 freeze."
-  ]
+    "The v0.1 file SHA-256 is recorded from the existing frozen artifact; the source commit is the commit that introduced the v0.1 freeze.",
+    "CI run 37160714959 is the ordinary ci.yml run for PR #91 (feat(f1): multilingual hybrid stance engine), triggered by pull_request/synchronize on commit deb1d50f1ed0c35a2b1f51b44991f764c5fd296b; it is not a dedicated freeze workflow.",
+    "Commit deb1d50f1ed0c35a2b1f51b44991f764c5fd296b is not a direct ancestor of main; its content entered the main history through the squash/merge of PR #115 (commit 3be512b)."
+  ],
+  "ci_run_at_source_commit": 37160714959,
+  "case_count": 34
 }
