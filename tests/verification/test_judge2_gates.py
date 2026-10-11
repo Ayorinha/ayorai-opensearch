@@ -20,7 +20,7 @@ def evidence(
     start: int = 0,
     end: int = 10,
     normalized_hash: str | None = None,
-) -> Evidence:
+) -> Any:
     from ayorai_attractor.verification.models import Evidence
 
     return Evidence(
