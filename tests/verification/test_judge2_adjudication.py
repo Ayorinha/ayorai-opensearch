@@ -378,3 +378,5 @@ def test_public_adjudicate_runs_gates_and_returns_deterministic_verdict() -> Non
     assert result.composite_decision is not None
     assert result.composite_decision.verdict == "SUPPORTED"
 
+def test_loaded_contract_hash_matches_approved_contract() -> None:
+    assert rules_sha256() == "493cce66ce45fcb432b8345e7567cfb39858492bfe46d5fa6b584991e79e9efc"
