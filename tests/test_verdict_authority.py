@@ -31,22 +31,22 @@ def _verdict_constructor_violations(src_root: Path) -> list[str]:
             relative.startswith("verification/judge") and path.suffix == ".py"
         )
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
-        verdict_aliases = {"Verdict"}
+
+        class_aliases = {"Verdict"}
         module_aliases: set[str] = set()
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
                 for alias in node.names:
                     if alias.name == "Verdict":
-                        verdict_aliases.add(alias.asname or alias.name)
+                        class_aliases.add(alias.asname or alias.name)
+                    if node.module == "builtins" and alias.name in {"__import__", "exec", "eval"}:
+                        pass
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    imported_name = alias.name
-                    local_name = alias.asname or imported_name.split(".")[0]
-                    if imported_name == "Verdict" or imported_name.endswith(".Verdict"):
-                        verdict_aliases.add(alias.asname or imported_name.split(".")[-1])
-                    # Track module aliases so module.Verdict(...) and
-                    # module.Verdict.SUPPORTED cannot bypass the guard.
-                    module_aliases.add(local_name)
+                    bound_name = alias.asname or alias.name.split(".")[0]
+                    module_aliases.add(bound_name)
+                    if alias.name == "Verdict" or alias.name.endswith(".Verdict"):
+                        class_aliases.add(alias.asname or alias.name.split(".")[-1])
 
         parents: dict[ast.AST, ast.AST] = {}
         for parent in ast.walk(tree):
@@ -63,56 +63,78 @@ def _verdict_constructor_violations(src_root: Path) -> list[str]:
 
         def is_verdict_expression(node: ast.AST) -> bool:
             if isinstance(node, ast.Name):
-                return node.id in verdict_aliases
-            return (
-                isinstance(node, ast.Attribute)
-                and node.attr == "Verdict"
-                and isinstance(node.value, ast.Name)
-                and node.value.id in module_aliases
-            )
+                return node.id in class_aliases
+            if isinstance(node, ast.Attribute) and node.attr == "Verdict":
+                return (
+                    isinstance(node.value, ast.Name)
+                    and node.value.id in module_aliases
+                )
+            return False
 
         if allowed:
             continue
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and (
-                (isinstance(node.func, ast.Name) and node.func.id in verdict_aliases)
-                or is_verdict_expression(node.func)
-            ):
+            if isinstance(node, ast.Call) and is_verdict_expression(node.func):
                 violations.append(f"{relative}:{node.lineno}:constructor")
-            elif isinstance(node, ast.Attribute):
-                if is_verdict_expression(node.value) and not inside_comparison(node):
+            elif isinstance(node, ast.Attribute) and is_verdict_expression(node.value):
+                if not inside_comparison(node):
                     violations.append(f"{relative}:{node.lineno}:member")
-            elif isinstance(node, ast.Subscript):
-                if is_verdict_expression(node.value) and not inside_comparison(node):
+            elif isinstance(node, ast.Subscript) and is_verdict_expression(node.value):
+                if not inside_comparison(node):
                     violations.append(f"{relative}:{node.lineno}:subscript")
     return sorted(violations)
 
 def _judge_import_violations(src_root: Path) -> list[str]:
     violations: list[str] = []
-    dynamic_import_names = {"__import__", "exec", "eval"}
+    forbidden_dynamic_names = {"__import__", "exec", "eval"}
     for path in _python_files(src_root):
         relative = _relative(path, src_root)
         if not (relative.startswith("verification/judge") and path.suffix == ".py"):
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
         imported: list[tuple[str, int]] = []
+        importlib_aliases = {"importlib"}
+        dynamic_call_aliases = set(forbidden_dynamic_names)
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
-                imported.extend((alias.name, node.lineno) for alias in node.names)
+                for alias in node.names:
+                    imported.append((alias.name, node.lineno))
+                    if alias.name == "importlib":
+                        importlib_aliases.add(alias.asname or alias.name)
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ""
                 imported.append((module, node.lineno))
-                imported.extend((f"{module}.{alias.name}" if module else alias.name, node.lineno) for alias in node.names)
+                imported.extend(
+                    (f"{module}.{alias.name}" if module else alias.name, node.lineno)
+                    for alias in node.names
+                )
+                if module == "importlib":
+                    for alias in node.names:
+                        if alias.name == "import_module":
+                            dynamic_call_aliases.add(alias.asname or alias.name)
+                if module == "builtins":
+                    for alias in node.names:
+                        if alias.name in forbidden_dynamic_names:
+                            dynamic_call_aliases.add(alias.asname or alias.name)
             elif isinstance(node, ast.Call):
                 func = node.func
-                if isinstance(func, ast.Name) and func.id in dynamic_import_names:
+                if isinstance(func, ast.Name) and func.id in dynamic_call_aliases:
                     violations.append(f"{relative}:{node.lineno}:{func.id}")
-                elif isinstance(func, ast.Attribute) and func.attr == "import_module":
-                    if isinstance(func.value, ast.Name) and func.value.id == "importlib":
-                        violations.append(f"{relative}:{node.lineno}:importlib.import_module")
+                elif (
+                    isinstance(func, ast.Attribute)
+                    and func.attr == "import_module"
+                    and isinstance(func.value, ast.Name)
+                    and func.value.id in importlib_aliases
+                ):
+                    violations.append(f"{relative}:{node.lineno}:importlib.import_module")
         for module, lineno in imported:
             roots = set(module.split("."))
-            if roots & NETWORK_MODEL_IMPORTS or roots & MODEL_IMPORTS or {"providers", "orchestrator", "importlib"} & roots or module in dynamic_import_names:
+            if (
+                roots & NETWORK_MODEL_IMPORTS
+                or roots & MODEL_IMPORTS
+                or {"providers", "orchestrator", "importlib"} & roots
+                or module in forbidden_dynamic_names
+            ):
                 violations.append(f"{relative}:{lineno}:{module}")
     return sorted(set(violations))
 
@@ -276,6 +298,36 @@ def test_judge_import_guard_detects_dynamic_import_and_eval(tmp_path: Path) -> N
     assert any(":__import__" in item for item in violations)
     assert any(":eval" in item for item in violations)
 
+
+
+def test_verdict_guard_detects_qualified_module_alias_and_comparison_is_allowed(tmp_path: Path) -> None:
+    root = tmp_path / "src" / "ayorai_attractor"
+    _write_source(
+        root, "api/qualified.py",
+        "import package.models as models\\n"
+        "result = models.Verdict.SUPPORTED\\n",
+    )
+    _write_source(
+        root, "api/compare_alias.py",
+        "import package.models as models\\n"
+        "allowed = verdict is models.Verdict.UNVERIFIED\\n",
+    )
+    assert _verdict_constructor_violations(root) == ["api/qualified.py:2:member"]
+
+
+def test_judge_import_guard_detects_aliased_dynamic_imports(tmp_path: Path) -> None:
+    root = tmp_path / "src" / "ayorai_attractor"
+    _write_source(
+        root, "verification/judge_dyn.py",
+        "import importlib as il\\n"
+        "il.import_module('requests')\\n"
+        "from builtins import eval as evaluate\\n"
+        "evaluate('1 + 1')\\n",
+    )
+    violations = _judge_import_violations(root)
+    assert any(":importlib" in item for item in violations)
+    assert any(":importlib.import_module" in item for item in violations)
+    assert any(":evaluate" in item for item in violations)
 
 def test_only_golden_evaluation_reads_legacy_baseline() -> None:
     assert _legacy_reader_violations(SRC) == []
