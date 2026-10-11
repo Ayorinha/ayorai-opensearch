@@ -13,7 +13,6 @@ from ayorai_attractor.verification.judge2 import load_rules  # noqa: E402
 from ayorai_attractor.verification.judge2.adjudication import (  # noqa: E402
     AtomicDecision,
     _atomic_verdict,
-    adjudicate_composite,
 )
 
 VERDICTS = ("SUPPORTED", "PARTIALLY_SUPPORTED", "REFUTED", "UNVERIFIED", "CONFLICTING")
@@ -30,6 +29,30 @@ def _atom_decision(index: int, verdict: str) -> AtomicDecision:
         contradiction_clusters=0,
         rule_id="2.0.0/A1",
     )
+
+
+
+def _composite_from_contract(rules: dict[str, object], decisions: list[AtomicDecision]) -> tuple[str, str]:
+    by_id = {rule["id"]: rule for rule in rules["composite_rules"]}  # type: ignore[index]
+    verdicts = [item.verdict for item in decisions]
+    for rule_id in rules["composite_precedence"]:  # type: ignore[index]
+        rule = by_id[rule_id]
+        predicate = rule["when"]
+        if predicate == "any_atom_REFUTED":
+            matched = "REFUTED" in verdicts
+        elif predicate == "otherwise_any_atom_CONFLICTING":
+            matched = "CONFLICTING" in verdicts
+        elif predicate == "all_atoms_SUPPORTED":
+            matched = all(value == "SUPPORTED" for value in verdicts)
+        elif predicate == "otherwise_any_atom_SUPPORTED":
+            matched = "SUPPORTED" in verdicts
+        elif predicate == "otherwise":
+            matched = True
+        else:
+            raise ValueError(f"unsupported composite predicate: {predicate}")
+        if matched:
+            return str(rule["verdict"]), f"2.0.0/{rule_id}"
+    raise ValueError("composite rules did not produce a decision")
 
 
 def render() -> str:
@@ -64,10 +87,10 @@ def render() -> str:
     for size in range(1, 5):
         for values in product(VERDICTS, repeat=size):
             decisions = [_atom_decision(index, value) for index, value in enumerate(values)]
-            decision = adjudicate_composite(decisions)
+            verdict, rule_id = _composite_from_contract(rules, decisions)
             tuple_text = ", ".join(values)
             lines.append(
-                f"| {size} | `({tuple_text})` | {decision.verdict} | {decision.rule_id} |"
+                f"| {size} | `({tuple_text})` | {verdict} | {rule_id} |"
             )
     lines.append("")
     return "\n".join(lines)
