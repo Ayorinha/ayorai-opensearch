@@ -119,6 +119,22 @@ O registro histórico de componentes R1–R20, com descrições de escopo e link
 | Fontes com origem, licença, finalidade e data registradas | §7.3 | Corpus atual | [NÃO IMPLEMENTADO para documentos reais] | O corpus atual é sintético; não constitui o conjunto de fontes reais documentadas previsto pela especificação. |
 | Resultados e métricas publicados com tamanho, composição e incerteza | §7; `docs/eval/BASELINE-v0.md` | Artefatos de avaliação; `tests/test_judge_evaluation.py`; `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py` | [LIMITAÇÃO DOCUMENTADA] | n=30 no baseline avaliado; os intervalos de confiança incluem o baseline. Não generalizar para além dos dados avaliados. |
 
+## Q2 — Módulos sem cobertura medida: limites de escopo
+
+Esta seção registra explicitamente o limite de evidência para módulos identificados na fila Q2. A presença de um módulo no repositório não comprova seu comportamento. Até que exista teste de contrato pertinente e evidência no SHA revisado, os módulos abaixo não devem ser apresentados como controles verificados.
+
+| Módulo | Tratamento atual | Condição para sair deste estado |
+|---|---|---|
+| `src/ayorai_attractor/cli/main.py` | Teste mínimo de contrato pendente na F1.4; não declarar comportamento verificado antes do teste. | Adicionar teste de contrato, executar a suíte e registrar o check-run/SHA. |
+| `src/ayorai_attractor/memory/core.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
+| `src/ayorai_attractor/observability/audit.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
+| `src/ayorai_attractor/observability/opentelemetry.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
+| `src/ayorai_attractor/providers/catalog.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
+| `src/ayorai_attractor/research_contract.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
+| `src/ayorai_attractor/security/policy.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
+
+Esta classificação não remove módulos, não altera contratos públicos e não afirma que os módulos são inseguros; apenas impede que sua existência seja confundida com cobertura ou validação. Remoção de qualquer módulo exige decisão nova e registrada. A situação de `cli/main.py` deve ser atualizada somente depois que o teste mínimo previsto for incorporado e verificado.
+
 ## 3. Achados que exigem etapas futuras
 
 1. **ADR-001:** status declarado desatualizado; atualizar somente após decisão do mantenedor. Não editar a ADR nesta PR.
