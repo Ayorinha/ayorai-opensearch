@@ -115,11 +115,12 @@
     {
       "id": "E1",
       "criterion": "valid_offsets_within_source",
-      "rejection": "OFFSET_INVALID"
+      "rejection": "OFFSET_INVALID",
+      "source_unavailable_rejection": "SOURCE_UNAVAILABLE"
     },
     {
       "id": "E2",
-      "criterion": "excerpt_matches_normalized_content_hash_when_present",
+      "criterion": "excerpt_matches_normalized_source_slice_always_and_normalized_content_hash_when_present",
       "rejection": "EXCERPT_MISMATCH"
     },
     {
