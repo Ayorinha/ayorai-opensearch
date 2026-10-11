@@ -56,12 +56,14 @@ def _verdict_constructor_violations(src_root: Path) -> list[str]:
             for child in ast.iter_child_nodes(parent):
                 parents[child] = parent
 
-        def inside_comparison(node: ast.AST) -> bool:
-            parent = parents.get(node)
+        def inside_comparison(
+            node: ast.AST, parent_map: dict[ast.AST, ast.AST] = parents
+        ) -> bool:
+            parent = parent_map.get(node)
             while parent is not None:
                 if isinstance(parent, ast.Compare):
                     return True
-                parent = parents.get(parent)
+                parent = parent_map.get(parent)
             return False
 
         def dotted_name(node: ast.AST) -> str | None:
@@ -72,13 +74,18 @@ def _verdict_constructor_violations(src_root: Path) -> list[str]:
                 return f"{prefix}.{node.attr}" if prefix else None
             return None
 
-        def is_verdict_type(node: ast.AST) -> bool:
+        def is_verdict_type(
+            node: ast.AST,
+            aliases: set[str] = verdict_aliases,
+            modules: set[str] = module_aliases,
+            imports: set[str] = imported_modules,
+        ) -> bool:
             if isinstance(node, ast.Name):
-                return node.id in verdict_aliases
+                return node.id in aliases
             if isinstance(node, ast.Attribute) and node.attr == "Verdict":
                 dotted = dotted_name(node)
                 prefix = dotted.rsplit(".Verdict", 1)[0] if dotted else ""
-                return prefix in module_aliases or prefix in imported_modules
+                return prefix in modules or prefix in imports
             return False
 
         if allowed:
