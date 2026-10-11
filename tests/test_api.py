@@ -5,7 +5,6 @@ from ayorai_attractor.models import (
     Evidence,
     QualityMode,
     SearchResponse,
-    VerificationStatus,
 )
 
 
@@ -15,7 +14,7 @@ class FakeEngine:
             query=request.query,
             mode=QualityMode.BALANCED,
             answer="test",
-            verification=VerificationStatus.SUPPORTED,
+            verification=None,
             confidence=0.9,
             evidence=[
                 Evidence(
@@ -41,7 +40,9 @@ class FakeEngine:
         )
 
 
-def test_audit_endpoint_returns_deterministic_report(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_audit_endpoint_returns_deterministic_report(
+    monkeypatch, tmp_path
+) -> None:  # type: ignore[no-untyped-def]
     from ayorai_attractor.audit_store import AuditTraceStore
 
     monkeypatch.setattr(api, "engine", FakeEngine())
@@ -55,7 +56,10 @@ def test_audit_endpoint_returns_deterministic_report(monkeypatch, tmp_path) -> N
     assert response.status_code == 200
     assert response.json() == {
         "trace_id": "tr_api",
-        "verification": "supported",
+        "verification": None,
+        "verdict_authority": "not_adjudicated",
+        "formal_verification_endpoint": "/v1/verify",
+        "operation_status": "completed",
         "evidence_count": 2,
         "independent_evidence_count": 2,
         "verified_evidence_count": 1,
@@ -72,7 +76,9 @@ def test_audit_endpoint_rejects_short_query() -> None:
     assert response.status_code == 422
 
 
-def test_audit_trace_lookup_returns_persisted_metadata(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_audit_trace_lookup_returns_persisted_metadata(
+    monkeypatch, tmp_path
+) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.setattr(api, "engine", FakeEngine())
     from ayorai_attractor.audit_store import AuditTraceStore
 
@@ -88,11 +94,17 @@ def test_audit_trace_lookup_returns_persisted_metadata(monkeypatch, tmp_path) ->
     assert lookup.status_code == 200
     body = lookup.json()
     assert body["trace_id"] == "tr_api"
+    assert body["verification"] is None
+    assert body["verdict_authority"] == "not_adjudicated"
+    assert body["formal_verification_endpoint"] == "/v1/verify"
+    assert body["operation_status"] == "not_recorded"
     assert body["replay_digest"]
     assert body["evidence_count"] == 2
 
 
-def test_audit_trace_lookup_returns_404_for_unknown_trace(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_audit_trace_lookup_returns_404_for_unknown_trace(
+    monkeypatch, tmp_path
+) -> None:  # type: ignore[no-untyped-def]
     from ayorai_attractor.audit_store import AuditTraceStore
 
     monkeypatch.setattr(

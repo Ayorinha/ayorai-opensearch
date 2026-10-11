@@ -1,6 +1,9 @@
+import sqlite3
+
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
-from ayorai_attractor.models import SearchResponse, VerificationStatus
+from ayorai_attractor.models import SearchResponse
+from ayorai_attractor.replay import ReplayBundle
 
 
 def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
@@ -8,8 +11,8 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
         query="test query",
         mode="balanced",
         answer="test",
-        verification=VerificationStatus.UNVERIFIED,
-        confidence=0.0,
+        verification=None,
+        confidence=None,
         trace_id="tr_persisted",
     )
     report = AuditReport.from_response(response)
@@ -22,8 +25,28 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
 
     assert saved is not None
     assert saved.trace_id == "tr_persisted"
-    assert saved.verification == "unverified"
+    assert saved.verification is None
+    assert saved.verdict_authority == "not_adjudicated"
+    assert saved.formal_verification_endpoint == "/v1/verify"
+    assert saved.operation_status == "not_recorded"
     assert saved.replay_digest == digest
+
+    with sqlite3.connect(tmp_path / "audit.sqlite3") as connection:
+        stored = connection.execute(
+            "SELECT verification FROM audit_traces WHERE trace_id = ?",
+            ("tr_persisted",),
+        ).fetchone()
+    assert stored == ("not_adjudicated",)
+    assert ReplayBundle.build(
+        "tr_persisted",
+        [{
+            "event": "audit.completed",
+            "verification": "not_adjudicated",
+            "evidence_count": 0,
+            "failure_count": 0,
+        }],
+        version="r2-v2",
+    ).digest == digest
 
 
 def test_missing_trace_returns_none(tmp_path) -> None:

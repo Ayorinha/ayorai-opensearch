@@ -130,3 +130,29 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 **Estado:** referência complementar; status e autoridade ainda aguardam confirmação do mantenedor. Nenhuma linha da matriz principal depende deste documento.
 
 Rótulos e conceitos anteriormente associados ao “Prompt Mestre v3”, incluindo §3/L0–L14, GEPA, OWASP ASI, Studio, BM25+kNN+RRF e demais itens desse documento, ficam isolados nesta seção. Não são fonte normativa da matriz canônica `AYORAI-ATTRACTOR-BAL` v1.0.0 e não devem ser usados para declarar conformidade com ela. Caso o mantenedor confirme sua relevância, registrar sua identidade, versão e relação com a especificação canônica antes de reintegrar qualquer requisito.
+
+
+## PR 1.2a — contrato de não adjudicação [PROPOSTO]
+
+- Requisito: apenas o Judge determinístico em `/v1/verify` pode produzir o veredito factual.
+- API de busca e auditoria: `verification=null`, `verdict_authority=not_adjudicated`, `formal_verification_endpoint=/v1/verify`; falhas operacionais ficam em `operation_status`.
+- Orquestrador: não consulta `EvidenceStore.status()` para decidir o veredito e não reaproveita a saída dos agentes como declaração de verificação factual.
+- Persistência transitória: enquanto `verification` continuar `NOT NULL`, grava-se `not_adjudicated`; a resposta pública da consulta de auditoria não expõe esse marcador como veredito.
+- Testes de contrato atualizados; execução, digests semânticos e hashes de artefatos congelados dependem de verificação independente do Cláudio no SHA exato.
+- Limitação: `VerificationStatus` e `EvidenceStore.status()` permanecem no código até a PR 1.3; não devem ser usados como autoridade de decisão.
+- Estado: [PROPOSTO] até revisão independente, CI verde e confirmação da tag `baseline-legacy-v0`.
+
+
+## PR 1.2a — contrato sem adjudicação factual [PENDENTE DE REVISÃO]
+
+- O orquestrador preserva a análise produzida pelos agentes, mas a separa do veredito factual;
+  `notice` informa que nenhum veredito foi adjudicado e direciona a `/v1/verify`.
+- `verification=null`, `verdict_authority=not_adjudicated`; falhas operacionais são expostas em `operation_status`.
+- `confidence` é depreciado e retorna `null`; remoção planejada para v0.5.0.
+- `r2-v1` identifica eventos históricos com semântica legada; `r2-v2` identifica novos eventos
+  `not_adjudicated`. Consultas de auditoria retornam `not_recorded` até a migração de persistência
+  da PR 1.2b.
+- A regeneração do baseline legado é bloqueada nesta versão e orienta a execução a partir da tag
+  histórica; manifesto congelado não é alterado.
+- Verificação de testes, lint, tipos, hashes congelados e semantic_sha256: pendente do Cláudio
+  no SHA final da PR.

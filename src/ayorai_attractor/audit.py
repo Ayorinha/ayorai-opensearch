@@ -12,7 +12,6 @@ from ayorai_attractor.models import (
     Failure,
     QualityMode,
     SearchResponse,
-    VerificationStatus,
 )
 
 
@@ -75,18 +74,9 @@ class AuditReport:
         for failure in response.failures:
             findings.append(_failure_finding(failure))
 
-        if response.verification.value in {"failed", "insufficient_evidence"}:
-            findings.append(
-                AuditFinding(
-                    "NON_VERIFIED_RESPONSE",
-                    AuditSeverity.ERROR,
-                    f"Verification status is {response.verification.value}.",
-                )
-            )
-
         return cls(
             trace_id=response.trace_id,
-            verification=response.verification.value,
+            verification="not_adjudicated",
             evidence_count=len(evidence),
             independent_evidence_count=len(independent),
             verified_evidence_count=len(verified),
@@ -113,8 +103,6 @@ def audit_evidence(
         query="audit",
         mode=QualityMode.BALANCED,
         answer="audit",
-        verification=VerificationStatus.UNVERIFIED,
-        confidence=0.0,
         evidence=evidence,
         failures=failures or [],
         agents_used=[],

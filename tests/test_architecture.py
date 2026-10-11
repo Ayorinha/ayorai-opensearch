@@ -34,4 +34,6 @@ def test_benchmark_is_multidimensional() -> None:
 
 def test_deep_request_never_claims_unimplemented_verification() -> None:
     result = Attractor().run(SearchRequest(query="deep test", mode="deep", max_agents=26))
-    assert result.verification.value == "unverified"
+    assert result.verification is None
+    assert result.verdict_authority == "not_adjudicated"
+    assert result.formal_verification_endpoint == "/v1/verify"

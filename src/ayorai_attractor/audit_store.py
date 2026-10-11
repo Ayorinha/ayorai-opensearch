@@ -48,12 +48,12 @@ class AuditTraceStore:
         events = [
             {
                 "event": "audit.completed",
-                "verification": report.verification,
+                "verification": "not_adjudicated",
                 "evidence_count": report.evidence_count,
                 "failure_count": report.failure_count,
             }
         ]
-        replay = ReplayBundle.build(response.trace_id, events, version="r2-v1")
+        replay = ReplayBundle.build(response.trace_id, events, version="r2-v2")
         connection = self._connection
         connection.execute(
             """
@@ -89,7 +89,10 @@ class AuditTraceStore:
             return None
         return AuditTraceResponse(
             trace_id=str(row[0]),
-            verification=str(row[1]),
+            verification=None,
+            verdict_authority="not_adjudicated",
+            formal_verification_endpoint="/v1/verify",
+            operation_status="not_recorded",
             evidence_count=int(row[2]),
             independent_evidence_count=int(row[3]),
             verified_evidence_count=int(row[4]),

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from ayorai_attractor.agents.core import (
     AgentContext,
     CriticAgent,
@@ -13,7 +15,7 @@ from ayorai_attractor.providers.base import Provider
 from ayorai_attractor.providers.factory import build_default_provider, build_search_provider
 from ayorai_attractor.providers.registry import ProviderRegistry
 
-from .models import FailureType, SearchRequest, SearchResponse, VerificationStatus
+from .models import FailureType, SearchRequest, SearchResponse
 from .router import AdaptiveRouter
 from .tenant import TenantContext
 
@@ -65,8 +67,9 @@ class Attractor:
                     "Execution stopped because the configured provider "
                     "is unavailable."
                 ),
-                verification=VerificationStatus.FAILED,
-                confidence=0.0,
+                verification=None,
+                operation_status="failed",
+                confidence=None,
                 failures=failures.failures,
                 trace_id=trace.trace_id,
             )
@@ -96,29 +99,29 @@ class Attractor:
         trace.event("agents.selected", count=len(selected))
         outputs = [agent.run(context) for agent in selected]
 
-        status = evidence.status()
         trace.event(
-            "verification.completed",
-            status=status.value,
+            "analysis.completed",
             evidence_count=len(evidence.all()),
         )
-        if status is VerificationStatus.UNVERIFIED:
-            answer = (
-                f"Preliminary result for '{request.query}'. "
-                "The MVP generated a local analysis, but independent external "
-                "evidence is not configured, so the result is not verified."
-            )
-            confidence = 0.35
-        else:
-            answer = outputs[-1].output if outputs else "No result."
-            confidence = 0.9
+        answer = next(
+            (item.output for item in reversed(outputs) if item.output.strip()),
+            f"Analysis completed for '{request.query}'. No agent produced output.",
+        )
+        operation_status: Literal["completed", "failed", "not_recorded"] = (
+            "failed"
+            if any(not failure.recoverable for failure in failures.failures)
+            else "completed"
+        )
 
         return SearchResponse(
             query=request.query,
             mode=request.mode,
             answer=answer,
-            verification=status,
-            confidence=confidence,
+            verification=None,
+            verdict_authority="not_adjudicated",
+            formal_verification_endpoint="/v1/verify",
+            operation_status=operation_status,
+            confidence=None,
             evidence=evidence.all(),
             failures=failures.failures,
             agents_used=[agent.name for agent in selected],

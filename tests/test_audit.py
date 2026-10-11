@@ -1,16 +1,13 @@
 from ayorai_attractor.audit import AuditReport, AuditSeverity
-from ayorai_attractor.models import Evidence, SearchResponse, VerificationStatus
+from ayorai_attractor.models import Evidence, SearchResponse
 
 
-def response(
-    evidence: list[Evidence],
-    status: VerificationStatus = VerificationStatus.UNVERIFIED,
-) -> SearchResponse:
+def response(evidence: list[Evidence]) -> SearchResponse:
     return SearchResponse(
         query="test",
         mode="balanced",
         answer="test",
-        verification=status,
+        verification=None,
         confidence=0.1,
         evidence=evidence,
         failures=[],
@@ -45,7 +42,7 @@ def test_audit_reports_independence_and_verification_counts() -> None:
             verified=False,
         ),
     ]
-    report = AuditReport.from_response(response(evidence, VerificationStatus.SUPPORTED))
+    report = AuditReport.from_response(response(evidence))
     assert report.independent_evidence_count == 2
     assert report.verified_evidence_count == 1
     assert report.failure_count == 0
