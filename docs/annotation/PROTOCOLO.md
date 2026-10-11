@@ -1,5 +1,13 @@
 # Protocolo de anotação PT-BR — versão de trabalho
 
+## Explicação simples
+
+Este protocolo orienta pessoas a registrar afirmações, trechos de evidência e rótulos de forma reproduzível.
+Ele separa o veredito factual do estado da decisão e do motivo registrado.
+As fontes, seus textos originais e as discordâncias ficam rastreáveis; correções não apagam o histórico.
+O Judge determinístico aplica regras versionadas; um modelo de linguagem não decide o veredito.
+O documento é uma proposta de trabalho, não comprova que o benchmark foi anotado ou validado.
+
 **Estado:** proposta de protocolo; não constitui resultado de anotação nem autorização para publicar um benchmark.  
 **Responsável pelo projeto:** Anderson Leon Ayora.  
 **Uso previsto:** preparar anotações humanas rastreáveis para avaliação futura do AYORAI ATTRACTOR.  
@@ -21,20 +29,22 @@ Cada caso deve identificar:
 - `case_id`, versão do esquema e versão do protocolo;
 - texto integral da afirmação original e idioma;
 - origem da afirmação e data de referência, quando fornecidas;
-- lista de átomos, cada qual ligado a um trecho da afirmação original;
-- documentos-fonte e evidências candidatas;
+- lista de átomos, cada qual ligado a um trecho da afirmação original e a um `claim_type` obrigatório;
+- documentos-fonte e evidências candidatas, cada fonte com `origin_id` (identificador da fonte primária de origem) e, quando aplicável, `republication_of` (identificador da fonte republicada);
 - relações de stance por átomo e evidência;
 - rótulo anotado, estado de decisão, códigos de motivo e justificativa baseada em evidência;
 - anotadores, adjudicador quando houver, timestamps e histórico de mudanças.
+
+O campo `claim_type` de cada átomo deve usar exclusivamente um destes valores: `numeric`, `date_deadline`, `legal_reference`, `source_conflict` ou `other`. Esse campo permite métricas estratificadas, incluindo as planejadas para F2.7/F4.4; não deve ser inferido depois apenas para melhorar resultados.
 
 A decomposição em átomos deve preservar o significado da afirmação original. Se não for possível decidir uma decomposição sem introduzir pressupostos, registrar a incerteza e encaminhar para adjudicação, em vez de inventar átomos.
 
 ## 3. Spans e offsets
 
-- Registrar offsets como índices inteiros de início inclusivo e fim exclusivo, em relação ao texto-fonte exato e à codificação definida pelo esquema.
+- Registrar offsets como índices inteiros de início inclusivo e fim exclusivo, medidos em code points Unicode (os índices de `str` do Python), compatíveis com `Evidence.start_offset` e `Evidence.end_offset`. Aplicar os offsets ao texto-fonte exato, sem normalização NFC/NFKC.
 - O trecho citado deve ser reproduzível aplicando os offsets ao texto-fonte identificado.
 - Início e fim precisam estar dentro dos limites do texto; o fim deve ser maior que o início.
-- Não calcular offsets sobre texto normalizado quando o identificador de origem se refere ao texto original.
+- Não calcular offsets sobre texto normalizado quando o identificador de origem se refere ao texto original. Se for necessária normalização, armazená-la como campo/texto derivado separado, com seu próprio identificador, regra de normalização e offsets; nunca substituir o texto de origem.
 - Se houver conversão de PDF, OCR ou HTML para texto, preservar o artefato de origem, o método de extração e o hash do texto extraído. Marcar possíveis erros de extração.
 
 ## 4. Relação entre evidência e afirmação
@@ -45,7 +55,7 @@ Para cada par átomo–evidência, registrar exatamente uma relação primária:
 - `CONTRADICTS`: o trecho contradiz explicitamente o átomo;
 - `NEUTRAL`: o trecho não estabelece suporte nem contradição suficiente.
 
-A relação descreve o trecho e o átomo anotados, não a confiabilidade geral da fonte. Uma evidência neutra não deve ser contada como suporte ou contradição. Se um trecho contiver conteúdo misto, dividir a anotação em unidades menores quando isso puder ser feito sem perder contexto; caso contrário, registrar a ambiguidade para adjudicação.
+A relação descreve o trecho e o átomo anotados, não a confiabilidade geral da fonte. Para avaliar independência conforme a ADR-006, registrar `origin_id` para identificar a origem primária e `republication_of` quando uma fonte reproduzir outra. Uma republicação não conta como fonte independente da fonte original; não presumir independência apenas porque há URLs, domínios ou cópias diferentes. Uma evidência neutra não deve ser contada como suporte ou contradição. Se um trecho contiver conteúdo misto, dividir a anotação em unidades menores quando isso puder ser feito sem perder contexto; caso contrário, registrar a ambiguidade para adjudicação.
 
 ## 5. Números, datas, unidades e condições
 
