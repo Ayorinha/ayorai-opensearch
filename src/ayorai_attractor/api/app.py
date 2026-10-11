@@ -16,7 +16,7 @@ from ayorai_attractor.verification.api_models import (
     VerificationAPIResponse,
     VerificationRequest,
 )
-from ayorai_attractor.verification.judge import judge
+from ayorai_attractor.verification.judge import InvalidJudgeInput, judge
 from ayorai_attractor.verification.models import Verdict
 from ayorai_attractor.verification.response import ResponsePolicy
 
@@ -79,13 +79,16 @@ def verify(request: VerificationRequest) -> VerificationAPIResponse:
 
     try:
         judgments, verdict = judge(request.claims, request.evidence, request.stances)
-    except ValueError as exc:
+    except InvalidJudgeInput as exc:
         raise HTTPException(
             status_code=422,
-            detail={
-                "code": "invalid_verification_input",
-                "message": str(exc),
-            },
+            detail=[
+                {
+                    "type": exc.code,
+                    "loc": ["body", exc.field],
+                    "msg": str(exc),
+                }
+            ],
         ) from exc
     status = (
         ResponsePolicy.ABSTAIN_NO_ANSWER
