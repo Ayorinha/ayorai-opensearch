@@ -64,14 +64,10 @@ When evidence conflicts, ATTRACTOR can return <code>CONFLICTING</code> instead o
 
 ## Where it applies
 
-| Sector | Example use |
+| Current domain | Scope |
 |---|---|
-| Financial services | verify that an AI explanation matches approved evidence and policy |
-| Capital markets | verify that AI summaries preserve reported facts and figures |
-| Insurance | validate answers against policy wording and supporting evidence |
-| Legal and compliance | detect citations that do not support the argument being made |
-| Public sector | preserve evidence trails for AI-assisted answers to citizens |
-| Internal audit | maintain a reproducible evidence record for AI-assisted conclusions |
+| Brazilian telecommunications regulation (D10) | Initial focus: verification of claims against evidence in Anatel consumer-rights regulation (RGC). This is a research and engineering focus, not a certification or claim of legal compliance. |
+| Other possible domains (outside current scope) | Financial services, capital markets, insurance, legal and compliance, public sector, and internal audit are illustrative future applications; they are not the current validated domain. |
 
 ## Evidence (historical measurements, v0.3.0)
 
@@ -110,32 +106,34 @@ Local `.attractor/` audit and replay data must not be versioned; evidence requir
 
 ## Evaluation glossary
 
-- **F0–F6:** roadmap phases (for example, F1 means the multilingual-stance phase), not statistical metrics.
+- **Phase labels:** the roadmap below describes the current delivery sequence; they are project stages, not statistical metrics.
 - **macro-F1:** the macro-averaged F1 classification metric; report it separately from accuracy and balanced accuracy.
 - **E1:** the historical evaluation/reporting label for the global-verdict accuracy results described above.
 
-## Roadmap F0–F6
+## Delivery roadmap
 
 ~~~mermaid
-flowchart LR
-    F0["F0<br/>Deterministic verification"] --> F1["F1<br/>Multilingual stance"]
-    F1 --> F2["F2<br/>Span-level evidence"]
-    F2 --> F3["F3<br/>Public benchmarks"]
-    F3 --> F4["F4<br/>Hidden Golden v1 in Portuguese"]
-    F4 --> F5["F5<br/>Adoption"]
-    F5 --> F6["F6<br/>Hardened release"]
-    PT["AYORAI-PT-NLI<br/>Portuguese stance path"] --> F2
-    F1 --> PT
+flowchart TD
+    P1["Phase 1 — Completed · v0.4.0<br/>Single Judge authority<br/>Tamper-evident audit trail<br/>Structured HTTP 422 errors"] --> P2["Phase 2 — Judge 2.0<br/>ADR-009 deterministic adjudication contract"]
+    P2 --> P21["2.1 — Contract<br/>Completed"]
+    P2 --> P22["2.2 — Pre-adjudication gates<br/>Completed"]
+    P2 --> P23["2.3 — Atomic and composite rules<br/>In progress"]
+    P23 --> P3["Reproducibility"]
+    P3 --> P4["PT-BR benchmark<br/>Anatel RGC domain"]
+    P4 --> P5["Demonstration"]
+    P5 --> P6["Institutional package"]
 ~~~
 
-The roadmap keeps the deterministic Judge outside the model. **AYORAI-PT-NLI** is a future stance-classification path; it does not become the final adjudicator.
+The deterministic Judge remains outside the model and remains the sole authority for the final verdict. Language models and stance classifiers may provide signals, but they do not issue the final decision. The roadmap describes planned delivery stages, not completed capabilities beyond the statuses explicitly marked above.
 
 ## Quickstart
 
 ~~~bash
 git clone https://github.com/Ayorinha/ayorai-opensearch.git
 cd ayorai-opensearch
-git checkout feat/f1-multilingual-stance
+git checkout main
+# Optional: use the stable v0.4.0 release instead of the latest main branch
+# git checkout v0.4.0
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,nli]"
