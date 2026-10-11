@@ -30,7 +30,7 @@ PY
 
 ## Recorded output
 
-These metric values were supplied from Cláudio's local execution of the base-commit code. The PR 0.9 tests and CI repeat the evaluations and assert the same values.
+These metric values were supplied from a local execution of the base-commit code. The PR 0.9 tests and CI repeat the evaluations and assert the same values.
 
 ### Golden v0
 
