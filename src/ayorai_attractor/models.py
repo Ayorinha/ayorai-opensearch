@@ -10,16 +10,6 @@ class QualityMode(StrEnum):
     DEEP = "deep"
 
 
-class VerificationStatus(StrEnum):
-    VERIFIED = "verified"
-    SUPPORTED = "supported"
-    PARTIALLY_SUPPORTED = "partially_supported"
-    CONFLICTING = "conflicting"
-    INSUFFICIENT_EVIDENCE = "insufficient_evidence"
-    UNVERIFIED = "unverified"
-    FAILED = "failed"
-
-
 class FailureType(StrEnum):
     TIMEOUT = "timeout"
     API_ERROR = "api_error"
