@@ -187,6 +187,7 @@ def _validate_g1(
             "stances",
             "only one stance is allowed for each atom/evidence pair",
         )
+    return None
 
 
 def _abstention_codes(
