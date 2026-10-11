@@ -28,7 +28,7 @@ A arquitetura pode apoiar controles relacionados a:
 
 - **art. 6º, VI:** transparência;
 - **art. 6º, X:** responsabilização e prestação de contas;
-- **art. 20:** revisão de decisões automatizadas, quando aplicável;
+- **art. 20:** direito de solicitar a revisão de decisões tomadas unicamente com base em tratamento automatizado, quando aplicável;
 - **art. 37:** registro das operações de tratamento;
 - **art. 46:** medidas de segurança técnicas e administrativas;
 - **art. 50:** boas práticas e governança.
@@ -37,7 +37,7 @@ O projeto deve ser usado como componente técnico de um programa mais amplo. **N
 
 ## PL 2.338/2023
 
-A tramitação do **PL 2.338/2023** é dinâmica. Consulte a [ficha oficial da Câmara dos Deputados](https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2487262) antes de qualquer decisão de produto ou implantação; esta página não substitui a conferência do texto vigente, dos apensados e dos atos legislativos mais recentes.
+**Status consultado em 11/10/2026:** aprovado no Senado; em tramitação na Câmara dos Deputados. A ficha oficial informa que aguarda parecer do relator na Comissão Especial e registra como última ação a apensação de 02/09/2026. Consulte a [ficha oficial da Câmara dos Deputados](https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2487262) e reconfirme o andamento na data de cada nova publicação.
 
 O ATTRACTOR pode apoiar mecanismos de documentação, rastreabilidade e avaliação, mas não substitui obrigações legais futuras ou controles específicos que venham a ser exigidos.
 
@@ -52,7 +52,7 @@ Para trabalhos de auditoria, a arquitetura pode apoiar:
 - reprodução da regra de decisão;
 - separação entre análise do modelo e autoridade do Judge.
 
-Referências técnicas de auditoria incluem **NBC TA 500** para evidência de auditoria e **NBC TA 230** para documentação de auditoria, conforme o contexto profissional aplicável.
+Este documento não estabelece conformidade com normas profissionais de auditoria; referências específicas só devem ser incluídas após conferência de fonte primária oficial e da edição vigente.
 
 ## Governança de IA
 
@@ -68,16 +68,11 @@ O ATTRACTOR pode apoiar esses objetivos por meio de:
 
 Isso não significa que o projeto, isoladamente, atenda a qualquer regime regulatório.
 
-## Setores e vereditos úteis
+## Domínio jurídico delimitado
 
-| Contexto | Vereditos especialmente úteis |
-|---|---|
-| Serviços financeiros | <code>VERIFIED</code>, <code>SUPPORTED</code>, <code>CONFLICTING</code>, <code>UNVERIFIED</code> |
-| Mercado de capitais | <code>VERIFIED</code>, <code>CONFLICTING</code>, <code>REFUTED</code> |
-| Seguros | <code>SUPPORTED</code>, <code>PARTIALLY_SUPPORTED</code>, <code>UNVERIFIED</code> |
-| Jurídico e compliance | <code>SUPPORTED</code>, <code>REFUTED</code>, <code>CONFLICTING</code> |
-| Setor público | <code>VERIFIED</code>, <code>UNVERIFIED</code>, <code>CONFLICTING</code> |
-| Auditoria interna | todos, conforme o caso de uso |
+O domínio jurídico previsto para avaliação futura é a regulação de telecomunicações, começando pelo Regulamento Geral de Direitos do Consumidor de Serviços de Telecomunicações (RGC), aprovado pela Resolução Anatel nº 765/2023 ([fonte primária da Anatel](https://informacoes.anatel.gov.br/legislacao/resolucoes/2023/1900-resolucao-765%29)). Esta referência delimita um possível corpus de avaliação; não indica parceria, apoio ou validação pela Anatel.
+
+O escopo não promete análise geral do setor público, auditoria de órgãos federais, interpretação jurídica, hierarquia normativa, revogação ou análise jurisprudencial. O Judge permanece determinístico: referências normativas estruturais e datas de vigência podem ser metadados, não conclusões jurídicas.
 
 ## O que ainda falta
 
@@ -97,7 +92,7 @@ Antes de uma implantação regulada, ainda são necessários, conforme o caso:
 
 ## Fontes normativas oficiais
 
-- **LGPD — Lei nº 13.709/2018:** [texto compilado no Planalto](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm). A aplicação dos artigos depende do contexto concreto de tratamento.
+- **LGPD — Lei nº 13.709/2018, art. 20:** o titular tem o direito de solicitar a revisão de decisões tomadas unicamente com base em tratamento automatizado. A lei não deve ser descrita aqui como exigindo revisão humana. [Texto oficial no Planalto](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm). A aplicação depende do contexto concreto de tratamento.
 - **PL 2.338/2023:** [tramitação oficial na Câmara dos Deputados](https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2487262). Verificar o andamento atual no momento da consulta.
 - **Regulamento Europeu de IA (Regulamento (UE) 2024/1689):** [texto oficial no EUR-Lex](https://eur-lex.europa.eu/eli/reg/2024/1689/oj). A aplicabilidade depende do âmbito e das datas de aplicação pertinentes.
 - **ISO/IEC 42001:** [página oficial da ISO](https://www.iso.org/standard/81230.html). A referência à norma não significa que o projeto seja certificado.
