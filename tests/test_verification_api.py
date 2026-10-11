@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from ayorai_attractor.api.app import app
@@ -111,3 +114,34 @@ def test_verify_rejects_extra_fields_and_invalid_schema_version() -> None:
 
     assert extra.status_code == 422
     assert invalid_version.status_code == 422
+
+
+def test_r1_a_response_bytes_match_pre_policy_baseline() -> None:
+    fixture_path = Path(__file__).parent / "fixtures" / "r1-a-response-baseline.json"
+    baseline = json.loads(fixture_path.read_text(encoding="utf-8"))
+    assert baseline["protocol"] == "r1-a"
+
+    client = TestClient(app)
+    for case in baseline["cases"]:
+        response = client.post("/v1/verify", json=case["request"])
+        assert response.status_code == case["expected_status_code"], case["name"]
+        assert response.headers["content-type"] == case["expected_content_type"], case["name"]
+        assert response.content.decode("utf-8") == case["expected_body"], case["name"]
+
+    for case in baseline["invalid_requests"]:
+        response = client.post("/v1/verify", json=case["request"])
+        assert response.status_code == case["expected_status_code"], case["name"]
+        assert response.headers["content-type"] == case["expected_content_type"], case["name"]
+        assert response.content.decode("utf-8") == case["expected_body"], case["name"]
+
+
+def test_r1_a_known_invalid_inputs_are_frozen_as_current_500_defects() -> None:
+    fixture_path = Path(__file__).parent / "fixtures" / "r1-a-response-baseline.json"
+    baseline = json.loads(fixture_path.read_text(encoding="utf-8"))
+    client = TestClient(app, raise_server_exceptions=False)
+
+    for case in baseline["known_defects"]:
+        response = client.post("/v1/verify", json=case["request"])
+        assert response.status_code == case["expected_status_code"], case["name"]
+        assert response.headers["content-type"] == case["expected_content_type"], case["name"]
+        assert response.content.decode("utf-8") == case["expected_body"], case["name"]
