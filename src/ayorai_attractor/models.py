@@ -115,3 +115,6 @@ class AuditTraceResponse(BaseModel):
     failure_count: int = Field(ge=0)
     finding_count: int = Field(ge=0)
     replay_digest: str
+    legacy_verification: str | None = None
+    replay_version: Literal["r2-v1", "r2-v2"]
+    replay_integrity: Literal["valid", "invalid"]
