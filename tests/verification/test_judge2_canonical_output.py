@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from ayorai_attractor.verification.judge2 import adjudicate
+from ayorai_attractor.verification.judge2 import adjudicate, verify_output
 from ayorai_attractor.verification.models import Evidence
 
 
@@ -123,3 +123,57 @@ def test_three_fixed_output_sha256_vectors() -> None:
     actual = [adjudicate(request).output_sha256 for request, _ in vectors]
     expected = [digest for _, digest in vectors]
     assert actual == expected
+
+
+
+def test_result_containers_are_deeply_immutable_and_digest_verifiable() -> None:
+    result = adjudicate(request_one())
+    with pytest.raises(TypeError):
+        result.coverage["supported"] = 99  # type: ignore[index]
+    with pytest.raises(TypeError):
+        result.atoms[0]["verdict"] = "REFUTED"  # type: ignore[index]
+    with pytest.raises(TypeError):
+        result.atoms[0]["admitted_evidence"][0]["stance"] = "CONTRADICTS"  # type: ignore[index]
+
+    canonical = result.to_dict()
+    assert verify_output(canonical)
+    canonical["coverage"]["supported"] = 99
+    assert not verify_output(canonical)
+
+
+def test_supported_datetimes_have_distinct_canonical_input_hashes() -> None:
+    first = request_one(out_of_scope=True)
+    second = request_one(out_of_scope=True)
+    first["out_of_scope"] = datetime(2020, 1, 1, tzinfo=UTC)
+    second["out_of_scope"] = datetime(2030, 1, 1, tzinfo=UTC)
+
+    first_result = adjudicate(first)
+    second_result = adjudicate(second)
+    assert first_result.input_sha256 != second_result.input_sha256
+
+
+def test_unsupported_input_fails_closed_as_schema_violation() -> None:
+    request = request_one()
+    request["out_of_scope"] = object()
+    result = adjudicate(request)
+
+    assert result.decision_state == "INVALID_INPUT"
+    assert result.reason_codes == ("SCHEMA_VIOLATION",)
+    assert result.verdict is None
+
+
+@pytest.mark.parametrize(
+    ("input_case", "expected_state", "expected_rule_id"),
+    [
+        (request_one(invalid=True), "INVALID_INPUT", "2.0.0/G1:NO_ATOMS"),
+        (request_one(out_of_scope=True), "ABSTAINED", "2.0.0/G2:OUT_OF_SCOPE"),
+    ],
+)
+def test_gate_outcomes_have_rule_trace(
+    input_case: dict[str, object], expected_state: str, expected_rule_id: str
+) -> None:
+    result = adjudicate(input_case)
+    assert result.decision_state == expected_state
+    assert result.rule_trace
+    assert result.rule_trace[0]["rule_id"] == expected_rule_id
+    assert all(item["label"] == "gate" for item in result.rule_trace)
