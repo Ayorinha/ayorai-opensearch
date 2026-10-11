@@ -17,6 +17,19 @@ from ayorai_attractor.verification.models import Evidence
 SUPPORTED_PROTOCOL_VERSION = "r2-a"
 DecisionState = Literal["INVALID_INPUT", "ABSTAINED"]
 
+IMPLEMENTED_G1_CODES = frozenset({
+    "SCHEMA_VIOLATION", "EMPTY_CLAIM", "NO_ATOMS", "DUPLICATE_ID",
+    "DANGLING_REFERENCE", "DUPLICATE_STANCE", "ATOM_SPAN_OUT_OF_RANGE",
+    "UNSUPPORTED_PROTOCOL_VERSION",
+})
+IMPLEMENTED_G2_CODES = frozenset({
+    "OUT_OF_SCOPE", "NON_FACTUAL_CLAIM", "MISSING_TEMPORAL_ANCHOR",
+    "RETRIEVAL_FAILURE", "EVIDENCE_POOL_INTEGRITY_FAILURE",
+})
+IMPLEMENTED_E_REJECTIONS = frozenset({
+    "OFFSET_INVALID", "SOURCE_UNAVAILABLE", "EXCERPT_MISMATCH", "NEUTRAL_STANCE",
+})
+
 
 @dataclass(frozen=True)
 class EvidenceDisposition:
@@ -329,5 +342,8 @@ def evaluate_gates(
 __all__ = [
     "EvidenceDisposition",
     "GateResult",
+    "IMPLEMENTED_G1_CODES",
+    "IMPLEMENTED_G2_CODES",
+    "IMPLEMENTED_E_REJECTIONS",
     "evaluate_gates",
 ]
