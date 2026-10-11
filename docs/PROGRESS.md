@@ -10,7 +10,7 @@ This page intentionally does not maintain a second feature-by-feature status tab
 
 ## Execution discipline
 
-- Work follows the approved queue in the current Prompt Mestre.
+- Work follows the approved queue in the current execution plan.
 - Changes to frozen artifacts require explicit maintainer authorization and a dedicated review gate.
 - A feature is not complete merely because documentation or a test file exists; evidence must identify the actual code path and exact commit tested.
 - Independent review, CI results, and maintainer-reported status are distinct evidence categories.
