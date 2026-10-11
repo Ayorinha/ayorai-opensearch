@@ -18,7 +18,7 @@ Fonte primária: [Lei nº 9.610, de 19 de fevereiro de 1998 — Planalto](https:
 | `planalto-lei-9610-1998` | Lei nº 9.610, de 19 de fevereiro de 1998 | Presidência da República — Planalto | [Texto oficial](https://www.planalto.gov.br/ccivil_03/leis/l9610.htm) | 1998-02-19 | Candidato; captura exata, data de coleta e SHA-256 pendentes |
 | `planalto-lgpd-13709-2018` | Lei nº 13.709, de 14 de agosto de 2018 — Lei Geral de Proteção de Dados Pessoais | Presidência da República — Planalto | [Texto oficial](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm) | 2018-08-14 | Candidato; captura exata, data de coleta e SHA-256 pendentes |
 
-As datas acima identificam a data do ato, não atestam a vigência atual. A página e o conteúdo exato devem ser conferidos no momento da captura. Não inferir vigência ou situação consolidada apenas a partir desta tabela.
+As datas acima identificam a data do ato, não atestam a vigência atual. Na consulta à página oficial da Resolução 765/2023, a própria Anatel apresenta ressalva de vigência parcial e remissões a atos posteriores. Por isso, a situação temporal deve ser capturada por dispositivo e com referência à fonte primária pertinente; não inferir vigência ou situação consolidada apenas a partir desta tabela. A página e o conteúdo exato devem ser conferidos novamente no momento da captura.
 
 ## Captura e aprovação de um registro
 
