@@ -126,6 +126,10 @@ def _validate_rules(rules: dict[str, Any]) -> None:
             required_fields = allowed_fields
             if section in {"input_gate", "abstention"}:
                 required_fields = allowed_fields
+            elif section == "evidence_admissibility":
+                required_fields = {"id", "criterion", "rejection"}
+                if entry.get("id") == "E1":
+                    required_fields.add("source_unavailable_rejection")
             elif section == "composite_rules":
                 required_fields = {"id", "when", "verdict"}
                 if not ({"robustness_atoms", "robustness"} & set(entry)):
