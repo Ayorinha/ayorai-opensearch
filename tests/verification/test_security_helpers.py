@@ -72,4 +72,7 @@ def test_assert_no_secret_accepts_response_without_secret() -> None:
 
 def test_assert_no_secret_rejects_secret_in_nested_response() -> None:
     with pytest.raises(ValueError, match="response contains an evaluation secret"):
-        assert_no_secret({"report": {"details": ["ok", {"secret": "token-secreto"}]}}, "token-secreto")
+        assert_no_secret(
+            {"report": {"details": ["ok", {"secret": "token-secreto"}]}},
+            "token-secreto",
+        )

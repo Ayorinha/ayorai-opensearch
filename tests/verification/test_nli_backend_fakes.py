@@ -30,7 +30,11 @@ class FakeTorch:
 
     @staticmethod
     def argmax(probabilities: list[FakeScalar]) -> FakeScalar:
-        return FakeScalar(max(range(len(probabilities)), key=lambda index: probabilities[index].item()))
+        winner = max(
+            range(len(probabilities)),
+            key=lambda index: probabilities[index].item(),
+        )
+        return FakeScalar(winner)
 
 
 class FakeTokenizer:
