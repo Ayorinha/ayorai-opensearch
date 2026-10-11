@@ -361,6 +361,8 @@ def _canonical_input(
 ) -> dict[str, Any]:
     """Normalize order-insensitive collections before hashing the request."""
     payload = _json_safe(request, allow_unsupported=allow_unsupported)
+    if not isinstance(payload, dict):
+        raise TypeError("canonical input must be a JSON object")
     for field, keys in (
         ("atoms", ("id",)),
         ("evidence", ("id",)),
