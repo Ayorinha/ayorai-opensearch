@@ -5,6 +5,7 @@ are derived from the validated Evidence objects carried by GateResult.
 """
 from __future__ import annotations
 
+import hashlib
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -318,7 +319,7 @@ def _build_result(
     from . import canonical_json_bytes
 
     canonical_input = canonical_json_bytes(_canonical_input(request))
-    input_digest = __import__("hashlib").sha256(canonical_input).hexdigest()
+    input_digest = hashlib.sha256(canonical_input).hexdigest()
     if decision_state == "DECIDED":
         if composite_decision is None:
             raise ValueError("DECIDED result must contain a composite decision")
@@ -395,7 +396,7 @@ def _build_result(
         "atoms": output_atoms,
         "rule_trace": trace,
     }
-    output_digest = __import__("hashlib").sha256(canonical_json_bytes(base)).hexdigest()
+    output_digest = hashlib.sha256(canonical_json_bytes(base)).hexdigest()
     return AdjudicationResult(
         judge_rules_version="2.0.0",
         decision_state=decision_state,
