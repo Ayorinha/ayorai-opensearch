@@ -8,6 +8,10 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
 
 ## DEC-001 — F3.5: uv lockfile and Docker image digests
 
+- **Data:** 11/10/2026
+- **Bloqueia:** F3.5
+- **Recomendação técnica:** Adotar `uv.lock` e fixar imagens-base Docker por digest, com procedimento documentado de atualização de segurança. O repositório já contém `docker/Dockerfile` e `docker-compose.yml`, mas não contém `uv.lock`; portanto, a decisão deve cobrir tanto a reprodução das dependências Python quanto a identidade das imagens.
+
 - **Status:** Pending maintainer decision
 - **Decision area:** Reproducible builds and software supply-chain controls
 - **Question:** Should the project adopt a committed `uv.lock` and pin Docker base images by immutable digest?
@@ -20,6 +24,10 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
 - **Approval gate:** Anderson selects an option; Cláudio reviews the implementation proposal before any implementation PR.
 
 ## DEC-002 — F4.2: licensing and provenance of source material
+
+- **Data:** 11/10/2026
+- **Bloqueia:** F4.2 e a coleta de dados da Fase 4
+- **Recomendação técnica:** Exigir licença ou permissão verificável, proveniência e condições de uso registradas para cada fonte destinada a fixtures distribuíveis; excluir do conjunto público o material com direitos não esclarecidos. Isso reduz o risco de redistribuição indevida e mantém auditável a origem dos dados.
 
 - **Status:** Pending maintainer decision
 - **Decision area:** Source licensing, permissions, provenance, and evaluation-data governance
@@ -34,6 +42,10 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
 
 ## DEC-003 — M1: ADR-001 status transition to Accepted
 
+- **Data:** 11/10/2026
+- **Bloqueia:** M1
+- **Recomendação técnica:** Manter o status atual de ADR-001 até confirmar que decisão, consequências, implementação e testes correspondem ao texto. Só mudar para `Accepted` após revisão explícita do mantenedor e conferência de rastreabilidade pelo Cláudio; não inferir aceitação a partir de implementação parcial.
+
 - **Status:** Pending maintainer decision
 - **Decision area:** Architecture decision governance
 - **Question:** Is ADR-001 accurate and sufficiently implemented to change its status to `Accepted`, or must its scope and evidence be revised first?
@@ -46,6 +58,10 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
 - **Approval gate:** Anderson explicitly approves the status change; Cláudio checks the exact ADR diff and its references.
 
 ## DEC-004 — M3: commercial documentation and repository name
+
+- **Data:** 11/10/2026
+- **Bloqueia:** M3 e partes da Fase 7
+- **Recomendação técnica:** Manter `ayorai-opensearch` enquanto se atualiza a documentação comercial com afirmações limitadas às capacidades e avaliações verificadas. Adiar renomeação até existir decisão de posicionamento e plano para links, badges e referências externas, reduzindo quebra desnecessária de URLs.
 
 - **Status:** Pending maintainer decision
 - **Decision area:** Public positioning, product documentation, and repository identity
