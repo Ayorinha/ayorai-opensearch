@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from itertools import product
+from typing import Any
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,10 +33,10 @@ def _atom_decision(index: int, verdict: str) -> AtomicDecision:
 
 
 
-def _composite_from_contract(rules: dict[str, object], decisions: list[AtomicDecision]) -> tuple[str, str]:
-    by_id = {rule["id"]: rule for rule in rules["composite_rules"]}  # type: ignore[index]
+def _composite_from_contract(rules: dict[str, Any], decisions: list[AtomicDecision]) -> tuple[str, str]:
+    by_id = {rule["id"]: rule for rule in rules["composite_rules"]}
     verdicts = [item.verdict for item in decisions]
-    for rule_id in rules["composite_precedence"]:  # type: ignore[index]
+    for rule_id in rules["composite_precedence"]:
         rule = by_id[rule_id]
         predicate = rule["when"]
         if predicate == "any_atom_REFUTED":
