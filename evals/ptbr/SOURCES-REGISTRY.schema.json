@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ayorinha/ayorai-opensearch/blob/main/evals/ptbr/SOURCES-REGISTRY.schema.json",
+  "title": "AYORAI ATTRACTOR PT-BR source registry",
+  "description": "Registry contract for source provenance. Candidate entries are not approved benchmark evidence until the exact source bytes are captured and hashed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "sources"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "title",
+        "source_type",
+        "issuing_authority",
+        "url",
+        "publication_date",
+        "retrieved_at",
+        "status",
+        "sha256"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "type": "string",
+          "enum": ["normative_act", "official_metadata"]
+        },
+        "issuing_authority": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "publication_date": {
+          "oneOf": [
+            {"type": "string", "format": "date"},
+            {"type": "null"}
+          ]
+        },
+        "retrieved_at": {
+          "oneOf": [
+            {"type": "string", "format": "date-time"},
+            {"type": "null"}
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["candidate", "verified"]
+        },
+        "sha256": {
+          "oneOf": [
+            {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            {"type": "null"}
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"status": {"const": "verified"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+              "retrieved_at": {"type": "string", "format": "date-time"},
+              "publication_date": {"type": "string", "format": "date"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"status": {"const": "candidate"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "sha256": {
+                "oneOf": [
+                  {"type": "null"},
+                  {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
