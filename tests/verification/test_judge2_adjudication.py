@@ -338,26 +338,79 @@ def test_public_adjudicate_rejects_stance_reference_missing_from_source_evidence
     assert result.decision_state == "INVALID_INPUT"
     assert result.composite_decision is None
 
-def test_production_modules_do_not_import_private_judge2_adjudicators() -> None:
+def _assert_no_private_judge2_adjudicator_access(source_root: "Path") -> None:
     import ast
     from pathlib import Path
 
-    root = Path(__file__).resolve().parents[2]
-    source_root = root / "src" / "ayorai_attractor"
     forbidden = {"_adjudicate_atoms", "_adjudicate_composite"}
-    for path in source_root.rglob("*.py"):
+    adjudication_module = "ayorai_attractor.verification.judge2.adjudication"
+    for path in Path(source_root).rglob("*.py"):
         if "/verification/judge2/" in path.as_posix():
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
-                assert not (forbidden & {alias.name for alias in node.names}), (
-                    f"{path} imports a private Judge 2 adjudicator"
-                )
             if isinstance(node, ast.Name):
                 assert node.id not in forbidden, (
                     f"{path} references a private Judge 2 adjudicator"
                 )
+            if isinstance(node, ast.Attribute):
+                assert node.attr not in forbidden, (
+                    f"{path} accesses a private Judge 2 adjudicator by attribute"
+                )
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                assert not any(name in node.value for name in forbidden), (
+                    f"{path} contains a private Judge 2 adjudicator name in a string"
+                )
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert not (
+                        alias.name == adjudication_module
+                        or alias.name.endswith(".verification.judge2.adjudication")
+                        or (alias.asname == "adjudication" and "judge2" in alias.name)
+                    ), f"{path} aliases the Judge 2 adjudication module"
+            if isinstance(node, ast.ImportFrom):
+                module = node.module or ""
+                assert not (forbidden & {alias.name for alias in node.names}), (
+                    f"{path} imports a private Judge 2 adjudicator"
+                )
+                assert not (
+                    module == "ayorai_attractor.verification.judge2"
+                    and any(alias.name == "adjudication" for alias in node.names)
+                ), f"{path} imports the Judge 2 adjudication module as a symbol"
+
+
+def test_production_modules_do_not_import_private_judge2_adjudicators() -> None:
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    source_root = root / "src" / "ayorai_attractor"
+    _assert_no_private_judge2_adjudicator_access(source_root)
+
+
+def test_ast_guard_rejects_temporary_module_attribute_access(tmp_path: "Path") -> None:
+    from pathlib import Path
+
+    consumer = tmp_path / "consumer.py"
+    consumer.write_text(
+        "from ayorai_attractor.verification.judge2 import adjudication\\n"
+        "adjudication._adjudicate_atoms([], [], object())\\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(AssertionError, match="accesses a private Judge 2 adjudicator"):
+        _assert_no_private_judge2_adjudicator_access(tmp_path)
+
+
+def test_ast_guard_rejects_dynamic_string_access_and_module_alias(tmp_path: "Path") -> None:
+    from pathlib import Path
+
+    consumer = tmp_path / "consumer.py"
+    consumer.write_text(
+        "import ayorai_attractor.verification.judge2.adjudication as adjudication\\n"
+        "getattr(adjudication, '_adjudicate_composite')\\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(AssertionError):
+        _assert_no_private_judge2_adjudicator_access(tmp_path)
 
 def test_public_adjudicate_runs_gates_and_returns_deterministic_verdict() -> None:
     from ayorai_attractor.verification.judge2 import adjudicate
