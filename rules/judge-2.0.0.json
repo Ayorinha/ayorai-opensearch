@@ -32,59 +32,83 @@
   "input_gate": [
     {
       "code": "SCHEMA_VIOLATION",
-      "outcome": "INVALID_INPUT"
+      "outcome": "INVALID_INPUT",
+      "id": "G1",
+      "rule_id": "2.0.0/G1:SCHEMA_VIOLATION"
     },
     {
       "code": "EMPTY_CLAIM",
-      "outcome": "INVALID_INPUT"
+      "outcome": "INVALID_INPUT",
+      "id": "G1",
+      "rule_id": "2.0.0/G1:EMPTY_CLAIM"
     },
     {
       "code": "NO_ATOMS",
-      "outcome": "INVALID_INPUT"
+      "outcome": "INVALID_INPUT",
+      "id": "G1",
+      "rule_id": "2.0.0/G1:NO_ATOMS"
     },
     {
       "id": "G1",
       "code": "DUPLICATE_ID",
-      "outcome": "INVALID_INPUT"
+      "outcome": "INVALID_INPUT",
+      "rule_id": "2.0.0/G1:DUPLICATE_ID"
     },
     {
       "code": "DANGLING_REFERENCE",
-      "outcome": "INVALID_INPUT"
+      "outcome": "INVALID_INPUT",
+      "id": "G1",
+      "rule_id": "2.0.0/G1:DANGLING_REFERENCE"
     },
     {
       "code": "DUPLICATE_STANCE",
-      "outcome": "INVALID_INPUT"
+      "outcome": "INVALID_INPUT",
+      "id": "G1",
+      "rule_id": "2.0.0/G1:DUPLICATE_STANCE"
     },
     {
       "code": "ATOM_SPAN_OUT_OF_RANGE",
-      "outcome": "INVALID_INPUT"
+      "outcome": "INVALID_INPUT",
+      "id": "G1",
+      "rule_id": "2.0.0/G1:ATOM_SPAN_OUT_OF_RANGE"
     },
     {
       "code": "UNSUPPORTED_PROTOCOL_VERSION",
-      "outcome": "INVALID_INPUT"
+      "outcome": "INVALID_INPUT",
+      "id": "G1",
+      "rule_id": "2.0.0/G1:UNSUPPORTED_PROTOCOL_VERSION"
     }
   ],
   "abstention": [
     {
       "id": "G2",
       "code": "OUT_OF_SCOPE",
-      "outcome": "ABSTAINED"
+      "outcome": "ABSTAINED",
+      "rule_id": "2.0.0/G2:OUT_OF_SCOPE"
     },
     {
       "code": "NON_FACTUAL_CLAIM",
-      "outcome": "ABSTAINED"
+      "outcome": "ABSTAINED",
+      "id": "G2",
+      "rule_id": "2.0.0/G2:NON_FACTUAL_CLAIM"
     },
     {
       "code": "MISSING_TEMPORAL_ANCHOR",
-      "outcome": "ABSTAINED"
+      "outcome": "ABSTAINED",
+      "id": "G2",
+      "rule_id": "2.0.0/G2:MISSING_TEMPORAL_ANCHOR"
     },
     {
       "code": "RETRIEVAL_FAILURE",
-      "outcome": "ABSTAINED"
+      "outcome": "ABSTAINED",
+      "id": "G2",
+      "rule_id": "2.0.0/G2:RETRIEVAL_FAILURE"
     },
     {
       "code": "EVIDENCE_POOL_INTEGRITY_FAILURE",
-      "outcome": "ABSTAINED"
+      "outcome": "ABSTAINED",
+      "id": "G2",
+      "rule_id": "2.0.0/G2:EVIDENCE_POOL_INTEGRITY_FAILURE"
     }
   ],
   "evidence_admissibility": [
