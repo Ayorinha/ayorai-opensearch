@@ -113,7 +113,7 @@ def test_t11_each_g1_code_has_a_specific_negative_case(
     ],
 )
 def test_g2_returns_abstention_reason_without_verdict(
-    override: dict[str, Any], code: str
+    override: dict[str, object], code: str
 ) -> None:
     kwargs = valid_kwargs()
     kwargs.update(override)
@@ -139,7 +139,7 @@ def test_g2_returns_abstention_reason_without_verdict(
     ],
 )
 def test_t11_each_evidence_rejection_reason_is_recorded(
-    kwargs_update: dict[str, Any], expected_reason: str
+    kwargs_update: dict[str, object], expected_reason: str
 ) -> None:
     kwargs = valid_kwargs()
     kwargs.update(kwargs_update)
