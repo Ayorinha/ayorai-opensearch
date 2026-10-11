@@ -1,3 +1,5 @@
+from typing import Literal
+
 from ayorai_attractor.agents.core import (
     AgentContext,
     CriticAgent,
@@ -105,7 +107,7 @@ class Attractor:
             (item.output for item in reversed(outputs) if item.output.strip()),
             f"Analysis completed for '{request.query}'. No agent produced output.",
         )
-        operation_status = (
+        operation_status: Literal["completed", "failed", "not_recorded"] = (
             "failed"
             if any(not failure.recoverable for failure in failures.failures)
             else "completed"
