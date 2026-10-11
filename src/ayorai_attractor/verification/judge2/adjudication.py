@@ -6,6 +6,7 @@ are derived from the validated Evidence objects carried by GateResult.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -13,7 +14,7 @@ from ayorai_attractor.verification.clusters import cluster_evidence
 from ayorai_attractor.verification.models import Evidence
 
 from . import load_rules
-from .gates import GateResult
+from .gates import GateResult, evaluate_gates
 
 Stance = Literal["SUPPORTS", "CONTRADICTS"]
 _ROBUSTNESS_RANK = {"R0": 0, "R1": 1, "R2": 2, "R3": 3}
@@ -87,13 +88,15 @@ def _robustness(
     return rule["value"], rule["id"], len(clusters)
 
 
-def adjudicate_atoms(
+def _adjudicate_atoms(
     atom_ids: list[str],
     evidence: list[DecisionEvidence],
     gates: GateResult,
 ) -> list[AtomicDecision]:
     """Adjudicate using gate-validated stance and provenance, never caller metadata."""
-    rules, _ = load_rules()
+    rules, contract_sha256 = load_rules()
+    if gates.rules_sha256 != contract_sha256:
+        raise ValueError("GateResult rules hash does not match the loaded Judge contract")
     if gates.decision_state is not None or not gates.admissible:
         raise ValueError("cannot adjudicate when pre-adjudication gates did not pass")
     if not atom_ids or len(atom_ids) != len(set(atom_ids)):
@@ -175,7 +178,7 @@ def adjudicate_atoms(
     return results
 
 
-def adjudicate_composite(atom_decisions: list[AtomicDecision]) -> CompositeDecision:
+def _adjudicate_composite(atom_decisions: list[AtomicDecision]) -> CompositeDecision:
     """Apply K1–K5 in normative precedence order and derive selected-side robustness."""
     rules, _ = load_rules()
     allowed_verdicts = set(rules["enums"]["verdict"])
@@ -225,3 +228,83 @@ def adjudicate_composite(atom_decisions: list[AtomicDecision]) -> CompositeDecis
             atom_count=len(atom_decisions),
         )
     raise ValueError("composite rules did not produce a decision")
+
+@dataclass(frozen=True)
+class AdjudicationResult:
+    """Public result returned by the single adjudication entry point."""
+
+    decision_state: str | None
+    reason_codes: tuple[str, ...]
+    rules_sha256: str
+    atomic_decisions: tuple[AtomicDecision, ...]
+    composite_decision: CompositeDecision | None
+
+
+def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
+    """Validate a request, run gates internally, then issue deterministic decisions.
+
+    Callers provide evidence and source text, never a GateResult or a verdict.
+    """
+    if not isinstance(request, Mapping):
+        raise TypeError("request must be a mapping")
+    required = {
+        "protocol_version", "claim_id", "claim_text", "atoms",
+        "evidence", "stances", "source_texts",
+    }
+    optional = {
+        "out_of_scope", "factual_claim", "temporal_anchor_present",
+        "retrieval_succeeded", "evidence_pool_integrity_ok",
+    }
+    unknown = set(request) - required - optional
+    missing = required - set(request)
+    if unknown or missing:
+        raise ValueError(
+            f"invalid adjudication request fields: unknown={sorted(unknown)}, "
+            f"missing={sorted(missing)}"
+        )
+    gate_input = {key: request[key] for key in required | (set(request) & optional)}
+    gates = evaluate_gates(**gate_input)
+    rules, contract_sha256 = load_rules()
+    if gates.rules_sha256 != contract_sha256:
+        raise ValueError("GateResult rules hash does not match the loaded Judge contract")
+    if gates.decision_state is not None:
+        return AdjudicationResult(
+            decision_state=gates.decision_state,
+            reason_codes=gates.reason_codes,
+            rules_sha256=contract_sha256,
+            atomic_decisions=(),
+            composite_decision=None,
+        )
+
+    raw_atoms = request["atoms"]
+    atom_ids = [str(atom["id"]) for atom in raw_atoms]
+    declared: list[DecisionEvidence] = []
+    for stance in request["stances"]:
+        relation = str(stance["stance"]).upper()
+        if relation in ("SUPPORTS", "CONTRADICTS"):
+            declared.append(
+                DecisionEvidence(
+                    evidence_id=str(stance["evidence_id"]),
+                    atom_id=str(stance["atom_id"]),
+                    stance=relation,  # type: ignore[arg-type]
+                )
+            )
+    atomic = _adjudicate_atoms(atom_ids, declared, gates)
+    composite = _adjudicate_composite(atomic)
+    return AdjudicationResult(
+        decision_state=None,
+        reason_codes=(),
+        rules_sha256=contract_sha256,
+        atomic_decisions=tuple(atomic),
+        composite_decision=composite,
+    )
+
+
+__all__ = [
+    "AdjudicationResult",
+    "AtomicDecision",
+    "CompositeDecision",
+    "DecisionEvidence",
+    "adjudicate",
+]
+
