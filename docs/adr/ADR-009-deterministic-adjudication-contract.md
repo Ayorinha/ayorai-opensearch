@@ -1,116 +1,163 @@
-# ADR-009 — Deterministic adjudication contract and claim coverage
+# ADR-009 — Contrato determinístico de adjudicação e cobertura de claims
 
-**Status:** Proposed / Draft — awaiting maintainer approval  
-**Date:** 2026-10-10  
-**Scope:** Proposed replacement for ADR-002 §§1 and 4, only after explicit maintainer approval  
-**Normative status:** None yet. ADR-002 remains authoritative and unchanged until this ADR is accepted.
+**Status:** Accepted — 2026-10-10, aprovado pelo mantenedor Anderson Leon Ayora  
+**Data:** 2026-10-10  
+**Escopo:** substitui ADR-002 §§1 e 4; o texto histórico de ADR-002 permanece preservado  
+**Autoridade:** este contrato é normativo para a implementação Judge 2.0.0 após merge desta ADR e das PRs de implementação correspondentes.
 
-## Context
+## Explicação simples
 
-The project requires a deterministic, replayable adjudication boundary. Language models may extract claims, analyse passages, propose stance labels, or draft explanations, but they must not choose the final factual verdict. The adjudication contract must also make abstention, invalid input, claim coverage, robustness, rule identity, and replay provenance explicit.
+O Judge determinístico é a única autoridade para o veredito factual.  
+Cada afirmação composta é dividida em partes atômicas e avaliada por regras versionadas.  
+Evidências só contam quando passam pelos critérios de admissibilidade e independência.  
+O sistema registra razões, cobertura, robustez e hashes para permitir auditoria e reprodução.  
+Abstenção e entrada inválida não são vereditos factuais.
 
-This draft records the required decision points for review. It does not silently change the current Judge, frozen evaluation artifacts, thresholds, goldens, or accepted ADRs.
+## 1. Contexto e invariantes
 
-## Proposed decision-state contract
+LLMs podem extrair claims, propor relações de stance e redigir explicações, mas não decidem o veredito final. A decisão factual é produzida exclusivamente pelo Judge determinístico. Sinais probabilísticos podem justificar abstenção, nunca escolher ou substituir um veredito.
 
-The proposed response decision states are:
+- **I1 — Estado/veredito:** `verdict != null` se e somente se `decision_state = DECIDED`.
+- **I2 — Robustez:** robustez descreve a força e a independência da evidência; nunca altera o veredito.
+- Regras executáveis são dados versionados, identificados por versão e `rules_sha256`.
+- Operação bem-sucedida, confiança do modelo, quantidade bruta de documentos e explicação textual não constituem adjudicação factual.
+- Nenhum componente fora do Judge pode construir ou emitir o veredito factual final.
 
-- `DECIDED`: the deterministic Judge produced a verdict under a valid, versioned rule set.
-- `ABSTAINED`: the request was understood but the system cannot responsibly adjudicate it under the contract.
-- `INVALID_INPUT`: the input fails the declared structural or semantic input contract.
+## 2. Tipos normativos
 
-These are response decision states, not factual verdict labels. An abstention or invalid input must not be converted into a factual verdict.
+`DecisionState = {DECIDED, ABSTAINED, INVALID_INPUT}`
 
-## Proposed verdict boundary
+`Verdict = {SUPPORTED, PARTIALLY_SUPPORTED, REFUTED, UNVERIFIED, CONFLICTING}`
 
-The proposed verdict vocabulary excludes `VERIFIED`. A model-generated stance, confidence score, narrative explanation, operational success flag, or source count alone cannot authorize a factual verdict. The deterministic Judge is the only component permitted to emit the final verdict.
+`Robustness = {R0, R1, R2, R3}`, com `R0=NONE`, `R1=SINGLE_SOURCE`, `R2=INDEPENDENCE_UNKNOWN`, `R3=CORROBORATED`.
 
-The exact replacement verdict set, aggregation precedence, and compatibility mapping must be confirmed by the maintainer before acceptance. Until then, the current ADR-002 rules remain in force.
+`VERIFIED` não faz parte do vocabulário de vereditos do Judge 2.0.0. O estado de decisão não é um veredito: `ABSTAINED` e `INVALID_INPUT` sempre produzem `verdict=null`.
 
-## Robustness levels
+## 3. Portão G — validação de entrada
 
-The proposal requires four explicit robustness levels, `R0` through `R3`. Their exact acceptance criteria, failure behaviour, and mapping to tests must be copied from the authoritative Prompt Mestre v3 or supplied by the maintainer. This draft intentionally does not invent those definitions.
+Os códigos G abaixo são erros de entrada e levam a `INVALID_INPUT`, sem veredito factual:
 
-## G/E gates and A/K controls
+- `SCHEMA_VIOLATION`: entrada incompatível com o esquema declarado.
+- `EMPTY_CLAIM`: claim vazio ou composto somente por espaços.
+- `NO_ATOMS`: claim composto sem átomos após a decomposição requerida.
+- `DUPLICATE_ID`: identificador duplicado em qualquer coleção em que IDs devam ser únicos.
+- `DANGLING_REFERENCE`: referência a claim, átomo, evidência ou stance inexistente.
+- `DUPLICATE_STANCE`: mais de uma stance para a mesma relação que deve ser única.
+- `ATOM_SPAN_OUT_OF_RANGE`: span do átomo fora dos limites do texto de origem.
+- `UNSUPPORTED_PROTOCOL_VERSION`: versão do protocolo não suportada.
 
-The implementation and documentation must make the `G` and `E` gates and controls `A1`–`A4` and `K1`–`K5` explicit, versioned, testable, and traceable to their source requirements.
+Cada código G deve ter teste negativo específico. A validação não pode converter entrada inválida em `UNVERIFIED` nem chamar o Judge como se a entrada fosse válida.
 
-**Open requirement:** the full authoritative definitions and pass/fail criteria for these labels were not included in the material available for this draft. They must be transcribed and reviewed before this ADR can be accepted. No implementation may claim compliance based on labels alone.
+## 4. Abstenção
 
-## Atomic claims and coverage
+Os motivos abaixo levam a `ABSTAINED`, com `verdict=null`:
 
-The proposed contract requires:
+- `OUT_OF_SCOPE`
+- `NON_FACTUAL_CLAIM`
+- `MISSING_TEMPORAL_ANCHOR`
+- `RETRIEVAL_FAILURE`
+- `EVIDENCE_POOL_INTEGRITY_FAILURE`
 
-1. Decompose compound assertions into atomic claims before adjudication.
-2. Preserve the relationship between each atomic claim and the original assertion.
-3. Report which parts of the original assertion are covered, unsupported, conflicting, abstained, or invalid under the accepted contract.
-4. Prevent a verdict for one atomic claim from being silently generalized to uncovered parts of a compound assertion.
-5. Make decomposition and coverage deterministic, versioned, and replayable wherever they affect the Judge's result.
+Abstenção significa que não se emite veredito factual. Não é uma classe de veredito nem deve ser contada como `UNVERIFIED`.
 
-The exact coverage formula and aggregation rule remain open until the authoritative Prompt Mestre v3 language is available.
+## 5. Admissibilidade E
 
-## Rule identity, canonical serialization, and provenance
+Uma evidência só participa dos clusters se passar pelos critérios aplicáveis:
 
-Every executable rule set must expose a stable `rule_id`, a rule version, and content hashes sufficient to identify the exact rules used for a decision. Structured inputs, intermediate adjudication records, and outputs must use a documented canonical JSON representation before hashing.
+- **E1 — Offsets:** offsets válidos, não negativos, ordenados e dentro dos limites do documento.
+- **E2 — Trecho:** quando existe hash de conteúdo normalizado, o trecho deve conferir com a fonte identificada por esse hash.
+- **E3 — Relação:** deve existir aresta explícita `SUPPORTS` ou `CONTRADICTS` entre a evidência e o átomo avaliado.
 
-Canonicalization must specify UTF-8 encoding, key ordering, separators, Unicode handling, numeric representation, and treatment of absent versus null fields. Hashes identify content; they do not by themselves prove the truth of a claim.
+Evidências rejeitadas não entram nos contadores decisórios e devem ser registradas com um motivo: `OFFSET_INVALID`, `EXCERPT_MISMATCH` ou `NEUTRAL_STANCE`. A rejeição de evidência não pode ser omitida do resultado técnico.
 
-Replay records must retain enough provenance to identify the rule version and the input/evidence references used, without storing secrets or unnecessary sensitive data.
+## 6. Independência, clusters e veredito atômico A
 
-## Frozen rules and migrations
+S e C representam, respectivamente, o número de clusters independentes admissíveis de suporte e contradição, segundo o contrato de independência de ADR-006. Republicações ou fontes dependentes não aumentam a contagem independente.
 
-- Existing rule-set 1.x behaviour remains frozen and executable as a historical reference.
-- Any incompatible contract change must be introduced through a versioned migration, not an in-place reinterpretation of old records.
-- Historical records must retain their original rule/replay identity and digests.
-- Migration code must be idempotent, tested against temporary databases, and preserve legacy values and digests byte for byte.
-- Frozen evaluation artifacts, manifests, goldens, thresholds, and reference hashes must not be regenerated or edited to make a new implementation pass.
+Para cada átomo:
 
-## Derived goldens
+- **A1:** S=0 e C=0 → `UNVERIFIED`.
+- **A2:** S≥1 e C=0 → `SUPPORTED`.
+- **A3:** S=0 e C≥1 → `REFUTED`.
+- **A4:** S≥1 e C≥1 → `CONFLICTING`.
 
-Any golden set derived from a prior suite must have its own explicit manifest that records source suite/version, derivation method, rule version, source commit, hashes, and known limitations. Derived goldens must not silently replace their parent suite or be represented as independent confirmatory evidence when they are not independent.
+Um átomo nunca recebe `PARTIALLY_SUPPORTED`; esse veredito é reservado à agregação composta. A contagem de clusters afeta robustez, não altera a regra de veredito A.
 
-A new or changed golden requires explicit maintainer approval before it is frozen or treated as normative.
+## 7. Robustez R
 
-## Required verification tests
+A robustez é calculada no lado decisivo do átomo, isto é, suporte para `SUPPORTED`, contradição para `REFUTED`, ambos os lados para `CONFLICTING`, e nenhum lado para `UNVERIFIED`.
 
-Before acceptance, the implementation must provide tests for at least:
+- **R0 / NONE:** nenhum cluster decisório admissível.
+- **R1 / SINGLE_SOURCE:** exatamente um cluster decisório admissível.
+- **R2 / INDEPENDENCE_UNKNOWN:** pelo menos dois clusters decisórios, com proveniência incompleta em uma ou mais evidências que impedem confirmar plenamente a independência.
+- **R3 / CORROBORATED:** pelo menos dois clusters decisórios, todos com proveniência completa.
 
-- atomic and compound assertions, including partial coverage;
-- deterministic decomposition and stable claim-to-source mapping;
-- all decision states, including invalid inputs that produce no factual verdict;
-- all accepted verdict/aggregation combinations and boundary conditions;
-- invariance to irrelevant ordering or formatting changes where the contract declares invariance;
-- byte-for-byte deterministic canonical serialization and replay hashes;
-- rule ID/version/hash consistency;
-- migration idempotence and exact preservation of legacy values/digests;
-- tampered or corrupted digests being detected rather than silently repaired;
-- offline execution without external network dependencies;
-- frozen artifact hashes remaining unchanged.
+A robustez nunca promove nem rebaixa o veredito. Para resultado composto, a robustez é a menor robustez entre os átomos avaliados, conforme a ordem R0 < R1 < R2 < R3; o resultado deve manter a cobertura que explica quais átomos contribuíram.
 
-The final test matrix must map every accepted requirement to at least one test and, where applicable, a golden case.
+## 8. Agregação composta K
 
-## Explanations and limitations
+Para um claim composto, aplicar a seguinte precedência, nesta ordem:
 
-The system should provide two explanation layers:
+- **K1:** se algum átomo for `REFUTED`, resultado `REFUTED`.
+- **K2:** senão, se algum átomo for `CONFLICTING`, resultado `CONFLICTING`.
+- **K3:** senão, se todos os átomos forem `SUPPORTED`, resultado `SUPPORTED`.
+- **K4:** senão, se algum átomo for `SUPPORTED`, resultado `PARTIALLY_SUPPORTED`.
+- **K5:** senão, resultado `UNVERIFIED`.
 
-1. **Plain-language explanation:** no more than five lines, identifying the decision state, the result for the covered claim(s), the decisive evidence relationship, and any material limitation.
-2. **Technical explanation:** rule IDs and versions, claim decomposition, evidence/provenance references, gate and robustness outcomes, canonical hashes, and reasons for abstention or invalid input.
+A regra K aplicada deve ser identificada em `rule_trace` com o `rule_id` correspondente e rotulada como `derived`. Os pesos dos átomos são iguais. Não há resolução automática de conflitos além da precedência K nesta versão 2.0.0. Qualquer política diferente exige nova decisão versionada.
 
-Explanations are descriptive output, not an alternate decision channel. They must not upgrade a result or conceal uncovered claims, missing evidence, unresolved conflicts, or limitations.
+A cobertura é um objeto com os contadores `supported`, `refuted`, `conflicting`, `unverified` e `total`. Ela descreve a distribuição dos vereditos atômicos e não pode ocultar átomos inválidos ou abstidos; esses estados são relatados no estado de decisão e nos motivos.
 
-## Compatibility and rollout
+## 9. Identidade de regras e saída canônica
 
-This ADR is a proposal only. Until the maintainer explicitly accepts it:
+O resultado inclui `judge_rules_version`, `rules_sha256`, `input_sha256`, `decision_state`, `reason_codes`, `verdict`, `coverage`, `robustness`, `atoms`, `rule_trace` e `output_sha256`.
 
-- ADR-002 §§1 and 4 remain authoritative;
-- the current implementation and frozen goldens remain unchanged except through separately approved implementation PRs;
-- no release, report, benchmark, or README may claim conformance to this proposed contract;
-- unresolved definitions for R0–R3, G/E, A1–A4, K1–K5, verdict vocabulary, and coverage aggregation must be resolved before acceptance.
+Cada átomo contém `atom_id`, `verdict`, `support_clusters`, `contradiction_clusters`, `robustness`, `rule_id`, `admitted_evidence` e `excluded_evidence` (com `id` e `reason`). `rule_id` usa o formato `2.0.0/A2`, `2.0.0/K4` ou `2.0.0/G1:DUPLICATE_ID`, conforme aplicável.
 
-After approval, implementation should proceed in isolated pull requests with independent review of the exact head SHA, green CI, and unchanged frozen artifact hashes. No implementation PR may be merged merely because this draft exists.
+A serialização canônica usa UTF-8, chaves ordenadas, separadores compactos, `ensure_ascii=False` e representação explícita de `null`. A definição implementada deve ser consistente em todos os caminhos e coberta por teste byte a byte. `output_sha256` é calculado sobre a representação canônica do conteúdo de saída antes da inclusão do próprio campo `output_sha256`, evitando autorreferência. Hashes identificam conteúdo e não provam, isoladamente, a verdade de uma afirmação.
 
-## Approval
+## 10. Migração de regras 1.x e goldens derivados
 
-**Decision:** Pending maintainer review.  
-**Supersedes:** Intended to replace ADR-002 §§1 and 4 only after explicit approval and a separately reviewed acceptance change.  
-**Current authority:** ADR-002 remains in force.
+As regras 1.x permanecem executáveis e historicamente preservadas até a v0.5.0. O caminho `r1-a` mantém o contrato de fio existente, sem alteração de comportamento ou serialização.
+
+A migração derivada de goldens usa uma tabela de mapeamento versionada:
+
+- `VERIFIED` → `SUPPORTED` + R3.
+- `SUPPORTED` → `SUPPORTED` + R2.
+- `PARTIALLY_SUPPORTED` com regra S=1 → `SUPPORTED` + R1.
+- Demais rótulos atômicos permanecem inalterados.
+- O rótulo composto é recalculado segundo K.
+
+Os arquivos derivados são `evals/golden/v0-r2.jsonl` e `evals/golden/v0.1-r2.jsonl`, cada um com manifesto próprio que registra origem, método, versão de regras, commit e hashes. Os arquivos originais, manifestos existentes, thresholds e hashes congelados não podem ser alterados. Casos não migráveis devem ser listados com motivo, não descartados silenciosamente.
+
+## 11. Testes normativos
+
+A implementação deve cobrir T1–T11:
+
+- **T1:** tabela atômica exaustiva para S∈{0..3}, C∈{0..2} e estados de proveniência.
+- **T2:** tabela composta exaustiva para multiconjuntos de vereditos até n=4.
+- **T3:** átomo único nunca retorna `PARTIALLY_SUPPORTED`.
+- **T4:** aumentar S mantendo S≥1 e C=0 não muda o veredito atômico.
+- **T5:** republicação não aumenta a contagem de clusters independentes.
+- **T6:** invariância à ordem onde o contrato declarar ordem irrelevante.
+- **T7:** serialização canônica determinística byte a byte.
+- **T8:** I1 em todos os caminhos de decisão, abstenção e erro.
+- **T9:** execução offline, sem rede.
+- **T10:** regras 1.x reproduzem os resultados de v0.3.0 sem alteração dos artefatos congelados.
+- **T11:** cada código G tem teste específico.
+
+As tabelas de verdade publicadas devem ser geradas do arquivo versionado de regras, não mantidas manualmente em duplicidade. A rastreabilidade deve mapear cada regra normativa a testes e, quando aplicável, a casos de golden.
+
+## 12. Explicações e limitações
+
+Toda resposta documentada deve ter explicação simples com no máximo cinco linhas e explicação técnica. A explicação técnica inclui versão e hash das regras, decomposição, evidências admitidas/excluídas, IDs das regras, estado de decisão, cobertura, robustez, hashes e limitações. Explicações não constituem canal alternativo de decisão e não podem transformar abstenção ou entrada inválida em veredito.
+
+## 13. Compatibilidade e rollout
+
+Esta ADR substitui ADR-002 §§1 e 4; o texto original dessas seções é preservado como histórico. Outras seções de ADR-002 permanecem vigentes, salvo substituição explícita por decisão posterior. A implementação deve ocorrer em PRs isoladas, com CI verde, revisão independente do SHA exato e hashes dos artefatos congelados inalterados. A aceitação desta ADR não autoriza alterar goldens ou publicar release automaticamente.
+
+## Aprovação
+
+**Decisão do mantenedor:** ACEITO em 2026-10-10.  
+**Revisão independente e integração documental:** pendentes na PR correspondente.  
+**Implementação:** pendente das PRs da Fase 2; a presença desta ADR não deve ser descrita como implementação concluída.
