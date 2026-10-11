@@ -388,8 +388,6 @@ def test_production_modules_do_not_import_private_judge2_adjudicators() -> None:
 
 
 def test_ast_guard_rejects_temporary_module_attribute_access(tmp_path: "Path") -> None:
-    from pathlib import Path
-
     consumer = tmp_path / "consumer.py"
     consumer.write_text(
         "from ayorai_attractor.verification.judge2 import adjudication\\n"
@@ -400,9 +398,17 @@ def test_ast_guard_rejects_temporary_module_attribute_access(tmp_path: "Path") -
         _assert_no_private_judge2_adjudicator_access(tmp_path)
 
 
-def test_ast_guard_rejects_dynamic_string_access_and_module_alias(tmp_path: "Path") -> None:
-    from pathlib import Path
+def test_ast_guard_rejects_dynamic_string_only_access(tmp_path: "Path") -> None:
+    consumer = tmp_path / "consumer.py"
+    consumer.write_text(
+        "getattr(target, '_adjudicate_composite')\\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(AssertionError, match="name in a string"):
+        _assert_no_private_judge2_adjudicator_access(tmp_path)
 
+
+def test_ast_guard_rejects_dynamic_string_access_and_module_alias(tmp_path: "Path") -> None:
     consumer = tmp_path / "consumer.py"
     consumer.write_text(
         "import ayorai_attractor.verification.judge2.adjudication as adjudication\\n"
