@@ -36,7 +36,7 @@ from .numeric import (
     parse_number,
     relative_difference,
 )
-from .response import ResponseStatus, VerificationResponse
+from .response import ResponsePolicy, ResponseStatus, VerificationResponse
 from .security import assert_no_secret, contains_secret
 from .stance import (
     DetectedStance,
@@ -90,6 +90,7 @@ __all__ = [
     "numeric_conflicts",
     "parse_number",
     "relative_difference",
+    "ResponsePolicy",
     "ResponseStatus",
     "VerificationResponse",
     "assert_no_secret",

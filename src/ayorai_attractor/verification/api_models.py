@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from .models import Claim, Evidence, StanceEdge, Verdict
-from .response import ResponseStatus
+from .response import ResponsePolicy
 
 
 class Traceability(BaseModel):
@@ -38,7 +38,7 @@ class VerificationAPIResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     schema_version: Literal["r1-a"] = "r1-a"
-    status: ResponseStatus
+    status: Verdict | ResponsePolicy
     verdict: Verdict | None = None
     judgments: list[ClaimJudgmentResponse]
     traceability: Traceability

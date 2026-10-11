@@ -18,7 +18,7 @@ from ayorai_attractor.verification.api_models import (
 )
 from ayorai_attractor.verification.judge import judge
 from ayorai_attractor.verification.models import Verdict
-from ayorai_attractor.verification.response import ResponseStatus
+from ayorai_attractor.verification.response import ResponsePolicy
 
 app = FastAPI(
     title="AYORAI ATTRACTOR",
@@ -71,7 +71,7 @@ def verify(request: VerificationRequest) -> VerificationAPIResponse:
     """Evaluate structured claims with the deterministic ADR-002 Judge."""
     if not request.claims:
         return VerificationAPIResponse(
-            status=ResponseStatus.ABSTAIN_OUT_OF_SCOPE,
+            status=ResponsePolicy.ABSTAIN_OUT_OF_SCOPE,
             verdict=None,
             judgments=[],
             traceability=Traceability(adr="ADR-002", rules=["§5"]),
@@ -79,11 +79,11 @@ def verify(request: VerificationRequest) -> VerificationAPIResponse:
 
     judgments, verdict = judge(request.claims, request.evidence, request.stances)
     status = (
-        ResponseStatus.ABSTAIN_NO_ANSWER
+        ResponsePolicy.ABSTAIN_NO_ANSWER
         if verdict is Verdict.UNVERIFIED
-        else ResponseStatus(verdict.value)
+        else verdict
     )
-    api_verdict = None if status is ResponseStatus.ABSTAIN_NO_ANSWER else verdict
+    api_verdict = None if status is ResponsePolicy.ABSTAIN_NO_ANSWER else verdict
     return VerificationAPIResponse(
         status=status,
         verdict=api_verdict,

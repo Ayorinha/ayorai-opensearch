@@ -4,7 +4,7 @@ from pydantic import ValidationError
 
 from ayorai_attractor.verification.claim_pipeline import ClaimVerificationPipeline
 from ayorai_attractor.verification.extraction import LLMClaimExtractor, RetrievedDocument
-from ayorai_attractor.verification.response import ResponseStatus
+from ayorai_attractor.verification.response import ResponsePolicy
 from ayorai_attractor.verification.stance import LLMStanceDetector
 
 
@@ -49,6 +49,6 @@ def test_invalid_llm_evidence_id_abstains_with_reason() -> None:
         LLMStanceDetector(BadStanceProvider(), model="fixture", version="1")
     )
     result = pipeline.verify(["AtlasGrid revenue was USD 120 million."], [doc()])
-    assert result.status is ResponseStatus.ABSTAIN_PROCESSING_ERROR
+    assert result.status is ResponsePolicy.ABSTAIN_PROCESSING_ERROR
     assert result.abstention_reason == "ValueError"
     assert "unknown evidence id" in result.rationale
