@@ -10,15 +10,15 @@ from __future__ import annotations
 import os
 import sqlite3
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Final, Literal
 
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.models import AuditTraceResponse, SearchResponse
 from ayorai_attractor.replay import ReplayBundle
 
 _SCHEMA_VERSION = 2
-_R2_V1 = "r2-v1"
-_R2_V2 = "r2-v2"
+_R2_V1: Final = "r2-v1"
+_R2_V2: Final = "r2-v2"
 ReplayVersion = Literal["r2-v1", "r2-v2"]
 ReplayIntegrity = Literal["valid", "invalid"]
 
