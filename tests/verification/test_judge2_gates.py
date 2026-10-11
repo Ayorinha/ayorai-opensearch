@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 import pytest
 
 
@@ -25,6 +24,7 @@ def evidence(
     normalized_hash: str | None = None,
 ) -> object:
     from datetime import UTC, datetime
+
     from ayorai_attractor.verification.models import Evidence
 
     return Evidence(
