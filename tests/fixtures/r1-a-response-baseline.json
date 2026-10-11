@@ -1,0 +1,73 @@
+{
+  "protocol": "r1-a",
+  "captured_from_commit": "2ac98add366afa3324f92652423d4d7011a795bd",
+  "capture_note": "Expected HTTP response bytes recorded from the pre-ResponsePolicy implementation. Keep these snapshots unchanged; compare them after the ResponsePolicy refactor.",
+  "cases": [
+    {
+      "name": "verified-two-independent-supporting-sources",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "The service launched in 2026."
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-a",
+            "source_location": "document:1",
+            "retrieved_at": "2026-10-02T09:00:00Z",
+            "start_offset": 0,
+            "end_offset": 30,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-a"
+          },
+          {
+            "id": "e2",
+            "claim_id": "c1",
+            "source_id": "source-b",
+            "source_location": "document:2",
+            "retrieved_at": "2026-10-02T09:00:01Z",
+            "start_offset": 0,
+            "end_offset": 30,
+            "excerpt": "The service launched in 2026.",
+            "origin_id": "origin-b"
+          }
+        ],
+        "stances": [
+          {
+            "id": "s1",
+            "claim_id": "c1",
+            "evidence_id": "e1",
+            "stance": "supports"
+          },
+          {
+            "id": "s2",
+            "claim_id": "c1",
+            "evidence_id": "e2",
+            "stance": "supports"
+          }
+        ]
+      },
+      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"verified\",\"verdict\":\"verified\",\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":2,\"contradiction_clusters\":0,\"provenance_complete\":true,\"verdict\":\"verified\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}"
+    },
+    {
+      "name": "unverified-claim-abstains-with-no-answer",
+      "request": {
+        "schema_version": "r1-a",
+        "claims": [
+          {
+            "id": "c1",
+            "text": "Unknown claim."
+          }
+        ],
+        "evidence": [],
+        "stances": []
+      },
+      "expected_body": "{\"schema_version\":\"r1-a\",\"status\":\"abstain/no_answer\",\"verdict\":null,\"judgments\":[{\"claim_id\":\"c1\",\"support_clusters\":0,\"contradiction_clusters\":0,\"provenance_complete\":false,\"verdict\":\"unverified\"}],\"traceability\":{\"adr\":\"ADR-002\",\"rules\":[\"§1\",\"§2\",\"§3\",\"§4\",\"§5\",\"§9\"]}}"
+    }
+  ]
+}
