@@ -13,8 +13,8 @@ from ayorai_attractor.verification.judge2.adjudication import (
     adjudicate_composite,
 )
 from ayorai_attractor.verification.judge2.gates import EvidenceDisposition, GateResult
-from ayorai_attractor.verification.models import Evidence
 from ayorai_attractor.verification.judge2 import adjudication, load_rules, rules_sha256
+from ayorai_attractor.verification.models import Evidence
 
 VERDICTS = ("SUPPORTED", "PARTIALLY_SUPPORTED", "REFUTED", "UNVERIFIED", "CONFLICTING")
 ROBUSTNESS = ("R0", "R1", "R2", "R3")
