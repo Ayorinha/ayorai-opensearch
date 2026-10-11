@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import sqlite3
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.models import AuditTraceResponse, SearchResponse
@@ -19,6 +19,8 @@ from ayorai_attractor.replay import ReplayBundle
 _SCHEMA_VERSION = 2
 _R2_V1 = "r2-v1"
 _R2_V2 = "r2-v2"
+ReplayVersion = Literal["r2-v1", "r2-v2"]
+ReplayIntegrity = Literal["valid", "invalid"]
 
 
 class AuditTraceStore:
@@ -32,10 +34,26 @@ class AuditTraceStore:
         self._connection = sqlite3.connect(self.path, check_same_thread=False)
         self._migrate()
 
+    def __enter__(self) -> AuditTraceStore:
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        self.close()
+
+    def close(self) -> None:
+        self._connection.close()
+
     def _create_schema_v2(self, connection: sqlite3.Connection) -> None:
+        self._create_schema_v2_named(connection, "audit_traces")
+
+    @staticmethod
+    def _create_schema_v2_named(
+        connection: sqlite3.Connection, table_name: str
+    ) -> None:
+        # The table name is an internal constant, never caller input.
         connection.execute(
-            """
-            CREATE TABLE audit_traces (
+            f"""
+            CREATE TABLE {table_name} (
                 trace_id TEXT PRIMARY KEY,
                 legacy_verification TEXT,
                 verification TEXT,
@@ -79,9 +97,6 @@ class AuditTraceStore:
             connection.commit()
             return
 
-        # Schema v1 is copied into a new table. Existing verification text and
-        # replay digests are never rewritten; their meaning is represented
-        # explicitly in the v2 columns.
         rows = connection.execute(
             """
             SELECT trace_id, verification, evidence_count,
@@ -140,37 +155,13 @@ class AuditTraceStore:
         connection.commit()
 
     @staticmethod
-    def _create_schema_v2_named(
-        connection: sqlite3.Connection, table_name: str
-    ) -> None:
-        # The table name is an internal constant, never caller input.
-        connection.execute(
-            f"""
-            CREATE TABLE {table_name} (
-                trace_id TEXT PRIMARY KEY,
-                legacy_verification TEXT,
-                verification TEXT,
-                operation_status TEXT NOT NULL,
-                evidence_count INTEGER NOT NULL,
-                independent_evidence_count INTEGER NOT NULL,
-                verified_evidence_count INTEGER NOT NULL,
-                failure_count INTEGER NOT NULL,
-                finding_count INTEGER NOT NULL,
-                replay_digest TEXT NOT NULL,
-                replay_version TEXT NOT NULL,
-                schema_version INTEGER NOT NULL
-            )
-            """
-        )
-
-    @staticmethod
     def _detect_replay_version(
         trace_id: str,
         old_verification: str,
         evidence_count: int,
         failure_count: int,
         replay_digest: str,
-    ) -> str:
+    ) -> ReplayVersion:
         if old_verification == "not_adjudicated":
             events: list[dict[str, Any]] = [
                 {
@@ -185,9 +176,6 @@ class AuditTraceStore:
                 return _R2_V2
         return _R2_V1
 
-    def _connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.path)
-
     def record(self, response: SearchResponse, report: AuditReport) -> str:
         events = [
             {
@@ -198,8 +186,7 @@ class AuditTraceStore:
             }
         ]
         replay = ReplayBundle.build(response.trace_id, events, version=_R2_V2)
-        connection = self._connection
-        connection.execute(
+        self._connection.execute(
             """
             INSERT OR REPLACE INTO audit_traces (
                 trace_id, legacy_verification, verification, operation_status,
@@ -221,16 +208,50 @@ class AuditTraceStore:
                 _SCHEMA_VERSION,
             ),
         )
-        connection.commit()
+        self._connection.commit()
         return replay.digest
 
+    def verify(self, trace_id: str) -> ReplayIntegrity:
+        row = self._connection.execute(
+            """
+            SELECT legacy_verification, evidence_count, failure_count,
+                   replay_digest, replay_version
+            FROM audit_traces WHERE trace_id = ?
+            """,
+            (trace_id,),
+        ).fetchone()
+        if row is None:
+            raise ValueError(f"Unknown audit trace: {trace_id}")
+        legacy_verification, evidence_count, failure_count, stored_digest, version = row
+        if version not in (_R2_V1, _R2_V2):
+            return "invalid"
+        verification = (
+            legacy_verification if version == _R2_V1 else "not_adjudicated"
+        )
+        if verification is None:
+            return "invalid"
+        events: list[dict[str, Any]] = [
+            {
+                "event": "audit.completed",
+                "verification": verification,
+                "evidence_count": int(evidence_count),
+                "failure_count": int(failure_count),
+            }
+        ]
+        rebuilt = ReplayBundle.build(
+            trace_id,
+            events,
+            version=version,
+        )
+        return "valid" if rebuilt.digest == stored_digest else "invalid"
+
     def get(self, trace_id: str) -> AuditTraceResponse | None:
-        connection = self._connection
-        row = connection.execute(
+        row = self._connection.execute(
             """
             SELECT trace_id, operation_status, evidence_count,
                    independent_evidence_count, verified_evidence_count,
-                   failure_count, finding_count, replay_digest
+                   failure_count, finding_count, replay_digest,
+                   legacy_verification, replay_version
             FROM audit_traces WHERE trace_id = ?
             """,
             (trace_id,),
@@ -249,4 +270,7 @@ class AuditTraceStore:
             failure_count=int(row[5]),
             finding_count=int(row[6]),
             replay_digest=str(row[7]),
+            legacy_verification=row[8],
+            replay_version=row[9],
+            replay_integrity=self.verify(trace_id),
         )
