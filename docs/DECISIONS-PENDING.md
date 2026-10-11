@@ -21,6 +21,21 @@ Source: execution plan v5, work queue
 - **Evidência inicial:** PR #132 congelou os três comportamentos atuais de HTTP 500 antes da mudança de código: https://github.com/Ayorinha/ayorai-opensearch/pull/132
 - **Status de implementação:** Aprovada; implementação pendente em PR separada após ResponsePolicy.
 
+### DEC-006 — Prioridade do motor de stance em português (ADR-008)
+
+- **Data da proposta:** 11/10/2026
+- **Bloqueia:** nada da Onda 1–2
+- **Status:** Pending maintainer decision
+- **Decision area:** Benchmark em português e priorização técnica
+- **Question:** Priorizar o motor de stance em português (ADR-008) logo após a Onda 2, avaliando-o no `pt-cp-audit` e em um futuro benchmark Anatel?
+- **Contexto:** A hipótese é que a detecção de stance — apoia, contradiz ou neutro — em português jurídico seja um gargalo relevante de desempenho. A hipótese deve ser medida, não apresentada como resultado já demonstrado.
+- **Opções:**
+  - **A — recomendada tecnicamente:** priorizar o motor de stance como primeira prioridade técnica após o Judge 2.0, com avaliação no `pt-cp-audit` e, quando definido, no benchmark de domínio Anatel.
+  - **B:** adiar essa prioridade para depois da Fase 3.
+- **Recomendação técnica:** A, sujeita à decisão explícita do mantenedor e a métricas estratificadas com tamanho amostral e IC 95%.
+- **Impacto a avaliar:** desempenho por tipo de afirmação, qualidade do rótulo de referência, cobertura do português jurídico e risco de generalização indevida.
+- **Regra de escopo:** esta proposta não amplia a Onda 1–2, não altera a ordem atual das ondas e não autoriza interpretação jurídica pelo Judge.
+
 ## DEC-001 — F3.5: uv lockfile and Docker image digests
 
 - **Data:** 11/10/2026
@@ -42,7 +57,7 @@ Source: execution plan v5, work queue
 
 - **Data:** 11/10/2026
 - **Bloqueia:** F4.2 e a coleta de dados da Fase 4
-- **Recomendação técnica:** Exigir licença ou permissão verificável, proveniência e condições de uso registradas para cada fonte destinada a fixtures distribuíveis; excluir do conjunto público o material com direitos não esclarecidos. Isso reduz o risco de redistribuição indevida e mantém auditável a origem dos dados.
+- **Recomendação técnica:** Exigir licença ou permissão verificável, proveniência e condições de uso registradas para cada fonte destinada a fixtures distribuíveis; excluir do conjunto público o material com direitos não esclarecidos. Isso reduz o risco de redistribuição indevida e mantém auditável a origem dos dados. Como base legal a registrar, a Lei nº 9.610/1998, art. 8º, IV, exclui da proteção autoral os textos de tratados ou convenções, leis, decretos, regulamentos, decisões judiciais e demais atos oficiais. Fonte primária: https://www.planalto.gov.br/ccivil_03/leis/l9610.htm. Essa exclusão não dispensa registrar URL, órgão, data de publicação, data de coleta e hash do material. Comentários doutrinários, livros e bases privadas permanecem sujeitos à política de bloqueio da DEC-002; não presumir permissão para redistribuí-los.
 
 - **Status:** Pending maintainer decision
 - **Decision area:** Source licensing, permissions, provenance, and evaluation-data governance
