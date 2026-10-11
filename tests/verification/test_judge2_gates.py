@@ -50,7 +50,10 @@ def valid_kwargs() -> dict[str, Any]:
 
 
 def test_contract_digest_is_pinned_to_approved_judge_2_contract() -> None:
-    assert rules_sha256() == RULES_SHA256 == "7bf2fd141bcc7cdd370364d3a162dfcdc4ea45e88182d27c4f3583b08616574e"
+    assert rules_sha256() == RULES_SHA256
+    assert RULES_SHA256 == (
+        "7bf2fd141bcc7cdd370364d3a162dfcdc4ea45e88182d27c4f3583b08616574e"
+    )
 
 
 @pytest.mark.parametrize(
@@ -60,12 +63,24 @@ def test_contract_digest_is_pinned_to_approved_judge_2_contract() -> None:
         ({"claim_text": "   "}, "EMPTY_CLAIM"),
         ({"atoms": []}, "NO_ATOMS"),
         ({"atoms": [ATOM, dict(ATOM)]}, "DUPLICATE_ID"),
-        ({"stances": [{"id": "st1", "atom_id": "missing", "evidence_id": "e1", "stance": "SUPPORTS"}]}, "DANGLING_REFERENCE"),
+        (
+            {"stances": [{
+                "id": "st1", "atom_id": "missing", "evidence_id": "e1",
+                "stance": "SUPPORTS",
+            }]},
+            "DANGLING_REFERENCE",
+        ),
         ({"stances": [
             {"id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"},
             {"id": "st2", "atom_id": "a1", "evidence_id": "e1", "stance": "CONTRADICTS"},
         ]}, "DUPLICATE_STANCE"),
-        ({"atoms": [{"id": "a1", "text": CLAIM, "start_offset": 0, "end_offset": len(CLAIM) + 1}]}, "ATOM_SPAN_OUT_OF_RANGE"),
+        (
+            {"atoms": [{
+                "id": "a1", "text": CLAIM, "start_offset": 0,
+                "end_offset": len(CLAIM) + 1,
+            }]},
+            "ATOM_SPAN_OUT_OF_RANGE",
+        ),
         ({"atoms": ["not-an-atom"]}, "SCHEMA_VIOLATION"),
     ],
 )
@@ -108,7 +123,13 @@ def test_g2_returns_abstention_reason_without_verdict(
     [
         ({"source_texts": {}}, "OFFSET_INVALID"),
         ({"evidence": [evidence(normalized_hash="0" * 64)]}, "EXCERPT_MISMATCH"),
-        ({"stances": [{"id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "NEUTRAL"}]}, "NEUTRAL_STANCE"),
+        (
+            {"stances": [{
+                "id": "st1", "atom_id": "a1", "evidence_id": "e1",
+                "stance": "NEUTRAL",
+            }]},
+            "NEUTRAL_STANCE",
+        ),
     ],
 )
 def test_t11_each_evidence_rejection_reason_is_recorded(
