@@ -200,14 +200,18 @@ def test_only_allowlisted_modules_construct_verdict() -> None:
 
 def test_verdict_guard_detects_synthetic_violation(tmp_path: Path) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
-    _write_source(root, "api/unauthorized.py", 'result = Verdict("verified")\\n')
+    _write_source(root, "api/unauthorized.py", 'result = Verdict("verified")\n')
     assert _verdict_constructor_violations(root) == ["api/unauthorized.py:1:constructor"]
 
 
 def test_verdict_guard_detects_member_access_and_import_alias(tmp_path: Path) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
-    _write_source(root, "api/member.py", "return_value = Verdict.SUPPORTED\\n")
-    _write_source(root, "api/alias.py", "from package import Verdict as V\\nresult = V('verified')\\n")
+    _write_source(root, "api/member.py", "return_value = Verdict.SUPPORTED\n")
+    _write_source(
+        root, "api/alias.py",
+        "from package import Verdict as V\n"
+        "result = V('verified')\n",
+    )
     assert _verdict_constructor_violations(root) == [
         "api/alias.py:2:constructor",
         "api/member.py:1:member",
@@ -219,14 +223,14 @@ def test_verdict_guard_detects_module_alias_and_allows_comparison(tmp_path: Path
     _write_source(
         root,
         "api/module_alias.py",
-        "import package.models as models\\n"
-        "result = models.Verdict('verified')\\n",
+        "import package.models as models\n"
+        "result = models.Verdict('verified')\n",
     )
     _write_source(
         root,
         "api/module_comparison.py",
-        "import package.models as models\\n"
-        "allowed = verdict is models.Verdict.UNVERIFIED\\n",
+        "import package.models as models\n"
+        "allowed = verdict is models.Verdict.UNVERIFIED\n",
     )
     assert _verdict_constructor_violations(root) == [
         "api/module_alias.py:2:constructor"
@@ -235,13 +239,17 @@ def test_verdict_guard_detects_module_alias_and_allows_comparison(tmp_path: Path
 
 def test_verdict_guard_allows_member_comparison(tmp_path: Path) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
-    _write_source(root, "api/compare.py", "allowed = verdict is Verdict.UNVERIFIED\\n")
+    _write_source(root, "api/compare.py", "allowed = verdict is Verdict.UNVERIFIED\n")
     assert _verdict_constructor_violations(root) == []
 
 
 def test_verdict_guard_detects_subscript_and_imported_alias(tmp_path: Path) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
-    _write_source(root, "api/subscript.py", "from package import Verdict as V\\nallowed = V['SUPPORTED']\\n")
+    _write_source(
+        root, "api/subscript.py",
+        "from package import Verdict as V\n"
+        "allowed = V['SUPPORTED']\n",
+    )
     assert _verdict_constructor_violations(root) == ["api/subscript.py:2:subscript"]
 
 
@@ -251,7 +259,7 @@ def test_judge_has_no_network_provider_model_or_orchestrator_imports() -> None:
 
 def test_judge_import_guard_detects_synthetic_violation(tmp_path: Path) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
-    _write_source(root, "verification/judge_bad.py", "import requests\\n")
+    _write_source(root, "verification/judge_bad.py", "import requests\n")
     assert _judge_import_violations(root) == ["verification/judge_bad.py:1:requests"]
 
 
@@ -259,8 +267,8 @@ def test_judge_import_guard_detects_dynamic_import_and_eval(tmp_path: Path) -> N
     root = tmp_path / "src" / "ayorai_attractor"
     _write_source(
         root, "verification/judge_dyn.py",
-        "import importlib\\nimportlib.import_module('requests')\\n"
-        "__import__('requests')\\neval('1 + 1')\\n",
+        "import importlib\nimportlib.import_module('requests')\n"
+        "__import__('requests')\neval('1 + 1')\n",
     )
     violations = _judge_import_violations(root)
     assert any(":importlib" in item for item in violations)
