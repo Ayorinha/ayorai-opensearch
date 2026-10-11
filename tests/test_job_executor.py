@@ -1,9 +1,19 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 import pytest
 
 from ayorai_attractor.job_executor import JobExecutor
 from ayorai_attractor.job_store import Job, JobStatus, JobStore
+
+
+@pytest.fixture
+def store() -> Iterator[JobStore]:
+    instance = JobStore(':memory:')
+    try:
+        yield instance
+    finally:
+        instance.close()
 
 
 @dataclass
@@ -15,8 +25,7 @@ class Handler:
             raise RuntimeError("worker failure")
 
 
-def test_executor_claims_runs_and_finishes_successfully() -> None:
-    store = JobStore(":memory:")
+def test_executor_claims_runs_and_finishes_successfully(store: JobStore) -> None:
     store.enqueue("j1", "id-1")
 
     result = JobExecutor(store, Handler()).run("j1", now=100.0)
@@ -26,7 +35,7 @@ def test_executor_claims_runs_and_finishes_successfully() -> None:
     assert result.lease_until is None
 
 
-def test_executor_marks_handler_failure_as_failed() -> None:
+def test_executor_marks_handler_failure_as_failed(store: JobStore) -> None:
     store = JobStore(":memory:")
     store.enqueue("j1", "id-1")
 
@@ -37,7 +46,7 @@ def test_executor_marks_handler_failure_as_failed() -> None:
     assert result.lease_until is None
 
 
-def test_executor_rejects_a_non_queued_job() -> None:
+def test_executor_rejects_a_non_queued_job(store: JobStore) -> None:
     store = JobStore(":memory:")
     store.enqueue("j1", "id-1")
     JobExecutor(store, Handler()).run("j1", now=100.0)

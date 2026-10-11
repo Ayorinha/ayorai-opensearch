@@ -33,6 +33,7 @@ class JobStore:
 
     def __init__(self, path: str = ":memory:") -> None:
         self._connection = sqlite3.connect(path, check_same_thread=False)
+        self._closed = False
         self._connection.execute(
             """
             CREATE TABLE IF NOT EXISTS jobs (
@@ -51,6 +52,20 @@ class JobStore:
         if "lease_until" not in columns:
             self._connection.execute("ALTER TABLE jobs ADD COLUMN lease_until REAL")
         self._connection.commit()
+
+    def close(self) -> None:
+        """Close the SQLite connection; repeated calls are safe."""
+        if not self._closed:
+            self._connection.close()
+            self._closed = True
+
+    def __enter__(self) -> JobStore:
+        if self._closed:
+            raise RuntimeError("JobStore is closed")
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        self.close()
 
     def enqueue(self, job_id: str, idempotency_key: str) -> Job:
         existing = self._connection.execute(

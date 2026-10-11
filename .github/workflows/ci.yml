@@ -180,7 +180,7 @@ jobs:
       - run: mypy src/ayorai_attractor
       - name: Strict mypy blocking — evidence
         run: mypy --strict src/ayorai_attractor/evidence
-      - run: pytest --cov=ayorai_attractor --cov-report=xml --cov-report=json --cov-report=term-missing
+      - run: pytest -W error::ResourceWarning --cov=ayorai_attractor --cov-report=xml --cov-report=json --cov-report=term-missing
       - name: Enforce per-module verification backend coverage
         run: |
           python - <<'PY'
