@@ -73,7 +73,7 @@ Report SHA-256: 0c7fad3b4bc4db96f888ac0b26f45bb4b0f7616a6e63e8df5bfb7d73a30342a9
 
 ## E2 Audit Conclusion
 
-Claude audit approved commit `22579cfbec65351d7a95b795ad8bf9e10786de27`.
+Independent review approved commit `22579cfbec65351d7a95b795ad8bf9e10786de27`.
 
 - H1 is **inconclusive for long documents**: 35/40 Golden documents have one sentence and none exceeds 512 characters, so H1 is equivalent to the existing 512-character window on those cases.
 - On the 5 two-sentence documents, H1 was harmful for path B (**-3 cases**).
@@ -84,7 +84,7 @@ Claude audit approved commit `22579cfbec65351d7a95b795ad8bf9e10786de27`.
 
 ## E3 Audit Reconciliation
 
-Claude audit approved E3 measurement at commit `7309a24107d736395c2b64f48fc737370e28ceb8`.
+Independent review approved E3 measurement at commit `7309a24107d736395c2b64f48fc737370e28ceb8`.
 
 - **Gold-label deviation:** E3 used the case-level **GLOBAL** verdict as the binary gold, not the claim-level stance specified by the E3 amendment. The implemented binary mapping is `SUPPORTS/SUPPORTED/VERIFIED -> SUSTENTADO`; all other global verdicts, including `PARTIALLY_SUPPORTED` and `CONFLICTING`, map to `NAO_SUSTENTADO`. The E3 measurement remains valid as a measurement of this explicitly documented case-level binary task; it is **not** a claim-level rerun and will not be rerun on this Golden.
 - **Binary majority baseline:** 23/30 = **76.67%**. Any binary A/B/C accuracy cited for the E3 comparison must be read against this baseline.
