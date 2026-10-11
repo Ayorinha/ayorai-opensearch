@@ -124,5 +124,11 @@ def test_r1_a_response_bytes_match_pre_policy_baseline() -> None:
     client = TestClient(app)
     for case in baseline["cases"]:
         response = client.post("/v1/verify", json=case["request"])
-        assert response.status_code == 200, case["name"]
+        assert response.status_code == case["expected_status_code"], case["name"]
+        assert response.headers["content-type"] == case["expected_content_type"], case["name"]
         assert response.content.decode("utf-8") == case["expected_body"], case["name"]
+
+    for case in baseline["invalid_requests"]:
+        response = client.post("/v1/verify", json=case["request"])
+        assert response.status_code == case["expected_status_code"], case["name"]
+        assert response.headers["content-type"] == case["expected_content_type"], case["name"]
