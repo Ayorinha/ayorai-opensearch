@@ -216,9 +216,10 @@ def _evidence_dispositions(
             if item.normalized_content_hash is not None:
                 normalized_source = unicodedata.normalize("NFC", source_text)
                 actual_hash = hashlib.sha256(normalized_source.encode("utf-8")).hexdigest()
-                if actual_hash != item.normalized_content_hash or locate_excerpt(
-                    source_text, item.excerpt
-                ) is None:
+                excerpt_at_offsets = unicodedata.normalize(
+                    "NFC", source_text[item.start_offset:item.end_offset]
+                ) == unicodedata.normalize("NFC", item.excerpt)
+                if actual_hash != item.normalized_content_hash or not excerpt_at_offsets:
                     results.append(EvidenceDisposition(item.id, atom_id, False, "EXCERPT_MISMATCH"))
                     continue
             stance = stance_by_pair.get((atom_id, item.id))
