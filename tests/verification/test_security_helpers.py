@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pytest
 
+from ayorai_attractor.verification.response import VerificationResponse
 from ayorai_attractor.verification.security import (
     assert_no_secret,
     contains_secret,
 )
+
+
+@dataclass
+class ResponseFixture:
+    rationale: str
+    metadata: dict[str, str]
 
 
 @pytest.mark.parametrize(
@@ -61,6 +70,33 @@ def test_secret_detection_handles_portuguese_evidence_and_report_fields() -> Non
     assert contains_secret(response, "token-secreto")
     with pytest.raises(ValueError, match="response contains an evaluation secret"):
         assert_no_secret(response, "token-secreto")
+
+
+def test_contains_secret_inspects_real_pydantic_verification_response() -> None:
+    response = VerificationResponse.no_answer("A resposta expôs token-secreto.")
+    assert contains_secret(response, "token-secreto")
+    with pytest.raises(ValueError, match="response contains an evaluation secret"):
+        assert_no_secret(response, "token-secreto")
+
+
+def test_contains_secret_inspects_dataclass_fields() -> None:
+    response = ResponseFixture(
+        rationale="texto público",
+        metadata={"observacao": "segredo token-secreto"},
+    )
+    assert contains_secret(response, "token-secreto")
+
+
+@pytest.mark.parametrize("value", [b"prefix token-secreto suffix", bytearray(b"token-secreto")])
+def test_contains_secret_inspects_bytes_and_bytearray(value: bytes | bytearray) -> None:
+    assert contains_secret(value, "token-secreto")
+
+
+@pytest.mark.parametrize("function", [contains_secret, assert_no_secret])
+@pytest.mark.parametrize("secret", ["", ""])
+def test_empty_secret_is_rejected(function: object, secret: str) -> None:
+    with pytest.raises(ValueError, match="secret must be non-empty"):
+        function("texto público", secret)  # type: ignore[operator]
 
 
 def test_assert_no_secret_accepts_response_without_secret() -> None:

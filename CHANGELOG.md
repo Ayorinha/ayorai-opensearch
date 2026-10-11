@@ -12,6 +12,8 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ### Fixed
 
+- Secret-leak checks now inspect Pydantic response models, dataclasses, and byte strings; empty secrets are rejected instead of matching every text value. The check detects leakage of an exact known secret and is not a generic credential detector.
+
 - `/v1/verify` now returns structured HTTP 422 responses only for the five classified invalid Judge input conditions: duplicate evidence IDs, dangling references, duplicate stances, duplicate claim IDs, and stances referencing nonexistent claims. Unexpected `ValueError` exceptions are not translated into client errors. The r1-a baseline fixture records the three previously observed 500 cases as structured 422 invalid requests; regression tests cover all five categories and a 250-example Hypothesis property check.
 
 ### Changed

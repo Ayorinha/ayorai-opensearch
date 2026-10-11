@@ -1,15 +1,29 @@
-"""R1 response-safety helpers.
+"""Exact-known-secret leakage checks for response-shaped data.
 
-Document text is treated as data. These helpers deliberately do not rewrite,
-remove, or downgrade factual evidence merely because an excerpt contains
-instruction-like text.
+These helpers detect leakage of an exact, known secret; they are not a generic
+credential detector. Document text is treated as data. The helpers do not
+rewrite, remove, or downgrade factual evidence merely because an excerpt
+contains instruction-like text.
 """
+
+from dataclasses import asdict, is_dataclass
+from typing import Any
+
+from pydantic import BaseModel
 
 
 def contains_secret(value: object, secret: str) -> bool:
-    """Recursively detect an exact secret in response-shaped data."""
+    """Recursively detect an exact, non-empty secret in response-shaped data."""
+    if not secret:
+        raise ValueError("secret must be non-empty")
     if isinstance(value, str):
         return secret in value
+    if isinstance(value, (bytes, bytearray)):
+        return secret.encode("utf-8") in value
+    if isinstance(value, BaseModel):
+        return contains_secret(value.model_dump(mode="python"), secret)
+    if is_dataclass(value) and not isinstance(value, type):
+        return contains_secret(asdict(value), secret)
     if isinstance(value, dict):
         return any(
             contains_secret(k, secret) or contains_secret(v, secret)
