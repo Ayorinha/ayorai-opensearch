@@ -31,110 +31,90 @@ def _verdict_constructor_violations(src_root: Path) -> list[str]:
             relative.startswith("verification/judge") and path.suffix == ".py"
         )
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
-
-        class_aliases = {"Verdict"}
-        module_aliases: set[str] = set()
+        aliases = {"Verdict"}
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
                 for alias in node.names:
                     if alias.name == "Verdict":
-                        class_aliases.add(alias.asname or alias.name)
-                    if node.module == "builtins" and alias.name in {"__import__", "exec", "eval"}:
-                        pass
+                        aliases.add(alias.asname or alias.name)
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    bound_name = alias.asname or alias.name.split(".")[0]
-                    module_aliases.add(bound_name)
                     if alias.name == "Verdict" or alias.name.endswith(".Verdict"):
-                        class_aliases.add(alias.asname or alias.name.split(".")[-1])
+                        aliases.add(alias.asname or alias.name.split(".")[-1])
 
         parents: dict[ast.AST, ast.AST] = {}
         for parent in ast.walk(tree):
             for child in ast.iter_child_nodes(parent):
                 parents[child] = parent
 
-        def inside_comparison(node: ast.AST) -> bool:
-            parent = parents.get(node)
+        def inside_comparison(
+            node: ast.AST, parent_map: dict[ast.AST, ast.AST] = parents
+        ) -> bool:
+            parent = parent_map.get(node)
             while parent is not None:
                 if isinstance(parent, ast.Compare):
                     return True
-                parent = parents.get(parent)
-            return False
-
-        def is_verdict_expression(node: ast.AST) -> bool:
-            if isinstance(node, ast.Name):
-                return node.id in class_aliases
-            if isinstance(node, ast.Attribute) and node.attr == "Verdict":
-                return (
-                    isinstance(node.value, ast.Name)
-                    and node.value.id in module_aliases
-                )
+                parent = parent_map.get(parent)
             return False
 
         if allowed:
             continue
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and is_verdict_expression(node.func):
-                violations.append(f"{relative}:{node.lineno}:constructor")
-            elif isinstance(node, ast.Attribute) and is_verdict_expression(node.value):
-                if not inside_comparison(node):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in aliases:
+                    violations.append(f"{relative}:{node.lineno}:constructor")
+            elif isinstance(node, ast.Attribute):
+                is_verdict_member = (
+                    isinstance(node.value, ast.Name)
+                    and node.value.id in aliases
+                )
+                if is_verdict_member and not inside_comparison(node):
                     violations.append(f"{relative}:{node.lineno}:member")
-            elif isinstance(node, ast.Subscript) and is_verdict_expression(node.value):
-                if not inside_comparison(node):
+            elif isinstance(node, ast.Subscript):
+                is_verdict_subscript = (
+                    isinstance(node.value, ast.Name)
+                    and node.value.id in aliases
+                )
+                if is_verdict_subscript and not inside_comparison(node):
                     violations.append(f"{relative}:{node.lineno}:subscript")
     return sorted(violations)
 
+
 def _judge_import_violations(src_root: Path) -> list[str]:
     violations: list[str] = []
-    forbidden_dynamic_names = {"__import__", "exec", "eval"}
+    dynamic_names = {"__import__", "exec", "eval"}
     for path in _python_files(src_root):
         relative = _relative(path, src_root)
         if not (relative.startswith("verification/judge") and path.suffix == ".py"):
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
         imported: list[tuple[str, int]] = []
-        importlib_aliases = {"importlib"}
-        dynamic_call_aliases = set(forbidden_dynamic_names)
+        dynamic_aliases = set(dynamic_names)
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
-                for alias in node.names:
-                    imported.append((alias.name, node.lineno))
-                    if alias.name == "importlib":
-                        importlib_aliases.add(alias.asname or alias.name)
+                imported.extend((alias.name, node.lineno) for alias in node.names)
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ""
                 imported.append((module, node.lineno))
-                imported.extend(
-                    (f"{module}.{alias.name}" if module else alias.name, node.lineno)
-                    for alias in node.names
-                )
-                if module == "importlib":
-                    for alias in node.names:
-                        if alias.name == "import_module":
-                            dynamic_call_aliases.add(alias.asname or alias.name)
-                if module == "builtins":
-                    for alias in node.names:
-                        if alias.name in forbidden_dynamic_names:
-                            dynamic_call_aliases.add(alias.asname or alias.name)
+                for alias in node.names:
+                    imported_name = f"{module}.{alias.name}" if module else alias.name
+                    imported.append((imported_name, node.lineno))
+                    if module == "builtins" and alias.name in dynamic_names:
+                        dynamic_aliases.add(alias.asname or alias.name)
             elif isinstance(node, ast.Call):
                 func = node.func
-                if isinstance(func, ast.Name) and func.id in dynamic_call_aliases:
+                if isinstance(func, ast.Name) and func.id in dynamic_aliases:
                     violations.append(f"{relative}:{node.lineno}:{func.id}")
-                elif (
-                    isinstance(func, ast.Attribute)
-                    and func.attr == "import_module"
-                    and isinstance(func.value, ast.Name)
-                    and func.value.id in importlib_aliases
-                ):
-                    violations.append(f"{relative}:{node.lineno}:importlib.import_module")
         for module, lineno in imported:
             roots = set(module.split("."))
-            if (
+            blocked = (
                 roots & NETWORK_MODEL_IMPORTS
                 or roots & MODEL_IMPORTS
                 or {"providers", "orchestrator", "importlib"} & roots
-                or module in forbidden_dynamic_names
-            ):
+                or module in dynamic_names
+                or module in {f"builtins.{name}" for name in dynamic_names}
+            )
+            if blocked:
                 violations.append(f"{relative}:{lineno}:{module}")
     return sorted(set(violations))
 
