@@ -13,8 +13,18 @@ class ResponsePolicy(StrEnum):
     ABSTAIN_PROCESSING_ERROR = "abstain/processing_error"
 
 
-# Deprecated compatibility name for callers that used the former mixed status enum.
-ResponseStatus = Verdict | ResponsePolicy
+class ResponseStatus(StrEnum):
+    """Deprecated compatibility enum; new contracts use Verdict | ResponsePolicy."""
+
+    VERIFIED = "verified"
+    SUPPORTED = "supported"
+    PARTIALLY_SUPPORTED = "partially_supported"
+    CONFLICTING = "conflicting"
+    REFUTED = "refuted"
+    UNVERIFIED = "unverified"
+    ABSTAIN_NO_ANSWER = "abstain/no_answer"
+    ABSTAIN_OUT_OF_SCOPE = "abstain/out_of_scope"
+    ABSTAIN_PROCESSING_ERROR = "abstain/processing_error"
 
 
 class VerificationResponse(BaseModel):
