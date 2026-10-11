@@ -31,54 +31,76 @@ def _verdict_constructor_violations(src_root: Path) -> list[str]:
             relative.startswith("verification/judge") and path.suffix == ".py"
         )
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
-        aliases = {"Verdict"}
+        verdict_aliases = {"Verdict"}
+        module_aliases: set[str] = set()
+        imported_modules: set[str] = set()
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
+            if isinstance(node, ast.Import):
                 for alias in node.names:
+                    bound = alias.asname or alias.name.split(".")[0]
+                    module_aliases.add(bound)
+                    imported_modules.add(alias.name)
+            elif isinstance(node, ast.ImportFrom):
+                module = node.module or ""
+                for alias in node.names:
+                    bound = alias.asname or alias.name
                     if alias.name == "Verdict":
-                        aliases.add(alias.asname or alias.name)
-            elif isinstance(node, ast.Import):
-                for alias in node.names:
-                    if alias.name == "Verdict" or alias.name.endswith(".Verdict"):
-                        aliases.add(alias.asname or alias.name.split(".")[-1])
+                        verdict_aliases.add(bound)
+                    else:
+                        module_aliases.add(bound)
+                    if module:
+                        imported_modules.add(module)
 
         parents: dict[ast.AST, ast.AST] = {}
         for parent in ast.walk(tree):
             for child in ast.iter_child_nodes(parent):
                 parents[child] = parent
 
-        def inside_comparison(
-            node: ast.AST, parent_map: dict[ast.AST, ast.AST] = parents
-        ) -> bool:
-            parent = parent_map.get(node)
+        def inside_comparison(node: ast.AST) -> bool:
+            parent = parents.get(node)
             while parent is not None:
                 if isinstance(parent, ast.Compare):
                     return True
-                parent = parent_map.get(parent)
+                parent = parents.get(parent)
+            return False
+
+        def dotted_name(node: ast.AST) -> str | None:
+            if isinstance(node, ast.Name):
+                return node.id
+            if isinstance(node, ast.Attribute):
+                prefix = dotted_name(node.value)
+                return f"{prefix}.{node.attr}" if prefix else None
+            return None
+
+        def is_verdict_type(node: ast.AST) -> bool:
+            if isinstance(node, ast.Name):
+                return node.id in verdict_aliases
+            if isinstance(node, ast.Attribute) and node.attr == "Verdict":
+                dotted = dotted_name(node)
+                prefix = dotted.rsplit(".Verdict", 1)[0] if dotted else ""
+                return prefix in module_aliases or prefix in imported_modules
             return False
 
         if allowed:
             continue
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-                if node.func.id in aliases:
+            if isinstance(node, ast.Call):
+                if is_verdict_type(node.func):
                     violations.append(f"{relative}:{node.lineno}:constructor")
+                elif (
+                    isinstance(node.func, ast.Name)
+                    and node.func.id == "getattr"
+                    and node.args
+                    and is_verdict_type(node.args[0])
+                ):
+                    violations.append(f"{relative}:{node.lineno}:getattr")
             elif isinstance(node, ast.Attribute):
-                is_verdict_member = (
-                    isinstance(node.value, ast.Name)
-                    and node.value.id in aliases
-                )
-                if is_verdict_member and not inside_comparison(node):
+                if is_verdict_type(node.value) and not inside_comparison(node):
                     violations.append(f"{relative}:{node.lineno}:member")
             elif isinstance(node, ast.Subscript):
-                is_verdict_subscript = (
-                    isinstance(node.value, ast.Name)
-                    and node.value.id in aliases
-                )
-                if is_verdict_subscript and not inside_comparison(node):
+                if is_verdict_type(node.value) and not inside_comparison(node):
                     violations.append(f"{relative}:{node.lineno}:subscript")
-    return sorted(violations)
-
+    return sorted(set(violations))
 
 def _judge_import_violations(src_root: Path) -> list[str]:
     violations: list[str] = []
@@ -90,9 +112,13 @@ def _judge_import_violations(src_root: Path) -> list[str]:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
         imported: list[tuple[str, int]] = []
         dynamic_aliases = set(dynamic_names)
+        importlib_aliases = {"importlib"}
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
-                imported.extend((alias.name, node.lineno) for alias in node.names)
+                for alias in node.names:
+                    imported.append((alias.name, node.lineno))
+                    if alias.name == "importlib":
+                        importlib_aliases.add(alias.asname or alias.name)
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ""
                 imported.append((module, node.lineno))
@@ -101,10 +127,21 @@ def _judge_import_violations(src_root: Path) -> list[str]:
                     imported.append((imported_name, node.lineno))
                     if module == "builtins" and alias.name in dynamic_names:
                         dynamic_aliases.add(alias.asname or alias.name)
+                    if module == "importlib" and alias.name == "import_module":
+                        dynamic_aliases.add(alias.asname or alias.name)
             elif isinstance(node, ast.Call):
                 func = node.func
                 if isinstance(func, ast.Name) and func.id in dynamic_aliases:
                     violations.append(f"{relative}:{node.lineno}:{func.id}")
+                elif (
+                    isinstance(func, ast.Attribute)
+                    and func.attr == "import_module"
+                    and isinstance(func.value, ast.Name)
+                    and func.value.id in importlib_aliases
+                ):
+                    violations.append(
+                        f"{relative}:{node.lineno}:importlib.import_module"
+                    )
         for module, lineno in imported:
             roots = set(module.split("."))
             blocked = (
@@ -280,7 +317,9 @@ def test_judge_import_guard_detects_dynamic_import_and_eval(tmp_path: Path) -> N
 
 
 
-def test_verdict_guard_detects_qualified_module_alias_and_comparison_is_allowed(tmp_path: Path) -> None:
+def test_verdict_guard_detects_qualified_module_alias_and_comparison_is_allowed(
+    tmp_path: Path,
+) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
     _write_source(
         root, "api/qualified.py",
@@ -294,6 +333,29 @@ def test_verdict_guard_detects_qualified_module_alias_and_comparison_is_allowed(
     )
     assert _verdict_constructor_violations(root) == ["api/qualified.py:2:member"]
 
+
+
+
+def test_verdict_guard_detects_getattr_alias(tmp_path: Path) -> None:
+    root = tmp_path / "src" / "ayorai_attractor"
+    _write_source(
+        root,
+        "api/getattr.py",
+        "from package import Verdict as V\n"
+        "member = getattr(V, 'SUPPORTED')\n",
+    )
+    assert _verdict_constructor_violations(root) == ["api/getattr.py:2:getattr"]
+
+
+def test_verdict_guard_detects_nested_qualified_verdict(tmp_path: Path) -> None:
+    root = tmp_path / "src" / "ayorai_attractor"
+    _write_source(
+        root,
+        "api/nested.py",
+        "import x.models as m\n"
+        "member = m.Verdict.SUPPORTED\n",
+    )
+    assert _verdict_constructor_violations(root) == ["api/nested.py:2:member"]
 
 def test_judge_import_guard_detects_aliased_dynamic_imports(tmp_path: Path) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
