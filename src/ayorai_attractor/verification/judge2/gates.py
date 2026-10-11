@@ -11,7 +11,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from ayorai_attractor.verification.excerpt import locate_excerpt
 from ayorai_attractor.verification.judge import InvalidJudgeInput
 from ayorai_attractor.verification.models import Evidence
 
