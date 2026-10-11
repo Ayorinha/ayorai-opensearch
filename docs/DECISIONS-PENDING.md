@@ -4,7 +4,22 @@ This file records decisions that require explicit maintainer approval. It is a q
 
 Owner and final decision-maker: Anderson Leon Ayora  
 Independent reviewer: revisor independente  
-Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
+Source: execution plan v5, work queue
+
+## Decisões aprovadas
+
+### DEC-005 — r1-a: entrada inválida retorna 500
+
+- **Data da decisão:** 11/10/2026
+- **Decisor:** Anderson Leon Ayora
+- **Opção aprovada:** A
+- **Alternativa não escolhida:** B — manter 500 em r1-a e corrigir só em r2-a; rejeitada porque um 500 nunca foi contrato e um sistema de auditoria não pode falhar com entrada do usuário.
+- **Decisão:** Converter falhas de validação de entrada que hoje escapam como `ValueError` do Judge em respostas HTTP 422 estruturadas na v0.4.0, documentando a correção no CHANGELOG.
+- **Escopo conhecido:** IDs de evidência duplicados, referências a evidências inexistentes, stances duplicadas, IDs de claim duplicados e stances que apontem para claims inexistentes. Cada categoria deve ter teste específico e formato de erro compatível com o FastAPI.
+- **Sequenciamento obrigatório:** Implementar em PR própria após a PR do ResponsePolicy. A PR de baseline #132 permanece como fotografia histórica; a alteração posterior da fixture só poderá mover os três casos de `known_defects` para `invalid_requests` e registrar os corpos 422 esperados, junto com a correção correspondente.
+- **Limites:** Não alterar a fixture baseline na PR do ResponsePolicy. Não alterar goldens, corpus, manifestos ou hashes congelados. Não permitir que entradas do schema r1-a produzam HTTP 500.
+- **Evidência inicial:** PR #132 congelou os três comportamentos atuais de HTTP 500 antes da mudança de código: https://github.com/Ayorinha/ayorai-opensearch/pull/132
+- **Status de implementação:** Aprovada; implementação pendente em PR separada após ResponsePolicy.
 
 ## DEC-001 — F3.5: uv lockfile and Docker image digests
 
@@ -73,21 +88,6 @@ Source: AYORAI ATTRACTOR Prompt Mestre v4.1, execution queue
   3. Defer the naming decision and publish only technical documentation until positioning is approved.
 - **Impact to assess:** Public discoverability, continuity of repository links, brand consistency, technical accuracy, and maintenance burden.
 - **Approval gate:** Anderson decides the name and positioning; revisor independente reviews factual claims and the documentation diff before publication.
-
-## DEC-005 — r1-a: entrada inválida retorna 500
-
-- **Data:** 11/10/2026
-- **Bloqueia:** nada da Fase 1; a correção deve ser uma PR própria logo após o ResponsePolicy.
-- **Recomendação técnica:** Opção A — corrigir para 422 com mensagem estruturada já na v0.4.0, como correção de bug documentada no CHANGELOG. Um 500 nunca foi contrato.
-- **Status:** Pending maintainer decision
-- **Decision area:** API input validation and error contract
-- **Question:** Should malformed but schema-valid requests that currently raise `ValueError` in the deterministic Judge be converted into structured HTTP 422 responses in v0.4.0, or should the behavior remain in r1-a until r2-a?
-- **Context:** The pre-ResponsePolicy baseline reproduced three invalid-input cases that currently return HTTP 500: duplicate evidence IDs, a stance referencing a nonexistent evidence ID, and multiple stances for one evidence item. The route does not catch these Judge `ValueError` exceptions. The baseline-only PR records these responses as known defects and must not fix them.
-- **Options:**
-  1. **A — Recommended:** Map these input-validation failures to structured HTTP 422 responses in v0.4.0; document the bug fix in the CHANGELOG and add regression tests in a separate PR after ResponsePolicy.
-  2. **B:** Preserve current r1-a behavior and defer correction to r2-a under `G1/INVALID_INPUT`.
-- **Impact to assess:** r1-a compatibility, API error consistency, structured error schema, test coverage, and CHANGELOG accuracy.
-- **Approval gate:** Anderson explicitly selects A or B. This entry records the recommendation only and does not authorize implementation; the correction must be a separate PR after ResponsePolicy.
 
 ## Queue rules
 
