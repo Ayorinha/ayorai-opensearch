@@ -47,12 +47,37 @@ _COMPOSITE_PREDICATES = {
     "otherwise",
 }
 _RULE_FIELDS = {
-    "input_gate": {"id", "code", "outcome"},
-    "abstention": {"id", "code", "outcome"},
+    "input_gate": {"id", "rule_id", "code", "outcome"},
+    "abstention": {"id", "rule_id", "code", "outcome"},
     "evidence_admissibility": {"id", "criterion", "rejection"},
     "atomic_rules": {"id", "when", "verdict"},
     "robustness_rules": {"id", "when", "value", "label"},
     "composite_rules": {"id", "when", "verdict", "robustness_atoms", "robustness"},
+}
+_EXPECTED_CODES = {
+    "input_gate": {
+        "SCHEMA_VIOLATION",
+        "EMPTY_CLAIM",
+        "NO_ATOMS",
+        "DUPLICATE_ID",
+        "DANGLING_REFERENCE",
+        "DUPLICATE_STANCE",
+        "ATOM_SPAN_OUT_OF_RANGE",
+        "UNSUPPORTED_PROTOCOL_VERSION",
+    },
+    "abstention": {
+        "OUT_OF_SCOPE",
+        "NON_FACTUAL_CLAIM",
+        "MISSING_TEMPORAL_ANCHOR",
+        "RETRIEVAL_FAILURE",
+        "EVIDENCE_POOL_INTEGRITY_FAILURE",
+    },
+}
+_EXPECTED_IDS = {
+    "atomic_rules": {"A1", "A2", "A3", "A4"},
+    "robustness_rules": {"R0", "R1", "R2", "R3"},
+    "composite_rules": {"K1", "K2", "K3", "K4", "K5"},
+    "evidence_admissibility": {"E1", "E2", "E3"},
 }
 
 
@@ -80,6 +105,14 @@ def _validate_rules(rules: dict[str, Any]) -> None:
             f"missing={sorted(missing_root)}"
         )
 
+    enums = rules["enums"]
+    for enum_name in ("decision_state", "verdict", "robustness"):
+        if not isinstance(enums.get(enum_name), list) or not enums[enum_name]:
+            raise JudgeRulesError(f"enums.{enum_name} must be a non-empty list")
+        if len(enums[enum_name]) != len(set(enums[enum_name])):
+            raise JudgeRulesError(f"enums.{enum_name} contains duplicate values")
+
+    all_rule_ids: list[str] = []
     for section, allowed_fields in _RULE_FIELDS.items():
         entries = rules.get(section)
         if not isinstance(entries, list):
@@ -90,8 +123,7 @@ def _validate_rules(rules: dict[str, Any]) -> None:
             unknown = set(entry) - allowed_fields
             required_fields = allowed_fields
             if section in {"input_gate", "abstention"}:
-                # Only identifiers explicitly assigned by ADR-009 are mandatory.
-                required_fields = allowed_fields - {"id"}
+                required_fields = allowed_fields
             elif section == "composite_rules":
                 required_fields = {"id", "when", "verdict"}
                 if not ({"robustness_atoms", "robustness"} & set(entry)):
@@ -104,6 +136,49 @@ def _validate_rules(rules: dict[str, Any]) -> None:
                     f"invalid fields in {section}[{index}]: "
                     f"unknown={sorted(unknown)}, missing={sorted(missing)}"
                 )
+            if "id" in entry:
+                all_rule_ids.append(entry["rule_id"] if section in {"input_gate", "abstention"} else entry["id"])
+
+            if "verdict" in entry and entry["verdict"] not in enums["verdict"]:
+                raise JudgeRulesError(
+                    f"invalid verdict in {section}[{index}]: {entry['verdict']!r}"
+                )
+            if "outcome" in entry and entry["outcome"] not in enums["decision_state"]:
+                raise JudgeRulesError(
+                    f"invalid outcome in {section}[{index}]: {entry['outcome']!r}"
+                )
+            if "robustness" in entry and entry["robustness"] not in enums["robustness"]:
+                raise JudgeRulesError(
+                    f"invalid robustness in {section}[{index}]: {entry['robustness']!r}"
+                )
+
+    if len(all_rule_ids) != len(set(all_rule_ids)):
+        raise JudgeRulesError("duplicate rule_id or rule id detected")
+
+    for section, expected_codes in _EXPECTED_CODES.items():
+        entries = rules[section]
+        codes = [entry.get("code") for entry in entries]
+        if len(codes) != len(set(codes)) or set(codes) != expected_codes:
+            raise JudgeRulesError(
+                f"{section} must contain each expected G code exactly once"
+            )
+        expected_id = "G1" if section == "input_gate" else "G2"
+        for entry in entries:
+            if entry.get("id") != expected_id:
+                raise JudgeRulesError(f"{section} entries must all use id {expected_id}")
+            expected_rule_id = f"2.0.0/{expected_id}:{entry['code']}"
+            if entry.get("rule_id") != expected_rule_id:
+                raise JudgeRulesError(
+                    f"invalid rule_id for {entry['code']}: expected {expected_rule_id}"
+                )
+
+    for section, expected_ids in _EXPECTED_IDS.items():
+        entries = rules[section]
+        ids = [entry.get("id") for entry in entries]
+        if len(ids) != len(set(ids)) or set(ids) != expected_ids:
+            raise JudgeRulesError(
+                f"{section} must contain each expected rule ID exactly once"
+            )
 
     for index, rule in enumerate(rules["atomic_rules"]):
         predicate = rule["when"]
