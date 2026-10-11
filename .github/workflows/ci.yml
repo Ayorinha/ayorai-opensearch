@@ -180,7 +180,36 @@ jobs:
       - run: mypy src/ayorai_attractor
       - name: Strict mypy blocking — evidence
         run: mypy --strict src/ayorai_attractor/evidence
-      - run: pytest --cov=ayorai_attractor --cov-report=xml --cov-report=term-missing
+      - run: pytest --cov=ayorai_attractor --cov-report=xml --cov-report=json --cov-report=term-missing
+      - name: Enforce per-module verification backend coverage
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("coverage.json").read_text(encoding="utf-8"))
+          required = {
+              "verification/security.py": 90.0,
+              "verification/translation.py": 80.0,
+              "verification/nli.py": 80.0,
+          }
+          files = report["files"]
+          for suffix, threshold in required.items():
+              matches = [
+                  details for path, details in files.items()
+                  if path.endswith(suffix)
+              ]
+              if len(matches) != 1:
+                  raise SystemExit(
+                      f"expected exactly one coverage entry ending in {suffix!r}; found {len(matches)}"
+                  )
+              measured = matches[0]["summary"]["percent_covered"]
+              print(f"{suffix}: {measured:.2f}% (required >= {threshold:.0f}%)")
+              if measured < threshold:
+                  raise SystemExit(
+                      f"{suffix} coverage {measured:.2f}% is below {threshold:.0f}%"
+                  )
+          PY
       - name: Enforce monotonic coverage ratchet
         shell: bash
         run: |

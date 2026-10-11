@@ -32,7 +32,6 @@ No unreleased entries yet.
   formal-verification endpoint. Operational failures are reported separately in `operation_status`.
   The deprecated `verification` and `confidence` response fields are scheduled for removal in v0.5.0.
 - SQLite audit storage uses a versioned schema via `PRAGMA user_version` and idempotent migration from existing databases. The migration preserves `legacy_verification` and does not rewrite historical digests. Replay records distinguish `r2-v1` (legacy verification values) and `r2-v2` (`not_adjudicated`); audit lookup exposes `replay_integrity` as `valid` or `invalid` so tampered records can be identified.
-- Audit replay digests use `r2-v1` for records created before PR 1.2a with legacy verification values and `r2-v2` for new records whose verification event is `not_adjudicated`. Audit lookup reports `operation_status=not_recorded` until the status is persisted by PR 1.2b.
 
 - Rule stance (detector version 6): Portuguese number words, legal duplicates `40 (quarenta)`, fractions and multipliers, duration conversion (1 ano = 12 meses), `vezes`/`dias-multa`, set semantics per fact, comparative bounds not read as negation, competing named actors block support. New module `verification/pt_normalize.py`.
 
