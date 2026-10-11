@@ -111,3 +111,18 @@ def test_verify_rejects_extra_fields_and_invalid_schema_version() -> None:
 
     assert extra.status_code == 422
     assert invalid_version.status_code == 422
+
+
+def test_r1_a_response_bytes_match_pre_policy_baseline() -> None:
+    import json
+    from pathlib import Path
+
+    fixture_path = Path(__file__).parent / "fixtures" / "r1-a-response-baseline.json"
+    baseline = json.loads(fixture_path.read_text(encoding="utf-8"))
+    assert baseline["protocol"] == "r1-a"
+
+    client = TestClient(app)
+    for case in baseline["cases"]:
+        response = client.post("/v1/verify", json=case["request"])
+        assert response.status_code == 200, case["name"]
+        assert response.content.decode("utf-8") == case["expected_body"], case["name"]
