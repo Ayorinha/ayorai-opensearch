@@ -73,13 +73,13 @@ def _validate_g1(
         raise _invalid("EMPTY_CLAIM", "claim_text", "claim text must not be empty")
     if not isinstance(claim_id, str) or not claim_id:
         raise _invalid("SCHEMA_VIOLATION", "claim_id", "claim_id must be a non-empty string")
-    if not isinstance(atoms, Sequence) or isinstance(atoms, (str, bytes)):
+    if not isinstance(atoms, Sequence) or isinstance(atoms, str | bytes):
         raise _invalid("SCHEMA_VIOLATION", "atoms", "atoms must be a sequence")
     if not atoms:
         raise _invalid("NO_ATOMS", "atoms", "at least one atom is required")
-    if not isinstance(evidence, Sequence) or isinstance(evidence, (str, bytes)):
+    if not isinstance(evidence, Sequence) or isinstance(evidence, str | bytes):
         raise _invalid("SCHEMA_VIOLATION", "evidence", "evidence must be a sequence")
-    if not isinstance(stances, Sequence) or isinstance(stances, (str, bytes)):
+    if not isinstance(stances, Sequence) or isinstance(stances, str | bytes):
         raise _invalid("SCHEMA_VIOLATION", "stances", "stances must be a sequence")
 
     atom_ids: list[str] = []
