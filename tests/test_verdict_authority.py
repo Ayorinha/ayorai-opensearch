@@ -179,10 +179,11 @@ def test_only_golden_evaluation_reads_legacy_baseline() -> None:
 
 def test_legacy_reader_guard_detects_synthetic_violation(tmp_path: Path) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
-    _write_source(
-        root, "api/unauthorized.py",
-        'from pathlib import Path\npath = Path("evals/baselines/legacy-v0/predictions.jsonl")\ndata = path.read_text()\n',
-    )
+    source = """from pathlib import Path
+path = Path("evals/baselines/legacy-v0/predictions.jsonl")
+data = path.read_text()
+"""
+    _write_source(root, "api/unauthorized.py", source)
     assert _legacy_reader_violations(root) == ["api/unauthorized.py"]
 
 
@@ -218,5 +219,11 @@ def test_invalid_judge_input_is_caught_only_in_verify_route() -> None:
 
 def test_invalid_judge_catch_guard_detects_synthetic_violation(tmp_path: Path) -> None:
     root = tmp_path / "src" / "ayorai_attractor"
-    _write_source(root, "api/other.py", "def other():\n    try:\n        pass\n    except InvalidJudgeInput:\n        pass\n")
+    source = """def other():
+    try:
+        pass
+    except InvalidJudgeInput:
+        pass
+"""
+    _write_source(root, "api/other.py", source)
     assert _invalid_judge_catch_violations(root) == ["api/other.py:4"]
