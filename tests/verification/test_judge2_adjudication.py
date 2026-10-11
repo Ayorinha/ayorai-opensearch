@@ -392,7 +392,8 @@ def test_ast_guard_rejects_temporary_module_attribute_access(tmp_path: Path) -> 
     consumer = tmp_path / "consumer.py"
     consumer.write_text(
         "\n".join([
-            "from ayorai_attractor.verification.judge2 import adjudication",
+            "import importlib",
+            "adjudication = importlib.import_module('ayorai_attractor.verification.judge2.adjudication')",
             "adjudication._adjudicate_atoms([], [], object())",
             "",
         ]),
