@@ -50,7 +50,7 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 
 | Requisito | Referência canônica | Código | Teste | Evidência / status | Limitação |
 |---|---|---|---|---|---|
-| LLM não é autoridade final do veredito | §2.1 — LLM ≠ Judge | `src/ayorai_attractor/verification/judge.py`; `src/ayorai_attractor/evidence/core.py` | `tests/test_verification_judge.py`; **sem teste dedicado de exclusividade da autoridade** | [RISCO — Fase 1]; `EvidenceStore.status()` calcula status próprio | Há risco de segunda autoridade; não corrigir nesta PR documental. |
+| LLM não é autoridade final do veredito | §2.1 — LLM ≠ Judge | `src/ayorai_attractor/verification/judge.py`; `src/ayorai_attractor/evidence/core.py` | `tests/test_verification_judge.py`; **teste de exclusividade pendente em F1.4 (PR 1.5)** | removido na PR 1.3 (#129); teste de exclusividade pendente em F1.4 (PR 1.5) | A remoção elimina a via de classificação legada; a exclusividade ainda precisa ser demonstrada por teste automatizado. |
 | Evidência precede conclusão | §2.2 | `src/ayorai_attractor/verification/claim_pipeline.py`; módulos de evidência | `tests/verification/test_claim_pipeline.py` e testes pertinentes de evidência | [PARCIAL]; confirmar relação explícita entre cada conclusão e evidência | A existência de pipeline não prova suporte integral de cada claim. |
 | Proveniência integral | §2.3 | `src/ayorai_attractor/evidence/`; `src/ayorai_attractor/replay.py`; `src/ayorai_attractor/replay_store.py`; `src/ayorai_attractor/evaluation/digest.py` | Testes de evidência/replay; `tests/test_golden_digest.py` | [PARCIAL]; `semantic_sha256` v1 é determinístico para o relatório semântico nos testes; proveniência integral e replay ponta a ponta continuam exigindo validação própria. |
 | Separação entre desenvolvimento, avaliação e validação | §2.4 | `evals/`; `docs/eval/` | `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py`; workflows Golden | [PARCIAL]; verificar segregação real dos conjuntos e processos | Golden congelado não prova, sozinho, independência de todos os conjuntos. |
@@ -69,7 +69,7 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 | Requisito | Referência canônica | Código / artefato | Teste / evidência | Status | Limitação |
 |---|---|---|---|---|---|
 | Escopo, população, exclusões e limites do benchmark explicitados | §4 | `evals/`; `docs/eval/` | `tests/test_judge_evaluation.py`; protocolo e resultados a conferir | [PARCIAL] | Não generalizar além dos casos, categorias e condições documentadas. |
-| Baseline legado corretamente contextualizado | §4; `docs/eval/BASELINE-v0.md`, linha 85 | `src/ayorai_attractor/orchestrator.py`; `src/ayorai_attractor/evidence/core.py` (`EvidenceStore.status`); `src/ayorai_attractor/evaluation/golden.py` (`_legacy_prediction`, linhas 156–164) | `tests/test_judge_evaluation.py` | [DECLARADO NA DOCUMENTAÇÃO DO BASELINE]; 13/30 = 43,3333%; PARTIALLY_SUPPORTED em 30/30 | Igual à classe majoritária; não representa evidência de capacidade geral de verificação. |
+| Baseline legado corretamente contextualizado | §4; `docs/eval/BASELINE-v0.md`, linha 85 | na tag histórica `baseline-legacy-v0`, `orchestrator.py` e `evidence/core.py` (`EvidenceStore.status`) geravam a predição legada; `evaluation/golden.py` contém o comparador histórico | `tests/test_judge_evaluation.py` | [DECLARADO NA DOCUMENTAÇÃO DO BASELINE]; 13/30 = 43,3333%; PARTIALLY_SUPPORTED em 30/30 | Igual à classe majoritária; não representa evidência de capacidade geral de verificação. |
 | Tamanho e composição sustentam as conclusões estatísticas | §4; §7 | `docs/eval/BASELINE-v0.md`; artefatos de avaliação | `tests/test_frozen_artifacts.py`; `tests/test_golden_digest.py` | [LIMITAÇÃO DOCUMENTADA] | n=30; intervalos de confiança incluem o baseline; conclusões devem permanecer restritas. |
 
 ### 2.4 Arquitetura — seção 5 (itens 5.1 a 5.8)
@@ -109,9 +109,9 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 
 1. **ADR-001:** status declarado desatualizado; atualizar somente após decisão do mantenedor. Não editar a ADR nesta PR.
 2. **ADR-009:** substituirá futuramente ADR-002 §§1 e 4; ainda não foi redigida. Não antecipar conteúdo ou decisão.
-3. **Segunda autoridade de veredito:** `EvidenceStore.status()`, em `src/ayorai_attractor/evidence/core.py`, calcula status próprio. Registrar como risco de arquitetura; sem teste dedicado de exclusividade identificado. Não alterar nesta PR documental.
+3. **Segunda autoridade de veredito (histórica):** na tag `baseline-legacy-v0`, `EvidenceStore.status()` gerava uma classificação própria. A implementação foi removida pela PR 1.3 (#129); o teste automatizado de exclusividade permanece pendente em F1.4 (PR 1.5).
 4. **Digest semântico — PR 0.9:** `semantic_sha256` v1 tem implementação isolada, testes de estabilidade em processo/subprocesso e referências de métricas Golden v0/v0.1. `content_sha256` permanece legado, sem alteração de semântica; sua variação por latência aninhada está documentada.
-5. **Baseline legado:** `orchestrator.py` + `evidence/core.py` (`EvidenceStore.status`) + `evaluation/golden.py` (`_legacy_prediction`, linhas 156–164). A documentação `docs/eval/BASELINE-v0.md`, linha 85, informa PARTIALLY_SUPPORTED em 30/30 e 13/30 corretos (43,3333%), igual à classe majoritária. Não citar `judge.py` como origem desta predição legada.
+5. **Baseline legado:** na tag `baseline-legacy-v0`, `orchestrator.py` e `evidence/core.py` (`EvidenceStore.status`) geravam a predição histórica; `evaluation/golden.py` mantém o comparador legado. A documentação `docs/eval/BASELINE-v0.md`, linha 85, informa PARTIALLY_SUPPORTED em 30/30 e 13/30 corretos (43,3333%), igual à classe majoritária. Não citar `judge.py` como origem desta predição legada.
 6. **Artefatos Golden congelados:** incluir `tests/test_frozen_artifacts.py` e `tests/test_golden_digest.py` na rastreabilidade de integridade, além dos testes específicos de avaliação.
 7. **Rótulos de verificação:** **[VERIFICADO por execução local — Cláudio, commit `1d5d7fa`]** — `pytest -p no:cacheprovider`: 348 passed; nenhum artefato congelado tocado e hashes idênticos; 20/20 perguntas literais conferidas palavra por palavra contra a especificação-fonte; zero linhas de tabela com número de células divergente do cabeçalho. Esta verificação aplica-se somente ao commit `1d5d7fa`; a nova correção ainda precisa ser reverificada e receber seu próprio SHA antes de receber rótulo de verificação.
 
@@ -132,7 +132,7 @@ A redação abaixo foi fornecida pelo mantenedor como a seção 1.1 da especific
 Rótulos e conceitos anteriormente associados ao “Prompt Mestre v3”, incluindo §3/L0–L14, GEPA, OWASP ASI, Studio, BM25+kNN+RRF e demais itens desse documento, ficam isolados nesta seção. Não são fonte normativa da matriz canônica `AYORAI-ATTRACTOR-BAL` v1.0.0 e não devem ser usados para declarar conformidade com ela. Caso o mantenedor confirme sua relevância, registrar sua identidade, versão e relação com a especificação canônica antes de reintegrar qualquer requisito.
 
 
-## PR 1.2a — contrato de não adjudicação [PROPOSTO]
+## PR 1.2a — contrato de não adjudicação [MESCLADA #125]
 
 - Requisito: apenas o Judge determinístico em `/v1/verify` pode produzir o veredito factual.
 - API de busca e auditoria: `verification=null`, `verdict_authority=not_adjudicated`, `formal_verification_endpoint=/v1/verify`; falhas operacionais ficam em `operation_status`.
@@ -140,10 +140,10 @@ Rótulos e conceitos anteriormente associados ao “Prompt Mestre v3”, incluin
 - Persistência transitória: enquanto `verification` continuar `NOT NULL`, grava-se `not_adjudicated`; a resposta pública da consulta de auditoria não expõe esse marcador como veredito.
 - Testes de contrato atualizados; execução, digests semânticos e hashes de artefatos congelados dependem de verificação independente do Cláudio no SHA exato.
 - PR 1.3 remove `VerificationStatus` e `EvidenceStore.status()`; a classificação factual permanece exclusiva do Judge determinístico em `/v1/verify`. Essa remoção não declara a implementação completa do Judge 2.0.0.
-- Estado: [PROPOSTO] até revisão independente, CI verde e confirmação da tag `baseline-legacy-v0`.
+- Estado: [MESCLADA #125]; tag `baseline-legacy-v0` confirmada. A revisão independente e o CI da PR 1.3 são gates separados.
 
 
-## PR 1.2a — contrato sem adjudicação factual [PENDENTE DE REVISÃO]
+## PR 1.2a — contrato sem adjudicação factual [MESCLADA #125]
 
 - O orquestrador preserva a análise produzida pelos agentes, mas a separa do veredito factual;
   `notice` informa que nenhum veredito foi adjudicado e direciona a `/v1/verify`.
