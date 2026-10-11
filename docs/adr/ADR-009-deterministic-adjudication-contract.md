@@ -78,7 +78,7 @@ Uma evidência só participa dos clusters se passar pelos critérios aplicáveis
 
 Evidências rejeitadas não entram nos contadores decisórios e devem ser registradas com um motivo: `OFFSET_INVALID`, `EXCERPT_MISMATCH` ou `NEUTRAL_STANCE`. A rejeição de evidência não pode ser omitida do resultado técnico.
 
-## 6. Independência, clusters e veredito atômico A
+## 7. Independência, clusters e veredito atômico A
 
 S e C representam, respectivamente, o número de clusters independentes admissíveis de suporte e contradição, segundo o contrato de independência de ADR-006. Republicações ou fontes dependentes não aumentam a contagem independente.
 
@@ -102,7 +102,7 @@ Para `SUPPORTED`, a robustez é calculada sobre os clusters de suporte; para `RE
 
 A robustez nunca promove nem rebaixa o veredito. Para um resultado composto, usar a menor robustez entre os átomos cujo veredito corresponde ao lado decisivo da regra K aplicada: K1 → átomos `REFUTED`; K2 → átomos `CONFLICTING`; K3 e K4 → átomos `SUPPORTED`; K5 → R0. Para K2, usar o campo `robustness` de cada átomo `CONFLICTING`, já definido como o menor entre os lados de suporte e contradição. Não calcular a robustez composta sobre todos os átomos avaliados, pois isso apagaria informação em resultados `PARTIALLY_SUPPORTED`.
 
-## 8. Agregação composta K
+## 9. Agregação composta K
 
 Para um claim composto, aplicar a seguinte precedência, nesta ordem:
 
@@ -116,7 +116,7 @@ A regra K aplicada deve ser identificada em `rule_trace` com o `rule_id` corresp
 
 A cobertura é um objeto com os contadores `supported`, `refuted`, `conflicting`, `unverified` e `total`; conta todos os átomos avaliados. `INVALID_INPUT` e `ABSTAINED` aplicam-se à afirmação inteira, não a átomos individuais, e são relatados em `decision_state` e `reason_codes`.
 
-## 9. Identidade de regras e saída canônica
+## 10. Identidade de regras e saída canônica
 
 O resultado inclui `judge_rules_version`, `rules_sha256`, `input_sha256`, `decision_state`, `reason_codes`, `verdict`, `coverage`, `robustness`, `atoms`, `rule_trace` e `output_sha256`.
 
@@ -124,7 +124,7 @@ Cada átomo contém `atom_id`, `verdict`, `support_clusters`, `contradiction_clu
 
 A serialização canônica usa UTF-8, chaves ordenadas, separadores compactos, `ensure_ascii=False` e representação explícita de `null`. A definição implementada deve ser consistente em todos os caminhos e coberta por teste byte a byte. `output_sha256` é calculado sobre a representação canônica do conteúdo de saída antes da inclusão do próprio campo `output_sha256`, evitando autorreferência. Hashes identificam conteúdo e não provam, isoladamente, a verdade de uma afirmação.
 
-## 10. Migração de regras 1.x e goldens derivados
+## 11. Migração de regras 1.x e goldens derivados
 
 As regras 1.x permanecem executáveis e historicamente preservadas até a v0.5.0. O caminho `r1-a` mantém o contrato de fio existente, sem alteração de comportamento ou serialização.
 
@@ -138,7 +138,7 @@ A migração derivada de goldens usa uma tabela de mapeamento versionada:
 
 Os arquivos derivados são `evals/golden/v0-r2.jsonl` e `evals/golden/v0.1-r2.jsonl`, cada um com manifesto próprio que registra origem, método, versão de regras, commit e hashes. Os arquivos originais, manifestos existentes, thresholds e hashes congelados não podem ser alterados. Casos não migráveis devem ser listados com motivo, não descartados silenciosamente.
 
-## 11. Testes normativos
+## 12. Testes normativos
 
 A implementação deve cobrir T1–T11:
 
@@ -156,11 +156,11 @@ A implementação deve cobrir T1–T11:
 
 As tabelas de verdade publicadas devem ser geradas do arquivo versionado de regras, não mantidas manualmente em duplicidade. A rastreabilidade deve mapear cada regra normativa a testes e, quando aplicável, a casos de golden.
 
-## 12. Explicações e limitações
+## 13. Explicações e limitações
 
 Toda resposta documentada deve ter explicação simples com no máximo cinco linhas e explicação técnica. A explicação técnica inclui versão e hash das regras, decomposição, evidências admitidas/excluídas, IDs das regras, estado de decisão, cobertura, robustez, hashes e limitações. Explicações não constituem canal alternativo de decisão e não podem transformar abstenção ou entrada inválida em veredito.
 
-## 13. Compatibilidade e rollout
+## 14. Compatibilidade e rollout
 
 Esta ADR substitui ADR-002 §§1 e 4; o texto original dessas seções é preservado como histórico. Outras seções de ADR-002 permanecem vigentes, salvo substituição explícita por decisão posterior. A implementação deve ocorrer em PRs isoladas, com CI verde, revisão independente do SHA exato e hashes dos artefatos congelados inalterados. A aceitação desta ADR não autoriza alterar goldens ou publicar release automaticamente.
 
