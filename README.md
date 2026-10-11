@@ -64,14 +64,10 @@ When evidence conflicts, ATTRACTOR can return <code>CONFLICTING</code> instead o
 
 ## Where it applies
 
-| Sector | Example use |
+| Scope | Status |
 |---|---|
-| Financial services | verify that an AI explanation matches approved evidence and policy |
-| Capital markets | verify that AI summaries preserve reported facts and figures |
-| Insurance | validate answers against policy wording and supporting evidence |
-| Legal and compliance | detect citations that do not support the argument being made |
-| Public sector | preserve evidence trails for AI-assisted answers to citizens |
-| Internal audit | maintain a reproducible evidence record for AI-assisted conclusions |
+| **Current domain — Brazilian telecommunications regulation (D10)** | Evidence-based verification for claims concerning Anatel rules, initially focused on the General Consumer Rights Regulation (RGC). |
+| Other possible domains (outside current scope) | Insurance, legal and compliance, public sector, internal audit, financial services and capital markets are possible future applications, not validated current use cases. |
 
 ## Evidence (historical measurements, v0.3.0)
 
@@ -114,28 +110,24 @@ Local `.attractor/` audit and replay data must not be versioned; evidence requir
 - **macro-F1:** the macro-averaged F1 classification metric; report it separately from accuracy and balanced accuracy.
 - **E1:** the historical evaluation/reporting label for the global-verdict accuracy results described above.
 
-## Roadmap F0–F6
+## Roadmap — current execution sequence
 
-~~~mermaid
-flowchart LR
-    F0["F0<br/>Deterministic verification"] --> F1["F1<br/>Multilingual stance"]
-    F1 --> F2["F2<br/>Span-level evidence"]
-    F2 --> F3["F3<br/>Public benchmarks"]
-    F3 --> F4["F4<br/>Hidden Golden v1 in Portuguese"]
-    F4 --> F5["F5<br/>Adoption"]
-    F5 --> F6["F6<br/>Hardened release"]
-    PT["AYORAI-PT-NLI<br/>Portuguese stance path"] --> F2
-    F1 --> PT
-~~~
+1. **Phase 1 — completed (v0.4.0):** single deterministic Judge authority for the final verdict, tamper-evident audit trail, and structured HTTP 422 errors.
+2. **Phase 2 — Judge 2.0:** ADR-009 is the normative contract; item 2.1 (contract) and item 2.2 (pre-adjudication gates) are complete; item 2.3 (deterministic atomic and composite rules) is in progress.
+3. **Reproducibility:** strengthen deterministic replay, provenance and auditable execution records.
+4. **PT-BR benchmark:** build and document an evidence-based benchmark focused on Brazilian telecommunications regulation, starting with Anatel's General Consumer Rights Regulation (RGC).
+5. **Demonstration:** prepare a reproducible demonstration with explicit limitations and evidence.
+6. **Institutional package:** prepare technical and governance materials for research and institutional review.
 
-The roadmap keeps the deterministic Judge outside the model. **AYORAI-PT-NLI** is a future stance-classification path; it does not become the final adjudicator.
+The deterministic Judge remains **outside the model** and is the sole authority for the final verdict. Models may assist with analysis; they do not authorize or issue the final decision.
 
 ## Quickstart
 
 ~~~bash
 git clone https://github.com/Ayorinha/ayorai-opensearch.git
 cd ayorai-opensearch
-git checkout feat/f1-multilingual-stance
+git switch main
+# For the stable v0.4.0 release instead, use: git switch --detach v0.4.0
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,nli]"
