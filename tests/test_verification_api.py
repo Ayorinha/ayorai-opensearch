@@ -154,10 +154,13 @@ def test_r1_a_duplicate_claim_ids_return_structured_422() -> None:
 
     assert response.status_code == 422
     assert response.json() == {
-        "detail": {
-            "code": "invalid_verification_input",
-            "message": "claim ids must be unique",
-        }
+        "detail": [
+            {
+                "type": "DUPLICATE_ID",
+                "loc": ["body", "claims"],
+                "msg": "claim ids must be unique",
+            }
+        ]
     }
 
 
@@ -182,10 +185,13 @@ def test_r1_a_stance_for_nonexistent_claim_returns_structured_422() -> None:
 
     assert response.status_code == 422
     assert response.json() == {
-        "detail": {
-            "code": "invalid_verification_input",
-            "message": "stance references unknown claim",
-        }
+        "detail": [
+            {
+                "type": "DANGLING_REFERENCE",
+                "loc": ["body", "stances"],
+                "msg": "stance references unknown claim",
+            }
+        ]
     }
 
 
@@ -238,3 +244,28 @@ def test_r1_a_schema_valid_inputs_never_return_http_500(
     response = client.post("/v1/verify", json=request)
     assert response.status_code != 500
     assert response.status_code in {200, 422}
+
+
+
+def test_r1_a_unexpected_value_error_from_judge_remains_http_500(monkeypatch) -> None:
+    import importlib
+
+    api_module = importlib.import_module("ayorai_attractor.api.app")
+
+    def unexpected_failure(*args, **kwargs):
+        raise ValueError("unexpected internal programming error")
+
+    monkeypatch.setattr(api_module, "judge", unexpected_failure)
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.post(
+        "/v1/verify",
+        json={
+            "schema_version": "r1-a",
+            "claims": [{"id": "c1", "text": "A valid claim."}],
+            "evidence": [],
+            "stances": [],
+        },
+    )
+
+    assert response.status_code == 500
+    assert response.text == "Internal Server Error"
