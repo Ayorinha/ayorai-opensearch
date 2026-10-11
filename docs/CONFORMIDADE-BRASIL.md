@@ -37,7 +37,7 @@ O projeto deve ser usado como componente técnico de um programa mais amplo. **N
 
 ## PL 2.338/2023
 
-O **PL 2.338/2023** foi aprovado no Senado em dezembro de 2024 e permanece em tramitação na Câmara. O texto e seu status legislativo devem ser verificados no momento de qualquer decisão de produto ou implantação.
+A tramitação do **PL 2.338/2023** é dinâmica. Consulte a [ficha oficial da Câmara dos Deputados](https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2487262) antes de qualquer decisão de produto ou implantação; esta página não substitui a conferência do texto vigente, dos apensados e dos atos legislativos mais recentes.
 
 O ATTRACTOR pode apoiar mecanismos de documentação, rastreabilidade e avaliação, mas não substitui obrigações legais futuras ou controles específicos que venham a ser exigidos.
 
@@ -94,5 +94,13 @@ Antes de uma implantação regulada, ainda são necessários, conforme o caso:
 - testes de segurança e continuidade;
 - governança de modelos e dados;
 - critérios de aprovação para uso em decisões de alto impacto.
+
+## Fontes normativas oficiais
+
+- **LGPD — Lei nº 13.709/2018:** [texto compilado no Planalto](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm). A aplicação dos artigos depende do contexto concreto de tratamento.
+- **PL 2.338/2023:** [tramitação oficial na Câmara dos Deputados](https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2487262). Verificar o andamento atual no momento da consulta.
+- **Regulamento Europeu de IA (Regulamento (UE) 2024/1689):** [texto oficial no EUR-Lex](https://eur-lex.europa.eu/eli/reg/2024/1689/oj). A aplicabilidade depende do âmbito e das datas de aplicação pertinentes.
+- **ISO/IEC 42001:** [página oficial da ISO](https://www.iso.org/standard/81230.html). A referência à norma não significa que o projeto seja certificado.
+- **NBC TA 500 e NBC TA 230:** confirmar edição vigente e contexto de aplicação junto às fontes profissionais oficiais antes de usar como fundamento formal de auditoria.
 
 **Status:** ferramenta de engenharia e pesquisa, não certificação.
