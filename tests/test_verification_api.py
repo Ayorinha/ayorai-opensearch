@@ -269,3 +269,103 @@ def test_r1_a_unexpected_value_error_from_judge_remains_http_500(monkeypatch) ->
 
     assert response.status_code == 500
     assert response.text == "Internal Server Error"
+
+
+def r2_a_request(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "schema_version": "r2-a",
+        "protocol_version": "r2-a",
+        "claim_id": "c1",
+        "claim_text": "Claim A",
+        "atoms": [
+            {"id": "a1", "text": "Claim A", "start_offset": 0, "end_offset": 7}
+        ],
+        "evidence": [
+            {
+                "id": "e1",
+                "claim_id": "c1",
+                "source_id": "source-e1",
+                "source_location": "document:1",
+                "retrieved_at": "2026-10-11T12:00:00Z",
+                "start_offset": 0,
+                "end_offset": 7,
+                "excerpt": "Claim A",
+                "origin_id": "origin-e1",
+            }
+        ],
+        "stances": [
+            {"id": "s1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"}
+        ],
+        "source_texts": {"source-e1": "Claim A"},
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_r2_a_returns_complete_canonical_decided_result() -> None:
+    response = TestClient(app).post("/v1/verify", json=r2_a_request())
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["schema_version"] == "r2-a"
+    assert body["result"]["judge_rules_version"] == "2.0.0"
+    assert body["result"]["decision_state"] == "DECIDED"
+    assert body["result"]["verdict"] == "SUPPORTED"
+    assert len(body["result"]["output_sha256"]) == 64
+    assert body["response_policy"] is None
+
+
+def test_r2_a_returns_abstained_without_factual_verdict() -> None:
+    response = TestClient(app).post(
+        "/v1/verify", json=r2_a_request(out_of_scope=True)
+    )
+
+    assert response.status_code == 200
+    result = response.json()["result"]
+    assert result["decision_state"] == "ABSTAINED"
+    assert result["verdict"] is None
+    assert response.json()["response_policy"] == "abstain/out_of_scope"
+
+
+def test_r2_a_returns_invalid_input_as_canonical_result() -> None:
+    response = TestClient(app).post(
+        "/v1/verify", json=r2_a_request(atoms=[])
+    )
+
+    assert response.status_code == 200
+    result = response.json()["result"]
+    assert result["decision_state"] == "INVALID_INPUT"
+    assert result["verdict"] is None
+    assert result["reason_codes"] == ["NO_ATOMS"]
+    assert len(result["output_sha256"]) == 64
+
+
+def test_r2_a_unverified_remains_decided_with_separate_response_policy() -> None:
+    response = TestClient(app).post(
+        "/v1/verify",
+        json=r2_a_request(evidence=[], stances=[], source_texts={}),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["result"]["decision_state"] == "DECIDED"
+    assert body["result"]["verdict"] == "UNVERIFIED"
+    assert body["response_policy"] == "abstain/no_answer"
+
+
+def test_unknown_schema_version_returns_structured_http_422() -> None:
+    response = TestClient(app).post(
+        "/v1/verify",
+        json={"schema_version": "r9", "claims": [{"id": "c1", "text": "Claim."}]},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == [
+        {
+            "type": "literal_error",
+            "loc": ["body", "schema_version"],
+            "msg": "Input should be 'r1-a'",
+            "input": "r9",
+            "ctx": {"expected": "'r1-a'"},
+        }
+    ]
