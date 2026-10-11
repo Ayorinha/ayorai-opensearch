@@ -44,11 +44,13 @@ def _invalid(code: str, field: str, message: str) -> InvalidJudgeInput:
     return InvalidJudgeInput(code, field, message)
 
 
-def _require_mapping(value: object, field: str) -> Mapping[str, object]:
+def _require_mapping(
+    value: object, field: str
+) -> Mapping[str, object] | InvalidJudgeInput:
     if not isinstance(value, Mapping):
-        raise _invalid("SCHEMA_VIOLATION", field, f"{field} must be an object")
+        return _invalid("SCHEMA_VIOLATION", field, f"{field} must be an object")
     if not all(isinstance(key, str) for key in value):
-        raise _invalid("SCHEMA_VIOLATION", field, f"{field} keys must be strings")
+        return _invalid("SCHEMA_VIOLATION", field, f"{field} keys must be strings")
     return value
 
 
@@ -60,9 +62,9 @@ def _validate_g1(
     atoms: Sequence[Mapping[str, object]],
     evidence: Sequence[Evidence],
     stances: Sequence[Mapping[str, object]],
-) -> None:
+) -> InvalidJudgeInput | None:
     if protocol_version != SUPPORTED_PROTOCOL_VERSION:
-        raise _invalid(
+        return _invalid(
             "UNSUPPORTED_PROTOCOL_VERSION",
             "protocol_version",
             f"unsupported protocol version: {protocol_version}",
@@ -85,6 +87,8 @@ def _validate_g1(
     atom_ids: list[str] = []
     for index, raw_atom in enumerate(atoms):
         atom = _require_mapping(raw_atom, f"atoms[{index}]")
+        if isinstance(atom, InvalidJudgeInput):
+            return atom
         atom_id = atom.get("id")
         text = atom.get("text")
         start = atom.get("start_offset")
@@ -145,6 +149,8 @@ def _validate_g1(
     atom_id_set = set(atom_ids)
     for index, raw_stance in enumerate(stances):
         stance = _require_mapping(raw_stance, f"stances[{index}]")
+        if isinstance(stance, InvalidJudgeInput):
+            return stance
         stance_id = stance.get("id")
         atom_id = stance.get("atom_id")
         evidence_id = stance.get("evidence_id")
@@ -271,19 +277,18 @@ def evaluate_gates(
     gate rejects the request, E1-E3 classify each evidence/atom pair. The
     result has no verdict field by design.
     """
-    try:
-        _validate_g1(
-            protocol_version=protocol_version,
-            claim_id=claim_id,
-            claim_text=claim_text,
-            atoms=atoms,
-            evidence=evidence,
-            stances=stances,
-        )
-    except InvalidJudgeInput as exc:
+    invalid_input = _validate_g1(
+        protocol_version=protocol_version,
+        claim_id=claim_id,
+        claim_text=claim_text,
+        atoms=atoms,
+        evidence=evidence,
+        stances=stances,
+    )
+    if isinstance(invalid_input, InvalidJudgeInput):
         return GateResult(
             decision_state="INVALID_INPUT",
-            reason_codes=(exc.code,),
+            reason_codes=(invalid_input.code,),
             admissible=False,
             evidence=(),
         )
