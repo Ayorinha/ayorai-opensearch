@@ -264,7 +264,7 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
         )
     gate_input = {key: request[key] for key in required | (set(request) & optional)}
     gates = evaluate_gates(**gate_input)
-    rules, contract_sha256 = load_rules()
+    _, contract_sha256 = load_rules()
     if gates.rules_sha256 != contract_sha256:
         raise ValueError("GateResult rules hash does not match the loaded Judge contract")
     if gates.decision_state is not None:
