@@ -10,7 +10,7 @@ import math
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from types import MappingProxyType
 from typing import Any, Literal
 
@@ -324,7 +324,7 @@ def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
             raise TypeError(
                 "naive datetime is not supported; provide an explicit timezone"
             )
-        return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
     if isinstance(value, date):
         return value.isoformat()
     if isinstance(value, Mapping):
@@ -391,7 +391,7 @@ def _build_result(
     from . import canonical_json_bytes
 
     if input_sha256_override is None:
-        canonical_json_bytes(_canonical_input(request))
+        canonical_input = canonical_json_bytes(_canonical_input(request))
         input_digest = hashlib.sha256(canonical_input).hexdigest()
     else:
         input_digest = input_sha256_override
@@ -504,7 +504,7 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
     if not isinstance(request, Mapping):
         raise TypeError("request must be a mapping")
     try:
-        canonical_input = canonical_json_bytes(_canonical_input(request))
+        canonical_json_bytes(_canonical_input(request))
     except TypeError:
         rejection_input = canonical_json_bytes(
             _canonical_input(request, allow_unsupported=True)
