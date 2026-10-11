@@ -265,20 +265,31 @@ def _evidence_dispositions(
         for item in evidence:
             source_text = source_texts.get(item.source_id)
             if not isinstance(source_text, str):
-                results.append(EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E1", "source_unavailable_rejection")))
+                results.append(
+                    EvidenceDisposition(
+                        item.id,
+                        atom_id,
+                        False,
+                        _e_rejection(rules, "E1", "source_unavailable_rejection"),
+                    )
+                )
                 continue
             if (
                 item.start_offset < 0
                 or item.end_offset <= item.start_offset
                 or item.end_offset > len(source_text)
             ):
-                results.append(EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E1")))
+                results.append(
+                    EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E1"))
+                )
                 continue
             excerpt_at_offsets = unicodedata.normalize(
                 "NFC", source_text[item.start_offset:item.end_offset]
             ) == unicodedata.normalize("NFC", item.excerpt)
             if not excerpt_at_offsets:
-                results.append(EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E2")))
+                results.append(
+                    EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E2"))
+                )
                 continue
             if item.normalized_content_hash is not None:
                 normalized_source = unicodedata.normalize("NFC", source_text)
@@ -288,7 +299,9 @@ def _evidence_dispositions(
                     continue
             stance = stance_by_pair.get((atom_id, item.id))
             if stance not in {"SUPPORTS", "CONTRADICTS"}:
-                results.append(EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E3")))
+                results.append(
+                    EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E3"))
+                )
                 continue
             results.append(EvidenceDisposition(item.id, atom_id, True))
     return tuple(results)
