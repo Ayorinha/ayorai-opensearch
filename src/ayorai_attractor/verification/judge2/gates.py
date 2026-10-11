@@ -53,7 +53,24 @@ class GateResult:
 
 
 def _invalid(code: str, field: str, message: str) -> InvalidJudgeInput:
-    return InvalidJudgeInput(code, field, message)
+    from ayorai_attractor.verification.judge2 import load_rules
+
+    rules, _ = load_rules()
+    normative = next(
+        (entry["code"] for entry in rules["input_gate"] if entry["code"] == code),
+        None,
+    )
+    if normative is None:
+        raise ValueError(f"G1 code is absent from the loaded Judge contract: {code}")
+    return InvalidJudgeInput(normative, field, message)
+
+
+def _e_rejection(
+    rules: Mapping[str, object], rule_id: str, field: str = "rejection"
+) -> str:
+    entries = rules["evidence_admissibility"]
+    entry = next(item for item in entries if item["id"] == rule_id)
+    return entry[field]
 
 
 def _require_mapping(
@@ -203,6 +220,7 @@ def _validate_g1(
 
 
 def _abstention_codes(
+    rules: Mapping[str, object],
     *,
     out_of_scope: bool,
     factual_claim: bool,
@@ -212,15 +230,15 @@ def _abstention_codes(
 ) -> tuple[str, ...]:
     codes: list[str] = []
     if out_of_scope:
-        codes.append("OUT_OF_SCOPE")
+        codes.append(next(item["code"] for item in rules["abstention"] if item["code"] == "OUT_OF_SCOPE"))
     if not factual_claim:
-        codes.append("NON_FACTUAL_CLAIM")
+        codes.append(next(item["code"] for item in rules["abstention"] if item["code"] == "NON_FACTUAL_CLAIM"))
     if not temporal_anchor_present:
-        codes.append("MISSING_TEMPORAL_ANCHOR")
+        codes.append(next(item["code"] for item in rules["abstention"] if item["code"] == "MISSING_TEMPORAL_ANCHOR"))
     if not retrieval_succeeded:
-        codes.append("RETRIEVAL_FAILURE")
+        codes.append(next(item["code"] for item in rules["abstention"] if item["code"] == "RETRIEVAL_FAILURE"))
     if not evidence_pool_integrity_ok:
-        codes.append("EVIDENCE_POOL_INTEGRITY_FAILURE")
+        codes.append(next(item["code"] for item in rules["abstention"] if item["code"] == "EVIDENCE_POOL_INTEGRITY_FAILURE"))
     return tuple(codes)
 
 
@@ -229,6 +247,7 @@ def _evidence_dispositions(
     evidence: Sequence[Evidence],
     stances: Sequence[Mapping[str, object]],
     source_texts: Mapping[str, str],
+    rules: Mapping[str, object],
 ) -> tuple[EvidenceDisposition, ...]:
     stance_by_pair: dict[tuple[str, str], str] = {}
     for raw_stance in stances:
@@ -242,20 +261,20 @@ def _evidence_dispositions(
         for item in evidence:
             source_text = source_texts.get(item.source_id)
             if not isinstance(source_text, str):
-                results.append(EvidenceDisposition(item.id, atom_id, False, "SOURCE_UNAVAILABLE"))
+                results.append(EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E1", "source_unavailable_rejection")))
                 continue
             if (
                 item.start_offset < 0
                 or item.end_offset <= item.start_offset
                 or item.end_offset > len(source_text)
             ):
-                results.append(EvidenceDisposition(item.id, atom_id, False, "OFFSET_INVALID"))
+                results.append(EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E1")))
                 continue
             excerpt_at_offsets = unicodedata.normalize(
                 "NFC", source_text[item.start_offset:item.end_offset]
             ) == unicodedata.normalize("NFC", item.excerpt)
             if not excerpt_at_offsets:
-                results.append(EvidenceDisposition(item.id, atom_id, False, "EXCERPT_MISMATCH"))
+                results.append(EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E2")))
                 continue
             if item.normalized_content_hash is not None:
                 normalized_source = unicodedata.normalize("NFC", source_text)
@@ -265,7 +284,7 @@ def _evidence_dispositions(
                     continue
             stance = stance_by_pair.get((atom_id, item.id))
             if stance not in {"SUPPORTS", "CONTRADICTS"}:
-                results.append(EvidenceDisposition(item.id, atom_id, False, "NEUTRAL_STANCE"))
+                results.append(EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E3")))
                 continue
             results.append(EvidenceDisposition(item.id, atom_id, True))
     return tuple(results)
@@ -295,7 +314,7 @@ def evaluate_gates(
     """
     from ayorai_attractor.verification.judge2 import load_rules
 
-    _, contract_sha256 = load_rules()
+    loaded_rules, contract_sha256 = load_rules()
     invalid_input = _validate_g1(
         protocol_version=protocol_version,
         claim_id=claim_id,
@@ -314,6 +333,7 @@ def evaluate_gates(
         )
 
     abstention = _abstention_codes(
+        loaded_rules,
         out_of_scope=out_of_scope,
         factual_claim=factual_claim,
         temporal_anchor_present=temporal_anchor_present,
@@ -329,7 +349,7 @@ def evaluate_gates(
             rules_sha256=contract_sha256,
         )
 
-    dispositions = _evidence_dispositions(atoms, evidence, stances, source_texts)
+    dispositions = _evidence_dispositions(atoms, evidence, stances, source_texts, loaded_rules)
     return GateResult(
         decision_state=None,
         reason_codes=(),
