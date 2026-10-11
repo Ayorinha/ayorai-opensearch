@@ -20,7 +20,7 @@ In 16 of the 34 Golden v0 cases the claim text describes the expected reasoning 
 
 ## 3. Disclosure
 
-The author of the rewrite (Claude) had seen per-case results of path C on Golden v0 before writing this file. Mitigation: the mechanical rules above, unchanged verdicts, and no evaluation of any path on v0.1 before this file and its hash were frozen.
+The author of the rewrite had seen per-case results of path C on Golden v0 before writing this file. Mitigation: the mechanical rules above, unchanged verdicts, and no evaluation of any path on v0.1 before this file and its hash were frozen.
 
 ## 4. Invariants (verified)
 
