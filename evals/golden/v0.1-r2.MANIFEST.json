@@ -2,12 +2,12 @@
   "derived": {
     "case_count": 34,
     "path": "v0.1-r2.jsonl",
-    "sha256": "723f4c0174e2e33656dd4b8b35ddf7672f3286dd230bb962c985130892af6c4c"
+    "sha256": "34f2e0445351d3aacf7fd5797768ff17cb3e0132e7491bda3e2145edd8cb8ecc"
   },
   "migration": {
     "atomic_mapping_justification": "ADR-002 §1: PARTIALLY_SUPPORTED atômico ⇔ S=1, C=0",
-    "mapping_version": "judge2-golden-map/1.2.0",
-    "method": "adr-009-§11-r2-derived-v2",
+    "mapping_version": "judge2-golden-map/1.3.0",
+    "method": "adr-009-§11-r2-derived-v3",
     "migrated_cases": 34,
     "migrated_claims": 27,
     "non_migratable": [],
