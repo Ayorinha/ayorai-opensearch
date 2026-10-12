@@ -58,7 +58,7 @@ def map_atomic(label: object, support_clusters: object) -> tuple[object, object,
     if label == "UNVERIFIED":
         return label, "R0", None
     if label in {"REFUTED", "CONFLICTING"}:
-        return label, None, "robustez não pode ser derivada com segurança apenas do rótulo legado"
+        return label, None, None
     return label, None, "rótulo de origem não reconhecido pelo mapeamento ADR-009 §11"
 
 
