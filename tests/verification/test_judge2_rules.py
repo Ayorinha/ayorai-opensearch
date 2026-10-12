@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import pytest
+from rfc8785 import IntegerDomainError
 
 from ayorai_attractor.verification.judge2 import (
     RULES_VERSION,
@@ -202,3 +203,35 @@ def test_rules_loader_rejects_non_normative_g_outcome(
 
     with pytest.raises(JudgeRulesError, match=f"must all use outcome {expected_outcome}"):
         load_rules(path)
+
+
+
+def test_canonical_json_bytes_follow_rfc8785_number_and_utf16_key_order() -> None:
+    value = {"value": 1.0}
+    assert canonical_json_bytes(value) == b'{"value":1}'
+
+    # RFC 8785 sorts names by UTF-16 code units; the emoji surrogate pair sorts
+    # before U+E000 even though Python code-point ordering places U+E000 first.
+    ordered = {"\ue000": "private-use", "😀": "emoji", "á": "accent"}
+    assert canonical_json_bytes(ordered) == (
+        '{"á":"accent","😀":"emoji","\ue000":"private-use"}'.encode("utf-8")
+    )
+
+
+def test_canonical_json_bytes_rfc8785_integer_accent_and_null_vectors() -> None:
+    assert canonical_json_bytes({"z": "ação", "a": None, "n": 7}) == (
+        '{"a":null,"n":7,"z":"ação"}'.encode()
+    )
+
+def test_rfc8785_accepts_only_safe_integer_boundary() -> None:
+    maximum = 2**53 - 1
+    assert canonical_json_bytes({"n": maximum}) == (
+        f'{{"n":{maximum}}}'.encode("ascii")
+    )
+    assert canonical_json_bytes({"n": -maximum}) == (
+        f'{{"n":{-maximum}}}'.encode("ascii")
+    )
+    for unsafe in (2**53, 2**53 + 1, 2**60, -(2**53), -(2**53 + 1), -(2**60)):
+        with pytest.raises(IntegerDomainError):
+            canonical_json_bytes({"n": unsafe})
+

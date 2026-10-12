@@ -1,0 +1,122 @@
+name: API Contract Guard
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  openapi-diff:
+    name: OpenAPI snapshot and oasdiff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Generate OpenAPI snapshots for base and pull request
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SNAPSHOT_PATH: ${{ runner.temp }}/openapi-base.json
+        run: |
+          set -euo pipefail
+          mkdir -p reports/api-contract
+          git worktree add --detach /tmp/attractor-api-base "$BASE_SHA"
+          (
+            cd /tmp/attractor-api-base
+            PYTHONPATH="$PWD/src" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from ayorai_attractor.api.app import app
+
+          Path(os.environ["SNAPSHOT_PATH"]).write_text(
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          )
+          PYTHONPATH="$PWD/src" python - <<'PY'
+          import json
+          from pathlib import Path
+          from ayorai_attractor.api.app import app
+
+          Path("reports/api-contract/openapi-current.json").write_text(
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          cp "$SNAPSHOT_PATH" reports/api-contract/openapi-base.json
+      - name: Install pinned oasdiff release and verify SHA-256
+        env:
+          OASDIFF_VERSION: "1.33.0"
+          OASDIFF_ARCHIVE: "oasdiff_1.33.0_linux_amd64.tar.gz"
+          OASDIFF_SHA256: "43a4e328e2d13ba1552d760aa68d2485c75c5621f309f6ff64ae895188345247"
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/${OASDIFF_ARCHIVE}" \
+            --output "${OASDIFF_ARCHIVE}"
+          echo "${OASDIFF_SHA256}  ${OASDIFF_ARCHIVE}" | sha256sum --check -
+          tar -xzf "${OASDIFF_ARCHIVE}" oasdiff
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 oasdiff "$HOME/.local/bin/oasdiff"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "oasdiff release v${OASDIFF_VERSION} verified by SHA-256 ${OASDIFF_SHA256}"
+          "$HOME/.local/bin/oasdiff" --help > /dev/null
+      - name: Reject breaking OpenAPI changes
+        run: oasdiff breaking reports/api-contract/openapi-base.json reports/api-contract/openapi-current.json
+      - name: Upload OpenAPI snapshots
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: openapi-snapshots-${{ github.sha }}
+          path: reports/api-contract/*.json
+          if-no-files-found: error
+
+  schemathesis:
+    name: Schemathesis API checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project and isolated Schemathesis
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          python -m venv /tmp/st
+          /tmp/st/bin/pip install schemathesis==4.29.4
+          /tmp/st/bin/st --version
+      - name: Start API
+        run: |
+          set -euo pipefail
+          uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000 > /tmp/attractor-api.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/openapi.json > /tmp/openapi-live.json; then
+              echo "API ready on attempt ${attempt}/30"
+              break
+            fi
+            echo "Waiting for API (attempt ${attempt}/30)"
+            sleep 1
+          done
+          test -s /tmp/openapi-live.json
+      - name: Exercise documented API contract
+        run: /tmp/st/bin/st run http://127.0.0.1:8000/openapi.json --url http://127.0.0.1:8000 --checks not_a_server_error
+      - name: Show API log on failure
+        if: failure()
+        run: cat /tmp/attractor-api.log
