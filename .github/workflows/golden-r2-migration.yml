@@ -21,6 +21,8 @@ jobs:
       - name: Verify two independent runs are byte-identical
         run: python scripts/migrate_golden_r2.py --check-determinism
       - name: Generate derived files for review
+        env:
+          SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           python scripts/migrate_golden_r2.py --output-dir /tmp/golden-r2
