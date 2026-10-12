@@ -124,6 +124,12 @@ Cada átomo contém `atom_id`, `verdict`, `support_clusters`, `contradiction_clu
 
 A serialização canônica usa UTF-8, chaves ordenadas, separadores compactos, `ensure_ascii=False` e representação explícita de `null`. A definição implementada deve ser consistente em todos os caminhos e coberta por teste byte a byte. `output_sha256` é calculado sobre a representação canônica do conteúdo de saída antes da inclusão do próprio campo `output_sha256`, evitando autorreferência. Hashes identificam conteúdo e não provam, isoladamente, a verdade de uma afirmação.
 
+### Emenda de 2026-10-12 — serialização RFC 8785
+
+A canonicalização usada em `input_sha256` e `output_sha256` do Judge 2.0.0 segue RFC 8785 (JSON Canonicalization Scheme), via dependência `rfc8785==0.1.4`. Isso fixa a representação numérica e a ordenação de nomes de propriedade por unidades de código UTF-16, evitando divergências entre implementações em linguagens diferentes. A dependência e seus vetores de conformidade são testados no CI.
+
+Esta alteração não muda `content_sha256` ou `semantic_sha256` legados, nem arquivos, manifestos ou hashes congelados das Goldens. Os vetores de `input_sha256` e `output_sha256` do Judge 2 são atualizados apenas quando a diferença decorrer comprovadamente da serialização RFC 8785.
+
 ## 11. Migração de regras 1.x e goldens derivados
 
 As regras 1.x permanecem executáveis e historicamente preservadas até a v0.5.0. O caminho `r1-a` mantém o contrato de fio existente, sem alteração de comportamento ou serialização.

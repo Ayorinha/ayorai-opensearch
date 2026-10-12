@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -400,3 +401,35 @@ def test_openapi_documents_both_verify_request_contracts() -> None:
     assert expected_refs <= {
         f"#/components/schemas/{name}" for name in schema["components"]["schemas"]
     }
+
+@pytest.mark.parametrize(
+    "unsafe_integer",
+    [2**53, 2**53 + 1, 2**60, -(2**53), -(2**53 + 1), -(2**60)],
+)
+def test_r2_a_rfc8785_integer_domain_never_returns_5xx(
+    unsafe_integer: int,
+) -> None:
+    payload = r2_a_request()
+    payload["atoms"] = [
+        {
+            "id": "a1",
+            "text": "Claim A",
+            "start_offset": 0,
+            "end_offset": 7,
+            "out_of_range_probe": unsafe_integer,
+        }
+    ]
+    response = TestClient(app, raise_server_exceptions=False).post(
+        "/v1/verify", json=payload
+    )
+
+    assert response.status_code != 500
+    assert response.status_code == 200
+    result = response.json()["result"]
+    assert result["decision_state"] == "INVALID_INPUT"
+    assert result["reason_codes"] == ["SCHEMA_VIOLATION"]
+    assert result["rule_trace"] == [
+        {"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"}
+    ]
+    assert len(result["output_sha256"]) == 64
+
