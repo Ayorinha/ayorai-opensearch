@@ -279,6 +279,7 @@ def _verify_contracts_schema_only(
     body: Annotated[VerificationRequest | Judge2VerificationRequest, Body()],
 ) -> VerificationAPIResponse | Judge2VerificationResponse:  # pragma: no cover
     """Expose both /v1/verify request contracts to OpenAPI generation."""
+    raise RuntimeError("documentation-only route must never be called")
 
 
 def _openapi_with_verify_schemas() -> dict[str, Any]:
