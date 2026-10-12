@@ -29,7 +29,7 @@ class FailureType(StrEnum):
 class SearchRequest(BaseModel):
     query: str = Field(min_length=3, max_length=10000)
     mode: QualityMode = QualityMode.BALANCED
-    max_agents: int = Field(default=5, ge=1, le=100)
+    max_agents: int = Field(default=5, ge=1, le=100, strict=True)
     require_primary_source: Annotated[
         bool,
         WithJsonSchema(
