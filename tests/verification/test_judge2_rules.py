@@ -221,3 +221,16 @@ def test_canonical_json_bytes_rfc8785_integer_accent_and_null_vectors() -> None:
     assert canonical_json_bytes({"z": "ação", "a": None, "n": 7}) == (
         '{"a":null,"n":7,"z":"ação"}'.encode()
     )
+
+def test_rfc8785_accepts_only_safe_integer_boundary() -> None:
+    maximum = 2**53 - 1
+    assert canonical_json_bytes({"n": maximum}) == (
+        f'{{"n":{maximum}}}'.encode("ascii")
+    )
+    assert canonical_json_bytes({"n": -maximum}) == (
+        f'{{"n":{-maximum}}}'.encode("ascii")
+    )
+    for unsafe in (2**53, 2**53 + 1, 2**60, -(2**53), -(2**53 + 1), -(2**60)):
+        with pytest.raises(Exception):
+            canonical_json_bytes({"n": unsafe})
+\n
