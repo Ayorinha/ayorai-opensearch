@@ -219,5 +219,5 @@ def test_canonical_json_bytes_follow_rfc8785_number_and_utf16_key_order() -> Non
 
 def test_canonical_json_bytes_rfc8785_integer_accent_and_null_vectors() -> None:
     assert canonical_json_bytes({"z": "ação", "a": None, "n": 7}) == (
-        '{"a":null,"n":7,"z":"ação"}'.encode("utf-8")
+        '{"a":null,"n":7,"z":"ação"}'.encode()
     )
