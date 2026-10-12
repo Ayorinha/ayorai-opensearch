@@ -55,7 +55,10 @@ def map_atomic(label: object, support_clusters: object) -> tuple[object, object,
     if label == "PARTIALLY_SUPPORTED" and support_clusters == 1:
         return "SUPPORTED", "R1", None
     if label == "PARTIALLY_SUPPORTED":
-        return label, None, "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+        return label, None, (
+            "S não está registrado como 1 no caso de origem; "
+            "não inferir clusters a partir de must_cite"
+        )
     if label == "UNVERIFIED":
         return label, "R0", None
     if label in {"REFUTED", "CONFLICTING"}:
@@ -118,12 +121,18 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
             transformed["global"] = None
             non_migratable.append({
                 "field": "expected_verdict/global",
-                "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims",
+                "reason": (
+                    "composição K não derivável sem inventar o mapeamento "
+                    "de uma ou mais claims"
+                ),
             })
     else:
         non_migratable.append({
             "field": "expected_claims",
-            "reason": "caso sem claims atômicas explícitas; veredito composto não pode ser recalculado por K",
+            "reason": (
+                "caso sem claims atômicas explícitas; veredito composto "
+                "não pode ser recalculado por K"
+            ),
         })
         transformed["expected_verdict"] = None
         transformed["global"] = None
@@ -136,7 +145,12 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
     return transformed, non_migratable, migrated_count
 
 
-def migrate(source_name: str, source_path: Path, output_dir: Path, source_commit: str) -> dict[str, Any]:
+def migrate(
+    source_name: str,
+    source_path: Path,
+    output_dir: Path,
+    source_commit: str,
+) -> dict[str, Any]:
     source_bytes = source_path.read_bytes()
     cases = read_jsonl(source_path)
     derived: list[dict[str, Any]] = []
@@ -220,7 +234,10 @@ def main() -> int:
         raise SystemExit(f"cannot determine source commit: {exc}") from exc
 
     if args.check_determinism:
-        with tempfile.TemporaryDirectory(prefix="golden-r2-a-") as first_dir, tempfile.TemporaryDirectory(prefix="golden-r2-b-") as second_dir:
+        with (
+            tempfile.TemporaryDirectory(prefix="golden-r2-a-") as first_dir,
+            tempfile.TemporaryDirectory(prefix="golden-r2-b-") as second_dir,
+        ):
             first = [migrate(name, path, Path(first_dir), source_commit) for name, path in SOURCES]
             second = [migrate(name, path, Path(second_dir), source_commit) for name, path in SOURCES]
             for name, _, in SOURCES:
