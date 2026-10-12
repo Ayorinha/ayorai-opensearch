@@ -811,9 +811,20 @@
             "type": "string"
           },
           "require_primary_source": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "enum": [
+                  0,
+                  1
+                ],
+                "type": "integer"
+              }
+            ],
             "default": false,
-            "title": "Require Primary Source",
-            "type": "boolean"
+            "title": "Require Primary Source"
           }
         },
         "required": [
