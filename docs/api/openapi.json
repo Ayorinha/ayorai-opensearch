@@ -1112,6 +1112,14 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VerificationAPIResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Judge2VerificationResponse"
+                    }
+                  ],
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/VerificationAPIResponse"
@@ -1119,7 +1127,8 @@
                     {
                       "$ref": "#/components/schemas/Judge2VerificationResponse"
                     }
-                  ]
+                  ],
+                  "title": "Response Verify V1 Verify Post"
                 }
               }
             },
