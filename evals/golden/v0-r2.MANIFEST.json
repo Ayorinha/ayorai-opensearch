@@ -2,7 +2,7 @@
   "derived": {
     "case_count": 34,
     "path": "v0-r2.jsonl",
-    "sha256": "PENDING-CI"
+    "sha256": "0876b3dc552c79c4b0fcab24151f5190cdd4504f48ea27fe388db626d91d7ec0"
   },
   "migration": {
     "atomic_mapping_justification": "ADR-002 §1: PARTIALLY_SUPPORTED atômico ⇔ S=1, C=0",
