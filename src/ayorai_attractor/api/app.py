@@ -229,9 +229,9 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
         response_policy = None
         if result.decision_state == "ABSTAINED":
             response_policy = (
-                ResponsePolicy.ABSTAIN_OUT_OF_SCOPE.value
+                ResponsePolicy.ABSTAIN_OUT_OF_SCOPE
                 if "OUT_OF_SCOPE" in result.reason_codes
-                else ResponsePolicy.ABSTAIN_NO_ANSWER.value
+                else ResponsePolicy.ABSTAIN_NO_ANSWER
             )
         canonical_result = result.to_dict()
         explanation = explain_canonical_result(canonical_result)
