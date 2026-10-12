@@ -7,14 +7,14 @@ from __future__ import annotations
 
 import hashlib
 import math
-
-import rfc8785
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from types import MappingProxyType
 from typing import Any, Literal
+
+import rfc8785
 
 from ayorai_attractor.verification.clusters import cluster_evidence
 from ayorai_attractor.verification.models import Evidence
