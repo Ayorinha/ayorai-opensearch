@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -141,12 +142,18 @@ def migrate(source_name: str, source_path: Path, output_dir: Path, source_commit
     derived: list[dict[str, Any]] = []
     unresolved: list[dict[str, str]] = []
     migrated_count = 0
+    migrated_cases = 0
+    non_migratable_case_ids: set[str] = set()
 
     for case in cases:
         case_id = str(case.get("id", "<missing-id>"))
         converted, reasons, count = transform_case(case)
         derived.append(converted)
         migrated_count += count
+        if reasons:
+            non_migratable_case_ids.add(case_id)
+        else:
+            migrated_cases += 1
         unresolved.extend(
             {"case_id": case_id, **reason} for reason in reasons
         )
@@ -178,6 +185,8 @@ def migrate(source_name: str, source_path: Path, output_dir: Path, source_commit
             "rules_version": "2.0.0",
             "rules_sha256": sha256_bytes(rules_bytes),
             "migrated_claims": migrated_count,
+            "migrated_cases": migrated_cases,
+            "non_migratable_cases": len(non_migratable_case_ids),
             "non_migratable_items": len(unresolved),
             "non_migratable": unresolved,
         },
@@ -201,10 +210,12 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=ROOT / "evals" / "golden")
     parser.add_argument("--check-determinism", action="store_true")
     args = parser.parse_args()
+    source_commit = os.environ.get("SOURCE_COMMIT")
     try:
-        source_commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True
-        ).stdout.strip()
+        if not source_commit:
+            source_commit = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True
+            ).stdout.strip()
     except (OSError, subprocess.CalledProcessError) as exc:
         raise SystemExit(f"cannot determine source commit: {exc}") from exc
 
@@ -225,6 +236,8 @@ def main() -> int:
         migration = manifest["migration"]
         print(
             f"{manifest['derived']['path']}: cases={manifest['derived']['case_count']} "
+            f"migrated_cases={migration['migrated_cases']} "
+            f"non_migratable_cases={migration['non_migratable_cases']} "
             f"migrated_claims={migration['migrated_claims']} "
             f"non_migratable_items={migration['non_migratable_items']} "
             f"sha256={manifest['derived']['sha256']}"
