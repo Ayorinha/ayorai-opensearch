@@ -286,6 +286,7 @@
             "type": "string"
           },
           "end_offset": {
+            "description": "Exclusive end offset; must be greater than start_offset.",
             "minimum": 0.0,
             "title": "End Offset",
             "type": "integer"
@@ -345,6 +346,7 @@
             "type": "string"
           },
           "start_offset": {
+            "description": "Inclusive start offset in the source text.",
             "minimum": 0.0,
             "title": "Start Offset",
             "type": "integer"
@@ -455,14 +457,207 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "Judge2AtomRequest": {
+        "additionalProperties": false,
+        "description": "Strict public schema for a Judge 2 atom and its source-text span.",
+        "properties": {
+          "end_offset": {
+            "description": "Exclusive end offset in source text; must be within the RFC 8785 safe-integer range.",
+            "exclusiveMinimum": 0.0,
+            "maximum": 9007199254740991.0,
+            "title": "End Offset",
+            "type": "integer"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "start_offset": {
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "title": "Start Offset",
+            "type": "integer"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "start_offset",
+          "end_offset"
+        ],
+        "title": "Judge2AtomRequest",
+        "type": "object"
+      },
+      "Judge2EvidenceRequest": {
+        "additionalProperties": false,
+        "description": "Strict r2-a evidence shape; relational offsets are adjudicated by Judge 2.",
+        "properties": {
+          "canonical_url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Url"
+          },
+          "cited_origin_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cited Origin Id"
+          },
+          "claim_id": {
+            "minLength": 1,
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "end_offset": {
+            "description": "Must be greater than start_offset; the relational invariant is enforced by the API and Judge 2.",
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "title": "End Offset",
+            "type": "integer"
+          },
+          "excerpt": {
+            "minLength": 1,
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "normalized_content_hash": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Content Hash"
+          },
+          "origin_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Id"
+          },
+          "provenance_complete": {
+            "default": true,
+            "title": "Provenance Complete",
+            "type": "boolean"
+          },
+          "retrieved_at": {
+            "format": "date-time",
+            "title": "Retrieved At",
+            "type": "string"
+          },
+          "source_id": {
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_location": {
+            "minLength": 1,
+            "title": "Source Location",
+            "type": "string"
+          },
+          "start_offset": {
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "title": "Start Offset",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "claim_id",
+          "source_id",
+          "source_location",
+          "retrieved_at",
+          "start_offset",
+          "end_offset",
+          "excerpt"
+        ],
+        "title": "Judge2EvidenceRequest",
+        "type": "object"
+      },
+      "Judge2StanceRequest": {
+        "additionalProperties": false,
+        "description": "Strict public schema for an explicit atom/evidence stance edge.",
+        "properties": {
+          "atom_id": {
+            "minLength": 1,
+            "title": "Atom Id",
+            "type": "string"
+          },
+          "evidence_id": {
+            "minLength": 1,
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "stance": {
+            "enum": [
+              "SUPPORTS",
+              "CONTRADICTS",
+              "NEUTRAL",
+              "supports",
+              "contradicts",
+              "neutral"
+            ],
+            "title": "Stance",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "atom_id",
+          "evidence_id",
+          "stance"
+        ],
+        "title": "Judge2StanceRequest",
+        "type": "object"
+      },
       "Judge2VerificationRequest": {
         "additionalProperties": false,
         "description": "Strict JSON contract for the r2-a Judge 2.0.0 API path.",
         "properties": {
           "atoms": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/Judge2AtomRequest"
             },
             "title": "Atoms",
             "type": "array"
@@ -479,7 +674,7 @@
           },
           "evidence": {
             "items": {
-              "$ref": "#/components/schemas/Evidence-Input"
+              "$ref": "#/components/schemas/Judge2EvidenceRequest"
             },
             "title": "Evidence",
             "type": "array"
@@ -524,8 +719,7 @@
           },
           "stances": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/Judge2StanceRequest"
             },
             "title": "Stances",
             "type": "array"
@@ -548,7 +742,7 @@
       },
       "Judge2VerificationResponse": {
         "additionalProperties": false,
-        "description": "Additive r2-a response with explanations derived from canonical output.",
+        "description": "Public r2-a envelope containing the canonical Judge 2 result.",
         "properties": {
           "response_policy": {
             "anyOf": [
@@ -633,9 +827,20 @@
             "type": "string"
           },
           "require_primary_source": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "enum": [
+                  0,
+                  1
+                ],
+                "type": "integer"
+              }
+            ],
             "default": false,
-            "title": "Require Primary Source",
-            "type": "boolean"
+            "title": "Require Primary Source"
           }
         },
         "required": [
@@ -902,6 +1107,20 @@
       },
       "VerificationRequest": {
         "additionalProperties": false,
+        "not": {
+          "properties": {
+            "evidence": {
+              "maxItems": 0
+            },
+            "stances": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "stances"
+          ],
+          "type": "object"
+        },
         "properties": {
           "claims": {
             "items": {
@@ -993,15 +1212,44 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Request body could not be parsed as JSON."
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "properties": {
+                    "detail": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ],
+                  "type": "object"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Request validation failed."
           }
         },
         "summary": "Audit"
@@ -1033,15 +1281,44 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The requested audit trace does not exist."
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "properties": {
+                    "detail": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ],
+                  "type": "object"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Request validation failed."
           }
         },
         "summary": "Audit Trace"
@@ -1071,15 +1348,44 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Request body could not be parsed as JSON."
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "properties": {
+                    "detail": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ],
+                  "type": "object"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Request validation failed."
           }
         },
         "summary": "Opensearch"
@@ -1112,14 +1418,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/VerificationAPIResponse"
-                    },
-                    {
-                      "$ref": "#/components/schemas/Judge2VerificationResponse"
-                    }
-                  ],
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/VerificationAPIResponse"
@@ -1127,22 +1425,50 @@
                     {
                       "$ref": "#/components/schemas/Judge2VerificationResponse"
                     }
-                  ],
-                  "title": "Response Verify V1 Verify Post"
+                  ]
                 }
               }
             },
-            "description": "r1-a or r2-a verification result"
+            "description": "r1-a or r2-a verification result."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Request body could not be parsed as JSON."
           },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "properties": {
+                    "detail": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ],
+                  "type": "object"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Request validation failed."
           }
         },
         "summary": "Verify"
