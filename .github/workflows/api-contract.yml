@@ -1,0 +1,104 @@
+name: API Contract Guard
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  openapi-diff:
+    name: OpenAPI snapshot and oasdiff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project and pinned API contract tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" schemathesis==4.4.4
+      - name: Generate OpenAPI snapshots for base and pull request
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports/api-contract
+          git worktree add --detach /tmp/attractor-api-base "$BASE_SHA"
+          (
+            cd /tmp/attractor-api-base
+            PYTHONPATH="$PWD/src" python - <<'PY'
+          import json
+          from pathlib import Path
+          from ayorai_attractor.api.app import app
+
+          Path("$RUNNER_TEMP/openapi-base.json").write_text(
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+              encoding="utf-8",
+          )
+          PY
+          )
+          PYTHONPATH="$PWD/src" python - <<'PY'
+          import json
+          from pathlib import Path
+          from ayorai_attractor.api.app import app
+
+          Path("reports/api-contract/openapi-current.json").write_text(
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+              encoding="utf-8",
+          )
+          PY
+          cp "$RUNNER_TEMP/openapi-base.json" reports/api-contract/openapi-base.json
+      - name: Install pinned oasdiff
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y golang-go
+          GOBIN="$HOME/.local/bin" go install github.com/oasdiff/oasdiff@v1.11.7
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Reject breaking OpenAPI changes
+        run: oasdiff breaking reports/api-contract/openapi-base.json reports/api-contract/openapi-current.json
+      - name: Upload OpenAPI snapshots
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: openapi-snapshots-${{ github.sha }}
+          path: reports/api-contract/*.json
+          if-no-files-found: error
+
+  schemathesis:
+    name: Schemathesis API checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project and pinned Schemathesis
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" schemathesis==4.4.4
+      - name: Start API
+        run: |
+          uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000 > /tmp/attractor-api.log 2>&1 &
+          echo $! > /tmp/attractor-api.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/openapi.json > /tmp/openapi-live.json; then
+              break
+            fi
+            sleep 1
+          done
+          test -s /tmp/openapi-live.json
+      - name: Exercise documented API contract
+        run: st run http://127.0.0.1:8000/openapi.json --url http://127.0.0.1:8000 --checks not_a_server_error
+      - name: Show API log on failure
+        if: failure()
+        run: cat /tmp/attractor-api.log
