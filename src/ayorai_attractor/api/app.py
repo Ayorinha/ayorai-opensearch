@@ -21,12 +21,14 @@ from ayorai_attractor.orchestrator import Attractor
 from ayorai_attractor.verification.api_models import (
     ClaimJudgmentResponse,
     Judge2VerificationRequest,
+    Judge2VerificationResponse,
     Traceability,
     VerificationAPIResponse,
     VerificationRequest,
 )
 from ayorai_attractor.verification.judge import InvalidJudgeInput, judge
 from ayorai_attractor.verification.judge2 import adjudicate
+from ayorai_attractor.verification.judge2.explanations import explain_canonical_result
 from ayorai_attractor.verification.models import Verdict
 from ayorai_attractor.verification.response import ResponsePolicy
 
@@ -107,7 +109,7 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
 
 @app.post(
     "/v1/verify",
-    response_model=VerificationAPIResponse,
+    response_model=VerificationAPIResponse | Judge2VerificationResponse,
     openapi_extra=_VERIFY_REQUEST_BODY,
 )
 def verify(payload: Annotated[Any, Body()]) -> Any:
@@ -150,13 +152,16 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
                 if "OUT_OF_SCOPE" in result.reason_codes
                 else ResponsePolicy.ABSTAIN_NO_ANSWER.value
             )
-        return JSONResponse(
-            content={
-                "schema_version": "r2-a",
-                "result": result.to_dict(),
-                "response_policy": response_policy,
-            }
+        canonical_result = result.to_dict()
+        explanation = explain_canonical_result(canonical_result)
+        response = Judge2VerificationResponse(
+            schema_version="r2-a",
+            result=canonical_result,
+            simple_explanation=explanation["simple_explanation"],
+            technical_explanation=explanation["technical_explanation"],
+            response_policy=response_policy,
         )
+        return JSONResponse(content=response.model_dump(mode="json"))
 
     try:
         request = VerificationRequest.model_validate(payload, from_attributes=True)
