@@ -52,8 +52,12 @@ class Judge2AtomRequest(BaseModel):
 
     id: str = Field(min_length=1)
     text: str = Field(min_length=1)
-    start_offset: int = Field(ge=0)
-    end_offset: int = Field(gt=0)
+    start_offset: int = Field(ge=0, le=9007199254740991)
+    end_offset: int = Field(
+        gt=0,
+        le=9007199254740991,
+        description="Exclusive end offset; for evidence spans, end_offset must be greater than start_offset.",
+    )
 
 
 class Judge2StanceRequest(BaseModel):
@@ -80,8 +84,12 @@ class Judge2EvidenceRequest(BaseModel):
     source_id: str = Field(min_length=1)
     source_location: str = Field(min_length=1)
     retrieved_at: datetime
-    start_offset: int = Field(ge=0)
-    end_offset: int = Field(ge=0)
+    start_offset: int = Field(ge=0, le=9007199254740991)
+    end_offset: int = Field(
+        ge=0,
+        le=9007199254740991,
+        description="Must be greater than start_offset; the relational invariant is enforced by the API and Judge 2.",
+    )
     excerpt: str = Field(min_length=1)
     origin_id: str | None = Field(default=None, min_length=1)
     canonical_url: HttpUrl | None = None
