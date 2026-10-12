@@ -70,6 +70,7 @@ jobs:
             --output "${OASDIFF_ARCHIVE}"
           echo "${OASDIFF_SHA256}  ${OASDIFF_ARCHIVE}" | sha256sum --check -
           tar -xzf "${OASDIFF_ARCHIVE}" oasdiff
+          mkdir -p "$HOME/.local/bin"
           install -m 0755 oasdiff "$HOME/.local/bin/oasdiff"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           "$HOME/.local/bin/oasdiff" version
