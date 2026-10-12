@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+
+import rfc8785
 from pathlib import Path
 from typing import Any
 
@@ -96,13 +98,7 @@ class JudgeRulesError(ValueError):
 
 def canonical_json_bytes(value: Any) -> bytes:
     """Serialize JSON using the ADR-009 canonical encoding."""
-    return json.dumps(
-        value,
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-        allow_nan=False,
-    ).encode("utf-8")
+    return rfc8785.dumps(value)
 
 
 def _validate_rules(rules: dict[str, Any]) -> None:
