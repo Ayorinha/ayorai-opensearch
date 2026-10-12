@@ -69,6 +69,12 @@ class Judge2StanceRequest(BaseModel):
     ]
 
 
+class Judge2EvidenceRequest(Evidence):
+    """Strict r2-a evidence schema with the positive end-offset constraint documented."""
+
+    end_offset: int = Field(gt=0)
+
+
 class Judge2VerificationRequest(BaseModel):
     """Strict JSON contract for the r2-a Judge 2.0.0 API path."""
 
@@ -79,7 +85,7 @@ class Judge2VerificationRequest(BaseModel):
     claim_id: str = Field(min_length=1)
     claim_text: str = Field(min_length=1)
     atoms: list[Judge2AtomRequest]
-    evidence: list[Evidence] = Field(default_factory=list)
+    evidence: list[Judge2EvidenceRequest] = Field(default_factory=list)
     stances: list[Judge2StanceRequest] = Field(default_factory=list)
     source_texts: dict[str, str]
     out_of_scope: bool = False
