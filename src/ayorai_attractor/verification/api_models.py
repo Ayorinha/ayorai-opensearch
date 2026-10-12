@@ -56,7 +56,10 @@ class Judge2AtomRequest(BaseModel):
     end_offset: int = Field(
         gt=0,
         le=9007199254740991,
-        description="Exclusive end offset in source text; must be within the RFC 8785 safe-integer range.",
+        description=(
+            "Exclusive end offset in source text; must be within the "
+            "RFC 8785 safe-integer range."
+        ),
     )
 
 
@@ -88,7 +91,10 @@ class Judge2EvidenceRequest(BaseModel):
     end_offset: int = Field(
         ge=0,
         le=9007199254740991,
-        description="Must be greater than start_offset; the relational invariant is enforced by the API and Judge 2.",
+        description=(
+            "Must be greater than start_offset; the relational invariant "
+            "is enforced by the API and Judge 2."
+        ),
     )
     excerpt: str = Field(min_length=1)
     origin_id: str | None = Field(default=None, min_length=1)
