@@ -400,3 +400,40 @@ def test_openapi_documents_both_verify_request_contracts() -> None:
     assert expected_refs <= {
         f"#/components/schemas/{name}" for name in schema["components"]["schemas"]
     }
+
+
+def test_r2_a_response_matches_declared_response_model_and_openapi_statuses() -> None:
+    from ayorai_attractor.verification.api_models import Judge2VerificationResponse
+
+    response = TestClient(app).post("/v1/verify", json=r2_a_request())
+    assert response.status_code == 200
+    Judge2VerificationResponse.model_validate(response.json())
+
+    schema = app.openapi()
+    verify_responses = schema["paths"]["/v1/verify"]["post"]["responses"]
+    assert "200" in verify_responses
+    assert "422" in verify_responses
+    response_schema = verify_responses["200"]["content"]["application/json"]["schema"]
+    assert response_schema["oneOf"] == [
+        {"$ref": "#/components/schemas/VerificationAPIResponse"},
+        {"$ref": "#/components/schemas/Judge2VerificationResponse"},
+    ]
+    assert "404" in schema["paths"]["/v1/audit/{trace_id}"]["get"]["responses"]
+    assert "422" in schema["paths"]["/v1/audit/{trace_id}"]["get"]["responses"]
+    assert "422" in schema["paths"]["/v1/audit"]["post"]["responses"]
+
+
+def test_r2_a_rejects_unknown_nested_atom_and_stance_fields() -> None:
+    client = TestClient(app)
+    bad_atom = r2_a_request()
+    bad_atom["atoms"] = [
+        {"id": "a1", "text": "Claim A", "start_offset": 0, "end_offset": 7, "unexpected": True}
+    ]
+    bad_stance = r2_a_request()
+    bad_stance["stances"] = [
+        {"id": "s1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS", "unexpected": True}
+    ]
+
+    assert client.post("/v1/verify", json=bad_atom).status_code == 422
+    assert client.post("/v1/verify", json=bad_stance).status_code == 422
+
