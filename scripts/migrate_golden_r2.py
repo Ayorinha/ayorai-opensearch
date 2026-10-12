@@ -17,8 +17,8 @@ SOURCES = (
     ("v0", ROOT / "evals" / "golden" / "v0.jsonl"),
     ("v0.1", ROOT / "evals" / "golden" / "v0.1.jsonl"),
 )
-MIGRATION_METHOD = "adr-009-§11-r2-derived-v1"
-MAPPING_VERSION = "judge2-golden-map/1.1.0"
+MIGRATION_METHOD = "adr-009-§11-r2-derived-v2"
+MAPPING_VERSION = "judge2-golden-map/1.2.0"
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -80,9 +80,15 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
     claims = case.get("expected_claims")
     non_migratable: list[dict[str, str]] = []
     migrated_count = 0
-    mapped_claims: list[dict[str, Any]] = []
 
-    if isinstance(claims, list) and claims:
+    if case.get("category") == "out-of-scope" or case.get("response_status") == "ABSTAIN/OUT_OF_SCOPE":
+        transformed["expected_decision_state"] = "ABSTAINED"
+        transformed["expected_reason_codes"] = ["OUT_OF_SCOPE"]
+        transformed["expected_verdict"] = None
+        transformed["global"] = None
+        transformed["expected_robustness"] = None
+    elif isinstance(claims, list) and claims:
+        mapped_claims: list[dict[str, Any]] = []
         for index, claim in enumerate(claims):
             if not isinstance(claim, dict) or "verdict" not in claim:
                 non_migratable.append({
@@ -106,42 +112,58 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
                 })
         transformed["expected_claims"] = mapped_claims
         labels = [claim.get("verdict") for claim in mapped_claims]
-        if len(mapped_claims) == len(claims) and not any(
-            item["field"].startswith("expected_claims[") for item in non_migratable
-        ):
-            transformed["expected_verdict"] = composite_k(labels)
-            transformed["global"] = composite_k(labels)
+        if len(mapped_claims) == len(claims) and not non_migratable:
+            if "REFUTED" in labels:
+                verdict, selector = "REFUTED", "REFUTED"
+            elif "CONFLICTING" in labels:
+                verdict, selector = "CONFLICTING", "CONFLICTING"
+            elif all(label == "SUPPORTED" for label in labels):
+                verdict, selector = "SUPPORTED", "SUPPORTED"
+            elif "SUPPORTED" in labels:
+                verdict, selector = "PARTIALLY_SUPPORTED", "SUPPORTED"
+            else:
+                verdict, selector = "UNVERIFIED", None
+            transformed["expected_verdict"] = verdict
+            transformed["global"] = verdict
+            selected = [
+                claim["robustness"] for claim in mapped_claims
+                if selector is not None and claim["verdict"] == selector
+                and claim.get("robustness") is not None
+            ]
+            rank = {"R0": 0, "R1": 1, "R2": 2, "R3": 3}
+            transformed["expected_robustness"] = (
+                min(selected, key=lambda value: rank[value]) if selected
+                else ("R0" if selector is None else None)
+            )
         else:
             transformed["expected_verdict"] = None
             transformed["global"] = None
+            transformed["expected_robustness"] = None
             non_migratable.append({
                 "field": "expected_verdict/global",
-                "reason": (
-                    "composição K não derivável sem inventar o mapeamento "
-                    "de uma ou mais claims"
-                ),
+                "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims",
             })
+        transformed["expected_decision_state"] = "DECIDED"
     else:
         non_migratable.append({
             "field": "expected_claims",
-            "reason": (
-                "caso sem claims atômicas explícitas; veredito composto "
-                "não pode ser recalculado por K"
-            ),
+            "reason": "caso sem claims atômicas explícitas e sem regra de abstinência reconhecida",
         })
+        transformed["expected_decision_state"] = "INVALID_INPUT"
+        transformed["expected_reason_codes"] = ["SCHEMA_VIOLATION"]
         transformed["expected_verdict"] = None
         transformed["global"] = None
+        transformed["expected_robustness"] = None
 
     transformed["migration"] = {
         "method": MIGRATION_METHOD,
         "mapping_version": MAPPING_VERSION,
-        "source_expected_verdict": case.get("expected_verdict", case.get("global")),
-        "atomic_mapping_justification": (
-            "ADR-002 §1: PARTIALLY_SUPPORTED atômico ⇔ S=1, C=0"
+        "source_expected_verdict": case.get(
+            "expected_verdict", case.get("global", case.get("response_status"))
         ),
+        "atomic_mapping_justification": "ADR-002 §1: PARTIALLY_SUPPORTED atômico ⇔ S=1, C=0",
     }
     return transformed, non_migratable, migrated_count
-
 
 def migrate(
     source_name: str,
