@@ -27,12 +27,12 @@
       "AuditResponse": {
         "properties": {
           "evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Evidence Count",
             "type": "integer"
           },
           "failure_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failure Count",
             "type": "integer"
           },
@@ -49,7 +49,7 @@
             "type": "string"
           },
           "independent_evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Independent Evidence Count",
             "type": "integer"
           },
@@ -78,7 +78,7 @@
             "type": "null"
           },
           "verified_evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Verified Evidence Count",
             "type": "integer"
           }
@@ -96,17 +96,17 @@
       "AuditTraceResponse": {
         "properties": {
           "evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Evidence Count",
             "type": "integer"
           },
           "failure_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failure Count",
             "type": "integer"
           },
           "finding_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Finding Count",
             "type": "integer"
           },
@@ -116,7 +116,7 @@
             "type": "string"
           },
           "independent_evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Independent Evidence Count",
             "type": "integer"
           },
@@ -176,7 +176,7 @@
             "type": "null"
           },
           "verified_evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Verified Evidence Count",
             "type": "integer"
           }
@@ -224,7 +224,7 @@
             "type": "string"
           },
           "contradiction_clusters": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Contradiction Clusters",
             "type": "integer"
           },
@@ -233,7 +233,7 @@
             "type": "boolean"
           },
           "support_clusters": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Support Clusters",
             "type": "integer"
           },
@@ -287,7 +287,7 @@
           },
           "end_offset": {
             "description": "Exclusive end offset; must be greater than start_offset.",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "End Offset",
             "type": "integer"
           },
@@ -347,7 +347,7 @@
           },
           "start_offset": {
             "description": "Inclusive start offset in the source text.",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Start Offset",
             "type": "integer"
           }
@@ -463,8 +463,8 @@
         "properties": {
           "end_offset": {
             "description": "Exclusive end offset in source text; must be within the RFC 8785 safe-integer range.",
-            "exclusiveMinimum": 0.0,
-            "maximum": 9007199254740991.0,
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
             "title": "End Offset",
             "type": "integer"
           },
@@ -474,8 +474,8 @@
             "type": "string"
           },
           "start_offset": {
-            "maximum": 9007199254740991.0,
-            "minimum": 0.0,
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "title": "Start Offset",
             "type": "integer"
           },
@@ -531,8 +531,8 @@
           },
           "end_offset": {
             "description": "Must be greater than start_offset; the relational invariant is enforced by the API and Judge 2.",
-            "maximum": 9007199254740991.0,
-            "minimum": 0.0,
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "title": "End Offset",
             "type": "integer"
           },
@@ -591,8 +591,8 @@
             "type": "string"
           },
           "start_offset": {
-            "maximum": 9007199254740991.0,
-            "minimum": 0.0,
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "title": "Start Offset",
             "type": "integer"
           }
@@ -795,8 +795,8 @@
         "properties": {
           "max_agents": {
             "default": 5,
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Agents",
             "type": "integer"
           },
@@ -811,20 +811,9 @@
             "type": "string"
           },
           "require_primary_source": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "enum": [
-                  0,
-                  1
-                ],
-                "type": "integer"
-              }
-            ],
             "default": false,
-            "title": "Require Primary Source"
+            "title": "Require Primary Source",
+            "type": "boolean"
           }
         },
         "required": [
@@ -849,8 +838,8 @@
           "confidence": {
             "anyOf": [
               {
-                "maximum": 1.0,
-                "minimum": 0.0,
+                "maximum": 1,
+                "minimum": 0,
                 "type": "number"
               },
               {
