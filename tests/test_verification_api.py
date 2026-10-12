@@ -437,3 +437,16 @@ def test_r2_a_rejects_unknown_nested_atom_and_stance_fields() -> None:
     assert client.post("/v1/verify", json=bad_atom).status_code == 422
     assert client.post("/v1/verify", json=bad_stance).status_code == 422
 
+
+
+
+def test_openapi_documents_r1_a_stance_requires_evidence() -> None:
+    schema = app.openapi()["components"]["schemas"]["VerificationRequest"]
+    assert schema["not"] == {
+        "type": "object",
+        "properties": {
+            "evidence": {"maxItems": 0},
+            "stances": {"minItems": 1},
+        },
+        "required": ["stances"],
+    }
