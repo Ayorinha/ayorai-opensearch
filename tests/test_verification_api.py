@@ -11,8 +11,10 @@ from ayorai_attractor.models import SearchRequest
 
 
 def test_search_request_preserves_legacy_integer_boolean_coercion() -> None:
-    assert SearchRequest(query="valid query", require_primary_source=0).require_primary_source is False
-    assert SearchRequest(query="valid query", require_primary_source=1).require_primary_source is True
+    zero = SearchRequest(query="valid query", require_primary_source=0)
+    one = SearchRequest(query="valid query", require_primary_source=1)
+    assert zero.require_primary_source is False
+    assert one.require_primary_source is True
 
 def test_verify_returns_deterministic_verified_result() -> None:
     client = TestClient(app)
