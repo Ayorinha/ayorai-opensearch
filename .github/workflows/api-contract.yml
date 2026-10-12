@@ -60,9 +60,9 @@ jobs:
           cp "$SNAPSHOT_PATH" reports/api-contract/openapi-base.json
       - name: Install pinned oasdiff release and verify SHA-256
         env:
-          OASDIFF_VERSION: "1.11.7"
-          OASDIFF_ARCHIVE: "oasdiff_1.11.7_linux_amd64.tar.gz"
-          OASDIFF_SHA256: "97f1052365f74e6fd6f4d8fa108606e09391aebb8ecbf3b5e7a4059d54327224"
+          OASDIFF_VERSION: "1.33.0"
+          OASDIFF_ARCHIVE: "oasdiff_1.33.0_linux_amd64.tar.gz"
+          OASDIFF_SHA256: "43a4e328e2d13ba1552d760aa68d2485c75c5621f309f6ff64ae895188345247"
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location \
