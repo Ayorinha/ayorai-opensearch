@@ -45,3 +45,67 @@ jobs:
       - name: Show API log on failure
         if: failure()
         run: cat /tmp/attractor-api.log
+
+  openapi-diff:
+    name: OpenAPI compatibility with oasdiff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Generate base and current OpenAPI snapshots
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/attractor-api-base "$BASE_SHA"
+          (
+            cd /tmp/attractor-api-base
+            PYTHONPATH="$PWD/src" python - <<'PY'
+          import json
+          from pathlib import Path
+          from ayorai_attractor.api.app import app
+
+          Path("/tmp/openapi-base.json").write_text(
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+              encoding="utf-8",
+          )
+          PY
+          )
+          PYTHONPATH="$PWD/src" python - <<'PY'
+          import json
+          from pathlib import Path
+          from ayorai_attractor.api.app import app
+
+          Path("/tmp/openapi-current.json").write_text(
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Install pinned oasdiff release and verify SHA-256
+        env:
+          OASDIFF_VERSION: "1.11.7"
+          OASDIFF_ARCHIVE: "oasdiff_1.11.7_linux_amd64.tar.gz"
+          OASDIFF_SHA256: "97f1052365f74e6fd6f4d8fa108606e09391aebb8ecbf3b5e7a4059d54327224"
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/${OASDIFF_ARCHIVE}" \
+            --output "${OASDIFF_ARCHIVE}"
+          echo "${OASDIFF_SHA256}  ${OASDIFF_ARCHIVE}" | sha256sum --check -
+          tar -xzf "${OASDIFF_ARCHIVE}" oasdiff
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 oasdiff "$HOME/.local/bin/oasdiff"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "oasdiff release v${OASDIFF_VERSION} verified by SHA-256 ${OASDIFF_SHA256}"
+          "$HOME/.local/bin/oasdiff" --help > /dev/null
+      - name: Reject breaking OpenAPI changes
+        run: oasdiff breaking /tmp/openapi-base.json /tmp/openapi-current.json
