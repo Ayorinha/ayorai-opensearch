@@ -56,7 +56,7 @@ class Judge2AtomRequest(BaseModel):
     end_offset: int = Field(
         gt=0,
         le=9007199254740991,
-        description="Exclusive end offset; for evidence spans, end_offset must be greater than start_offset.",
+        description="Exclusive end offset in source text; must be within the RFC 8785 safe-integer range.",
     )
 
 
