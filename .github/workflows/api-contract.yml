@@ -58,12 +58,6 @@ jobs:
           )
           PY
           cp "$SNAPSHOT_PATH" reports/api-contract/openapi-base.json
-      - name: Emit current OpenAPI snapshot for initial checked-in baseline
-        run: |
-          echo OPENAPI_CURRENT_BASE64_BEGIN
-          base64 --wrap=0 reports/api-contract/openapi-current.json
-          echo
-          echo OPENAPI_CURRENT_BASE64_END
       - name: Install pinned oasdiff release and verify SHA-256
         env:
           OASDIFF_VERSION: "1.11.7"
@@ -79,7 +73,8 @@ jobs:
           mkdir -p "$HOME/.local/bin"
           install -m 0755 oasdiff "$HOME/.local/bin/oasdiff"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          "$HOME/.local/bin/oasdiff" version
+          echo "oasdiff release v${OASDIFF_VERSION} verified by SHA-256 ${OASDIFF_SHA256}"
+          "$HOME/.local/bin/oasdiff" --help > /dev/null
       - name: Reject breaking OpenAPI changes
         run: oasdiff breaking reports/api-contract/openapi-base.json reports/api-contract/openapi-current.json
       - name: Upload OpenAPI snapshots
