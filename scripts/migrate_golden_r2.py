@@ -238,12 +238,22 @@ def main() -> int:
             tempfile.TemporaryDirectory(prefix="golden-r2-a-") as first_dir,
             tempfile.TemporaryDirectory(prefix="golden-r2-b-") as second_dir,
         ):
-            first = [migrate(name, path, Path(first_dir), source_commit) for name, path in SOURCES]
-            second = [migrate(name, path, Path(second_dir), source_commit) for name, path in SOURCES]
-            for name, _, in SOURCES:
+            first = [
+                migrate(name, path, Path(first_dir), source_commit)
+                for name, path in SOURCES
+            ]
+            second = [
+                migrate(name, path, Path(second_dir), source_commit)
+                for name, path in SOURCES
+            ]
+            if first != second:
+                raise SystemExit("non-deterministic migration manifest")
+            for name, _source_path in SOURCES:
                 filenames = [f"{name}-r2.jsonl", f"{name}-r2.MANIFEST.json"]
                 for filename in filenames:
-                    if (Path(first_dir) / filename).read_bytes() != (Path(second_dir) / filename).read_bytes():
+                    first_bytes = (Path(first_dir) / filename).read_bytes()
+                    second_bytes = (Path(second_dir) / filename).read_bytes()
+                    if first_bytes != second_bytes:
                         raise SystemExit(f"non-deterministic output: {filename}")
             manifests = first
     else:
