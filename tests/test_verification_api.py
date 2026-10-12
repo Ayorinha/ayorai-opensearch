@@ -411,7 +411,15 @@ def test_r2_a_rfc8785_integer_domain_never_returns_5xx(
     unsafe_integer: int,
 ) -> None:
     payload = r2_a_request()
-    payload["atoms"][0]["out_of_range_probe"] = unsafe_integer
+    payload["atoms"] = [
+        {
+            "id": "a1",
+            "text": "Claim A",
+            "start_offset": 0,
+            "end_offset": 7,
+            "out_of_range_probe": unsafe_integer,
+        }
+    ]
     response = TestClient(app, raise_server_exceptions=False).post(
         "/v1/verify", json=payload
     )
