@@ -558,9 +558,7 @@
               {
                 "type": "null"
               }
-            ],
-            "default": null,
-            "title": "Response Policy"
+            ]
           },
           "result": {
             "additionalProperties": true,
