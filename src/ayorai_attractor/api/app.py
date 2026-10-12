@@ -20,8 +20,6 @@ from ayorai_attractor.models import (
 from ayorai_attractor.orchestrator import Attractor
 from ayorai_attractor.verification.api_models import (
     ClaimJudgmentResponse,
-    Judge2AtomRequest,
-    Judge2StanceRequest,
     Judge2VerificationRequest,
     Judge2VerificationResponse,
     Traceability,
