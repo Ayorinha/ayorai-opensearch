@@ -75,7 +75,7 @@ jobs:
           from ayorai_attractor.api.app import app
 
           Path("/tmp/openapi-base.json").write_text(
-              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
           )
           PY
@@ -86,7 +86,7 @@ jobs:
           from ayorai_attractor.api.app import app
 
           Path("/tmp/openapi-current.json").write_text(
-              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
           )
           PY
