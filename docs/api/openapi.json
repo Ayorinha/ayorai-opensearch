@@ -27,12 +27,12 @@
       "AuditResponse": {
         "properties": {
           "evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Evidence Count",
             "type": "integer"
           },
           "failure_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failure Count",
             "type": "integer"
           },
@@ -49,7 +49,7 @@
             "type": "string"
           },
           "independent_evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Independent Evidence Count",
             "type": "integer"
           },
@@ -78,7 +78,7 @@
             "type": "null"
           },
           "verified_evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Verified Evidence Count",
             "type": "integer"
           }
@@ -96,17 +96,17 @@
       "AuditTraceResponse": {
         "properties": {
           "evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Evidence Count",
             "type": "integer"
           },
           "failure_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failure Count",
             "type": "integer"
           },
           "finding_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Finding Count",
             "type": "integer"
           },
@@ -116,7 +116,7 @@
             "type": "string"
           },
           "independent_evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Independent Evidence Count",
             "type": "integer"
           },
@@ -176,7 +176,7 @@
             "type": "null"
           },
           "verified_evidence_count": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Verified Evidence Count",
             "type": "integer"
           }
@@ -224,7 +224,7 @@
             "type": "string"
           },
           "contradiction_clusters": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Contradiction Clusters",
             "type": "integer"
           },
@@ -233,7 +233,7 @@
             "type": "boolean"
           },
           "support_clusters": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Support Clusters",
             "type": "integer"
           },
@@ -286,7 +286,7 @@
             "type": "string"
           },
           "end_offset": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "End Offset",
             "type": "integer"
           },
@@ -345,7 +345,7 @@
             "type": "string"
           },
           "start_offset": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Start Offset",
             "type": "integer"
           }
@@ -460,7 +460,7 @@
         "description": "Strict public schema for a Judge 2 atom and its source-text span.",
         "properties": {
           "end_offset": {
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "End Offset",
             "type": "integer"
           },
@@ -470,7 +470,7 @@
             "type": "string"
           },
           "start_offset": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Start Offset",
             "type": "integer"
           },
@@ -525,7 +525,7 @@
             "type": "string"
           },
           "end_offset": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "End Offset",
             "type": "integer"
           },
@@ -584,7 +584,7 @@
             "type": "string"
           },
           "start_offset": {
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Start Offset",
             "type": "integer"
           }
@@ -787,8 +787,8 @@
         "properties": {
           "max_agents": {
             "default": 5,
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Agents",
             "type": "integer"
           },
@@ -830,8 +830,8 @@
           "confidence": {
             "anyOf": [
               {
-                "maximum": 1.0,
-                "minimum": 0.0,
+                "maximum": 1,
+                "minimum": 0,
                 "type": "number"
               },
               {
@@ -1072,6 +1072,20 @@
       },
       "VerificationRequest": {
         "additionalProperties": false,
+        "not": {
+          "properties": {
+            "evidence": {
+              "maxItems": 0
+            },
+            "stances": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "stances"
+          ],
+          "type": "object"
+        },
         "properties": {
           "claims": {
             "items": {
