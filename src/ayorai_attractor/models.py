@@ -30,7 +30,7 @@ class SearchRequest(BaseModel):
     query: str = Field(min_length=3, max_length=10000)
     mode: QualityMode = QualityMode.BALANCED
     max_agents: int = Field(default=5, ge=1, le=100)
-    require_primary_source: bool = False
+    require_primary_source: bool = Field(default=False, strict=True)
 
 
 class Evidence(BaseModel):
