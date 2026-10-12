@@ -450,3 +450,53 @@ def test_openapi_documents_r1_a_stance_requires_evidence() -> None:
         },
         "required": ["stances"],
     }
+
+
+def test_r2_a_accepts_safe_integer_boundary_without_server_error() -> None:
+    safe_max = 2**53 - 1
+    payload = r2_a_request()
+    payload["atoms"] = [
+        {"id": "a1", "text": "Claim A", "start_offset": safe_max - 1, "end_offset": safe_max}
+    ]
+    payload["evidence"] = [
+        {
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-e1",
+            "source_location": "document:1",
+            "retrieved_at": "2026-10-11T12:00:00Z",
+            "start_offset": safe_max - 1,
+            "end_offset": safe_max,
+            "excerpt": "Claim A",
+            "origin_id": "origin-e1",
+        }
+    ]
+    response = TestClient(app).post("/v1/verify", json=payload)
+    assert response.status_code != 422
+    assert response.status_code < 500
+
+
+def test_r2_a_rejects_integers_outside_rfc8785_safe_range() -> None:
+    client = TestClient(app)
+    for value in (2**53, 2**53 + 1, 2**60, -(2**53), -(2**53 + 1), -(2**60)):
+        bad_atom = r2_a_request()
+        bad_atom["atoms"] = [
+            {"id": "a1", "text": "Claim A", "start_offset": value, "end_offset": 7}
+        ]
+        assert client.post("/v1/verify", json=bad_atom).status_code == 422
+
+        bad_evidence = r2_a_request()
+        bad_evidence["evidence"] = [
+            {
+                "id": "e1",
+                "claim_id": "c1",
+                "source_id": "source-e1",
+                "source_location": "document:1",
+                "retrieved_at": "2026-10-11T12:00:00Z",
+                "start_offset": 0,
+                "end_offset": value,
+                "excerpt": "Claim A",
+                "origin_id": "origin-e1",
+            }
+        ]
+        assert client.post("/v1/verify", json=bad_evidence).status_code == 422
