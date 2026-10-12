@@ -1,0 +1,193 @@
+{
+  "derived": {
+    "case_count": 34,
+    "path": "v0.1-r2.jsonl",
+    "sha256": "4936feadf61fe884a4afdf0a891147ea33f56bcc212f354c91af4dfd08b27436"
+  },
+  "migration": {
+    "mapping_version": "judge2-golden-map/1.0.0",
+    "method": "adr-009-§11-r2-derived-v1",
+    "migrated_cases": 19,
+    "migrated_claims": 10,
+    "non_migratable": [
+      {
+        "case_id": "f03",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "f03",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "f04",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "f04",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "m01",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "m01",
+        "field": "expected_claims[1]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "m01",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "m02",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "m02",
+        "field": "expected_claims[1]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "m02",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "m03",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "m03",
+        "field": "expected_claims[1]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "m03",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "c02",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "c02",
+        "field": "expected_claims[1]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "c02",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "i01",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "i01",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "i02",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "i02",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "i03",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "i03",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "o01",
+        "field": "expected_claims",
+        "reason": "caso sem claims atômicas explícitas; veredito composto não pode ser recalculado por K"
+      },
+      {
+        "case_id": "o02",
+        "field": "expected_claims",
+        "reason": "caso sem claims atômicas explícitas; veredito composto não pode ser recalculado por K"
+      },
+      {
+        "case_id": "r01",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "r01",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "r02",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "r02",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "h01",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "h01",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      },
+      {
+        "case_id": "ch01",
+        "field": "expected_claims[0]",
+        "reason": "S não está registrado como 1 no caso de origem; não inferir clusters a partir de must_cite"
+      },
+      {
+        "case_id": "ch01",
+        "field": "expected_verdict/global",
+        "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+      }
+    ],
+    "non_migratable_cases": 15,
+    "non_migratable_items": 32,
+    "rules_path": "rules/judge-2.0.0.json",
+    "rules_sha256": "dcbf823ffb262996b68ac40b79289fd9d11362bd5ba8fd241d5396b8c5071f4c",
+    "rules_version": "2.0.0",
+    "source_commit": "6360c6aadc6bcecf574f410cc264754d9e54452b"
+  },
+  "preservation": {
+    "corpus_modified": false,
+    "existing_manifests_modified": false,
+    "source_files_modified": false,
+    "thresholds_modified": false
+  },
+  "schema_version": "ayorai-golden-r2-manifest/1.0.0",
+  "source": {
+    "case_count": 34,
+    "path": "evals/golden/v0.1.jsonl",
+    "sha256": "a7076512196c1ee9670478f036f7a3996fe89a483efad140ec7b985a54846fb9"
+  }
+}
