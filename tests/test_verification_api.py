@@ -523,3 +523,31 @@ def test_r2_a_rejects_integers_outside_rfc8785_safe_range() -> None:
             }
         ]
         assert client.post("/v1/verify", json=bad_evidence).status_code == 422
+
+
+def test_r2_a_response_explanations_are_canonical_and_do_not_change_verdict() -> None:
+    from ayorai_attractor.verification.judge2 import verify_output
+
+    response = TestClient(app).post("/v1/verify", json=r2_a_request())
+    assert response.status_code == 200
+    body = response.json()
+    result = body["result"]
+    assert verify_output(result)
+    assert body["technical_explanation"] == result
+    assert len(body["simple_explanation"]) <= 5
+    assert f"Veredito determinístico: {result['verdict']}." in body["simple_explanation"]
+
+
+def test_r2_a_abstained_and_invalid_input_explanations_never_emit_verdict() -> None:
+    client = TestClient(app)
+    for payload, expected_state in (
+        (r2_a_request(out_of_scope=True), "ABSTAINED"),
+        (r2_a_request(atoms=[]), "INVALID_INPUT"),
+    ):
+        response = client.post("/v1/verify", json=payload)
+        assert response.status_code == 200
+        body = response.json()
+        assert body["result"]["decision_state"] == expected_state
+        assert body["result"]["verdict"] is None
+        assert body["technical_explanation"] == body["result"]
+        assert any("nenhum veredito factual" in line for line in body["simple_explanation"])

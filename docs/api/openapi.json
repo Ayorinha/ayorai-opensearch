@@ -742,7 +742,7 @@
       },
       "Judge2VerificationResponse": {
         "additionalProperties": false,
-        "description": "Public r2-a envelope containing the canonical Judge 2 result.",
+        "description": "Additive r2-a response with explanations derived from canonical output.",
         "properties": {
           "response_policy": {
             "anyOf": [
@@ -763,11 +763,27 @@
             "const": "r2-a",
             "title": "Schema Version",
             "type": "string"
+          },
+          "simple_explanation": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Simple Explanation",
+            "type": "array"
+          },
+          "technical_explanation": {
+            "additionalProperties": true,
+            "title": "Technical Explanation",
+            "type": "object"
           }
         },
         "required": [
           "schema_version",
-          "result"
+          "result",
+          "simple_explanation",
+          "technical_explanation"
         ],
         "title": "Judge2VerificationResponse",
         "type": "object"

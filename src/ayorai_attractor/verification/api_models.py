@@ -142,10 +142,12 @@ class Judge2VerificationRequest(BaseModel):
 
 
 class Judge2VerificationResponse(BaseModel):
-    """Public r2-a envelope containing the canonical Judge 2 result."""
+    """Additive r2-a response with explanations derived from canonical output."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
     schema_version: Literal["r2-a"]
     result: dict[str, object]
+    simple_explanation: list[str] = Field(min_length=1, max_length=5)
+    technical_explanation: dict[str, object]
     response_policy: ResponsePolicy | None = None
