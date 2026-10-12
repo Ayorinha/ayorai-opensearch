@@ -490,4 +490,4 @@ def test_rfc8785_integer_domain_fails_closed_with_valid_digest(
     )
     assert verify_output(result.to_dict())
     assert len(result.output_sha256) == 64
-\n
+
