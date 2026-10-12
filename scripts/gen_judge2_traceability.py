@@ -59,14 +59,13 @@ def load_and_validate_rules() -> list[dict[str, Any]]:
         if not rule.get("tests"):
             missing.append(f"{rule['id']}: no test mapped")
             continue
-        for test in rule["tests"]:
-            path = ROOT / test["path"]
-            name = test["name"]
+        for test_path, name in rule["tests"]:
+            path = ROOT / test_path
             pattern = rf"^\s*def\s+{re.escape(name)}\s*\("
             if not path.is_file() or not re.search(
                 pattern, path.read_text(encoding="utf-8"), re.MULTILINE
             ):
-                missing.append(f"{rule['id']}: missing {test['path']}::{name}")
+                missing.append(f"{rule['id']}: missing {test_path}::{name}")
     if missing:
         raise SystemExit(
             "traceability rules without executable tests:\n" + "\n".join(missing)
@@ -89,7 +88,7 @@ def render() -> str:
     ]
     for rule in rules:
         test_text = "<br>".join(
-            f"{test['path']}::{test['name']}" for test in rule["tests"]
+            f"{test_path}::{name}" for test_path, name in rule["tests"]
         )
         golden_text: list[str] = []
         for name, cases in datasets:
