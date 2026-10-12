@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-
-import rfc8785
 from pathlib import Path
 from typing import Any
+
+import rfc8785
 
 from .gates import (
     IMPLEMENTED_E_REJECTIONS,
