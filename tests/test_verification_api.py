@@ -15,6 +15,14 @@ def test_search_request_preserves_legacy_integer_boolean_coercion() -> None:
     assert zero.require_primary_source is False
     assert one.require_primary_source is True
 
+def test_opensearch_rejects_boolean_max_agents_as_schema_violation() -> None:
+    response = TestClient(app).post(
+        "/v1/opensearch",
+        json={"query": "valid query", "max_agents": True},
+    )
+    assert response.status_code == 422
+
+
 def test_verify_returns_deterministic_verified_result() -> None:
     client = TestClient(app)
     response = client.post(
