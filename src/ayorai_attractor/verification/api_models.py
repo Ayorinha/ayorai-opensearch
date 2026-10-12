@@ -62,3 +62,15 @@ class Judge2VerificationRequest(BaseModel):
     temporal_anchor_present: bool = True
     retrieval_succeeded: bool = True
     evidence_pool_integrity_ok: bool = True
+
+
+class Judge2VerificationResponse(BaseModel):
+    """Additive r2-a response with explanations derived from canonical output."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    schema_version: Literal["r2-a"]
+    result: dict[str, object]
+    simple_explanation: list[str] = Field(min_length=1, max_length=5)
+    technical_explanation: dict[str, object]
+    response_policy: ResponsePolicy | None = None
