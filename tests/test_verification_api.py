@@ -15,12 +15,20 @@ def test_search_request_preserves_legacy_integer_boolean_coercion() -> None:
     assert zero.require_primary_source is False
     assert one.require_primary_source is True
 
-def test_opensearch_rejects_boolean_max_agents_as_schema_violation() -> None:
-    response = TestClient(app).post(
+def test_opensearch_rejects_non_integer_json_types_for_max_agents() -> None:
+    client = TestClient(app)
+    for value in (True, "5"):
+        response = client.post(
+            "/v1/opensearch",
+            json={"query": "valid query", "max_agents": value},
+        )
+        assert response.status_code == 422
+
+    integral_float = client.post(
         "/v1/opensearch",
-        json={"query": "valid query", "max_agents": True},
+        json={"query": "valid query", "max_agents": 5.0},
     )
-    assert response.status_code == 422
+    assert integral_float.status_code == 200
 
 
 def test_verify_returns_deterministic_verified_result() -> None:
