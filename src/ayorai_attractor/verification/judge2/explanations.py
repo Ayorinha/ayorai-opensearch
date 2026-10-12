@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from copy import deepcopy
-from typing import Any
+from typing import Any, TypedDict
 
 from .adjudication import verify_output
 
@@ -11,7 +11,12 @@ _DECISION_STATES = {"DECIDED", "ABSTAINED", "INVALID_INPUT"}
 _VERDICTS = {"SUPPORTED", "PARTIALLY_SUPPORTED", "REFUTED", "UNVERIFIED", "CONFLICTING"}
 
 
-def explain_canonical_result(canonical_result: Mapping[str, Any]) -> dict[str, object]:
+class ExplanationOutput(TypedDict):
+    simple_explanation: list[str]
+    technical_explanation: dict[str, object]
+
+
+def explain_canonical_result(canonical_result: Mapping[str, Any]) -> ExplanationOutput:
     """Build display explanations without adjudicating or changing the result.
 
     The canonical result is the sole input. Its output digest is checked before
