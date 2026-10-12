@@ -1,8 +1,9 @@
 """Strict API contracts for the R1-a deterministic verification surface."""
 
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 from .models import Claim, Evidence, StanceEdge, Verdict
 from .response import ResponsePolicy
@@ -69,10 +70,41 @@ class Judge2StanceRequest(BaseModel):
     ]
 
 
-class Judge2EvidenceRequest(Evidence):
-    """Strict r2-a evidence schema with the positive end-offset constraint documented."""
+class Judge2EvidenceRequest(BaseModel):
+    """Strict r2-a evidence shape; relational offsets are adjudicated by Judge 2."""
 
-    end_offset: int = Field(gt=0)
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    id: str = Field(min_length=1)
+    claim_id: str = Field(min_length=1)
+    source_id: str = Field(min_length=1)
+    source_location: str = Field(min_length=1)
+    retrieved_at: datetime
+    start_offset: int = Field(ge=0)
+    end_offset: int = Field(ge=0)
+    excerpt: str = Field(min_length=1)
+    origin_id: str | None = Field(default=None, min_length=1)
+    canonical_url: HttpUrl | None = None
+    normalized_content_hash: str | None = Field(default=None, min_length=1)
+    cited_origin_id: str | None = Field(default=None, min_length=1)
+    provenance_complete: bool = True
+
+    @field_validator("retrieved_at", mode="before")
+    @classmethod
+    def parse_rfc3339_timestamp(cls, value: object) -> object:
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise ValueError("retrieved_at must be a valid RFC3339 timestamp") from exc
+        return value
+
+    @field_validator("canonical_url", mode="before")
+    @classmethod
+    def parse_http_url(cls, value: object) -> object:
+        if isinstance(value, str):
+            return HttpUrl(value)
+        return value
 
 
 class Judge2VerificationRequest(BaseModel):
