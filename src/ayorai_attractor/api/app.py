@@ -160,12 +160,12 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
             "retrieval_succeeded": request2.retrieval_succeeded,
             "evidence_pool_integrity_ok": request2.evidence_pool_integrity_ok,
         })
-        response_policy = None
+        response_policy: ResponsePolicy | None = None
         if result.decision_state == "ABSTAINED":
             response_policy = (
-                ResponsePolicy.ABSTAIN_OUT_OF_SCOPE.value
+                ResponsePolicy.ABSTAIN_OUT_OF_SCOPE
                 if "OUT_OF_SCOPE" in result.reason_codes
-                else ResponsePolicy.ABSTAIN_NO_ANSWER.value
+                else ResponsePolicy.ABSTAIN_NO_ANSWER
             )
         canonical_result = result.to_dict()
         explanation = explain_canonical_result(canonical_result)
