@@ -28,6 +28,7 @@ jobs:
       - name: Generate OpenAPI snapshots for base and pull request
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SNAPSHOT_PATH: ${{ runner.temp }}/openapi-base.json
         run: |
           set -euo pipefail
           mkdir -p reports/api-contract
@@ -36,11 +37,12 @@ jobs:
             cd /tmp/attractor-api-base
             PYTHONPATH="$PWD/src" python - <<'PY'
           import json
+          import os
           from pathlib import Path
           from ayorai_attractor.api.app import app
 
-          Path("$RUNNER_TEMP/openapi-base.json").write_text(
-              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+          Path(os.environ["SNAPSHOT_PATH"]).write_text(
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
           )
           PY
@@ -51,11 +53,11 @@ jobs:
           from ayorai_attractor.api.app import app
 
           Path("reports/api-contract/openapi-current.json").write_text(
-              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
           )
           PY
-          cp "$RUNNER_TEMP/openapi-base.json" reports/api-contract/openapi-base.json
+          cp "$SNAPSHOT_PATH" reports/api-contract/openapi-base.json
       - name: Install pinned oasdiff
         run: |
           set -euo pipefail
