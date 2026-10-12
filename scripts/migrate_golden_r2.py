@@ -224,6 +224,10 @@ def migrate(
             "atomic_mapping_justification": (
                 "ADR-002 §1: PARTIALLY_SUPPORTED atômico ⇔ S=1, C=0"
             ),
+            "conflicting_robustness_policy": (
+                "CONFLICTING claims retain null robustness: rules 1.x do not record "
+                "per-side cluster counts, so robustness is not inferred."
+            ),
             "rules_path": str(RULES_PATH.relative_to(ROOT)),
             "rules_version": "2.0.0",
             "rules_sha256": sha256_bytes(rules_bytes),
