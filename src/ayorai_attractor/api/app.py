@@ -111,6 +111,21 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
     "/v1/verify",
     response_model=VerificationAPIResponse | Judge2VerificationResponse,
     openapi_extra=_VERIFY_REQUEST_BODY,
+    responses={
+        200: {
+            "description": "r1-a or r2-a verification result",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "oneOf": [
+                            {"$ref": "#/components/schemas/VerificationAPIResponse"},
+                            {"$ref": "#/components/schemas/Judge2VerificationResponse"},
+                        ]
+                    }
+                }
+            },
+        }
+    },
 )
 def verify(payload: Annotated[Any, Body()]) -> Any:
     """Dispatch r1-a unchanged or expose the canonical Judge 2.0.0 result for r2-a."""
