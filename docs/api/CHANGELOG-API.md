@@ -22,3 +22,10 @@ All public API contract changes are additive unless explicitly identified otherw
 - Explanations verify `output_sha256` and reject invalid or contradictory canonical objects; `ABSTAINED` and `INVALID_INPUT` remain without factual verdicts.
 - Added generated rule-to-test-to-Golden traceability for G1–G2, E1–E3, A1–A4, R0–R3 and K1–K5. The generator fails when a normative rule lacks a real test, and CI tests generated-document parity.
 - Phase 2 completion is described only after this PR is merged.
+
+## 2026-10-12 — Compatibility fix: legacy `max_agents` coercion on `POST /v1/opensearch`
+
+- Restored the pre-#163 behavior of `max_agents`: numeric strings (e.g. `"5"`), integral floats and booleans are accepted again, as they were before #163. The change in #163 had rejected them, which broke existing clients of a legacy route.
+- The OpenAPI schema keeps the preferred JSON integer form (1..100) and now describes the legacy coercion.
+- Schemathesis excludes only `negative_data_rejection` for `POST /v1/opensearch`, with the reason versioned in `scripts/run_schemathesis_contract.sh`.
+

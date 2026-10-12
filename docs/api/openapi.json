@@ -811,6 +811,7 @@
         "properties": {
           "max_agents": {
             "default": 5,
+            "description": "Preferred form: JSON integer. Legacy coercion is preserved for compatibility: numeric strings (e.g. \"5\"), integral floats and booleans are still accepted as before v0.5.0.",
             "maximum": 100.0,
             "minimum": 1.0,
             "title": "Max Agents",

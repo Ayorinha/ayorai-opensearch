@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, WithJsonSchema, field_validator
+from pydantic import BaseModel, Field, WithJsonSchema
 
 
 class QualityMode(StrEnum):
@@ -29,15 +29,16 @@ class FailureType(StrEnum):
 class SearchRequest(BaseModel):
     query: str = Field(min_length=3, max_length=10000)
     mode: QualityMode = QualityMode.BALANCED
-    max_agents: int = Field(default=5, ge=1, le=100)
-    @field_validator("max_agents", mode="before")
-    @classmethod
-    def reject_non_integer_json_types(cls, value: object) -> object:
-        if isinstance(value, bool) or isinstance(value, str):
-            raise ValueError("max_agents must be a JSON integer")
-        if isinstance(value, float) and value.is_integer():
-            return int(value)
-        return value
+    max_agents: int = Field(
+        default=5,
+        ge=1,
+        le=100,
+        description=(
+            "Preferred form: JSON integer. Legacy coercion is preserved for "
+            "compatibility: numeric strings (e.g. \"5\"), integral floats and "
+            "booleans are still accepted as before v0.5.0."
+        ),
+    )
 
     require_primary_source: Annotated[
         bool,
