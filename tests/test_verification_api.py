@@ -15,20 +15,22 @@ def test_search_request_preserves_legacy_integer_boolean_coercion() -> None:
     assert zero.require_primary_source is False
     assert one.require_primary_source is True
 
-def test_opensearch_rejects_non_integer_json_types_for_max_agents() -> None:
+def test_opensearch_preserves_legacy_max_agents_coercion() -> None:
+    """Legacy /v1/opensearch accepted lax integer forms before #163; keep them."""
     client = TestClient(app)
-    for value in (True, "5"):
+    for value in (5, 5.0, "5", True):
         response = client.post(
             "/v1/opensearch",
             json={"query": "valid query", "max_agents": value},
         )
-        assert response.status_code == 422
+        assert response.status_code == 200, value
 
-    integral_float = client.post(
-        "/v1/opensearch",
-        json={"query": "valid query", "max_agents": 5.0},
-    )
-    assert integral_float.status_code == 200
+    for value in ("abc", 5.5, 0, 101):
+        response = client.post(
+            "/v1/opensearch",
+            json={"query": "valid query", "max_agents": value},
+        )
+        assert response.status_code == 422, value
 
 
 def test_verify_returns_deterministic_verified_result() -> None:

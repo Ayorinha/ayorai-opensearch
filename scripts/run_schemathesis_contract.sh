@@ -10,10 +10,21 @@ API_URL="${3:?API URL required}"
 # application validation and exclude only positive_data_acceptance for POST
 # /v1/verify; all other Schemathesis checks remain enabled for that operation.
 # Every other operation still runs the complete --checks all set, including
-# positive_data_acceptance.
+# positive_data_acceptance. Path filters are used alone: combined with
+# --include-method they are OR-ed and would widen the selection to every POST
+# operation.
+# Legacy /v1/opensearch keeps Pydantic lax integer coercion for max_agents
+# (numeric strings, integral floats and booleans were accepted before v0.5.0).
+# The schema documents the preferred JSON integer form, so only
+# negative_data_rejection is excluded for that operation; every other check,
+# including positive_data_acceptance, still runs for it.
 "$ST_BIN" run "$OPENAPI_URL" --url "$API_URL" --checks all \
-  --exclude-path /v1/verify
+  --exclude-path /v1/verify --exclude-path /v1/opensearch
 
 "$ST_BIN" run "$OPENAPI_URL" --url "$API_URL" --checks all \
-  --include-path /v1/verify --include-method POST \
+  --include-path /v1/opensearch \
+  --exclude-checks negative_data_rejection
+
+"$ST_BIN" run "$OPENAPI_URL" --url "$API_URL" --checks all \
+  --include-path /v1/verify \
   --exclude-checks positive_data_acceptance
