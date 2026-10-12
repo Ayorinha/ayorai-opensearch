@@ -277,7 +277,7 @@ def audit_trace(trace_id: str) -> AuditTraceResponse:
 
 def _verify_contracts_schema_only(
     body: Annotated[VerificationRequest | Judge2VerificationRequest, Body()],
-) -> VerificationAPIResponse | Judge2VerificationResponse:  # pragma: no cover - documentation-only signature, never routed
+) -> VerificationAPIResponse | Judge2VerificationResponse:  # pragma: no cover
     """Expose both /v1/verify request contracts to OpenAPI generation."""
 
 
