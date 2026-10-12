@@ -478,16 +478,24 @@ def test_public_adjudicate_does_not_admit_excerpt_absent_from_source() -> None:
 def test_rfc8785_integer_domain_fails_closed_with_valid_digest(
     unsafe_integer: int,
 ) -> None:
-    request = request_one(out_of_scope=True)
-    request["out_of_scope"] = unsafe_integer
+    request = {
+        "protocol_version": "r2-a",
+        "claim_id": "c1",
+        "claim_text": "claim",
+        "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
+        "evidence": [],
+        "stances": [],
+        "source_texts": {},
+        "out_of_scope": unsafe_integer,
+    }
 
-    result = adjudicate(request)
+    result = adjudication.adjudicate(request)
 
     assert result.decision_state == "INVALID_INPUT"
     assert result.reason_codes == ("SCHEMA_VIOLATION",)
     assert result.rule_trace == (
         {"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},
     )
-    assert verify_output(result.to_dict())
+    assert adjudication.verify_output(result.to_dict())
     assert len(result.output_sha256) == 64
 
