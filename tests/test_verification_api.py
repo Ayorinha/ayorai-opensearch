@@ -420,4 +420,4 @@ def test_r2_a_rfc8785_integer_domain_never_returns_5xx(
         {"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"}
     ]
     assert len(result["output_sha256"]) == 64
-\n
+
