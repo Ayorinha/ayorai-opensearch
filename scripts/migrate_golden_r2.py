@@ -81,7 +81,7 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
     non_migratable: list[dict[str, str]] = []
     migrated_count = 0
 
-    if case.get("category") == "out-of-scope" or case.get("response_status") == "ABSTAIN/OUT_OF_SCOPE":
+    if (\n        case.get("category") == "out-of-scope"\n        or case.get("response_status") == "ABSTAIN/OUT_OF_SCOPE"\n    ):
         transformed["expected_decision_state"] = "ABSTAINED"
         transformed["expected_reason_codes"] = ["OUT_OF_SCOPE"]
         transformed["expected_verdict"] = None
@@ -141,7 +141,7 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
             transformed["expected_robustness"] = None
             non_migratable.append({
                 "field": "expected_verdict/global",
-                "reason": "composição K não derivável sem inventar o mapeamento de uma ou mais claims",
+                "reason": (\n                    "composição K não derivável sem inventar o mapeamento "\n                    "de uma ou mais claims"\n                ),
             })
         transformed["expected_decision_state"] = "DECIDED"
     else:
