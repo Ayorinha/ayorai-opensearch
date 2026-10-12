@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from fastapi.testclient import TestClient
 from hypothesis import given, settings
 from hypothesis import strategies as st
