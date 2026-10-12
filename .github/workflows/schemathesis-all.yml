@@ -1,0 +1,47 @@
+name: Schemathesis Full API Contract
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  schemathesis-all:
+    name: Schemathesis all contract checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project and isolated Schemathesis
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          python -m venv /tmp/st
+          /tmp/st/bin/pip install schemathesis==4.29.4
+          /tmp/st/bin/st --version
+      - name: Start API
+        run: |
+          set -euo pipefail
+          uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000 > /tmp/attractor-api.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/openapi.json > /tmp/openapi-live.json; then
+              echo "API ready on attempt ${attempt}/30"
+              break
+            fi
+            echo "Waiting for API (attempt ${attempt}/30)"
+            sleep 1
+          done
+          test -s /tmp/openapi-live.json
+      - name: Exercise all documented API contract checks
+        run: /tmp/st/bin/st run http://127.0.0.1:8000/openapi.json --url http://127.0.0.1:8000 --checks all
+      - name: Show API log on failure
+        if: failure()
+        run: cat /tmp/attractor-api.log
