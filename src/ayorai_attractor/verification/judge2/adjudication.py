@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import hashlib
 import math
+
+import rfc8785
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
