@@ -233,4 +233,4 @@ def test_rfc8785_accepts_only_safe_integer_boundary() -> None:
     for unsafe in (2**53, 2**53 + 1, 2**60, -(2**53), -(2**53 + 1), -(2**60)):
         with pytest.raises(Exception):
             canonical_json_bytes({"n": unsafe})
-\n
+
