@@ -20,7 +20,10 @@ from ayorai_attractor.models import (
 from ayorai_attractor.orchestrator import Attractor
 from ayorai_attractor.verification.api_models import (
     ClaimJudgmentResponse,
+    Judge2AtomRequest,
+    Judge2StanceRequest,
     Judge2VerificationRequest,
+    Judge2VerificationResponse,
     Traceability,
     VerificationAPIResponse,
     VerificationRequest,
@@ -43,6 +46,31 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         audit_store.close()
 
 
+_HTTP_422_RESPONSE: dict[str, Any] = {
+    "description": "Request validation failed.",
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {"detail": {"type": "array", "items": {"type": "object"}}},
+                "required": ["detail"],
+            }
+        }
+    },
+}
+_HTTP_404_RESPONSE: dict[str, Any] = {
+    "description": "The requested audit trace does not exist.",
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {"detail": {"type": "string"}},
+                "required": ["detail"],
+            }
+        }
+    },
+}
+
 app = FastAPI(
     title="AYORAI ATTRACTOR",
     version="0.1.0",
@@ -61,7 +89,7 @@ def opensearch(request: SearchRequest) -> SearchResponse:
     return engine.run(request)
 
 
-@app.post("/v1/audit", response_model=AuditResponse)
+@app.post("/v1/audit", response_model=AuditResponse, responses={422: _HTTP_422_RESPONSE})
 def audit(request: SearchRequest) -> AuditResponse:
     """Run the engine and expose a deterministic audit of its evidence."""
     response = engine.run(request)
@@ -107,8 +135,24 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
 
 @app.post(
     "/v1/verify",
-    response_model=VerificationAPIResponse,
+    response_model=None,
     openapi_extra=_VERIFY_REQUEST_BODY,
+    responses={
+        200: {
+            "description": "r1-a or r2-a verification result.",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "oneOf": [
+                            {"$ref": "#/components/schemas/VerificationAPIResponse"},
+                            {"$ref": "#/components/schemas/Judge2VerificationResponse"},
+                        ]
+                    }
+                }
+            },
+        },
+        422: _HTTP_422_RESPONSE,
+    },
 )
 def verify(payload: Annotated[Any, Body()]) -> Any:
     """Dispatch r1-a unchanged or expose the canonical Judge 2.0.0 result for r2-a."""
@@ -133,9 +177,9 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
             "protocol_version": request2.protocol_version,
             "claim_id": request2.claim_id,
             "claim_text": request2.claim_text,
-            "atoms": request2.atoms,
+            "atoms": [item.model_dump() for item in request2.atoms],
             "evidence": request2.evidence,
-            "stances": request2.stances,
+            "stances": [item.model_dump() for item in request2.stances],
             "source_texts": request2.source_texts,
             "out_of_scope": request2.out_of_scope,
             "factual_claim": request2.factual_claim,
@@ -217,7 +261,11 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
     )
 
 
-@app.get("/v1/audit/{trace_id}", response_model=AuditTraceResponse)
+@app.get(
+    "/v1/audit/{trace_id}",
+    response_model=AuditTraceResponse,
+    responses={404: _HTTP_404_RESPONSE, 422: _HTTP_422_RESPONSE},
+)
 def audit_trace(trace_id: str) -> AuditTraceResponse:
     """Return persisted audit metadata without exposing raw evidence or prompts."""
     saved = audit_store.get(trace_id)
@@ -231,7 +279,7 @@ def audit_trace(trace_id: str) -> AuditTraceResponse:
 
 def _verify_contracts_schema_only(
     body: Annotated[VerificationRequest | Judge2VerificationRequest, Body()],
-) -> None:  # pragma: no cover - documentation-only signature, never routed
+) -> VerificationAPIResponse | Judge2VerificationResponse:  # pragma: no cover - documentation-only signature, never routed
     """Expose both /v1/verify request contracts to OpenAPI generation."""
 
 
