@@ -462,8 +462,8 @@
         "description": "Strict public schema for a Judge 2 atom and its source-text span.",
         "properties": {
           "end_offset": {
-            "exclusiveMinimum": 0.0,
             "description": "Exclusive end offset in source text; must be within the RFC 8785 safe-integer range.",
+            "exclusiveMinimum": 0.0,
             "maximum": 9007199254740991.0,
             "title": "End Offset",
             "type": "integer"
