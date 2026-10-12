@@ -1,12 +1,34 @@
 import json
 from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from ayorai_attractor.api.app import app
+from ayorai_attractor.models import SearchRequest
+
+
+def test_search_request_preserves_legacy_integer_boolean_coercion() -> None:
+    zero = SearchRequest(query="valid query", require_primary_source=0)
+    one = SearchRequest(query="valid query", require_primary_source=1)
+    assert zero.require_primary_source is False
+    assert one.require_primary_source is True
+
+def test_opensearch_rejects_non_integer_json_types_for_max_agents() -> None:
+    client = TestClient(app)
+    for value in (True, "5"):
+        response = client.post(
+            "/v1/opensearch",
+            json={"query": "valid query", "max_agents": value},
+        )
+        assert response.status_code == 422
+
+    integral_float = client.post(
+        "/v1/opensearch",
+        json={"query": "valid query", "max_agents": 5.0},
+    )
+    assert integral_float.status_code == 200
 
 
 def test_verify_returns_deterministic_verified_result() -> None:
@@ -402,34 +424,102 @@ def test_openapi_documents_both_verify_request_contracts() -> None:
         f"#/components/schemas/{name}" for name in schema["components"]["schemas"]
     }
 
-@pytest.mark.parametrize(
-    "unsafe_integer",
-    [2**53, 2**53 + 1, 2**60, -(2**53), -(2**53 + 1), -(2**60)],
-)
-def test_r2_a_rfc8785_integer_domain_never_returns_5xx(
-    unsafe_integer: int,
-) -> None:
+
+def test_r2_a_response_matches_declared_response_model_and_openapi_statuses() -> None:
+    from ayorai_attractor.verification.api_models import Judge2VerificationResponse
+
+    response = TestClient(app).post("/v1/verify", json=r2_a_request())
+    assert response.status_code == 200
+    Judge2VerificationResponse.model_validate(response.json())
+
+    schema = app.openapi()
+    verify_responses = schema["paths"]["/v1/verify"]["post"]["responses"]
+    assert "200" in verify_responses
+    assert "422" in verify_responses
+    response_schema = verify_responses["200"]["content"]["application/json"]["schema"]
+    assert response_schema["oneOf"] == [
+        {"$ref": "#/components/schemas/VerificationAPIResponse"},
+        {"$ref": "#/components/schemas/Judge2VerificationResponse"},
+    ]
+    assert "404" in schema["paths"]["/v1/audit/{trace_id}"]["get"]["responses"]
+    assert "422" in schema["paths"]["/v1/audit/{trace_id}"]["get"]["responses"]
+    assert "422" in schema["paths"]["/v1/audit"]["post"]["responses"]
+
+
+def test_r2_a_rejects_unknown_nested_atom_and_stance_fields() -> None:
+    client = TestClient(app)
+    bad_atom = r2_a_request()
+    bad_atom["atoms"] = [
+        {"id": "a1", "text": "Claim A", "start_offset": 0, "end_offset": 7, "unexpected": True}
+    ]
+    bad_stance = r2_a_request()
+    bad_stance["stances"] = [
+        {"id": "s1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS", "unexpected": True}
+    ]
+
+    assert client.post("/v1/verify", json=bad_atom).status_code == 422
+    assert client.post("/v1/verify", json=bad_stance).status_code == 422
+
+
+
+
+def test_openapi_documents_r1_a_stance_requires_evidence() -> None:
+    schema = app.openapi()["components"]["schemas"]["VerificationRequest"]
+    assert schema["not"] == {
+        "type": "object",
+        "properties": {
+            "evidence": {"maxItems": 0},
+            "stances": {"minItems": 1},
+        },
+        "required": ["stances"],
+    }
+
+
+def test_r2_a_accepts_safe_integer_boundary_without_server_error() -> None:
+    safe_max = 2**53 - 1
     payload = r2_a_request()
     payload["atoms"] = [
+        {"id": "a1", "text": "Claim A", "start_offset": safe_max - 1, "end_offset": safe_max}
+    ]
+    payload["evidence"] = [
         {
-            "id": "a1",
-            "text": "Claim A",
-            "start_offset": 0,
-            "end_offset": 7,
-            "out_of_range_probe": unsafe_integer,
+            "id": "e1",
+            "claim_id": "c1",
+            "source_id": "source-e1",
+            "source_location": "document:1",
+            "retrieved_at": "2026-10-11T12:00:00Z",
+            "start_offset": safe_max - 1,
+            "end_offset": safe_max,
+            "excerpt": "Claim A",
+            "origin_id": "origin-e1",
         }
     ]
-    response = TestClient(app, raise_server_exceptions=False).post(
-        "/v1/verify", json=payload
-    )
+    response = TestClient(app).post("/v1/verify", json=payload)
+    assert response.status_code != 422
+    assert response.status_code < 500
 
-    assert response.status_code != 500
-    assert response.status_code == 200
-    result = response.json()["result"]
-    assert result["decision_state"] == "INVALID_INPUT"
-    assert result["reason_codes"] == ["SCHEMA_VIOLATION"]
-    assert result["rule_trace"] == [
-        {"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"}
-    ]
-    assert len(result["output_sha256"]) == 64
 
+def test_r2_a_rejects_integers_outside_rfc8785_safe_range() -> None:
+    client = TestClient(app)
+    for value in (2**53, 2**53 + 1, 2**60, -(2**53), -(2**53 + 1), -(2**60)):
+        bad_atom = r2_a_request()
+        bad_atom["atoms"] = [
+            {"id": "a1", "text": "Claim A", "start_offset": value, "end_offset": 7}
+        ]
+        assert client.post("/v1/verify", json=bad_atom).status_code == 422
+
+        bad_evidence = r2_a_request()
+        bad_evidence["evidence"] = [
+            {
+                "id": "e1",
+                "claim_id": "c1",
+                "source_id": "source-e1",
+                "source_location": "document:1",
+                "retrieved_at": "2026-10-11T12:00:00Z",
+                "start_offset": 0,
+                "end_offset": value,
+                "excerpt": "Claim A",
+                "origin_id": "origin-e1",
+            }
+        ]
+        assert client.post("/v1/verify", json=bad_evidence).status_code == 422

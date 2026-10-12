@@ -27,8 +27,11 @@ class Evidence(StrictModel):
     source_id: str = Field(min_length=1)
     source_location: str = Field(min_length=1)
     retrieved_at: datetime
-    start_offset: int = Field(ge=0)
-    end_offset: int = Field(ge=0)
+    start_offset: int = Field(ge=0, description="Inclusive start offset in the source text.")
+    end_offset: int = Field(
+        ge=0,
+        description="Exclusive end offset; must be greater than start_offset.",
+    )
     excerpt: str = Field(min_length=1)
     origin_id: str | None = Field(default=None, min_length=1)
     canonical_url: HttpUrl | None = None
