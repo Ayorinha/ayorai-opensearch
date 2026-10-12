@@ -40,6 +40,22 @@ jobs:
             sleep 1
           done
           test -s /tmp/openapi-live.json
+      - name: Emit canonical OpenAPI snapshot for review
+        run: |
+          PYTHONPATH="$PWD/src" python - <<'PY'
+          import json
+          from pathlib import Path
+          from ayorai_attractor.api.app import app
+
+          Path("/tmp/openapi-canonical.json").write_text(
+              json.dumps(app.openapi(), ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+              encoding="utf-8",
+          )
+          PY
+          echo OPENAPI_CANONICAL_BASE64_BEGIN
+          base64 --wrap=0 /tmp/openapi-canonical.json
+          echo
+          echo OPENAPI_CANONICAL_BASE64_END
       - name: Exercise all documented API contract checks
         run: /tmp/st/bin/st run http://127.0.0.1:8000/openapi.json --url http://127.0.0.1:8000 --checks all
       - name: Show API log on failure
