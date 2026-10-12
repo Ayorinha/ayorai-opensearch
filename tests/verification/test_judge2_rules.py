@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import pytest
+from rfc8785 import IntegerDomainError
 
 from ayorai_attractor.verification.judge2 import (
     RULES_VERSION,
@@ -231,6 +232,6 @@ def test_rfc8785_accepts_only_safe_integer_boundary() -> None:
         f'{{"n":{-maximum}}}'.encode("ascii")
     )
     for unsafe in (2**53, 2**53 + 1, 2**60, -(2**53), -(2**53 + 1), -(2**60)):
-        with pytest.raises(Exception):
+        with pytest.raises(IntegerDomainError):
             canonical_json_bytes({"n": unsafe})
 
