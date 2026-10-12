@@ -28,7 +28,7 @@ from ayorai_attractor.verification.api_models import (
 )
 from ayorai_attractor.verification.judge import InvalidJudgeInput, judge
 from ayorai_attractor.verification.judge2 import adjudicate
-from ayorai_attractor.verification.models import Verdict
+from ayorai_attractor.verification.models import Evidence, Verdict
 from ayorai_attractor.verification.response import ResponsePolicy
 
 engine = Attractor()
@@ -184,12 +184,29 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
             ]
             raise RequestValidationError(errors, body=payload) from exc
 
+        evidence_items: list[Evidence | dict[str, object]] = []
+        for item in request2.evidence:
+            evidence_data = item.model_dump()
+            if (
+                evidence_data["end_offset"] <= evidence_data["start_offset"]
+                or (
+                    evidence_data["origin_id"] is None
+                    and evidence_data["canonical_url"] is None
+                )
+            ):
+                evidence_items.append(evidence_data)
+            else:
+                try:
+                    evidence_items.append(Evidence.model_validate(evidence_data, from_attributes=True))
+                except ValidationError:
+                    evidence_items.append(evidence_data)
+
         result = adjudicate({
             "protocol_version": request2.protocol_version,
             "claim_id": request2.claim_id,
             "claim_text": request2.claim_text,
             "atoms": [item.model_dump() for item in request2.atoms],
-            "evidence": request2.evidence,
+            "evidence": evidence_items,
             "stances": [item.model_dump() for item in request2.stances],
             "source_texts": request2.source_texts,
             "out_of_scope": request2.out_of_scope,
