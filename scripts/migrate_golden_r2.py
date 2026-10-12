@@ -17,8 +17,8 @@ SOURCES = (
     ("v0", ROOT / "evals" / "golden" / "v0.jsonl"),
     ("v0.1", ROOT / "evals" / "golden" / "v0.1.jsonl"),
 )
-MIGRATION_METHOD = "adr-009-§11-r2-derived-v2"
-MAPPING_VERSION = "judge2-golden-map/1.2.0"
+MIGRATION_METHOD = "adr-009-§11-r2-derived-v3"
+MAPPING_VERSION = "judge2-golden-map/1.3.0"
 
 
 def sha256_bytes(data: bytes) -> str:
