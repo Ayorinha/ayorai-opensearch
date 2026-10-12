@@ -41,7 +41,7 @@ jobs:
           done
           test -s /tmp/openapi-live.json
       - name: Exercise all documented API contract checks
-        run: /tmp/st/bin/st run http://127.0.0.1:8000/openapi.json --url http://127.0.0.1:8000 --checks all
+        run: bash scripts/run_schemathesis_contract.sh /tmp/st/bin/st http://127.0.0.1:8000/openapi.json http://127.0.0.1:8000
       - name: Show API log on failure
         if: failure()
         run: cat /tmp/attractor-api.log
