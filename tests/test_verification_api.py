@@ -401,7 +401,10 @@ def test_openapi_documents_both_verify_request_contracts() -> None:
         f"#/components/schemas/{name}" for name in schema["components"]["schemas"]
     }
 
-@pytest.mark.parametrize("unsafe_integer", [2**53, 2**53 + 1, 2**60])
+@pytest.mark.parametrize(
+    "unsafe_integer",
+    [2**53, 2**53 + 1, 2**60, -(2**53), -(2**53 + 1), -(2**60)],
+)
 def test_r2_a_rfc8785_integer_domain_never_returns_5xx(
     unsafe_integer: int,
 ) -> None:
