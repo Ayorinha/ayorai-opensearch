@@ -44,26 +44,6 @@ class VerificationAPIResponse(BaseModel):
     traceability: Traceability
 
 
-class Judge2VerificationRequest(BaseModel):
-    """Strict JSON contract for the r2-a Judge 2.0.0 API path."""
-
-    model_config = ConfigDict(extra="forbid", strict=True)
-
-    schema_version: Literal["r2-a"]
-    protocol_version: Literal["r2-a"] = "r2-a"
-    claim_id: str = Field(min_length=1)
-    claim_text: str = Field(min_length=1)
-    atoms: list[Judge2AtomRequest]
-    evidence: list[Evidence] = Field(default_factory=list)
-    stances: list[Judge2StanceRequest] = Field(default_factory=list)
-    source_texts: dict[str, str]
-    out_of_scope: bool = False
-    factual_claim: bool = True
-    temporal_anchor_present: bool = True
-    retrieval_succeeded: bool = True
-    evidence_pool_integrity_ok: bool = True
-
-
 class Judge2AtomRequest(BaseModel):
     """Strict public schema for a Judge 2 atom and its source-text span."""
 
@@ -87,6 +67,26 @@ class Judge2StanceRequest(BaseModel):
         "SUPPORTS", "CONTRADICTS", "NEUTRAL",
         "supports", "contradicts", "neutral",
     ]
+
+
+class Judge2VerificationRequest(BaseModel):
+    """Strict JSON contract for the r2-a Judge 2.0.0 API path."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    schema_version: Literal["r2-a"]
+    protocol_version: Literal["r2-a"] = "r2-a"
+    claim_id: str = Field(min_length=1)
+    claim_text: str = Field(min_length=1)
+    atoms: list[Judge2AtomRequest]
+    evidence: list[Evidence] = Field(default_factory=list)
+    stances: list[Judge2StanceRequest] = Field(default_factory=list)
+    source_texts: dict[str, str]
+    out_of_scope: bool = False
+    factual_claim: bool = True
+    temporal_anchor_present: bool = True
+    retrieval_succeeded: bool = True
+    evidence_pool_integrity_ok: bool = True
 
 
 class Judge2VerificationResponse(BaseModel):
