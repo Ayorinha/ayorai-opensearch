@@ -18,7 +18,7 @@ SOURCES = (
     ("v0.1", ROOT / "evals" / "golden" / "v0.1.jsonl"),
 )
 MIGRATION_METHOD = "adr-009-§11-r2-derived-v1"
-MAPPING_VERSION = "judge2-golden-map/1.0.0"
+MAPPING_VERSION = "judge2-golden-map/1.1.0"
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -52,13 +52,8 @@ def map_atomic(label: object, support_clusters: object) -> tuple[object, object,
         return "SUPPORTED", "R3", None
     if label == "SUPPORTED":
         return "SUPPORTED", "R2", None
-    if label == "PARTIALLY_SUPPORTED" and support_clusters == 1:
-        return "SUPPORTED", "R1", None
     if label == "PARTIALLY_SUPPORTED":
-        return label, None, (
-            "S não está registrado como 1 no caso de origem; "
-            "não inferir clusters a partir de must_cite"
-        )
+        return "SUPPORTED", "R1", None
     if label == "UNVERIFIED":
         return label, "R0", None
     if label in {"REFUTED", "CONFLICTING"}:
@@ -141,6 +136,9 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
         "method": MIGRATION_METHOD,
         "mapping_version": MAPPING_VERSION,
         "source_expected_verdict": case.get("expected_verdict", case.get("global")),
+        "atomic_mapping_justification": (
+            "ADR-002 §1: PARTIALLY_SUPPORTED atômico ⇔ S=1, C=0"
+        ),
     }
     return transformed, non_migratable, migrated_count
 
@@ -195,6 +193,9 @@ def migrate(
             "method": MIGRATION_METHOD,
             "mapping_version": MAPPING_VERSION,
             "source_commit": source_commit,
+            "atomic_mapping_justification": (
+                "ADR-002 §1: PARTIALLY_SUPPORTED atômico ⇔ S=1, C=0"
+            ),
             "rules_path": str(RULES_PATH.relative_to(ROOT)),
             "rules_version": "2.0.0",
             "rules_sha256": sha256_bytes(rules_bytes),
@@ -228,8 +229,15 @@ def main() -> int:
     try:
         if not source_commit:
             source_commit = subprocess.run(
-                ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True
+                [
+                    "git", "log", "-1", "--format=%H", "--",
+                    "evals/golden/v0.jsonl", "evals/golden/v0.1.jsonl",
+                    "rules/judge-2.0.0.json",
+                ],
+                cwd=ROOT, check=True, capture_output=True, text=True,
             ).stdout.strip()
+            if not source_commit:
+                raise ValueError("no commit found for frozen source files")
     except (OSError, subprocess.CalledProcessError) as exc:
         raise SystemExit(f"cannot determine source commit: {exc}") from exc
 
