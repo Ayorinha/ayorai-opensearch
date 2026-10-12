@@ -1,0 +1,250 @@
+[
+  {
+    "id": "G1",
+    "meaning": "Entrada inválida; códigos G não podem gerar veredito.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_gates.py",
+        "test_t11_each_g1_code_has_a_specific_negative_case"
+      ],
+      [
+        "tests/verification/test_judge2_canonical_output.py",
+        "test_t8_invariant_i1_holds_for_every_decision_state"
+      ]
+    ],
+    "selector": "none",
+    "note": "Sem caso Golden inválido; coberto por testes negativos dedicados."
+  },
+  {
+    "id": "G2",
+    "meaning": "Abstenção sem veredito factual.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_gates.py",
+        "test_g2_returns_abstention_reason_without_verdict"
+      ],
+      [
+        "tests/verification/test_judge2_canonical_output.py",
+        "test_t8_invariant_i1_holds_for_every_decision_state"
+      ]
+    ],
+    "selector": "abstained",
+    "note": ""
+  },
+  {
+    "id": "E1",
+    "meaning": "Offsets válidos, ordenados e dentro dos limites do documento.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_gates.py",
+        "test_t11_each_evidence_rejection_reason_is_recorded"
+      ],
+      [
+        "tests/verification/test_judge2_gates.py",
+        "test_offsets_count_unicode_code_points_for_accented_source"
+      ]
+    ],
+    "selector": "none",
+    "note": "Golden r2 não armazena spans nem payloads brutos de evidência."
+  },
+  {
+    "id": "E2",
+    "meaning": "Trecho consistente com a fonte e seu hash quando aplicável.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_gates.py",
+        "test_fabricated_excerpt_without_hash_is_rejected"
+      ],
+      [
+        "tests/verification/test_judge2_gates.py",
+        "test_excerpt_shifted_by_one_character_is_rejected"
+      ],
+      [
+        "tests/verification/test_judge2_gates.py",
+        "test_nfd_excerpt_matches_nfc_source_after_normalization"
+      ]
+    ],
+    "selector": "none",
+    "note": "Golden r2 não armazena payloads brutos ou hashes de trecho."
+  },
+  {
+    "id": "E3",
+    "meaning": "Evidência só conta com aresta SUPPORTS/CONTRADICTS admissível.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_gates.py",
+        "test_valid_supporting_evidence_is_admitted_without_verdict"
+      ],
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_only_gate_admitted_evidence_contributes_to_verdict"
+      ]
+    ],
+    "selector": "none",
+    "note": "Golden r2 não serializa arestas de stance nem evidência admitida."
+  },
+  {
+    "id": "A1",
+    "meaning": "S=0 e C=0 → UNVERIFIED.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t1_atomic_truth_table_covers_support_zero_to_three_and_contradiction_zero_to_two"
+      ]
+    ],
+    "selector": "atomic:UNVERIFIED",
+    "note": ""
+  },
+  {
+    "id": "A2",
+    "meaning": "S≥1 e C=0 → SUPPORTED.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t1_atomic_truth_table_covers_support_zero_to_three_and_contradiction_zero_to_two"
+      ]
+    ],
+    "selector": "atomic:SUPPORTED",
+    "note": ""
+  },
+  {
+    "id": "A3",
+    "meaning": "S=0 e C≥1 → REFUTED.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t1_atomic_truth_table_covers_support_zero_to_three_and_contradiction_zero_to_two"
+      ]
+    ],
+    "selector": "atomic:REFUTED",
+    "note": ""
+  },
+  {
+    "id": "A4",
+    "meaning": "S≥1 e C≥1 → CONFLICTING.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t1_atomic_truth_table_covers_support_zero_to_three_and_contradiction_zero_to_two"
+      ]
+    ],
+    "selector": "atomic:CONFLICTING",
+    "note": ""
+  },
+  {
+    "id": "R0",
+    "meaning": "Nenhum cluster decisório admissível.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t1_provenance_selects_r2_or_r3_without_changing_verdict"
+      ],
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_conflicting_atomic_decision_exposes_both_sides_and_uses_minimum"
+      ]
+    ],
+    "selector": "robustness:R0",
+    "note": ""
+  },
+  {
+    "id": "R1",
+    "meaning": "Um cluster decisório admissível.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t1_provenance_selects_r2_or_r3_without_changing_verdict"
+      ],
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_composite_robustness_is_minimum_of_atoms_selected_by_rule"
+      ]
+    ],
+    "selector": "robustness:R1",
+    "note": ""
+  },
+  {
+    "id": "R2",
+    "meaning": "Dois ou mais clusters, independência não plenamente confirmada.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t1_provenance_selects_r2_or_r3_without_changing_verdict"
+      ]
+    ],
+    "selector": "robustness:R2",
+    "note": ""
+  },
+  {
+    "id": "R3",
+    "meaning": "Dois ou mais clusters com proveniência completa.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t1_provenance_selects_r2_or_r3_without_changing_verdict"
+      ]
+    ],
+    "selector": "robustness:R3",
+    "note": ""
+  },
+  {
+    "id": "K1",
+    "meaning": "Qualquer átomo REFUTED → composto REFUTED.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t2_composite_truth_table_exhaustive_for_multisets_up_to_four_atoms"
+      ]
+    ],
+    "selector": "composite:REFUTED",
+    "note": "Nenhum caso Golden composto atual exercita K1; tabela exaustiva cobre a regra."
+  },
+  {
+    "id": "K2",
+    "meaning": "Sem K1, qualquer átomo CONFLICTING → composto CONFLICTING.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t2_composite_truth_table_exhaustive_for_multisets_up_to_four_atoms"
+      ]
+    ],
+    "selector": "composite:CONFLICTING",
+    "note": ""
+  },
+  {
+    "id": "K3",
+    "meaning": "Todos os átomos SUPPORTED → composto SUPPORTED.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t2_composite_truth_table_exhaustive_for_multisets_up_to_four_atoms"
+      ]
+    ],
+    "selector": "composite:SUPPORTED",
+    "note": ""
+  },
+  {
+    "id": "K4",
+    "meaning": "Sem K1–K3, algum átomo SUPPORTED → PARTIALLY_SUPPORTED.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t2_composite_truth_table_exhaustive_for_multisets_up_to_four_atoms"
+      ]
+    ],
+    "selector": "composite:PARTIALLY_SUPPORTED",
+    "note": "Nenhum caso Golden composto atual exercita K4; tabela exaustiva cobre a regra."
+  },
+  {
+    "id": "K5",
+    "meaning": "Nenhum átomo decisório → UNVERIFIED.",
+    "tests": [
+      [
+        "tests/verification/test_judge2_adjudication.py",
+        "test_t2_composite_truth_table_exhaustive_for_multisets_up_to_four_atoms"
+      ]
+    ],
+    "selector": "composite:UNVERIFIED",
+    "note": "Nenhum caso Golden composto atual exercita K5; tabela exaustiva cobre a regra."
+  }
+]
