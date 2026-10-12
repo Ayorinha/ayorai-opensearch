@@ -547,7 +547,7 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
     gate_input = {key: request[key] for key in required | (set(request) & optional)}
     try:
         canonical_json_bytes(_canonical_input(request))
-    except (rfc8785.IntegerDomainError, rfc8785.FloatDomainError):
+    except (TypeError, rfc8785.IntegerDomainError, rfc8785.FloatDomainError):
         # RFC 8785 rejects numbers outside its interoperable IEEE-754 domain.
         # Re-encode the rejected value as a marker so the Judge can return a
         # deterministic SCHEMA_VIOLATION instead of leaking an exception.
