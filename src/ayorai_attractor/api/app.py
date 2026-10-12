@@ -335,6 +335,16 @@ def _openapi_with_verify_schemas() -> dict[str, Any]:
         title=app.title, version=app.version, routes=[*app.routes, phantom]
     )
     schema["paths"].pop(phantom_path, None)
+    verification_schema = schema["components"]["schemas"].get("VerificationRequest")
+    if isinstance(verification_schema, dict):
+        verification_schema["not"] = {
+            "type": "object",
+            "properties": {
+                "evidence": {"maxItems": 0},
+                "stances": {"minItems": 1},
+            },
+            "required": ["stances"],
+        }
     app.openapi_schema = schema
     return schema
 
