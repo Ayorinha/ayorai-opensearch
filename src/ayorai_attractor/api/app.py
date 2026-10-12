@@ -44,6 +44,18 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         audit_store.close()
 
 
+_HTTP_400_RESPONSE: dict[str, Any] = {
+    "description": "Request body could not be parsed as JSON.",
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {"detail": {"type": "string"}},
+                "required": ["detail"],
+            }
+        }
+    },
+}
 _HTTP_422_RESPONSE: dict[str, Any] = {
     "description": "Request validation failed.",
     "content": {
@@ -82,12 +94,12 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "ayorai-attractor"}
 
 
-@app.post("/v1/opensearch", response_model=SearchResponse)
+@app.post("/v1/opensearch", response_model=SearchResponse, responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE})
 def opensearch(request: SearchRequest) -> SearchResponse:
     return engine.run(request)
 
 
-@app.post("/v1/audit", response_model=AuditResponse, responses={422: _HTTP_422_RESPONSE})
+@app.post("/v1/audit", response_model=AuditResponse, responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE})
 def audit(request: SearchRequest) -> AuditResponse:
     """Run the engine and expose a deterministic audit of its evidence."""
     response = engine.run(request)
@@ -149,6 +161,7 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
                 }
             },
         },
+        400: _HTTP_400_RESPONSE,
         422: _HTTP_422_RESPONSE,
     },
 )
