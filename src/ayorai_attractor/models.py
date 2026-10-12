@@ -1,7 +1,7 @@
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, WithJsonSchema
 
 
 class QualityMode(StrEnum):
@@ -30,7 +30,17 @@ class SearchRequest(BaseModel):
     query: str = Field(min_length=3, max_length=10000)
     mode: QualityMode = QualityMode.BALANCED
     max_agents: int = Field(default=5, ge=1, le=100)
-    require_primary_source: bool = False
+    require_primary_source: Annotated[
+        bool,
+        WithJsonSchema(
+            {
+                "anyOf": [
+                    {"type": "boolean"},
+                    {"type": "integer", "enum": [0, 1]},
+                ]
+            }
+        ),
+    ] = Field(default=False)
 
 
 class Evidence(BaseModel):
