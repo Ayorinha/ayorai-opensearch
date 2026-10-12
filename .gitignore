@@ -19,3 +19,4 @@ build/
 evals/golden/v1*
 **/golden-v1*
 **/golden_v1*
+.schemathesis/
