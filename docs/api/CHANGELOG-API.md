@@ -10,3 +10,7 @@ All public API contract changes are additive unless explicitly identified otherw
 - The `r2-a` response exposes the canonical Judge 2 result and a nullable `response_policy`.
 - Documented the `r1-a` and `r2-a` response envelope as an additive `oneOf`, plus the applicable 404 and 422 responses for audit/verification endpoints.
 - Made nested `r2-a` atom and stance objects reject undeclared properties.
+
+- Bounded all public `r2-a` offsets to the RFC 8785 safe-integer range `0..9007199254740991`.
+- Documented the cross-field `end_offset > start_offset` invariant; it remains enforced in application validation because OpenAPI/JSON Schema cannot express the comparison.
+- Schemathesis keeps `--checks all`; only `positive_data_acceptance` is excluded for `POST /v1/verify`, while all checks (including positive data acceptance) run for every other operation. The policy is versioned in `scripts/run_schemathesis_contract.sh`.
