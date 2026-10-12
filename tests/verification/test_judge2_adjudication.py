@@ -471,3 +471,23 @@ def test_public_adjudicate_does_not_admit_excerpt_absent_from_source() -> None:
     assert result.composite_decision is not None
     assert result.composite_decision.verdict == "UNVERIFIED"
 
+@pytest.mark.parametrize(
+    "unsafe_integer",
+    [2**53, 2**53 + 1, 2**60, -(2**53), -(2**53 + 1), -(2**60)],
+)
+def test_rfc8785_integer_domain_fails_closed_with_valid_digest(
+    unsafe_integer: int,
+) -> None:
+    request = request_one(out_of_scope=True)
+    request["out_of_scope"] = unsafe_integer
+
+    result = adjudicate(request)
+
+    assert result.decision_state == "INVALID_INPUT"
+    assert result.reason_codes == ("SCHEMA_VIOLATION",)
+    assert result.rule_trace == (
+        {"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},
+    )
+    assert verify_output(result.to_dict())
+    assert len(result.output_sha256) == 64
+\n
