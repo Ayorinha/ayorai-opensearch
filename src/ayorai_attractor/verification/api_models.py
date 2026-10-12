@@ -53,12 +53,47 @@ class Judge2VerificationRequest(BaseModel):
     protocol_version: Literal["r2-a"] = "r2-a"
     claim_id: str = Field(min_length=1)
     claim_text: str = Field(min_length=1)
-    atoms: list[dict[str, object]]
+    atoms: list[Judge2AtomRequest]
     evidence: list[Evidence] = Field(default_factory=list)
-    stances: list[dict[str, object]] = Field(default_factory=list)
+    stances: list[Judge2StanceRequest] = Field(default_factory=list)
     source_texts: dict[str, str]
     out_of_scope: bool = False
     factual_claim: bool = True
     temporal_anchor_present: bool = True
     retrieval_succeeded: bool = True
     evidence_pool_integrity_ok: bool = True
+
+
+class Judge2AtomRequest(BaseModel):
+    """Strict public schema for a Judge 2 atom and its source-text span."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    id: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+    start_offset: int = Field(ge=0)
+    end_offset: int = Field(gt=0)
+
+
+class Judge2StanceRequest(BaseModel):
+    """Strict public schema for an explicit atom/evidence stance edge."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    id: str = Field(min_length=1)
+    atom_id: str = Field(min_length=1)
+    evidence_id: str = Field(min_length=1)
+    stance: Literal[
+        "SUPPORTS", "CONTRADICTS", "NEUTRAL",
+        "supports", "contradicts", "neutral",
+    ]
+
+
+class Judge2VerificationResponse(BaseModel):
+    """Public r2-a envelope containing the canonical Judge 2 result."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    schema_version: Literal["r2-a"]
+    result: dict[str, object]
+    response_policy: ResponsePolicy | None = None
