@@ -1,8 +1,9 @@
 """Strict API contracts for the R1-a deterministic verification surface."""
 
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 from .models import Claim, Evidence, StanceEdge, Verdict
 from .response import ResponsePolicy
@@ -44,6 +45,82 @@ class VerificationAPIResponse(BaseModel):
     traceability: Traceability
 
 
+class Judge2AtomRequest(BaseModel):
+    """Strict public schema for a Judge 2 atom and its source-text span."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    id: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+    start_offset: int = Field(ge=0, le=9007199254740991)
+    end_offset: int = Field(
+        gt=0,
+        le=9007199254740991,
+        description=(
+            "Exclusive end offset in source text; must be within the "
+            "RFC 8785 safe-integer range."
+        ),
+    )
+
+
+class Judge2StanceRequest(BaseModel):
+    """Strict public schema for an explicit atom/evidence stance edge."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    id: str = Field(min_length=1)
+    atom_id: str = Field(min_length=1)
+    evidence_id: str = Field(min_length=1)
+    stance: Literal[
+        "SUPPORTS", "CONTRADICTS", "NEUTRAL",
+        "supports", "contradicts", "neutral",
+    ]
+
+
+class Judge2EvidenceRequest(BaseModel):
+    """Strict r2-a evidence shape; relational offsets are adjudicated by Judge 2."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    id: str = Field(min_length=1)
+    claim_id: str = Field(min_length=1)
+    source_id: str = Field(min_length=1)
+    source_location: str = Field(min_length=1)
+    retrieved_at: datetime
+    start_offset: int = Field(ge=0, le=9007199254740991)
+    end_offset: int = Field(
+        ge=0,
+        le=9007199254740991,
+        description=(
+            "Must be greater than start_offset; the relational invariant "
+            "is enforced by the API and Judge 2."
+        ),
+    )
+    excerpt: str = Field(min_length=1)
+    origin_id: str | None = Field(default=None, min_length=1)
+    canonical_url: HttpUrl | None = None
+    normalized_content_hash: str | None = Field(default=None, min_length=1)
+    cited_origin_id: str | None = Field(default=None, min_length=1)
+    provenance_complete: bool = True
+
+    @field_validator("retrieved_at", mode="before")
+    @classmethod
+    def parse_rfc3339_timestamp(cls, value: object) -> object:
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise ValueError("retrieved_at must be a valid RFC3339 timestamp") from exc
+        return value
+
+    @field_validator("canonical_url", mode="before")
+    @classmethod
+    def parse_http_url(cls, value: object) -> object:
+        if isinstance(value, str):
+            return HttpUrl(value)
+        return value
+
+
 class Judge2VerificationRequest(BaseModel):
     """Strict JSON contract for the r2-a Judge 2.0.0 API path."""
 
@@ -53,9 +130,9 @@ class Judge2VerificationRequest(BaseModel):
     protocol_version: Literal["r2-a"] = "r2-a"
     claim_id: str = Field(min_length=1)
     claim_text: str = Field(min_length=1)
-    atoms: list[dict[str, object]]
-    evidence: list[Evidence] = Field(default_factory=list)
-    stances: list[dict[str, object]] = Field(default_factory=list)
+    atoms: list[Judge2AtomRequest]
+    evidence: list[Judge2EvidenceRequest] = Field(default_factory=list)
+    stances: list[Judge2StanceRequest] = Field(default_factory=list)
     source_texts: dict[str, str]
     out_of_scope: bool = False
     factual_claim: bool = True
