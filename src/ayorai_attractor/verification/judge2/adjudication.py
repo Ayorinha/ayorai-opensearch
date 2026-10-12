@@ -344,7 +344,14 @@ def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
         }
     if isinstance(value, (list, tuple)):
         return [_json_safe(item, allow_unsupported=allow_unsupported) for item in value]
-    if value is None or isinstance(value, (str, bool, int)):
+    if isinstance(value, int) and not isinstance(value, bool):
+        if abs(value) > 9007199254740991 and allow_unsupported:
+            return {
+                "unsupported_type": "rfc8785.integer_out_of_range",
+                "representation": str(value),
+            }
+        return value
+    if value is None or isinstance(value, (str, bool)):
         return value
     if isinstance(value, float):
         if not math.isfinite(value):
@@ -538,7 +545,11 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
     gate_input = {key: request[key] for key in required | (set(request) & optional)}
     try:
         canonical_json_bytes(_canonical_input(request))
-    except TypeError:
+    except Exception:
+        # RFC 8785 rejects integers outside the interoperable IEEE-754 safe
+        # integer domain with IntegerDomainError (not necessarily TypeError).
+        # Re-encode the rejected value as an explicit marker so the Judge can
+        # return a deterministic SCHEMA_VIOLATION instead of leaking an error.
         rejection_input = canonical_json_bytes(
             _canonical_input(request, allow_unsupported=True)
         )
