@@ -59,7 +59,7 @@ Source: execution plan v5, work queue
 - **Bloqueia:** F4.2 e a coleta de dados da Fase 4
 - **Recomendação técnica:** Exigir licença ou permissão verificável, proveniência e condições de uso registradas para cada fonte destinada a fixtures distribuíveis; excluir do conjunto público o material com direitos não esclarecidos. Isso reduz o risco de redistribuição indevida e mantém auditável a origem dos dados. Como base legal a registrar, a Lei nº 9.610/1998, art. 8º, IV, exclui da proteção autoral os textos de tratados ou convenções, leis, decretos, regulamentos, decisões judiciais e demais atos oficiais. Fonte primária: https://www.planalto.gov.br/ccivil_03/leis/l9610.htm. Essa exclusão não dispensa registrar URL, órgão, data de publicação, data de coleta e hash do material. Comentários doutrinários, livros e bases privadas permanecem sujeitos à política de bloqueio da DEC-002; não presumir permissão para redistribuí-los.
 
-- **Status:** Pending maintainer decision
+- **Status:** **Decided on 2026-10-13 — options 1 and 3 combined.** The approved policy is recorded in [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-002--política-de-licença-e-proveniência-das-fontes). The text below is kept as the historical decision request.
 - **Decision area:** Source licensing, permissions, provenance, and evaluation-data governance
 - **Question:** What acceptance policy must each external source satisfy before its material is included in evaluation fixtures, examples, or distributable datasets?
 - **Context:** Source attribution alone does not establish permission to redistribute content. Each source may have different copyright, license, terms-of-use, privacy, and retention constraints.
