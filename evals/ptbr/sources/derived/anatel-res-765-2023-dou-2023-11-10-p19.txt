@@ -1,0 +1,250 @@
+Seção 1
+
+ISSN 1677-7042
+
+CAPÍTULO II
+DOS DEVERES DOS CONSUMIDORES
+Art. 6º São deveres dos Consumidores:
+I - utilizar adequadamente os serviços, equipamentos e redes de
+telecomunicações, zelando pela integridade dos equipamentos da Prestadora sob sua posse;
+II - respeitar os bens públicos e aqueles voltados à utilização do público em geral;
+III - comunicar às autoridades competentes irregularidades ocorridas e atos
+ilícitos cometidos por Prestadora de serviço de telecomunicações;
+IV - cumprir as obrigações fixadas no contrato de prestação de serviço, em
+especial efetuar pontualmente o pagamento referente à sua fruição, observadas as
+disposições regulamentares;
+V - somente conectar à rede da Prestadora terminais que possuam certificação
+expedida ou aceita pela Anatel, mantendo-os dentro das especificações técnicas segundo
+as quais foram certificados;
+VI - indenizar a Prestadora por todo e qualquer dano ou prejuízo a que der
+causa, por infringência de disposição legal, regulamentar ou contratual,
+independentemente de qualquer outra sanção, cabendo à Prestadora o ônus da prova;
+VII - comunicar imediatamente à sua Prestadora:
+a) o roubo, furto ou extravio de terminal de acesso móvel ou outros
+equipamentos terminais necessários ao provimento do serviço contratado;
+b) a transferência de titularidade do Código de Acesso de Usuário ou do
+contrato de prestação de serviço; e/ou,
+c) qualquer alteração de suas informações cadastrais; e,
+VIII - no caso do STFC e do SCM, providenciar local adequado e infraestrutura
+necessários à correta instalação e funcionamento de equipamentos da Prestadora, quando
+for o caso.
+TÍTULO III
+DO ATENDIMENTO
+CAPÍTULO I
+DOS PRINCÍPIOS GERAIS
+Art. 7º O atendimento aos Consumidores é regido pelos princípios da
+acessibilidade, confiabilidade, transparência, clareza, segurança das informações,
+rastreabilidade e resolutividade das demandas, presteza, cortesia, eficácia, racionalização e
+melhoria contínua.
+CAPÍTULO II
+DAS REGRAS DO ATENDIMENTO
+Art. 8º Para fins de cumprimento deste Regulamento, caracterizam-se como
+atendimento as interações entre Prestadora e Consumidor, independentemente do
+originador da interação, nas formas de Atendimento Remoto e Presencial.
+§ 1º A Prestadora deverá informar a todos os Consumidores, de modo
+ostensivo, claro e objetivo, as formas de atendimento disponíveis.
+§ 2º Nos casos de serviços de telecomunicações oferecidos conjuntamente, o
+atendimento deverá ser feito por meio de um canal comum que possibilite o efetivo
+atendimento das demandas relativas a qualquer um dos serviços.
+§ 3º A Prestadora garantirá que a sua comunicação com Consumidores com
+deficiência seja realizada por meio adequado, nos termos da regulamentação.
+Art. 9º Todo atendimento receberá um protocolo da Prestadora, que deverá:
+I - ser informado ao Consumidor no início do atendimento;
+II - permitir a rastreabilidade da demanda; e,
+III - ser enviado por meio eletrônico escolhido pelo Consumidor, em até 1 (um)
+dia do atendimento, contendo data e hora do registro, para todos os serviços cuja
+prestação está sujeita ao presente Regulamento.
+Parágrafo único. O Grupo de Implantação definirá o formato do protocolo e o
+atendimento quanto ao disposto no inciso II deste artigo.
+Art. 10. As solicitações e pedidos de informação apresentados pelo Consumidor
+deverão ser respondidos durante o atendimento e suas reclamações, resolvidas no prazo
+máximo de 7 (sete) dias corridos, contados a partir de seu recebimento.
+§ 1º As solicitações que não puderem ser atendidas de imediato deverão ser
+atendidas em, no máximo, 10 (dez) dias corridos, contados a partir de seu recebimento.
+§ 2º O Manual Operacional de que trata o art. 95 poderá prever prazo inferior
+para atendimento das demandas e das reclamações quando o Consumidor se qualificar
+como prestador de Serviços de Utilidade Pública, Pronto-Socorro ou Posto de Saúde.
+Art. 11. O Consumidor tem direito de acesso, sem ônus, ao histórico de suas
+demandas.
+§ 1º O histórico das demandas deverá apresentar, no mínimo:
+I - o protocolo do atendimento;
+II - a data e hora de registro e de conclusão do atendimento; e,
+III - a classificação, a síntese da demanda e o encaminhamento dado pela
+Prestadora.
+§ 2º É dever da Prestadora:
+I - manter o histórico das demandas à disposição do Consumidor por um
+período mínimo de 3 (três) anos após sua conclusão;
+II - enviar o histórico das demandas, por meio eletrônico ou impresso, a critério
+do Consumidor, em até 5 (cinco) dias corridos, contados da solicitação;
+III - incluir no histórico das demandas aquelas cujo atendimento não tenha sido
+concluído quando da solicitação do histórico; e,
+IV - ser capaz de localizar as demandas do Consumidor por meios alternativos
+ao protocolo de atendimento.
+Art. 12. As Prestadoras deverão estabelecer, em Código de Práticas, os meios,
+condições, procedimentos e prazos para atendimento dos Consumidores, respeitado o
+disposto neste Regulamento.
+§ 1º Na elaboração e na revisão do Código de Práticas, deverão ser ouvidos, em
+caráter consultivo, o Conselho de Usuários da Prestadora e o Comitê de Defesa dos
+Usuários dos Serviços de Telecomunicações (CDUST).
+§ 2º O Código de Práticas deverá ser disponibilizado para consulta por qualquer
+interessado, em meio digital, e ser redigido em linguagem simples e acessível.
+CAPÍTULO III
+DAS FORMAS DE ATENDIMENTO
+Seção I
+Do Atendimento Remoto
+Subseção I
+Do Atendimento por Meio Digital
+Art. 13. O Atendimento por Meio Digital garantirá ao Consumidor o acesso, no
+mínimo:
+I - aos documentos da(s) Oferta(s) à(s) qual(is) se encontra vinculado, com o
+devido destaque ao Prazo de Vigência e ao Prazo de Permanência, quando for o caso;
+II - à referência a novos serviços contratados;
+III - aos documentos de cobrança dos últimos 6 (seis) meses;
+IV - ao relatório detalhado dos serviços prestados dos últimos 6 (seis) meses;
+V - à opção de solicitação de cópia da gravação de suas interações, quando for
+o caso;
+VI - ao histórico de suas demandas registradas nos últimos 6 (seis) meses;
+VII - a recurso que lhe possibilite o acompanhamento adequado do uso do
+serviço contratado, durante sua fruição, nas Ofertas em que houver franquia contratada,
+observado o disposto no art. 50;
+VIII - ao perfil de consumo dos últimos 6 (seis) meses, independentemente da
+existência de franquia contratada nos serviços; e,
+IX - ao registro e ao tratamento de quaisquer demandas.
+§ 1º O acesso ao Atendimento por Meio Digital deverá ser assegurado ao
+Consumidor por, no mínimo, 6 (seis) meses após a rescisão contratual.
+§ 2º No Atendimento por Meio Digital, deverão estar disponíveis ao
+Consumidor as opções de salvar cópia das informações e documentos, e de remetê-los
+para o meio eletrônico de sua escolha.
+§ 3º A rescisão do contrato ou a contratação de Oferta pelo Atendimento por
+Meio Digital deverá ser processada de forma automatizada, sem intervenção de
+atendente.
+§ 4º O Atendimento por Meio Digital deverá garantir o tratamento de todas as
+demandas relacionadas à Oferta prevista no art. 24.
+Este documento pode ser verificado no endereço eletrônico
+http://www.in.gov.br/autenticidade.html, pelo código 05152023111000019
+
+Nº 214, sexta-feira, 10 de novembro de 2023
+
+§ 5º É vedada a cobrança ou desconto em franquia do volume de dados
+trafegados para acesso, por meio digital, aos canais de atendimento da Prestadora, bem
+como para acesso aos conteúdos neles divulgados, ainda que o conteúdo esteja hospedado
+em sítio eletrônico de terceiros.
+Art. 14. É vedada a imposição de qualquer condicionamento ou restrição ao
+acesso do Consumidor ao Atendimento por Meio Digital, devendo ser respeitadas as
+condições de acessibilidade.
+Parágrafo único. A exigência de prévia identificação do Consumidor para acesso
+ao Atendimento por Meio Digital não configura a restrição vedada pelo caput.
+Subseção II
+Do Atendimento Telefônico
+Art. 15. O Atendimento Telefônico deverá:
+I - ser gratuito;
+II - receber chamadas originadas do Serviço Telefônico Fixo Comutado - STFC e
+do Serviço Móvel Pessoal - SMP;
+III - estar disponível ininterruptamente, durante 24 (vinte e quatro) horas por
+dia, 7 (sete) dias por semana; e,
+IV - dispor de atendente humano durante 24 (vinte e quatro) horas para
+demandas urgentes e, para as demais, de 6 (seis) às 22 (vinte e duas) horas,
+ininterruptamente, 7 (sete) dias por semana.
+§ 1º A Anatel poderá motivadamente alterar a quantidade de horas em que o
+atendimento humano ficará disponível.
+§ 2º O Grupo de Implantação definirá no Manual Operacional os parâmetros a
+serem observados para definição de demandas urgentes constante do inciso IV.
+Art. 16. No Atendimento Telefônico, a Prestadora deverá informar ao
+Consumidor que a chamada encaminhada ao atendente será gravada e que a gravação
+poderá ser por ele solicitada.
+Art. 17. A Prestadora deverá retornar imediatamente a ligação ao Consumidor
+nos casos de descontinuidade da chamada antes da conclusão do atendimento.
+Art. 18. No primeiro menu do Atendimento Telefônico deverão estar
+disponíveis, no mínimo, as opções de:
+I - rescisão do contrato de forma automatizada, sem intervenção de
+atendente;
+II - registro de reclamação; e,
+III - atendimento por humano.
+§ 1º A opção de acesso ao atendente deverá constar em todos os submenus do
+Atendimento Telefônico.
+§ 2º A solicitação de identificação do Consumidor, desde que não reiterada no
+caso de ausência de resposta, não configura restrição ou condicionamento ao atendimento
+humano.
+§ 3º O Grupo de Implantação definirá:
+I - o tempo máximo para contato com o atendente, quando essa for a opção
+selecionada, e para transferência ao setor competente para atendimento em definitivo da
+demanda; e,
+II - o conceito de primeiro menu do Atendimento Telefônico.
+Art. 19. Não se aplicam as regras de atendimento às chamadas telefônicas
+dirigidas ao Serviço de Informação de Código de Acesso de Consumidor do STFC.
+Seção II
+Do Atendimento Presencial
+Art. 20. A existência de estabelecimentos da Prestadora ou de terceiros que
+explorem exclusivamente a marca da Prestadora é facultativa, mas, uma vez existentes,
+devem oferecer Atendimento Presencial, e obedecer ao seguinte:
+I - no estabelecimento, o Consumidor deve ser atendido por pessoa
+devidamente qualificada para responder e dar tratamento a quaisquer demandas
+relacionadas a todos os serviços prestados pelo Grupo; e,
+II - o Atendimento Presencial deve observar as regras de acessibilidade
+dispostas em legislação específica.
+TÍTULO IV
+DA OFERTA
+CAPÍTULO I
+DAS REGRAS APLICÁVEIS ÀS OFERTAS
+Seção I
+Das Disposições Gerais
+Art. 21. Toda Oferta de serviços de telecomunicações deverá ser registrada em
+sistema da Anatel antes de sua comercialização.
+§ 1º O sistema para registro das Ofertas será definido pelo Grupo de
+Implantação.
+§ 2º As Ofertas deverão ter um código de identificação único a ser definido
+pelo Grupo de Implantação e implementado por cada Prestadora.
+§ 3º Quando do registro da Oferta no sistema previsto no caput, deverá ser
+informado o Prazo de Comercialização, bem como as seguintes condições de preço, acesso
+e fruição do(s) serviço(s):
+I - nome comercial da Oferta;
+II - Prazo de Vigência;
+III - preços e tarifas aplicáveis, critério de tarifação e forma de pagamento;
+IV - critérios e data-base de reajuste, que não poderá ser inferior a 12 (doze)
+meses da data da contratação, observado o disposto no art. 39;
+V - limites de franquia, se houver;
+VI - velocidades de conexão, tanto de download quanto de upload;
+VII - valores de aquisição, instalação e manutenção dos serviços e
+equipamentos;
+VIII - área de abrangência;
+IX - valores pela utilização da Estação Móvel fora da Área de Mobilidade
+Nacional ou na condição de Usuário Visitante; e,
+X - período de incidência de Prazo de Permanência, se houver, e benefício a ser
+concedido ao Consumidor.
+§ 4º Faculta-se à Prestadora a extensão do Prazo de Comercialização da Oferta,
+mediante prévia comunicação à Anatel, nos mesmos termos do caput.
+Art. 22. Todas as Ofertas de serviços de telecomunicações da Prestadora,
+incluindo as que não estão em vigência, deverão ser mantidas em um repositório
+permanente de Ofertas em sua página na internet, pelo período de 3 (três) anos após o
+fim de sua vigência, atendendo-se aos seguintes critérios:
+I - disponibilização de listagem integral, a partir de atalho em sua página inicial,
+na qual conste a identificação das Ofertas pelo nome comercial e por seu código de
+identificação único; e,
+II - disponibilização de Etiqueta Padrão, acompanhada da Oferta.
+Art. 23. Durante a vigência da Oferta registrada nos termos do art. 21, é
+vedado à Prestadora alterar qualquer característica de preço, acesso e fruição constante da
+Oferta, exceto mediante determinação da Anatel conforme previsto no art. 25 ou, no caso
+do SeAC, em decorrência de cessação de contrato de distribuição de conteúdo sobre o
+Canal de Programação, ou de descumprimento das regras relativas à classificação indicativa
+do conteúdo.
+Art. 24. É facultada à Prestadora a comercialização de Ofertas que prevejam a
+contratação e o atendimento exclusivamente por meio digital.
+§ 1º A Oferta descrita no caput deverá prever canal alternativo para contato
+com a Prestadora em caso de indisponibilidade do serviço.
+§ 2º A Prestadora não poderá cobrar pela disponibilização, por meio eletrônico,
+do documento de cobrança e do relatório detalhado.
+§ 3º O contrato de prestação de serviço e a Etiqueta Padrão correspondente à
+Oferta descrita no caput deverão informar sobre:
+I - o canal alternativo para contato com a Prestadora previsto no § 1º;
+II - a vedação prevista no § 2º; e,
+III - os canais de acesso à Ouvidoria da Prestadora, nos moldes estabelecidos
+neste Regulamento e no Manual das Ouvidorias.
+§ 4º As regras do Atendimento por Meio Digital aplicam-se em sua
+integralidade à Oferta prevista no caput.
+
+19
+
+Documento assinado digitalmente conforme MP nº 2.200-2 de 24/08/2001,
+que institui a Infraestrutura de Chaves Públicas Brasileira - ICP-Brasil.
+
+

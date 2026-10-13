@@ -65,8 +65,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p14.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "b50bba0ef76d2868920e1269eb3d3cd97316cbac5bb436abe5701ad666df96a7",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU; bytes idênticos em duas capturas independentes (runs 38448661216 e 38449402582). Vigência por dispositivo deve ser conferida na anotação: Acórdão Anatel nº 228/2024 (maior parte em vigor a partir de 2025-09-01); Resolução Anatel nº 768/2024 revoga o § 2º do art. 39 do RGC a partir de 2026-01-01; Resolução Anatel nº 777/2025 revogou os arts. 2º a 79 da Resolução 765 (alterações a outros regulamentos)."
     },
     {
@@ -82,8 +82,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p15.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "02c424d0e953d39ba67995c6d9a3020ca9207b883eed4b71ee144cc00f5dc9fb",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU; bytes idênticos em duas capturas independentes (runs 38448661216 e 38449402582). Vigência por dispositivo deve ser conferida na anotação: Acórdão Anatel nº 228/2024 (maior parte em vigor a partir de 2025-09-01); Resolução Anatel nº 768/2024 revoga o § 2º do art. 39 do RGC a partir de 2026-01-01; Resolução Anatel nº 777/2025 revogou os arts. 2º a 79 da Resolução 765 (alterações a outros regulamentos)."
     },
     {
@@ -99,8 +99,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p16.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "7a75522ce61cca3ef4e0d98c7f8fd6e78186c1477976fb0e7e3e20f4d7b7d87c",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU; bytes idênticos em duas capturas independentes (runs 38448661216 e 38449402582). Vigência por dispositivo deve ser conferida na anotação: Acórdão Anatel nº 228/2024 (maior parte em vigor a partir de 2025-09-01); Resolução Anatel nº 768/2024 revoga o § 2º do art. 39 do RGC a partir de 2026-01-01; Resolução Anatel nº 777/2025 revogou os arts. 2º a 79 da Resolução 765 (alterações a outros regulamentos)."
     },
     {
@@ -116,8 +116,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p17.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "14264e0ca8cc21d18ac0cc78bbc5a7aff493d0109c6a51cf00e2a9ea2acf26be",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU; bytes idênticos em duas capturas independentes (runs 38448661216 e 38449402582). Vigência por dispositivo deve ser conferida na anotação: Acórdão Anatel nº 228/2024 (maior parte em vigor a partir de 2025-09-01); Resolução Anatel nº 768/2024 revoga o § 2º do art. 39 do RGC a partir de 2026-01-01; Resolução Anatel nº 777/2025 revogou os arts. 2º a 79 da Resolução 765 (alterações a outros regulamentos)."
     },
     {
@@ -133,8 +133,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p18.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "b5f599bcd96d2ffec8326bd0904bbe02aac39c2607a51925ea63cb4a59ff27bd",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU; bytes idênticos em duas capturas independentes (runs 38448661216 e 38449402582). Vigência por dispositivo deve ser conferida na anotação: Acórdão Anatel nº 228/2024 (maior parte em vigor a partir de 2025-09-01); Resolução Anatel nº 768/2024 revoga o § 2º do art. 39 do RGC a partir de 2026-01-01; Resolução Anatel nº 777/2025 revogou os arts. 2º a 79 da Resolução 765 (alterações a outros regulamentos)."
     },
     {
@@ -150,8 +150,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p19.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "50a007225cfbe3bfbbe24dc9fdde9bff26f16f6a1129c9041b83c7d65e7d9444",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU; bytes idênticos em duas capturas independentes (runs 38448661216 e 38449402582). Vigência por dispositivo deve ser conferida na anotação: Acórdão Anatel nº 228/2024 (maior parte em vigor a partir de 2025-09-01); Resolução Anatel nº 768/2024 revoga o § 2º do art. 39 do RGC a partir de 2026-01-01; Resolução Anatel nº 777/2025 revogou os arts. 2º a 79 da Resolução 765 (alterações a outros regulamentos)."
     },
     {
@@ -167,8 +167,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p20.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "dd0a3eaf6e714886dfbf377aef0d24b9c6cf26cd40a3f42e8a6eab0a2ca47352",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU; bytes idênticos em duas capturas independentes (runs 38448661216 e 38449402582). Vigência por dispositivo deve ser conferida na anotação: Acórdão Anatel nº 228/2024 (maior parte em vigor a partir de 2025-09-01); Resolução Anatel nº 768/2024 revoga o § 2º do art. 39 do RGC a partir de 2026-01-01; Resolução Anatel nº 777/2025 revogou os arts. 2º a 79 da Resolução 765 (alterações a outros regulamentos)."
     },
     {
@@ -184,8 +184,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p21.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "9555a4ce233ec1859ec02fded186e02a55c6b28a97d2a41b7b1bf282705951ff",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU; bytes idênticos em duas capturas independentes (runs 38448661216 e 38449402582). Vigência por dispositivo deve ser conferida na anotação: Acórdão Anatel nº 228/2024 (maior parte em vigor a partir de 2025-09-01); Resolução Anatel nº 768/2024 revoga o § 2º do art. 39 do RGC a partir de 2026-01-01; Resolução Anatel nº 777/2025 revogou os arts. 2º a 79 da Resolução 765 (alterações a outros regulamentos)."
     },
     {
@@ -201,8 +201,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p22.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "b80c964f1c9af14b3065c22fc7e746bfdb186bc14fe19ff660a148f8b73fd5d1",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU; bytes idênticos em duas capturas independentes (runs 38448661216 e 38449402582). Vigência por dispositivo deve ser conferida na anotação: Acórdão Anatel nº 228/2024 (maior parte em vigor a partir de 2025-09-01); Resolução Anatel nº 768/2024 revoga o § 2º do art. 39 do RGC a partir de 2026-01-01; Resolução Anatel nº 777/2025 revogou os arts. 2º a 79 da Resolução 765 (alterações a outros regulamentos)."
     },
     {
@@ -218,8 +218,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p23.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "52ca39a3c94716d23c46078a219df034086e1f87012b315968d722d5ae469f50",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU; bytes idênticos em duas capturas independentes (runs 38448661216 e 38449402582). Vigência por dispositivo deve ser conferida na anotação: Acórdão Anatel nº 228/2024 (maior parte em vigor a partir de 2025-09-01); Resolução Anatel nº 768/2024 revoga o § 2º do art. 39 do RGC a partir de 2026-01-01; Resolução Anatel nº 777/2025 revogou os arts. 2º a 79 da Resolução 765 (alterações a outros regulamentos)."
     },
     {
@@ -235,8 +235,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2023-12-26-p13-retificacao.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "10eb4e4cfa5364b8ca4825aa95a9fdd5b11dd57ebe0e1d2d9752d022acf8be7e",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU. A página contém outros atos além da retificação."
     },
     {
@@ -252,8 +252,8 @@
       "capture_method": "HTTP GET by GitHub Actions (https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582) using scripts/capture_sources.py; exact bytes preserved without normalization",
       "artifact_path": "evals/ptbr/sources/raw/dou-2024-01-12-p4-retificacao.pdf",
       "content_type": "application/pdf",
-      "derived_text_sha256": null,
-      "derived_text_present": false,
+      "derived_text_sha256": "0e5453e0faedf43964a90d79da039b658e56d9f4b18b53635545c4444c8df720",
+      "derived_text_present": true,
       "notes": "PDF oficial da página do DOU. A página contém outros atos além da retificação."
     }
   ]
