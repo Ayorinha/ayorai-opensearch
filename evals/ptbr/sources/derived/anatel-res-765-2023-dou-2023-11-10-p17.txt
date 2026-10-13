@@ -1,0 +1,246 @@
+Seção 1
+
+ISSN 1677-7042
+
+"Art. 105. Nas situações em que as Ofertas de Planos de Atendimento Rural
+forem baseados na cessão de Meios Adicionais em regime de exploração industrial, o
+contrato celebrado entre a Prestadora do STFC e a Prestadora cedente deve, dentre
+outros, contemplar os seguintes aspectos: (NR)"
+Art. 68. Dar nova redação aos incisos I e II do art. 108 do Regulamento de
+Universalização do Serviço Telefônico Fixo Comutado Prestado no Regime Público,
+aprovado pela Resolução nº 754, de 12 de agosto de 2022, publicada no Diário Oficial da
+União do dia 15 de agosto de 2022, passando a vigorar nos termos abaixo:
+"Art. 108. .................................................................................................................
+I - ao atendimento das solicitações de serviço de mudança de endereço
+enquadrado como fora da ATB, para qualquer Oferta de Plano de Atendimento Rural, o
+qual está subordinado à existência de condições técnicas no local de destino, se também
+for considerado como fora da ATB, e deve se dar em até 90 (noventa) dias, contados a
+partir da solicitação; e,
+II - ao atendimento das solicitações de reparo de terminais do STFC fora da ATB,
+vinculados a Ofertas de Planos de Atendimento Rural, o qual deve se dar em até 96
+(noventa e seis) horas, contadas a partir da solicitação. (NR)"
+Art. 69. Dar nova redação ao § 4º do art. 109 do Regulamento de
+Universalização do Serviço Telefônico Fixo Comutado Prestado no Regime Público,
+aprovado pela Resolução nº 754, de 12 de agosto de 2022, publicada no Diário Oficial da
+União do dia 15 de agosto de 2022, passando a vigorar nos termos abaixo:
+"Art. 109. .................................................................................................................
+...................................................................................................................................
+§ 4º A Prestadora poderá contratar empresas para prover a instalação, bem
+como a análise de sua viabilidade e equipamentos necessários, além de providenciar a
+ativação do código de acesso na Oferta de Plano de Atendimento Rural de escolha do
+Consumidor. (NR)"
+Art. 70. Dar nova redação ao caput do art. 115 do Regulamento de
+Universalização do Serviço Telefônico Fixo Comutado Prestado no Regime Público,
+aprovado pela Resolução nº 754, de 12 de agosto de 2022, publicada no Diário Oficial da
+União do dia 15 de agosto de 2022, passando a vigorar nos termos abaixo:
+"Art. 115. Após a disponibilização da Oferta de Plano de Atendimento Rural, as
+chamadas destinadas a Códigos de Acesso de numeração específica para o STFC fora da
+ATB deverão ser interceptadas na rede da Prestadora do STFC, para a devida informação,
+ao usuário originador, sobre os critérios de tarifação e valores aplicáveis, por meio de
+mensagem na qual se esclareça que o telefone chamado está localizado em área rural e
+tem cobrança diferenciada. (NR)"
+Art. 71. Dar nova redação ao caput e § 1º do art. 117 do Regulamento de
+Universalização do Serviço Telefônico Fixo Comutado Prestado no Regime Público,
+aprovado pela Resolução nº 754, de 12 de agosto de 2022, publicada no Diário Oficial da
+União do dia 15 de agosto de 2022, passando a vigorar nos termos abaixo:
+"Art. 117. Os assinantes do STFC fora da ATB cuja prestação se dê por meio de
+contrato específico poderão, a seu critério, migrar para uma Oferta de Plano de
+Atendimento Rural comercializado pela Prestadora no endereço indicado para a prestação
+do serviço.
+§ 1º Para os Consumidores atendidos por meio de redes do SMP em fase de
+descontinuidade, conforme determinação da Anatel, bem como por redes do SMP com
+contrato de exploração industrial a termo final, a concessionária deverá proceder à
+migração para uma Oferta de Plano de Atendimento Rural comercializado por ela no
+endereço indicado para a prestação do serviço. (NR)"
+Art. 72. Dar nova redação às cláusulas 1.4., 1.5., 1.6., 1.7., 2., 2.1., 5.1.2., 5.3.1.,
+5.3.2., 5.4., 5.4.1., 7.1., e 7.3 do Anexo I do Regulamento de Universalização do Serviço
+Telefônico Fixo Comutado Prestado no Regime Público, aprovado pela Resolução nº 754,
+de 12 de agosto de 2022, publicada no Diário Oficial da União do dia 15 de agosto de
+2022, passando a vigorar nos termos abaixo:
+"1.4. Oferta de Plano Básico é aquela definida para a concessionária no
+Contrato de Concessão, cujos valores são definidos em Ato do Conselho Diretor.
+1.5. Fazem parte desta Oferta as demais condições de prestação do STFC na
+modalidade local, previstas na regulamentação e que não contrariem o disposto nesta
+Oferta e no Regulamento sobre a Prestação do STFC fora da ATB.
+1.6. Aplicam-se a esta Oferta os conceitos de Classe de Assinante, Classe
+Residencial e Classe Não-Residencial, constantes do Regulamento de Tarifação do Serviço
+Telefônico Fixo Comutado Destinado ao Uso do Público em Geral Prestado no Regime
+Público.
+1.7. Nas chamadas locais a cobrar, recebidas por usuários desta Oferta, são
+aplicados os mesmos critérios de tarifação das chamadas originadas nesta Oferta, excluídos
+os tempos característicos de aviso e aceitação de chamada a cobrar.
+...................................................................................................................................
+2. Vigência da Oferta
+2.1. Esta Oferta tem vigência simultânea à do Contrato de Concessão do STFC
+na modalidade local.
+...................................................................................................................................
+5.1.2. Os valores referentes à Tarifa de Habilitação são aqueles definidos na
+Oferta de Plano Básico da respectiva Classe de Assinante.
+...................................................................................................................................
+5.3.1. O valor máximo do minuto para chamadas locais originadas em terminal
+do STFC vinculado a esta Oferta e destinadas a terminal do STFC instalado na ATB equivale
+a um valor 20% (vinte por cento) superior ao definido na Oferta de Plano Básico, acrescido
+do valor do VMA.
+5.3.2. O valor máximo do minuto para chamadas locais originadas em terminal
+do STFC vinculado a esta Oferta e destinadas a terminal do STFC vinculado a este ou
+qualquer outra Oferta de Plano de Atendimento Rural equivale a um valor 20% (vinte por
+cento) superior ao definido na Oferta de Plano Básico, acrescido do valor de 2 (dois)
+VMA.
+5.4. As chamadas locais originadas em terminal do STFC vinculado a esta Oferta
+e destinadas a acesso do SMP ou SME são tarifadas por tempo de utilização, respeitada a
+modulação horária contida na Oferta de Plano Básico.
+5.4.1. O valor máximo do minuto (VC-1) equivale a um valor 20% (vinte por
+cento) superior ao definido na Oferta de Plano Básico acrescido do valor de um VMA.
+...................................................................................................................................
+7.1. Os valores do Minuto, da Tarifa de Habilitação e da Tarifa de Mudança de
+Endereço somente podem ser reajustados na mesma data e pelos mesmos percentuais
+estabelecidos para o reajuste dos valores correspondentes da Oferta de Plano Básico de
+Serviço.
+...................................................................................................................................
+7.3. A Concessionária deve fornecer todas as informações da Oferta ao
+Consumidor, nos termos da regulamentação. (NR)"
+Art. 73. Dar nova redação às cláusulas 1.3., 5.1.2., 5.4.1., 5.4.2., 5.5., 5.5.1., 7.1.,
+7.2. e 7.3 do Anexo II do Regulamento de Universalização do Serviço Telefônico Fixo
+Comutado Prestado no Regime Público, aprovado pela Resolução nº 754, de 12 de agosto
+de 2022, publicada no Diário Oficial da União do dia 15 de agosto de 2022, passando a
+vigorar nos termos abaixo:
+"1.3. Oferta de Plano Básico é aquela definida para a concessionária no
+Contrato de Concessão, cujos valores são definidos em Ato do Conselho Diretor.
+...................................................................................................................................
+5.1.2. Os valores referentes à Tarifa de Habilitação são aqueles definidos na
+Oferta de Plano Básico da respectiva Classe de Assinante.
+...................................................................................................................................
+5.4.1. O valor máximo do minuto, excedente à franquia, para chamadas locais
+originadas em terminal do STFC vinculado a esta Oferta e destinadas a terminal do STFC
+instalado na ATB equivale àquele definido na Oferta de Plano Básico acrescido do valor de
+um VMA.
+5.4.2. O valor máximo do minuto, excedente à franquia, para chamadas locais
+originadas em terminal do STFC vinculado a esta Oferta e destinadas a terminal do STFC
+vinculado a este ou qualquer outra Oferta de Plano de Atendimento Rural equivale àquele
+definido na Oferta de Plano Básico acrescido do valor de 2 (dois) VMA.
+Este documento pode ser verificado no endereço eletrônico
+http://www.in.gov.br/autenticidade.html, pelo código 05152023111000017
+
+Nº 214, sexta-feira, 10 de novembro de 2023
+
+5.5. As chamadas locais originadas em terminal do STFC vinculado a esta Oferta
+e destinadas a acesso do SMP ou SME são tarifadas por tempo de utilização, respeitada a
+modulação horária contida na Oferta de Plano Básico.
+"5.5.1. O valor máximo do minuto (VC-1) corresponde àquele definido na Oferta
+de Plano Básico acrescido do valor de um VMA.
+..................................................................................................................................
+7.1. Os valores do Minuto, da Tarifa de Habilitação e da Tarifa de Mudança de
+Endereço somente podem ser reajustados na mesma data e pelos mesmos percentuais
+estabelecidos para o reajuste dos valores correspondentes da Oferta de Plano Básico de
+Serviço.
+7.2. A adesão a esta Oferta se dá nos termos da Resolução que o aprovou e do
+Regulamento do Serviço Telefônico Fixo Comutado.
+7.3. A Concessionária deve fornecer todas as informações da Oferta ao
+Consumidor, nos termos da regulamentação. (NR)"
+Art. 74. Dar nova redação ao leiaute de folha de qualificação do usuário e à
+cláusula 2.16, cláusula 2.23, itens "a" e "b" da cláusula 4.2, à cláusula quinta, cláusula 5.2,
+cláusula 5.5, cláusula 5.6, cláusula 6.2 e cláusula 7.2 do Anexo III do Regulamento de
+Universalização do Serviço Telefônico Fixo Comutado Prestado no Regime Público,
+aprovado pela Resolução nº 754, de 12 de agosto de 2022, publicada no Diário Oficial da
+União do dia 15 de agosto de 2022, passando a vigorar nos termos abaixo:
+"Número de telefone
+Endereço para instalação
+Endereço para cobrança
+Classe do terminal
+Autoriza divulgar seu nome na lista telefônica?
+Oferta escolhida
+..................................................................................................................................
+2.16. À não suspensão do SERVIÇO sem sua solicitação, ressalvada as hipóteses
+previstas na regulamentação;
+..................................................................................................................................
+2.23. De receber todas as informações da Oferta contratada, nos termos da
+regulamentação;
+.................................................................................................................................
+4.2. ..........................................................................................................................
+a) na Oferta de Plano Básico de serviço, quando do efetivo completamento de
+cada chamada a partir da escolha do código de seleção de Prestadora de preferência do
+Consumidor.
+b) nos demais casos, quando da contratação da Oferta junto à Prestadora de
+preferência do Consumidor.
+CLÁUSULA QUINTA - DA OFERTA
+..................................................................................................................................
+5.2. A Oferta em anexo é parte integrante deste instrumento e contém a
+descrição de suas principais condições, o Prazo de Vigência, o valor das tarifas ou preços,
+o lugar, tempo e modo de seu pagamento.
+..................................................................................................................................
+5.5. O CONSUMIDOR adimplente poderá migrar para outras Ofertas,
+comercializadas pela PRESTADORA e homologadas pela Anatel, a qualquer época. (NR)"
+5.6. As Ofertas de Planos de Atendimento Rural Facultativos poderão ser
+descontinuadas pela PRESTADORA na forma da regulamentação vigente, possuindo o
+CONSUMIDOR o direito de migrar para qualquer outra Oferta de Atendimento Rural da
+PRESTADORA, disponível no endereço indicado pelo ASSINANTE, sem a necessidade de
+pagamento de nenhum valor por essa transferência.
+..................................................................................................................................
+6.2. A suspensão e rescisão contratual por falta de pagamento ou de inserção
+de crédito observará o disposto no Regulamento Geral de Direitos do Consumidor de
+Serviços de Telecomunicações (RGC).
+..................................................................................................................................
+7.2. Por ação da PRESTADORA: quando o SERVIÇO for utilizado em condições
+incompatíveis com as previstas neste instrumento, ou nos casos de rescisão contratual por
+falta de pagamento ou de inserção de crédito, nos termos do Regulamento Geral de
+Direitos do Consumidor de Serviços de Telecomunicações (RGC). (NR)"
+Art. 75. Dar nova redação ao art. 1º do Regulamento de Tarifação do Serviço
+Telefônico Fixo Comutado Destinado ao Uso do Público em Geral - STFC, aprovado pela
+Resolução nº 755, de 11 de outubro de 2022, publicado no Diário Oficial da União do dia
+14 de outubro de 2022, passando a vigorar nos termos abaixo:
+"Art. 1º Este Regulamento define as Áreas Tarifárias e estabelece os critérios
+tarifários utilizados na Oferta de Plano Básico do Serviço Telefônico Fixo Comutado (STFC)
+nas modalidades Local e nas Ofertas de serviços de Longa Distância Nacional e Longa
+Distância Internacional. (NR)"
+Art. 76. Dar nova redação ao inciso XIX do art. 2º do Regulamento de Tarifação
+do Serviço Telefônico Fixo Comutado Destinado ao Uso do Público em Geral - STFC,
+aprovado pela Resolução nº 755, de 11 de outubro de 2022, publicado no Diário Oficial da
+União do dia 14 de outubro de 2022, passando a vigorar nos termos abaixo:
+"Art. 2º ....................................................................................................................
+..................................................................................................................................
+XIX - Valor de Chamada Atendida (VCA): valor invariável da chamada local entre
+acessos do STFC, realizada no horário de tarifação reduzida, originada ou recebida a cobrar
+em acesso vinculado a Oferta de Plano Básico da Concessionária; (NR)"
+Art. 77. Dar nova redação ao parágrafo único do art. 16 do Regulamento de
+Tarifação do Serviço Telefônico Fixo Comutado Destinado ao Uso do Público em Geral STFC, aprovado pela Resolução nº 755, de 11 de outubro de 2022, publicado no Diário
+Oficial da União do dia 14 de outubro de 2022, passando a vigorar nos termos abaixo:
+"Art. 16. ..................................................................................................................
+Parágrafo único. No caso das Ofertas de serviços distintas da Oferta de Plano
+Básico, os critérios são definidos pela Prestadora, conforme dispõe a regulamentação.
+(NR)"
+Art. 78. Dar nova redação ao art. 17 do Regulamento de Tarifação do Serviço
+Telefônico Fixo Comutado Destinado ao Uso do Público em Geral - STFC, aprovado pela
+Resolução nº 755, de 11 de outubro de 2022, publicado no Diário Oficial da União do dia
+14 de outubro de 2022, passando a vigorar nos termos abaixo:
+"Art. 17. Os critérios tarifários estabelecidos neste Título aplicam-se
+exclusivamente à Oferta de Plano Básico, nas modalidades Local, Longa Distância Nacional
+e Longa Distância Internacional, prestados em regime público. (NR)"
+Art. 79. Dar nova redação ao Capítulo I do Título II, ao caput e §§ 2º e 3º do
+art. 18 do Regulamento de Tarifação do Serviço Telefônico Fixo Comutado Destinado ao
+Uso do Público em Geral - STFC, aprovado pela Resolução nº 755, de 11 de outubro de
+2022, publicado no Diário Oficial da União do dia 14 de outubro de 2022, passando a
+vigorar nos termos abaixo:
+"CAPÍTULO I
+DA ESTRUTURA E CRITÉRIOS TARIFÁRIOS PARA A OFERTA DE PLANO BÁSICO
+Art. 18. A Oferta de Plano Básico do STFC-Local prestado no regime público é
+constituída dos seguintes itens tarifários:
+...................................................................................................................................
+§ 2º O assinante da Classe Residencial da Oferta de Plano Básico da
+Concessionária do STFC-Local tem direito a uma franquia mensal de 200 (duzentos)
+minutos tarifados, que podem ser utilizados nas chamadas locais entre acessos do STFC,
+não cumulativos para outro período de apuração.
+§ 3º O assinante da Classe Não Residencial ou Tronco da Oferta de Plano Básico
+da Concessionária do STFC-Local tem direito a uma franquia mensal de 150 (cento e
+cinquenta) minutos tarifados, que podem ser utilizados nas chamadas locais entre acessos
+do STFC, não cumulativos para outro período de apuração. (NR)"
+Art. 80. Dar nova redação ao Capítulo II do Título II e ao caput do art. 29 do
+Regulamento de Tarifação do Serviço Telefônico Fixo Comutado Destinado ao Uso do Público
+em Geral - STFC, aprovado pela Resolução nº 755, de 11 de outubro de 2022, publicado no
+Diário Oficial da União do dia 14 de outubro de 2022, passando a vigorar nos termos abaixo:
+
+17
+
+Documento assinado digitalmente conforme MP nº 2.200-2 de 24/08/2001,
+que institui a Infraestrutura de Chaves Públicas Brasileira - ICP-Brasil.
+
+
