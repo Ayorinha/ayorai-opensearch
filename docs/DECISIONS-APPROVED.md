@@ -28,3 +28,14 @@ Este arquivo registra decisões explícitas do mantenedor já aprovadas. Não su
 - **Condições permanentes:** revisão independente do SHA exato, seis checks CI verdes e artefatos congelados intocados. Nenhuma alteração de Golden, thresholds, manifestos congelados ou `rules/judge-2.0.0.json` é autorizada.
 - **Limite de maturidade:** não se afirma certificação regulatória, conformidade jurídica automática nem generalização em produção a partir dos Goldens de desenvolvimento. Hashes identificam conteúdo, mas não demonstram a verdade factual; a limitação documentada de forja em processo permanece.
 
+## DEC-002 — Política de licença e proveniência das fontes
+
+- **Data da decisão:** 2026-10-13
+- **Decisor e mantenedor:** Anderson Leon Ayora
+- **Decisão:** OPÇÕES 1 e 3 combinadas, conforme detalhado abaixo. A opção 2 (exceções caso a caso) não foi adotada.
+- **Atos oficiais:** textos de leis, decretos, regulamentos, resoluções e demais atos oficiais podem ser usados no corpus e em fixtures, com base na Lei nº 9.610/1998, art. 8º, IV (fonte primária: https://www.planalto.gov.br/ccivil_03/leis/l9610.htm). Para cada documento é obrigatório registrar em `docs/annotation/SOURCES.md`: URL oficial, órgão emissor, data de publicação, data e hora de coleta, método de captura e SHA-256 dos bytes capturados.
+- **Demais fontes:** comentários doutrinários, livros, notícias, páginas comerciais, bases privadas e qualquer material de terceiros só entram com licença ou permissão explícita registrada. Sem esse registro, ficam excluídos.
+- **Separação pública e privada:** fixtures públicos e o conjunto de avaliação oculto têm controles e manifestos distintos; os casos ocultos nunca entram no repositório público (`docs/eval/PROTOCOL-GOLDEN-V1.md`).
+- **Efeito sobre o benchmark RGC:** a Resolução Anatel nº 765/2023 é ato oficial e fica autorizada como fonte, **condicionada** à captura e ao registro de proveniência acima. A coleta pode começar somente depois desse registro, seguindo `docs/eval/PREREGISTRATION-RGC-v1.md`.
+- **Limite:** esta decisão não afirma parceria, apoio ou validação da Anatel e não constitui parecer jurídico; antes de contrato com instituição, recomenda-se confirmação por assessoria jurídica.
+
