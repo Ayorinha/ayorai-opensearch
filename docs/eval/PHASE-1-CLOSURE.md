@@ -4,6 +4,8 @@
 **Reference main SHA after Q1 merge:** da05861e249a53d8a2f9ee57eb1a5e2a811e2651  
 **Release target:** v0.4.0 (documentation prepared; not released)
 
+**State note (2026-10-13):** v0.4.0 published on 2026-10-11.
+
 This file is a closure checklist and evidence index. It does not turn a pending review into an approval and does not claim that Phase 1 is closed before all gates pass.
 
 ## Phase 1 implementation history

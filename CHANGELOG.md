@@ -6,6 +6,29 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 No unreleased entries yet.
 
+## [0.5.0] — 2026-10-13
+
+### Added
+- Judge 2.0.0: versioned rule contract and deterministic decision gates G1, G2 and E1–E3 (item 2.2).
+- Atomic and composite rules (item 2.3; PRs #154 and #159).
+- Canonical output and `verify_output` (item 2.4; PR #160).
+- Additive `r2-a` contract on `POST /v1/verify`, preserving `r1-a` byte-identically (item 2.5; PR #161).
+- Derived Golden r2 fixtures (item 2.6; PR #165).
+- Canonical explanations and rule-level traceability (item 2.7; PR #167).
+
+### Changed
+- RFC 8785 canonicalization for `input_sha256` and `output_sha256` (PR #164).
+- API Contract Guard with oasdiff, Schemathesis and an OpenAPI snapshot (PR #162).
+- Complete response contract and Schemathesis `--checks all` (PR #163).
+- Phase 2 — Judge 2.0 items 2.1–2.7 are prepared as the v0.5.0 release scope; API details are in `docs/api/CHANGELOG-API.md`.
+- Brand banner update (PR #158) and post-v0.4.0 project metadata/DOI update (PR #156).
+
+### Fixed
+- Restored legacy `max_agents` coercion on `POST /v1/opensearch` for compatibility (PR #169).
+
+### Deprecated
+- Removal of `ResponseStatus`, the `verification` and `confidence` fields, and the `r1-a` path with 1.x rules is postponed to v0.6.0. Nothing is removed in v0.5.0.
+
 ## [0.4.0] — 2026-10-11
 
 ### CI reproducibility
