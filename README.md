@@ -115,7 +115,7 @@ Local `.attractor/` audit and replay data must not be versioned; evidence requir
 ## Roadmap — current execution sequence
 
 1. **Phase 1 — completed (v0.4.0):** single deterministic Judge authority for the final verdict, tamper-evident audit trail, and structured HTTP 422 errors.
-2. **Phase 2 — Judge 2.0:** complete through item 2.7 once this PR is merged: the normative contract, gates, deterministic adjudication, API contracts, derived Golden sets, canonical-result explanations and generated traceability.
+2. **Phase 2 — Judge 2.0 — completed (v0.5.0):** items 2.1–2.7: the normative contract, gates, deterministic adjudication, API contracts, derived Golden sets, canonical-result explanations and generated traceability.
 3. **Reproducibility:** strengthen deterministic replay, provenance and auditable execution records.
 4. **PT-BR benchmark:** build and document an evidence-based benchmark focused on Brazilian telecommunications regulation, starting with Anatel's General Consumer Rights Regulation (RGC).
 5. **Demonstration:** prepare a reproducible demonstration with explicit limitations and evidence.
@@ -129,7 +129,7 @@ The deterministic Judge remains **outside the model** and is the sole authority 
 git clone https://github.com/Ayorinha/ayorai-opensearch.git
 cd ayorai-opensearch
 git switch main
-# For the stable v0.4.0 release instead, use: git switch --detach v0.4.0
+# For the stable v0.5.0 release instead, use: git switch --detach v0.5.0
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
@@ -160,7 +160,7 @@ Always record the commit SHA, suite version and both report digests with an eval
 
 ## ADRs
 
-[ADR-009 — Deterministic adjudication contract](docs/adr/ADR-009-deterministic-adjudication-contract.md) is the normative contract for Judge 2.0, which remains in development; this reference does not claim the future interpreter or rule-trace implementation is complete.
+[ADR-009 — Deterministic adjudication contract](docs/adr/ADR-009-deterministic-adjudication-contract.md) is implemented for Judge 2.0: gates, deterministic adjudication, canonical output with rule trace, explanations and generated traceability. SHA-256 hashes identify content; they do not prove that a claim is true. The documented in-process forgery limitation remains.
 
 | ADR | Decision |
 |---|---|
@@ -201,7 +201,7 @@ O princípio central é:
 
 Modelos podem ajudar a analisar evidências, mas o **Judge determinístico** permanece como a única autoridade para o veredito final.
 
-Os resultados atuais são de desenvolvimento. A generalização para documentos genuinamente em português permanece reservada ao **Golden v1 oculto**.
+Os resultados atuais são de desenvolvimento. A generalização para documentos genuinamente em português permanece reservada ao **Golden v1 oculto**. Hashes SHA-256 identificam conteúdo, mas não provam a verdade de uma afirmação; a limitação de forja em processo continua documentada.
 
 ---
 

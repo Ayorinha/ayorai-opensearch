@@ -178,7 +178,7 @@ Rótulos e conceitos anteriormente associados ao plano de execução v3, incluin
 - O orquestrador preserva a análise produzida pelos agentes, mas a separa do veredito factual;
   `notice` informa que nenhum veredito foi adjudicado e direciona a `/v1/verify`.
 - `verification=null`, `verdict_authority=not_adjudicated`; falhas operacionais são expostas em `operation_status`.
-- `confidence` é depreciado e retorna `null`; remoção planejada para v0.5.0.
+- `confidence` é depreciado e retorna `null`; remoção planejada para v0.6.0.
 - `r2-v1` identifica eventos históricos com semântica legada; `r2-v2` identifica novos eventos
   `not_adjudicated`. Consultas de auditoria retornam `not_recorded` até a migração de persistência
   da PR 1.2b.

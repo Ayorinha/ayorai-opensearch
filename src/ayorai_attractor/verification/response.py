@@ -14,7 +14,7 @@ class ResponsePolicy(StrEnum):
 
 
 class ResponseStatus(StrEnum):
-    """Deprecated since v0.4.0; use Verdict or ResponsePolicy; removal in v0.5.0."""
+    """Deprecated since v0.4.0; use Verdict or ResponsePolicy; removal in v0.6.0."""
 
     VERIFIED = "verified"
     SUPPORTED = "supported"
