@@ -80,6 +80,16 @@ def test_segment_real_corpus_is_ordered_and_in_bounds() -> None:
             previous_end = passage.end
 
 
+def test_segmentation_loses_no_text_in_real_corpus() -> None:
+    # Between consecutive passages (and before/after) only whitespace may remain.
+    for document in RUNNER["load_documents"]().values():
+        cursor = 0
+        for passage in RUNNER["segment"](document):
+            assert document.text[cursor:passage.start].strip() == ""
+            cursor = passage.end
+        assert document.text[cursor:].strip() == ""
+
+
 def test_bm25_is_deterministic_and_ranks_relevant_passage_first() -> None:
     passages = RUNNER["segment"](DOCS["sint-1"])
     index = RUNNER["BM25Index"](passages, DOCS)
@@ -140,8 +150,8 @@ def test_metrics_match_hand_computation() -> None:
     pred = ["SUPPORTED", "SUPPORTED", "REFUTED", "REFUTED", RUNNER["INVALID"]]
     assert RUNNER["accuracy"](gold, pred) == pytest.approx(3 / 5)
     assert RUNNER["balanced_accuracy"](gold, pred) == pytest.approx((2 / 3 + 1 + 0) / 3)
-    # F1: SUPPORTED 0.8, REFUTED 2/3, UNVERIFIED 0 (INVALID is not a class).
-    assert RUNNER["macro_f1"](gold, pred) == pytest.approx((0.8 + 2 / 3 + 0) / 3)
+    # F1: SUPPORTED 0.8, REFUTED 2/3, UNVERIFIED 0, INVALID_PREDICTION 0.
+    assert RUNNER["macro_f1"](gold, pred) == pytest.approx((0.8 + 2 / 3 + 0 + 0) / 4)
     metrics = RUNNER["compute_metrics"](gold, pred, "judge2", iterations=200)
     assert metrics["baseline"]["label"] == "SUPPORTED"
     assert metrics["baseline"]["accuracy"] == pytest.approx(0.6)
@@ -153,6 +163,26 @@ def test_metrics_match_hand_computation() -> None:
     low, high = metrics["system_ci95"]["accuracy"]
     assert 0.0 <= low <= 0.6 <= high <= 1.0
     assert metrics == RUNNER["compute_metrics"](gold, pred, "judge2", iterations=200)
+
+
+def test_h1_decision_uses_unrounded_values() -> None:
+    # 7 of 10 right vs a 6-of-10 baseline: margin is exactly 10 pp, which binary
+    # floating point represents as 0.0999...; it must still count as >= 10 pp.
+    gold = ["SUPPORTED"] * 6 + ["REFUTED"] * 4
+    pred = ["SUPPORTED"] * 6 + ["REFUTED"] + ["SUPPORTED"] * 3
+    metrics = RUNNER["compute_metrics"](gold, pred, "judge2", iterations=50)
+    assert metrics["primary_criterion"]["margin_at_least_10pp"] is True
+    # A margin of 9.999995 pp rounds to 0.1 at 6 decimals but must not pass.
+    gold = ["SUPPORTED"] * 6 + ["REFUTED"] * 4
+    compute = RUNNER["compute_metrics"]
+    original = RUNNER["METRICS"]["accuracy"]
+    try:
+        RUNNER["METRICS"]["accuracy"] = lambda g, p: 0.6 if len(set(p)) == 1 else 0.69999995
+        metrics = compute(gold, pred, "judge2", iterations=10)
+    finally:
+        RUNNER["METRICS"]["accuracy"] = original
+    assert metrics["system"]["accuracy"] == 0.7
+    assert metrics["primary_criterion"]["margin_at_least_10pp"] is False
 
 
 def test_majority_tie_breaks_by_vocabulary_order() -> None:
@@ -173,6 +203,12 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
                                     iterations=100)
         assert result["excluded"] == [{"case_id": "s3", "label": "RULE_GAP"}]
         assert [row["predicted"] for row in result["cases"]] == ["SUPPORTED", "REFUTED"]
+    with pytest.raises(ValueError, match="unknown cases"):
+        RUNNER["evaluate"](cases, {**labels, "s9": "SUPPORTED"}, DOCS, mode="oracle",
+                           vocabulary="judge2", iterations=10)
+    with pytest.raises(ValueError, match="duplicate case"):
+        RUNNER["evaluate"]([*cases, cases[0]], labels, DOCS, mode="oracle",
+                           vocabulary="judge2", iterations=10)
     with pytest.raises(ValueError, match="without a label"):
         RUNNER["evaluate"](cases, {"s1": "SUPPORTED"}, DOCS, mode="oracle",
                            vocabulary="judge2", iterations=10)

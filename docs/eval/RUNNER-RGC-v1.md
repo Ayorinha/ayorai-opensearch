@@ -11,7 +11,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 ## 1. Salvaguardas
 
 - O subcomando `run` exige um arquivo de rótulos humanos completo (`--labels`). Não existe modo "só previsões"; por isso o sistema não pode ser rodado sobre casos ainda não rotulados, evitando que a saída do sistema influencie a anotação.
-- Casos sem rótulo interrompem a execução (erro), em vez de serem descartados em silêncio.
+- Casos sem rótulo, rótulos de casos inexistentes e casos duplicados interrompem a execução (erro), em vez de serem descartados em silêncio.
 - Rótulo `RULE_GAP` (lacuna nas regras de anotação, usado no piloto) remove o caso do denominador e é sempre listado em `excluded` no relatório.
 - Previsões inválidas (`INVALID_PREDICTION`) permanecem no denominador e contam como erro, conforme o pré-registro §4.
 - O relatório registra: versão do executor, commit, versão do Python, SHA-256 dos casos, dos rótulos e dos documentos, configuração completa e cada previsão com o `output_sha256` do Judge.
@@ -34,11 +34,12 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 | Recuperação | BM25, `k1 = 1,2`, `b = 0,75`, top-*k* = 3 | empate desfeito pela ordem no corpus |
 | Tokenização | `\w+` em minúsculas; mantém números; remove tokens com menos de 3 letras e uma lista fixa de palavras funcionais | nenhuma palavra do domínio na lista |
 | Vocabulário | `judge2` (5 estados) | depende da DEC-009; `adr002` (6 estados) disponível |
-| Macro-F1 | média sobre a união dos estados de referência e previstos (`INVALID_PREDICTION` não é classe) | |
+| Macro-F1 | média sobre a união dos estados de referência e previstos, **incluindo** `INVALID_PREDICTION` (F1 = 0, escolha conservadora) | |
 | Acurácia balanceada | média das revocações dos estados presentes na referência | |
 | IC95% | bootstrap percentil, 10.000 reamostragens, seed `20261003`, mesma sequência de reamostragem para as três métricas | |
 | Baseline | classe majoritária da partição avaliada; empate desfeito pela ordem do vocabulário | |
 | Comparação | McNemar exato bilateral (`ayorai_attractor.evaluation.stats`) | |
+| Precisão das decisões | as três condições de H1 usam valores **não arredondados**; o arredondamento (6 casas) vale só para o relatório | |
 
 Depois de congelados, qualquer mudança nesses valores exige emenda datada antes de nova execução, conforme o pré-registro §5.
 

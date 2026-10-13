@@ -315,8 +315,12 @@ def balanced_accuracy(gold: Sequence[str], pred: Sequence[str]) -> float:
 
 
 def macro_f1(gold: Sequence[str], pred: Sequence[str]) -> float:
-    """Macro-F1 over the union of gold and predicted labels (INVALID excluded)."""
-    labels = sorted((set(gold) | set(pred)) - {INVALID})
+    """Macro-F1 over the union of gold and predicted labels.
+
+    INVALID_PREDICTION is kept in the union: it never appears in gold, so its
+    F1 is 0 and it lowers the average (the conservative choice).
+    """
+    labels = sorted(set(gold) | set(pred))
     scores = []
     for label in labels:
         tp = sum(g == label and p == label for g, p in zip(gold, pred, strict=True))
@@ -346,8 +350,8 @@ def bootstrap_ci(
     for name, values in samples.items():
         values.sort()
         out[name] = [
-            round(values[int(0.025 * (iterations - 1))], 6),
-            round(values[int(0.975 * (iterations - 1))], 6),
+            values[int(0.025 * (iterations - 1))],
+            values[int(0.975 * (iterations - 1))],
         ]
     return out
 
@@ -369,15 +373,18 @@ def compute_metrics(
 ) -> dict[str, Any]:
     baseline_label = majority_label(gold, vocabulary)
     baseline = [baseline_label] * len(gold)
-    system = {name: round(fn(gold, pred), 6) for name, fn in METRICS.items()}
-    base = {name: round(fn(gold, baseline), 6) for name, fn in METRICS.items()}
+    # Decisions use unrounded values; rounding is applied only to the report.
+    system = {name: fn(gold, pred) for name, fn in METRICS.items()}
+    base = {name: fn(gold, baseline) for name, fn in METRICS.items()}
     ci = bootstrap_ci(gold, pred, iterations=iterations)
+    margin = system["accuracy"] - base["accuracy"]
     discordant_system = sum(p == g and b != g for g, p, b in zip(gold, pred, baseline, strict=True))
     discordant_base = sum(p != g and b == g for g, p, b in zip(gold, pred, baseline, strict=True))
     p_value = mcnemar_exact_pvalue(gold, pred, baseline)
     primary = {
-        "accuracy_margin_pp": round(100 * (system["accuracy"] - base["accuracy"]), 4),
-        "margin_at_least_10pp": system["accuracy"] - base["accuracy"] >= 0.10 - 1e-12,
+        "accuracy_margin_pp": round(100 * margin, 4),
+        # Tolerance only absorbs binary floating-point error (e.g. 0.7 - 0.6).
+        "margin_at_least_10pp": margin >= 0.10 - 1e-12,
         "ci_lower_above_baseline": ci["accuracy"][0] > base["accuracy"],
         "mcnemar_p_below_0_05": p_value < 0.05,
     }
@@ -390,9 +397,10 @@ def compute_metrics(
         "gold_counts": {label: gold.count(label) for label in VOCABULARIES[vocabulary]},
         "absent_gold_states": [s for s in VOCABULARIES[vocabulary] if s not in gold],
         "invalid_predictions": pred.count(INVALID),
-        "system": system,
-        "system_ci95": ci,
-        "baseline": {"label": baseline_label, **base},
+        "system": {name: round(value, 6) for name, value in system.items()},
+        "system_ci95": {name: [round(v, 6) for v in pair] for name, pair in ci.items()},
+        "baseline": {"label": baseline_label,
+                     **{name: round(value, 6) for name, value in base.items()}},
         "mcnemar": {
             "system_right_baseline_wrong": discordant_system,
             "system_wrong_baseline_right": discordant_base,
@@ -455,8 +463,12 @@ def evaluate(
     rows: list[dict[str, Any]] = []
     excluded: list[dict[str, str]] = []
     unlabeled: list[str] = []
+    seen: set[str] = set()
     for case in cases:
         case_id = str(case["case_id"])
+        if case_id in seen:
+            raise ValueError(f"{case_id}: duplicate case")
+        seen.add(case_id)
         gold = labels.get(case_id)
         if gold is None:
             unlabeled.append(case_id)
@@ -475,6 +487,9 @@ def evaluate(
         rows.append({"case_id": case_id, "gold": gold, "predicted": label, **prediction})
     if unlabeled:
         raise ValueError(f"cases without a label (labels must be complete): {unlabeled}")
+    extra = sorted(set(labels) - seen)
+    if extra:
+        raise ValueError(f"labels for unknown cases (files do not match): {extra}")
     if not rows:
         raise ValueError("no evaluable cases")
     gold_labels = [str(r["gold"]) for r in rows]
