@@ -1,6 +1,9 @@
 # Judge 2.0.0 — G1/G2 and E1–E3 pre-adjudication report
 
 **Status:** implementation candidate; not independently approved and not yet verified by CI at the time this report was drafted.  
+
+> **State note (2026-10-13):** the gates described here were merged to `main` with required CI checks passing and were published in v0.5.0. The original status line above is preserved as a historical record of when this report was drafted.
+
 **Scope:** Onda 2, item 2.2.  
 **Normative contract:** ADR-009 and `rules/judge-2.0.0.json`.  
 **Contract `rules_sha256`:** `493cce66ce45fcb432b8345e7567cfb39858492bfe46d5fa6b584991e79e9efc`.  
