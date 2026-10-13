@@ -216,4 +216,5 @@ Apache-2.0. See [LICENSE](LICENSE).
 - [Authorship and technical direction](docs/AUTHORSHIP.md)
 - [Citation metadata](CITATION.cff)
 - Concept DOI (all versions): [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082)
+- v0.5.0: [10.5281/zenodo.23344005](https://doi.org/10.5281/zenodo.23344005)
 - v0.4.0: [10.5281/zenodo.23300849](https://doi.org/10.5281/zenodo.23300849)
