@@ -43,7 +43,7 @@ def _extension(content_type: str) -> str:
 def capture(target: dict[str, str], out_dir: Path) -> dict[str, object]:
     request = urllib.request.Request(target["url"], headers={"User-Agent": USER_AGENT})
     record: dict[str, object] = {"id": target["id"], "url": target["url"]}
-    started = dt.datetime.now(dt.timezone.utc)
+    started = dt.datetime.now(dt.UTC)
     try:
         with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310
             body = response.read()
@@ -99,7 +99,8 @@ def main() -> int:
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     for r in records:
-        print(r["id"], r.get("status"), r.get("content_type"), r.get("size_bytes"), r.get("sha256") or r.get("error"))
+        detail = r.get("sha256") or r.get("error")
+        print(r["id"], r.get("status"), r.get("content_type"), r.get("size_bytes"), detail)
     return 0
 
 
