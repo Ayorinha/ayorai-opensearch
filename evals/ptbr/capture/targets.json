@@ -1,0 +1,65 @@
+{
+  "purpose": "Exact-byte capture of official sources for the PT-BR RGC benchmark (DEC-002): Resolucao Anatel 765/2023 as published in the DOU of 2023-11-10, Section 1, pages 14-23 (resolution on pp. 14-18, RGC annex on pp. 18-23, ending at art. 101), the two DOU rectifications, the Anatel reference page, and the two Planalto laws in the source registry.",
+  "targets": [
+    {
+      "id": "anatel-res-765-2023-pagina",
+      "url": "https://informacoes.anatel.gov.br/legislacao/resolucoes/2023/1900-resolucao-765"
+    },
+    {
+      "id": "planalto-lei-9610-1998",
+      "url": "https://www.planalto.gov.br/ccivil_03/leis/l9610.htm"
+    },
+    {
+      "id": "planalto-lgpd-13709-2018",
+      "url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm"
+    },
+    {
+      "id": "dou-2023-12-26-p13-retificacao",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=13&data=26/12/2023&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2024-01-12-p4-retificacao",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=4&data=12/01/2024&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2023-11-10-p14",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=14&data=10/11/2023&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2023-11-10-p15",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=15&data=10/11/2023&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2023-11-10-p16",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=16&data=10/11/2023&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2023-11-10-p17",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=17&data=10/11/2023&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2023-11-10-p18",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=18&data=10/11/2023&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2023-11-10-p19",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=19&data=10/11/2023&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2023-11-10-p20",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=20&data=10/11/2023&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2023-11-10-p21",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=21&data=10/11/2023&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2023-11-10-p22",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=22&data=10/11/2023&captchafield=firstAccess"
+    },
+    {
+      "id": "dou-2023-11-10-p23",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=23&data=10/11/2023&captchafield=firstAccess"
+    }
+  ]
+}

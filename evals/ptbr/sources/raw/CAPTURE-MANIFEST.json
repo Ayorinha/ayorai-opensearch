@@ -1,0 +1,191 @@
+{
+  "capture_method": "scripts/capture_sources.py via urllib (exact bytes, no normalization)",
+  "runner": {
+    "github_run_id": "38449402582",
+    "github_run_url": "https://github.com/Ayorinha/ayorai-opensearch/actions/runs/38449402582",
+    "github_sha": "e57e2cffb820a478af702dc61706aa86c2a9bf26",
+    "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
+  },
+  "records": [
+    {
+      "id": "anatel-res-765-2023-pagina",
+      "url": "https://informacoes.anatel.gov.br/legislacao/resolucoes/2023/1900-resolucao-765",
+      "status": 200,
+      "final_url": "https://informacoes.anatel.gov.br/legislacao/resolucoes/2023/1900-resolucao-765",
+      "content_type": "text/html; charset=utf-8",
+      "last_modified": "Tue, 13 Oct 2026 18:46:03 GMT",
+      "retrieved_at": "2026-10-13T18:46:02Z",
+      "artifact_path": "evals/ptbr/sources/raw/anatel-res-765-2023-pagina.html",
+      "size_bytes": 354275,
+      "sha256": "7f665980704bb49c6a5f5db3e67ead500b8c867d916a1995d109c96b79362984"
+    },
+    {
+      "id": "planalto-lei-9610-1998",
+      "url": "https://www.planalto.gov.br/ccivil_03/leis/l9610.htm",
+      "status": 200,
+      "final_url": "https://www.planalto.gov.br/ccivil_03/leis/l9610.htm",
+      "content_type": "text/html",
+      "last_modified": "Thu, 23 Apr 2026 23:00:53 GMT",
+      "retrieved_at": "2026-10-13T18:46:06Z",
+      "artifact_path": "evals/ptbr/sources/raw/planalto-lei-9610-1998.html",
+      "size_bytes": 148434,
+      "sha256": "3d1b59c0b383d45e24dee9ce1b696a52237d19bff3b9b686159858deefb6bced"
+    },
+    {
+      "id": "planalto-lgpd-13709-2018",
+      "url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm",
+      "status": 200,
+      "final_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm",
+      "content_type": "text/html",
+      "last_modified": "Thu, 23 Apr 2026 23:33:33 GMT",
+      "retrieved_at": "2026-10-13T18:46:09Z",
+      "artifact_path": "evals/ptbr/sources/raw/planalto-lgpd-13709-2018.html",
+      "size_bytes": 310252,
+      "sha256": "587f8905e7df7d27c43c35626bc7267995a391f72ae7bc81714c60ed9c9ea555"
+    },
+    {
+      "id": "dou-2023-12-26-p13-retificacao",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=13&data=26/12/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=13&data=26/12/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:12Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-12-26-p13-retificacao.pdf",
+      "size_bytes": 733970,
+      "sha256": "a5b75a048955b78292d7c9ed2417c569de7525ba4a5ba11696eec4bd1c275f5f"
+    },
+    {
+      "id": "dou-2024-01-12-p4-retificacao",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=4&data=12/01/2024&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=4&data=12/01/2024&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:18Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2024-01-12-p4-retificacao.pdf",
+      "size_bytes": 732424,
+      "sha256": "efad54a3d9b91ee91c04e9093dfa599b5786c014434d6fe07bd26efcfd4398c2"
+    },
+    {
+      "id": "dou-2023-11-10-p14",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=14&data=10/11/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=14&data=10/11/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:22Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p14.pdf",
+      "size_bytes": 733853,
+      "sha256": "d0f2b25bdb69e73a380d5cd691c78d650db3d684329737bae45a30cf70dbf576"
+    },
+    {
+      "id": "dou-2023-11-10-p15",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=15&data=10/11/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=15&data=10/11/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:25Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p15.pdf",
+      "size_bytes": 734888,
+      "sha256": "168a5594d31fa4f0a545dcb429490a03a701e7c578fb903ef87bdeb4616943c3"
+    },
+    {
+      "id": "dou-2023-11-10-p16",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=16&data=10/11/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=16&data=10/11/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:30Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p16.pdf",
+      "size_bytes": 733745,
+      "sha256": "d4edfb90ac185977bb03ea37789eb11110b6288b28426cf7a13ed8d6f6cbe716"
+    },
+    {
+      "id": "dou-2023-11-10-p17",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=17&data=10/11/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=17&data=10/11/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:34Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p17.pdf",
+      "size_bytes": 736021,
+      "sha256": "6f7144bf17061f36c43724bcaa3587ebb3035828d1015deac37f6b0de8afb97d"
+    },
+    {
+      "id": "dou-2023-11-10-p18",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=18&data=10/11/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=18&data=10/11/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:39Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p18.pdf",
+      "size_bytes": 735012,
+      "sha256": "e50a77f0bad39b0bca0f899a7b67f81beccccb321a5862d6af4939c3e39d197f"
+    },
+    {
+      "id": "dou-2023-11-10-p19",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=19&data=10/11/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=19&data=10/11/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:45Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p19.pdf",
+      "size_bytes": 734678,
+      "sha256": "8ed28a3054fcc983694b89af9fb1f910d32d579dcb6b7c20fb70e59630b9fecc"
+    },
+    {
+      "id": "dou-2023-11-10-p20",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=20&data=10/11/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=20&data=10/11/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:49Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p20.pdf",
+      "size_bytes": 735831,
+      "sha256": "96c84cbe015e244a7e446d34a335928675f687c0ff14d5897aceac1aafe28451"
+    },
+    {
+      "id": "dou-2023-11-10-p21",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=21&data=10/11/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=21&data=10/11/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:52Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p21.pdf",
+      "size_bytes": 735034,
+      "sha256": "ba10ec11444103eb1a35a2e84ed8242e03b092cdef0f8bbcf866a57b8164d475"
+    },
+    {
+      "id": "dou-2023-11-10-p22",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=22&data=10/11/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=22&data=10/11/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:56Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p22.pdf",
+      "size_bytes": 735733,
+      "sha256": "ebc8ebfb3c0eb06a6e0a51c919c1a8eb3d7591aacb3f7c3cab56196b05e3d2e4"
+    },
+    {
+      "id": "dou-2023-11-10-p23",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=23&data=10/11/2023&captchafield=firstAccess",
+      "status": 200,
+      "final_url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?jornal=515&pagina=23&data=10/11/2023&captchafield=firstAccess",
+      "content_type": "application/pdf",
+      "last_modified": null,
+      "retrieved_at": "2026-10-13T18:46:59Z",
+      "artifact_path": "evals/ptbr/sources/raw/dou-2023-11-10-p23.pdf",
+      "size_bytes": 736480,
+      "sha256": "95c65db25449269520b1c179014467312ee30b7d7d827ccdd8061bd789c9f986"
+    }
+  ]
+}
