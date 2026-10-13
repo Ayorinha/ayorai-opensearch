@@ -10,7 +10,7 @@
 
 O objetivo é medir, de forma reproduzível, a capacidade do AYORAI ATTRACTOR de verificar afirmações em português brasileiro contra o texto oficial do Regulamento Geral de Direitos do Consumidor de Serviços de Telecomunicações (RGC), aprovado pela Resolução Anatel nº 765/2023.
 
-**Hipótese principal (H1):** em um conjunto de avaliação definido e anotado antes da execução, o sistema alcançará acurácia balanceada superior à baseline de classe majoritária. A hipótese será avaliada somente após a aprovação deste pré-registro, a liberação da coleta e a conclusão das etapas de proveniência e anotação.
+**Hipótese principal (H1):** em um conjunto de avaliação definido e anotado antes da execução, o sistema alcançará acurácia superior à baseline de classe majoritária. A hipótese será avaliada somente após a aprovação deste pré-registro, a liberação da coleta e a conclusão das etapas de proveniência e anotação.
 
 Este estudo é independente. Não implica nem afirma parceria, apoio, revisão, endosso ou validação da Anatel, nem de qualquer universidade ou outra instituição.
 
@@ -87,9 +87,11 @@ Os critérios abaixo são propostos antes da coleta e não poderão ser alterado
 ### Sucesso no critério primário
 
 Declarar que H1 recebeu suporte **somente se todas** as condições forem satisfeitas no conjunto de avaliação definido:
-- acurácia balanceada do sistema pelo menos **10 pontos percentuais** acima da acurácia balanceada da baseline de classe majoritária;
-- limite inferior do IC95% da acurácia balanceada do sistema acima do valor pontual da baseline;
-- teste exato de McNemar bilateral contra a baseline com (p < 0{,}05).
+- acurácia do sistema pelo menos **10 pontos percentuais** acima da acurácia da baseline de classe majoritária;
+- limite inferior do IC95% da acurácia do sistema acima do valor pontual da acurácia da baseline;
+- teste exato de McNemar bilateral contra a baseline com p < 0,05.
+
+Acurácia balanceada e macro-F1 são métricas secundárias obrigatórias; nota: a acurácia balanceada da baseline de classe majoritária equivale a 1/K, onde K é o número de estados presentes na partição avaliada.
 
 Além disso, publicar sempre acurácia, macro-F1, IC95%, matriz de confusão e resultados por categoria/estado, independentemente do sucesso primário. Se a baseline não permitir uma comparação informativa para determinada métrica ou houver estado ausente, declarar a limitação explicitamente.
 
