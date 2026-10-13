@@ -1,0 +1,45 @@
+name: Official Source Capture
+
+# Captures official normative sources byte-for-byte for the PT-BR benchmark
+# (DEC-002). Runs only on capture/** branches; results are committed back to
+# the same branch so the capture is reviewed in a pull request before merge.
+
+on:
+  push:
+    branches: ["capture/**"]
+    paths:
+      - "evals/ptbr/capture/targets.json"
+      - "scripts/capture_sources.py"
+      - ".github/workflows/source-capture.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: source-capture-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    name: Capture official sources
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Capture exact bytes and write manifest
+        run: python scripts/capture_sources.py evals/ptbr/capture/targets.json evals/ptbr/sources/raw
+      - name: Commit captured artifacts to this branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add evals/ptbr/sources/raw
+          if git diff --cached --quiet; then
+            echo "Nothing captured."
+            exit 0
+          fi
+          git commit -m "data(ptbr): capture official sources (run ${GITHUB_RUN_ID})"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
