@@ -1,6 +1,6 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-10-11
+Updated: 2026-10-13
 
 ## Source of truth
 
@@ -8,9 +8,9 @@ The [TRACEABILITY MASTER](TRACEABILITY-MASTER.md) is the canonical project requi
 
 ## Current execution
 
-- Main branch at the start of this documentation change: `5ab8f32b9cd14a16fe55a108cab6d685cfe3d3bd`.
-- Baseline-only r1-a response snapshot: [PR #132](https://github.com/Ayorinha/ayorai-opensearch/pull/132), merged; its fixture must remain unchanged during the separate ResponsePolicy PR.
-- DEC-005 option A: documented for maintainer approval and sequencing in a separate documentation PR; the fix itself belongs in its own PR after ResponsePolicy.
+- Latest release: v0.5.0 (2026-10-13), tag on main commit e9eccb5; version DOI 10.5281/zenodo.23344005.
+- `main` is protected: pull request required, plus test (3.11), test (3.12), test (3.13), golden-regression, judge-regression and security.
+- Next queue: Dependabot updates (#104, #106), then the PT-BR benchmark (Anatel RGC).
 - Open work and evidence must be assessed from the exact commit and check run, not inferred from this page.
 
 ## Engineering gates
