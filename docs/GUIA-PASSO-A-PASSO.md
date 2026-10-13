@@ -73,12 +73,16 @@ pip install -e ".[dev,nli]"
 python scripts/run_f1_eval.py --suite golden-v0.1
 ~~~
 
-Resultados esperados:
+Resultados históricos esperados (E1), sempre lado a lado, conforme DEC-007:
 
-- **A: 76.67% — research only**
-- **B: 66.67% — commercial candidate**
-- **Baseline: 43.33%**
-- **B vs baseline: p=0.0085**
+| Caminho | Golden v0 | Golden v0.1 |
+|---|---:|---:|
+| A (research only / EVAL_ONLY) | 40.00% | 76.67% |
+| B (commercial candidate) | 43.33% | 66.67% |
+| C | 26.67% | 33.33% |
+| Baseline de classe majoritária | 43.33% | 43.33% |
+
+No Golden v0, o caminho B é igual à baseline. O Golden v0.1 foi reescrito depois de os resultados por caso terem sido observados; por isso não é evidência confirmatória independente, e nenhum número do v0.1 (nem valor-p calculado só sobre ele) deve ser apresentado isoladamente.
 
 Esses resultados são de desenvolvimento e não devem ser apresentados como generalização de produção.
 

@@ -20,6 +20,12 @@ The repository's architecture, verification contracts, evaluation criteria and r
 
 AI tools have been used as assistants under Anderson Leon Ayora's direction and human review. Architectural decisions, acceptance criteria, repository changes and release decisions remain subject to human review and ownership.
 
+Seven commits dated 2026-10-09 carry a technical attribution to an AI tool in the Git history. They are intentionally preserved, not rewritten, because they are part of published releases archived with DOIs; rewriting history would break the project's verifiable integrity.
+
+## Prior intellectual property
+
+The verifiable record of authorship and prior intellectual property (first commit, release tags, Zenodo DOIs and guidance for future institutional agreements) is kept in [docs/legal/PRIOR-IP-RECORD.md](legal/PRIOR-IP-RECORD.md).
+
 ## Citation
 
 For research or software reuse, cite the repository using [CITATION.cff](../CITATION.cff). Cite all versions with DOI 10.5281/zenodo.23125082; cite a specific release with its version DOI (v0.5.0: 10.5281/zenodo.23344005; v0.4.0: 10.5281/zenodo.23300849).
