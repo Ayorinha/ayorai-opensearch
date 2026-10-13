@@ -1,5 +1,7 @@
 # TRACEABILITY MASTER — AYORAI ATTRACTOR
 
+> **Nota de estado (13/10/2026):** este documento é o registro histórico da revisão da PR #120. A rastreabilidade atual das regras do Judge 2.0 (publicado na v0.5.0) está em `docs/judge2/TRACEABILITY.md`, gerado e verificado por `scripts/gen_judge2_traceability.py --check`.
+
 **Estado:** [PROPOSTO] matriz documental em revisão; não autoriza, por si só, declaração de implementação.
 **Especificação canônica:** *AYORAI ATTRACTOR — ESPECIFICAÇÃO MESTRA DO LABORATÓRIO BRASILEIRO DE AUDITORIA, BENCHMARK E RASTREABILIDADE DE INTELIGÊNCIA ARTIFICIAL*; identificador `AYORAI-ATTRACTOR-BAL`; versão `1.0.0`.
 **Origem da especificação:** documento-fonte fornecido pelo mantenedor; ainda não versionado neste repositório. Proposta futura: versionar em `docs/spec/`, mediante decisão do mantenedor.
