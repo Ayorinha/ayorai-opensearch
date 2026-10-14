@@ -19,15 +19,13 @@ Este estudo é independente. Não implica nem afirma parceria, apoio, revisão, 
 - **ID de fonte existente:** `anatel-res-765-2023`, registrado em `docs/annotation/SOURCES.md`.
 - **Fonte oficial candidata:** https://informacoes.anatel.gov.br/legislacao/resolucoes/2023/1900-resolucao-765
 - **Ato:** Resolução Anatel nº 765, de 6 de novembro de 2023.
-- **Captura exata dos bytes:** pendente.
-- **Data e hora de coleta:** pendentes.
-- **Método de captura, tipo de conteúdo e caminho do artefato preservado:** pendentes.
-- **SHA-256 dos bytes originais e, se aplicável, do texto derivado:** pendentes; não calculados nem presumidos neste pré-registro.
-- **Estado do registro:** candidato; não verificado.
+- **Captura exata dos bytes:** concluída e registrada em #177; texto derivado determinístico documentado em #178.
+- **Data, método, metadados e SHA-256:** registrados nos artefatos de proveniência de #177; não recalculados por este documento.
+- **Estado do registro:** fonte capturada; os portões posteriores de protocolo, anotação, execução e relatório continuam pendentes.
 
 ### Bloqueio obrigatório de coleta
 
-A coleta, extração, transformação, anotação e inclusão de qualquer conteúdo do RGC no benchmark ficam **BLOQUEADAS até decisão explícita do mantenedor sobre a DEC-002**, registrada em `docs/DECISIONS-PENDING.md`. Este pré-registro não aprova a fonte nem resolve questões de licença, proveniência, vigência ou redistribuição. Depois da decisão, a fonte ainda deverá passar pelo procedimento de captura e verificação definido em `docs/annotation/SOURCES.md`. Nenhum material de terceiros com condições de uso não esclarecidas poderá ser incorporado a fixtures públicos.
+A coleta e a captura foram autorizadas pela decisão DEC-002 (#176), e a captura byte a byte da fonte oficial foi registrada em #177; a derivação determinística do texto está documentada em #178. Isso não inicia a anotação nem autoriza alterar os critérios do protocolo. Nenhum material de terceiros com condições de uso não esclarecidas poderá ser incorporado a fixtures públicos.
 
 ## 3. Desenho do estudo
 
@@ -126,4 +124,4 @@ A Resolução e suas alterações, ressalvas de vigência, remissões ou consoli
 5. O sistema é executado uma vez conforme o plano congelado; configurações, commit e resultados são preservados.
 6. O relatório publica métricas, IC95%, baseline, comparação pareada, limitações e qualquer desvio, inclusive resultados negativos.
 
-**Estado atual:** proposta documental apenas. A coleta de dados e a criação de casos permanecem bloqueadas. Nenhuma validação, parceria ou resultado experimental é reivindicado.
+**Estado atual (2026-10-14):** portão 1 — DEC-002 — cumprido (#176); portão 2 — captura e proveniência da fonte — cumprido (#177; texto derivado determinístico em #178). Portões 3–6 permanecem pendentes: aprovação do protocolo/regras, anotação e separação dos conjuntos, execução congelada e relatório. O executor permanece **[PROPOSTO]** (#179), e só roda com rótulos humanos completos. O piloto humano de 20 casos ainda não foi iniciado. Nenhuma validação, parceria ou resultado experimental é reivindicado.
