@@ -23,7 +23,7 @@ Este estudo é independente. Não implica nem afirma parceria, apoio, revisão, 
 - **Data, método, metadados e SHA-256:** registrados nos artefatos de proveniência de #177; não recalculados por este documento.
 - **Estado do registro:** fonte capturada; os portões posteriores de protocolo, anotação, execução e relatório continuam pendentes.
 
-### Bloqueio obrigatório de coleta
+### Autorização de coleta (DEC-002)
 
 A coleta e a captura foram autorizadas pela decisão DEC-002 (#176), e a captura byte a byte da fonte oficial foi registrada em #177; a derivação determinística do texto está documentada em #178. Isso não inicia a anotação nem autoriza alterar os critérios do protocolo. Nenhum material de terceiros com condições de uso não esclarecidas poderá ser incorporado a fixtures públicos.
 
