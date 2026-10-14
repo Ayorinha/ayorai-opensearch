@@ -1,6 +1,6 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-10-13
+Updated: 2026-10-14
 
 ## Source of truth
 
@@ -10,7 +10,8 @@ The [TRACEABILITY MASTER](TRACEABILITY-MASTER.md) is the canonical project requi
 
 - Latest release: v0.5.0 (2026-10-13), tag on main commit e9eccb5; version DOI 10.5281/zenodo.23344005.
 - `main` is protected: pull request required, plus test (3.11), test (3.12), test (3.13), golden-regression, judge-regression and security.
-- Next queue: Dependabot updates (#104, #106), then the PT-BR benchmark (Anatel RGC).
+- Next step: human annotation pilot for the PT-BR RGC benchmark (20 cases; to be conducted by Anderson).
+- Stage evidence: DEC-002 decision recorded in #176; official source bytes and SHA-256 capture in #177; deterministic derived text in #178; proposed deterministic runner requiring complete human labels in #179. These changes do not mean annotation has started.
 - Open work and evidence must be assessed from the exact commit and check run, not inferred from this page.
 
 ## Engineering gates
