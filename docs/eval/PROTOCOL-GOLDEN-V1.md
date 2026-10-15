@@ -29,3 +29,12 @@ Antes de qualquer modelo ser rodado, 30% dos casos são sorteados (seed 20261003
 
 ## Emenda 1 (2026-10-04)
 As fontes ficam em um arquivo separado, uma linha por documento, com os campos source_id, source_url, source_license, retrieved_at e text (texto completo). O sistema avaliado recebe o documento completo, nunca o trecho, o rótulo ou a justificativa do caso. Todo source_excerpt deve aparecer literalmente no texto da sua fonte; caso contrário, o caso é inválido.
+
+## Emenda 2 (2026-10-15)
+
+1. O benchmark RGC usa os cinco vereditos de `rules/judge-2.0.0.json` (`enums.verdict`), com a semântica da ADR-009 (K1–K5), não a da ADR-002. Esta emenda substitui, somente para o RGC, a regra “os mesmos rótulos do v0.1”; o Golden v0/v0.1 não é alterado.
+2. `PARTIALLY_SUPPORTED` significa uma afirmação com mais de uma parte, com pelo menos uma parte confirmada, nenhuma contradita e alguma sem confirmação. Não significa “fonte única” (sentido da ADR-002, linha S=1).
+3. `VERIFIED` não é rótulo de referência. Corroboração (R0–R3) é um eixo separado e não é anotada no v1.
+4. Golden v0, v0.1 e derivados r2 permanecem intocados; nenhum rótulo histórico é convertido.
+5. `RULE_GAP` (“regra insuficiente”) só pode ser usado no piloto, como marcador de ambiguidade das regras, nunca como veredito. No conjunto definitivo, é proibido no campo `label`: caso indecidível deve ser reescrito ou excluído antes do congelamento, com o motivo registrado no log de exclusões. A taxa de `RULE_GAP` é reportada separadamente; não entra no kappa nem nas métricas do sistema.
+6. `ABSTAINED` do Judge é avaliado como `UNVERIFIED` (DEC-009).
