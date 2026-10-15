@@ -7,7 +7,32 @@ from fastapi.testclient import TestClient
 
 from ayorai_attractor.api.app import app
 from ayorai_attractor.verification.judge2.adjudication import verify_output
-from tests.test_verification_api import r2_a_request
+
+
+def r2_a_request() -> dict[str, object]:
+    """Minimal valid r2-a request (same shape as tests/test_verification_api.py)."""
+    return {
+        "schema_version": "r2-a",
+        "protocol_version": "r2-a",
+        "claim_id": "c1",
+        "claim_text": "Claim A",
+        "atoms": [{"id": "a1", "text": "Claim A", "start_offset": 0, "end_offset": 7}],
+        "evidence": [
+            {
+                "id": "e1",
+                "claim_id": "c1",
+                "source_id": "source-e1",
+                "source_location": "document:1",
+                "retrieved_at": "2026-10-11T12:00:00Z",
+                "start_offset": 0,
+                "end_offset": 7,
+                "excerpt": "Claim A",
+                "origin_id": "origin-e1",
+            }
+        ],
+        "stances": [{"id": "s1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"}],
+        "source_texts": {"source-e1": "Claim A"},
+    }
 
 
 def _with_urls(*urls: str) -> dict[str, object]:
