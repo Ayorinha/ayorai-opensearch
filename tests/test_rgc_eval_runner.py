@@ -203,6 +203,7 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
                                     iterations=100)
         assert result["excluded"] == [{"case_id": "s3", "label": "RULE_GAP"}]
         assert [row["predicted"] for row in result["cases"]] == ["SUPPORTED", "REFUTED"]
+        assert result["decision_states"] == {"DECIDED": 2}
     with pytest.raises(ValueError, match="unknown cases"):
         RUNNER["evaluate"](cases, {**labels, "s9": "SUPPORTED"}, DOCS, mode="oracle",
                            vocabulary="judge2", iterations=10)
@@ -212,6 +213,27 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
     with pytest.raises(ValueError, match="without a label"):
         RUNNER["evaluate"](cases, {"s1": "SUPPORTED"}, DOCS, mode="oracle",
                            vocabulary="judge2", iterations=10)
+
+
+def test_evaluate_reports_abstentions_mapped_to_unverified() -> None:
+    cases = [_case("s1", "O cancelamento será efetivado em até 2 dias.",
+                   "§ 1º O cancelamento será efetivado em até 2 (dois) dias.")]
+    module_globals = RUNNER["evaluate"].__globals__
+    original = module_globals["predict"]
+
+    def abstaining_predict(*args: object, **kwargs: object) -> dict[str, object]:
+        prediction = dict(original(*args, **kwargs))
+        prediction.update(decision_state="ABSTAINED", verdict=None)
+        return prediction
+
+    module_globals["predict"] = abstaining_predict
+    try:
+        result = RUNNER["evaluate"](cases, {"s1": "UNVERIFIED"}, DOCS, mode="oracle",
+                                    vocabulary="judge2", iterations=10)
+    finally:
+        module_globals["predict"] = original
+    assert result["decision_states"] == {"ABSTAINED": 1}
+    assert result["cases"][0]["predicted"] == "UNVERIFIED"
 
 
 def test_labels_outside_vocabulary_are_rejected(tmp_path: Path) -> None:
