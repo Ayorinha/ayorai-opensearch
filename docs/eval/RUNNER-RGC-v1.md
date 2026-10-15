@@ -12,9 +12,9 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 
 - O subcomando `run` exige um arquivo de rótulos humanos completo (`--labels`). Não existe modo "só previsões"; por isso o sistema não pode ser rodado sobre casos ainda não rotulados, evitando que a saída do sistema influencie a anotação.
 - Casos sem rótulo, rótulos de casos inexistentes e casos duplicados interrompem a execução (erro), em vez de serem descartados em silêncio.
-- Rótulo `RULE_GAP` (lacuna nas regras de anotação, usado no piloto) remove o caso do denominador e é sempre listado em `excluded` no relatório.
+- Rótulo `RULE_GAP` (lacuna nas regras de anotação, usado somente no piloto) remove o caso do denominador e é sempre listado em `excluded` no relatório; no conjunto definitivo, `RULE_GAP` é proibido no campo `label`.
 - Previsões inválidas (`INVALID_PREDICTION`) permanecem no denominador e contam como erro, conforme o pré-registro §4.
-- O relatório registra: versão do executor, commit, versão do Python, SHA-256 dos casos, dos rótulos e dos documentos, configuração completa e cada previsão com o `output_sha256` do Judge.
+- O relatório registra: versão do executor, commit, versão do Python, SHA-256 dos casos, dos rótulos e dos documentos, configuração completa, cada previsão com o `output_sha256` do Judge e a contagem de previsões cujo estado original do Judge foi `ABSTAINED`.
 
 ## 2. Pipeline por caso (determinístico, sem rede, sem componente aprendido)
 
@@ -23,7 +23,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
    - **Modo `retrieval`**: o texto de `DOCUMENTS.jsonl` é segmentado em dispositivos e os *k* melhores trechos são recuperados por BM25 (§3). Mede o sistema de ponta a ponta.
 2. **Stance**: `RuleStanceDetector` (versão registrada no relatório) para cada par (afirmação, trecho).
 3. **Veredito**: Judge 2.0 `adjudicate` (ADR-009), com **um átomo** cobrindo a afirmação inteira.
-4. **Mapeamento** (`to_label`): `DECIDED` → veredito do Judge; `ABSTAINED` → `UNVERIFIED`; qualquer outro estado → `INVALID_PREDICTION`. No vocabulário `adr002`, `SUPPORTED` com robustez `R3` → `VERIFIED` (ADR-009 §11).
+4. **Mapeamento** (`to_label`): `DECIDED` → veredito do Judge; `ABSTAINED` → `UNVERIFIED` (DEC-009 aprovada); qualquer outro estado → `INVALID_PREDICTION`. No vocabulário histórico `adr002`, `SUPPORTED` com robustez `R3` → `VERIFIED` (ADR-009 §11), mas esse mapeamento não se aplica ao vocabulário RGC `judge2`.
 
 ## 3. Parâmetros propostos para congelamento
 
@@ -33,7 +33,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 | Segmentação | `dispositivo` (início de linha: `Art.`, `§`, `Parágrafo único`, incisos romanos `I -`, alíneas `a)`) | alternativa `artigo` disponível só para análise secundária |
 | Recuperação | BM25, `k1 = 1,2`, `b = 0,75`, top-*k* = 3 | empate desfeito pela ordem no corpus |
 | Tokenização | `\w+` em minúsculas; mantém números; remove tokens com menos de 3 letras e uma lista fixa de palavras funcionais | nenhuma palavra do domínio na lista |
-| Vocabulário | `judge2` (5 estados) | depende da DEC-009; `adr002` (6 estados) disponível |
+| Vocabulário | `judge2` (5 estados) | DEC-007 aprovada (5 estados); `adr002` (6 estados) permanece apenas como vocabulário histórico alternativo, não usado no RGC |
 | Macro-F1 | média sobre a união dos estados de referência e previstos, **incluindo** `INVALID_PREDICTION` (F1 = 0, escolha conservadora) | |
 | Acurácia balanceada | média das revocações dos estados presentes na referência | |
 | IC95% | bootstrap percentil, 10.000 reamostragens, seed `20261003`, mesma sequência de reamostragem para as três métricas | |
@@ -58,7 +58,7 @@ Depois de congelados, qualquer mudança nesses valores exige emenda datada antes
 
 ## 6. Achado durante a implementação (fora do escopo deste executor)
 
-Uma requisição `r2-a` válida com `evidence[].canonical_url` preenchido retorna `INVALID_INPUT / SCHEMA_VIOLATION` em vez de ser adjudicada. Causa provável: `_json_safe` em `verification/judge2/adjudication.py` converte a evidência com `model_dump(mode="python")`, que devolve um objeto `HttpUrl`, tipo não aceito na serialização canônica. Reprodução: a mesma requisição sem `canonical_url` retorna `DECIDED / SUPPORTED`; com `"canonical_url": "https://example.test/a"` retorna `INVALID_INPUT`. A correção toca o Judge e o hash canônico de entrada, portanto deve ser tratada em PR separada, com decisão do mantenedor.
+Uma requisição `r2-a` válida com `evidence[].canonical_url` preenchido retorna `INVALID_INPUT / SCHEMA_VIOLATION` em vez de ser adjudicada. A causa e a correção estão em revisão na PR #192; até que ela seja mesclada pelo mantenedor, não declarar o defeito corrigido nem presumir CI verde. A PR documenta a hipótese confirmada e os testes propostos: https://github.com/Ayorinha/ayorai-opensearch/pull/192.
 
 ## 7. Uso (somente após rótulos completos e parâmetros congelados)
 
