@@ -2,6 +2,12 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## 2026-10-15 — Fix #182: `evidence[].canonical_url` on `r2-a`
+
+- Fixed: an `r2-a` request with a valid `evidence[].canonical_url` returned `INVALID_INPUT / SCHEMA_VIOLATION` instead of being adjudicated. Cause: the validated `HttpUrl` reached the canonical-input serializer, which rejected the type.
+- `canonical_url` now enters the canonical input (and `input_sha256`) as pydantic's normalized URL string, the same form the independence rule compares. Example: `https://example.test` and `https://example.test/` hash identically.
+- No request or response schema change; the OpenAPI snapshot is unchanged. No frozen Golden, rules file or rules hash changes. Requests without `canonical_url` keep byte-identical hashes. Only rejection hashes of requests that previously failed with this field change, because those requests are now decided.
+
 ## 2026-10-12 — Item 2.5: r2-a on `POST /v1/verify`
 
 - Added the `r2-a` request contract alongside the existing `r1-a` request contract.
