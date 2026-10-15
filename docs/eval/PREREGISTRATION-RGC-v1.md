@@ -41,9 +41,9 @@ Categorias de afirmações, definidas antes da coleta:
 
 As categorias podem se sobrepor; a regra de anotação deverá definir uma categoria principal e registrar categorias secundárias quando necessário. Os rótulos de referência serão atribuídos por pessoas, com justificativa rastreável ao texto-fonte. O sistema avaliado não poderá gerar ou alterar os rótulos de referência.
 
-### 3.2 Estados de veredito
+### 3.2 Estados de veredito — registro histórico da proposta
 
-Usar exclusivamente os seis estados previstos no contrato de veredito associado à ADR-002, sem inventar rótulos nem alterar sua semântica:
+A lista abaixo registra a proposta original de 2026-10-13 e não representa o vocabulário aprovado para o benchmark RGC:
 
 - `UNVERIFIED`
 - `SUPPORTED`
@@ -52,7 +52,9 @@ Usar exclusivamente os seis estados previstos no contrato de veredito associado 
 - `CONFLICTING`
 - `REFUTED`
 
-Antes da anotação, os anotadores deverão consultar a versão aceita da ADR-002 e as instruções de anotação aplicáveis. Casos ambíguos, sem contexto suficiente ou com referência normativa não verificável deverão seguir uma regra de exclusão ou adjudicação documentada, nunca receber um rótulo por conveniência.
+**Nota datada (2026-10-15):** conforme a Emenda 2 de `docs/eval/PROTOCOL-GOLDEN-V1.md`, o benchmark RGC usa os cinco vereditos de `rules/judge-2.0.0.json` (`enums.verdict`) com a semântica da ADR-009 (K1–K5), e não a semântica da ADR-002. `VERIFIED` não é rótulo de referência no RGC; corroboração R0–R3 é eixo separado e não é anotada no v1. O mapeamento `ABSTAINED` → `UNVERIFIED` segue a DEC-009 aprovada. A proposta e o estado geral deste documento permanecem **[PROPOSTO]** até o congelamento formal pelo mantenedor.
+
+Casos ambíguos, sem contexto suficiente ou com referência normativa não verificável deverão seguir a regra de `RULE_GAP) do piloto ou ser reescritos/excluídos antes do congelamento, com o motivo registrado no log de exclusões; nunca receber um rótulo por conveniência.
 
 ### 3.3 Anotação e isolamento
 
