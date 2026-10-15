@@ -15,6 +15,7 @@ from types import MappingProxyType
 from typing import Any, Literal
 
 import rfc8785
+from pydantic import AnyUrl
 
 from ayorai_attractor.verification.clusters import cluster_evidence
 from ayorai_attractor.verification.models import Evidence
@@ -317,6 +318,10 @@ def verify_output(result_dict: Mapping[str, Any]) -> bool:
 
 def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
     """Convert explicitly supported values to stable JSON-compatible values."""
+    if isinstance(value, AnyUrl):
+        # Validated URLs are hashed in pydantic's normalized string form, the
+        # same form the independence rule compares (issue #182).
+        return str(value)
     if hasattr(value, "model_dump"):
         return _json_safe(
             value.model_dump(mode="python"),
