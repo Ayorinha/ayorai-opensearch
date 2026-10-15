@@ -54,7 +54,7 @@ A lista abaixo registra a proposta original de 2026-10-13 e não representa o vo
 
 **Nota datada (2026-10-15):** conforme a Emenda 2 de `docs/eval/PROTOCOL-GOLDEN-V1.md`, o benchmark RGC usa os cinco vereditos de `rules/judge-2.0.0.json` (`enums.verdict`) com a semântica da ADR-009 (K1–K5), e não a semântica da ADR-002. `VERIFIED` não é rótulo de referência no RGC; corroboração R0–R3 é eixo separado e não é anotada no v1. O mapeamento `ABSTAINED` → `UNVERIFIED` segue a DEC-009 aprovada. A proposta e o estado geral deste documento permanecem **[PROPOSTO]** até o congelamento formal pelo mantenedor.
 
-Casos ambíguos, sem contexto suficiente ou com referência normativa não verificável deverão seguir a regra de `RULE_GAP) do piloto ou ser reescritos/excluídos antes do congelamento, com o motivo registrado no log de exclusões; nunca receber um rótulo por conveniência.
+Casos ambíguos, sem contexto suficiente ou com referência normativa não verificável deverão seguir a regra de `RULE_GAP` do piloto ou ser reescritos/excluídos antes do congelamento, com o motivo registrado no log de exclusões; nunca receber um rótulo por conveniência.
 
 ### 3.3 Anotação e isolamento
 
