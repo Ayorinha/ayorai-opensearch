@@ -39,14 +39,12 @@ Source: execution plan v5, work queue
 - **Decisor:** Anderson Leon Ayora
 - **Opção aprovada:** A — o anotador marca os átomos de cada afirmação composta, com offsets; o executor usa esses átomos para adjudicação.
 - **Proporção-alvo:** cerca de um terço dos casos definitivos será composto; a proporção efetiva deverá constar no relatório.
-- **Decisão:** a unidade de anotação e execução para afirmações compostas será formalizada pela Emenda 3 de `docs/eval/PROTOCOL-GOLDEN-V1.md` e refletida no pré-registro. A implementação de código correspondente está na [PR #203](https://github.com/Ayorinha/ayorai-opensearch/pull/203), que propõe o campo `atoms` nos casos e o executor 0.2.0; casos sem `atoms` devem manter o mesmo `output_sha256`.
+- **Decisão:** a unidade de anotação e execução para afirmações compostas será formalizada pela Emenda 3 de `docs/eval/PROTOCOL-GOLDEN-V1.md` e refletida no pré-registro. A implementação de código foi mesclada na [PR #203](https://github.com/Ayorinha/ayorai-opensearch/pull/203) em 2026-10-16: campo `atoms` nos casos e executor `rgc-eval/0.2.0`; casos sem `atoms` mantêm o mesmo `output_sha256`.
 - **Opções consideradas (texto preservado):**
   - **A — escolhida:** o anotador marca as partes (átomos) de cada afirmação composta, incluindo offsets; o executor usa esses átomos para adjudicação. O formato e a regra entram em uma emenda ao protocolo e no pré-registro antes da anotação definitiva. A opção preserva a semântica da Emenda 2 e permite avaliar o Judge com afirmações compostas.
   - **B — não escolhida:** o v1 aceita apenas afirmações atômicas; afirmações compostas ficam para o v2. A ausência de `PARTIALLY_SUPPORTED` no v1 seria declarada explicitamente, com regra para identificar/excluir afirmações compostas.
 - **Fato que motivou a decisão:** o executor anterior tratava cada afirmação como um único átomo. Pelas regras A1–A4 de `rules/judge-2.0.0.json`, um átomo pode resultar em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`; K4 exige dois ou mais átomos para `PARTIALLY_SUPPORTED`. `CONFLICTING` continua possível pela regra A4. Ver [RUNNER-RGC-v1.md §5](eval/RUNNER-RGC-v1.md#5-limitações-conhecidas).
-- **Estado:** aprovada como decisão documental; implementação de código e atualização do protocolo devem ser avaliadas separadamente em suas PRs. A aprovação não afirma que a PR #203 foi mesclada nem que o executor 0.2.0 foi validado.
-
-
+- **Estado:** aprovada. O código (PR #203) está mesclado; a emenda ao protocolo segue em PR própria. A mesclagem não equivale à validação do executor no benchmark definitivo.
 
 ### DEC-005 — r1-a: entrada inválida retorna 500
 
