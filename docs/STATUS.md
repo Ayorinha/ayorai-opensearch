@@ -1,6 +1,6 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-10-14
+Updated: 2026-10-16
 
 ## Source of truth
 
@@ -11,7 +11,7 @@ The [TRACEABILITY MASTER](TRACEABILITY-MASTER.md) is the canonical project requi
 - Latest release: v0.5.0 (2026-10-13), tag on main commit e9eccb5; version DOI 10.5281/zenodo.23344005.
 - `main` is protected: pull request required, plus test (3.11), test (3.12), test (3.13), golden-regression, judge-regression and security.
 - Next step: human annotation pilot for the PT-BR RGC benchmark (20 cases; to be conducted by Anderson).
-- Stage evidence: DEC-002 decision recorded in #176; official source bytes and SHA-256 capture in #177; deterministic derived text in #178; proposed deterministic runner requiring complete human labels in #179. These changes do not mean annotation has started.
+- Stage evidence: DEC-002 is recorded in #176; official source bytes and SHA-256 capture in #177; deterministic derived text in #178; proposed deterministic runner requiring complete human labels in #179; canonical URL serialization fix with regression tests in [#192](https://github.com/Ayorinha/ayorai-opensearch/pull/192); RGC runner prediction counts by original Judge state in [#195](https://github.com/Ayorinha/ayorai-opensearch/pull/195); Protocol Amendment 2 in [#193](https://github.com/Ayorinha/ayorai-opensearch/pull/193); and DEC-007, DEC-008 and DEC-009 recorded as approved in [#194](https://github.com/Ayorinha/ayorai-opensearch/pull/194). No Portuguese benchmark results exist yet, and human annotation has not started.
 - Open work and evidence must be assessed from the exact commit and check run, not inferred from this page.
 
 ## Engineering gates
