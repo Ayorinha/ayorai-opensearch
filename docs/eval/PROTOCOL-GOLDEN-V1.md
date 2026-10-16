@@ -39,7 +39,6 @@ As fontes ficam em um arquivo separado, uma linha por documento, com os campos s
 5. `RULE_GAP` (“regra insuficiente”) só pode ser usado no piloto, como marcador de ambiguidade das regras, nunca como veredito. No conjunto definitivo, é proibido no campo `label`: caso indecidível deve ser reescrito ou excluído antes do congelamento, com o motivo registrado no log de exclusões. A taxa de `RULE_GAP` é reportada separadamente; não entra no kappa nem nas métricas do sistema.
 6. `ABSTAINED` do Judge é avaliado como `UNVERIFIED` (DEC-009).
 
-
 ## Emenda 3 (2026-10-16) — Afirmações compostas (DEC-010, opção A)
 
 1. **Afirmação simples:** contém um único fato verificável e não leva o campo `atoms`.
@@ -47,6 +46,6 @@ As fontes ficam em um arquivo separado, uma linha por documento, com os campos s
 3. Todo caso rotulado `PARTIALLY_SUPPORTED` deve ser composto e trazer `atoms`. Um caso composto pode receber qualquer um dos cinco rótulos do RGC.
 4. Os átomos são marcados **antes** do rótulo e não podem ser ajustados para alterar o resultado do sistema. O sistema nunca é executado sobre casos sem rótulo.
 5. **Meta de composição:** cerca de um terço dos casos definitivos será composto. A proporção final será declarada no relatório.
-6. Anotação de átomos inválida interrompe a execução, conforme o executor 0.2.0 proposto na [PR #203](https://github.com/Ayorinha/ayorai-opensearch/pull/203). Esta referência não implica que a PR esteja mesclada nem que a implementação tenha sido validada.
+6. Anotação de átomos inválida interrompe a execução, conforme o executor `rgc-eval/0.2.0`, mesclado na [PR #203](https://github.com/Ayorinha/ayorai-opensearch/pull/203) em 2026-10-16. A mesclagem não equivale à validação do executor no benchmark definitivo.
 
 A presente emenda documenta a decisão DEC-010, opção A. O protocolo e o pré-registro permanecem **[PROPOSTO]** até aprovação e congelamento formais pelo mantenedor.
