@@ -49,7 +49,7 @@ from ayorai_attractor.verification.stance import RuleStanceDetector
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.1.0"
+RUNNER_VERSION = "rgc-eval/0.2.0"
 SEED = 20261003
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
@@ -216,19 +216,47 @@ def oracle_passages(case: Mapping[str, Any], documents: Mapping[str, Document]) 
     return passages
 
 
+def case_atoms(case: Mapping[str, Any]) -> list[tuple[int, int]] | None:
+    """Return the annotated atom spans of a compound claim (DEC-010, option A).
+
+    A case without ``atoms`` is a simple claim, adjudicated as one atom. When
+    present, ``atoms`` must hold two or more spans of the claim text, given as
+    ``start_offset``/``end_offset`` (optional ``text`` must match the span),
+    sorted, non-overlapping and non-blank. Invalid annotation stops the run.
+    """
+    raw = case.get("atoms")
+    if raw is None:
+        return None
+    case_id, claim = str(case["case_id"]), str(case["claim"])
+    if not isinstance(raw, list) or len(raw) < 2:
+        raise ValueError(f"{case_id}: atoms must list two or more spans")
+    spans: list[tuple[int, int]] = []
+    for item in raw:
+        start, end = item.get("start_offset"), item.get("end_offset")
+        if not (isinstance(start, int) and isinstance(end, int)) or isinstance(start, bool):
+            raise ValueError(f"{case_id}: atom offsets must be integers")
+        if not 0 <= start < end <= len(claim):
+            raise ValueError(f"{case_id}: atom span {start}-{end} outside the claim")
+        if not claim[start:end].strip():
+            raise ValueError(f"{case_id}: atom span {start}-{end} is blank")
+        if "text" in item and item["text"] != claim[start:end]:
+            raise ValueError(f"{case_id}: atom text does not match span {start}-{end}")
+        spans.append((start, end))
+    if spans != sorted(spans) or any(a[1] > b[0] for a, b in zip(spans, spans[1:], strict=False)):
+        raise ValueError(f"{case_id}: atom spans must be sorted and non-overlapping")
+    return spans
+
+
 def predict(
     claim_text: str,
     passages: Sequence[Passage],
     documents: Mapping[str, Document],
     *,
+    atoms: Sequence[tuple[int, int]] | None = None,
     retrieval_succeeded: bool = True,
 ) -> dict[str, Any]:
     claim_id = "c1"
-    extracted = ExtractedClaim(
-        claim=Claim(id=claim_id, text=claim_text),
-        confidence=1.0,
-        provenance=ComponentProvenance("rgc-eval", "rgc-eval", RUNNER_VERSION, "in", "out"),
-    )
+    spans = list(atoms) if atoms else [(0, len(claim_text))]
     evidence = []
     for index, passage in enumerate(passages, start=1):
         doc = documents[passage.document_id]
@@ -247,22 +275,34 @@ def predict(
                 # serialize URL objects; the URL is kept in source_location.
             )
         )
-    edges = RuleStanceDetector().detect([extracted], evidence).edges if evidence else ()
-    stances = [
-        {
-            "id": f"s{index}",
-            "atom_id": "a1",
-            "evidence_id": edge.edge.evidence_id,
-            "stance": edge.edge.stance.value.upper(),
-        }
-        for index, edge in enumerate(edges, start=1)
-    ]
+    # Stance is detected per atom: each atom text is compared with every passage.
+    detector = RuleStanceDetector()
+    stances: list[dict[str, str]] = []
+    for atom_index, (start, end) in enumerate(spans, start=1):
+        extracted = ExtractedClaim(
+            claim=Claim(id=claim_id, text=claim_text[start:end]),
+            confidence=1.0,
+            provenance=ComponentProvenance("rgc-eval", "rgc-eval", RUNNER_VERSION, "in", "out"),
+        )
+        edges = detector.detect([extracted], evidence).edges if evidence else ()
+        stances.extend(
+            {
+                "id": f"s{len(stances) + offset}",
+                "atom_id": f"a{atom_index}",
+                "evidence_id": edge.edge.evidence_id,
+                "stance": edge.edge.stance.value.upper(),
+            }
+            for offset, edge in enumerate(edges, start=1)
+        )
     result = adjudication.adjudicate({
         "protocol_version": "r2-a",
         "claim_id": claim_id,
         "claim_text": claim_text,
-        "atoms": [{"id": "a1", "text": claim_text, "start_offset": 0,
-                   "end_offset": len(claim_text)}],
+        "atoms": [
+            {"id": f"a{i}", "text": claim_text[start:end], "start_offset": start,
+             "end_offset": end}
+            for i, (start, end) in enumerate(spans, start=1)
+        ],
         "evidence": evidence,
         "stances": stances,
         "source_texts": {p.document_id: documents[p.document_id].text for p in passages},
@@ -278,6 +318,7 @@ def predict(
             {"document_id": p.document_id, "start_offset": p.start, "end_offset": p.end}
             for p in passages
         ],
+        "atoms": [claim_text[start:end] for start, end in spans],
         "stances": [s["stance"] for s in stances],
     }
 
@@ -476,12 +517,14 @@ def evaluate(
         if gold in EXCLUSION_LABELS:
             excluded.append({"case_id": case_id, "label": gold})
             continue
+        atoms = case_atoms(case)
         if index is None:
-            prediction = predict(case["claim"], oracle_passages(case, documents), documents)
+            prediction = predict(case["claim"], oracle_passages(case, documents), documents,
+                                 atoms=atoms)
         else:
             hits = index.search(case["claim"], top_k)
             prediction = predict(case["claim"], [p for p, _ in hits], documents,
-                                 retrieval_succeeded=bool(hits))
+                                 atoms=atoms, retrieval_succeeded=bool(hits))
             prediction["retrieval_scores"] = [round(s, 6) for _, s in hits]
         label = to_label(prediction, vocabulary)
         rows.append({"case_id": case_id, "gold": gold, "predicted": label, **prediction})

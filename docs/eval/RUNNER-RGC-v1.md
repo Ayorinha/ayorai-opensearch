@@ -22,7 +22,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
    - **Modo `oracle`**: usa os trechos do próprio caso (`evidence[].excerpt`), conferidos caractere a caractere contra o texto do documento nos offsets declarados. Mede stance + Judge isoladamente, sem recuperação.
    - **Modo `retrieval`**: o texto de `DOCUMENTS.jsonl` é segmentado em dispositivos e os *k* melhores trechos são recuperados por BM25 (§3). Mede o sistema de ponta a ponta.
 2. **Stance**: `RuleStanceDetector` (versão registrada no relatório) para cada par (afirmação, trecho).
-3. **Veredito**: Judge 2.0 `adjudicate` (ADR-009), com **um átomo** cobrindo a afirmação inteira.
+3. **Veredito**: Judge 2.0 `adjudicate` (ADR-009). Afirmação simples: **um átomo** cobrindo a afirmação inteira. Afirmação composta (DEC-010, opção A): os átomos anotados no campo `atoms` do caso (dois ou mais trechos da afirmação, por `start_offset`/`end_offset`, ordenados e sem sobreposição); a posição é detectada por átomo contra cada trecho, e o veredito composto segue K1–K5. Anotação de átomos inválida interrompe a execução.
 4. **Mapeamento** (`to_label`): `DECIDED` → veredito do Judge; `ABSTAINED` → `UNVERIFIED` (DEC-009 aprovada); qualquer outro estado → `INVALID_PREDICTION`. No vocabulário histórico `adr002`, `SUPPORTED` com robustez `R3` → `VERIFIED` (ADR-009 §11), mas esse mapeamento não se aplica ao vocabulário RGC `judge2`.
 
 ## 3. Parâmetros propostos para congelamento
@@ -49,7 +49,7 @@ Depois de congelados, qualquer mudança nesses valores exige emenda datada antes
 
 ## 5. Limitações conhecidas (declaradas antes dos dados)
 
-- **Um átomo por afirmação:** o executor atual passa a afirmação inteira como um único átomo. Pelas regras atômicas A1–A4 de `rules/judge-2.0.0.json`, um único átomo pode resultar apenas em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`. A regra K4 exige dois ou mais átomos para `PARTIALLY_SUPPORTED`; portanto, o executor atual não prevê `PARTIALLY_SUPPORTED`, e casos de referência com esse rótulo contariam como erro estrutural. `CONFLICTING` continua possível pela regra A4. A correção dessa limitação depende da decisão DEC-010, ainda pendente. Esta descrição e o executor permanecem **[PROPOSTO]**.
+- **Átomos anotados, não decompostos automaticamente:** o executor não divide afirmações por conta própria. Sem o campo `atoms`, a afirmação é um único átomo e, pelas regras A1–A4, só pode resultar em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`. `PARTIALLY_SUPPORTED` (regra K4) só é alcançável quando o caso traz dois ou mais átomos anotados. Por isso, todo caso de referência rotulado `PARTIALLY_SUPPORTED` deve trazer os átomos; a regra de anotação entra na emenda ao protocolo que registra a DEC-010. Casos sem `atoms` produzem exatamente o mesmo resultado e o mesmo `output_sha256` da versão anterior do executor. Esta descrição e o executor permanecem **[PROPOSTO]**.
 - **Stance lexical:** o `RuleStanceDetector` compara números, datas e sobreposição de palavras; paráfrases fortes e negações implícitas tendem a sair como `NEUTRAL` → `UNVERIFIED`.
 - **Dispositivo sem o caput:** um inciso recuperado isoladamente não carrega o texto do caput do artigo.
 - **Ruído do DOU:** cabeçalhos e rodapés de página extraídos pelo `pdftotext` ficam anexados ao dispositivo anterior.

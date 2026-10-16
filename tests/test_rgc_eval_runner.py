@@ -275,3 +275,93 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     assert report["metrics"]["system"]["accuracy"] == 1.0
     assert report["config"]["mode"] == "retrieval"
     assert len(report["inputs"]["cases_sha256"]) == 64
+
+
+# --- DEC-010 option A: annotated atoms for compound claims -------------------
+
+CANCEL = "§ 1º O cancelamento será efetivado em até 2 (dois) dias."
+
+
+def _compound(case_id: str, claim: str, parts: list[str]) -> dict[str, Any]:
+    case = _case(case_id, claim, CANCEL)
+    case["atoms"] = [
+        {"start_offset": claim.index(part), "end_offset": claim.index(part) + len(part)}
+        for part in parts
+    ]
+    return case
+
+
+def _predict(case: dict[str, Any]) -> dict[str, Any]:
+    result: dict[str, Any] = RUNNER["predict"](
+        case["claim"], RUNNER["oracle_passages"](case, DOCS), DOCS,
+        atoms=RUNNER["case_atoms"](case),
+    )
+    return result
+
+
+def test_compound_claim_with_one_unconfirmed_part_is_partially_supported() -> None:
+    claim = "O cancelamento será efetivado em até 2 dias e o plano terá multa de 10%."
+    case = _compound("k4", claim, ["O cancelamento será efetivado em até 2 dias",
+                                   "o plano terá multa de 10%"])
+    result = _predict(case)
+    assert result["judge_verdict"] == "PARTIALLY_SUPPORTED"
+    assert result["stances"] == ["SUPPORTS", "NEUTRAL"]
+    # The same text as a single atom cannot reach K4 (the limitation fixed here).
+    single = _predict(_case("k4-single", claim, CANCEL))
+    assert single["judge_verdict"] != "PARTIALLY_SUPPORTED"
+
+
+def test_compound_claim_with_a_contradicted_part_is_refuted() -> None:
+    claim = "O cancelamento será efetivado em até 9 dias e o plano terá multa de 10%."
+    case = _compound("k1", claim, ["O cancelamento será efetivado em até 9 dias",
+                                   "o plano terá multa de 10%"])
+    assert _predict(case)["judge_verdict"] == "REFUTED"
+
+
+def test_compound_prediction_is_deterministic_and_lists_atoms() -> None:
+    claim = "O cancelamento será efetivado em até 2 dias e o plano terá multa de 10%."
+    parts = ["O cancelamento será efetivado em até 2 dias", "o plano terá multa de 10%"]
+    first = _predict(_compound("d1", claim, parts))
+    second = _predict(_compound("d1", claim, parts))
+    assert first["output_sha256"] == second["output_sha256"]
+    assert first["atoms"] == parts
+
+
+def test_case_without_atoms_keeps_single_atom_behaviour() -> None:
+    case = _case("s1", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    assert RUNNER["case_atoms"](case) is None
+    result = _predict(case)
+    assert result["atoms"] == [case["claim"]]
+    assert result["judge_verdict"] == "SUPPORTED"
+
+
+@pytest.mark.parametrize(
+    ("atoms", "message"),
+    [
+        ([{"start_offset": 0, "end_offset": 5}], "two or more"),
+        ([{"start_offset": 0, "end_offset": 5}, {"start_offset": 3, "end_offset": 9}],
+         "non-overlapping"),
+        ([{"start_offset": 0, "end_offset": 5}, {"start_offset": 6, "end_offset": 999}],
+         "outside the claim"),
+        ([{"start_offset": 0, "end_offset": 5}, {"start_offset": 5, "end_offset": 6}],
+         "blank"),
+        ([{"start_offset": 0, "end_offset": 5, "text": "Outro"},
+          {"start_offset": 6, "end_offset": 10}], "does not match"),
+        ([{"start_offset": "0", "end_offset": 5}, {"start_offset": 6, "end_offset": 10}],
+         "integers"),
+    ],
+)
+def test_invalid_atom_annotation_stops_the_run(atoms: list[dict[str, Any]], message: str) -> None:
+    case = _case("bad", "Texto A e texto B.", CANCEL)
+    case["atoms"] = atoms
+    with pytest.raises(ValueError, match=message):
+        RUNNER["case_atoms"](case)
+
+
+def test_evaluate_uses_annotated_atoms() -> None:
+    claim = "O cancelamento será efetivado em até 2 dias e o plano terá multa de 10%."
+    case = _compound("e1", claim, ["O cancelamento será efetivado em até 2 dias",
+                                   "o plano terá multa de 10%"])
+    result = RUNNER["evaluate"]([case], {"e1": "PARTIALLY_SUPPORTED"}, DOCS, mode="oracle",
+                                vocabulary="judge2", iterations=10)
+    assert result["cases"][0]["predicted"] == "PARTIALLY_SUPPORTED"
