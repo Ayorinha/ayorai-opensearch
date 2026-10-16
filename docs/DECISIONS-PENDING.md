@@ -142,6 +142,59 @@ Source: execution plan v5, work queue
 - **Impact to assess:** Public discoverability, continuity of repository links, brand consistency, technical accuracy, and maintenance burden.
 - **Approval gate:** Anderson decides the name and positioning; revisor independente reviews factual claims and the documentation diff before publication.
 
+## DEC-011 — Guia de anotação do RGC após o piloto (fase 1)
+
+- **Data da proposta:** 16/10/2026
+- **Status:** Pendente (Anderson)
+- **Bloqueia:** segundo piloto, congelamento do protocolo RGC e redação dos 300 casos definitivos.
+- **Origem:** piloto exploratório de 20 casos (fase 1 do [protocolo](eval/PROTOCOL-GOLDEN-V1.md)), rotulado pelo mantenedor em 16/10/2026. Os rótulos do piloto não integram o benchmark e não foram exportados para o repositório. Os achados abaixo se referem aos casos pelo identificador do piloto.
+- **Distribuição observada no piloto:** 9 `SUPPORTED`, 11 `REFUTED`, 0 `UNVERIFIED`, 0 `PARTIALLY_SUPPORTED`, 0 `CONFLICTING`, 0 `RULE_GAP`. O piloto não continha caso projetado para `PARTIALLY_SUPPORTED` ou `CONFLICTING`; essas regras ainda não foram exercitadas por um anotador humano.
+- **Pergunta:** quais regras de anotação devem ser acrescentadas ao protocolo (Emenda 4) para eliminar as ambiguidades encontradas no piloto?
+
+### Parte 1 — "Não confirma" não é "contradiz"
+
+- **Fato (pilot-18):** a justificativa registrada diz que a afirmação "não encontra respaldo na evidência apresentada", mas o rótulo escolhido foi `REFUTED`. O trecho não menciona multa diária, nem para conceder nem para negar.
+- **Regra proposta:**
+  1. `REFUTED` exige que algum trecho afirme algo **incompatível** com a afirmação (outro valor, outro sujeito, outra condição, negação expressa).
+  2. Se os trechos apenas não tratam do ponto, o rótulo é `UNVERIFIED`, mesmo que o anotador acredite que a afirmação seja falsa.
+  3. Teste de controle, escrito no guia: *"Consigo apontar a frase do trecho que diz o contrário?"* Se não, não é `REFUTED`.
+  4. A justificativa deve citar a frase incompatível em todo caso `REFUTED`.
+
+### Parte 2 — Retificação e texto superado
+
+- **Fato (pilot-19):** o trecho 1 (texto original do art. 84) confirma a afirmação e o trecho 2 (retificação de 26/12/2023) a contradiz. Pela regra atual ("para a mesma parte, há trecho que confirma e trecho que contradiz"), o rótulo seria `CONFLICTING`; o rótulo dado foi `REFUTED`, que é o resultado juridicamente correto. Nenhuma regra do Judge 2.0 trata precedência temporal ou retificação.
+- **Agravante verificado:** o próprio documento de retificação no corpus (`rgc-res-765-2023-retificacao-2023-12-26` em `evals/ptbr/sources/DOCUMENTS.jsonl`) reproduz o texto superado no trecho "Onde se lê", e o corpus contém uma segunda retificação (`rgc-res-765-2023-retificacao-2024-01-12`). No modo `retrieval`, o sistema pode recuperar o texto superado como evidência.
+- **Opções:**
+  - **A — recomendada tecnicamente para o v1:** regra apenas de anotação. O rótulo de referência segue o **texto vigente** (original com as retificações aplicadas); texto superado ("Onde se lê" ou redação original retificada) não conta como evidência de apoio. O Judge não é alterado. Casos que envolvem dispositivo retificado recebem a marca `rectified: true` e o relatório apresenta o desempenho nesse estrato separadamente, declarando a limitação.
+  - **B:** alterar o Judge ou o detector de stance para reconhecer precedência temporal e o marcador "Onde se lê". Exige ADR, nova versão de regras, testes e hashes novos; fica fora do v1.
+  - **C:** excluir do v1 todo dispositivo retificado (arts. 84, 86, 34, 90, 93 e 96 da Resolução 765/2023 e do Anexo), com registro no log de exclusões.
+- **Recomendação técnica:** A. Mede o sistema como ele é, sem alterar o Judge, e torna a limitação visível em vez de escondê-la. B pode ser proposta para o v2 com base no estrato medido.
+
+### Parte 3 — Valores, quantificadores e modalidade
+
+- **Fatos:** pilot-04 (afirmação "no mínimo 5 anos"; texto "mínimo de 3 anos") e pilot-12 (afirmação "exclusivamente por carta"; texto "preferencialmente por meio eletrônico"). Em pilot-12, a justificativa registrada diz que a afirmação "acrescenta uma restrição que não consta", argumento de ausência, enquanto o rótulo foi `REFUTED`.
+- **Regras propostas, com exemplos do piloto:**
+
+  | Situação | Rótulo | Exemplo |
+  |---|---|---|
+  | A afirmação dá **outro valor** para o mesmo prazo, período, percentual ou data | `REFUTED` | 5 anos vs. "mínimo de 3 anos" (pilot-04); 10 vs. 7 dias (pilot-02); dezembro vs. novembro (pilot-17) |
+  | A afirmação diz **"exclusivamente/somente X"** e o texto admite ou prefere outro meio ou condição | `REFUTED` | "exclusivamente por carta" vs. "preferencialmente por meio eletrônico" (pilot-12); "somente em dias úteis" vs. "24 horas, 7 dias" (pilot-08) |
+  | A afirmação diz **"exclusivamente/somente X"** e o texto não trata de meio ou condição | `UNVERIFIED` | — |
+  | A afirmação diz **"integralmente/totalmente"** e o texto limita o alcance | `REFUTED` | revogação integral vs. revogação de artigos específicos (pilot-19, aplicada a Parte 2) |
+  | A afirmação troca **dever por faculdade** (ou o inverso), ou **permissão por proibição** | `REFUTED` | "pode ser cobrado" vs. "sem ônus" (pilot-06); "configura restrição vedada" vs. "não configura" (pilot-09) |
+  | A afirmação transforma **"preferencialmente"** em obrigação ("deve ser por meio eletrônico") sem dizer "exclusivamente" | **ponto aberto** | Anderson decide: `REFUTED` (o texto não obriga) ou excluir esse tipo de afirmação do v1 |
+
+- **Recomendação técnica:** adotar a tabela. Para o ponto aberto, recomenda-se **não redigir** afirmações desse tipo no v1, porque a fronteira depende de interpretação jurídica que o protocolo não deve delegar ao anotador.
+
+### Encaminhamento proposto após aprovação
+
+1. Registrar as regras aprovadas como **Emenda 4** em `docs/eval/PROTOCOL-GOLDEN-V1.md`, com nota datada no pré-registro.
+2. **Segundo piloto** de cerca de 10 casos novos, com pelo menos 3 compostos com parte sem confirmação (`PARTIALLY_SUPPORTED`), 1 com fontes divergentes (`CONFLICTING`), 1 envolvendo dispositivo retificado e 2 de ausência (`UNVERIFIED`). Os casos do segundo piloto também são descartados.
+3. Só depois do segundo piloto: congelamento do protocolo e redação dos 300 casos.
+
+- **Isolamento (DEC-008):** os textos do primeiro piloto foram consultados em assistentes externos (Grok, ChatGPT) após a rotulagem. Por ser descartado, isso não afeta o benchmark. Para o segundo piloto e para o conjunto definitivo, nenhum caso pode ser enviado a ferramenta de IA antes do congelamento e da execução única.
+- **Impacto:** guia de anotação, protocolo, pré-registro e relatório. Não altera código, regras do Judge, hashes ou artefatos Golden.
+- **Aprovação necessária:** Anderson aprova as Partes 1 a 3 (com a opção da Parte 2 e o ponto aberto da Parte 3) antes do segundo piloto.
 
 ## Queue rules
 
