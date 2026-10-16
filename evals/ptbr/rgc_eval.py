@@ -494,8 +494,12 @@ def evaluate(
         raise ValueError("no evaluable cases")
     gold_labels = [str(r["gold"]) for r in rows]
     predicted = [str(r["predicted"]) for r in rows]
+    states = [str(r["decision_state"]) for r in rows]
     return {
         "metrics": compute_metrics(gold_labels, predicted, vocabulary, iterations=iterations),
+        # DEC-009: ABSTAINED is scored as UNVERIFIED; report how many predictions
+        # came from each original Judge state so the mapping stays visible.
+        "decision_states": {state: states.count(state) for state in sorted(set(states))},
         "excluded": excluded,
         "cases": rows,
     }
