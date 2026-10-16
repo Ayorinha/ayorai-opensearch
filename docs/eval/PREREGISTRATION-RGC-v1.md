@@ -56,7 +56,11 @@ A lista abaixo registra a proposta original de 2026-10-13 e não representa o vo
 
 Casos ambíguos, sem contexto suficiente ou com referência normativa não verificável deverão seguir a regra de `RULE_GAP` do piloto ou ser reescritos/excluídos antes do congelamento, com o motivo registrado no log de exclusões; nunca receber um rótulo por conveniência.
 
-### 3.3 Anotação e isolamento
+#
+
+**Nota datada (2026-10-16) — Emenda 3 / DEC-010:** conforme a decisão do mantenedor, opção A, afirmações compostas serão anotadas com o campo `atoms`, incluindo `start_offset` e `end_offset` relativos ao texto da afirmação; o campo `text` é opcional e, quando presente, deve corresponder exatamente ao trecho. Afirmações simples não levam `atoms`. Todo caso `PARTIALLY_SUPPORTED` deve ser composto e conter `atoms`; casos compostos podem receber qualquer um dos cinco vereditos. A meta é que cerca de um terço dos casos definitivos seja composto, e a proporção efetiva será relatada. Os átomos são anotados antes do rótulo, e a execução exige casos rotulados. Ver [Emenda 3 do protocolo](PROTOCOL-GOLDEN-V1.md#emenda-3-2026-10-16--afirmações-compostas-dec-010-opção-a). Esta nota não altera o estado **[PROPOSTO]** do pré-registro.
+
+## 3.3 Anotação e isolamento
 
 O protocolo seguirá `docs/eval/PROTOCOL-GOLDEN-V1.md`, incluindo regras de fonte, anotação independente, resolução de divergências, registro de limitações e isolamento dos casos ocultos. A meta de 300 casos não substitui os critérios de qualidade de anotação do protocolo. Se a segunda anotação independente e a concordância mínima especificada no protocolo não forem obtidas, os resultados serão identificados como preliminares e não serão apresentados como avaliação principal.
 
