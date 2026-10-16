@@ -8,6 +8,32 @@ Source: execution plan v5, work queue
 
 ## Decisões aprovadas
 
+### DEC-007 — Vocabulário de rótulos do benchmark RGC
+
+- **Data da decisão:** 15/10/2026
+- **Decisor:** Anderson Leon Ayora
+- **Opção aprovada:** 1 — usar os cinco vereditos do Judge 2.0.
+- **Decisão:** O benchmark RGC usa os cinco vereditos definidos em `rules/judge-2.0.0.json` (`enums.verdict`), com a semântica da ADR-009 (K1–K5), e não a semântica da ADR-002. Esta decisão vale somente para o RGC; Golden v0, v0.1 e derivados r2 permanecem inalterados. `VERIFIED` não é rótulo de referência no RGC; corroboração R0–R3 é um eixo separado e não é anotada no v1.
+- **Implementação documental:** Emenda 2 em `docs/eval/PROTOCOL-GOLDEN-V1.md`; lista histórica do pré-registro preservada como histórica.
+- **Estado:** Aprovada; a implementação documental aguarda revisão e merge pelo mantenedor.
+
+### DEC-008 — Autoria dos casos do benchmark RGC
+
+- **Data da decisão:** 15/10/2026
+- **Decisor:** Anderson Leon Ayora
+- **Opção aprovada:** A — Anderson redige e rotula os aproximadamente 300 casos.
+- **Decisão:** Anderson será responsável pela redação e rotulagem dos casos. Mantêm-se a segunda anotação independente, Cohen's kappa ≥ 0,6 e o registro caso a caso das divergências. Enquanto houver um único anotador, o conjunto será identificado como `v1-draft`, e seus resultados não serão usados como resultado principal.
+- **Estado:** Aprovada; nenhuma anotação ou execução de benchmark é autorizada por este registro isoladamente.
+
+### DEC-009 — Mapeamento de abstenção na avaliação RGC
+
+- **Data da decisão:** 15/10/2026
+- **Decisor:** Anderson Leon Ayora
+- **Opção aprovada:** Avaliar `ABSTAINED` do Judge como `UNVERIFIED`.
+- **Justificativa:** A abstenção significa que o Judge não encontrou base para decidir; isso equivale ao rótulo de referência `UNVERIFIED`. O relatório deve informar quantas previsões vieram originalmente de `ABSTAINED`, separadamente da contagem do veredito mapeado.
+- **Estado:** Aprovada; aplica-se ao executor de avaliação RGC e não altera o contrato de saída do Judge nem os Golden históricos.
+
+
 ### DEC-005 — r1-a: entrada inválida retorna 500
 
 - **Data da decisão:** 11/10/2026
@@ -104,34 +130,6 @@ Source: execution plan v5, work queue
 - **Impact to assess:** Public discoverability, continuity of repository links, brand consistency, technical accuracy, and maintenance burden.
 - **Approval gate:** Anderson decides the name and positioning; revisor independente reviews factual claims and the documentation diff before publication.
 
-
-## DEC-007 — Vocabulário de rótulos do benchmark RGC
-
-- **Data da proposta:** 14/10/2026
-- **Bloqueia:** congelamento do protocolo e início da anotação do benchmark RGC
-- **Status:** Pendente (Anderson)
-- **Questão:** O benchmark deve usar os cinco estados produzidos pelo Judge 2.0 ou os seis estados do Golden v0.1?
-- **Contexto:** O executor proposto documenta o vocabulário `judge2` (cinco estados) e também disponibiliza `adr002` (seis estados). O protocolo `docs/eval/PROTOCOL-GOLDEN-V1.md` diz para reutilizar os rótulos do Golden v0.1, enquanto o contrato do Judge 2.0 e a ADR-009 definem o conjunto produzido pelo sistema. A escolha afeta o mapeamento de previsões, a matriz de confusão e as métricas.
-- **Opções:**
-  1. Usar os cinco estados do Judge 2.0 e documentar explicitamente qualquer mapeamento necessário dos rótulos de referência.
-  2. Usar os seis estados do Golden v0.1 e definir uma regra prévia e determinística para estados que o Judge 2.0 não produz diretamente.
-- **Recomendação técnica:** Opção 1 — usar os cinco estados que o sistema efetivamente produz, evitando criar um contrato de previsão fictício. Antes da anotação, alinhar o protocolo com a ADR-009 e documentar como os estados de referência serão mapeados, excluídos ou tratados sem conversão silenciosa. Golden v0 e Golden v0.1 devem continuar identificados separadamente quando citados; não presumir equivalência entre seus rótulos.
-- **Referências:** `docs/eval/PROTOCOL-GOLDEN-V1.md`; ADR-009 — contrato determinístico de adjudicação.
-- **Decisão:** pendente (Anderson).
-
-## DEC-008 — Autoria dos casos do benchmark RGC
-
-- **Data da proposta:** 14/10/2026
-- **Bloqueia:** definição do fluxo de autoria antes da redação dos casos
-- **Status:** Pendente (Anderson)
-- **Questão:** Quem redige os aproximadamente 300 casos do benchmark PT-BR?
-- **Contexto:** O protocolo atual atribui ao autor a redação de cada caso, incluindo afirmação, trecho da fonte, rótulo e justificativa. O uso de rascunhos assistidos por IA pode reduzir o esforço inicial, mas altera a autoria material e exige rastreabilidade por caso; o sistema avaliado não pode gerar nem alterar os rótulos de referência.
-- **Opções:**
-  1. **A — autoria integral do autor:** Anderson redige todos os casos conforme o protocolo atual.
-  2. **B — rascunhos assistidos:** Claude propõe rascunhos; Anderson aprova ou edita cada caso. Cada registro deve identificar explicitamente quem redigiu o rascunho, quem revisou/editou, quem atribuiu o rótulo e quem aprovou a versão final.
-- **Recomendação técnica:** Opção A é a mais simples para preservar o protocolo existente e evitar ambiguidade de autoria. Se Anderson escolher B, emendar o protocolo antes de redigir casos, definir campos de proveniência por caso e manter a decisão humana final sobre afirmação, trecho, rótulo e justificativa.
-- **Exigência para o relatório final:** declarar expressamente a opção escolhida. Se B for escolhida, informar a proporção de casos inicialmente redigidos pelo Claude e a proporção revisada/editada/aprovada por Anderson, com trilha de auditoria por caso.
-- **Decisão:** pendente (Anderson).
 
 ## Queue rules
 
