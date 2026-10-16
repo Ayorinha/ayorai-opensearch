@@ -33,6 +33,18 @@ Source: execution plan v5, work queue
 - **Justificativa:** A abstenção significa que o Judge não encontrou base para decidir; isso equivale ao rótulo de referência `UNVERIFIED`. O relatório deve informar quantas previsões vieram originalmente de `ABSTAINED`, separadamente da contagem do veredito mapeado.
 - **Estado:** Aprovada; aplica-se ao executor de avaliação RGC e não altera o contrato de saída do Judge nem os Golden históricos.
 
+### DEC-010 — Afirmações compostas no benchmark RGC
+
+- **Data da decisão:** 16/10/2026
+- **Decisor:** Anderson Leon Ayora
+- **Opção aprovada:** A — o anotador marca os átomos de cada afirmação composta, com offsets; o executor usa esses átomos para adjudicação.
+- **Proporção-alvo:** cerca de um terço dos casos definitivos será composto; a proporção efetiva deverá constar no relatório.
+- **Decisão:** a unidade de anotação e execução para afirmações compostas será formalizada pela Emenda 3 de `docs/eval/PROTOCOL-GOLDEN-V1.md` e refletida no pré-registro. A implementação de código foi mesclada na [PR #203](https://github.com/Ayorinha/ayorai-opensearch/pull/203) em 2026-10-16: campo `atoms` nos casos e executor `rgc-eval/0.2.0`; casos sem `atoms` mantêm o mesmo `output_sha256`.
+- **Opções consideradas (texto preservado):**
+  - **A — escolhida:** o anotador marca as partes (átomos) de cada afirmação composta, incluindo offsets; o executor usa esses átomos para adjudicação. O formato e a regra entram em uma emenda ao protocolo e no pré-registro antes da anotação definitiva. A opção preserva a semântica da Emenda 2 e permite avaliar o Judge com afirmações compostas.
+  - **B — não escolhida:** o v1 aceita apenas afirmações atômicas; afirmações compostas ficam para o v2. A ausência de `PARTIALLY_SUPPORTED` no v1 seria declarada explicitamente, com regra para identificar/excluir afirmações compostas.
+- **Fato que motivou a decisão:** o executor anterior tratava cada afirmação como um único átomo. Pelas regras A1–A4 de `rules/judge-2.0.0.json`, um átomo pode resultar em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`; K4 exige dois ou mais átomos para `PARTIALLY_SUPPORTED`. `CONFLICTING` continua possível pela regra A4. Ver [RUNNER-RGC-v1.md §5](eval/RUNNER-RGC-v1.md#5-limitações-conhecidas).
+- **Estado:** aprovada. O código (PR #203) está mesclado; a emenda ao protocolo segue em PR própria. A mesclagem não equivale à validação do executor no benchmark definitivo.
 
 ### DEC-005 — r1-a: entrada inválida retorna 500
 
@@ -130,20 +142,6 @@ Source: execution plan v5, work queue
 - **Impact to assess:** Public discoverability, continuity of repository links, brand consistency, technical accuracy, and maintenance burden.
 - **Approval gate:** Anderson decides the name and positioning; revisor independente reviews factual claims and the documentation diff before publication.
 
-
-## DEC-010 — Afirmações compostas no benchmark RGC
-
-- **Status:** Pendente (Anderson)
-- **Bloqueia:** congelamento do protocolo RGC e redação dos 300 casos definitivos. **Não bloqueia o piloto exploratório de 20 casos**, cujos resultados serão descartados e não integrarão o benchmark definitivo.
-- **Fato verificado:** o executor RGC trata cada afirmação como um único átomo. Pelas regras A1–A4 de `rules/judge-2.0.0.json`, um átomo só produz `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`; a regra K4 exige dois ou mais átomos para `PARTIALLY_SUPPORTED`. Assim, o executor atual não prevê `PARTIALLY_SUPPORTED`, e casos de referência com esse rótulo contariam como erro estrutural. `CONFLICTING` continua possível pela regra A4. Ver [RUNNER-RGC-v1.md §5](eval/RUNNER-RGC-v1.md#5-limitações-conhecidas).
-- **Pergunta:** como o v1 deve tratar afirmações compostas para que a anotação, a execução e o pré-registro tenham a mesma unidade de análise?
-- **Opções:**
-  - **A — recomendada tecnicamente:** o anotador marca as partes (átomos) de cada afirmação composta, incluindo offsets; o executor usa esses átomos para adjudicação. O formato de anotação e a regra de agregação são registrados em uma emenda ao protocolo e no pré-registro antes do início da anotação definitiva. Esta opção preserva a semântica da Emenda 2 e permite avaliar o Judge com afirmações compostas.
-  - **B:** o v1 aceita apenas afirmações atômicas; afirmações compostas ficam para o v2. A ausência de `PARTIALLY_SUPPORTED` no v1 é declarada explicitamente e o protocolo define como identificar/excluir afirmações compostas antes da anotação.
-- **Recomendação técnica:** A, sujeita à decisão explícita de Anderson.
-- **Impacto:** unidade de anotação, offsets, regra de agregação, executor, protocolo e pré-registro; não autoriza por si só alterações em código, regras do Judge ou artefatos congelados.
-- **Aprovação necessária:** Anderson escolhe A ou B antes do congelamento do protocolo e da redação dos 300 casos.
-- **Estado da implementação:** pendente; a limitação permanece declarada em [RUNNER-RGC-v1.md §5](eval/RUNNER-RGC-v1.md#5-limitações-conhecidas).
 
 ## Queue rules
 
