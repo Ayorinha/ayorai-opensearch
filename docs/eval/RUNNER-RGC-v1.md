@@ -32,7 +32,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 | Modo da avaliação principal | `retrieval` | `oracle` reportado ao lado, como análise secundária |
 | Segmentação | `dispositivo` (início de linha: `Art.`, `§`, `Parágrafo único`, incisos romanos `I -`, alíneas `a)`) | alternativa `artigo` disponível só para análise secundária |
 | Recuperação | BM25, `k1 = 1,2`, `b = 0,75`, top-*k* = 3 | empate desfeito pela ordem no corpus |
-| Tokenização | `\w+` em minúsculas; mantém números; remove tokens com menos de 3 letras e uma lista fixa de palavras funcionais | nenhuma palavra do domínio na lista |
+| Tokenização | `\\w+` em minúsculas; mantém números; remove tokens com menos de 3 letras e uma lista fixa de palavras funcionais | nenhuma palavra do domínio na lista |
 | Vocabulário | `judge2` (5 estados) | DEC-007 aprovada (5 estados); `adr002` (6 estados) permanece apenas como vocabulário histórico alternativo, não usado no RGC |
 | Macro-F1 | média sobre a união dos estados de referência e previstos, **incluindo** `INVALID_PREDICTION` (F1 = 0, escolha conservadora) | |
 | Acurácia balanceada | média das revocações dos estados presentes na referência | |
@@ -49,12 +49,12 @@ Depois de congelados, qualquer mudança nesses valores exige emenda datada antes
 
 ## 5. Limitações conhecidas (declaradas antes dos dados)
 
-- **Um átomo por afirmação**: não há decomposição de afirmações compostas; `PARTIALLY_SUPPORTED` e `CONFLICTING` dependem de evidências divergentes entre trechos, não de átomos distintos.
-- **Stance lexical**: o `RuleStanceDetector` compara números, datas e sobreposição de palavras; paráfrases fortes e negações implícitas tendem a sair como `NEUTRAL` → `UNVERIFIED`.
-- **Dispositivo sem o caput**: um inciso recuperado isoladamente não carrega o texto do caput do artigo.
-- **Ruído do DOU**: cabeçalhos e rodapés de página extraídos pelo `pdftotext` ficam anexados ao dispositivo anterior.
-- **Uma única origem**: todos os trechos vêm do mesmo ato normativo, portanto a robustez máxima esperada é limitada (`VERIFIED` exige R3 no vocabulário `adr002`).
-- **`canonical_url` omitido**: o executor não preenche `canonical_url` nas evidências (a URL fica em `source_location`). Ver §6.
+- **Um átomo por afirmação:** o executor atual passa a afirmação inteira como um único átomo. Pelas regras atômicas A1–A4 de `rules/judge-2.0.0.json`, um único átomo pode resultar apenas em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`. A regra K4 exige dois ou mais átomos para `PARTIALLY_SUPPORTED`; portanto, o executor atual não prevê `PARTIALLY_SUPPORTED`, e casos de referência com esse rótulo contariam como erro estrutural. `CONFLICTING` continua possível pela regra A4. A correção dessa limitação depende da decisão DEC-010, ainda pendente. Esta descrição e o executor permanecem **[PROPOSTO]**.
+- **Stance lexical:** o `RuleStanceDetector` compara números, datas e sobreposição de palavras; paráfrases fortes e negações implícitas tendem a sair como `NEUTRAL` → `UNVERIFIED`.
+- **Dispositivo sem o caput:** um inciso recuperado isoladamente não carrega o texto do caput do artigo.
+- **Ruído do DOU:** cabeçalhos e rodapés de página extraídos pelo `pdftotext` ficam anexados ao dispositivo anterior.
+- **Uma única origem:** todos os trechos vêm do mesmo ato normativo, portanto a robustez máxima esperada é limitada (`VERIFIED` exige R3 no vocabulário `adr002`).
+- **`canonical_url` omitido:** o executor não preenche `canonical_url` nas evidências (a URL fica em `source_location`). Ver §6.
 
 ## 6. Achado durante a implementação (fora do escopo deste executor)
 
