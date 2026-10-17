@@ -21,7 +21,7 @@ Cada caso é marcado com pelo menos um tipo: número, data, negação, paráfras
 4. **Anotação definitiva:** somente após o congelamento, o mantenedor redige casos novos com afirmação, trecho da fonte, rótulo e justificativa curta. O conjunto permanece `v1-draft` enquanto houver um único anotador; resultados de anotador único não são resultado principal.
 5. **Anotação independente:** uma segunda pessoa rotula os mesmos casos sem ver os rótulos da primeira. Calcular Cohen's kappa; só com kappa >= 0,6 o conjunto pode ser promovido a v1. Divergências são resolvidas em conjunto e registradas caso a caso.
 
-Relatório proposto do piloto exploratório concluído em 2026-10-16: [PILOT-RGC-01-REPORT.md](PILOT-RGC-01-REPORT.md) (**[PROPOSTO]**). O piloto foi descartado e o sistema não foi executado sobre seus casos; não constitui resultado de benchmark.
+Relatório histórico do piloto exploratório concluído em 2026-10-16: [PILOT-RGC-01-REPORT.md](PILOT-RGC-01-REPORT.md). O piloto foi descartado e o sistema não foi executado sobre seus casos; não constitui resultado de benchmark.
 
 ## Separação oculta
 Antes de qualquer modelo ser rodado, 30% dos casos são sorteados (seed 20261003) para um conjunto oculto. Esse arquivo nunca entra no repositório; só o seu SHA-256 é publicado.
