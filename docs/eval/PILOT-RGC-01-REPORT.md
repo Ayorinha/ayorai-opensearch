@@ -31,9 +31,9 @@ O piloto não continha casos projetados para exercitar os rótulos PARTIALLY_SUP
 
 Os achados estão registrados na [DEC-011, proposta pendente — PR #206](https://github.com/Ayorinha/ayorai-opensearch/pull/206). A escolha do mantenedor para a Parte 2 foi registrada na [PR #207](https://github.com/Ayorinha/ayorai-opensearch/pull/207). Este relatório não reproduz afirmações, trechos de fontes, justificativas ou rótulos individuais.
 
-1. **Confirmação versus contradição — pilot-18 (Parte 1):** ausência de confirmação na evidência não equivale, por si só, a uma contradição. A distinção proposta permanece sujeita à aprovação completa da DEC-011.
-2. **Texto retificado — pilot-19 (Parte 2):** foi identificada uma questão de tratamento de texto original e retificação. Anderson escolheu a opção A em 2026-10-17: tratamento na anotação, considerando o texto em vigor e uma estratificação separada para casos retificados, sem alterar o Judge. A escolha está registrada na PR #207; a DEC-011 como um todo continua pendente.
-3. **Valores, quantificadores e modalidade — pilot-04 e pilot-12 (Parte 3):** foram identificadas ambiguidades de interpretação envolvendo valores e quantificadores. Há um ponto aberto ainda não decidido pelo mantenedor; a Parte 3 não está aprovada integralmente.
+1. **Confirmação versus contradição — pilot-18 (Parte 1):** a regra foi aprovada na DEC-011 e incorporada à Emenda 4: ausência de evidência = `UNVERIFIED`; `REFUTED` exige contradição explícita e citação da frase incompatível.
+2. **Texto retificado — pilot-19 (Parte 2):** Anderson aprovou a opção A em 2026-10-17. A Emenda 4 determina considerar o texto vigente após retificações, ignorar redação superada, marcar `rectified: true` e reportar esse estrato separadamente, sem alterar o Judge.
+3. **Valores, quantificadores e modalidade — pilot-04 e pilot-12 (Parte 3):** Anderson aprovou a tabela de regras e decidiu excluir do v1 afirmações que transformem “preferencialmente” em obrigação sem suporte textual explícito. A decisão não autoriza inferências jurídicas pelo anotador.
 
 ## Limitações e transparência
 
@@ -53,9 +53,9 @@ Os achados estão registrados na [DEC-011, proposta pendente — PR #206](https:
 
 ## Próximos passos
 
-1. Aprovar integralmente a DEC-011, incluindo o ponto aberto da Parte 3.
-2. Preparar a Emenda 4 do protocolo.
-3. Executar um segundo piloto de aproximadamente 10 casos, incluindo cenários parciais, conflitantes e retificados.
-4. Congelar o protocolo antes de redigir os 300 casos definitivos.
+1. Executar um segundo piloto exploratório de aproximadamente 10 casos novos, sem consulta a assistentes/modelos de IA, com fontes oficiais verificadas e anotação humana.
+2. Descartar os casos do piloto; não executar o sistema sobre eles nem incorporá-los ao conjunto definitivo.
+3. Revisar os achados e documentar ambiguidades ou ajustes necessários.
+4. Solicitar aprovação explícita para congelar o protocolo; só depois iniciar a redação dos 300 casos definitivos.
 5. Obter uma segunda anotação independente e exigir Cohen's kappa >= 0,6.
 6. Somente depois dos gates anteriores, executar o sistema uma única vez sobre o conjunto congelado e completamente rotulado.

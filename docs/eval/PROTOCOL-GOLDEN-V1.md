@@ -1,5 +1,5 @@
 # Protocolo de anotação do Golden v1 (português)
-Status: pré-registrado antes de qualquer caso ser escrito. Alterações só por emenda datada no fim deste arquivo.
+Status: em revisão pós-piloto; ainda não congelado. Alterações só por emenda datada no fim deste arquivo.
 
 ## Objetivo
 Conjunto de avaliação em português brasileiro, com meta de 300 casos, para medir o desempenho do AYORAI ATTRACTOR em português.
@@ -65,4 +65,4 @@ Esta emenda registra a aprovação explícita do mantenedor. O segundo piloto co
 6. **Composição do segundo piloto.** Alvo aproximado de 10 casos: incluir pelo menos 3 casos compostos com uma parte confirmada e outra sem confirmação (`PARTIALLY_SUPPORTED`), 1 caso com fontes divergentes (`CONFLICTING`), 1 caso envolvendo dispositivo retificado e 2 casos de ausência de evidência (`UNVERIFIED`). A seleção final depende de fontes elegíveis e de conferência humana; não fabricar casos para satisfazer cotas.
 7. **Gate posterior.** Após o piloto, revisar ambiguidades e documentar o resultado. Congelar o protocolo somente por registro explícito do mantenedor depois dessa revisão. Só então iniciar a redação dos 300 casos definitivos. Não alterar código, regras do Judge, Golden históricos, manifestos ou hashes congelados nesta emenda.
 
-A decisão foi aprovada por Anderson Leon Ayora em 2026-10-17. A emenda e o pré-registro permanecem sujeitos à revisão documental e ao merge da PR; o benchmark PT-BR não tem resultado validado neste estágio.
+A decisão foi aprovada por Anderson Leon Ayora em 2026-10-17 e a Emenda 4 foi incorporada pela PR #227, mesclada pelo mantenedor. O protocolo continua sem congelamento formal: depende da revisão do segundo piloto exploratório e de registro explícito de congelamento. O benchmark PT-BR não tem resultado validado neste estágio.
