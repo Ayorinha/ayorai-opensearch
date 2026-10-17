@@ -3,7 +3,11 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+    env_file:
+      - .env
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
-      ATTRACTOR_PROVIDER: mock
+      ATTRACTOR_PROVIDER: ${ATTRACTOR_PROVIDER:-mock}
+      ATTRACTOR_AUTH_MODE: ${ATTRACTOR_AUTH_MODE:-api_key}
+      ATTRACTOR_API_KEYS_SHA256: ${ATTRACTOR_API_KEYS_SHA256:-}
