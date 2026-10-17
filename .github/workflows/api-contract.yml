@@ -116,22 +116,7 @@ jobs:
           done
           test -s /tmp/openapi-live.json
       - name: Exercise documented API contract
-        env:
-          SCHEMATHESIS_SEED: "20261003"
-        run: |
-          set -euo pipefail
-          echo "Schemathesis seed: ${SCHEMATHESIS_SEED}"
-          /tmp/st/bin/st run http://127.0.0.1:8000/openapi.json --url http://127.0.0.1:8000 \
-            --checks not_a_server_error --seed "$SCHEMATHESIS_SEED" \
-            --report junit,ndjson --report-dir schemathesis-report
+        run: /tmp/st/bin/st run http://127.0.0.1:8000/openapi.json --url http://127.0.0.1:8000 --checks not_a_server_error
       - name: Show API log on failure
         if: failure()
         run: cat /tmp/attractor-api.log
-      - name: Upload Schemathesis reports
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: schemathesis-api-checks-report
-          path: schemathesis-report/
-          if-no-files-found: warn
-          retention-days: 30

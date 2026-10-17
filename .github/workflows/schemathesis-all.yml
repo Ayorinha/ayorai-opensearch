@@ -41,18 +41,10 @@ jobs:
           done
           test -s /tmp/openapi-live.json
       - name: Exercise all documented API contract checks
-        run: bash scripts/run_schemathesis_contract.sh /tmp/st/bin/st http://127.0.0.1:8000/openapi.json http://127.0.0.1:8000 schemathesis-report
+        run: bash scripts/run_schemathesis_contract.sh /tmp/st/bin/st http://127.0.0.1:8000/openapi.json http://127.0.0.1:8000
       - name: Show API log on failure
         if: failure()
         run: cat /tmp/attractor-api.log
-      - name: Upload Schemathesis reports
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: schemathesis-all-report
-          path: schemathesis-report/
-          if-no-files-found: warn
-          retention-days: 30
 
   openapi-diff:
     name: OpenAPI compatibility with oasdiff

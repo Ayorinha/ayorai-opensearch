@@ -88,6 +88,10 @@ The development measurements are reported side by side; neither set establishes 
 
 Path A is **research-only / EVAL_ONLY**. Path B is described elsewhere in the project as a candidate commercial path, subject to the project's model-license policy and independent verification; these accuracy figures alone do not establish commercial clearance.
 
+## Reproduce with one command
+
+After `make install`, run `make reproduce`. It executes the same deterministic checks as the required CI gates (frozen Golden lint, smoke-v0, Golden v0 and v0.1 metrics and `semantic_sha256`, Judge regression, Golden r2 migration determinism) and then the full test suite, printing PASS/FAIL per check and writing `reports/reproduce-summary.json` with the commit and Python version. `make reproduce-quick` skips the test suite. The expected values are the ones in `.github/workflows/ci.yml`; a test fails if they diverge. The script only reads frozen artifacts.
+
 ## CI environment reproducibility
 
 All GitHub Actions workflow jobs explicitly use `ubuntu-24.04`; they do not rely on the moving `ubuntu-latest` alias. This pins the runner's Ubuntu release, not every package or external service installed during a workflow.
