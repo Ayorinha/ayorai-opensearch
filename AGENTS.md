@@ -48,6 +48,7 @@ Não alterar esses artefatos para fazer testes passarem.
 ## 7. Forma de trabalho
 
 - Consultar o estado atual da `main` e das PRs antes de alterar qualquer coisa.
+- Não criar PRs adicionais nem ampliar o escopo aprovado sem autorização explícita do mantenedor; se surgir uma necessidade adjacente, descrevê-la e aguardar decisão.
 - Uma PR por tarefa coerente, com objetivo, alterações, limites e evidência (testes executados e checks do SHA exato).
 - Distinguir sempre fato verificado, inferência e hipótese.
 - Não declarar uma tarefa concluída sem a evidência correspondente.
