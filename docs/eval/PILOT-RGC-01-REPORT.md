@@ -3,7 +3,7 @@
 **Status: registro histórico de piloto exploratório — descartado; não é benchmark**  
 **Data do piloto:** 2026-10-16  
 **Anotador:** Anderson Leon Ayora  
-**Redação dos casos:** os 20 casos (afirmação e trechos) foram redigidos pelo Claude (assistente de IA) a partir das fontes oficiais registradas em `evals/ptbr/sources/`; o anotador apenas atribuiu rótulos e justificativas.  
+**Redação dos casos:** os 20 casos (afirmação e trechos) foram gerados com auxílio de uma ferramenta automatizada de geração de texto, a partir das fontes oficiais registradas em `evals/ptbr/sources/`; o anotador apenas atribuiu rótulos e justificativas. Por essa e outras limitações metodológicas, o piloto foi descartado.  
 **Identificação do arquivo de casos:** SHA-256 `3cbbed018f241d6fdc1d83717aec5248e37811b9afc7e2badf17b4fcbd24065c` (o arquivo não integra o repositório; o hash é registrado para rastreabilidade).  
 **Escopo:** piloto exploratório de anotação; não é avaliação do sistema.
 
@@ -38,7 +38,7 @@ Os achados históricos foram discutidos na [PR #206](https://github.com/Ayorinha
 ## Limitações e transparência
 
 - Houve um único anotador: Anderson. Não houve anotação independente por segunda pessoa nem cálculo de Cohen's kappa.
-- Os casos foram redigidos por um assistente de IA, e não pelo anotador. No conjunto definitivo, a redação cabe ao mantenedor (DEC-008); portanto, o piloto não testou a etapa de redação humana dos casos.
+- Os casos foram gerados com auxílio de uma ferramenta automatizada de geração de texto, e não redigidos pelo anotador. No conjunto definitivo, a redação cabe ao mantenedor (DEC-008); portanto, o piloto não testou a etapa de redação humana dos casos.
 - Não havia casos projetados para PARTIALLY_SUPPORTED ou CONFLICTING; portanto, o piloto não testou adequadamente esses cenários.
 - O mantenedor confirmou que a justificativa de pilot-04 teve auxílio de IA.
 - Depois da rotulagem, os textos do piloto foram consultados em assistentes externos. Esse fato deve ser considerado ao avaliar a independência do processo e a aderência às regras de isolamento.
