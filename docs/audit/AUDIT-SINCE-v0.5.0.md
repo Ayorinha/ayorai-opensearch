@@ -3,8 +3,8 @@
 | Campo | Valor |
 |---|---|
 | Versão de referência | v0.5.0, publicada em 2026-10-13 (tag no commit `e9eccb50e4904b8f33004a414a5666477378c67a`; DOI 10.5281/zenodo.23344005) |
-| Estado auditado | `main` em `ab13f737236d649587051783dd0c5d6e8832178e` (2026-10-17) |
-| Intervalo | 58 commits na `main` desde a tag; 56 PRs mescladas (#104, #106 e #171–#234, com lacunas na numeração) |
+| Estado auditado | `main` em `e50d2b9bc623d1ad0dd95302e4602653e3dcbac2` (2026-10-17) |
+| Intervalo | 63 commits na `main` desde a tag; 61 PRs mescladas até #245, com lacunas na numeração (contagem derivada do compare de commits e dos merges registrados) |
 | Solicitante | Anderson Leon Ayora (mantenedor) |
 | Natureza | Documento de engenharia. Não altera código, decisões, ADRs, regras, Golden, manifestos ou hashes. |
 
@@ -12,10 +12,10 @@
 
 Nenhum item é classificado como implementado sem **código na `main`**, **teste que o exercita** e **execução registrada**. Fontes consultadas:
 
-1. Histórico da `main` (`git log e9eccb5..ab13f73`): 58 commits, **todos com um único pai** (merge por squash, conforme as condições permanentes da DEC-007 (release)).
+1. Compare da tag v0.5.0 (`e9eccb5`) até a `main` auditada (`e50d2b9`): 63 commits. A afirmação histórica de que os 58 commits até `ab13f73` tinham um único pai não é automaticamente transferida para os commits posteriores; a estrutura de pais do intervalo atualizado não foi revalidada localmente nesta sessão.
 2. API REST do GitHub: PRs mescladas e abertas, check-runs, ruleset `Protecao-main-ATTRACTOR`, releases e comentários.
-3. Execução local da suíte completa no SHA auditado: **658 testes aprovados** (Python 3.13.16, `pytest -q`). Resultado local; não substitui a CI.
-4. Check-runs da CI no SHA auditado: **12 de 12 com sucesso** nos workflows de `push`.
+3. Última execução local declarada nesta matriz: **658 testes aprovados em `ab13f737`** (Python 3.13.16, `pytest -q`). Esse resultado é histórico e não prova a suíte no SHA `e50d2b9`; não houve execução local nesta sessão.
+4. Check-runs do SHA `e50d2b9`: os seis checks obrigatórios (test 3.11/3.12/3.13, golden-regression, judge-regression, security) foram conferidos no GitHub; o job `analyze` ainda estava em andamento na consulta inicial e não é um check obrigatório de merge.
 5. Leitura direta dos arquivos citados, com caminho e linha.
 
 ### Legenda
@@ -41,7 +41,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | Benchmark RGC PT-BR | PENDENTE | Fontes capturadas, executor proposto, emendas 1–4. **Protocolo não congelado. Nenhum resultado.** |
 | Reprodutibilidade e CI | IMPLEMENTADO | `make reproduce`, seed fixa no Schemathesis, `ruff format` obrigatório, `mypy --strict` no executor, `py.typed`. |
 | Cadeia de suprimentos | PENDENTE | Sem `uv.lock`, sem digest de imagem, sem SBOM, sem assinatura de release (DEC-001 pendente). |
-| Governança e documentação | IMPLEMENTADO — LIMITADO | Status reconciliado (#230, #231, #234). Revisão independente registrada no GitHub em só 5 das 56 PRs (achado F-01). |
+| Governança e documentação | IMPLEMENTADO — LIMITADO | Status reconciliado (#230, #231, #234). Comentários antes rotulados como revisão independente foram reidentificados como revisões automatizadas publicadas pelo mantenedor; a revisão humana independente das PRs desde a v0.5.0 continua pendente (F-01). |
 
 ## 2. Matriz de auditoria
 
@@ -78,8 +78,8 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 |---|---|---|---|
 | Rejeição de `trace_id` duplicado | IMPLEMENTADO — LIMITADO | PR #217; `src/ayorai_attractor/audit_store.py:29,220` (`DuplicateAuditTraceError`); `tests/test_audit_store.py` (8 testes) | **Não** é à prova de adulteração: quem tem acesso ao banco altera linha e digest juntos (limite documentado na própria PR e na ADR-010, R1) |
 | Persistência dos vereditos de `/v1/verify` | PENDENTE | ADR-010, R2 | Nada é gravado no servidor |
-| ADR-010 (log Merkle C2SP) | PROPOSTO | PR #220 mesclada como **Proposed** | Decisões 1–4 só na PR #225, aberta |
-| Fase 1: hashing RFC 6962, provas e compromissos com sal | EM PR | PR #236; vetores gerados pela referência Go `transparency-dev/merkle`; revisão independente com correções aplicadas | Biblioteca pura. Não constitui log implantado. |
+| ADR-010 (log Merkle C2SP) | PROPOSTO / IMPLEMENTADO — LIMITADO | PR #220 mantém o desenho proposto; DEC-012 foi registrada e mesclada na #225; a biblioteca pura da fase 1 foi mesclada na #236 | Sem persistência, API de gravação, checkpoints assinados ou implantação; o log verificável não está implementado como serviço |
+| Fase 1: hashing RFC 6962, provas e compromissos com sal | IMPLEMENTADO — LIMITADO | PR #236 mesclada; vetores e testes em `tests/auditlog/`; checks obrigatórios verdes no SHA revisado antes do merge | Biblioteca pura. Não constitui log implantado. |
 | Fases 2–4 (checkpoints assinados, gravação, testemunhas, carimbo do tempo) | PENDENTE | ADR-010, perguntas 5–7 abertas | — |
 
 ### 2.5 Benchmark RGC em português
@@ -119,10 +119,10 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 
 | PR | Conteúdo | Situação |
 |---|---|---|
-| #225 | DEC-012: decisões 1–4 da ADR-010 e §15.1 da ADR-009 | Aprovável na revisão independente; aguarda merge |
+| #225 | DEC-012: decisões 1–4 da ADR-010 e §15.1 da ADR-009 | Mesclada por squash; perguntas 5–7 permanecem abertas |
 | #232 | Estrato `rectified` (`rgc-eval/0.3.0`) | Aguarda decisão sobre ausência do campo |
-| #235 | Status e CHANGELOG (outro agente) | Duplicada por #230 e #234, já mescladas; candidata a fechamento |
-| #236 | ADR-010 fase 1 | Correções da revisão aplicadas; depende da #225 |
+| #235 | Status e CHANGELOG | Fechada sem merge; conteúdo coberto pelas PRs #230 e #234 |
+| #236 | ADR-010 fase 1 | Mesclada após #225; biblioteca pura, sem API/storage/implantação |
 | #241 | Proposta de desenho estatístico do RGC | Aguarda revisão e decisões do mantenedor |
 | #189 | Dependabot: `transformers` < 6 | Não revisada nesta rodada |
 
@@ -130,12 +130,12 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 
 | ID | Severidade | Achado | Recomendação | Decisão |
 |---|---|---|---|---|
-| F-01 | Alta (governança) | As condições permanentes das DEC-007 e DEC-008 (release) exigem revisão independente do SHA exato. **Só 5 das 56 PRs mescladas** (#219, #230, #231, #233, #234) têm revisão registrada no GitHub. Revisões podem ter ocorrido fora do GitHub, mas não há registro verificável. | Registrar, antes da v0.6.0, uma revisão independente retroativa das PRs de código (#192, #195, #203, #212–#224, #226) ou declarar a lacuna nas notas de release. Exigir comentário de revisão em toda PR nova. | Mantenedor |
+| F-01 | Alta (governança) | Os comentários de revisão que apareciam como “Revisão independente” foram produzidos de forma automatizada e publicados pela conta do mantenedor; o rótulo foi corrigido para declarar essa natureza. Eles não constituem revisão humana independente. **A revisão humana independente das PRs desde a v0.5.0 permanece pendente.** | Designar revisor humano independente com conta própria e revisar o SHA exato das PRs de código desde a v0.5.0 antes de alegar revisão independente. Manter os pareceres automatizados identificados pela linha padrão. | Anderson (decisão não delegada) |
 | F-02 | Alta (segurança) | A aplicação sobe sem autenticação por padrão (`auth.py:24`). O Compose corrige isso, mas uma execução direta com `uvicorn` exposta à rede fica aberta. | Avaliar um modo de produção que recuse iniciar com `off` quando ligado a interface não local, ou um aviso explícito na inicialização. | Mantenedor |
 | F-03 | Alta (reprodutibilidade) | Sem `uv.lock` nem digest da imagem base. | Decidir a DEC-001 e implementar em PRs pequenas. | Mantenedor (DEC-001) |
 | F-04 | Alta (científica) | Ambiguidade no critério de concordância e baixo poder de H1 se avaliada só no conjunto oculto (~90 casos). | Ver PR #241; decidir antes do congelamento. | Mantenedor |
 | F-05 | Média (governança) | DEC-007 e DEC-008 com dois significados (release e RGC). Mitigado por qualificadores (PR #231). | Renumerar ou manter os qualificadores. | Mantenedor |
-| F-06 | Média (CI) | Uma falha não reproduzida do Schemathesis numa PR sem código. | Registrar o *seed* e o caso da falha; abrir issue se repetir. | Implementador |
+| F-06 | Média (CI) | A matriz histórica relata uma falha de Schemathesis não reproduzida. Os runs consultados para o SHA `a2562c1f9aeb12df446ddc22a718314a03f3fab1` (#234) e `0fc123f9f8331677acc4bcec00f0d97bca0d1351` (#245) terminaram com sucesso; não foi localizado artefato com caso falsificador, e o workflow não publica relatório como artefato. | Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250): anexar o run realmente falho e preservar stdout/stderr e exemplo reproduzível numa PR separada; não alterar seed/filtros sem reproduzir. | Investigação aberta; hipótese não confirmada |
 | F-07 | Média (auditabilidade) | O log atual é evidência operacional, não prova de integridade (ADR-010, R1 e R2). | Não descrever o sistema como "auditável de forma verificável" até a fase 3 estar implantada. | — |
 | F-08 | Baixa | O ruleset não exige aprovação de revisão (`required_approving_review_count = 0`); a revisão independente depende de disciplina, não de bloqueio técnico. | Considerar 1 aprovação obrigatória quando houver revisor com conta própria. | Mantenedor |
 
