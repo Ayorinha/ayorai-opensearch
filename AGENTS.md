@@ -16,10 +16,11 @@ Este arquivo estabelece limites para agentes automatizados que contribuam com es
 
 ## 3. Autoria, proveniência e histórico
 
-- Não falsificar autoria nem atribuir ao mantenedor trabalho que ele não executou.
+As contribuições podem ser produzidas com auxílio de ferramentas automatizadas, sob supervisão, revisão e responsabilidade do mantenedor, e são registradas em seu nome. Os documentos científicos declaram esse auxílio, de forma genérica, quando ele for relevante para a proveniência.
 - Não reescrever o histórico de commits. Preservar as linhas de coautoria existentes.
 - Remover publicidade desnecessária não autoriza apagar evidência: a proveniência técnica relevante deve continuar verificável.
 - Em material já publicado (documentos, descrições de PR, registros metodológicos), apresentar o trecho atual e o texto proposto e aguardar autorização antes de alterar.
+- Pareceres de revisão produzidos por ferramenta automatizada começam com a linha: 'Revisão por ferramenta automatizada, publicada pelo mantenedor.' Não identificam a ferramenta.
 
 ## 4. Artefatos protegidos
 
