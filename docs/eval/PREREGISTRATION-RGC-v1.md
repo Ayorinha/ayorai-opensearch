@@ -17,7 +17,8 @@ Este estudo é independente. Não implica nem afirma parceria, apoio, revisão, 
 ## 2. Fonte e proveniência
 
 - **ID de fonte existente:** `anatel-res-765-2023`, registrado em `docs/annotation/SOURCES.md`.
-- **Fonte oficial candidata:** https://informacoes.anatel.gov.br/legislacao/resolucoes/2023/1900-resolucao-765
+- **Página de referência oficial capturada:** https://informacoes.anatel.gov.br/legislacao/resolucoes/2023/1900-resolucao-765
+- **Limite de uso:** a página informa ressalvas sobre vigência e remete a atos posteriores; a vigência aplicável deve ser conferida por dispositivo com fontes primárias pertinentes, não inferida apenas desta página.
 - **Ato:** Resolução Anatel nº 765, de 6 de novembro de 2023.
 - **Captura exata dos bytes:** concluída e registrada em #177; texto derivado determinístico documentado em #178.
 - **Data, método, metadados e SHA-256:** registrados nos artefatos de proveniência de #177; não recalculados por este documento.
