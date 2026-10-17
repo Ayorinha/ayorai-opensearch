@@ -50,8 +50,10 @@ jobs:
           from transformers import AutoConfig, AutoTokenizer
 
           from ayorai_attractor.verification.nli import (
+              EVAL_ONLY_LEVEL,
               EVAL_ONLY_MODEL,
               EVAL_ONLY_REVISION,
+              TransformersNLIBackend,
               _resolve_label_map,
           )
 
@@ -69,10 +71,28 @@ jobs:
           )
           assert tokenizer is not None
           assert set(label_map.values()) == {"supports", "contradicts", "neutral"}
+
+          # Exercise the actual backend path, including model weights, tokenization,
+          # inference_mode, logits, softmax and label mapping on CPU.
+          backend = TransformersNLIBackend(
+              EVAL_ONLY_MODEL,
+              EVAL_ONLY_REVISION,
+              license_level=EVAL_ONLY_LEVEL,
+              evaluation_mode=True,
+          )
+          result = backend.classify(
+              "O atendimento telefônico deve ser gratuito.",
+              "O atendimento telefônico deve ser gratuito em dias úteis.",
+          )
+          assert result["stance"] in {"supports", "contradicts", "neutral"}
+          assert 0.0 <= float(result["confidence"]) <= 1.0
           print("NLI_TRANSFORMERS_RUNTIME_SMOKE: PASS")
+          print("NLI_MODEL_INFERENCE_SMOKE: PASS")
           print("transformers==" + version("transformers"))
           print("model_revision=" + EVAL_ONLY_REVISION)
           print("label_map=" + repr(label_map))
+          print("inference_stance=" + str(result["stance"]))
+          print("inference_confidence=" + str(result["confidence"]))
           PY
       - name: Run test suite with NLI dependencies installed
         run: pytest -q
