@@ -39,3 +39,7 @@ Este arquivo registra decisões explícitas do mantenedor já aprovadas. Não su
 - **Efeito sobre o benchmark RGC:** a Resolução Anatel nº 765/2023 é ato oficial e fica autorizada como fonte, **condicionada** à captura e ao registro de proveniência acima. A coleta pode começar somente depois desse registro, seguindo `docs/eval/PREREGISTRATION-RGC-v1.md`.
 - **Limite:** esta decisão não afirma parceria, apoio ou validação da Anatel e não constitui parecer jurídico; antes de contrato com instituição, recomenda-se confirmação por assessoria jurídica.
 
+
+## Nota de identificação (2026-10-17)
+
+DEC-007 e DEC-008 deste arquivo tratam das releases v0.4.0 e v0.5.0. Os mesmos números foram reutilizados para decisões do benchmark RGC em `DECISIONS-PENDING.md`. Use o índice daquele arquivo e cite "DEC-007 (release)" ou "DEC-007 (RGC)" até decisão do mantenedor sobre renumeração.
