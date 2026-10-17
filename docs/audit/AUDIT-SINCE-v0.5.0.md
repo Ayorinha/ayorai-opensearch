@@ -3,8 +3,8 @@
 | Campo | Valor |
 |---|---|
 | Versão de referência | v0.5.0, publicada em 2026-10-13 (tag no commit `e9eccb50e4904b8f33004a414a5666477378c67a`; DOI 10.5281/zenodo.23344005) |
-| Estado auditado | `main` em `b585bc79d7d5c6eba8598377889db7711ad5dc85` (2026-10-17) |
-| Intervalo | 67 commits na `main` desde a tag; 65 PRs mescladas até #249, com lacunas na numeração (contagem derivada do compare de commits e dos merges registrados) |
+| Estado auditado | `main` em `a2c08e5f1edbb976f6d82f46f1ba2eef3022569d` (2026-10-17) |
+| Intervalo | 68 commits na `main` desde a tag; 66 PRs mescladas até #251, com lacunas na numeração (contagem derivada do compare de commits e dos merges registrados) |
 | Solicitante | Anderson Leon Ayora (mantenedor) |
 | Natureza | Documento de engenharia. Não altera código, decisões, ADRs, regras, Golden, manifestos ou hashes. |
 
@@ -12,10 +12,10 @@
 
 Nenhum item é classificado como implementado sem **código na `main`**, **teste que o exercita** e **execução registrada**. Fontes consultadas:
 
-1. Compare da tag v0.5.0 (`e9eccb5`) até a `main` auditada (`b585bc7`): 67 commits. A afirmação histórica de que os 58 commits até `ab13f73` tinham um único pai não é automaticamente transferida para os commits posteriores; a estrutura de pais do intervalo atualizado não foi revalidada localmente nesta sessão.
+1. Compare da tag v0.5.0 (`e9eccb5`) até a `main` auditada (`a2c08e5`): 68 commits. O compare do GitHub confirmou a contagem. A estrutura de pais do intervalo não foi revalidada localmente nesta sessão.
 2. API REST do GitHub: PRs mescladas e abertas, check-runs, ruleset `Protecao-main-ATTRACTOR`, releases e comentários.
-3. Última execução local declarada nesta matriz: **658 testes aprovados em `ab13f737`** (Python 3.13.16, `pytest -q`). Esse resultado é histórico e não prova a suíte no SHA `e50d2b9`; não houve execução local nesta sessão.
-4. Check-runs do SHA `b585bc7`: os seis checks obrigatórios (test 3.11/3.12/3.13, golden-regression, judge-regression, security) foram conferidos no GitHub; o job `analyze` ainda estava em andamento na consulta inicial e não é um check obrigatório de merge.
+3. Última execução local declarada: **658 testes aprovados em `ab13f737`** (Python 3.13.16, `pytest -q`), resultado histórico. Para o SHA auditado `a2c08e5`, o CI do GitHub (run `39075021825`) concluiu com sucesso os jobs `test (3.11)`, `test (3.12)`, `test (3.13)`, `golden-regression`, `judge-regression`, `golden-smoke`, `golden-lint`, `workflow-lint` e `namespace-compatibility`. Não foi feita execução local nesta sessão.
+4. Para o SHA `a2c08e5`, os jobs de CI acima e os workflows `Security` (`39075021845`) e `CodeQL` (`39075021862`) terminaram com sucesso no GitHub. Essas evidências valem para esse SHA, não para cabeças de PR diferentes.
 5. Leitura direta dos arquivos citados, com caminho e linha.
 
 ### Legenda
@@ -58,7 +58,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 
 | Item | Classe | Evidência | Limite |
 |---|---|---|---|
-| Autenticação opcional por API key | IMPLEMENTADO — LIMITADO | PR #219; `src/ayorai_attractor/api/auth.py` (`APIKeyAuthMiddleware`, linha 66); `tests/test_api_auth.py` (8 testes) | Padrão da aplicação: `ATTRACTOR_AUTH_MODE=off` (`auth.py:24`). Nenhum mecanismo impede subir uma instância exposta sem autenticação. Sem escopo, expiração, revogação individual nem limitação de requisições. |
+| Autenticação opcional por API key | IMPLEMENTADO — LIMITADO | PR #219; `src/ayorai_attractor/api/auth.py` (`APIKeyAuthMiddleware`, linha 66); `tests/test_api_auth.py` (8 testes) | Padrão da aplicação: `ATTRACTOR_AUTH_MODE=off` (`auth.py:24`). A PR #252 propõe `api_key` por padrão e falha fechada; ainda não está mesclada. Sem escopo, expiração, revogação individual nem limitação de requisições. |
 | Autenticação dentro do contêiner | IMPLEMENTADO | PR #226; `.github/workflows/docker.yml`: `/health` público, 401 sem chave e com chave inválida, 200 com chave válida | Credenciais efêmeras geradas no CI |
 | `X-Request-ID` e log de acesso JSON | IMPLEMENTADO | PR #221; `src/ayorai_attractor/api/request_context.py:14` (padrão `[A-Za-z0-9-]{1,64}`); `tests/test_api_request_context.py` (5 testes) | Os testes cobrem campos conhecidos. Não há verificação formal de que nenhum campo futuro vaze dados. |
 | Limite de corpo HTTP (413) | IMPLEMENTADO | PRs #218 e #223; `src/ayorai_attractor/api/app.py:90`; `tests/test_api.py:200–223`; `tests/test_api_uvicorn_body_limit.py` | — |
@@ -91,7 +91,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | Pré-registro | PROPOSTO | PR #174; `docs/eval/PREREGISTRATION-RGC-v1.md`, marcado **[PROPOSTO]** | Ver a proposta estatística (PR #241) |
 | Protocolo com Emendas 1–4 | IMPLEMENTADO como documento; **não congelado** | `docs/eval/PROTOCOL-GOLDEN-V1.md`; PRs #193, #205 e #227 | O congelamento exige registro explícito do mantenedor |
 | Executor `rgc-eval/0.2.0` (abstenção, átomos) | IMPLEMENTADO — LIMITADO | PRs #179, #195 e #203; `evals/ptbr/rgc_eval.py:52`; `tests/test_rgc_eval_runner.py` (23 testes, só fixtures sintéticas) | Marcado [PROPOSTO]; só validado com dados sintéticos |
-| Estrato `rectified` (Emenda 4) | EM PR | PR #232 (`rgc-eval/0.3.0`) | Política para ausência do campo depende do mantenedor |
+| Estrato `rectified` (Emenda 4) | EM PR | PR #232 (`rgc-eval/0.3.0`) | DEC-011 opção A já aprovada; revisar implementação e testes antes do merge |
 | Verificador offline da ficha do piloto 2 | IMPLEMENTADO | PR #233; `scripts/check_pilot_worksheet.py`; `tests/test_check_pilot_worksheet.py` (11 testes) | Só regras mecânicas; não avalia rótulos |
 | Piloto exploratório 01 | Concluído e descartado | `docs/eval/PILOT-RGC-01-REPORT.md` | Casos redigidos por IA; anotador único; sistema não executado |
 | Segundo piloto humano | PENDENTE | Ficha em branco: `docs/eval/PILOT-RGC-02-WORKSHEET.md` | Trabalho humano, sem IA |
@@ -120,24 +120,26 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | PR | Conteúdo | Situação |
 |---|---|---|
 | #225 | DEC-012: decisões 1–4 da ADR-010 e §15.1 da ADR-009 | Mesclada por squash; perguntas 5–7 permanecem abertas |
-| #232 | Estrato `rectified` (`rgc-eval/0.3.0`) | Aberta; política para campo ausente não decidida |
+| #232 | Estrato `rectified` (`rgc-eval/0.3.0`) | Aberta; DEC-011 opção A aprovada; checks verdes no SHA da cabeça consultada; revisão independente e merge do mantenedor pendentes |
 | #235 | Status e CHANGELOG | Fechada sem merge; conteúdo coberto pelas PRs #230 e #234 |
 | #236 | ADR-010 fase 1 | Mesclada após #225; biblioteca pura, sem API/storage/implantação |
-| #241 | Proposta de desenho estatístico do RGC | Aberta; checks precisam ser corrigidos/confirmados e escolhas estatísticas são não delegadas |
-| #242 | Auditoria técnica desde v0.5.0 | Esta PR; F-01 atualizado e revisão documental em andamento |
+| #241 | Proposta de desenho estatístico do RGC | Aberta; falha anterior de `ruff format` foi corrigida; execução integral da simulação e conferência da saída ainda pendentes |
+| #242 | Auditoria técnica desde v0.5.0 | Esta PR; documento atualizado para `main` `a2c08e5`; revisão documental em andamento |
 | #245 | Regra de autoria e rotulagem de pareceres | Mesclada por squash; checks da cabeça estavam verdes |
-| #246 | Transparência sobre apoio automatizado | Aberta; checks conferidos no SHA da cabeça, aguarda ordem de merge |
+| #246 | Transparência sobre apoio automatizado | Mesclada por squash; checks verdes no SHA final |
 | #247 | README alinhado à evidência | Mesclada por squash após revisão e checks verdes |
 | #248 | Escopo de módulos experimentais | Mesclada por squash após correção de E501 e checks verdes no SHA final |
 | #249 | Fonte única de status | Mesclada por squash após revisão e checks verdes no SHA final |
-| #189 | Dependabot: `transformers` < 6 | Aberta; não mesclar sem revisar o impacto da faixa `<6` nos testes |
+| #251 | Atualização da página canônica de status | Mesclada por squash; CI, Security e CodeQL verdes no SHA `a2c08e5` |
+| #252 | Autenticação fail-closed por padrão | Aberta; CI inicial revelou que os workflows de contrato precisavam declarar explicitamente `ATTRACTOR_AUTH_MODE=off`; correção aplicada na cabeça seguinte, checks em andamento |
+| #189 | Dependabot: `transformers` < 6 | Aberta; todos os workflows consultados e o teste opcional NLI passaram no SHA `a9664c5`; revisar a compatibilidade de runtime da faixa `<6` e obter revisão humana antes do merge |
 
 ## 4. Achados
 
 | ID | Severidade | Achado | Recomendação | Decisão |
 |---|---|---|---|---|
 | F-01 | Alta (governança) | Os comentários da conta Ayorinha identificados nesta rodada que apareciam como “Revisão independente” foram produzidos de forma automatizada e publicados pela conta do mantenedor; os rótulos desses comentários foram corrigidos para declarar essa natureza. Eles não constituem revisão humana independente. **A revisão humana independente das PRs desde a v0.5.0 permanece pendente.** | Designar revisor humano independente com conta própria e revisar o SHA exato das PRs de código desde a v0.5.0 antes de alegar revisão independente. Manter os pareceres automatizados identificados pela linha padrão. | Anderson (decisão não delegada) |
-| F-02 | Alta (segurança) | A aplicação sobe sem autenticação por padrão (`auth.py:24`). O Compose corrige isso, mas uma execução direta com `uvicorn` exposta à rede fica aberta. | Avaliar um modo de produção que recuse iniciar com `off` quando ligado a interface não local, ou um aviso explícito na inicialização. | Mantenedor |
+| F-02 | Alta (segurança) | A aplicação sobe sem autenticação por padrão (`auth.py:24`). O Compose corrige isso, mas uma execução direta com `uvicorn` fica sem autenticação se exposta à rede. | PR #252 propõe exigir `api_key` por padrão e falhar na inicialização sem configuração válida; verificar os checks do SHA final antes de aprovação. | Mantenedor |
 | F-03 | Alta (reprodutibilidade) | Sem `uv.lock` nem digest da imagem base. | Decidir a DEC-001 e implementar em PRs pequenas. | Mantenedor (DEC-001) |
 | F-04 | Alta (científica) | Ambiguidade no critério de concordância e baixo poder de H1 se avaliada só no conjunto oculto (~90 casos). | Ver PR #241; decidir antes do congelamento. | Mantenedor |
 | F-05 | Média (governança) | DEC-007 e DEC-008 com dois significados (release e RGC). Mitigado por qualificadores (PR #231). | Renumerar ou manter os qualificadores. | Mantenedor |
