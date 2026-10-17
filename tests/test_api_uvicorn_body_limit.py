@@ -17,7 +17,9 @@ from pathlib import Path
 def _wait_for_server(process: subprocess.Popen[bytes], url: str) -> None:
     for _ in range(200):
         if process.poll() is not None:
-            raise AssertionError(f"Uvicorn exited before becoming ready (code {process.returncode})")
+            raise AssertionError(
+                f"Uvicorn exited before becoming ready (code {process.returncode})"
+            )
         try:
             with urllib.request.urlopen(url, timeout=0.25) as response:
                 if response.status == 200:
