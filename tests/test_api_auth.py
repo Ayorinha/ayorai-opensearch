@@ -1,6 +1,7 @@
 """Tests for optional API-key authentication."""
 
 import hashlib
+import hmac
 import secrets
 
 import pytest
@@ -25,13 +26,19 @@ def _client() -> TestClient:
     return TestClient(app)
 
 
-def _digest(key: str) -> str:
-    return hashlib.sha256(key.encode("utf-8")).hexdigest()
+def _digest(key: str, pepper_hex: str) -> str:
+    return hmac.new(bytes.fromhex(pepper_hex), key.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def _set_pepper(monkeypatch: pytest.MonkeyPatch) -> str:
+    pepper = secrets.token_hex(32)
+    monkeypatch.setenv("ATTRACTOR_API_KEY_PEPPER", pepper)
+    return pepper
 
 
 def test_authentication_is_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ATTRACTOR_AUTH_MODE", raising=False)
-    monkeypatch.delenv("ATTRACTOR_API_KEYS_SHA256", raising=False)
+    monkeypatch.delenv("ATTRACTOR_API_KEYS_HMAC_SHA256", raising=False)
 
     with _client() as client:
         response = client.get("/private")
@@ -44,8 +51,9 @@ def test_api_key_mode_rejects_missing_or_invalid_keys(
 ) -> None:
     correct_key = secrets.token_urlsafe(32)
     wrong_key = secrets.token_urlsafe(32)
+    pepper = _set_pepper(monkeypatch)
     monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
-    monkeypatch.setenv("ATTRACTOR_API_KEYS_SHA256", _digest(correct_key))
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_HMAC_SHA256", _digest(correct_key, pepper))
 
     with _client() as client:
         missing = client.get("/private")
@@ -63,8 +71,9 @@ def test_api_key_mode_accepts_bearer_and_x_api_key(
     header_name: str,
 ) -> None:
     key = secrets.token_urlsafe(32)
+    pepper = _set_pepper(monkeypatch)
     monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
-    monkeypatch.setenv("ATTRACTOR_API_KEYS_SHA256", _digest(key))
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_HMAC_SHA256", _digest(key, pepper))
     value = f"Bearer {key}" if header_name == "Authorization" else key
 
     with _client() as client:
@@ -77,8 +86,12 @@ def test_api_key_mode_accepts_bearer_and_x_api_key(
 def test_health_endpoint_remains_public_in_api_key_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    pepper = _set_pepper(monkeypatch)
     monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
-    monkeypatch.setenv("ATTRACTOR_API_KEYS_SHA256", _digest(secrets.token_urlsafe(32)))
+    monkeypatch.setenv(
+        "ATTRACTOR_API_KEYS_HMAC_SHA256",
+        _digest(secrets.token_urlsafe(32), pepper),
+    )
 
     with _client() as client:
         response = client.get("/health")
@@ -90,10 +103,11 @@ def test_health_endpoint_remains_public_in_api_key_mode(
 def test_api_key_mode_requires_at_least_one_configured_hash(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _set_pepper(monkeypatch)
     monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
-    monkeypatch.delenv("ATTRACTOR_API_KEYS_SHA256", raising=False)
+    monkeypatch.delenv("ATTRACTOR_API_KEYS_HMAC_SHA256", raising=False)
 
-    with pytest.raises(ValueError, match="must contain at least one SHA-256 digest"):
+    with pytest.raises(ValueError, match="must contain at least one HMAC-SHA-256 digest"):
         with _client() as client:
             client.get("/private")
 
@@ -111,8 +125,9 @@ def test_invalid_auth_configuration_fails_closed(
     configured_hashes: str,
     message: str,
 ) -> None:
+    _set_pepper(monkeypatch)
     monkeypatch.setenv("ATTRACTOR_AUTH_MODE", mode)
-    monkeypatch.setenv("ATTRACTOR_API_KEYS_SHA256", configured_hashes)
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_HMAC_SHA256", configured_hashes)
 
     with pytest.raises(ValueError, match=message):
         with _client() as client:
