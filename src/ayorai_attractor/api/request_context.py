@@ -18,7 +18,7 @@ def _request_id(scope: Scope) -> str:
     for name, value in scope.get("headers", []):
         if name.lower() == b"x-request-id":
             try:
-                candidate = value.decode("ascii")
+                candidate = str(value.decode("ascii"))
             except UnicodeDecodeError:
                 break
             if _REQUEST_ID_PATTERN.fullmatch(candidate):
