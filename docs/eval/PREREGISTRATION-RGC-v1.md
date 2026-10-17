@@ -1,6 +1,6 @@
 # [PROPOSTO] Pré-registro — benchmark PT-BR do RGC (v1)
 
-**Estado:** [PROPOSTO] — aguarda decisão do mantenedor  
+**Estado:** [PROPOSTO] — DEC-011 aprovada; o protocolo ainda aguarda revisão do segundo piloto e congelamento formal  
 **Data da proposta:** 2026-10-13  
 **Responsável proposto:** Anderson Leon Ayora  
 **Repositório:** `Ayorinha/ayorai-opensearch`  
@@ -128,7 +128,7 @@ A Resolução e suas alterações, ressalvas de vigência, remissões ou consoli
 5. O sistema é executado uma vez conforme o plano congelado; configurações, commit e resultados são preservados.
 6. O relatório publica métricas, IC95%, baseline, comparação pareada, limitações e qualquer desvio, inclusive resultados negativos.
 
-**Estado atual (2026-10-14):** portão 1 — DEC-002 — cumprido (#176); portão 2 — captura e proveniência da fonte — cumprido (#177; texto derivado determinístico em #178). Portões 3–6 permanecem pendentes: aprovação do protocolo/regras, anotação e separação dos conjuntos, execução congelada e relatório. O executor permanece **[PROPOSTO]** (#179), e só roda com rótulos humanos completos. O piloto humano de 20 casos ainda não foi iniciado. Nenhuma validação, parceria ou resultado experimental é reivindicado.
+**Registro histórico de estado (2026-10-14; atualizado pelas notas datadas abaixo):** portão 1 — DEC-002 — cumprido (#176); portão 2 — captura e proveniência da fonte — cumprido (#177; texto derivado determinístico em #178). O piloto exploratório inicial de 20 casos foi concluído em 2026-10-16, descartado e não executado pelo sistema. A DEC-011 foi aprovada em 2026-10-17 e a Emenda 4 foi incorporada pela PR #227. Permanecem pendentes o segundo piloto humano isolado, a revisão pós-piloto, o congelamento formal do protocolo, a anotação definitiva, a separação dos conjuntos, a execução única e o relatório. O executor permanece **[PROPOSTO]** (#179). Nenhuma validação, parceria ou resultado experimental é reivindicado.
 
 
 **Nota datada (2026-10-17) — DEC-011 aprovada, execução ainda condicionada aos gates:** Anderson aprovou as três partes da DEC-011. Aplicam-se as regras da [Emenda 4 do protocolo](PROTOCOL-GOLDEN-V1.md#emenda-4-2026-10-17--regras-de-anotação-após-o-piloto-dec-011-aprovada): ausência de evidência implica `UNVERIFIED`; `REFUTED` exige contradição explícita; para texto retificado, seguir o texto vigente, ignorar texto superado e marcar `rectified: true`; excluir do v1 afirmações que convertam “preferencialmente” em obrigação sem suporte textual explícito. O segundo piloto será exploratório, terá cerca de 10 casos novos, será anotado sem ferramentas de IA e será descartado. O protocolo não está congelado, os 300 casos definitivos não foram redigidos e nenhum resultado de benchmark PT-BR é reivindicado.
