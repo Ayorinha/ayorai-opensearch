@@ -76,6 +76,16 @@ Repita a ficha abaixo para cada caso. Não compartilhe os casos com assistentes/
 
 Copie a ficha completa do Caso 01 para cada caso restante e altere apenas o identificador. Não use a ficha para registrar previsões do sistema.
 
+## Conferência mecânica opcional (sem IA, sem executar o sistema)
+
+Depois de preencher uma cópia local desta ficha, o anotador pode rodar no próprio computador:
+
+```bash
+python scripts/check_pilot_worksheet.py minha-ficha.md
+```
+
+O script só confere regras mecânicas: trecho literal presente no artefato capturado (Emenda 1), rótulo dentro dos cinco vereditos (Emenda 2), frase incompatível literal em todo `REFUTED` (Emenda 4), coerência de `rectified` e átomos em `PARTIALLY_SUPPORTED` (Emendas 3 e 4). Não sugere nem avalia rótulos, não usa rede nem modelos, não importa o ATTRACTOR e imprime apenas identificadores e a regra violada, nunca o conteúdo dos casos. Não versionar a ficha preenchida.
+
 ## Revisão após a anotação
 
 - Total de casos elegíveis efetivamente encontrados:
