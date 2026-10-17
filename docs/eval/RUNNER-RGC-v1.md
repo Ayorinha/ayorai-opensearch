@@ -1,6 +1,6 @@
 # [PROPOSTO] Executor de avaliação do benchmark RGC (v1)
 
-**Estado:** [PROPOSTO] — aguarda congelamento pelo mantenedor  
+**Estado:** [PROPOSTO] — versão `rgc-eval/0.3.0`; aguarda congelamento pelo mantenedor  
 **Data:** 2026-10-13  
 **Responsável:** Anderson Leon Ayora  
 **Código:** `evals/ptbr/rgc_eval.py` · **Testes:** `tests/test_rgc_eval_runner.py`  
@@ -15,6 +15,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 - Rótulo `RULE_GAP` (lacuna nas regras de anotação, usado somente no piloto) remove o caso do denominador e é sempre listado em `excluded` no relatório; no conjunto definitivo, `RULE_GAP` é proibido no campo `label`.
 - Previsões inválidas (`INVALID_PREDICTION`) permanecem no denominador e contam como erro, conforme o pré-registro §4.
 - O relatório registra: versão do executor, commit, versão do Python, SHA-256 dos casos, dos rótulos e dos documentos, configuração completa, cada previsão com o `output_sha256` do Judge e a contagem de previsões cujo estado original do Judge foi `ABSTAINED`.
+- Cada caso deve declarar explicitamente `rectified: true` ou `rectified: false`; a ausência do campo ou um valor não booleano interrompe a execução. O relatório apresenta contagens, rótulos de referência, previsões, métricas descritivas e matriz de confusão em estratos separados (`rectified` / `not_rectified`). A hipótese principal H1 continua sendo avaliada somente no conjunto elegível completo; os estratos são descritivos e devem ser interpretados considerando seus tamanhos.
 
 ## 2. Pipeline por caso (determinístico, sem rede, sem componente aprendido)
 
@@ -25,7 +26,11 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 3. **Veredito**: Judge 2.0 `adjudicate` (ADR-009). Afirmação simples: **um átomo** cobrindo a afirmação inteira. Afirmação composta (DEC-010, opção A): os átomos anotados no campo `atoms` do caso (dois ou mais trechos da afirmação, por `start_offset`/`end_offset`, ordenados e sem sobreposição); a posição é detectada por átomo contra cada trecho, e o veredito composto segue K1–K5. Anotação de átomos inválida interrompe a execução.
 4. **Mapeamento** (`to_label`): `DECIDED` → veredito do Judge; `ABSTAINED` → `UNVERIFIED` (DEC-009 aprovada); qualquer outro estado → `INVALID_PREDICTION`. No vocabulário histórico `adr002`, `SUPPORTED` com robustez `R3` → `VERIFIED` (ADR-009 §11), mas esse mapeamento não se aplica ao vocabulário RGC `judge2`.
 
-## 3. Parâmetros propostos para congelamento
+## 3. Estratificação de dispositivos retificados (DEC-011)
+
+Todos os casos, inclusive os não retificados, devem conter o campo booleano `rectified`. A avaliação publica os dois estratos para tornar visível a limitação de que o Judge não aplica precedência temporal por conta própria. Os resultados estratificados são descritivos; não substituem a métrica principal nem autorizam conclusões confirmatórias em subgrupos pequenos. Casos `RULE_GAP` continuam excluídos do denominador e mantêm sua marca de retificação no relatório de exclusões.
+
+## 4. Parâmetros propostos para congelamento
 
 | Parâmetro | Valor proposto | Observação |
 |---|---|---|
