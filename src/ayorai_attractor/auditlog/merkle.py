@@ -12,7 +12,12 @@ Hashing (RFC 6962 §2.1, SHA-256):
 
 Proof generation follows the PATH and SUBPROOF definitions of RFC 6962 §2.1.1
 and §2.1.2; verification follows the algorithms of RFC 9162 §2.1.3.2 and
-§2.1.4.2. Verification never raises on malformed proofs: it returns ``False``.
+§2.1.4.2. Verification never raises on malformed input: it returns ``False``.
+
+Input contract of the verifiers: hashes (leaf, roots, proof nodes) are
+``bytes`` or ``bytearray`` of exactly 32 bytes; a proof is a ``list`` or
+``tuple`` of such hashes; indices and sizes are ``int`` (``bool`` rejected).
+Anything else, including ``memoryview`` and ``str``, is malformed.
 """
 
 from __future__ import annotations
@@ -48,6 +53,7 @@ def leaf_hash(data: bytes) -> bytes:
 
 
 def node_hash(left: bytes, right: bytes) -> bytes:
+    """Interior node hash. Callers pass validated 32-byte digests; not a public verifier."""
     return hashlib.sha256(NODE_PREFIX + left + right).digest()
 
 

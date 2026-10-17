@@ -213,3 +213,23 @@ def test_booleans_and_non_integers_are_not_sizes_or_indices(value: object) -> No
 def test_tuple_proofs_are_accepted() -> None:
     proof = tuple(merkle.inclusion_proof(3, LEAF_HASHES[:7]))
     assert merkle.verify_inclusion(3, 7, LEAF_HASHES[3], proof, ROOTS[7])
+
+
+MALFORMED_HASHES: list[object] = [bytearray(32), "x" * 32, None, object(), memoryview(bytes(32))]
+
+
+@pytest.mark.parametrize("bad", MALFORMED_HASHES, ids=lambda v: type(v).__name__)
+def test_malformed_roots_and_leaves_return_false_without_raising(bad: object) -> None:
+    proof = merkle.inclusion_proof(1, LEAF_HASHES[:4])
+    assert merkle.verify_inclusion(1, 4, LEAF_HASHES[1], proof, bad) is False  # type: ignore[arg-type]
+    assert merkle.verify_inclusion(1, 4, bad, proof, ROOTS[4]) is False  # type: ignore[arg-type]
+    cproof = merkle.consistency_proof(2, LEAF_HASHES[:4])
+    assert merkle.verify_consistency(2, 4, bad, ROOTS[4], cproof) is False  # type: ignore[arg-type]
+    assert merkle.verify_consistency(2, 4, ROOTS[2], bad, cproof) is False  # type: ignore[arg-type]
+
+
+def test_bytearray_with_the_correct_value_is_accepted() -> None:
+    proof = merkle.inclusion_proof(1, LEAF_HASHES[:4])
+    assert merkle.verify_inclusion(1, 4, bytearray(LEAF_HASHES[1]), proof, bytearray(ROOTS[4]))
+    cproof = [bytearray(x) for x in merkle.consistency_proof(2, LEAF_HASHES[:4])]
+    assert merkle.verify_consistency(2, 4, bytearray(ROOTS[2]), bytearray(ROOTS[4]), cproof)
