@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import sys
 from array import array
+from typing import Any
 from collections import Counter
 from math import sqrt
 from random import Random
@@ -94,7 +95,7 @@ def agreement(rng: Random, reps: int = 200, boots: int = 400) -> None:
                 )
 
 
-def _bootstrap_indices(n: int) -> object | None:
+def _bootstrap_indices(n: int) -> Any | None:
     """Precompute the executor's exact 10,000 seeded paired-case resamples."""
     if np is None:
         return None
@@ -107,9 +108,9 @@ def _bootstrap_indices(n: int) -> object | None:
 
 
 def _accuracy_ci_lower(
-    gold: list[str], predicted: list[str], indices: object | None
+    gold: list[str], predicted: list[str], indices: Any | None
 ) -> float:
-    if indices is None:
+    if np is None or indices is None:
         return bootstrap_accuracy(
             gold, predicted, iterations=BOOTSTRAPS, seed=SEED
         )[0]
