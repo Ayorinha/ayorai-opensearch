@@ -23,7 +23,26 @@ from .gates import (
 )
 
 RULES_VERSION = "2.0.0"
-_RULES_PATH = Path(__file__).resolve().parents[4] / "rules" / "judge-2.0.0.json"
+_RULES_FILENAME = "judge-2.0.0.json"
+# Canonical copy at the repository root (used by CI, scripts and Golden
+# migrations) and a byte-identical copy shipped inside the package, so the
+# Judge also works when installed from a wheel. The source checkout is
+# detected structurally (src/ layout with a sibling rules/ directory) rather
+# than by probing parents[4], which for an installed package points outside
+# site-packages and could pick up an unrelated or stale file.
+_PACKAGE_DIR = Path(__file__).resolve().parent
+_PACKAGED_RULES_PATH = _PACKAGE_DIR / "rules" / _RULES_FILENAME
+_SOURCE_ROOT = _PACKAGE_DIR.parents[2]
+_REPOSITORY_RULES_PATH = _SOURCE_ROOT.parent / "rules" / _RULES_FILENAME
+
+
+def _default_rules_path() -> Path:
+    if _SOURCE_ROOT.name == "src" and _REPOSITORY_RULES_PATH.is_file():
+        return _REPOSITORY_RULES_PATH
+    return _PACKAGED_RULES_PATH
+
+
+_RULES_PATH = _default_rules_path()
 
 _ROOT_FIELDS = {
     "schema_version",

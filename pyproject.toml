@@ -55,7 +55,7 @@ where = ["src"]
 include = ["ayorai_attractor*"]
 
 [tool.setuptools.package-data]
-ayorai_attractor = ["py.typed"]
+ayorai_attractor = ["py.typed", "verification/judge2/rules/*.json"]
 
 [tool.ruff]
 line-length = 100
