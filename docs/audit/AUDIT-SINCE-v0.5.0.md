@@ -115,16 +115,22 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | Dossiê técnico, proposta a universidade, plano de 12 meses, glossário | PROPOSTO (rascunhos) | PRs #183–#185, #210, #211; `docs/institutional/` | Não pressupõem parceria nem endosso; precisam acompanhar o estado real a cada release |
 | Licença Apache-2.0, NOTICE e registro de propriedade intelectual prévia | IMPLEMENTADO | PR #175 | — |
 
-## 3. PRs abertas no momento da auditoria
+## 3. PRs relevantes e estado atual
 
 | PR | Conteúdo | Situação |
 |---|---|---|
 | #225 | DEC-012: decisões 1–4 da ADR-010 e §15.1 da ADR-009 | Mesclada por squash; perguntas 5–7 permanecem abertas |
-| #232 | Estrato `rectified` (`rgc-eval/0.3.0`) | Aguarda decisão sobre ausência do campo |
+| #232 | Estrato `rectified` (`rgc-eval/0.3.0`) | Aberta; política para campo ausente não decidida |
 | #235 | Status e CHANGELOG | Fechada sem merge; conteúdo coberto pelas PRs #230 e #234 |
 | #236 | ADR-010 fase 1 | Mesclada após #225; biblioteca pura, sem API/storage/implantação |
-| #241 | Proposta de desenho estatístico do RGC | Aguarda revisão e decisões do mantenedor |
-| #189 | Dependabot: `transformers` < 6 | Não revisada nesta rodada |
+| #241 | Proposta de desenho estatístico do RGC | Aberta; checks precisam ser corrigidos/confirmados e escolhas estatísticas são não delegadas |
+| #242 | Auditoria técnica desde v0.5.0 | Esta PR; F-01 atualizado e revisão documental em andamento |
+| #245 | Regra de autoria e rotulagem de pareceres | Mesclada por squash; checks da cabeça estavam verdes |
+| #246 | Transparência sobre apoio automatizado | Aberta; checks conferidos no SHA da cabeça, aguarda ordem de merge |
+| #247 | README alinhado à evidência | Aberta; checks conferidos no SHA da cabeça, aguarda ordem de merge |
+| #248 | Escopo de módulos experimentais | Aberta; CI inicial falhou por linhas longas nos docstrings; correção enviada, revalidar SHA final |
+| #249 | Fonte única de status | Aberta; checks conferidos no SHA da cabeça, aguarda ordem de merge |
+| #189 | Dependabot: `transformers` < 6 | Aberta; não mesclar sem revisar o impacto da faixa `<6` nos testes |
 
 ## 4. Achados
 
