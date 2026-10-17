@@ -7,6 +7,7 @@ WORKDIR /app
 
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
+COPY rules /usr/local/lib/python3.12/rules
 
 RUN pip install --no-cache-dir . \
     && groupadd --system attractor \
