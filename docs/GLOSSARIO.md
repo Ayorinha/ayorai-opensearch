@@ -14,11 +14,15 @@ Proposição factual que pode ser examinada à luz de um documento e de evidênc
 
 ## Átomo
 
-Parte factual verificável de uma afirmação composta. Conforme a Emenda 3, cada átomo é registrado com offsets de início e fim relativos ao texto da afirmação; os trechos devem estar ordenados, não se sobrepor e não ser vazios. Fonte: [Emenda 3 do protocolo Golden v1](eval/PROTOCOL-GOLDEN-V1.md).
+Parte factual verificável de uma afirmação composta. Conforme a Emenda 3, cada átomo é registrado com offsets de início e fim relativos ao texto da afirmação; os trechos devem estar ordenados, não se sobrepor e não ser vazios. Uma afirmação simples, sem `atoms`, é avaliada como um único átomo. Fontes: [Emenda 3 do protocolo Golden v1](eval/PROTOCOL-GOLDEN-V1.md) e [executor RGC, seção 2](eval/RUNNER-RGC-v1.md).
 
 ## Evidência
 
 Documento ou trecho documental usado para avaliar uma afirmação. Para participar da decisão, a evidência precisa cumprir os critérios aplicáveis de admissibilidade, como offsets válidos, correspondência com a fonte e uma relação de apoio ou contradição registrada. Fonte: [ADR-009, seção 6 — Admissibilidade](adr/ADR-009-deterministic-adjudication-contract.md).
+
+## Cluster (grupo de evidências dependentes)
+
+Conjunto de evidências tratadas como uma única fonte porque dependem umas das outras, por exemplo por terem a mesma URL canônica, a mesma origem declarada ou o mesmo conteúdo. O Judge conta clusters, e não itens de evidência, para que republicações e cópias não sejam contadas como confirmação independente; proveniência ausente não é tratada como prova de independência. Fontes: [ADR-006](adr/ADR-006-metadata-judge-rules.md), [ADR-009, seção 7](adr/ADR-009-deterministic-adjudication-contract.md) e [implementação](../src/ayorai_attractor/verification/clusters.py).
 
 ## Stance (posição da evidência)
 
@@ -66,7 +70,7 @@ Os campos input_sha256 e output_sha256 são hashes SHA-256 calculados sobre repr
 
 ## Golden
 
-Conjunto de avaliação com casos e rótulos de referência usados para comparar as previsões de um sistema com a anotação de referência. As versões e os conjuntos derivados têm escopos próprios e não devem ser misturados nem alterados fora das regras de governança aplicáveis. Fonte: [protocolo Golden v1](eval/PROTOCOL-GOLDEN-V1.md) e [ADR-009](adr/ADR-009-deterministic-adjudication-contract.md).
+Conjunto de avaliação com casos e rótulos de referência usados para comparar as previsões de um sistema com a anotação de referência. No projeto, os Goldens v0 e v0.1 são conjuntos sintéticos de desenvolvimento e não demonstram generalização; o benchmark RGC em português é um conjunto distinto, ainda em preparação, e não tem resultado. As versões e os conjuntos derivados têm escopos próprios e não devem ser misturados nem alterados fora das regras de governança aplicáveis. Fontes: [protocolo Golden v1](eval/PROTOCOL-GOLDEN-V1.md), [dossiê técnico](institutional/DOSSIE-TECNICO.md) e [ADR-009](adr/ADR-009-deterministic-adjudication-contract.md).
 
 ## Pré-registro
 
