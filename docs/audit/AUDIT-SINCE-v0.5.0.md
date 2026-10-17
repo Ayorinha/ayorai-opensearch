@@ -131,7 +131,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | #248 | Escopo de módulos experimentais | Mesclada por squash após correção de E501 e checks verdes no SHA final |
 | #249 | Fonte única de status | Mesclada por squash após revisão e checks verdes no SHA final |
 | #251 | Atualização da página canônica de status | Mesclada por squash; CI, Security e CodeQL verdes no SHA `a2c08e5` |
-| #252 | Autenticação fail-closed por padrão | Aberta; CI inicial revelou que os workflows de contrato precisavam declarar explicitamente `ATTRACTOR_AUTH_MODE=off`; correção aplicada na cabeça seguinte, checks em andamento |
+| #252 | Autenticação fail-closed por padrão | Aberta; no SHA `29ff09c` CI, Security, CodeQL, Docker smoke, Schemathesis, API Contract Guard, Dependency Review e Golden r2 Migration passaram; revisão humana independente e merge do mantenedor pendentes |
 | #189 | Dependabot: `transformers` < 6 | Aberta; todos os workflows consultados e o teste opcional NLI passaram no SHA `a9664c5`; revisar a compatibilidade de runtime da faixa `<6` e obter revisão humana antes do merge |
 
 ## 4. Achados
