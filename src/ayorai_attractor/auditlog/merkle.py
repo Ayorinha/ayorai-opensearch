@@ -36,7 +36,6 @@ __all__ = [
     "empty_root",
     "inclusion_proof",
     "leaf_hash",
-    "node_hash",
     "root_from_inclusion",
     "tree_root",
     "verify_consistency",
