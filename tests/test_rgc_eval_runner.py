@@ -44,6 +44,7 @@ def _case(case_id: str, claim: str, excerpt: str) -> dict[str, Any]:
     return {
         "case_id": case_id,
         "claim": claim,
+        "rectified": False,
         "evidence": [
             {
                 "document_id": "sint-1",
@@ -223,7 +224,7 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
         result = RUNNER["evaluate"](
             cases, labels, DOCS, mode=mode, vocabulary="judge2", iterations=100
         )
-        assert result["excluded"] == [{"case_id": "s3", "label": "RULE_GAP"}]
+        assert result["excluded"] == [{"case_id": "s3", "label": "RULE_GAP", "rectified": False}]
         assert [row["predicted"] for row in result["cases"]] == ["SUPPORTED", "REFUTED"]
         assert result["decision_states"] == {"DECIDED": 2}
     with pytest.raises(ValueError, match="unknown cases"):
@@ -242,6 +243,50 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
     with pytest.raises(ValueError, match="without a label"):
         RUNNER["evaluate"](
             cases, {"s1": "SUPPORTED"}, DOCS, mode="oracle", vocabulary="judge2", iterations=10
+        )
+
+
+def test_evaluate_reports_rectified_and_non_rectified_strata() -> None:
+    cases = [
+        _case(
+            "s1",
+            "O cancelamento será efetivado em até 2 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        ),
+        _case(
+            "s2",
+            "O cancelamento será efetivado em até 9 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        ),
+    ]
+    cases[1]["rectified"] = True
+    result = RUNNER["evaluate"](
+        cases,
+        {"s1": "SUPPORTED", "s2": "REFUTED"},
+        DOCS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=10,
+    )
+    strata = result["rectification_strata"]
+    assert strata["not_rectified"]["n"] == 1
+    assert strata["not_rectified"]["case_ids"] == ["s1"]
+    assert strata["rectified"]["n"] == 1
+    assert strata["rectified"]["case_ids"] == ["s2"]
+    assert strata["rectified"]["gold_counts"]["REFUTED"] == 1
+    assert "system_ci95" not in strata["rectified"]
+
+
+def test_evaluate_requires_explicit_boolean_rectified_field() -> None:
+    case = _case(
+        "s1",
+        "O cancelamento será efetivado em até 2 dias.",
+        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+    )
+    del case["rectified"]
+    with pytest.raises(ValueError, match="rectified must be an explicit boolean"):
+        RUNNER["evaluate"](
+            [case], {"s1": "SUPPORTED"}, DOCS, mode="oracle", vocabulary="judge2", iterations=10
         )
 
 
@@ -337,6 +382,9 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
     assert report["metrics"]["system"]["accuracy"] == 1.0
+    assert report["runner_version"] == "rgc-eval/0.3.0"
+    assert report["rectification_strata"]["not_rectified"]["n"] == 1
+    assert report["rectification_strata"]["rectified"]["n"] == 0
     assert report["config"]["mode"] == "retrieval"
     assert len(report["inputs"]["cases_sha256"]) == 64
 
