@@ -511,9 +511,7 @@ def compute_rectification_metrics(
             label: predicted.count(label) for label in (*VOCABULARIES[vocabulary], INVALID)
         },
         "system": (
-            {name: round(METRICS[name](gold, predicted), 6) for name in METRICS}
-            if rows
-            else None
+            {name: round(METRICS[name](gold, predicted), 6) for name in METRICS} if rows else None
         ),
         "confusion": confusion(gold, predicted, vocabulary) if rows else None,
     }
