@@ -13,8 +13,10 @@ Pipeline per case (no learned component, no network):
      (dispositivos: ``Art.``, ``§``, ``Parágrafo único``, incisos, alíneas),
      ranked with BM25 against the claim, and the top-k passages are used.
 2. Stance: ``RuleStanceDetector`` on each (claim, passage) pair.
-3. Verdict: Judge 2.0 ``adjudicate`` with one atom covering a simple claim, or the human-annotated atoms of a compound claim.
-4. Rectification: every case explicitly declares ``rectified`` as a boolean; metrics are reported separately for rectified and non-rectified cases.
+3. Verdict: Judge 2.0 ``adjudicate`` with one atom covering a simple claim,
+   or the human-annotated atoms of a compound claim.
+4. Rectification: every case explicitly declares ``rectified`` as a boolean;
+   metrics are reported separately for rectified and non-rectified cases.
 
 Subcommands:
     run            evaluate cases against human labels and write a report
@@ -567,7 +569,9 @@ def evaluate(
             )
             prediction["retrieval_scores"] = [round(s, 6) for _, s in hits]
         label = to_label(prediction, vocabulary)
-        rows.append({"case_id": case_id, "gold": gold, "predicted": label, "rectified": rectified, **prediction})
+        rows.append(
+            {"case_id": case_id, "gold": gold, "predicted": label, "rectified": rectified, **prediction}
+        )
     if unlabeled:
         raise ValueError(f"cases without a label (labels must be complete): {unlabeled}")
     extra = sorted(set(labels) - seen)
