@@ -4,7 +4,9 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
-No unreleased entries yet.
+### Fixed
+- Verify the configurable HTTP request-body limit against a real Uvicorn server for oversized bodies with Content-Length and chunked bodies without Content-Length.
+
 
 ## [0.5.0] — 2026-10-13
 
