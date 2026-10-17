@@ -107,13 +107,9 @@ def _bootstrap_indices(n: int) -> Any | None:
     return np.frombuffer(raw, dtype=np.uint16).reshape(BOOTSTRAPS, n)
 
 
-def _accuracy_ci_lower(
-    gold: list[str], predicted: list[str], indices: Any | None
-) -> float:
+def _accuracy_ci_lower(gold: list[str], predicted: list[str], indices: Any | None) -> float:
     if np is None or indices is None:
-        return bootstrap_accuracy(
-            gold, predicted, iterations=BOOTSTRAPS, seed=SEED
-        )[0]
+        return bootstrap_accuracy(gold, predicted, iterations=BOOTSTRAPS, seed=SEED)[0]
     outcomes = np.asarray(
         [actual == guess for actual, guess in zip(gold, predicted, strict=True)],
         dtype=np.bool_,
@@ -160,9 +156,7 @@ def _system_predictions(
 
     predicted: list[str] = []
     for actual, baseline_ok in zip(gold, baseline_correct, strict=True):
-        conditional = (
-            p_system_given_base if baseline_ok else p_system_given_baseline_wrong
-        )
+        conditional = p_system_given_base if baseline_ok else p_system_given_baseline_wrong
         if rng.random() < conditional:
             predicted.append(actual)
         else:
@@ -177,10 +171,7 @@ def power(rng: Random) -> None:
         "imbalanced": [0.40, 0.30, 0.15, 0.10, 0.05],
         "very_imbalanced": [0.55, 0.25, 0.10, 0.06, 0.04],
     }
-    print(
-        "\nprevalence       n  system_acc  P(H1 independent)  "
-        "P(H1 positive_phi_target_0.5)"
-    )
+    print("\nprevalence       n  system_acc  P(H1 independent)  P(H1 positive_phi_target_0.5)")
     for scenario_index, (name, prevalence) in enumerate(prevalences.items()):
         scenario_rng = Random(SEED + scenario_index)
         for n in (90, 300):
@@ -193,17 +184,21 @@ def power(rng: Random) -> None:
                         gold = scenario_rng.choices(LABELS, weights=prevalence, k=n)
                         baseline_label = _majority_label(gold)
                         baseline = [baseline_label] * n
-                        predicted = _system_predictions(
-                            scenario_rng, gold, system_accuracy, phi
+                        predicted = _system_predictions(scenario_rng, gold, system_accuracy, phi)
+                        accuracy = (
+                            sum(
+                                actual == guess
+                                for actual, guess in zip(gold, predicted, strict=True)
+                            )
+                            / n
                         )
-                        accuracy = sum(
-                            actual == guess
-                            for actual, guess in zip(gold, predicted, strict=True)
-                        ) / n
-                        baseline_accuracy = sum(
-                            actual == guess
-                            for actual, guess in zip(gold, baseline, strict=True)
-                        ) / n
+                        baseline_accuracy = (
+                            sum(
+                                actual == guess
+                                for actual, guess in zip(gold, baseline, strict=True)
+                            )
+                            / n
+                        )
                         margin = accuracy - baseline_accuracy
                         ci_lower = _accuracy_ci_lower(gold, predicted, indices)
                         p_value = mcnemar_exact_pvalue(gold, predicted, baseline)
