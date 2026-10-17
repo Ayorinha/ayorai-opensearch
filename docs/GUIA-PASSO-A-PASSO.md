@@ -73,7 +73,7 @@ pip install -e ".[dev,nli]"
 python scripts/run_f1_eval.py --suite golden-v0.1
 ~~~
 
-Resultados históricos esperados (E1), sempre lado a lado, conforme DEC-007:
+Resultados históricos esperados (E1), sempre lado a lado, conforme REL-DEC-007:
 
 | Caminho | Golden v0 | Golden v0.1 |
 |---|---:|---:|
