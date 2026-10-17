@@ -27,7 +27,7 @@ Exigem autorização explícita do mantenedor para qualquer alteração:
 
 - regras do Judge (`rules/`, `src/ayorai_attractor/verification/judge2/`);
 - conjuntos Golden em `evals/golden/`, manifestos e hashes congelados;
-- bytes oficiais capturados, textos derivados e registros de fontes em `evals/ptbr/sources/`, incluindo `evals/ptbr/SOURCES-REGISTRY.json`; preservar capturas históricas e não sobrescrevê-las;
+- bytes oficiais capturados e textos derivados em `evals/ptbr/sources/`; registro de fontes em `evals/ptbr/SOURCES-REGISTRY.json`. Preservar capturas históricas e não sobrescrevê-las;
 - `docs/eval/PROTOCOL-GOLDEN-V1.md` e `docs/eval/PREREGISTRATION-RGC-v1.md`: alterações somente por emenda datada e aprovada explicitamente pelo mantenedor;
 - ADRs aceitas e decisões aprovadas (`docs/DECISIONS-APPROVED.md` e entradas aprovadas de `docs/DECISIONS-PENDING.md`);
 - notas de release (`docs/release/`).
