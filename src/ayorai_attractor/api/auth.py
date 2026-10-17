@@ -1,4 +1,4 @@
-"""Optional API-key authentication for the HTTP API."""
+"""API-key authentication for the HTTP API; enabled by default."""
 
 from __future__ import annotations
 
@@ -21,7 +21,8 @@ MIN_API_KEY_LENGTH = 32
 
 
 def _load_configuration() -> tuple[str, tuple[str, ...], bytes | None]:
-    mode = os.getenv("ATTRACTOR_AUTH_MODE", "off").strip().lower()
+    # Fail closed: an unconfigured deployment must not silently expose the API.
+    mode = os.getenv("ATTRACTOR_AUTH_MODE", "api_key").strip().lower()
     if mode not in {"off", "api_key"}:
         raise ValueError("ATTRACTOR_AUTH_MODE must be 'off' or 'api_key'")
 
@@ -66,7 +67,8 @@ def validate_auth_configuration() -> None:
 class APIKeyAuthMiddleware:
     """Authenticate HTTP requests with keyed HMAC-SHA-256 digests of API keys.
 
-    Authentication is disabled by default. In api_key mode, configure
+    Authentication is enabled by default. For local development only, set
+    ATTRACTOR_AUTH_MODE=off explicitly. In api_key mode, configure
     ATTRACTOR_API_KEYS_HMAC_SHA256 with comma-separated HMAC-SHA-256 hex digests
     and ATTRACTOR_API_KEY_PEPPER with a separately managed 32-byte secret.
     Raw API keys are never read from configuration or written to logs.
