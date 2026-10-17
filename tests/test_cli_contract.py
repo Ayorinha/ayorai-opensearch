@@ -16,9 +16,7 @@ def test_cli_help_exposes_search_and_eval_commands() -> None:
     assert "eval" in result.stdout
 
 
-def test_cli_eval_writes_json_report_for_supported_suite(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_cli_eval_writes_json_report_for_supported_suite(tmp_path: Path, monkeypatch) -> None:
     output = tmp_path / "reports" / "contract-report.json"
     calls: list[tuple[Path, Path, str]] = []
 

@@ -54,10 +54,14 @@ def fixture(
     offset = 0
     for atom_id in atom_ids:
         text = segments[atom_id]
-        atoms.append({
-            "id": atom_id, "text": text,
-            "start_offset": offset, "end_offset": offset + len(text),
-        })
+        atoms.append(
+            {
+                "id": atom_id,
+                "text": text,
+                "start_offset": offset,
+                "end_offset": offset + len(text),
+            }
+        )
         offset += len(text) + 3
 
     evidence_by_id: dict[str, Evidence] = {}
@@ -75,10 +79,14 @@ def fixture(
             evidence_by_id[evidence_id] = item
             source_texts[item.source_id] = "x"
         declared.append(DecisionEvidence(evidence_id, atom_id, stance))  # type: ignore[arg-type]
-        raw_stances.append({
-            "id": f"stance-{index}", "atom_id": atom_id,
-            "evidence_id": evidence_id, "stance": stance,
-        })
+        raw_stances.append(
+            {
+                "id": f"stance-{index}",
+                "atom_id": atom_id,
+                "evidence_id": evidence_id,
+                "stance": stance,
+            }
+        )
     gates = evaluate_gates(
         protocol_version="r2-a",
         claim_id="c1",
@@ -104,7 +112,8 @@ def _forge_gate_result(
     object.__setattr__(forged, "admissible", original.admissible)
     object.__setattr__(forged, "evidence", original.evidence if evidence is None else evidence)
     object.__setattr__(
-        forged, "rules_sha256",
+        forged,
+        "rules_sha256",
         original.rules_sha256 if rules_sha256 is None else rules_sha256,
     )
     return forged
@@ -144,9 +153,12 @@ def test_t1_atomic_truth_table_covers_support_zero_to_three_and_contradiction_ze
 
 
 def test_t1_provenance_selects_r2_or_r3_without_changing_verdict() -> None:
-    complete, gates_complete = fixture([
-        ("s1", "a1", "SUPPORTS"), ("s2", "a1", "SUPPORTS"),
-    ])
+    complete, gates_complete = fixture(
+        [
+            ("s1", "a1", "SUPPORTS"),
+            ("s2", "a1", "SUPPORTS"),
+        ]
+    )
     incomplete, gates_incomplete = fixture(
         [("s1", "a1", "SUPPORTS"), ("s2", "a1", "SUPPORTS")],
         incomplete={"s2"},
@@ -188,10 +200,13 @@ def test_t3_single_atomic_verdict_never_partially_supported() -> None:
 
 def test_t4_increasing_support_clusters_does_not_change_supported_verdict() -> None:
     one, one_gate = fixture([("s1", "a1", "SUPPORTS")])
-    many, many_gate = fixture([
-        ("s1", "a1", "SUPPORTS"), ("s2", "a1", "SUPPORTS"),
-        ("s3", "a1", "SUPPORTS"),
-    ])
+    many, many_gate = fixture(
+        [
+            ("s1", "a1", "SUPPORTS"),
+            ("s2", "a1", "SUPPORTS"),
+            ("s3", "a1", "SUPPORTS"),
+        ]
+    )
     first = _adjudicate_atoms(["a1"], one, one_gate)[0]
     later = _adjudicate_atoms(["a1"], many, many_gate)[0]
     assert first.verdict == later.verdict == "SUPPORTED"
@@ -230,11 +245,13 @@ def test_gate_validated_stance_cannot_be_overridden_by_caller() -> None:
 
 
 def test_conflicting_atomic_decision_exposes_both_sides_and_uses_minimum() -> None:
-    declared, gates = fixture([
-        ("s1", "a1", "SUPPORTS"),
-        ("s2", "a1", "SUPPORTS"),
-        ("c1", "a1", "CONTRADICTS"),
-    ])
+    declared, gates = fixture(
+        [
+            ("s1", "a1", "SUPPORTS"),
+            ("s2", "a1", "SUPPORTS"),
+            ("c1", "a1", "CONTRADICTS"),
+        ]
+    )
     result = _adjudicate_atoms(["a1"], declared, gates)[0]
     assert result.verdict == "CONFLICTING"
     assert result.robustness_support == "R3"
@@ -243,14 +260,18 @@ def test_conflicting_atomic_decision_exposes_both_sides_and_uses_minimum() -> No
 
 
 def test_composite_robustness_is_minimum_of_atoms_selected_by_rule() -> None:
-    refuted = _adjudicate_composite([
-        atomic("a1", "REFUTED", "R1"),
-        atomic("a2", "SUPPORTED", "R3"),
-    ])
-    supported = _adjudicate_composite([
-        atomic("a1", "SUPPORTED", "R3"),
-        atomic("a2", "SUPPORTED", "R2"),
-    ])
+    refuted = _adjudicate_composite(
+        [
+            atomic("a1", "REFUTED", "R1"),
+            atomic("a2", "SUPPORTED", "R3"),
+        ]
+    )
+    supported = _adjudicate_composite(
+        [
+            atomic("a1", "SUPPORTED", "R3"),
+            atomic("a2", "SUPPORTED", "R2"),
+        ]
+    )
     conflicting = _adjudicate_composite([atomic("a1", "CONFLICTING", "R1")])
     assert (refuted.verdict, refuted.robustness) == ("REFUTED", "R1")
     assert (supported.verdict, supported.robustness) == ("SUPPORTED", "R2")
@@ -273,10 +294,12 @@ def test_t6_precedence_uses_contract_order_even_if_rule_list_is_shuffled(
     rules, digest = load_rules()
     rules["composite_rules"] = list(reversed(rules["composite_rules"]))
     monkeypatch.setattr(adjudication, "load_rules", lambda: (rules, digest))
-    result = _adjudicate_composite([
-        atomic("a1", "REFUTED", "R1"),
-        atomic("a2", "CONFLICTING", "R3"),
-    ])
+    result = _adjudicate_composite(
+        [
+            atomic("a1", "REFUTED", "R1"),
+            atomic("a2", "CONFLICTING", "R3"),
+        ]
+    )
     assert result.verdict == "REFUTED"
     assert result.rule_id == "2.0.0/K1"
 
@@ -289,9 +312,10 @@ def test_t6_order_of_evidence_does_not_change_atomic_result() -> None:
     ]
     declared, gates = fixture(edges)
     reversed_declared, reversed_gates = fixture(list(reversed(edges)))
-    assert _adjudicate_atoms(["a1"], declared, gates)[0] == _adjudicate_atoms(
-        ["a1"], reversed_declared, reversed_gates
-    )[0]
+    assert (
+        _adjudicate_atoms(["a1"], declared, gates)[0]
+        == _adjudicate_atoms(["a1"], reversed_declared, reversed_gates)[0]
+    )
 
 
 def test_contract_rule_ids_are_versioned_and_robustness_enum_is_closed() -> None:
@@ -301,6 +325,7 @@ def test_contract_rule_ids_are_versioned_and_robustness_enum_is_closed() -> None
     assert {item["id"] for item in rules["composite_rules"]} == {"K1", "K2", "K3", "K4", "K5"}
     with pytest.raises(ValueError, match="robustness enum"):
         _adjudicate_composite([atomic("a1", "SUPPORTED", "R9")])
+
 
 def test_gate_result_constructor_is_restricted_to_gates_module() -> None:
     with pytest.raises(TypeError, match="only be constructed by the gates module"):
@@ -318,26 +343,44 @@ def test_public_adjudicate_does_not_accept_caller_supplied_gate_result() -> None
     from ayorai_attractor.verification.judge2.adjudication import adjudicate
 
     with pytest.raises(ValueError, match="unknown=.*gates"):
-        adjudicate({
-            "protocol_version": "r2-a", "claim_id": "c1", "claim_text": "claim",
-            "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
-            "evidence": [], "stances": [], "source_texts": {}, "gates": object(),
-        })
+        adjudicate(
+            {
+                "protocol_version": "r2-a",
+                "claim_id": "c1",
+                "claim_text": "claim",
+                "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
+                "evidence": [],
+                "stances": [],
+                "source_texts": {},
+                "gates": object(),
+            }
+        )
 
 
 def test_public_adjudicate_rejects_stance_reference_missing_from_source_evidence() -> None:
     from ayorai_attractor.verification.judge2.adjudication import adjudicate
 
-    result = adjudicate({
-        "protocol_version": "r2-a", "claim_id": "c1", "claim_text": "claim",
-        "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
-        "evidence": [], "stances": [{
-            "id": "st1", "atom_id": "a1", "evidence_id": "missing", "stance": "SUPPORTS",
-        }],
-        "source_texts": {},
-    })
+    result = adjudicate(
+        {
+            "protocol_version": "r2-a",
+            "claim_id": "c1",
+            "claim_text": "claim",
+            "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
+            "evidence": [],
+            "stances": [
+                {
+                    "id": "st1",
+                    "atom_id": "a1",
+                    "evidence_id": "missing",
+                    "stance": "SUPPORTS",
+                }
+            ],
+            "source_texts": {},
+        }
+    )
     assert result.decision_state == "INVALID_INPUT"
     assert result.composite_decision is None
+
 
 def _assert_no_private_judge2_adjudicator_access(source_root: Path) -> None:
     import ast
@@ -351,9 +394,7 @@ def _assert_no_private_judge2_adjudicator_access(source_root: Path) -> None:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
             if isinstance(node, ast.Name):
-                assert node.id not in forbidden, (
-                    f"{path} references a private Judge 2 adjudicator"
-                )
+                assert node.id not in forbidden, f"{path} references a private Judge 2 adjudicator"
             if isinstance(node, ast.Attribute):
                 assert node.attr not in forbidden, (
                     f"{path} accesses a private Judge 2 adjudicator by attribute"
@@ -391,14 +432,16 @@ def test_production_modules_do_not_import_private_judge2_adjudicators() -> None:
 def test_ast_guard_rejects_temporary_module_attribute_access(tmp_path: Path) -> None:
     consumer = tmp_path / "consumer.py"
     consumer.write_text(
-        "\n".join([
-            "import importlib",
-            "adjudication = importlib.import_module(",
-            "    'ayorai_attractor.verification.judge2.adjudication'",
-            ")",
-            "adjudication._adjudicate_atoms([], [], object())",
-            "",
-        ]),
+        "\n".join(
+            [
+                "import importlib",
+                "adjudication = importlib.import_module(",
+                "    'ayorai_attractor.verification.judge2.adjudication'",
+                ")",
+                "adjudication._adjudicate_atoms([], [], object())",
+                "",
+            ]
+        ),
         encoding="utf-8",
     )
     with pytest.raises(AssertionError, match="accesses a private Judge 2 adjudicator"):
@@ -418,58 +461,78 @@ def test_ast_guard_rejects_dynamic_string_only_access(tmp_path: Path) -> None:
 def test_ast_guard_rejects_dynamic_string_access_and_module_alias(tmp_path: Path) -> None:
     consumer = tmp_path / "consumer.py"
     consumer.write_text(
-        "\n".join([
-            "import ayorai_attractor.verification.judge2.adjudication as adjudication",
-            "getattr(adjudication, '_adjudicate_composite')",
-            "",
-        ]),
+        "\n".join(
+            [
+                "import ayorai_attractor.verification.judge2.adjudication as adjudication",
+                "getattr(adjudication, '_adjudicate_composite')",
+                "",
+            ]
+        ),
         encoding="utf-8",
     )
     with pytest.raises(AssertionError):
         _assert_no_private_judge2_adjudicator_access(tmp_path)
 
+
 def test_public_adjudicate_runs_gates_and_returns_deterministic_verdict() -> None:
     from ayorai_attractor.verification.judge2 import adjudicate
 
-    result = adjudicate({
-        "protocol_version": "r2-a",
-        "claim_id": "c1",
-        "claim_text": "claim",
-        "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
-        "evidence": [source("e1")],
-        "stances": [{
-            "id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS",
-        }],
-        "source_texts": {"source-e1": "x"},
-    })
+    result = adjudicate(
+        {
+            "protocol_version": "r2-a",
+            "claim_id": "c1",
+            "claim_text": "claim",
+            "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
+            "evidence": [source("e1")],
+            "stances": [
+                {
+                    "id": "st1",
+                    "atom_id": "a1",
+                    "evidence_id": "e1",
+                    "stance": "SUPPORTS",
+                }
+            ],
+            "source_texts": {"source-e1": "x"},
+        }
+    )
     assert result.decision_state == "DECIDED"
     assert result.atomic_decisions[0].verdict == "SUPPORTED"
     assert result.composite_decision is not None
     assert result.composite_decision.verdict == "SUPPORTED"
 
+
 def test_loaded_contract_hash_matches_approved_contract() -> None:
     assert rules_sha256() == "493cce66ce45fcb432b8345e7567cfb39858492bfe46d5fa6b584991e79e9efc"
+
 
 def test_public_adjudicate_does_not_admit_excerpt_absent_from_source() -> None:
     from ayorai_attractor.verification.judge2 import adjudicate
 
     item = source("e1")
     fabricated = Evidence(**{**item.model_dump(), "excerpt": "not in source"})
-    result = adjudicate({
-        "protocol_version": "r2-a",
-        "claim_id": "c1",
-        "claim_text": "claim",
-        "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
-        "evidence": [fabricated],
-        "stances": [{
-            "id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS",
-        }],
-        "source_texts": {"source-e1": "x"},
-    })
+    result = adjudicate(
+        {
+            "protocol_version": "r2-a",
+            "claim_id": "c1",
+            "claim_text": "claim",
+            "atoms": [{"id": "a1", "text": "claim", "start_offset": 0, "end_offset": 5}],
+            "evidence": [fabricated],
+            "stances": [
+                {
+                    "id": "st1",
+                    "atom_id": "a1",
+                    "evidence_id": "e1",
+                    "stance": "SUPPORTS",
+                }
+            ],
+            "source_texts": {"source-e1": "x"},
+        }
+    )
     assert result.decision_state == "DECIDED"
     assert result.atomic_decisions[0].verdict == "UNVERIFIED"
     assert result.composite_decision is not None
     assert result.composite_decision.verdict == "UNVERIFIED"
+
 
 @pytest.mark.parametrize(
     "unsafe_integer",
@@ -493,9 +556,6 @@ def test_rfc8785_integer_domain_fails_closed_with_valid_digest(
 
     assert result.decision_state == "INVALID_INPUT"
     assert result.reason_codes == ("SCHEMA_VIOLATION",)
-    assert result.rule_trace == (
-        {"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},
-    )
+    assert result.rule_trace == ({"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},)
     assert adjudication.verify_output(result.to_dict())
     assert len(result.output_sha256) == 64
-

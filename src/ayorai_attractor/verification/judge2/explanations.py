@@ -1,4 +1,5 @@
 """Deterministic explanations derived only from a canonical Judge 2 result."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

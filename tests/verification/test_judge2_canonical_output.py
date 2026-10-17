@@ -25,18 +25,20 @@ def evidence(item_id: str = "e1", *, claim_id: str = "c1") -> Evidence:
 
 def request_one(*, out_of_scope: bool = False, invalid: bool = False) -> dict[str, object]:
     claim_text = "Claim A"
-    atoms: list[dict[str, object]] = [] if invalid else [
-        {"id": "a1", "text": claim_text, "start_offset": 0, "end_offset": len(claim_text)}
-    ]
+    atoms: list[dict[str, object]] = (
+        []
+        if invalid
+        else [{"id": "a1", "text": claim_text, "start_offset": 0, "end_offset": len(claim_text)}]
+    )
     return {
         "protocol_version": "r2-a",
         "claim_id": "c1",
         "claim_text": claim_text,
         "atoms": atoms,
         "evidence": [] if invalid or out_of_scope else [evidence()],
-        "stances": [] if invalid or out_of_scope else [
-            {"id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"}
-        ],
+        "stances": []
+        if invalid or out_of_scope
+        else [{"id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"}],
         "source_texts": {} if invalid or out_of_scope else {"source-e1": "x"},
         "out_of_scope": out_of_scope,
     }
@@ -86,12 +88,18 @@ def test_t8_invariant_i1_holds_for_every_decision_state(
     assert result.decision_state == expected_state
     assert (result.verdict is not None) is (result.decision_state == "DECIDED")
     assert result.to_dict()["output_sha256"] == result.output_sha256
-    assert result.output_sha256 == __import__("hashlib").sha256(
-        __import__("ayorai_attractor.verification.judge2", fromlist=["canonical_json_bytes"])
-        .canonical_json_bytes({
-            key: value for key, value in result.to_dict().items() if key != "output_sha256"
-        })
-    ).hexdigest()
+    assert (
+        result.output_sha256
+        == __import__("hashlib")
+        .sha256(
+            __import__(
+                "ayorai_attractor.verification.judge2", fromlist=["canonical_json_bytes"]
+            ).canonical_json_bytes(
+                {key: value for key, value in result.to_dict().items() if key != "output_sha256"}
+            )
+        )
+        .hexdigest()
+    )
 
 
 def test_t9_adjudication_executes_without_network(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -186,9 +194,7 @@ def test_naive_datetime_fails_closed_as_schema_violation() -> None:
 
     assert result.decision_state == "INVALID_INPUT"
     assert result.reason_codes == ("SCHEMA_VIOLATION",)
-    assert result.rule_trace == (
-        {"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},
-    )
+    assert result.rule_trace == ({"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},)
     assert verify_output(result.to_dict())
     assert len(result.output_sha256) == 64
 
@@ -204,8 +210,6 @@ def test_non_finite_float_fails_closed_as_schema_violation(
 
     assert result.decision_state == "INVALID_INPUT"
     assert result.reason_codes == ("SCHEMA_VIOLATION",)
-    assert result.rule_trace == (
-        {"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},
-    )
+    assert result.rule_trace == ({"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},)
     assert verify_output(result.to_dict())
     assert len(result.output_sha256) == 64

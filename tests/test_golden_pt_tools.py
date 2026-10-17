@@ -88,9 +88,7 @@ def test_validator_rejects_duplicate_id(tmp_path: Path) -> None:
 SPLIT_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "split_golden_pt.py"
 
 
-def run_split(
-    input_path: Path, output_dir: Path
-) -> subprocess.CompletedProcess[str]:
+def run_split(input_path: Path, output_dir: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(SPLIT_SCRIPT), str(input_path), str(output_dir)],
         capture_output=True,
@@ -143,9 +141,7 @@ def write_annotations(path: Path, labels: list[str]) -> None:
     )
 
 
-def run_kappa(
-    annotator_a: Path, annotator_b: Path
-) -> subprocess.CompletedProcess[str]:
+def run_kappa(annotator_a: Path, annotator_b: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(KAPPA_SCRIPT), str(annotator_a), str(annotator_b)],
         capture_output=True,
@@ -204,7 +200,6 @@ def test_validator_rejects_non_text_difficulty_without_exception(tmp_path: Path)
     assert validate(path)
 
 
-
 def write_corpus(path: Path, sources: list[dict[str, str]]) -> None:
     path.write_text(
         "".join(json.dumps(source, ensure_ascii=False) + "\n" for source in sources),
@@ -254,13 +249,15 @@ def test_validator_corpus_rejects_unknown_source_id(tmp_path: Path) -> None:
     write_jsonl(case_path, [VALID_CASE])
     write_corpus(
         corpus_path,
-        [{
-            "source_id": "src-other",
-            "source_url": VALID_CASE["source_url"],
-            "source_license": VALID_CASE["source_license"],
-            "retrieved_at": "2026-10-04T12:00:00Z",
-            "text": VALID_CASE["source_excerpt"],
-        }],
+        [
+            {
+                "source_id": "src-other",
+                "source_url": VALID_CASE["source_url"],
+                "source_license": VALID_CASE["source_license"],
+                "retrieved_at": "2026-10-04T12:00:00Z",
+                "text": VALID_CASE["source_excerpt"],
+            }
+        ],
     )
 
     errors = validate(case_path, corpus_path)
@@ -274,13 +271,15 @@ def test_validator_corpus_rejects_license_mismatch(tmp_path: Path) -> None:
     write_jsonl(case_path, [VALID_CASE])
     write_corpus(
         corpus_path,
-        [{
-            "source_id": VALID_CASE["source_id"],
-            "source_url": VALID_CASE["source_url"],
-            "source_license": "CC0-1.0",
-            "retrieved_at": "2026-10-04T12:00:00Z",
-            "text": VALID_CASE["source_excerpt"],
-        }],
+        [
+            {
+                "source_id": VALID_CASE["source_id"],
+                "source_url": VALID_CASE["source_url"],
+                "source_license": "CC0-1.0",
+                "retrieved_at": "2026-10-04T12:00:00Z",
+                "text": VALID_CASE["source_excerpt"],
+            }
+        ],
     )
 
     errors = validate(case_path, corpus_path)

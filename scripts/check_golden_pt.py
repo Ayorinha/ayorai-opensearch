@@ -78,9 +78,7 @@ def _read_corpus(path: Path) -> tuple[dict[str, dict[str, str]], list[str]]:
             continue
 
         if not isinstance(source, dict):
-            errors.append(
-                f"corpus linha {line_number}: documento deve ser um objeto JSON"
-            )
+            errors.append(f"corpus linha {line_number}: documento deve ser um objeto JSON")
             continue
 
         fields = set(source)
@@ -92,22 +90,18 @@ def _read_corpus(path: Path) -> tuple[dict[str, dict[str, str]], list[str]]:
             errors.append(f"corpus linha {line_number}: campo extra: {field}")
 
         invalid_text = [
-            field
-            for field in required_fields & fields
-            if not _nonempty_text(source[field])
+            field for field in required_fields & fields if not _nonempty_text(source[field])
         ]
         for field in sorted(invalid_text):
             errors.append(
-                f"corpus linha {line_number}: valor inválido em {field}: "
-                "texto não vazio esperado"
+                f"corpus linha {line_number}: valor inválido em {field}: texto não vazio esperado"
             )
 
         if "source_license" in source and (
-            not _nonempty_text(source["source_license"])
-            or source["source_license"] == "unknown"
+            not _nonempty_text(source["source_license"]) or source["source_license"] == "unknown"
         ):
             errors.append(
-                f'corpus linha {line_number}: valor inválido em source_license: '
+                f"corpus linha {line_number}: valor inválido em source_license: "
                 'texto não vazio diferente de "unknown" esperado'
             )
 
@@ -120,9 +114,7 @@ def _read_corpus(path: Path) -> tuple[dict[str, dict[str, str]], list[str]]:
             and source.get("source_license") != "unknown"
         )
         if _nonempty_text(source_id) and source_id in corpus:
-            errors.append(
-                f"corpus linha {line_number}: source_id repetido: {source_id!r}"
-            )
+            errors.append(f"corpus linha {line_number}: source_id repetido: {source_id!r}")
         elif source_is_valid:
             corpus[source_id] = source
 
@@ -203,8 +195,7 @@ def validate(path: Path, corpus_path: Path | None = None) -> list[str]:
                 source = corpus.get(source_id)
                 if source is None:
                     errors.append(
-                        f"linha {line_number}: source_id não encontrado no corpus: "
-                        f"{source_id!r}"
+                        f"linha {line_number}: source_id não encontrado no corpus: {source_id!r}"
                     )
                 else:
                     if case.get("source_url") != source["source_url"]:
@@ -218,9 +209,7 @@ def validate(path: Path, corpus_path: Path | None = None) -> list[str]:
                             f"do corpus para {source_id!r}"
                         )
                     excerpt = case.get("source_excerpt")
-                    if _nonempty_text(excerpt) and locate_excerpt(
-                        source["text"], excerpt
-                    ) is None:
+                    if _nonempty_text(excerpt) and locate_excerpt(source["text"], excerpt) is None:
                         errors.append(
                             f"linha {line_number}: source_excerpt não encontrado "
                             f"na fonte do corpus para {source_id!r}"

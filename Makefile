@@ -6,6 +6,10 @@ test:
 
 lint:
 	ruff check .
+	ruff format --check .
+
+format:
+	ruff format .
 
 typecheck:
 	mypy src/ayorai_attractor

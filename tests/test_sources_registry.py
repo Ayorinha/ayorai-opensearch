@@ -68,6 +68,7 @@ def test_unknown_source_field_is_rejected() -> None:
     errors = list(_validator().iter_errors(registry))
     assert errors
 
+
 def test_format_checker_has_required_optional_validators() -> None:
     checker = FormatChecker()
     assert "date-time" in checker.checkers
@@ -99,4 +100,3 @@ def test_invalid_source_url_format_is_rejected() -> None:
     registry["sources"][0] = source
     errors = list(_validator().iter_errors(registry))
     assert any("url" in str(error.path) for error in errors)
-

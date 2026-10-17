@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Verify legacy predictions from the pre-1.2a baseline checkout only."""
+
 from __future__ import annotations
 
 import argparse

@@ -33,9 +33,7 @@ class TraceContext:
     def event(self, name: str, **attributes: object) -> None:
         if not name.strip():
             raise ValueError("event name must not be blank")
-        normalized = tuple(
-            sorted((key, str(value)) for key, value in attributes.items())
-        )
+        normalized = tuple(sorted((key, str(value)) for key, value in attributes.items()))
         event = TraceEvent(name=name, attributes=normalized)
         self._events.append(event)
         if self.sink is not None:

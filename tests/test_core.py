@@ -59,10 +59,9 @@ def test_orchestrator_preserves_agent_output_and_notice(
         "IMPLEMENTED_AGENTS",
         {"researcher": ResearchAgent},
     )
+
     class FakeRouter:
-        def select(
-            self, query: str, mode: str, max_agents: int
-        ) -> SimpleNamespace:
+        def select(self, query: str, mode: str, max_agents: int) -> SimpleNamespace:
             return SimpleNamespace(roles=[SimpleNamespace(id="researcher")])
 
     monkeypatch.setattr(orchestrator, "AdaptiveRouter", FakeRouter)

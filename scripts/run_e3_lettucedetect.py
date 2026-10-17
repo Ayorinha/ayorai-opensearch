@@ -33,9 +33,7 @@ BOOTSTRAP = 10000
 
 def binary(label: str) -> str:
     return (
-        "SUSTENTADO"
-        if label.upper() in {"SUPPORTS", "SUPPORTED", "VERIFIED"}
-        else "NAO_SUSTENTADO"
+        "SUSTENTADO" if label.upper() in {"SUPPORTS", "SUPPORTED", "VERIFIED"} else "NAO_SUSTENTADO"
     )
 
 
@@ -55,8 +53,7 @@ def bootstrap_balanced_accuracy(gold: list[str], pred: list[str]) -> tuple[float
             if total:
                 recalls.append(
                     sum(
-                        x == label and y == label
-                        for x, y in zip(sampled_g, sampled_p, strict=True)
+                        x == label and y == label for x, y in zip(sampled_g, sampled_p, strict=True)
                     )
                     / total
                 )
@@ -70,13 +67,7 @@ def balanced_accuracy(gold: list[str], pred: list[str]) -> float:
     for label in ("SUSTENTADO", "NAO_SUSTENTADO"):
         total = sum(x == label for x in gold)
         recalls.append(
-            (
-                sum(
-                    x == label and y == label
-                    for x, y in zip(gold, pred, strict=True)
-                )
-                / total
-            )
+            (sum(x == label and y == label for x, y in zip(gold, pred, strict=True)) / total)
             if total
             else 0.0
         )
@@ -107,9 +98,7 @@ def evaluate_detector(
     translator: Any | None,
 ) -> dict[str, Any]:
     eligible = [
-        c
-        for c in cases
-        if "global" in c and c.get("expected_claims") and c.get("evidence_pool")
+        c for c in cases if "global" in c and c.get("expected_claims") and c.get("evidence_pool")
     ]
     results = []
     predictions = []
@@ -121,9 +110,7 @@ def evaluate_detector(
         docs = [corpus[str(doc_id)]["content"] for doc_id in case["evidence_pool"]]
         claim_texts = [str(item["text"]) for item in case["expected_claims"]]
         answer_texts = (
-            claim_texts
-            if translator is None
-            else [translator.translate(x) for x in claim_texts]
+            claim_texts if translator is None else [translator.translate(x) for x in claim_texts]
         )
         started = time.perf_counter()
         spans = []
@@ -143,16 +130,18 @@ def evaluate_detector(
         gold.append(expected)
         latencies.append(latency)
         by_category.setdefault(str(case["category"]), []).append(ok)
-        results.append({
-            "id": str(case["id"]),
-            "category": str(case["category"]),
-            "expected": expected,
-            "predicted": predicted,
-            "unsupported_span_count": len(spans),
-            "unsupported_spans": spans,
-            "correct": ok,
-            "latency_ms": round(latency, 3),
-        })
+        results.append(
+            {
+                "id": str(case["id"]),
+                "category": str(case["category"]),
+                "expected": expected,
+                "predicted": predicted,
+                "unsupported_span_count": len(spans),
+                "unsupported_spans": spans,
+                "correct": ok,
+                "latency_ms": round(latency, 3),
+            }
+        )
 
     ci = bootstrap_balanced_accuracy(gold, predictions)
     return {
@@ -197,12 +186,10 @@ def paired(gold: list[str], left: list[str], right: list[str]) -> dict[str, Any]
     return {
         "case_count": len(gold),
         "left_correct_right_wrong": sum(
-            g == a and g != b
-            for g, a, b in zip(gold, left, right, strict=True)
+            g == a and g != b for g, a, b in zip(gold, left, right, strict=True)
         ),
         "right_correct_left_wrong": sum(
-            g != a and g == b
-            for g, a, b in zip(gold, left, right, strict=True)
+            g != a and g == b for g, a, b in zip(gold, left, right, strict=True)
         ),
         "exact_p": mcnemar_exact_pvalue(gold, left, right),
     }
@@ -227,8 +214,10 @@ def main() -> None:
     model_path = hf.snapshot_download(repo_id=model_id, revision=model_revision)
     detector = lettuce.HallucinationDetector(method="transformer", model_path=model_path)
     translator = MarianTranslationBackend(
-        TRANSLATOR_MODEL, TRANSLATOR_REVISION,
-        license_level="EVAL_ONLY", evaluation_mode=True,
+        TRANSLATOR_MODEL,
+        TRANSLATOR_REVISION,
+        license_level="EVAL_ONLY",
+        evaluation_mode=True,
     )
 
     corpus = {str(row["doc_id"]): row for row in _load_jsonl(CORPUS)}
@@ -279,9 +268,7 @@ def main() -> None:
 
         gold = d1["_gold"]
         preds = {"D1": d1["_predictions"], "D2": d2["_predictions"], **f1_by_path}
-        binary_comparison = {
-            key: binary_metrics(gold, preds[key]) for key in ("A", "B", "C")
-        }
+        binary_comparison = {key: binary_metrics(gold, preds[key]) for key in ("A", "B", "C")}
         majority_accuracy = max(
             sum(label == value for label in gold) for value in ("SUSTENTADO", "NAO_SUSTENTADO")
         ) / len(gold)
@@ -349,7 +336,7 @@ def main() -> None:
             "mcnemar_D2_vs_B",
             "mcnemar_D2_vs_C",
         ):
-            x=s[key]
+            x = s[key]
             lines.append(
                 f"| {key} | {x['left_correct_right_wrong']} | "
                 f"{x['right_correct_left_wrong']} | {x['exact_p']:.6g} |"

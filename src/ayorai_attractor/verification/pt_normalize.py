@@ -17,22 +17,61 @@ from fractions import Fraction
 _WORD_RE = re.compile(r"[A-Za-zÀ-ÿ]+", re.UNICODE)
 
 _UNITS = {
-    "um": 1, "uma": 1, "dois": 2, "duas": 2, "três": 3, "tres": 3, "quatro": 4,
-    "cinco": 5, "seis": 6, "sete": 7, "oito": 8, "nove": 9,
+    "um": 1,
+    "uma": 1,
+    "dois": 2,
+    "duas": 2,
+    "três": 3,
+    "tres": 3,
+    "quatro": 4,
+    "cinco": 5,
+    "seis": 6,
+    "sete": 7,
+    "oito": 8,
+    "nove": 9,
 }
 _TEENS = {
-    "dez": 10, "onze": 11, "doze": 12, "treze": 13, "quatorze": 14, "catorze": 14,
-    "quinze": 15, "dezesseis": 16, "dezessete": 17, "dezoito": 18, "dezenove": 19,
+    "dez": 10,
+    "onze": 11,
+    "doze": 12,
+    "treze": 13,
+    "quatorze": 14,
+    "catorze": 14,
+    "quinze": 15,
+    "dezesseis": 16,
+    "dezessete": 17,
+    "dezoito": 18,
+    "dezenove": 19,
 }
 _TENS = {
-    "vinte": 20, "trinta": 30, "quarenta": 40, "cinquenta": 50, "cinqüenta": 50,
-    "sessenta": 60, "setenta": 70, "oitenta": 80, "noventa": 90,
+    "vinte": 20,
+    "trinta": 30,
+    "quarenta": 40,
+    "cinquenta": 50,
+    "cinqüenta": 50,
+    "sessenta": 60,
+    "setenta": 70,
+    "oitenta": 80,
+    "noventa": 90,
 }
 _HUNDREDS = {
-    "cem": 100, "cento": 100, "duzentos": 200, "duzentas": 200, "trezentos": 300,
-    "trezentas": 300, "quatrocentos": 400, "quatrocentas": 400, "quinhentos": 500,
-    "quinhentas": 500, "seiscentos": 600, "seiscentas": 600, "setecentos": 700,
-    "setecentas": 700, "oitocentos": 800, "oitocentas": 800, "novecentos": 900,
+    "cem": 100,
+    "cento": 100,
+    "duzentos": 200,
+    "duzentas": 200,
+    "trezentos": 300,
+    "trezentas": 300,
+    "quatrocentos": 400,
+    "quatrocentas": 400,
+    "quinhentos": 500,
+    "quinhentas": 500,
+    "seiscentos": 600,
+    "seiscentas": 600,
+    "setecentos": 700,
+    "setecentas": 700,
+    "oitocentos": 800,
+    "oitocentas": 800,
+    "novecentos": 900,
     "novecentas": 900,
 }
 _NUMBER_WORDS = {**_UNITS, **_TEENS, **_TENS, **_HUNDREDS}
@@ -42,9 +81,22 @@ _UNIT_NOUNS = frozenset(
 )
 
 _DENOMINATORS = {
-    "meio": 2, "terço": 3, "terco": 3, "quarto": 4, "quinto": 5, "sexto": 6,
-    "sétimo": 7, "setimo": 7, "oitavo": 8, "nono": 9, "décimo": 10, "decimo": 10,
-    "vigésimo": 20, "vigesimo": 20, "trigésimo": 30, "trigesimo": 30,
+    "meio": 2,
+    "terço": 3,
+    "terco": 3,
+    "quarto": 4,
+    "quinto": 5,
+    "sexto": 6,
+    "sétimo": 7,
+    "setimo": 7,
+    "oitavo": 8,
+    "nono": 9,
+    "décimo": 10,
+    "decimo": 10,
+    "vigésimo": 20,
+    "vigesimo": 20,
+    "trigésimo": 30,
+    "trigesimo": 30,
 }
 _DENOMINATOR_PATTERN = "|".join(
     sorted({f"{name}s?" for name in _DENOMINATORS}, key=len, reverse=True)
@@ -61,9 +113,7 @@ _FRACTION_RE = re.compile(
 )
 _HALF_RE = re.compile(r"\bmetade\b", re.IGNORECASE)
 _MULTIPLIERS = {"dobro": 2, "triplo": 3, "quádruplo": 4, "quadruplo": 4, "quíntuplo": 5}
-_MULTIPLIER_RE = re.compile(
-    r"\b(?P<word>dobro|triplo|qu[áa]druplo|quíntuplo)\b", re.IGNORECASE
-)
+_MULTIPLIER_RE = re.compile(r"\b(?P<word>dobro|triplo|qu[áa]druplo|quíntuplo)\b", re.IGNORECASE)
 # "40 (quarenta)" -> "40": the legal duplicate of a number is not a second fact.
 _DUPLICATE_RE = re.compile(r"\b(?P<digits>\d+)\s*\((?P<words>[a-zà-ÿ\s]+)\)", re.IGNORECASE)
 
@@ -177,9 +227,41 @@ def normalize_numerals(text: str) -> str:
 
 _ENTITY_STOP = frozenset(
     {
-        "o", "a", "os", "as", "pelo", "pela", "pelos", "pelas", "no", "na", "nos", "nas",
-        "em", "de", "do", "da", "dos", "das", "segundo", "para", "com", "ao", "aos", "se",
-        "um", "uma", "the", "in", "of", "for", "by", "nao", "não", "art", "lei",
+        "o",
+        "a",
+        "os",
+        "as",
+        "pelo",
+        "pela",
+        "pelos",
+        "pelas",
+        "no",
+        "na",
+        "nos",
+        "nas",
+        "em",
+        "de",
+        "do",
+        "da",
+        "dos",
+        "das",
+        "segundo",
+        "para",
+        "com",
+        "ao",
+        "aos",
+        "se",
+        "um",
+        "uma",
+        "the",
+        "in",
+        "of",
+        "for",
+        "by",
+        "nao",
+        "não",
+        "art",
+        "lei",
     }
 )
 _CAPITAL_RE = re.compile(r"\b[A-ZÀ-Ý][\wÀ-ÿ]*|\b(?:de|do|da|dos|das|e|of)\b")

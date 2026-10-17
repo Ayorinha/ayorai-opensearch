@@ -48,8 +48,5 @@ class GroundedSynthesizer:
                 answer="ABSTAIN: one or more claims lack valid evidence citations.",
                 grounding=grounding,
             )
-        lines = [
-            f"{claim} [{', '.join(citation_ids_by_claim[claim])}]"
-            for claim in claims
-        ]
+        lines = [f"{claim} [{', '.join(citation_ids_by_claim[claim])}]" for claim in claims]
         return SynthesisResult(answer="\n".join(lines), grounding=grounding)

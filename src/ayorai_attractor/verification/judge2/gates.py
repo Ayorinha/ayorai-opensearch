@@ -3,6 +3,7 @@
 This module can reject invalid input, abstain, or mark evidence admissible.
 It deliberately does not calculate or emit a factual verdict.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -17,18 +18,35 @@ from ayorai_attractor.verification.models import Evidence
 SUPPORTED_PROTOCOL_VERSION = "r2-a"
 DecisionState = Literal["INVALID_INPUT", "ABSTAINED"]
 
-IMPLEMENTED_G1_CODES = frozenset({
-    "SCHEMA_VIOLATION", "EMPTY_CLAIM", "NO_ATOMS", "DUPLICATE_ID",
-    "DANGLING_REFERENCE", "DUPLICATE_STANCE", "ATOM_SPAN_OUT_OF_RANGE",
-    "UNSUPPORTED_PROTOCOL_VERSION",
-})
-IMPLEMENTED_G2_CODES = frozenset({
-    "OUT_OF_SCOPE", "NON_FACTUAL_CLAIM", "MISSING_TEMPORAL_ANCHOR",
-    "RETRIEVAL_FAILURE", "EVIDENCE_POOL_INTEGRITY_FAILURE",
-})
-IMPLEMENTED_E_REJECTIONS = frozenset({
-    "OFFSET_INVALID", "SOURCE_UNAVAILABLE", "EXCERPT_MISMATCH", "NEUTRAL_STANCE",
-})
+IMPLEMENTED_G1_CODES = frozenset(
+    {
+        "SCHEMA_VIOLATION",
+        "EMPTY_CLAIM",
+        "NO_ATOMS",
+        "DUPLICATE_ID",
+        "DANGLING_REFERENCE",
+        "DUPLICATE_STANCE",
+        "ATOM_SPAN_OUT_OF_RANGE",
+        "UNSUPPORTED_PROTOCOL_VERSION",
+    }
+)
+IMPLEMENTED_G2_CODES = frozenset(
+    {
+        "OUT_OF_SCOPE",
+        "NON_FACTUAL_CLAIM",
+        "MISSING_TEMPORAL_ANCHOR",
+        "RETRIEVAL_FAILURE",
+        "EVIDENCE_POOL_INTEGRITY_FAILURE",
+    }
+)
+IMPLEMENTED_E_REJECTIONS = frozenset(
+    {
+        "OFFSET_INVALID",
+        "SOURCE_UNAVAILABLE",
+        "EXCERPT_MISMATCH",
+        "NEUTRAL_STANCE",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -113,9 +131,7 @@ def _contract_code(rules: Mapping[str, Any], section: str, code: str) -> str:
     return value
 
 
-def _e_rejection(
-    rules: Mapping[str, Any], rule_id: str, field: str = "rejection"
-) -> str:
+def _e_rejection(rules: Mapping[str, Any], rule_id: str, field: str = "rejection") -> str:
     entries = rules["evidence_admissibility"]
     entry = next(item for item in entries if item["id"] == rule_id)
     value = entry[field]
@@ -124,9 +140,7 @@ def _e_rejection(
     return value
 
 
-def _require_mapping(
-    value: object, field: str
-) -> Mapping[str, object] | InvalidJudgeInput:
+def _require_mapping(value: object, field: str) -> Mapping[str, object] | InvalidJudgeInput:
     if not isinstance(value, Mapping):
         return _invalid("SCHEMA_VIOLATION", field, f"{field} must be an object")
     if not all(isinstance(key, str) for key in value):
@@ -244,7 +258,12 @@ def _validate_g1(
                 "atom_id and evidence_id are required",
             )
         if not isinstance(relation, str) or relation not in {
-            "SUPPORTS", "CONTRADICTS", "NEUTRAL", "supports", "contradicts", "neutral"
+            "SUPPORTS",
+            "CONTRADICTS",
+            "NEUTRAL",
+            "supports",
+            "contradicts",
+            "neutral",
         }:
             return _invalid(
                 "SCHEMA_VIOLATION",
@@ -331,7 +350,7 @@ def _evidence_dispositions(
                 )
                 continue
             excerpt_at_offsets = unicodedata.normalize(
-                "NFC", source_text[item.start_offset:item.end_offset]
+                "NFC", source_text[item.start_offset : item.end_offset]
             ) == unicodedata.normalize("NFC", item.excerpt)
             if not excerpt_at_offsets:
                 results.append(
@@ -343,9 +362,7 @@ def _evidence_dispositions(
                 actual_hash = hashlib.sha256(normalized_source.encode("utf-8")).hexdigest()
                 if actual_hash != item.normalized_content_hash:
                     results.append(
-                        EvidenceDisposition(
-                            item.id, atom_id, False, _e_rejection(rules, "E2")
-                        )
+                        EvidenceDisposition(item.id, atom_id, False, _e_rejection(rules, "E2"))
                     )
                     continue
             stance = stance_by_pair.get((atom_id, item.id))

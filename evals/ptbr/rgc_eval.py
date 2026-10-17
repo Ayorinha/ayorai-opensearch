@@ -66,9 +66,7 @@ INVALID = "INVALID_PREDICTION"
 STRICT_CORPUS_FIELDS = ("source_id", "source_url", "source_license", "retrieved_at", "text")
 
 # Start of a legal provision at the beginning of a line.
-PROVISION_RE = re.compile(
-    r"(?m)^(?:Art\. ?\d+|§ ?\d+|Parágrafo único|[IVXLC]+ ?[-–]|[a-z]\) )"
-)
+PROVISION_RE = re.compile(r"(?m)^(?:Art\. ?\d+|§ ?\d+|Parágrafo único|[IVXLC]+ ?[-–]|[a-z]\) )")
 ARTICLE_RE = re.compile(r"(?m)^Art\. ?\d+")
 TOKEN_RE = re.compile(r"\w+")
 # Function words only; no domain terms. Frozen with the runner.
@@ -199,7 +197,7 @@ class BM25Index:
 
 
 def _text(passage: Passage, documents: Mapping[str, Document]) -> str:
-    return documents[passage.document_id].text[passage.start:passage.end]
+    return documents[passage.document_id].text[passage.start : passage.end]
 
 
 # ------------------------------------------------------------------ predict
@@ -294,20 +292,26 @@ def predict(
             }
             for offset, edge in enumerate(edges, start=1)
         )
-    result = adjudication.adjudicate({
-        "protocol_version": "r2-a",
-        "claim_id": claim_id,
-        "claim_text": claim_text,
-        "atoms": [
-            {"id": f"a{i}", "text": claim_text[start:end], "start_offset": start,
-             "end_offset": end}
-            for i, (start, end) in enumerate(spans, start=1)
-        ],
-        "evidence": evidence,
-        "stances": stances,
-        "source_texts": {p.document_id: documents[p.document_id].text for p in passages},
-        "retrieval_succeeded": retrieval_succeeded,
-    }).to_dict()
+    result = adjudication.adjudicate(
+        {
+            "protocol_version": "r2-a",
+            "claim_id": claim_id,
+            "claim_text": claim_text,
+            "atoms": [
+                {
+                    "id": f"a{i}",
+                    "text": claim_text[start:end],
+                    "start_offset": start,
+                    "end_offset": end,
+                }
+                for i, (start, end) in enumerate(spans, start=1)
+            ],
+            "evidence": evidence,
+            "stances": stances,
+            "source_texts": {p.document_id: documents[p.document_id].text for p in passages},
+            "retrieval_succeeded": retrieval_succeeded,
+        }
+    ).to_dict()
     return {
         "decision_state": result["decision_state"],
         "reason_codes": result["reason_codes"],
@@ -430,8 +434,8 @@ def compute_metrics(
         "mcnemar_p_below_0_05": p_value < 0.05,
     }
     primary["h1_supported"] = all(
-        primary[k] for k in ("margin_at_least_10pp", "ci_lower_above_baseline",
-                             "mcnemar_p_below_0_05")
+        primary[k]
+        for k in ("margin_at_least_10pp", "ci_lower_above_baseline", "mcnemar_p_below_0_05")
     )
     return {
         "n": len(gold),
@@ -440,8 +444,10 @@ def compute_metrics(
         "invalid_predictions": pred.count(INVALID),
         "system": {name: round(value, 6) for name, value in system.items()},
         "system_ci95": {name: [round(v, 6) for v in pair] for name, pair in ci.items()},
-        "baseline": {"label": baseline_label,
-                     **{name: round(value, 6) for name, value in base.items()}},
+        "baseline": {
+            "label": baseline_label,
+            **{name: round(value, 6) for name, value in base.items()},
+        },
         "mcnemar": {
             "system_right_baseline_wrong": discordant_system,
             "system_wrong_baseline_right": discordant_base,
@@ -456,8 +462,9 @@ def compute_metrics(
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
-            if line.strip()]
+    return [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
 
 
 def _sha256(path: Path) -> str:
@@ -466,8 +473,9 @@ def _sha256(path: Path) -> str:
 
 def _git_commit() -> str | None:
     try:
-        out = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
-                             text=True, check=True)
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True
+        )
     except (OSError, subprocess.CalledProcessError):
         return None
     return out.stdout.strip()
@@ -519,12 +527,18 @@ def evaluate(
             continue
         atoms = case_atoms(case)
         if index is None:
-            prediction = predict(case["claim"], oracle_passages(case, documents), documents,
-                                 atoms=atoms)
+            prediction = predict(
+                case["claim"], oracle_passages(case, documents), documents, atoms=atoms
+            )
         else:
             hits = index.search(case["claim"], top_k)
-            prediction = predict(case["claim"], [p for p, _ in hits], documents,
-                                 atoms=atoms, retrieval_succeeded=bool(hits))
+            prediction = predict(
+                case["claim"],
+                [p for p, _ in hits],
+                documents,
+                atoms=atoms,
+                retrieval_succeeded=bool(hits),
+            )
             prediction["retrieval_scores"] = [round(s, 6) for _, s in hits]
         label = to_label(prediction, vocabulary)
         rows.append({"case_id": case_id, "gold": gold, "predicted": label, **prediction})
@@ -549,8 +563,9 @@ def evaluate(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     run = sub.add_parser("run")
     run.add_argument("cases", type=Path)
@@ -573,8 +588,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     result = evaluate(
-        _read_jsonl(args.cases), load_labels(args.labels, args.vocabulary), documents,
-        mode=args.mode, vocabulary=args.vocabulary, top_k=args.top_k,
+        _read_jsonl(args.cases),
+        load_labels(args.labels, args.vocabulary),
+        documents,
+        mode=args.mode,
+        vocabulary=args.vocabulary,
+        top_k=args.top_k,
         granularity=args.granularity,
     )
     report = {
@@ -583,24 +602,29 @@ def main(argv: Sequence[str] | None = None) -> int:
         "git_commit": _git_commit(),
         "python": sys.version.split()[0],
         "inputs": {
-            "cases": str(args.cases), "cases_sha256": _sha256(args.cases),
+            "cases": str(args.cases),
+            "cases_sha256": _sha256(args.cases),
             "labels_sha256": _sha256(args.labels),
             "documents_sha256": _sha256(args.documents),
         },
         "config": {
-            "mode": args.mode, "vocabulary": args.vocabulary, "top_k": args.top_k,
-            "granularity": args.granularity, "bm25": {"k1": BM25_K1, "b": BM25_B},
+            "mode": args.mode,
+            "vocabulary": args.vocabulary,
+            "top_k": args.top_k,
+            "granularity": args.granularity,
+            "bm25": {"k1": BM25_K1, "b": BM25_B},
             "stance_detector": f"{RuleStanceDetector.component}/{RuleStanceDetector.version}",
             "bootstrap": {"iterations": BOOTSTRAP_ITERATIONS, "seed": SEED},
         },
         **result,
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
-                        encoding="utf-8")
+    args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     m = result["metrics"]
-    print(f"n={m['n']} accuracy={m['system']['accuracy']} "
-          f"baseline={m['baseline']['accuracy']} h1={m['primary_criterion']['h1_supported']}")
+    print(
+        f"n={m['n']} accuracy={m['system']['accuracy']} "
+        f"baseline={m['baseline']['accuracy']} h1={m['primary_criterion']['h1_supported']}"
+    )
     return 0
 
 

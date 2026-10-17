@@ -177,6 +177,7 @@ jobs:
         run: python scripts/lint_golden.py
       - run: python -c "import mcp, agents, ayorai_attractor; print(mcp.__file__); print(agents.__file__); print(ayorai_attractor.__file__)"
       - run: ruff check .
+      - run: ruff format --check .
       - run: mypy src/ayorai_attractor
       - name: Strict mypy blocking — evidence
         run: mypy --strict src/ayorai_attractor/evidence

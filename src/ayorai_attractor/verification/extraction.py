@@ -111,8 +111,7 @@ class ClaimExtractor(Protocol):
     from this contract to prevent circular verification.
     """
 
-    def extract(self, response: str) -> ClaimExtractionResult:
-        ...
+    def extract(self, response: str) -> ClaimExtractionResult: ...
 
 
 class RuleClaimExtractor:
@@ -190,9 +189,7 @@ class LLMClaimExtractor:
             {
                 "task": "decompose the model response into atomic factual claims",
                 "response": response,
-                "output_schema": {
-                    "claims": [{"text": "string", "confidence": "number"}]
-                },
+                "output_schema": {"claims": [{"text": "string", "confidence": "number"}]},
             },
             ensure_ascii=False,
             sort_keys=True,

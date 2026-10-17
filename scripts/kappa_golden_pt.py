@@ -49,10 +49,7 @@ def calculate_kappa(a: dict[str, str], b: dict[str, str]) -> tuple[int, float, l
     counts_a = Counter(a.values())
     counts_b = Counter(b.values())
     labels = set(counts_a) | set(counts_b)
-    pe = sum(
-        (counts_a[label] / n) * (counts_b[label] / n)
-        for label in labels
-    ) if n else 1.0
+    pe = sum((counts_a[label] / n) * (counts_b[label] / n) for label in labels) if n else 1.0
 
     if pe == 1:
         raise ZeroDivisionError

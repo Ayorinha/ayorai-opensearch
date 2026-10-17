@@ -35,9 +35,7 @@ OUT_OF_SCOPE_TERMS = (
 
 def load_jsonl(path: Path) -> list[dict[str, object]]:
     return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
 
 
@@ -73,10 +71,7 @@ class FixtureRetriever:
 
 def main() -> None:
     cases = load_jsonl(GOLDEN)
-    corpus = {
-        str(item["doc_id"]): item
-        for item in load_jsonl(CORPUS)
-    }
+    corpus = {str(item["doc_id"]): item for item in load_jsonl(CORPUS)}
     legacy = evaluate_golden_v0(GOLDEN, CORPUS)
     legacy_by_id = {item["id"]: item["predicted"] for item in legacy["results"]}
 
@@ -109,12 +104,10 @@ def main() -> None:
         pipeline_labels.append(predicted)
 
     correct = sum(
-        gold == predicted
-        for gold, predicted in zip(expected, pipeline_labels, strict=True)
+        gold == predicted for gold, predicted in zip(expected, pipeline_labels, strict=True)
     )
     legacy_correct = sum(
-        gold == predicted
-        for gold, predicted in zip(expected, legacy_labels, strict=True)
+        gold == predicted for gold, predicted in zip(expected, legacy_labels, strict=True)
     )
     legacy_right_new_wrong = sum(
         gold == old and gold != new

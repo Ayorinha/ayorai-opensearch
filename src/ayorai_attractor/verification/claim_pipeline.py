@@ -22,8 +22,7 @@ from .stance import StanceDetector
 
 
 class ScopeClassifier(Protocol):
-    def is_out_of_scope(self, text: str) -> bool:
-        ...
+    def is_out_of_scope(self, text: str) -> bool: ...
 
 
 @dataclass(frozen=True)

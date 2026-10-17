@@ -25,8 +25,10 @@ ReplayIntegrity = Literal["valid", "invalid"]
 
 class AuditTraceStore:
     def __init__(self, path: str | None = None) -> None:
-        configured: str = path if path is not None else os.getenv(
-            "ATTRACTOR_AUDIT_DB", ".attractor/audit.sqlite3"
+        configured: str = (
+            path
+            if path is not None
+            else os.getenv("ATTRACTOR_AUDIT_DB", ".attractor/audit.sqlite3")
         )
         self.path = configured
         if configured != ":memory:":
@@ -47,9 +49,7 @@ class AuditTraceStore:
         self._create_schema_v2_named(connection, "audit_traces")
 
     @staticmethod
-    def _create_schema_v2_named(
-        connection: sqlite3.Connection, table_name: str
-    ) -> None:
+    def _create_schema_v2_named(connection: sqlite3.Connection, table_name: str) -> None:
         # The table name is an internal constant, never caller input.
         connection.execute(
             f"""
@@ -82,8 +82,7 @@ class AuditTraceStore:
             return
 
         columns = {
-            str(row[1])
-            for row in connection.execute("PRAGMA table_info(audit_traces)").fetchall()
+            str(row[1]) for row in connection.execute("PRAGMA table_info(audit_traces)").fetchall()
         }
         required = {
             "legacy_verification",
@@ -225,9 +224,7 @@ class AuditTraceStore:
         legacy_verification, evidence_count, failure_count, stored_digest, version = row
         if version not in (_R2_V1, _R2_V2):
             return "invalid"
-        verification = (
-            legacy_verification if version == _R2_V1 else "not_adjudicated"
-        )
+        verification = legacy_verification if version == _R2_V1 else "not_adjudicated"
         if verification is None:
             return "invalid"
         events: list[dict[str, Any]] = [

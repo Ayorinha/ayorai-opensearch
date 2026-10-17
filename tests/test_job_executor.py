@@ -9,7 +9,7 @@ from ayorai_attractor.job_store import Job, JobStatus, JobStore
 
 @pytest.fixture
 def store() -> Iterator[JobStore]:
-    instance = JobStore(':memory:')
+    instance = JobStore(":memory:")
     try:
         yield instance
     finally:

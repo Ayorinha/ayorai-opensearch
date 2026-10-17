@@ -75,11 +75,7 @@ def _macro_f1(expected: list[str], predicted: list[str]) -> float:
         fn = sum(g == label and p != label for g, p in zip(expected, predicted, strict=True))
         precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / (tp + fn) if tp + fn else 0.0
-        scores.append(
-            2 * precision * recall / (precision + recall)
-            if precision + recall
-            else 0.0
-        )
+        scores.append(2 * precision * recall / (precision + recall) if precision + recall else 0.0)
     return round(sum(scores) / len(scores), 6) if scores else 0.0
 
 
@@ -91,13 +87,10 @@ def _selective_metrics(
     for label in ("VERIFIED", "SUPPORTED"):
         predicted_target = sum(p == label for p in predicted)
         correct_target = sum(
-            g == label and p == label
-            for g, p in zip(expected, predicted, strict=True)
+            g == label and p == label for g, p in zip(expected, predicted, strict=True)
         )
         output[label] = {
-            "precision": round(correct_target / predicted_target, 6)
-            if predicted_target
-            else 0.0,
+            "precision": round(correct_target / predicted_target, 6) if predicted_target else 0.0,
             "coverage": round(predicted_target / total, 6) if total else 0.0,
             "predicted_count": predicted_target,
         }
@@ -115,8 +108,7 @@ def _ece(confidences: list[float], correct: list[bool], bins: int = 10) -> float
         members = [
             i
             for i, score in enumerate(confidences)
-            if low <= score < high
-            or (index == bins - 1 and score == high)
+            if low <= score < high or (index == bins - 1 and score == high)
         ]
         if not members:
             continue
@@ -191,9 +183,7 @@ def _evaluate(
         "selective_verified_supported": _selective_metrics(expected, predicted),
         "abstention": {
             "count": sum(not bool(item["predicted"]) for item in results),
-            "rate": round(
-                sum(not bool(item["predicted"]) for item in results) / len(results), 6
-            )
+            "rate": round(sum(not bool(item["predicted"]) for item in results) / len(results), 6)
             if results
             else 0.0,
         },
@@ -239,9 +229,7 @@ def _evaluate(
         "latency_ms": {
             "p50": round(statistics.median(latencies), 3),
             "p95": round(
-                sorted(latencies)[
-                    min(len(latencies) - 1, int(len(latencies) * 0.95))
-                ],
+                sorted(latencies)[min(len(latencies) - 1, int(len(latencies) * 0.95))],
                 3,
             ),
         },
@@ -342,8 +330,10 @@ def _markdown(report: dict[str, Any]) -> str:
     for suite_key, title in (("golden_v0", "Golden v0"), ("golden_v0_1", "Golden v0.1")):
         suite = report[suite_key]
         lines += [
-            f"## {title}", "",
-            f"Golden SHA-256: {suite['golden_sha256']}", "",
+            f"## {title}",
+            "",
+            f"Golden SHA-256: {suite['golden_sha256']}",
+            "",
             "| Path | Accuracy | Balanced | Macro-F1 | IC95% | ECE | p50 ms | p95 ms |",
             "|---|---:|---:|---:|---:|---:|---:|---:|",
         ]
@@ -389,7 +379,8 @@ def _markdown(report: dict[str, Any]) -> str:
             )
     lines += [
         "",
-        "## Paired McNemar — v0 vs v0.1", "",
+        "## Paired McNemar — v0 vs v0.1",
+        "",
         "| Path | v0 correct / v0.1 wrong | v0.1 correct / v0 wrong | Exact p |",
         "|---|---:|---:|---:|",
     ]
@@ -424,8 +415,10 @@ def main() -> None:
         rule_report = _evaluate(RuleStanceDetector(), cases, corpus)
 
         a_backend = TransformersNLIBackend(
-            EVAL_ONLY_MODEL, EVAL_ONLY_REVISION,
-            license_level=EVAL_ONLY_LEVEL, evaluation_mode=True,
+            EVAL_ONLY_MODEL,
+            EVAL_ONLY_REVISION,
+            license_level=EVAL_ONLY_LEVEL,
+            evaluation_mode=True,
         )
         a_detector = NLIStanceDetector(
             a_backend,
@@ -438,15 +431,19 @@ def main() -> None:
         a_report = _evaluate(a_detector, cases, corpus)
 
         b_backend = TransformersNLIBackend(
-            B_NLI_MODEL, B_NLI_REVISION,
+            B_NLI_MODEL,
+            B_NLI_REVISION,
             license_level="COMMERCIAL_DEFAULT",
         )
         b_translator = MarianTranslationBackend(
-            B_TRANSLATOR_MODEL, B_TRANSLATOR_REVISION,
-            license_level=EVAL_ONLY_LEVEL, evaluation_mode=True,
+            B_TRANSLATOR_MODEL,
+            B_TRANSLATOR_REVISION,
+            license_level=EVAL_ONLY_LEVEL,
+            evaluation_mode=True,
         )
         b_detector = TranslatedNLIStanceDetector(
-            b_backend, b_translator,
+            b_backend,
+            b_translator,
             model=f"{B_TRANSLATOR_MODEL}+{B_NLI_MODEL}",
             version=f"{b_translator.provenance_version}+{b_backend.provenance_version}",
             window_size=int(window["max_characters"]),
@@ -461,20 +458,14 @@ def main() -> None:
         }
 
         def paired_with_c(left: list[str]) -> dict[str, float | int]:
-            gold = [
-                str(case["global"]).upper()
-                for case in cases
-                if "global" in case
-            ]
+            gold = [str(case["global"]).upper() for case in cases if "global" in case]
             return {
                 "case_count": len(gold),
                 "left_correct_c_wrong": sum(
-                    g == x and g != y
-                    for g, x, y in zip(gold, left, predictions["C"], strict=True)
+                    g == x and g != y for g, x, y in zip(gold, left, predictions["C"], strict=True)
                 ),
                 "c_correct_left_wrong": sum(
-                    g != x and g == y
-                    for g, x, y in zip(gold, left, predictions["C"], strict=True)
+                    g != x and g == y for g, x, y in zip(gold, left, predictions["C"], strict=True)
                 ),
                 "exact_p": mcnemar_exact_pvalue(gold, left, predictions["C"]),
             }
@@ -511,9 +502,7 @@ def main() -> None:
         "golden_v0_1": v01,
         "mcnemar_v0_vs_v0_1": paired,
     }
-    stable = json.dumps(
-        report, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    ).encode()
+    stable = json.dumps(report, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     report["report_sha256"] = hashlib.sha256(stable).hexdigest()
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(

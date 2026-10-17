@@ -3,6 +3,7 @@
 This module validates the normative rule data and computes its canonical identity.
 It does not yet replace the legacy r1-a judge or adjudicate claims.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -136,9 +137,7 @@ def _validate_rules(rules: dict[str, Any]) -> None:
             elif section == "composite_rules":
                 required_fields = {"id", "when", "verdict"}
                 if not ({"robustness_atoms", "robustness"} & set(entry)):
-                    raise JudgeRulesError(
-                        f"composite_rules[{index}] needs a robustness field"
-                    )
+                    raise JudgeRulesError(f"composite_rules[{index}] needs a robustness field")
             missing = required_fields - set(entry)
             if unknown or missing:
                 raise JudgeRulesError(
@@ -175,18 +174,14 @@ def _validate_rules(rules: dict[str, Any]) -> None:
         entries = rules[section]
         codes = [entry.get("code") for entry in entries]
         if len(codes) != len(set(codes)) or set(codes) != expected_codes:
-            raise JudgeRulesError(
-                f"{section} must contain each expected G code exactly once"
-            )
+            raise JudgeRulesError(f"{section} must contain each expected G code exactly once")
         expected_id = "G1" if section == "input_gate" else "G2"
         expected_outcome = "INVALID_INPUT" if expected_id == "G1" else "ABSTAINED"
         for entry in entries:
             if entry.get("id") != expected_id:
                 raise JudgeRulesError(f"{section} entries must all use id {expected_id}")
             if entry.get("outcome") != expected_outcome:
-                raise JudgeRulesError(
-                    f"{section} entries must all use outcome {expected_outcome}"
-                )
+                raise JudgeRulesError(f"{section} entries must all use outcome {expected_outcome}")
             expected_rule_id = f"2.0.0/{expected_id}:{entry['code']}"
             if entry.get("rule_id") != expected_rule_id:
                 raise JudgeRulesError(
@@ -201,9 +196,7 @@ def _validate_rules(rules: dict[str, Any]) -> None:
         entries = rules[section]
         ids = [entry.get("id") for entry in entries]
         if len(ids) != len(set(ids)) or set(ids) != expected_ids:
-            raise JudgeRulesError(
-                f"{section} must contain each expected rule ID exactly once"
-            )
+            raise JudgeRulesError(f"{section} must contain each expected rule ID exactly once")
 
     for index, rule in enumerate(rules["atomic_rules"]):
         predicate = rule["when"]
@@ -211,13 +204,9 @@ def _validate_rules(rules: dict[str, Any]) -> None:
             raise JudgeRulesError(f"atomic_rules[{index}].when must be an object")
         unknown = set(predicate) - _ATOMIC_WHEN_FIELDS
         if unknown:
-            raise JudgeRulesError(
-                f"unknown atomic predicate fields: {sorted(unknown)}"
-            )
+            raise JudgeRulesError(f"unknown atomic predicate fields: {sorted(unknown)}")
         if any(value not in _ATOMIC_WHEN_VALUES for value in predicate.values()):
-            raise JudgeRulesError(
-                f"unknown atomic predicate value in rule {rule['id']}"
-            )
+            raise JudgeRulesError(f"unknown atomic predicate value in rule {rule['id']}")
 
     for section, predicates in (
         ("robustness_rules", _ROBUSTNESS_PREDICATES),
@@ -225,15 +214,11 @@ def _validate_rules(rules: dict[str, Any]) -> None:
     ):
         for rule in rules[section]:
             if rule["when"] not in predicates:
-                raise JudgeRulesError(
-                    f"unknown predicate in {section}: {rule['when']!r}"
-                )
+                raise JudgeRulesError(f"unknown predicate in {section}: {rule['when']!r}")
 
     expected_precedence = ["K1", "K2", "K3", "K4", "K5"]
     if rules["composite_precedence"] != expected_precedence:
-        raise JudgeRulesError(
-            "composite_precedence must explicitly order K1 through K5"
-        )
+        raise JudgeRulesError("composite_precedence must explicitly order K1 through K5")
     if [rule["id"] for rule in rules["composite_rules"]] != rules["composite_precedence"]:
         raise JudgeRulesError("composite rules must follow composite_precedence")
 

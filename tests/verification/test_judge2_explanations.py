@@ -85,22 +85,15 @@ def test_explanations_are_derived_from_canonical_result_without_changing_it(
         assert f"Veredito determinístico: {verdict}." in explanation["simple_explanation"]
     else:
         assert result["verdict"] is None
-        assert any(
-            "nenhum veredito factual" in line
-            for line in explanation["simple_explanation"]
-        )
+        assert any("nenhum veredito factual" in line for line in explanation["simple_explanation"])
         explanation_text = " ".join(explanation["simple_explanation"])
-        assert not any(
-            re.search(rf"\b{verdict}\b", explanation_text) for verdict in VERDICTS
-        )
+        assert not any(re.search(rf"\b{verdict}\b", explanation_text) for verdict in VERDICTS)
 
 
 def test_explanation_rejects_tampered_or_contradictory_canonical_result() -> None:
     canonical = adjudicate(request_one()).to_dict()
     tampered = deepcopy(canonical)
-    tampered["verdict"] = (
-        "REFUTED" if canonical["verdict"] != "REFUTED" else "SUPPORTED"
-    )
+    tampered["verdict"] = "REFUTED" if canonical["verdict"] != "REFUTED" else "SUPPORTED"
     with pytest.raises(ValueError, match="invalid output_sha256"):
         explain_canonical_result(tampered)
 
@@ -124,11 +117,25 @@ def test_traceability_generator_has_a_test_for_every_normative_rule() -> None:
         text=True,
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
-    document = (ROOT / "docs" / "judge2" / "TRACEABILITY.md").read_text(
-        encoding="utf-8"
-    )
+    document = (ROOT / "docs" / "judge2" / "TRACEABILITY.md").read_text(encoding="utf-8")
     for rule_id in (
-        "G1", "G2", "E1", "E2", "E3", "A1", "A2", "A3", "A4",
-        "R0", "R1", "R2", "R3", "K1", "K2", "K3", "K4", "K5",
+        "G1",
+        "G2",
+        "E1",
+        "E2",
+        "E3",
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "R0",
+        "R1",
+        "R2",
+        "R3",
+        "K1",
+        "K2",
+        "K3",
+        "K4",
+        "K5",
     ):
         assert f"**{rule_id}**" in document

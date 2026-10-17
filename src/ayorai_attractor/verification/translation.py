@@ -45,10 +45,7 @@ class MarianTranslationBackend:
             evaluation_mode=self.evaluation_mode,
             license_opt_in=self.license_opt_in,
         )
-        return (
-            f"{self.model_id}@{self.model_revision}"
-            f"|license={self.license_level}|{gate}"
-        )
+        return f"{self.model_id}@{self.model_revision}|license={self.license_level}|{gate}"
 
     def _load(self) -> None:
         _ = self.provenance_version

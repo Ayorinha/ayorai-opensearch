@@ -88,12 +88,8 @@ class MetricsCollector:
             requests=self._requests,
             successes=self._successes,
             failures=self._failures,
-            mean_latency_ms=mean(self._latencies_ms)
-            if self._latencies_ms
-            else 0.0,
-            p95_latency_ms=percentile(self._latencies_ms, 0.95)
-            if self._latencies_ms
-            else 0.0,
+            mean_latency_ms=mean(self._latencies_ms) if self._latencies_ms else 0.0,
+            p95_latency_ms=percentile(self._latencies_ms, 0.95) if self._latencies_ms else 0.0,
             estimated_cost=self._estimated_cost,
         )
 

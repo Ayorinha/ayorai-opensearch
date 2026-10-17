@@ -45,10 +45,7 @@ class JobStore:
             )
             """
         )
-        columns = {
-            row[1]
-            for row in self._connection.execute("PRAGMA table_info(jobs)").fetchall()
-        }
+        columns = {row[1] for row in self._connection.execute("PRAGMA table_info(jobs)").fetchall()}
         if "lease_until" not in columns:
             self._connection.execute("ALTER TABLE jobs ADD COLUMN lease_until REAL")
         self._connection.commit()

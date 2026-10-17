@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Generate the committed Judge 2.0.0 decision truth table deterministically."""
+
 from __future__ import annotations
 
 import sys
@@ -79,21 +80,21 @@ def render() -> str:
     for supports, contradicts in product(range(4), range(3)):
         verdict, rule_id = _atomic_verdict(rules, supports, contradicts)
         lines.append(f"| {supports} | {contradicts} | {verdict} | 2.0.0/{rule_id} |")
-    lines.extend([
-        "",
-        "## Composite rules (K1–K5), exhaustive through n=4",
-        "",
-        "| n | Atom verdict tuple | Composite verdict | Rule |",
-        "|---:|---|---|---|",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Composite rules (K1–K5), exhaustive through n=4",
+            "",
+            "| n | Atom verdict tuple | Composite verdict | Rule |",
+            "|---:|---|---|---|",
+        ]
+    )
     for size in range(1, 5):
         for values in product(VERDICTS, repeat=size):
             decisions = [_atom_decision(index, value) for index, value in enumerate(values)]
             verdict, rule_id = _composite_from_contract(rules, decisions)
             tuple_text = ", ".join(values)
-            lines.append(
-                f"| {size} | `({tuple_text})` | {verdict} | {rule_id} |"
-            )
+            lines.append(f"| {size} | `({tuple_text})` | {verdict} | {rule_id} |")
     lines.append("")
     return "\n".join(lines)
 

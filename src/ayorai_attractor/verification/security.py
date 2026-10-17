@@ -25,8 +25,7 @@ def contains_secret(value: object, secret: str) -> bool:
         return contains_secret(asdict(value), secret)
     if isinstance(value, dict):
         return any(
-            contains_secret(k, secret) or contains_secret(v, secret)
-            for k, v in value.items()
+            contains_secret(k, secret) or contains_secret(v, secret) for k, v in value.items()
         )
     if isinstance(value, (list, tuple, set, frozenset)):
         return any(contains_secret(item, secret) for item in value)
