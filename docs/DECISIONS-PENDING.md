@@ -145,7 +145,9 @@ Source: execution plan v5, work queue
 ## DEC-011 — Guia de anotação do RGC após o piloto (fase 1)
 
 - **Data da proposta:** 16/10/2026
-- **Status:** Pendente (Anderson)
+- **Data da aprovação:** 17/10/2026
+- **Decisor:** Anderson Leon Ayora
+- **Status:** Aprovada; implementação documental e piloto exploratório autorizados conforme os gates abaixo.
 - **Bloqueia:** segundo piloto, congelamento do protocolo RGC e redação dos 300 casos definitivos.
 - **Origem:** piloto exploratório de 20 casos (fase 1 do [protocolo](eval/PROTOCOL-GOLDEN-V1.md)), rotulado pelo mantenedor em 16/10/2026. Os rótulos do piloto não integram o benchmark e não foram exportados para o repositório. Os achados abaixo se referem aos casos pelo identificador do piloto.
 - **Distribuição observada no piloto:** 9 `SUPPORTED`, 11 `REFUTED`, 0 `UNVERIFIED`, 0 `PARTIALLY_SUPPORTED`, 0 `CONFLICTING`, 0 `RULE_GAP`. O piloto não continha caso projetado para `PARTIALLY_SUPPORTED` ou `CONFLICTING`; essas regras ainda não foram exercitadas por um anotador humano.
@@ -169,7 +171,7 @@ Source: execution plan v5, work queue
   - **B:** alterar o Judge ou o detector de stance para reconhecer precedência temporal e o marcador "Onde se lê". Exige ADR, nova versão de regras, testes e hashes novos; fica fora do v1.
   - **C:** excluir do v1 todo dispositivo retificado (arts. 84, 86, 34, 90, 93 e 96 da Resolução 765/2023 e do Anexo), com registro no log de exclusões.
 - **Recomendação técnica:** A. Mede o sistema como ele é, sem alterar o Judge, e torna a limitação visível em vez de escondê-la. B pode ser proposta para o v2 com base no estrato medido.
-- **Escolha do mantenedor (17/10/2026):** opção **A**. Registrada aqui; a DEC-011 como um todo continua pendente até a aprovação das Partes 1 e 3 e do ponto aberto.
+- **Escolha do mantenedor (17/10/2026):** opção **A**, aprovada. O rótulo de referência segue o texto vigente após as retificações; redações superadas em “Onde se lê” não contam como apoio. Casos afetados recebem `rectified: true` e são reportados em estrato separado; o Judge permanece inalterado.
 
 ### Parte 3 — Valores, quantificadores e modalidade
 
@@ -185,7 +187,7 @@ Source: execution plan v5, work queue
   | A afirmação troca **dever por faculdade** (ou o inverso), ou **permissão por proibição** | `REFUTED` | "pode ser cobrado" vs. "sem ônus" (pilot-06); "configura restrição vedada" vs. "não configura" (pilot-09) |
   | A afirmação transforma **"preferencialmente"** em obrigação ("deve ser por meio eletrônico") sem dizer "exclusivamente" | **ponto aberto** | Anderson decide: `REFUTED` (o texto não obriga) ou excluir esse tipo de afirmação do v1 |
 
-- **Recomendação técnica:** adotar a tabela. Para o ponto aberto, recomenda-se **não redigir** afirmações desse tipo no v1, porque a fronteira depende de interpretação jurídica que o protocolo não deve delegar ao anotador.
+- **Decisão do mantenedor (17/10/2026):** tabela aprovada. Afirmações que transformem “preferencialmente” em obrigação sem suporte textual explícito ficam excluídas do v1; não serão rotuladas por inferência interpretativa.
 
 ### Encaminhamento proposto após aprovação
 
@@ -195,7 +197,8 @@ Source: execution plan v5, work queue
 
 - **Isolamento (DEC-008):** os textos do primeiro piloto foram consultados em assistentes externos (Grok, ChatGPT). O mantenedor confirmou (17/10/2026) que a justificativa de pilot-04 foi redigida com auxílio do Grok; os demais rótulos foram dados por ele. Por ser descartado, isso não afeta o benchmark. Para o segundo piloto e para o conjunto definitivo, nenhum caso pode ser enviado a ferramenta de IA antes do congelamento e da execução única.
 - **Impacto:** guia de anotação, protocolo, pré-registro e relatório. Não altera código, regras do Judge, hashes ou artefatos Golden.
-- **Aprovação necessária:** Anderson aprova as Partes 1 a 3 (com a opção da Parte 2 e o ponto aberto da Parte 3) antes do segundo piloto.
+- **Aprovação registrada (17/10/2026):** Anderson aprovou as três partes: (1) ausência de confirmação = `UNVERIFIED`; `REFUTED` exige contradição explícita e justificativa com citação incompatível; (2) opção A para retificação; (3) tabela de valores, quantificadores e modalidade, excluindo do v1 afirmações que convertam “preferencialmente” em obrigação sem suporte textual explícito.
+- **Próximo gate:** executar o segundo piloto com cerca de 10 casos novos, usando apenas fontes oficiais verificadas e anotação humana independente de ferramentas de IA. Os casos do piloto serão descartados e não poderão ser enviados a assistentes/modelos. Após análise dos resultados, solicitar congelamento formal do protocolo antes de redigir os 300 casos definitivos.
 
 ## Queue rules
 
