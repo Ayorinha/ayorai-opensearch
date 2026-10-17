@@ -1,6 +1,6 @@
 # Relatório do piloto exploratório RGC PT-BR 01
 
-**Status: [PROPOSTO]**  
+**Status: registro histórico de piloto exploratório — descartado; não é benchmark**  
 **Data do piloto:** 2026-10-16  
 **Anotador:** Anderson Leon Ayora  
 **Redação dos casos:** os 20 casos (afirmação e trechos) foram redigidos pelo Claude (assistente de IA) a partir das fontes oficiais registradas em `evals/ptbr/sources/`; o anotador apenas atribuiu rótulos e justificativas.  
@@ -29,7 +29,7 @@ O piloto não continha casos projetados para exercitar os rótulos PARTIALLY_SUP
 
 ## Achados encaminhados à DEC-011
 
-Os achados estão registrados na [DEC-011, proposta pendente — PR #206](https://github.com/Ayorinha/ayorai-opensearch/pull/206). A escolha do mantenedor para a Parte 2 foi registrada na [PR #207](https://github.com/Ayorinha/ayorai-opensearch/pull/207). Este relatório não reproduz afirmações, trechos de fontes, justificativas ou rótulos individuais.
+Os achados históricos foram discutidos na [PR #206](https://github.com/Ayorinha/ayorai-opensearch/pull/206), e a escolha para a Parte 2 foi registrada na [PR #207](https://github.com/Ayorinha/ayorai-opensearch/pull/207). A decisão consolidada foi aprovada na DEC-011 e documentada na [PR #227](https://github.com/Ayorinha/ayorai-opensearch/pull/227). Este relatório não reproduz afirmações, trechos de fontes, justificativas ou rótulos individuais.
 
 1. **Confirmação versus contradição — pilot-18 (Parte 1):** a regra foi aprovada na DEC-011 e incorporada à Emenda 4: ausência de evidência = `UNVERIFIED`; `REFUTED` exige contradição explícita e citação da frase incompatível.
 2. **Texto retificado — pilot-19 (Parte 2):** Anderson aprovou a opção A em 2026-10-17. A Emenda 4 determina considerar o texto vigente após retificações, ignorar redação superada, marcar `rectified: true` e reportar esse estrato separadamente, sem alterar o Judge.
@@ -42,7 +42,7 @@ Os achados estão registrados na [DEC-011, proposta pendente — PR #206](https:
 - Não havia casos projetados para PARTIALLY_SUPPORTED ou CONFLICTING; portanto, o piloto não testou adequadamente esses cenários.
 - O mantenedor confirmou que a justificativa de pilot-04 teve auxílio de IA.
 - Depois da rotulagem, os textos do piloto foram consultados em assistentes externos. Esse fato deve ser considerado ao avaliar a independência do processo e a aderência às regras de isolamento.
-- A DEC-011 continua pendente. A escolha da opção A para a Parte 2 não representa aprovação das Partes 1 e 3 nem resolução do ponto aberto na Parte 3.
+- A DEC-011 foi aprovada em 2026-10-17 e suas regras foram registradas na Emenda 4. O segundo piloto humano ainda é necessário para verificar ambiguidades remanescentes; a aprovação da decisão não equivale a congelamento do protocolo.
 - Os resultados e rótulos individuais do piloto são descartados e não foram incorporados ao repositório.
 
 ## Relação com a avaliação do sistema

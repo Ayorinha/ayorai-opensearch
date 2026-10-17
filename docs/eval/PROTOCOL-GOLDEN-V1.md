@@ -5,7 +5,7 @@ Status: em revisão pós-piloto; ainda não congelado. Alterações só por emen
 Conjunto de avaliação em português brasileiro, com meta de 300 casos, para medir o desempenho do AYORAI ATTRACTOR em português.
 
 ## Rótulos
-Os mesmos rótulos usados em evals/golden/v0.1.jsonl. Nenhum rótulo novo.
+O benchmark RGC usa os cinco vereditos de `rules/judge-2.0.0.json` (`SUPPORTED`, `REFUTED`, `UNVERIFIED`, `PARTIALLY_SUPPORTED`, `CONFLICTING`), conforme a Emenda 2 e a semântica da ADR-009 (K1–K5). Não reutilizar automaticamente os rótulos do Golden v0/v0.1; esses conjuntos históricos permanecem inalterados.
 
 ## Fontes
 Somente documentos com licença conhecida que permita uso, ou textos oficiais sem proteção autoral (Lei 9.610/98, art. 8º, IV: textos de leis e atos oficiais). A licença de cada documento é registrada. Licença desconhecida = documento excluído.
@@ -15,11 +15,13 @@ Domínios: legislação e regulação (incluindo LGPD), finanças e dados públi
 Cada caso é marcado com pelo menos um tipo: número, data, negação, paráfrase, apoio parcial, entidade trocada.
 
 ## Fases
-1. Piloto: 20 casos para testar estas regras. Depois do piloto, as regras são congeladas e os 20 casos são descartados.
-2. Anotação 1: o autor escreve cada caso com afirmação, trecho da fonte, rótulo e justificativa curta. Enquanto houver um só anotador, o conjunto se chama v1-draft e seus resultados são marcados "anotador único, não usar como resultado principal".
-3. Anotação 2: uma segunda pessoa rotula os mesmos casos sem ver os rótulos da primeira. Calcula-se o Cohen's kappa. Só com kappa >= 0,6 o conjunto passa a se chamar v1. Divergências são resolvidas em conjunto e registradas, caso a caso.
+1. **Piloto exploratório 01 — concluído e descartado:** 20 casos redigidos com auxílio de IA e rotulados por um único anotador. O sistema não foi executado; os casos não são evidência de desempenho.
+2. **Piloto exploratório 02 — pendente:** aproximadamente 10 casos novos, anotação humana sem consulta a assistentes/modelos de IA, fontes oficiais conferidas e rastreabilidade por caso. Após revisão, descartar os casos e registrar os achados; não executar o sistema sobre eles nem incorporá-los ao conjunto definitivo. A composição proposta na Emenda 4 é uma meta condicionada à existência de casos elegíveis, não uma quota que justifique fabricar exemplos.
+3. **Gate de congelamento:** após revisar o segundo piloto, registrar explicitamente a aprovação e o congelamento do protocolo. Até esse gate, não iniciar os 300 casos definitivos.
+4. **Anotação definitiva:** somente após o congelamento, o mantenedor redige casos novos com afirmação, trecho da fonte, rótulo e justificativa curta. O conjunto permanece `v1-draft` enquanto houver um único anotador; resultados de anotador único não são resultado principal.
+5. **Anotação independente:** uma segunda pessoa rotula os mesmos casos sem ver os rótulos da primeira. Calcular Cohen's kappa; só com kappa >= 0,6 o conjunto pode ser promovido a v1. Divergências são resolvidas em conjunto e registradas caso a caso.
 
-Relatório proposto do piloto exploratório concluído em 2026-10-16: [PILOT-RGC-01-REPORT.md](PILOT-RGC-01-REPORT.md) (**[PROPOSTO]**). O piloto foi descartado e o sistema não foi executado sobre seus casos; não constitui resultado de benchmark.
+Relatório histórico do piloto exploratório concluído em 2026-10-16: [PILOT-RGC-01-REPORT.md](PILOT-RGC-01-REPORT.md). O piloto foi descartado e o sistema não foi executado sobre seus casos; não constitui resultado de benchmark.
 
 ## Separação oculta
 Antes de qualquer modelo ser rodado, 30% dos casos são sorteados (seed 20261003) para um conjunto oculto. Esse arquivo nunca entra no repositório; só o seu SHA-256 é publicado.
@@ -50,7 +52,7 @@ As fontes ficam em um arquivo separado, uma linha por documento, com os campos s
 5. **Meta de composição:** cerca de um terço dos casos definitivos será composto. A proporção final será declarada no relatório.
 6. Anotação de átomos inválida interrompe a execução, conforme o executor `rgc-eval/0.2.0`, mesclado na [PR #203](https://github.com/Ayorinha/ayorai-opensearch/pull/203) em 2026-10-16. A mesclagem não equivale à validação do executor no benchmark definitivo.
 
-A presente emenda documenta a decisão DEC-010, opção A. O protocolo e o pré-registro permanecem **[PROPOSTO]** até aprovação e congelamento formais pelo mantenedor.
+A presente emenda documenta a decisão DEC-010, opção A. **Nota histórica:** à data desta emenda, o protocolo e o pré-registro ainda aguardavam aprovação e congelamento formais; a Emenda 4 (2026-10-17) registra a aprovação da DEC-011. O protocolo continua sem congelamento formal até a conclusão e revisão do segundo piloto.
 
 
 ## Emenda 4 (2026-10-17) — Regras de anotação após o piloto (DEC-011, aprovada)
