@@ -195,24 +195,24 @@ class AuditTraceStore:
         try:
             self._connection.execute(
                 """
-            INSERT INTO audit_traces (
-                trace_id, legacy_verification, verification, operation_status,
-                evidence_count, independent_evidence_count,
-                verified_evidence_count, failure_count, finding_count,
-                replay_digest, replay_version, schema_version
-            ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                report.trace_id,
-                response.operation_status,
-                report.evidence_count,
-                report.independent_evidence_count,
-                report.verified_evidence_count,
-                report.failure_count,
-                len(report.findings),
-                replay.digest,
-                _R2_V2,
-                _SCHEMA_VERSION,
+                INSERT INTO audit_traces (
+                    trace_id, legacy_verification, verification, operation_status,
+                    evidence_count, independent_evidence_count,
+                    verified_evidence_count, failure_count, finding_count,
+                    replay_digest, replay_version, schema_version
+                ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    report.trace_id,
+                    response.operation_status,
+                    report.evidence_count,
+                    report.independent_evidence_count,
+                    report.verified_evidence_count,
+                    report.failure_count,
+                    len(report.findings),
+                    replay.digest,
+                    _R2_V2,
+                    _SCHEMA_VERSION,
                 ),
             )
         except sqlite3.IntegrityError as exc:
