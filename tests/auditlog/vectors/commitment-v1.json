@@ -1,0 +1,24 @@
+{
+  "description": "Salted commitment test vectors, schema v1 (ADR-010 decision 1). Expected values were computed with coreutils sha256sum over the hand-assembled preimage DOMAIN_LABEL || salt || RFC8785(record), independently of the Python implementation.",
+  "domain_label_hex": "61796f7261692d617474726163746f722f61756469742d636f6d6d69746d656e742f763100",
+  "vectors": [
+    {
+      "salt_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "record": {
+        "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "output_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "decision_state": "DECIDED",
+        "verdict": "SUPPORTED",
+        "client": "pseud-0001",
+        "received_at": "2026-10-17T00:00:00Z",
+        "time_source": "server_clock"
+      },
+      "commitment_hex": "a32b54580b1c22607cecedaf8166b0b2a0ef54a214940d251b7556cb18d416f8"
+    },
+    {
+      "salt_hex": "fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0efeeedecebeae9e8e7e6e5e4e3e2e1e0",
+      "record": {"verdict": "REFUTED", "é": "ação", "n": 1},
+      "commitment_hex": "36584f3851b87785b7317602c71499f30df6ce3f46fd7937d66678f8e0587bca"
+    }
+  ]
+}
