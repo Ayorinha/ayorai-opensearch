@@ -8,13 +8,19 @@ The container runs as a dedicated unprivileged user. Docker Compose publishes th
 cp .env.example .env
 ~~~
 
-Generate a SHA-256 digest for a high-entropy API key. The key is entered without echo and is not printed by this command; only the digest is printed:
+Generate a high-entropy 32-byte pepper and store it securely. The printed value is a secret; do not commit it:
 
 ~~~bash
-python -c "import getpass, hashlib; key=getpass.getpass('API key: '); print(hashlib.sha256(key.encode('utf-8')).hexdigest())"
+python -c "import secrets; print(secrets.token_hex(32))"
 ~~~
 
-Edit .env and set ATTRACTOR_API_KEYS_SHA256 to the generated 64-character digest. Keep the raw key in a secret manager and provide it to clients through a secure channel. Do not commit .env. The example file intentionally leaves the digest empty; with ATTRACTOR_AUTH_MODE=api_key, the application refuses to start until a valid digest is configured. For a deliberately isolated local development environment only, ATTRACTOR_AUTH_MODE can be set to off.
+Generate an HMAC-SHA-256 digest for a high-entropy API key. Both the key and pepper are entered without echo; only the digest is printed:
+
+~~~bash
+python -c "import getpass, hashlib, hmac; key=getpass.getpass('API key: '); pepper=bytes.fromhex(getpass.getpass('32-byte pepper (64 hex chars): ')); print(hmac.new(pepper, key.encode('utf-8'), hashlib.sha256).hexdigest())"
+~~~
+
+Edit .env and set ATTRACTOR_API_KEY_PEPPER to the 64-character hex pepper and ATTRACTOR_API_KEYS_HMAC_SHA256 to the generated 64-character digest. Keep the pepper in a secret manager and restrict access to it separately from the digest list. Keep the raw API key in a secret manager and provide it to clients through a secure channel. Do not commit .env. The example file intentionally leaves the pepper and digest empty; with ATTRACTOR_AUTH_MODE=api_key, the application refuses to start until both are configured. For a deliberately isolated local development environment only, ATTRACTOR_AUTH_MODE can be set to off.
 
 ## Build and start
 
@@ -40,4 +46,5 @@ The second command should receive HTTP 401 when API-key authentication is enable
 - The 127.0.0.1 host binding prevents direct publication on all host interfaces. Do not change it to 0.0.0.0 unless exposure is intentional and protected by suitable network controls.
 - The process inside the container listens on 0.0.0.0:8000 so Docker port forwarding can reach it; this does not expose the host port beyond the configured loopback binding.
 - Keep .env out of version control and restrict access to the host and container runtime.
+- The HMAC pepper should be protected separately from stored digest values. Rotating it requires regenerating all configured API-key digests.
 - The health check only confirms process/API responsiveness; it does not prove dependency health or application correctness.
