@@ -1,3 +1,12 @@
+"""In-memory audit event log.
+
+Status: experimental. Not used by the verification pipeline, the Judge or the
+public API; the interface may change without a deprecation period. See
+docs/EXPERIMENTAL-MODULES.md.
+
+This is distinct from the persistent API audit store used by /v1/verify.
+"""
+
 from dataclasses import dataclass
 from datetime import UTC, datetime
 

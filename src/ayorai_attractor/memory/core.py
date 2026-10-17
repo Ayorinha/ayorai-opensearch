@@ -1,3 +1,10 @@
+"""In-memory key/value store for research notes.
+
+Status: experimental. Not used by the verification pipeline, the Judge or the
+public API; the interface may change without a deprecation period. See
+docs/EXPERIMENTAL-MODULES.md.
+"""
+
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
