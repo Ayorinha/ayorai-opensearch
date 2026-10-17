@@ -7,12 +7,10 @@ from typing import Annotated, Any
 from fastapi import Body, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-
 from pydantic import ValidationError
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from ayorai_attractor.api.auth import APIKeyAuthMiddleware
-
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
 from ayorai_attractor.models import (
