@@ -8,6 +8,7 @@ on:
       - "docker-compose.yml"
       - ".env.example"
       - "src/ayorai_attractor/api/**"
+      - "src/ayorai_attractor/verification/judge2/rules/**"
       - "pyproject.toml"
       - ".github/workflows/docker.yml"
   push:
@@ -17,6 +18,7 @@ on:
       - "docker-compose.yml"
       - ".env.example"
       - "src/ayorai_attractor/api/**"
+      - "src/ayorai_attractor/verification/judge2/rules/**"
       - "pyproject.toml"
       - ".github/workflows/docker.yml"
   workflow_dispatch:
@@ -41,31 +43,55 @@ jobs:
           docker compose config --quiet
           docker compose config --format json | python -c "import json, sys; c=json.load(sys.stdin); assert c['services']['attractor']['ports'][0]['host_ip'] == '127.0.0.1'"
 
-      - name: Verify non-root runtime and healthcheck
+      - name: Verify authenticated non-root runtime, healthcheck, and packaged Judge rules
+        shell: bash
         run: |
-          docker run --detach --name attractor-smoke \
+          set -euo pipefail
+          pepper="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+          key="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          wrong_key="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          digest="$(PEPPER="$pepper" KEY="$key" python -c 'import hashlib, hmac, os; print(hmac.new(bytes.fromhex(os.environ["PEPPER"]), os.environ["KEY"].encode("utf-8"), hashlib.sha256).hexdigest())')"
+
+          docker run --detach --name attractor-auth-smoke \
             --publish 127.0.0.1:18000:8000 \
-            --env ATTRACTOR_AUTH_MODE=off \
+            --env ATTRACTOR_AUTH_MODE=api_key \
+            --env ATTRACTOR_API_KEY_PEPPER="$pepper" \
+            --env ATTRACTOR_API_KEYS_HMAC_SHA256="$digest" \
             --env ATTRACTOR_AUDIT_DB=/tmp/audit.sqlite3 \
             ayorai-attractor:test
-          trap 'docker rm --force attractor-smoke >/dev/null 2>&1 || true' EXIT
-          test "$(docker exec attractor-smoke id -u)" != "0"
+          trap 'docker rm --force attractor-auth-smoke >/dev/null 2>&1 || true' EXIT
+
+          test "$(docker exec attractor-auth-smoke id -u)" != "0"
           for _ in $(seq 1 30); do
-            status="$(docker inspect --format '{{.State.Health.Status}}' attractor-smoke)"
+            status="$(docker inspect --format '{{.State.Health.Status}}' attractor-auth-smoke)"
             if [ "$status" = "healthy" ]; then
               break
             fi
             if [ "$status" = "unhealthy" ]; then
-              docker logs attractor-smoke
+              docker logs attractor-auth-smoke
               exit 1
             fi
             sleep 1
           done
-          test "$(docker inspect --format '{{.State.Health.Status}}' attractor-smoke)" = "healthy"
+          test "$(docker inspect --format '{{.State.Health.Status}}' attractor-auth-smoke)" = "healthy"
+
           curl --fail --silent --show-error http://127.0.0.1:18000/health
-          # The Judge loads rules/judge-2.0.0.json at runtime; a 200 with a
-          # decided verdict proves the rules are present inside the image.
-          curl --fail --silent --show-error -H 'content-type: application/json' \
-            --data '{"schema_version":"r2-a","protocol_version":"r2-a","claim_id":"c1","claim_text":"Claim A","atoms":[{"id":"a1","text":"Claim A","start_offset":0,"end_offset":7}],"evidence":[{"id":"e1","claim_id":"c1","source_id":"source-e1","source_location":"document:1","retrieved_at":"2026-10-11T12:00:00Z","start_offset":0,"end_offset":7,"excerpt":"Claim A","origin_id":"origin-e1"}],"stances":[{"id":"s1","atom_id":"a1","evidence_id":"e1","stance":"SUPPORTS"}],"source_texts":{"source-e1":"Claim A"}}' \
-            http://127.0.0.1:18000/v1/verify > /tmp/verify.json
-          python -c "import json; r=json.load(open('/tmp/verify.json'))['result']; assert r['decision_state']=='DECIDED', r; assert r['verdict']=='SUPPORTED', r; assert r['rules_sha256']=='493cce66ce45fcb432b8345e7567cfb39858492bfe46d5fa6b584991e79e9efc', r; print('VERIFY_IN_CONTAINER: PASS', r['rules_sha256'])"
+
+          payload='{"schema_version":"r2-a","protocol_version":"r2-a","claim_id":"c1","claim_text":"Claim A","atoms":[{"id":"a1","text":"Claim A","start_offset":0,"end_offset":7}],"evidence":[{"id":"e1","claim_id":"c1","source_id":"source-e1","source_location":"document:1","retrieved_at":"2026-10-11T12:00:00Z","start_offset":0,"end_offset":7,"excerpt":"Claim A","origin_id":"origin-e1"}],"stances":[{"id":"s1","atom_id":"a1","evidence_id":"e1","stance":"SUPPORTS"}],"source_texts":{"source-e1":"Claim A"}}'
+
+          unauth_status="$(curl --silent --show-error --output /tmp/unauth.json --write-out '%{http_code}' \
+            --header 'content-type: application/json' --data "$payload" \
+            http://127.0.0.1:18000/v1/verify)"
+          test "$unauth_status" = "401"
+
+          invalid_status="$(curl --silent --show-error --output /tmp/invalid.json --write-out '%{http_code}' \
+            --header 'content-type: application/json' --header "Authorization: Bearer $wrong_key" \
+            --data "$payload" http://127.0.0.1:18000/v1/verify)"
+          test "$invalid_status" = "401"
+
+          valid_status="$(curl --silent --show-error --output /tmp/verify.json --write-out '%{http_code}' \
+            --header 'content-type: application/json' --header "Authorization: Bearer $key" \
+            --data "$payload" http://127.0.0.1:18000/v1/verify)"
+          test "$valid_status" = "200"
+          python -c "import json; r=json.load(open('/tmp/verify.json'))['result']; assert r['decision_state']=='DECIDED', r; assert r['verdict']=='SUPPORTED', r; assert r['rules_sha256']=='493cce66ce45fcb432b8345e7567cfb39858492bfe46d5fa6b584991e79e9efc', r; print('AUTHENTICATED_VERIFY_IN_CONTAINER: PASS', r['rules_sha256'])"
+          echo "AUTHENTICATION_SMOKE: missing key=401, invalid key=401, valid key=200; /health remains public"
