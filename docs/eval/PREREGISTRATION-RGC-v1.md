@@ -32,7 +32,7 @@ A coleta e a captura foram autorizadas pela decisão DEC-002 (#176), e a captura
 
 ### 3.1 Unidade e composição
 
-A unidade de avaliação será uma afirmação factual atômica, acompanhada do contexto documental necessário para julgá-la. A meta proposta é de **300 casos elegíveis**, sujeita à viabilidade da fonte, à DEC-002 e à qualidade da anotação. Se não for possível atingir esse número sem comprometer a validade ou a proveniência, o tamanho final e a razão serão declarados antes de executar o sistema; não haverá preenchimento artificial de casos.
+A unidade de avaliação será um caso com uma afirmação factual simples ou composta, acompanhada do contexto documental necessário para julgá-la. Para afirmações compostas, o anotador marca os átomos e seus offsets conforme a Emenda 3 (DEC-010, opção A); a meta é aproximadamente um terço de casos compostos, sem forçar a proporção quando não houver casos elegíveis. A meta proposta é de **300 casos elegíveis**, sujeita à viabilidade da fonte, à DEC-002 e à qualidade da anotação. Se não for possível atingir esse número sem comprometer a validade ou a proveniência, o tamanho final e a razão serão declarados antes de executar o sistema; não haverá preenchimento artificial de casos.
 
 Categorias de afirmações, definidas antes da coleta:
 - prazos e datas;
