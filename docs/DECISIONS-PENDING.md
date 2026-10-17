@@ -169,6 +169,7 @@ Source: execution plan v5, work queue
   - **B:** alterar o Judge ou o detector de stance para reconhecer precedência temporal e o marcador "Onde se lê". Exige ADR, nova versão de regras, testes e hashes novos; fica fora do v1.
   - **C:** excluir do v1 todo dispositivo retificado (arts. 84, 86, 34, 90, 93 e 96 da Resolução 765/2023 e do Anexo), com registro no log de exclusões.
 - **Recomendação técnica:** A. Mede o sistema como ele é, sem alterar o Judge, e torna a limitação visível em vez de escondê-la. B pode ser proposta para o v2 com base no estrato medido.
+- **Escolha do mantenedor (17/10/2026):** opção **A**. Registrada aqui; a DEC-011 como um todo continua pendente até a aprovação das Partes 1 e 3 e do ponto aberto.
 
 ### Parte 3 — Valores, quantificadores e modalidade
 
@@ -192,7 +193,7 @@ Source: execution plan v5, work queue
 2. **Segundo piloto** de cerca de 10 casos novos, com pelo menos 3 compostos com parte sem confirmação (`PARTIALLY_SUPPORTED`), 1 com fontes divergentes (`CONFLICTING`), 1 envolvendo dispositivo retificado e 2 de ausência (`UNVERIFIED`). Os casos do segundo piloto também são descartados.
 3. Só depois do segundo piloto: congelamento do protocolo e redação dos 300 casos.
 
-- **Isolamento (DEC-008):** os textos do primeiro piloto foram consultados em assistentes externos (Grok, ChatGPT) após a rotulagem. Por ser descartado, isso não afeta o benchmark. Para o segundo piloto e para o conjunto definitivo, nenhum caso pode ser enviado a ferramenta de IA antes do congelamento e da execução única.
+- **Isolamento (DEC-008):** os textos do primeiro piloto foram consultados em assistentes externos (Grok, ChatGPT). O mantenedor confirmou (17/10/2026) que a justificativa de pilot-04 foi redigida com auxílio do Grok; os demais rótulos foram dados por ele. Por ser descartado, isso não afeta o benchmark. Para o segundo piloto e para o conjunto definitivo, nenhum caso pode ser enviado a ferramenta de IA antes do congelamento e da execução única.
 - **Impacto:** guia de anotação, protocolo, pré-registro e relatório. Não altera código, regras do Judge, hashes ou artefatos Golden.
 - **Aprovação necessária:** Anderson aprova as Partes 1 a 3 (com a opção da Parte 2 e o ponto aberto da Parte 3) antes do segundo piloto.
 
