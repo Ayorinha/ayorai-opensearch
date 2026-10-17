@@ -26,11 +26,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 3. **Veredito**: Judge 2.0 `adjudicate` (ADR-009). Afirmação simples: **um átomo** cobrindo a afirmação inteira. Afirmação composta (DEC-010, opção A): os átomos anotados no campo `atoms` do caso (dois ou mais trechos da afirmação, por `start_offset`/`end_offset`, ordenados e sem sobreposição); a posição é detectada por átomo contra cada trecho, e o veredito composto segue K1–K5. Anotação de átomos inválida interrompe a execução.
 4. **Mapeamento** (`to_label`): `DECIDED` → veredito do Judge; `ABSTAINED` → `UNVERIFIED` (DEC-009 aprovada); qualquer outro estado → `INVALID_PREDICTION`. No vocabulário histórico `adr002`, `SUPPORTED` com robustez `R3` → `VERIFIED` (ADR-009 §11), mas esse mapeamento não se aplica ao vocabulário RGC `judge2`.
 
-## 3. Estratificação de dispositivos retificados (DEC-011)
-
-Todos os casos, inclusive os não retificados, devem conter o campo booleano `rectified`. A avaliação publica os dois estratos para tornar visível a limitação de que o Judge não aplica precedência temporal por conta própria. Os resultados estratificados são descritivos; não substituem a métrica principal nem autorizam conclusões confirmatórias em subgrupos pequenos. Casos `RULE_GAP` continuam excluídos do denominador e mantêm sua marca de retificação no relatório de exclusões.
-
-## 4. Parâmetros propostos para congelamento
+## 3. Parâmetros propostos para congelamento
 
 | Parâmetro | Valor proposto | Observação |
 |---|---|---|
@@ -75,3 +71,8 @@ python evals/ptbr/rgc_eval.py run <casos.jsonl> --labels <rotulos.jsonl> \
 Formato dos rótulos (um por linha): `{"case_id": "...", "verdict": "SUPPORTED"}`.
 
 Este executor não afirma validação, parceria ou endosso da Anatel ou de qualquer instituição.
+
+
+## 8. Estratificação de dispositivos retificados (DEC-011)
+
+Todos os casos, inclusive os não retificados, devem conter o campo booleano `rectified`. A avaliação publica os dois estratos para tornar visível a limitação de que o Judge não aplica precedência temporal por conta própria. Os resultados estratificados são descritivos; não substituem a métrica principal nem autorizam conclusões confirmatórias em subgrupos pequenos. Casos `RULE_GAP` continuam excluídos do denominador e mantêm sua marca de retificação no relatório de exclusões.
