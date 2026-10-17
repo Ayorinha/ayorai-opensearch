@@ -95,7 +95,9 @@ class APIKeyAuthMiddleware:
 
         # API keys must be high-entropy bearer tokens, not human passwords.
         # A separate pepper means a leaked digest list alone cannot verify guesses.
-        assert self.pepper is not None
+        if self.pepper is None:
+            await self._unauthorized(scope, receive, send)
+            return
         presented_digest = _api_key_digest(presented_key, self.pepper)
         matched = any(
             hmac.compare_digest(presented_digest, configured_digest)
