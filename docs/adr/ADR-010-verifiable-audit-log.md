@@ -1,9 +1,9 @@
 # ADR-010: Verifiable audit log
 
-- **Status:** Proposed
+- **Status:** Accepted in part — owner decisions 1–4 recorded on 2026-10-17; decisions 5–7 remain open
 - **Date:** 2026-10-17
 - **Decision owner:** Anderson Leon Ayora
-- **Scope:** Design proposal only; no implementation is authorized by this ADR.
+- **Scope:** Design direction for a verifiable audit log. Implementation proceeds only through separate, reviewed PRs (see "Implementation phasing").
 
 ## Context
 
@@ -52,7 +52,7 @@ Because the Judge is deterministic, anyone who guesses an input can compute its 
 
 The salt and canonical record are stored in an access-controlled, erasable store and are returned to the client in its receipt. Erasing them makes the commitment unlinkable while the tree stays valid. Consequence for the owner's decision: a third party can verify a specific event only if the client or the controller discloses its salt and record.
 
-Whether `verdict` is also published in clear in the leaf (public statistics) is an open decision; the default proposed here is commitment-only. A digest is not automatically non-personal data; classification remains a legal assessment.
+`verdict` is **not** published in clear in the leaf; it exists only inside the commitment (owner decision 2). A digest is not automatically non-personal data; classification remains a legal assessment.
 
 ### Proof objects (distinct, not interchangeable)
 
@@ -104,15 +104,29 @@ The current `audit_traces` table is frozen as legacy. A digest of an exported, c
 7. Backup, restore and recovery tested against the last anchored checkpoint.
 8. Measured latency and storage overhead on documented hardware.
 
-## Open decisions for the owner
+## Owner decisions (recorded 2026-10-17)
 
-1. Salted commitments (erasable, selective verification) versus direct digests (publicly verifiable, not erasable).
-2. Verdict in clear in the leaf or only inside the commitment.
-3. Behavior when recording fails in pilot deployments.
-4. Amendment to ADR-009 §15 for receipts, `audit_status` and `Idempotency-Key`.
+| # | Question | Decision |
+| --- | --- | --- |
+| 1 | Salted commitments versus direct digests | **Salted commitments.** Leaves carry `SHA-256(domain_label \|\| salt \|\| canonical_record)`; salt and record live in an erasable, access-controlled store and in the client's receipt. Third-party verification of a specific event requires disclosure by the client or the controller. |
+| 2 | Verdict in clear in the leaf | **No.** The verdict exists only inside the commitment. No public per-event or aggregate verdict statistics are derived from the log. |
+| 3 | Behavior when recording fails in recording-required deployments | **Fail closed.** No verdict is returned without a recorded event; the API returns an error and the client may retry with the same `Idempotency-Key`. Local (non-recording) mode keeps `audit_status = "not_recorded"`. |
+| 4 | Amendment to ADR-009 §15 | **Approved.** Recorded as ADR-009 §15.1: additive response fields outside `result`, only when recording is enabled; Judge rules, `result` and its hashes are unchanged. |
+
+## Still open
+
 5. Python writer versus Tessera, to be settled by proof of concept.
 6. Who could act as independent witnesses.
 7. Whether and when to procure ICP-Brasil timestamps.
+
+## Implementation phasing
+
+Each phase is a separate PR with its own review and CI evidence.
+
+1. **Core library.** RFC 6962 Merkle tree hashing, inclusion and consistency proofs, and the salted commitment, as a pure library with published test vectors and cross-checks against independent implementations. No API, storage, dependency or Judge change.
+2. **Checkpoints and storage.** C2SP checkpoint and signed-note (Ed25519), tile storage, single-writer append and restart behavior, mutation tests (acceptance criteria 3, 5 and 7). New runtime dependencies, if any, are declared and approved in that PR.
+3. **Recording `/v1/verify`.** Recording-required mode, receipts, `Idempotency-Key`, OpenAPI change, per ADR-009 §15.1.
+4. **External state.** Witnesses, RFC 3161 timestamps and anchoring, after decisions 5–7.
 
 ## Primary sources (consulted 2026-10-17)
 
@@ -120,4 +134,4 @@ C2SP: [tlog-tiles](https://c2sp.org/tlog-tiles), [tlog-checkpoint](https://c2sp.
 
 ## Explicit non-decision
 
-This document is **Proposed**, not Accepted. It does not authorize code changes, database migrations, new dependencies, changes to Judge behavior, changes to the API contract, changes to frozen artifacts, or claims that the current audit store is tamper-proof. Any implementation requires a separate reviewed change and an explicit decision by the project owner.
+Accepting decisions 1–4 does not by itself change code, migrate databases, add dependencies, alter Judge behavior or frozen artifacts, or make the current audit store tamper-proof. Until phase 3 is merged and deployed, no deployment may be described as having a verifiable audit log.

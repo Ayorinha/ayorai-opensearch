@@ -2,6 +2,20 @@
 
 Este arquivo registra decisões explícitas do mantenedor já aprovadas. Não substitui ADRs normativas; mantém a trilha de governança e autorização.
 
+## DEC-012 — Registro de auditoria verificável: decisões 1–4 da ADR-010
+
+- **Data da decisão:** 2026-10-17
+- **Decisor e mantenedor:** Anderson Leon Ayora
+- **Decisão:** ACEITO, seguindo a recomendação técnica em todas as quatro perguntas.
+  1. **Compromissos com sal** em vez de hashes diretos: a folha do log guarda `SHA-256(domain_label || salt || canonical_record)`; sal e registro ficam num armazenamento apagável, com controle de acesso, e no recibo do cliente.
+  2. **Veredito só dentro do compromisso**, nunca em claro na folha.
+  3. **Falha de gravação bloqueia:** no modo "registro obrigatório", sem evento gravado não há veredito; a API devolve erro.
+  4. **Emenda à ADR-009 §15 aprovada** (registrada como §15.1): `audit_status`, `audit_receipt` e `Idempotency-Key`, campos aditivos fora de `result`, só com o registro ligado.
+- **Continua em aberto:** escritor em Python ou Tessera (decidir por prova de conceito), testemunhas independentes e carimbo do tempo ICP-Brasil.
+- **Execução:** em fases, uma PR por fase (ADR-010, "Implementation phasing"). A fase 1 é uma biblioteca isolada (árvore de Merkle RFC 6962 e compromissos), sem mudar API, banco, dependências ou o Judge.
+- **Condições permanentes:** CI verde, revisão do SHA exato, nenhuma alteração de Golden, regras, hashes ou manifestos congelados.
+- **Limite de maturidade:** até a fase 3 estar mesclada e implantada, nenhuma instalação pode ser descrita como tendo log de auditoria verificável.
+
 ## DEC-007 — Publicar a release v0.4.0?
 
 - **Data da decisão:** 2026-10-11
