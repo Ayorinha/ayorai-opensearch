@@ -30,7 +30,15 @@ def _request_id(scope: Scope) -> str:
 def _route_label(scope: Scope) -> str:
     route = scope.get("route")
     route_path = getattr(route, "path", None)
-    return route_path if isinstance(route_path, str) else "unmatched"
+    if isinstance(route_path, str):
+        return route_path
+
+    path = scope.get("path")
+    if path in {"/health", "/v1/opensearch", "/v1/audit", "/v1/verify"}:
+        return str(path)
+    if isinstance(path, str) and path.startswith("/v1/audit/") and "/" not in path.removeprefix("/v1/audit/"):
+        return "/v1/audit/{trace_id}"
+    return "unmatched"
 
 
 class RequestContextMiddleware:
