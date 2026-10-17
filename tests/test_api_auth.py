@@ -1,4 +1,4 @@
-"""Tests for optional API-key authentication."""
+"""Tests for API-key authentication defaults and behavior."""
 
 import hashlib
 import hmac
@@ -36,9 +36,20 @@ def _set_pepper(monkeypatch: pytest.MonkeyPatch) -> str:
     return pepper
 
 
-def test_authentication_is_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_authentication_fails_closed_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ATTRACTOR_AUTH_MODE", raising=False)
     monkeypatch.delenv("ATTRACTOR_API_KEYS_HMAC_SHA256", raising=False)
+    monkeypatch.delenv("ATTRACTOR_API_KEY_PEPPER", raising=False)
+
+    with pytest.raises(ValueError, match="ATTRACTOR_API_KEY_PEPPER must be"):
+        with _client() as client:
+            client.get("/private")
+
+
+def test_authentication_can_be_disabled_only_explicitly(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "off")
+    monkeypatch.delenv("ATTRACTOR_API_KEYS_HMAC_SHA256", raising=False)
+    monkeypatch.delenv("ATTRACTOR_API_KEY_PEPPER", raising=False)
 
     with _client() as client:
         response = client.get("/private")
