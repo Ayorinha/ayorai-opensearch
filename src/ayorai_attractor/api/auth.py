@@ -75,6 +75,8 @@ class APIKeyAuthMiddleware:
             await self._unauthorized(scope, receive, send)
             return
 
+        # API keys must be high-entropy bearer tokens, not human passwords.
+        # SHA-256 is the required stored-digest format for this API-key contract.
         presented_digest = hashlib.sha256(presented_key.encode("utf-8")).hexdigest()
         matched = any(
             hmac.compare_digest(presented_digest, configured_digest)
