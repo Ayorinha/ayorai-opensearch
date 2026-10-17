@@ -132,7 +132,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | #249 | Fonte única de status | Mesclada por squash após revisão e checks verdes no SHA final |
 | #251 | Atualização da página canônica de status | Mesclada por squash; CI, Security e CodeQL verdes no SHA `a2c08e5` |
 | #252 | Autenticação fail-closed por padrão | Aberta; no SHA `29ff09c` CI, Security, CodeQL, Docker smoke, Schemathesis, API Contract Guard, Dependency Review e Golden r2 Migration passaram; revisão humana independente e merge do mantenedor pendentes |
-| #189 | Dependabot: `transformers` < 6 | Aberta; todos os workflows consultados e o teste opcional NLI passaram no SHA `a9664c5`; revisar a compatibilidade de runtime da faixa `<6` e obter revisão humana antes do merge |
+| #189 | Dependabot: `transformers` < 6 | Aberta; no SHA `95207c2` todos os workflows passaram, incluindo smoke real do tokenizer/configuração do modelo fixado com Transformers 5.20.1 e a suíte completa; revisão humana independente e merge pendentes |
 
 ## 4. Achados
 
