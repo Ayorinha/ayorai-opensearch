@@ -5,8 +5,8 @@ immutable TraceEvent into a short-lived OpenTelemetry span event, preserving
 the ATTRACTOR trace identifier as an explicit attribute without allowing
 telemetry to affect verification semantics.
 
-Status: experimental (requires the optional ``telemetry`` extra). See
-docs/EXPERIMENTAL-MODULES.md.
+Status: experimental — fora do escopo verificado. Ver docs/TRACEABILITY-MASTER.md.
+Requires the optional ``telemetry`` extra. See docs/EXPERIMENTAL-MODULES.md.
 """
 
 from __future__ import annotations
