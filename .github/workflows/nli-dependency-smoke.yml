@@ -40,5 +40,39 @@ jobs:
               print(f"{package}=={version(package)}")
           print("NLI_OPTIONAL_DEPENDENCIES_IMPORT: PASS")
           PY
+      - name: Load pinned NLI tokenizer and configuration
+        env:
+          HF_HUB_DISABLE_TELEMETRY: "1"
+          TOKENIZERS_PARALLELISM: "false"
+        run: |
+          python - <<'PY'
+          from importlib.metadata import version
+          from transformers import AutoConfig, AutoTokenizer
+
+          from ayorai_attractor.verification.nli import (
+              EVAL_ONLY_MODEL,
+              EVAL_ONLY_REVISION,
+              _resolve_label_map,
+          )
+
+          tokenizer = AutoTokenizer.from_pretrained(
+              EVAL_ONLY_MODEL,
+              revision=EVAL_ONLY_REVISION,
+              use_fast=False,
+          )
+          config = AutoConfig.from_pretrained(
+              EVAL_ONLY_MODEL,
+              revision=EVAL_ONLY_REVISION,
+          )
+          label_map = _resolve_label_map(
+              {int(index): str(label) for index, label in config.id2label.items()}
+          )
+          assert tokenizer is not None
+          assert set(label_map.values()) == {"supports", "contradicts", "neutral"}
+          print("NLI_TRANSFORMERS_RUNTIME_SMOKE: PASS")
+          print("transformers==" + version("transformers"))
+          print("model_revision=" + EVAL_ONLY_REVISION)
+          print("label_map=" + repr(label_map))
+          PY
       - name: Run test suite with NLI dependencies installed
         run: pytest -q
