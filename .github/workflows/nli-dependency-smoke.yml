@@ -1,0 +1,95 @@
+name: NLI Optional Dependency Smoke
+
+on:
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - ".github/workflows/nli-dependency-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nli-dependency-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install optional NLI dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,nli]"
+      - name: Verify installed dependency versions
+        run: |
+          python - <<'PY'
+          from importlib.metadata import version
+          import google.protobuf
+          import sentencepiece
+          import torch
+          import transformers
+
+          for package in ("transformers", "torch", "protobuf", "sentencepiece"):
+              print(f"{package}=={version(package)}")
+          print("NLI_OPTIONAL_DEPENDENCIES_IMPORT: PASS")
+          PY
+      - name: Load pinned NLI model and exercise inference
+        env:
+          HF_HUB_DISABLE_TELEMETRY: "1"
+          TOKENIZERS_PARALLELISM: "false"
+        run: |
+          python - <<'PY'
+          from importlib.metadata import version
+          from transformers import AutoConfig, AutoTokenizer
+
+          from ayorai_attractor.verification.nli import (
+              EVAL_ONLY_LEVEL,
+              EVAL_ONLY_MODEL,
+              EVAL_ONLY_REVISION,
+              TransformersNLIBackend,
+              _resolve_label_map,
+          )
+
+          tokenizer = AutoTokenizer.from_pretrained(
+              EVAL_ONLY_MODEL,
+              revision=EVAL_ONLY_REVISION,
+              use_fast=False,
+          )
+          config = AutoConfig.from_pretrained(
+              EVAL_ONLY_MODEL,
+              revision=EVAL_ONLY_REVISION,
+          )
+          label_map = _resolve_label_map(
+              {int(index): str(label) for index, label in config.id2label.items()}
+          )
+          assert tokenizer is not None
+          assert set(label_map.values()) == {"supports", "contradicts", "neutral"}
+
+          # Exercise the actual backend path, including model weights, tokenization,
+          # inference_mode, logits, softmax and label mapping on CPU.
+          backend = TransformersNLIBackend(
+              EVAL_ONLY_MODEL,
+              EVAL_ONLY_REVISION,
+              license_level=EVAL_ONLY_LEVEL,
+              evaluation_mode=True,
+          )
+          result = backend.classify(
+              "O atendimento telefônico deve ser gratuito.",
+              "O atendimento telefônico deve ser gratuito em dias úteis.",
+          )
+          assert result["stance"] in {"supports", "contradicts", "neutral"}
+          assert 0.0 <= float(result["confidence"]) <= 1.0
+          print("NLI_TRANSFORMERS_RUNTIME_SMOKE: PASS")
+          print("NLI_MODEL_INFERENCE_SMOKE: PASS")
+          print("transformers==" + version("transformers"))
+          print("model_revision=" + EVAL_ONLY_REVISION)
+          print("label_map=" + repr(label_map))
+          print("inference_stance=" + str(result["stance"]))
+          print("inference_confidence=" + str(result["confidence"]))
+          PY
+      - name: Run test suite with NLI dependencies installed
+        run: pytest -q
