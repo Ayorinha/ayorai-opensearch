@@ -4,9 +4,19 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+### Added
+- Optional API-key authentication for protected endpoints, with bearer and `X-API-Key` support and constant-time digest comparison (PR #219).
+- Request IDs and structured privacy-safe access logs that exclude request/response bodies and credentials (PR #221).
+
+### Changed
+- Harden Docker runtime defaults: non-root user, healthcheck, localhost-only port binding, environment-based runtime settings and documented API-key configuration (PR #222).
+
 ### Fixed
+- Package Judge 2.0 rules so installed distributions can load them outside a source checkout (PR #224).
 - Verify the configurable HTTP request-body limit against a real Uvicorn server for oversized bodies with Content-Length and chunked bodies without Content-Length.
 
+### Tests
+- Exercise API-key authentication in the real Docker container, including unauthenticated, invalid-key and valid-key behavior (PR #226).
 
 ## [0.5.0] — 2026-10-13
 
