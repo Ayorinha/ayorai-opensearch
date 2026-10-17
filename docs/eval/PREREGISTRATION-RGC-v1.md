@@ -40,6 +40,8 @@ Categorias de afirmações, definidas antes da coleta:
 - obrigações da prestadora;
 - exceções, condições, limites e hipóteses de inaplicabilidade.
 
+**Nota datada (2026-10-17):** a expressão “afirmação factual atômica” acima é a redação original de 2026-10-13. Desde a Emenda 3 (DEC-010, opção A), a unidade de avaliação é a afirmação simples ou composta; afirmações compostas trazem átomos anotados (§3.2). A redação original é preservada como histórica.
+
 As categorias podem se sobrepor; a regra de anotação deverá definir uma categoria principal e registrar categorias secundárias quando necessário. Os rótulos de referência serão atribuídos por pessoas, com justificativa rastreável ao texto-fonte. O sistema avaliado não poderá gerar ou alterar os rótulos de referência.
 
 ### 3.2 Estados de veredito — registro histórico da proposta
