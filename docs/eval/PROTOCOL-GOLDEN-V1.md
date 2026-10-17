@@ -19,6 +19,8 @@ Cada caso é marcado com pelo menos um tipo: número, data, negação, paráfras
 2. Anotação 1: o autor escreve cada caso com afirmação, trecho da fonte, rótulo e justificativa curta. Enquanto houver um só anotador, o conjunto se chama v1-draft e seus resultados são marcados "anotador único, não usar como resultado principal".
 3. Anotação 2: uma segunda pessoa rotula os mesmos casos sem ver os rótulos da primeira. Calcula-se o Cohen's kappa. Só com kappa >= 0,6 o conjunto passa a se chamar v1. Divergências são resolvidas em conjunto e registradas, caso a caso.
 
+Relatório proposto do piloto exploratório concluído em 2026-10-16: [PILOT-RGC-01-REPORT.md](PILOT-RGC-01-REPORT.md) (**[PROPOSTO]**). O piloto foi descartado e o sistema não foi executado sobre seus casos; não constitui resultado de benchmark.
+
 ## Separação oculta
 Antes de qualquer modelo ser rodado, 30% dos casos são sorteados (seed 20261003) para um conjunto oculto. Esse arquivo nunca entra no repositório; só o seu SHA-256 é publicado.
 
