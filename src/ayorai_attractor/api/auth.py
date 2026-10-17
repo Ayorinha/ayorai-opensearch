@@ -11,6 +11,32 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 
+def _load_configuration() -> tuple[str, tuple[str, ...]]:
+    mode = os.getenv("ATTRACTOR_AUTH_MODE", "off").strip().lower()
+    if mode not in {"off", "api_key"}:
+        raise ValueError("ATTRACTOR_AUTH_MODE must be 'off' or 'api_key'")
+
+    configured = os.getenv("ATTRACTOR_API_KEYS_SHA256", "")
+    hashes = tuple(item.strip().lower() for item in configured.split(",") if item.strip())
+    if any(not _is_sha256_hex(item) for item in hashes):
+        raise ValueError("ATTRACTOR_API_KEYS_SHA256 must contain only SHA-256 hex digests")
+    if mode == "api_key" and not hashes:
+        raise ValueError(
+            "ATTRACTOR_API_KEYS_SHA256 must contain at least one SHA-256 digest "
+            "when ATTRACTOR_AUTH_MODE=api_key"
+        )
+    return mode, hashes
+
+
+def _is_sha256_hex(value: str) -> bool:
+    return len(value) == 64 and all(char in "0123456789abcdef" for char in value)
+
+
+def validate_auth_configuration() -> None:
+    """Validate auth environment settings during application startup."""
+    _load_configuration()
+
+
 class APIKeyAuthMiddleware:
     """Authenticate HTTP requests with SHA-256 digests of configured API keys.
 
@@ -21,25 +47,7 @@ class APIKeyAuthMiddleware:
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
-        mode = os.getenv("ATTRACTOR_AUTH_MODE", "off").strip().lower()
-        if mode not in {"off", "api_key"}:
-            raise ValueError("ATTRACTOR_AUTH_MODE must be 'off' or 'api_key'")
-        self.mode = mode
-
-        configured = os.getenv("ATTRACTOR_API_KEYS_SHA256", "")
-        hashes = tuple(item.strip().lower() for item in configured.split(",") if item.strip())
-        if any(not self._is_sha256_hex(item) for item in hashes):
-            raise ValueError("ATTRACTOR_API_KEYS_SHA256 must contain only SHA-256 hex digests")
-        if self.mode == "api_key" and not hashes:
-            raise ValueError(
-                "ATTRACTOR_API_KEYS_SHA256 must contain at least one SHA-256 digest "
-                "when ATTRACTOR_AUTH_MODE=api_key"
-            )
-        self.key_hashes = hashes
-
-    @staticmethod
-    def _is_sha256_hex(value: str) -> bool:
-        return len(value) == 64 and all(char in "0123456789abcdef" for char in value)
+        self.mode, self.key_hashes = _load_configuration()
 
     @staticmethod
     def _extract_key(headers: Iterable[tuple[bytes, bytes]]) -> str | None:
