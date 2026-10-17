@@ -182,12 +182,24 @@ A rota canônica é `/v1/verify`.
 
 A implementação deve testar os dois caminhos separadamente: testes de fio fixos e byte a byte para `r1-a`, e testes de contrato para `r2-a`, incluindo `UNVERIFIED` com `DECIDED` e política de resposta independente.
 
+### 15.1 Emenda — registro de auditoria verificável (2026-10-17, ADR-010)
+
+Aprovada pelo mantenedor em 2026-10-17 (ADR-010, decisão 4). Vale apenas para `r2-a` e apenas quando o modo de registro estiver ligado; `r1-a` não muda.
+
+- **Campos aditivos fora de `result`.** A resposta pode ganhar `audit_status` (`"recorded"` ou `"not_recorded"`) e `audit_receipt` (recibo de submissão, prova de inclusão e checkpoint, conforme ADR-010). O objeto `result`, as regras, `input_sha256`, `output_sha256` e `rules_sha256` não mudam; o recibo nunca entra no cálculo de `output_sha256`.
+- **`Idempotency-Key`.** Cabeçalho opcional da requisição. Mesma chave e mesma entrada devolvem o mesmo evento e o mesmo recibo; mesma chave com entrada diferente é rejeitada como conflito.
+- **Falha de gravação.** No modo "registro obrigatório", se o evento não puder ser gravado, a API devolve erro e nenhum veredito (ADR-010, decisão 3). No modo local, a resposta declara `audit_status = "not_recorded"`.
+- **Veredito no registro.** O veredito fica apenas dentro do compromisso com sal, nunca em claro na folha (ADR-010, decisões 1 e 2).
+
+Os nomes finais, esquemas e códigos de erro são fixados na PR que implementar a fase 3 da ADR-010, com alteração do OpenAPI aprovada pelo mantenedor. Até lá, nenhum desses campos existe na API.
+
 ## 16. Decisões do mantenedor registradas
 
 - **Q1 — K1 domina se algum átomo for REFUTED: SIM.** Uma contradição atômica impede declarar a afirmação composta como integralmente suportada.
 - **Q2 — Pesos iguais entre átomos: SIM.** Evita pesos implícitos ou ajustados por modelo na agregação determinística.
 - **Q3 — Sem resolução automática de conflito na 2.0.0: SIM.** Conflitos permanecem explícitos e auditáveis; qualquer resolução futura exige decisão versionada.
 - **Q4 — Manter r1-a até v0.5.0 com regras 1.x: SIM.** Preserva compatibilidade e permite migração controlada, sem alteração silenciosa do contrato histórico.
+- **Q5 — Emenda §15.1 para recibo, `audit_status` e `Idempotency-Key`: SIM (2026-10-17).** Campos aditivos fora de `result`, apenas com o registro ligado; o Judge e seus hashes não mudam.
 
 ## Aprovação
 
