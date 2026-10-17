@@ -91,7 +91,7 @@ def _path(index: int, hashes: Sequence[bytes]) -> list[bytes]:
 def inclusion_proof(index: int, leaf_hashes: Sequence[bytes]) -> list[bytes]:
     """Audit path for leaf ``index`` in the tree made of ``leaf_hashes``."""
     _check_hashes(leaf_hashes)
-    if not 0 <= index < len(leaf_hashes):
+    if not _is_int(index) or not 0 <= index < len(leaf_hashes):
         raise ValueError("index must be inside the tree")
     return _path(index, leaf_hashes)
 
@@ -109,11 +109,21 @@ def _subproof(m: int, hashes: Sequence[bytes], complete: bool) -> list[bytes]:
 def consistency_proof(size1: int, leaf_hashes: Sequence[bytes]) -> list[bytes]:
     """Proof that the first ``size1`` leaves form a prefix of the whole tree."""
     _check_hashes(leaf_hashes)
-    if not 0 < size1 <= len(leaf_hashes):
+    if not _is_int(size1) or not 0 < size1 <= len(leaf_hashes):
         raise ValueError("size1 must satisfy 0 < size1 <= size2")
     if size1 == len(leaf_hashes):
         return []
     return _subproof(size1, leaf_hashes, True)
+
+
+def _is_int(value: object) -> bool:
+    """True for real integers only; ``bool`` is a subclass of ``int`` and is rejected."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _valid_proof(proof: object) -> bool:
+    """A proof is a list or tuple of 32-byte hashes; anything else is malformed."""
+    return isinstance(proof, list | tuple) and all(_valid_hash(p) for p in proof)
 
 
 def _valid_hash(value: object) -> bool:
@@ -122,9 +132,9 @@ def _valid_hash(value: object) -> bool:
 
 def root_from_inclusion(index: int, size: int, leaf: bytes, proof: Sequence[bytes]) -> bytes | None:
     """RFC 9162 §2.1.3.2: recompute the root, or ``None`` if the proof is malformed."""
-    if not (isinstance(index, int) and isinstance(size, int)) or not 0 <= index < size:
+    if not (_is_int(index) and _is_int(size)) or not 0 <= index < size:
         return None
-    if not _valid_hash(leaf) or not all(_valid_hash(p) for p in proof):
+    if not _valid_hash(leaf) or not _valid_proof(proof):
         return None
     fn, sn = index, size - 1
     r = bytes(leaf)
@@ -157,11 +167,11 @@ def verify_consistency(
     size1: int, size2: int, root1: bytes, root2: bytes, proof: Sequence[bytes]
 ) -> bool:
     """RFC 9162 §2.1.4.2 consistency verification between two tree heads."""
-    if not (isinstance(size1, int) and isinstance(size2, int)):
+    if not (_is_int(size1) and _is_int(size2)):
         return False
     if not (_valid_hash(root1) and _valid_hash(root2)):
         return False
-    if not all(_valid_hash(p) for p in proof):
+    if not _valid_proof(proof):
         return False
     # As in the transparency-dev reference: a proof from the empty tree is
     # meaningless and is rejected rather than trivially accepted.

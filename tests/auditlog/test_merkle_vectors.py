@@ -162,3 +162,54 @@ def test_inclusion_edge_cases_never_raise() -> None:
         merkle.consistency_proof(0, LEAF_HASHES[:3])
     with pytest.raises(ValueError):
         merkle.tree_root([b"short"])
+
+
+# Published constants of transparency-dev/merkle testonly.RootHashes(), commit
+# c39fbf350a405f68571bf4c42a6a518eb0a46a4b, copied verbatim for sizes 0..8.
+PUBLISHED_ROOTS = [
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+    "fac54203e7cc696cf0dfcb42c92a1d9dbaf70ad9e621f4bd8d98662f00e3c125",
+    "aeb6bcfe274b70a14fb067a5e5578264db0fa9b51af5e0ba159158f329e06e77",
+    "d37ee418976dd95753c1c73862b9398fa2a2cf9b4ff0fdfe8b30cd95209614b7",
+    "4e3bbb1f7b478dcfe71fb631631519a3bca12c9aefca1612bfce4c13a86264d4",
+    "76e67dadbcdf1e10e1b74ddc608abd2f98dfb16fbce75277b5232a127f2087ef",
+    "ddb89be403809e325750d3d263cd78929c2942b7942a34b77e122c9594a74c8c",
+    "5dc9da79a70659a9ad559cb701ded9a2ab9d823aad2f4960cfe370eff4604328",
+]
+
+
+@pytest.mark.parametrize("size", range(len(PUBLISHED_ROOTS)))
+def test_each_published_root_matches(size: int) -> None:
+    assert merkle.tree_root(LEAF_HASHES[:size]).hex() == PUBLISHED_ROOTS[size]
+
+
+MALFORMED_PROOFS: list[object] = [None, 42, "abc", b"x" * 32, {"a": 1}, iter([]), [None]]
+NON_INTEGERS: list[object] = [True, False, None, 1.0, "1"]
+
+
+@pytest.mark.parametrize("proof", MALFORMED_PROOFS, ids=repr)
+def test_malformed_proof_objects_return_false(proof: object) -> None:
+    leaf = LEAF_HASHES[0]
+    assert merkle.verify_inclusion(0, 2, leaf, proof, ROOTS[2]) is False  # type: ignore[arg-type]
+    assert merkle.verify_consistency(2, 3, ROOTS[2], ROOTS[3], proof) is False  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("value", NON_INTEGERS, ids=repr)
+def test_booleans_and_non_integers_are_not_sizes_or_indices(value: object) -> None:
+    leaf, proof1 = LEAF_HASHES[1], merkle.inclusion_proof(1, LEAF_HASHES[:2])
+    # True == 1 in Python; without the explicit check this call would verify.
+    assert merkle.verify_inclusion(value, 2, leaf, proof1, ROOTS[2]) is False  # type: ignore[arg-type]
+    assert merkle.verify_inclusion(1, value, leaf, proof1, ROOTS[2]) is False  # type: ignore[arg-type]
+    proof = merkle.consistency_proof(1, LEAF_HASHES[:2])
+    assert merkle.verify_consistency(value, 2, ROOTS[1], ROOTS[2], proof) is False  # type: ignore[arg-type]
+    assert merkle.verify_consistency(1, value, ROOTS[1], ROOTS[2], proof) is False  # type: ignore[arg-type]
+    with pytest.raises(ValueError):
+        merkle.inclusion_proof(value, LEAF_HASHES[:2])  # type: ignore[arg-type]
+    with pytest.raises(ValueError):
+        merkle.consistency_proof(value, LEAF_HASHES[:2])  # type: ignore[arg-type]
+
+
+def test_tuple_proofs_are_accepted() -> None:
+    proof = tuple(merkle.inclusion_proof(3, LEAF_HASHES[:7]))
+    assert merkle.verify_inclusion(3, 7, LEAF_HASHES[3], proof, ROOTS[7])
