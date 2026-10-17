@@ -50,7 +50,7 @@ jobs:
             ayorai-attractor:test
           trap 'docker rm --force attractor-smoke >/dev/null 2>&1 || true' EXIT
           test "$(docker exec attractor-smoke id -u)" != "0"
-          for attempt in $(seq 1 30); do
+          for _ in $(seq 1 30); do
             status="$(docker inspect --format '{{.State.Health.Status}}' attractor-smoke)"
             if [ "$status" = "healthy" ]; then
               break
