@@ -36,7 +36,11 @@ def _route_label(scope: Scope) -> str:
     path = scope.get("path")
     if path in {"/health", "/v1/opensearch", "/v1/audit", "/v1/verify"}:
         return str(path)
-    if isinstance(path, str) and path.startswith("/v1/audit/") and "/" not in path.removeprefix("/v1/audit/"):
+    if (
+        isinstance(path, str)
+        and path.startswith("/v1/audit/")
+        and "/" not in path.removeprefix("/v1/audit/")
+    ):
         return "/v1/audit/{trace_id}"
     return "unmatched"
 
