@@ -20,3 +20,7 @@ evals/golden/v1*
 **/golden-v1*
 **/golden_v1*
 .schemathesis/
+schemathesis-report/
+
+# Local outputs of scripts/reproduce.py
+reports/reproduce-*.json
