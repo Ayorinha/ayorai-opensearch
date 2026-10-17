@@ -40,7 +40,7 @@ jobs:
               print(f"{package}=={version(package)}")
           print("NLI_OPTIONAL_DEPENDENCIES_IMPORT: PASS")
           PY
-      - name: Load pinned NLI tokenizer and configuration
+      - name: Load pinned NLI model and exercise inference
         env:
           HF_HUB_DISABLE_TELEMETRY: "1"
           TOKENIZERS_PARALLELISM: "false"
