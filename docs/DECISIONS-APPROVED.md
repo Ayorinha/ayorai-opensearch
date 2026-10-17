@@ -2,7 +2,9 @@
 
 Este arquivo registra decisões explícitas do mantenedor já aprovadas. Não substitui ADRs normativas; mantém a trilha de governança e autorização.
 
-## DEC-007 — Publicar a release v0.4.0?
+**Nomenclatura (2026-10-17):** decisões de publicação de release usam o prefixo `REL-DEC-*` para evitar colisão com decisões do benchmark RGC, que usam `DEC-*`. A mudança de identificador abaixo é editorial e não altera o conteúdo nem a data das decisões aprovadas.
+
+## REL-DEC-007 — Publicar a release v0.4.0?
 
 - **Data da decisão:** 2026-10-11
 - **Decisor e mantenedor:** Anderson Leon Ayora
@@ -15,7 +17,7 @@ Este arquivo registra decisões explícitas do mantenedor já aprovadas. Não su
 - **Condições permanentes:** revisão independente do SHA exato de cada PR, CI verde, merge por SQUASH e artefatos congelados intocados. Nenhuma alteração de Golden, threshold ou manifesto congelado é autorizada por esta decisão.
 - **Limite de maturidade:** a publicação v0.4.0 não afirma que o Judge 2.0.0 esteja totalmente implementado, que os Goldens de desenvolvimento demonstrem generalização em produção ou que haja certificação regulatória ou conformidade jurídica automática.
 
-## DEC-008 — Publicar a release v0.5.0?
+## REL-DEC-008 — Publicar a release v0.5.0?
 
 - **Data da decisão:** 2026-10-13
 - **Decisor e mantenedor:** Anderson Leon Ayora
