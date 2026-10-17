@@ -212,7 +212,6 @@ def test_missing_trace_returns_none(tmp_path) -> None:
         assert store.get("missing") is None
 
 
-
 def test_record_rejects_duplicate_trace_id_and_preserves_original(tmp_path) -> None:
     response = SearchResponse(
         query="original query",
