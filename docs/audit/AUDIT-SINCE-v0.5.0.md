@@ -62,7 +62,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | Autenticação dentro do contêiner | IMPLEMENTADO | PR #226; `.github/workflows/docker.yml`: `/health` público, 401 sem chave e com chave inválida, 200 com chave válida | Credenciais efêmeras geradas no CI |
 | `X-Request-ID` e log de acesso JSON | IMPLEMENTADO | PR #221; `src/ayorai_attractor/api/request_context.py:14` (padrão `[A-Za-z0-9-]{1,64}`); `tests/test_api_request_context.py` (5 testes) | Os testes cobrem campos conhecidos. Não há verificação formal de que nenhum campo futuro vaze dados. |
 | Limite de corpo HTTP (413) | IMPLEMENTADO | PRs #218 e #223; `src/ayorai_attractor/api/app.py:90`; `tests/test_api.py:200–223`; `tests/test_api_uvicorn_body_limit.py` | — |
-| Contrato OpenAPI | IMPLEMENTADO | Workflows `api-contract.yml` e `schemathesis-all.yml`; seed fixa desde a PR #212 | Em 2026-10-17 o "Schemathesis all contract checks" falhou uma vez e passou na reexecução, numa PR só de CHANGELOG (#234). Indício de instabilidade residual; ver F-06. |
+| Contrato OpenAPI | IMPLEMENTADO | Workflows `api-contract.yml` e `schemathesis-all.yml`; seed fixa desde a PR #212 | A matriz anterior relatou uma falha não reproduzida. Os runs consultados dos SHAs documentados para #234 e #245 terminaram com sucesso; o run falho exato e seu caso falsificador não foram localizados. Ver F-06 e issue #250. |
 
 ### 2.3 Distribuição e contêiner
 
