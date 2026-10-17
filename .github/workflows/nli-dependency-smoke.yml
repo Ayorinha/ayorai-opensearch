@@ -1,9 +1,6 @@
 name: NLI Optional Dependency Smoke
 
 on:
-  push:
-    branches:
-      - "dependabot/pip/transformers-*"
   pull_request:
     paths:
       - "pyproject.toml"
