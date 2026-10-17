@@ -31,7 +31,7 @@ def _route_label(scope: Scope) -> str:
     route = scope.get("route")
     route_path = getattr(route, "path", None)
     if isinstance(route_path, str):
-        return route_path
+        return str(route_path)
 
     path = scope.get("path")
     if path in {"/health", "/v1/opensearch", "/v1/audit", "/v1/verify"}:
