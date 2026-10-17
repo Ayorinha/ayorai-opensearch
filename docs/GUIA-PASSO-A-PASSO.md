@@ -135,7 +135,6 @@ Eles representam correções, congelamento de avaliação, ajustes de métricas,
 - executar avaliação independente no Golden v1;
 - medir segurança, latência e auditabilidade antes de qualquer adoção operacional.
 
-
 ## Limite de tamanho do corpo HTTP
 
 A API aplica um limite de tamanho ao corpo de cada requisição HTTP antes de o FastAPI/Pydantic analisar o conteúdo. O padrão é **2 MiB (2.097.152 bytes)**. Uma requisição acima do limite recebe HTTP **413** com JSON, sem alterar os modelos Pydantic nem o contrato OpenAPI congelado.
