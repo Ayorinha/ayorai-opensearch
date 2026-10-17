@@ -535,7 +535,7 @@ def evaluate(
         passages = [p for doc in documents.values() for p in segment(doc, granularity)]
         index = BM25Index(passages, documents)
     rows: list[dict[str, Any]] = []
-    excluded: list[dict[str, str]] = []
+    excluded: list[dict[str, Any]] = []
     unlabeled: list[str] = []
     seen: set[str] = set()
     for case in cases:
@@ -570,7 +570,13 @@ def evaluate(
             prediction["retrieval_scores"] = [round(s, 6) for _, s in hits]
         label = to_label(prediction, vocabulary)
         rows.append(
-            {"case_id": case_id, "gold": gold, "predicted": label, "rectified": rectified, **prediction}
+            {
+                "case_id": case_id,
+                "gold": gold,
+                "predicted": label,
+                "rectified": rectified,
+                **prediction,
+            }
         )
     if unlabeled:
         raise ValueError(f"cases without a label (labels must be complete): {unlabeled}")
