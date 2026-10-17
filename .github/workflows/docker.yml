@@ -63,3 +63,9 @@ jobs:
           done
           test "$(docker inspect --format '{{.State.Health.Status}}' attractor-smoke)" = "healthy"
           curl --fail --silent --show-error http://127.0.0.1:18000/health
+          # The Judge loads rules/judge-2.0.0.json at runtime; a 200 with a
+          # decided verdict proves the rules are present inside the image.
+          curl --fail --silent --show-error -H 'content-type: application/json' \
+            --data '{"schema_version":"r2-a","protocol_version":"r2-a","claim_id":"c1","claim_text":"Claim A","atoms":[{"id":"a1","text":"Claim A","start_offset":0,"end_offset":7}],"evidence":[{"id":"e1","claim_id":"c1","source_id":"source-e1","source_location":"document:1","retrieved_at":"2026-10-11T12:00:00Z","start_offset":0,"end_offset":7,"excerpt":"Claim A","origin_id":"origin-e1"}],"stances":[{"id":"s1","atom_id":"a1","evidence_id":"e1","stance":"SUPPORTS"}],"source_texts":{"source-e1":"Claim A"}}' \
+            http://127.0.0.1:18000/v1/verify > /tmp/verify.json
+          python -c "import json; r=json.load(open('/tmp/verify.json'))['result']; assert r['decision_state']=='DECIDED', r; assert r['verdict']=='SUPPORTED', r; assert r['rules_sha256']=='493cce66ce45fcb432b8345e7567cfb39858492bfe46d5fa6b584991e79e9efc', r; print('VERIFY_IN_CONTAINER: PASS', r['rules_sha256'])"
