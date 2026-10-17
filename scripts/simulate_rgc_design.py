@@ -22,10 +22,10 @@ from __future__ import annotations
 
 import sys
 from array import array
-from typing import Any
 from collections import Counter
 from math import sqrt
 from random import Random
+from typing import Any
 
 from ayorai_attractor.evaluation.stats import bootstrap_accuracy, mcnemar_exact_pvalue
 
