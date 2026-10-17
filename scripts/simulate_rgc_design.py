@@ -89,7 +89,8 @@ def mcnemar_p(b: int, c: int) -> float:
     n = b + c
     if n == 0:
         return 1.0
-    return min(1.0, 2 * sum(comb(n, i) for i in range(min(b, c) + 1)) / 2**n)
+    tail = sum(comb(n, i) for i in range(min(b, c) + 1))
+    return min(1.0, 2.0 * tail / float(2**n))
 
 
 def power(rng: Random, reps: int = 2000, boots: int = 1000) -> None:
@@ -113,7 +114,7 @@ def power(rng: Random, reps: int = 2000, boots: int = 1000) -> None:
 
 
 def main() -> int:
-    rng = Random(SEED)  # nosec B311 - deterministic design simulation
+    rng = Random(SEED)  # nosec B311
     agreement(rng)
     power(rng)
     return 0
