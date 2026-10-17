@@ -1,6 +1,7 @@
 """Tests for optional API-key authentication."""
 
 import hashlib
+import secrets
 
 import pytest
 from fastapi import FastAPI
@@ -41,12 +42,14 @@ def test_authentication_is_disabled_by_default(monkeypatch: pytest.MonkeyPatch) 
 def test_api_key_mode_rejects_missing_or_invalid_keys(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    correct_key = secrets.token_urlsafe(32)
+    wrong_key = secrets.token_urlsafe(32)
     monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
-    monkeypatch.setenv("ATTRACTOR_API_KEYS_SHA256", _digest("correct-secret"))
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_SHA256", _digest(correct_key))
 
     with _client() as client:
         missing = client.get("/private")
-        invalid = client.get("/private", headers={"Authorization": "Bearer wrong-secret"})
+        invalid = client.get("/private", headers={"Authorization": f"Bearer {wrong_key}"})
 
     assert missing.status_code == 401
     assert invalid.status_code == 401
@@ -54,22 +57,18 @@ def test_api_key_mode_rejects_missing_or_invalid_keys(
     assert invalid.json() == {"detail": "Unauthorized"}
 
 
-@pytest.mark.parametrize(
-    "header",
-    [
-        {"Authorization": "Bearer correct-secret"},
-        {"X-API-Key": "correct-secret"},
-    ],
-)
+@pytest.mark.parametrize("header_name", ["Authorization", "X-API-Key"])
 def test_api_key_mode_accepts_bearer_and_x_api_key(
     monkeypatch: pytest.MonkeyPatch,
-    header: dict[str, str],
+    header_name: str,
 ) -> None:
+    key = secrets.token_urlsafe(32)
     monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
-    monkeypatch.setenv("ATTRACTOR_API_KEYS_SHA256", _digest("correct-secret"))
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_SHA256", _digest(key))
+    value = f"Bearer {key}" if header_name == "Authorization" else key
 
     with _client() as client:
-        response = client.get("/private", headers=header)
+        response = client.get("/private", headers={header_name: value})
 
     assert response.status_code == 200
     assert response.json() == {"access": "granted"}
@@ -79,7 +78,7 @@ def test_health_endpoint_remains_public_in_api_key_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
-    monkeypatch.setenv("ATTRACTOR_API_KEYS_SHA256", _digest("correct-secret"))
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_SHA256", _digest(secrets.token_urlsafe(32)))
 
     with _client() as client:
         response = client.get("/health")
@@ -102,7 +101,7 @@ def test_api_key_mode_requires_at_least_one_configured_hash(
 @pytest.mark.parametrize(
     ("mode", "configured_hashes", "message"),
     [
-        ("unsupported", _digest("secret"), "ATTRACTOR_AUTH_MODE must be"),
+        ("unsupported", _digest(secrets.token_urlsafe(32)), "ATTRACTOR_AUTH_MODE must be"),
         ("api_key", "not-a-hash", "must contain only SHA-256 hex digests"),
     ],
 )
