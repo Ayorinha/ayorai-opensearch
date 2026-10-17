@@ -7,6 +7,8 @@ from typing import Annotated, Any
 from fastapi import Body, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+
+from ayorai_attractor.api.auth import APIKeyAuthMiddleware
 from pydantic import ValidationError
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -159,6 +161,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.add_middleware(RequestBodyLimitMiddleware)
+app.add_middleware(APIKeyAuthMiddleware)
 
 
 @app.get("/health")
