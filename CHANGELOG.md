@@ -23,6 +23,10 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - Configurable HTTP request-body size limit enforced (PR #218) and verified against a real Uvicorn server for oversized bodies with Content-Length and chunked bodies without Content-Length (PR #223).
 
 
+### Governança
+- Descrições de pull requests padronizadas sem rodapés de ferramentas em 17/10/2026. O conteúdo técnico e o histórico de commits foram preservados; o histórico de edição das descrições permanece disponível no GitHub.
+- Revisões produzidas por ferramenta automatizada passam a ser identificadas como tal; pareceres anteriores foram reidentificados. A revisão humana independente das PRs desde a v0.5.0 continua pendente.
+
 ## [0.5.0] — 2026-10-13
 
 ### Added
