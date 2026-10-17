@@ -37,7 +37,7 @@ Não alterar esses artefatos para fazer testes passarem.
 ## 5. Benchmark RGC em português
 
 - Agentes automatizados não criam, revisam, veem nem rotulam casos do segundo piloto nem do conjunto definitivo. A criação, revisão, visualização e rotulagem humanas seguem o protocolo e as decisões aprovadas pelo mantenedor.
-- Não executar o sistema sobre casos sem rótulo humano completo, nem sobre o conjunto oculto antes da execução única autorizada.
+- Agentes automatizados não executam o sistema sobre casos sem rótulo humano completo, nem sobre o conjunto oculto antes da execução única autorizada.
 - Não afirmar benchmark validado, protocolo congelado, parceria, certificação, aprovação ou endosso de qualquer instituição sem evidência verificável.
 - Resultados exploratórios nunca são apresentados como confirmatórios.
 
