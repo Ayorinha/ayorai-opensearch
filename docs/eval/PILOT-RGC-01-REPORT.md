@@ -3,7 +3,7 @@
 **Status: registro histórico de piloto exploratório — descartado; não é benchmark**  
 **Data do piloto:** 2026-10-16  
 **Anotador:** Anderson Leon Ayora  
-**Redação dos casos:** os 20 casos (afirmação e trechos) foram gerados com auxílio de uma ferramenta automatizada de geração de texto, a partir das fontes oficiais registradas em `evals/ptbr/sources/`; o anotador apenas atribuiu rótulos e justificativas. Por essa e outras limitações metodológicas, o piloto foi descartado.  
+**Redação dos casos:** os 20 casos (afirmação e trechos) foram gerados com auxílio de uma ferramenta automatizada de geração de texto, a partir das fontes oficiais registradas em `evals/ptbr/sources/`; o anotador apenas atribuiu rótulos e justificativas. O piloto era exploratório e foi descartado conforme previsto no protocolo; a redação automatizada dos casos está entre as limitações registradas abaixo.  
 **Identificação do arquivo de casos:** SHA-256 `3cbbed018f241d6fdc1d83717aec5248e37811b9afc7e2badf17b4fcbd24065c` (o arquivo não integra o repositório; o hash é registrado para rastreabilidade).  
 **Escopo:** piloto exploratório de anotação; não é avaliação do sistema.
 

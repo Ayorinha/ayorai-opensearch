@@ -1,11 +1,11 @@
 # Regras para agentes automatizados — AYORAI ATTRACTOR
 
-Este arquivo vale para qualquer ferramenta automatizada que contribua com este repositório. As mesmas regras se aplicam a colaboradores humanos (ver `CONTRIBUTING.md`).
+Este arquivo estabelece limites para agentes automatizados que contribuam com este repositório. As seções 2, 3, 4 e 7 também orientam colaboradores humanos, conforme `CONTRIBUTING.md`, sem restringir as atribuições do mantenedor. As proibições operacionais dirigidas a agentes automatizados nas seções 1 e 5 não impedem decisões e atividades humanas autorizadas; a governança do benchmark continua sujeita ao protocolo e às decisões aprovadas.
 
 ## 1. Autoridade
 
 - Anderson Leon Ayora, mantenedor, é a única autoridade sobre merges, releases, tags, publicações e decisões metodológicas ou de governança.
-- Não mesclar PRs, não fechar PRs de terceiros, não criar tags nem publicar versões.
+- Agentes automatizados não mesclam PRs, não fecham PRs de terceiros, não criam tags nem publicam versões.
 - Parar e pedir decisão do mantenedor quando a tarefa exigir decisão humana, anotação isolada, congelamento de protocolo, mudança de contrato, mudança de escopo ou autorização de merge.
 
 ## 2. Identidade do projeto e proibição de autopromoção
@@ -26,7 +26,9 @@ Este arquivo vale para qualquer ferramenta automatizada que contribua com este r
 Exigem autorização explícita do mantenedor para qualquer alteração:
 
 - regras do Judge (`rules/`, `src/ayorai_attractor/verification/judge2/`);
-- conjuntos Golden, manifestos e hashes congelados;
+- conjuntos Golden em `evals/golden/`, manifestos e hashes congelados;
+- bytes oficiais capturados e textos derivados em `evals/ptbr/sources/`; registro de fontes em `evals/ptbr/SOURCES-REGISTRY.json`. Preservar capturas históricas e não sobrescrevê-las;
+- `docs/eval/PROTOCOL-GOLDEN-V1.md` e `docs/eval/PREREGISTRATION-RGC-v1.md`: alterações somente por emenda datada e aprovada explicitamente pelo mantenedor;
 - ADRs aceitas e decisões aprovadas (`docs/DECISIONS-APPROVED.md` e entradas aprovadas de `docs/DECISIONS-PENDING.md`);
 - notas de release (`docs/release/`).
 
@@ -34,21 +36,28 @@ Não alterar esses artefatos para fazer testes passarem.
 
 ## 5. Benchmark RGC em português
 
-- Não criar, revisar, ver ou rotular casos do segundo piloto nem do conjunto definitivo.
-- Não executar o sistema sobre casos sem rótulo humano completo, nem sobre o conjunto oculto antes da execução única autorizada.
+- Agentes automatizados não criam, revisam, veem nem rotulam casos do segundo piloto nem do conjunto definitivo. A criação, revisão, visualização e rotulagem humanas seguem o protocolo e as decisões aprovadas pelo mantenedor.
+- Agentes automatizados não executam o sistema sobre casos sem rótulo humano completo, nem sobre o conjunto oculto antes da execução única autorizada.
 - Não afirmar benchmark validado, protocolo congelado, parceria, certificação, aprovação ou endosso de qualquer instituição sem evidência verificável.
 - Resultados exploratórios nunca são apresentados como confirmatórios.
 
 ## 6. Soberania tecnológica
 
-- Priorizar soluções, serviços e componentes brasileiros quando forem tecnicamente adequados em segurança, qualidade, licença, manutenção e custo.
-- Ao propor uma dependência, serviço ou fornecedor, avaliar e registrar origem, licença, dependências transitivas e riscos da cadeia de suprimentos.
-- Não afirmar que o projeto é "100% brasileiro", nem usar expressão equivalente, sem evidência auditável de origem de código, dependências, infraestrutura e serviços.
+### 6.1 Objetivo
+
+- A soberania tecnológica é um objetivo do projeto: priorizar soluções, serviços e componentes brasileiros quando forem tecnicamente adequados em segurança, qualidade, licença, manutenção e custo.
+- Ao propor uma dependência, ferramenta, serviço ou fornecedor, avaliar e registrar origem, licença, dependências transitivas e riscos da cadeia de suprimentos.
+
+### 6.2 Comprovação antes de qualquer declaração
+
+- O projeto não se declara "100% brasileiro", nem usa expressão equivalente, antes de uma auditoria verificável que cubra dependências, ferramentas, infraestrutura e serviços.
+- A auditoria deve ser reproduzível e publicada, com inventário de componentes (origem e licença), data e commit de referência, método de verificação e exceções declaradas.
+- Enquanto essa auditoria não existir, a soberania tecnológica é comunicada apenas como objetivo.
 
 ## 7. Forma de trabalho
 
 - Consultar o estado atual da `main` e das PRs antes de alterar qualquer coisa.
-- Não criar PRs adicionais nem ampliar o escopo aprovado sem autorização explícita do mantenedor; se surgir uma necessidade adjacente, descrevê-la e aguardar decisão.
+- Não abrir PR, branch pública ou issue que não tenha sido solicitada, nem ampliar o escopo autorizado, sem autorização explícita do mantenedor; se surgir uma necessidade adjacente, descrevê-la e aguardar decisão.
 - Uma PR por tarefa coerente, com objetivo, alterações, limites e evidência (testes executados e checks do SHA exato).
 - Distinguir sempre fato verificado, inferência e hipótese.
 - Não declarar uma tarefa concluída sem a evidência correspondente.

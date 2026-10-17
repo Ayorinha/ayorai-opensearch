@@ -25,7 +25,7 @@ PRs devem manter CI, segurança e CodeQL verdes. Resultados de benchmark/eval s�
 
 ## Contribuições assistidas por ferramentas automatizadas
 
-Ferramentas automatizadas podem auxiliar o trabalho, mas o projeto mantém identidade própria. As regras completas estão em [AGENTS.md](AGENTS.md) e valem também para colaboradores humanos: nenhuma assinatura, link ou crédito promocional de ferramenta em materiais públicos; autoria e proveniência sempre verificáveis; autoridade exclusiva do mantenedor sobre merges e releases; artefatos protegidos; restrições do benchmark RGC; e diretriz de soberania tecnológica.
+Ferramentas automatizadas podem auxiliar o trabalho, mas o projeto mantém identidade própria. As regras completas para agentes automatizados estão em [AGENTS.md](AGENTS.md). As seções 2, 3, 4 e 7 também orientam colaboradores humanos: nenhuma assinatura, link ou crédito promocional de ferramenta em materiais públicos; autoria e proveniência sempre verificáveis; respeito aos artefatos protegidos; escopo autorizado; e diretriz de soberania tecnológica. A autoridade exclusiva do mantenedor sobre merges, releases, publicações e decisões metodológicas permanece preservada. As restrições operacionais dirigidas a agentes automatizados não proíbem o mantenedor ou anotadores humanos autorizados de executar suas responsabilidades no benchmark RGC, que continuam sujeitas ao protocolo e às decisões aprovadas.
 
 ## DCO
 
