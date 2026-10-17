@@ -8,7 +8,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from ayorai_attractor.api.auth import APIKeyAuthMiddleware
+from ayorai_attractor.api.auth import MIN_API_KEY_LENGTH, APIKeyAuthMiddleware
 
 
 def _client() -> TestClient:
@@ -142,3 +142,19 @@ def test_invalid_auth_configuration_fails_closed(
     with pytest.raises(ValueError, match=message):
         with _client() as client:
             client.get("/private")
+
+
+def test_api_key_mode_rejects_short_keys_even_when_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    short_key = secrets.token_urlsafe(8)
+    assert len(short_key) < MIN_API_KEY_LENGTH
+    pepper = _set_pepper(monkeypatch)
+    monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_HMAC_SHA256", _digest(short_key, pepper))
+
+    with _client() as client:
+        response = client.get("/private", headers={"X-API-Key": short_key})
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Unauthorized"}

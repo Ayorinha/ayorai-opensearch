@@ -12,6 +12,12 @@ Generate a high-entropy pepper once and store it in your deployment secret manag
 python -c "import secrets; print(secrets.token_hex(32))"
 ~~~
 
+Generate each API key with a cryptographically secure generator. Keys shorter than 32 characters are always rejected, even if their digest is configured:
+
+~~~bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+~~~
+
 Generate a digest locally without printing the raw API key or pepper:
 
 ~~~bash
@@ -48,3 +54,7 @@ Keep the raw key in a secret manager or environment supplied by the deployment p
 - Restrict access to environment configuration and deployment logs.
 - Authentication is not a substitute for network controls, rate limiting, authorization scopes, or secret rotation procedures.
 - The default `off` mode preserves existing API behavior. Operators must explicitly enable `api_key` mode when required by their deployment.
+
+## Why HMAC-SHA-256 and not a password-hashing function
+
+CodeQL rule `py/weak-sensitive-data-hashing` flags any fast hash applied to a value it classifies as a password. That guidance targets low-entropy, human-chosen secrets, where a slow function (Argon2, scrypt, PBKDF2) limits offline guessing. ATTRACTOR API keys are machine-generated tokens of at least 32 characters (about 190 bits when generated as above), enforced by the middleware. Guessing such a key is infeasible with or without a slow function, and a slow function would add CPU cost to every request that an attacker could exploit. The digest list is additionally keyed by a separate 32-byte pepper. This rationale is the basis for dismissing that alert as not applicable; it does not apply if human-chosen passwords are ever accepted.

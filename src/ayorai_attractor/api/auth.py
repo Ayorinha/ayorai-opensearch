@@ -10,6 +10,15 @@ from collections.abc import Iterable
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+# API keys are machine-generated bearer tokens, not human passwords. A key
+# shorter than this is rejected before any digest is computed, so every key
+# that can ever authenticate carries at least ~190 bits of entropy when
+# generated as documented (secrets.token_urlsafe(32) yields 43 characters).
+# This is what makes a fast keyed digest (HMAC-SHA-256) appropriate here;
+# slow password-hashing functions are designed for low-entropy secrets and
+# would add per-request CPU cost an attacker could exploit.
+MIN_API_KEY_LENGTH = 32
+
 
 def _load_configuration() -> tuple[str, tuple[str, ...], bytes | None]:
     mode = os.getenv("ATTRACTOR_AUTH_MODE", "off").strip().lower()
@@ -89,7 +98,7 @@ class APIKeyAuthMiddleware:
             return
 
         presented_key = self._extract_key(scope.get("headers", []))
-        if presented_key is None:
+        if presented_key is None or len(presented_key) < MIN_API_KEY_LENGTH:
             await self._unauthorized(scope, receive, send)
             return
 
