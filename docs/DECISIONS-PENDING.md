@@ -25,7 +25,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-009 | Abstenção avaliada como `UNVERIFIED` | Aprovada (2026-10-15); executor na PR #195 | Este arquivo |
 | DEC-010 | Afirmações compostas (opção A) | Aprovada (2026-10-16); executor na PR #203, Emenda 3 na PR #205 | Este arquivo |
 | DEC-011 | Guia de anotação após o piloto 01 | Aprovada (2026-10-17); Emenda 4 na PR #227 | Este arquivo |
-| DEC-012 | Decisões 1–4 do log de auditoria (ADR-010) | Registrada em PR aberta (#225), ainda não mesclada | PR #225 |
+| DEC-012 | Decisões 1–4 do log de auditoria (ADR-010) | Registro mesclado na PR #225 em 2026-10-17; implementação e validação continuam sujeitas aos gates da ADR-010 | [PR #225](https://github.com/Ayorinha/ayorai-opensearch/pull/225) |
 
 ## Decisões aprovadas
 
