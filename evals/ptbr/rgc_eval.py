@@ -13,7 +13,8 @@ Pipeline per case (no learned component, no network):
      (dispositivos: ``Art.``, ``§``, ``Parágrafo único``, incisos, alíneas),
      ranked with BM25 against the claim, and the top-k passages are used.
 2. Stance: ``RuleStanceDetector`` on each (claim, passage) pair.
-3. Verdict: Judge 2.0 ``adjudicate`` with one atom covering the whole claim.
+3. Verdict: Judge 2.0 ``adjudicate`` with one atom covering a simple claim, or the human-annotated atoms of a compound claim.
+4. Rectification: every case explicitly declares ``rectified`` as a boolean; metrics are reported separately for rectified and non-rectified cases.
 
 Subcommands:
     run            evaluate cases against human labels and write a report
@@ -49,7 +50,7 @@ from ayorai_attractor.verification.stance import RuleStanceDetector
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.2.0"
+RUNNER_VERSION = "rgc-eval/0.3.0"
 SEED = 20261003
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
@@ -494,6 +495,28 @@ def load_labels(path: Path, vocabulary: str) -> dict[str, str]:
     return labels
 
 
+def compute_rectification_metrics(
+    rows: Sequence[Mapping[str, Any]], vocabulary: str
+) -> dict[str, Any]:
+    """Descriptive metrics for a rectification stratum; not a separate H1 test."""
+    gold = [str(row["gold"]) for row in rows]
+    predicted = [str(row["predicted"]) for row in rows]
+    return {
+        "n": len(rows),
+        "case_ids": [str(row["case_id"]) for row in rows],
+        "gold_counts": {label: gold.count(label) for label in VOCABULARIES[vocabulary]},
+        "predicted_counts": {
+            label: predicted.count(label) for label in (*VOCABULARIES[vocabulary], INVALID)
+        },
+        "system": (
+            {name: round(METRICS[name](gold, predicted), 6) for name in METRICS}
+            if rows
+            else None
+        ),
+        "confusion": confusion(gold, predicted, vocabulary) if rows else None,
+    }
+
+
 def evaluate(
     cases: Iterable[Mapping[str, Any]],
     labels: Mapping[str, str],
@@ -515,6 +538,9 @@ def evaluate(
     seen: set[str] = set()
     for case in cases:
         case_id = str(case["case_id"])
+        rectified = case.get("rectified")
+        if not isinstance(rectified, bool):
+            raise ValueError(f"{case_id}: rectified must be an explicit boolean")
         if case_id in seen:
             raise ValueError(f"{case_id}: duplicate case")
         seen.add(case_id)
@@ -523,7 +549,7 @@ def evaluate(
             unlabeled.append(case_id)
             continue
         if gold in EXCLUSION_LABELS:
-            excluded.append({"case_id": case_id, "label": gold})
+            excluded.append({"case_id": case_id, "label": gold, "rectified": rectified})
             continue
         atoms = case_atoms(case)
         if index is None:
@@ -541,7 +567,7 @@ def evaluate(
             )
             prediction["retrieval_scores"] = [round(s, 6) for _, s in hits]
         label = to_label(prediction, vocabulary)
-        rows.append({"case_id": case_id, "gold": gold, "predicted": label, **prediction})
+        rows.append({"case_id": case_id, "gold": gold, "predicted": label, "rectified": rectified, **prediction})
     if unlabeled:
         raise ValueError(f"cases without a label (labels must be complete): {unlabeled}")
     extra = sorted(set(labels) - seen)
@@ -552,8 +578,16 @@ def evaluate(
     gold_labels = [str(r["gold"]) for r in rows]
     predicted = [str(r["predicted"]) for r in rows]
     states = [str(r["decision_state"]) for r in rows]
+    rectified_rows = [row for row in rows if row["rectified"] is True]
+    non_rectified_rows = [row for row in rows if row["rectified"] is False]
     return {
         "metrics": compute_metrics(gold_labels, predicted, vocabulary, iterations=iterations),
+        # DEC-011: stratify descriptive metrics by official rectification status.
+        # The primary hypothesis remains evaluated on the complete eligible set.
+        "rectification_strata": {
+            "rectified": compute_rectification_metrics(rectified_rows, vocabulary),
+            "not_rectified": compute_rectification_metrics(non_rectified_rows, vocabulary),
+        },
         # DEC-009: ABSTAINED is scored as UNVERIFIED; report how many predictions
         # came from each original Judge state so the mapping stays visible.
         "decision_states": {state: states.count(state) for state in sorted(set(states))},
