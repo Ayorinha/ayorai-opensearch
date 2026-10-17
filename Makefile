@@ -16,3 +16,11 @@ security:
 
 run:
 	uvicorn ayorai_attractor.api.app:app --reload
+
+reproduce:
+	python scripts/reproduce.py
+
+reproduce-quick:
+	python scripts/reproduce.py --quick
+
+.PHONY: install test lint typecheck security run reproduce reproduce-quick
