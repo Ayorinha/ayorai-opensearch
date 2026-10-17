@@ -85,7 +85,6 @@ _HTTP_404_RESPONSE: dict[str, Any] = {
 }
 
 
-
 _DEFAULT_MAX_BODY_BYTES = 2 * 1024 * 1024
 
 
