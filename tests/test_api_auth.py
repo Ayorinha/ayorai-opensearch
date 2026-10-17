@@ -112,11 +112,22 @@ def test_api_key_mode_requires_at_least_one_configured_hash(
             client.get("/private")
 
 
+
+def test_api_key_mode_requires_valid_pepper(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_HMAC_SHA256", "0" * 64)
+    monkeypatch.delenv("ATTRACTOR_API_KEY_PEPPER", raising=False)
+
+    with pytest.raises(ValueError, match="ATTRACTOR_API_KEY_PEPPER must be"):
+        with _client() as client:
+            client.get("/private")
+
+
 @pytest.mark.parametrize(
     ("mode", "configured_hashes", "message"),
     [
-        ("unsupported", _digest(secrets.token_urlsafe(32)), "ATTRACTOR_AUTH_MODE must be"),
-        ("api_key", "not-a-hash", "must contain only SHA-256 hex digests"),
+        ("unsupported", "0" * 64, "ATTRACTOR_AUTH_MODE must be"),
+        ("api_key", "not-a-hash", "must contain only HMAC-SHA-256 hex digests"),
     ],
 )
 def test_invalid_auth_configuration_fails_closed(
