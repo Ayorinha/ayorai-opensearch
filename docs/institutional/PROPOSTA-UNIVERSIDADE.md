@@ -46,3 +46,7 @@ Antes de qualquer atividade conjunta, recomenda-se que as partes e suas áreas c
 ## Próxima etapa
 
 Uma conversa exploratória poderá avaliar disponibilidade de anotador independente, custódia do conjunto oculto e revisão externa. Nenhuma instituição é nomeada ou apresentada como participante nesta versão.
+
+## Referência terminológica
+
+Para leitores externos, consulte o [Glossário do AYORAI ATTRACTOR](../GLOSSARIO.md), que resume os termos técnicos e aponta para os documentos normativos correspondentes. Este glossário também está em rascunho e não substitui as fontes normativas.
