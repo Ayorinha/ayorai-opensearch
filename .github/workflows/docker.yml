@@ -1,0 +1,65 @@
+name: Docker smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docker/**"
+      - "docker-compose.yml"
+      - ".env.example"
+      - "src/ayorai_attractor/api/**"
+      - "pyproject.toml"
+      - ".github/workflows/docker.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docker/**"
+      - "docker-compose.yml"
+      - ".env.example"
+      - "src/ayorai_attractor/api/**"
+      - "pyproject.toml"
+      - ".github/workflows/docker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  container-smoke:
+    name: container-smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build production image
+        run: docker build --file docker/Dockerfile --tag ayorai-attractor:test .
+
+      - name: Validate Compose configuration and loopback binding
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+          docker compose config --format json | python -c "import json, sys; c=json.load(sys.stdin); assert c['services']['attractor']['ports'][0]['host_ip'] == '127.0.0.1'"
+
+      - name: Verify non-root runtime and healthcheck
+        run: |
+          docker run --detach --name attractor-smoke \
+            --publish 127.0.0.1:18000:8000 \
+            --env ATTRACTOR_AUTH_MODE=off \
+            --env ATTRACTOR_AUDIT_DB=/tmp/audit.sqlite3 \
+            ayorai-attractor:test
+          trap 'docker rm --force attractor-smoke >/dev/null 2>&1 || true' EXIT
+          test "$(docker exec attractor-smoke id -u)" != "0"
+          for attempt in $(seq 1 30); do
+            status="$(docker inspect --format '{{.State.Health.Status}}' attractor-smoke)"
+            if [ "$status" = "healthy" ]; then
+              break
+            fi
+            if [ "$status" = "unhealthy" ]; then
+              docker logs attractor-smoke
+              exit 1
+            fi
+            sleep 1
+          done
+          test "$(docker inspect --format '{{.State.Health.Status}}' attractor-smoke)" = "healthy"
+          curl --fail --silent --show-error http://127.0.0.1:18000/health
