@@ -112,7 +112,6 @@ def test_api_key_mode_requires_at_least_one_configured_hash(
             client.get("/private")
 
 
-
 def test_api_key_mode_requires_valid_pepper(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
     monkeypatch.setenv("ATTRACTOR_API_KEYS_HMAC_SHA256", "0" * 64)
