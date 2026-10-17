@@ -3,8 +3,8 @@
 | Campo | Valor |
 |---|---|
 | Versão de referência | v0.5.0, publicada em 2026-10-13 (tag no commit `e9eccb50e4904b8f33004a414a5666477378c67a`; DOI 10.5281/zenodo.23344005) |
-| Estado auditado | `main` em `e50d2b9bc623d1ad0dd95302e4602653e3dcbac2` (2026-10-17) |
-| Intervalo | 63 commits na `main` desde a tag; 61 PRs mescladas até #245, com lacunas na numeração (contagem derivada do compare de commits e dos merges registrados) |
+| Estado auditado | `main` em `03b860395222f71028978509737f813ae465bc63` (2026-10-17) |
+| Intervalo | 66 commits na `main` desde a tag; 64 PRs mescladas até #248, com lacunas na numeração (contagem derivada do compare de commits e dos merges registrados) |
 | Solicitante | Anderson Leon Ayora (mantenedor) |
 | Natureza | Documento de engenharia. Não altera código, decisões, ADRs, regras, Golden, manifestos ou hashes. |
 
@@ -12,10 +12,10 @@
 
 Nenhum item é classificado como implementado sem **código na `main`**, **teste que o exercita** e **execução registrada**. Fontes consultadas:
 
-1. Compare da tag v0.5.0 (`e9eccb5`) até a `main` auditada (`e50d2b9`): 63 commits. A afirmação histórica de que os 58 commits até `ab13f73` tinham um único pai não é automaticamente transferida para os commits posteriores; a estrutura de pais do intervalo atualizado não foi revalidada localmente nesta sessão.
+1. Compare da tag v0.5.0 (`e9eccb5`) até a `main` auditada (`03b8603`): 66 commits. A afirmação histórica de que os 58 commits até `ab13f73` tinham um único pai não é automaticamente transferida para os commits posteriores; a estrutura de pais do intervalo atualizado não foi revalidada localmente nesta sessão.
 2. API REST do GitHub: PRs mescladas e abertas, check-runs, ruleset `Protecao-main-ATTRACTOR`, releases e comentários.
 3. Última execução local declarada nesta matriz: **658 testes aprovados em `ab13f737`** (Python 3.13.16, `pytest -q`). Esse resultado é histórico e não prova a suíte no SHA `e50d2b9`; não houve execução local nesta sessão.
-4. Check-runs do SHA `e50d2b9`: os seis checks obrigatórios (test 3.11/3.12/3.13, golden-regression, judge-regression, security) foram conferidos no GitHub; o job `analyze` ainda estava em andamento na consulta inicial e não é um check obrigatório de merge.
+4. Check-runs do SHA `03b8603`: os seis checks obrigatórios (test 3.11/3.12/3.13, golden-regression, judge-regression, security) foram conferidos no GitHub; o job `analyze` ainda estava em andamento na consulta inicial e não é um check obrigatório de merge.
 5. Leitura direta dos arquivos citados, com caminho e linha.
 
 ### Legenda
@@ -127,9 +127,9 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | #242 | Auditoria técnica desde v0.5.0 | Esta PR; F-01 atualizado e revisão documental em andamento |
 | #245 | Regra de autoria e rotulagem de pareceres | Mesclada por squash; checks da cabeça estavam verdes |
 | #246 | Transparência sobre apoio automatizado | Aberta; checks conferidos no SHA da cabeça, aguarda ordem de merge |
-| #247 | README alinhado à evidência | Aberta; checks conferidos no SHA da cabeça, aguarda ordem de merge |
-| #248 | Escopo de módulos experimentais | Aberta; CI inicial falhou por linhas longas nos docstrings; correção enviada, revalidar SHA final |
-| #249 | Fonte única de status | Aberta; checks conferidos no SHA da cabeça, aguarda ordem de merge |
+| #247 | README alinhado à evidência | Mesclada por squash após revisão e checks verdes |
+| #248 | Escopo de módulos experimentais | Mesclada por squash após correção de E501 e checks verdes no SHA final |
+| #249 | Fonte única de status | Aberta; documentação atualizada contra a main após #247 e #248; checks do SHA final em andamento |
 | #189 | Dependabot: `transformers` < 6 | Aberta; não mesclar sem revisar o impacto da faixa `<6` nos testes |
 
 ## 4. Achados
