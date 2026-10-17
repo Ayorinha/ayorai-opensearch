@@ -51,3 +51,18 @@ As fontes ficam em um arquivo separado, uma linha por documento, com os campos s
 6. Anotação de átomos inválida interrompe a execução, conforme o executor `rgc-eval/0.2.0`, mesclado na [PR #203](https://github.com/Ayorinha/ayorai-opensearch/pull/203) em 2026-10-16. A mesclagem não equivale à validação do executor no benchmark definitivo.
 
 A presente emenda documenta a decisão DEC-010, opção A. O protocolo e o pré-registro permanecem **[PROPOSTO]** até aprovação e congelamento formais pelo mantenedor.
+
+
+## Emenda 4 (2026-10-17) — Regras de anotação após o piloto (DEC-011, aprovada)
+
+Esta emenda registra a aprovação explícita do mantenedor. O segundo piloto continua exploratório e seus casos serão descartados; esta emenda não declara o protocolo congelado nem constitui resultado de benchmark.
+
+1. **Ausência não é contradição.** Atribuir `UNVERIFIED` quando as evidências não abordam a afirmação. Atribuir `REFUTED` somente quando uma frase da evidência for explicitamente incompatível com a afirmação. A justificativa de todo `REFUTED` deve citar a frase incompatível. Pergunta de controle: “Consigo apontar a frase do trecho que diz o contrário?” Se não, não usar `REFUTED`.
+2. **Texto retificado — opção A.** Para o rótulo de referência, considerar o texto vigente após aplicar as retificações oficiais. Texto superado reproduzido em “Onde se lê” ou em redação original retificada não conta como evidência de apoio. Marcar casos que envolvam dispositivo retificado com `rectified: true` e reportar esse estrato separadamente, com a limitação explícita. Não alterar o Judge nem suas regras nesta versão.
+3. **Valores, quantificadores e modalidade.** Valores diferentes para o mesmo prazo, período, percentual ou data são `REFUTED` quando o texto fornece um valor incompatível. Afirmações “exclusivamente/somente X” são `REFUTED` quando a fonte admite ou prefere meio/condição incompatível; se a fonte não tratar do ponto, usar `UNVERIFIED`. Afirmações de integralidade são `REFUTED` quando o texto delimita expressamente um alcance menor. Trocas entre dever e faculdade, ou entre permissão e proibição, são `REFUTED` quando o texto é explicitamente incompatível.
+4. **Limite de interpretação.** Excluir do v1 afirmações que transformem “preferencialmente” em obrigação sem suporte textual explícito. Não inferir obrigação nem contradição apenas por interpretação jurídica do anotador.
+5. **Isolamento e proveniência.** O segundo piloto deve usar casos novos, trechos conferidos literalmente contra fontes oficiais registradas e anotação humana sem consulta a assistentes/modelos de IA. Registrar a fonte, o trecho exato, o rótulo e uma justificativa rastreável. Os casos do piloto são descartados e não integram o conjunto definitivo.
+6. **Composição do segundo piloto.** Alvo aproximado de 10 casos: incluir pelo menos 3 casos compostos com uma parte confirmada e outra sem confirmação (`PARTIALLY_SUPPORTED`), 1 caso com fontes divergentes (`CONFLICTING`), 1 caso envolvendo dispositivo retificado e 2 casos de ausência de evidência (`UNVERIFIED`). A seleção final depende de fontes elegíveis e de conferência humana; não fabricar casos para satisfazer cotas.
+7. **Gate posterior.** Após o piloto, revisar ambiguidades e documentar o resultado. Congelar o protocolo somente por registro explícito do mantenedor depois dessa revisão. Só então iniciar a redação dos 300 casos definitivos. Não alterar código, regras do Judge, Golden históricos, manifestos ou hashes congelados nesta emenda.
+
+A decisão foi aprovada por Anderson Leon Ayora em 2026-10-17. A emenda e o pré-registro permanecem sujeitos à revisão documental e ao merge da PR; o benchmark PT-BR não tem resultado validado neste estágio.
