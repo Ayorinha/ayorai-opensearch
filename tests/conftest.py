@@ -15,7 +15,7 @@ import pytest
 
 # Unit tests explicitly opt into unauthenticated mode. Production defaults to
 # api_key and fails startup when key material has not been configured.
-os.environ.setdefault("ATTRACTOR_AUTH_MODE", "off")
+os.environ["ATTRACTOR_AUTH_MODE"] = "off"
 
 # This runs before test modules import the API application.
 os.environ["ATTRACTOR_AUDIT_DB"] = ":memory:"
