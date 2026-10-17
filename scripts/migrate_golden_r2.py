@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Create deterministic, derived Judge 2 Golden files without mutating legacy inputs."""
+
 from __future__ import annotations
 
 import argparse
@@ -40,8 +41,7 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
 def dump_jsonl(records: list[dict[str, Any]]) -> bytes:
     return b"".join(
         (
-            json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-            + "\n"
+            json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
         ).encode("utf-8")
         for record in records
     )
@@ -94,10 +94,12 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
         mapped_claims: list[dict[str, Any]] = []
         for index, claim in enumerate(claims):
             if not isinstance(claim, dict) or "verdict" not in claim:
-                non_migratable.append({
-                    "field": f"expected_claims[{index}]",
-                    "reason": "estrutura da claim ou campo verdict ausente",
-                })
+                non_migratable.append(
+                    {
+                        "field": f"expected_claims[{index}]",
+                        "reason": "estrutura da claim ou campo verdict ausente",
+                    }
+                )
                 continue
             label, robustness, reason = map_atomic(
                 claim.get("verdict"), claim.get("support_clusters")
@@ -109,10 +111,12 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
             if label != claim.get("verdict") or robustness is not None:
                 migrated_count += 1
             if reason:
-                non_migratable.append({
-                    "field": f"expected_claims[{index}]",
-                    "reason": reason,
-                })
+                non_migratable.append(
+                    {
+                        "field": f"expected_claims[{index}]",
+                        "reason": reason,
+                    }
+                )
         transformed["expected_claims"] = mapped_claims
         labels = [claim.get("verdict") for claim in mapped_claims]
         if len(mapped_claims) == len(claims) and not non_migratable:
@@ -129,32 +133,40 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
             transformed["expected_verdict"] = verdict
             transformed["global"] = verdict
             selected = [
-                claim["robustness"] for claim in mapped_claims
-                if selector is not None and claim["verdict"] == selector
+                claim["robustness"]
+                for claim in mapped_claims
+                if selector is not None
+                and claim["verdict"] == selector
                 and claim.get("robustness") is not None
             ]
             rank = {"R0": 0, "R1": 1, "R2": 2, "R3": 3}
             transformed["expected_robustness"] = (
-                min(selected, key=lambda value: rank[value]) if selected
+                min(selected, key=lambda value: rank[value])
+                if selected
                 else ("R0" if selector is None else None)
             )
         else:
             transformed["expected_verdict"] = None
             transformed["global"] = None
             transformed["expected_robustness"] = None
-            non_migratable.append({
-                "field": "expected_verdict/global",
-                "reason": (
-                    "composição K não derivável sem inventar o mapeamento "
-                    "de uma ou mais claims"
-                ),
-            })
+            non_migratable.append(
+                {
+                    "field": "expected_verdict/global",
+                    "reason": (
+                        "composição K não derivável sem inventar o mapeamento de uma ou mais claims"
+                    ),
+                }
+            )
         transformed["expected_decision_state"] = "DECIDED"
     else:
-        non_migratable.append({
-            "field": "expected_claims",
-            "reason": "caso sem claims atômicas explícitas e sem regra de abstinência reconhecida",
-        })
+        non_migratable.append(
+            {
+                "field": "expected_claims",
+                "reason": (
+                    "caso sem claims atômicas explícitas e sem regra de abstinência reconhecida"
+                ),
+            }
+        )
         transformed["expected_decision_state"] = "INVALID_INPUT"
         transformed["expected_reason_codes"] = ["SCHEMA_VIOLATION"]
         transformed["expected_verdict"] = None
@@ -170,6 +182,7 @@ def transform_case(case: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
         "atomic_mapping_justification": "ADR-002 §1: PARTIALLY_SUPPORTED atômico ⇔ S=1, C=0",
     }
     return transformed, non_migratable, migrated_count
+
 
 def migrate(
     source_name: str,
@@ -194,9 +207,7 @@ def migrate(
             non_migratable_case_ids.add(case_id)
         else:
             migrated_cases += 1
-        unresolved.extend(
-            {"case_id": case_id, **reason} for reason in reasons
-        )
+        unresolved.extend({"case_id": case_id, **reason} for reason in reasons)
 
     out_name = f"{source_name}-r2.jsonl"
     out_path = output_dir / out_name
@@ -221,9 +232,7 @@ def migrate(
             "method": MIGRATION_METHOD,
             "mapping_version": MAPPING_VERSION,
             "source_commit": source_commit,
-            "atomic_mapping_justification": (
-                "ADR-002 §1: PARTIALLY_SUPPORTED atômico ⇔ S=1, C=0"
-            ),
+            "atomic_mapping_justification": ("ADR-002 §1: PARTIALLY_SUPPORTED atômico ⇔ S=1, C=0"),
             "conflicting_robustness_policy": (
                 "CONFLICTING claims retain null robustness: rules 1.x do not record "
                 "per-side cluster counts, so robustness is not inferred."
@@ -262,11 +271,19 @@ def main() -> int:
         if not source_commit:
             source_commit = subprocess.run(
                 [
-                    "git", "log", "-1", "--format=%H", "--",
-                    "evals/golden/v0.jsonl", "evals/golden/v0.1.jsonl",
+                    "git",
+                    "log",
+                    "-1",
+                    "--format=%H",
+                    "--",
+                    "evals/golden/v0.jsonl",
+                    "evals/golden/v0.1.jsonl",
                     "rules/judge-2.0.0.json",
                 ],
-                cwd=ROOT, check=True, capture_output=True, text=True,
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
             ).stdout.strip()
             if not source_commit:
                 raise ValueError("no commit found for frozen source files")
@@ -278,13 +295,9 @@ def main() -> int:
             tempfile.TemporaryDirectory(prefix="golden-r2-a-") as first_dir,
             tempfile.TemporaryDirectory(prefix="golden-r2-b-") as second_dir,
         ):
-            first = [
-                migrate(name, path, Path(first_dir), source_commit)
-                for name, path in SOURCES
-            ]
+            first = [migrate(name, path, Path(first_dir), source_commit) for name, path in SOURCES]
             second = [
-                migrate(name, path, Path(second_dir), source_commit)
-                for name, path in SOURCES
+                migrate(name, path, Path(second_dir), source_commit) for name, path in SOURCES
             ]
             if first != second:
                 raise SystemExit("non-deterministic migration manifest")

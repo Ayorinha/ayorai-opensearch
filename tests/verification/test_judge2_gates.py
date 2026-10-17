@@ -66,21 +66,38 @@ def test_contract_digest_is_pinned_to_approved_judge_2_contract() -> None:
         ({"atoms": []}, "NO_ATOMS"),
         ({"atoms": [ATOM, dict(ATOM)]}, "DUPLICATE_ID"),
         (
-            {"stances": [{
-                "id": "st1", "atom_id": "missing", "evidence_id": "e1",
-                "stance": "SUPPORTS",
-            }]},
+            {
+                "stances": [
+                    {
+                        "id": "st1",
+                        "atom_id": "missing",
+                        "evidence_id": "e1",
+                        "stance": "SUPPORTS",
+                    }
+                ]
+            },
             "DANGLING_REFERENCE",
         ),
-        ({"stances": [
-            {"id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"},
-            {"id": "st2", "atom_id": "a1", "evidence_id": "e1", "stance": "CONTRADICTS"},
-        ]}, "DUPLICATE_STANCE"),
         (
-            {"atoms": [{
-                "id": "a1", "text": CLAIM, "start_offset": 0,
-                "end_offset": len(CLAIM) + 1,
-            }]},
+            {
+                "stances": [
+                    {"id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"},
+                    {"id": "st2", "atom_id": "a1", "evidence_id": "e1", "stance": "CONTRADICTS"},
+                ]
+            },
+            "DUPLICATE_STANCE",
+        ),
+        (
+            {
+                "atoms": [
+                    {
+                        "id": "a1",
+                        "text": CLAIM,
+                        "start_offset": 0,
+                        "end_offset": len(CLAIM) + 1,
+                    }
+                ]
+            },
             "ATOM_SPAN_OUT_OF_RANGE",
         ),
         ({"atoms": ["not-an-atom"]}, "SCHEMA_VIOLATION"),
@@ -126,10 +143,16 @@ def test_g2_returns_abstention_reason_without_verdict(
         ({"source_texts": {}}, "SOURCE_UNAVAILABLE"),
         ({"evidence": [evidence(normalized_hash="0" * 64)]}, "EXCERPT_MISMATCH"),
         (
-            {"stances": [{
-                "id": "st1", "atom_id": "a1", "evidence_id": "e1",
-                "stance": "NEUTRAL",
-            }]},
+            {
+                "stances": [
+                    {
+                        "id": "st1",
+                        "atom_id": "a1",
+                        "evidence_id": "e1",
+                        "stance": "NEUTRAL",
+                    }
+                ]
+            },
             "NEUTRAL_STANCE",
         ),
     ],
@@ -146,7 +169,6 @@ def test_t11_each_evidence_rejection_reason_is_recorded(
     assert result.evidence[0].admitted is False
     assert result.evidence[0].reason == expected_reason
     assert not hasattr(result, "verdict")
-
 
 
 def test_g1_g2_and_e_codes_match_loaded_contract_exactly() -> None:
@@ -203,6 +225,7 @@ def test_offsets_count_unicode_code_points_for_accented_source() -> None:
     result = run_gates(**kwargs)
     assert result.evidence[0].admitted is True
 
+
 def test_gate_result_records_digest_of_loaded_contract() -> None:
     from ayorai_attractor.verification.judge2 import rules_sha256
 
@@ -230,5 +253,3 @@ def test_multiple_g2_reasons_are_preserved_in_normative_order() -> None:
         "NON_FACTUAL_CLAIM",
         "RETRIEVAL_FAILURE",
     )
-
-

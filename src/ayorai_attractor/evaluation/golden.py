@@ -98,11 +98,7 @@ class FixtureRetriever:
 
 
 def _load_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [
-        json.loads(x)
-        for x in path.read_text(encoding="utf-8").splitlines()
-        if x.strip()
-    ]
+    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
 
 
 def _accuracy(correct: int, total: int) -> dict[str, float | int]:
@@ -178,8 +174,7 @@ def _legacy_prediction(
     actual_hash = hashlib.sha256(raw).hexdigest()
     if actual_hash != expected_hash:
         raise RuntimeError(
-            "Frozen legacy baseline SHA-256 mismatch: "
-            f"expected {expected_hash}, got {actual_hash}"
+            f"Frozen legacy baseline SHA-256 mismatch: expected {expected_hash}, got {actual_hash}"
         )
 
     matches: list[str] = []
@@ -200,8 +195,12 @@ def _legacy_prediction(
         )
     prediction = matches[0]
     if prediction not in {
-        "VERIFIED", "SUPPORTED", "PARTIALLY_SUPPORTED",
-        "UNVERIFIED", "REFUTED", "CONFLICTING",
+        "VERIFIED",
+        "SUPPORTED",
+        "PARTIALLY_SUPPORTED",
+        "UNVERIFIED",
+        "REFUTED",
+        "CONFLICTING",
     }:
         raise RuntimeError(f"Invalid frozen legacy prediction: {prediction!r}")
     return prediction
@@ -217,8 +216,7 @@ def evaluate_golden_v0(
     if suite == "smoke-v0":
         wanted = {"factual", "conflict", "injection", "no-answer", "out-of-scope"}
         cases = [
-            next(c for c in cases if c.get("category") == category)
-            for category in sorted(wanted)
+            next(c for c in cases if c.get("category") == category) for category in sorted(wanted)
         ]
     elif suite not in {"golden-v0", "golden-v0.1"}:
         raise ValueError(f"Unsupported suite: {suite}")
@@ -316,20 +314,16 @@ def evaluate_golden_v0(
         ),
         "mcnemar_vs_legacy": {
             "legacy_correct_new_wrong": sum(
-                g == a and g != b
-                for g, a, b in zip(expected, legacy, predicted, strict=True)
+                g == a and g != b for g, a, b in zip(expected, legacy, predicted, strict=True)
             ),
             "new_correct_legacy_wrong": sum(
-                g != a and g == b
-                for g, a, b in zip(expected, legacy, predicted, strict=True)
+                g != a and g == b for g, a, b in zip(expected, legacy, predicted, strict=True)
             ),
             "exact_p": mcnemar_exact_pvalue(expected, legacy, predicted),
         },
         "abstention_contracts": {
             "case_count": len(abstain_expected),
-            "correct": sum(
-                a == b for a, b in zip(abstain_expected, abstain_actual, strict=True)
-            ),
+            "correct": sum(a == b for a, b in zip(abstain_expected, abstain_actual, strict=True)),
             "evaluated": True,
             "expected_statuses": dict(Counter(abstain_expected)),
         },

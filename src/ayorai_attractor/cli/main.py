@@ -18,9 +18,7 @@ def search(
     max_agents: int = 5,
 ) -> None:
     """Run an evidence-first multi-agent search task."""
-    result = engine.run(
-        SearchRequest(query=query, mode=mode, max_agents=max_agents)
-    )
+    result = engine.run(SearchRequest(query=query, mode=mode, max_agents=max_agents))
     typer.echo(
         json.dumps(
             result.model_dump(mode="json"),
@@ -53,12 +51,17 @@ def eval_suite(
         json.dumps(report, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
-    typer.echo(json.dumps({
-        "suite": suite,
-        "out": str(out),
-        "global_accuracy": report["global_accuracy"],
-        "majority_class_baseline": report["majority_class_baseline"],
-    }, ensure_ascii=False))
+    typer.echo(
+        json.dumps(
+            {
+                "suite": suite,
+                "out": str(out),
+                "global_accuracy": report["global_accuracy"],
+                "majority_class_baseline": report["majority_class_baseline"],
+            },
+            ensure_ascii=False,
+        )
+    )
 
 
 if __name__ == "__main__":

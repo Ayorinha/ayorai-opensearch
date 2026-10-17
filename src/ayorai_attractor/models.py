@@ -35,7 +35,7 @@ class SearchRequest(BaseModel):
         le=100,
         description=(
             "Preferred form: JSON integer. Legacy coercion is preserved for "
-            "compatibility: numeric strings (e.g. \"5\"), integral floats and "
+            'compatibility: numeric strings (e.g. "5"), integral floats and '
             "booleans are still accepted for backward compatibility; removal "
             "is not scheduled before v0.6.0."
         ),

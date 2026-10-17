@@ -3,6 +3,7 @@
 Only gate-admitted, validated evidence can contribute. Clusters and provenance
 are derived from the validated Evidence objects carried by GateResult.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -61,9 +62,7 @@ def _rule_id(rule_id: str) -> str:
     return f"2.0.0/{rule_id}"
 
 
-def _atomic_verdict(
-    rules: dict[str, Any], supports: int, contradicts: int
-) -> tuple[str, str]:
+def _atomic_verdict(rules: dict[str, Any], supports: int, contradicts: int) -> tuple[str, str]:
     for rule in rules["atomic_rules"]:
         conditions = rule["when"]
         matches = True
@@ -80,9 +79,7 @@ def _atomic_verdict(
     raise ValueError("atomic rules do not cover this cluster-count combination")
 
 
-def _robustness(
-    rules: dict[str, Any], items: list[Evidence]
-) -> tuple[str, str, int]:
+def _robustness(rules: dict[str, Any], items: list[Evidence]) -> tuple[str, str, int]:
     clusters = cluster_evidence(items)
     if not clusters:
         predicate = "no_admissible_decision_cluster"
@@ -134,10 +131,7 @@ def _adjudicate_atoms(
         matched_disposition = dispositions.get(key)
         if matched_disposition is None:
             raise ValueError("decision evidence has no matching GateResult disposition")
-        if (
-            matched_disposition.stance is not None
-            and item.stance != matched_disposition.stance
-        ):
+        if matched_disposition.stance is not None and item.stance != matched_disposition.stance:
             raise ValueError("caller stance differs from stance validated by GateResult")
 
     by_atom_side: dict[str, dict[str, list[Evidence]]] = defaultdict(
@@ -152,9 +146,7 @@ def _adjudicate_atoms(
             raise ValueError("admitted GateResult edge has no validated decisive stance")
         if disposition.source_evidence is None:
             raise ValueError("admitted GateResult edge has no validated source evidence")
-        by_atom_side[disposition.atom_id][disposition.stance].append(
-            disposition.source_evidence
-        )
+        by_atom_side[disposition.atom_id][disposition.stance].append(disposition.source_evidence)
 
     results: list[AtomicDecision] = []
     for atom_id in atom_ids:
@@ -225,9 +217,7 @@ def _adjudicate_composite(atom_decisions: list[AtomicDecision]) -> CompositeDeci
         if selector is None:
             robustness = rule.get("robustness", "R0")
         else:
-            selected = [
-                item.robustness for item in atom_decisions if item.verdict == selector
-            ]
+            selected = [item.robustness for item in atom_decisions if item.verdict == selector]
             robustness = min(selected, key=lambda value: _ROBUSTNESS_RANK[value])
         if robustness not in allowed_robustness:
             raise ValueError("composite rule produced an invalid robustness enum")
@@ -334,9 +324,7 @@ def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
                     "unsupported_type": "datetime.naive",
                     "representation": value.isoformat(),
                 }
-            raise TypeError(
-                "naive datetime is not supported; provide an explicit timezone"
-            )
+            raise TypeError("naive datetime is not supported; provide an explicit timezone")
         return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
     if isinstance(value, date):
         return value.isoformat()
@@ -380,9 +368,7 @@ def _json_safe(value: Any, *, allow_unsupported: bool = False) -> Any:
             "unsupported_type": f"{type(value).__module__}.{type(value).__qualname__}",
             "representation": representation,
         }
-    raise TypeError(
-        f"unsupported input type: {type(value).__module__}.{type(value).__qualname__}"
-    )
+    raise TypeError(f"unsupported input type: {type(value).__module__}.{type(value).__qualname__}")
 
 
 def _canonical_input(
@@ -401,8 +387,11 @@ def _canonical_input(
         if isinstance(items, list):
             payload[field] = sorted(
                 items,
-                key=lambda item: tuple(str(item.get(key, "")) for key in keys)
-                if isinstance(item, Mapping) else ("",),
+                key=lambda item: (
+                    tuple(str(item.get(key, "")) for key in keys)
+                    if isinstance(item, Mapping)
+                    else ("",)
+                ),
             )
     return payload
 
@@ -441,32 +430,36 @@ def _build_result(
                 if item.atom_id != atom_id:
                     continue
                 if item.admitted:
-                    admitted.append({
-                        "id": item.evidence_id,
-                        "stance": item.stance or "",
-                    })
+                    admitted.append(
+                        {
+                            "id": item.evidence_id,
+                            "stance": item.stance or "",
+                        }
+                    )
                 else:
-                    excluded.append({
-                        "id": item.evidence_id,
-                        "reason": item.reason or "UNKNOWN_EXCLUSION",
-                    })
-            output_atoms.append({
-                "atom_id": decision.atom_id,
-                "verdict": decision.verdict,
-                "support_clusters": decision.support_clusters,
-                "contradiction_clusters": decision.contradiction_clusters,
-                "robustness": decision.robustness,
-                "rule_id": decision.rule_id,
-                "admitted_evidence": sorted(
-                    admitted, key=lambda item: (item["id"], item["stance"])
-                ),
-                "excluded_evidence": sorted(
-                    excluded, key=lambda item: (item["id"], item["reason"])
-                ),
-            })
-        counts = {name: 0 for name in (
-            "supported", "refuted", "conflicting", "unverified"
-        )}
+                    excluded.append(
+                        {
+                            "id": item.evidence_id,
+                            "reason": item.reason or "UNKNOWN_EXCLUSION",
+                        }
+                    )
+            output_atoms.append(
+                {
+                    "atom_id": decision.atom_id,
+                    "verdict": decision.verdict,
+                    "support_clusters": decision.support_clusters,
+                    "contradiction_clusters": decision.contradiction_clusters,
+                    "robustness": decision.robustness,
+                    "rule_id": decision.rule_id,
+                    "admitted_evidence": sorted(
+                        admitted, key=lambda item: (item["id"], item["stance"])
+                    ),
+                    "excluded_evidence": sorted(
+                        excluded, key=lambda item: (item["id"], item["reason"])
+                    ),
+                }
+            )
+        counts = {name: 0 for name in ("supported", "refuted", "conflicting", "unverified")}
         for decision in atomic_decisions:
             key = decision.verdict.lower()
             if key in counts:
@@ -484,8 +477,11 @@ def _build_result(
         verdict = None
         output_atoms = []
         coverage = {
-            "supported": 0, "refuted": 0, "conflicting": 0,
-            "unverified": 0, "total": 0,
+            "supported": 0,
+            "refuted": 0,
+            "conflicting": 0,
+            "unverified": 0,
+            "total": 0,
         }
         robustness = "R0"
         rules, _ = load_rules()
@@ -535,12 +531,20 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
     if not isinstance(request, Mapping):
         raise TypeError("request must be a mapping")
     required = {
-        "protocol_version", "claim_id", "claim_text", "atoms",
-        "evidence", "stances", "source_texts",
+        "protocol_version",
+        "claim_id",
+        "claim_text",
+        "atoms",
+        "evidence",
+        "stances",
+        "source_texts",
     }
     optional = {
-        "out_of_scope", "factual_claim", "temporal_anchor_present",
-        "retrieval_succeeded", "evidence_pool_integrity_ok",
+        "out_of_scope",
+        "factual_claim",
+        "temporal_anchor_present",
+        "retrieval_succeeded",
+        "evidence_pool_integrity_ok",
     }
     unknown = set(request) - required - optional
     missing = required - set(request)
@@ -556,9 +560,7 @@ def adjudicate(request: Mapping[str, Any]) -> AdjudicationResult:
         # RFC 8785 rejects numbers outside its interoperable IEEE-754 domain.
         # Re-encode the rejected value as a marker so the Judge can return a
         # deterministic SCHEMA_VIOLATION instead of leaking an exception.
-        rejection_input = canonical_json_bytes(
-            _canonical_input(request, allow_unsupported=True)
-        )
+        rejection_input = canonical_json_bytes(_canonical_input(request, allow_unsupported=True))
         _, contract_sha256 = load_rules()
         return _build_result(
             request=request,

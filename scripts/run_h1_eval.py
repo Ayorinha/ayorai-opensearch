@@ -59,30 +59,46 @@ def _suite(cases: list[dict[str, Any]], corpus: dict[str, dict[str, Any]]) -> di
     a_backend = TransformersNLIBackend(
         A_MODEL, A_REVISION, license_level=EVAL_ONLY_LEVEL, evaluation_mode=True
     )
-    b_backend = TransformersNLIBackend(
-        B_MODEL, B_REVISION, license_level="COMMERCIAL_DEFAULT"
-    )
+    b_backend = TransformersNLIBackend(B_MODEL, B_REVISION, license_level="COMMERCIAL_DEFAULT")
     translator = MarianTranslationBackend(
-        B_TRANSLATOR, B_TRANSLATOR_REVISION,
-        license_level=EVAL_ONLY_LEVEL, evaluation_mode=True,
+        B_TRANSLATOR,
+        B_TRANSLATOR_REVISION,
+        license_level=EVAL_ONLY_LEVEL,
+        evaluation_mode=True,
     )
     a_base = NLIStanceDetector(
-        a_backend, model=A_MODEL, version=a_backend.provenance_version,
-        window_size=512, window_overlap=64, tie_precedence="contradicts"
+        a_backend,
+        model=A_MODEL,
+        version=a_backend.provenance_version,
+        window_size=512,
+        window_overlap=64,
+        tie_precedence="contradicts",
     )
     a_h1 = SentenceNLIStanceDetector(
-        a_backend, model=A_MODEL, version=a_backend.provenance_version,
-        window_size=512, window_overlap=64, tie_precedence="contradicts"
+        a_backend,
+        model=A_MODEL,
+        version=a_backend.provenance_version,
+        window_size=512,
+        window_overlap=64,
+        tie_precedence="contradicts",
     )
     b_base = TranslatedNLIStanceDetector(
-        b_backend, translator, model=f"{B_TRANSLATOR}+{B_MODEL}",
+        b_backend,
+        translator,
+        model=f"{B_TRANSLATOR}+{B_MODEL}",
         version=f"{translator.provenance_version}+{b_backend.provenance_version}",
-        window_size=512, window_overlap=64, tie_precedence="contradicts"
+        window_size=512,
+        window_overlap=64,
+        tie_precedence="contradicts",
     )
     b_h1 = SentenceTranslatedNLIStanceDetector(
-        b_backend, translator, model=f"{B_TRANSLATOR}+{B_MODEL}",
+        b_backend,
+        translator,
+        model=f"{B_TRANSLATOR}+{B_MODEL}",
         version=f"{translator.provenance_version}+{b_backend.provenance_version}",
-        window_size=512, window_overlap=64, tie_precedence="contradicts"
+        window_size=512,
+        window_overlap=64,
+        tie_precedence="contradicts",
     )
     return {
         "A_baseline": _evaluate(a_base, cases, corpus),
@@ -94,9 +110,7 @@ def _suite(cases: list[dict[str, Any]], corpus: dict[str, dict[str, Any]]) -> di
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--suite", choices=("golden-v0", "golden-v0.1"), default="golden-v0.1"
-    )
+    parser.add_argument("--suite", choices=("golden-v0", "golden-v0.1"), default="golden-v0.1")
     parser.parse_args()
     corpus = {str(x["doc_id"]): x for x in _load_jsonl(CORPUS)}
     paths = {
@@ -122,8 +136,7 @@ def main() -> None:
         "seed": 20261003,
         "bootstrap_iterations": 10000,
         "method": (
-            "sentence-level evidence, claim x sentence, max confidence, "
-            "contradicts tie precedence"
+            "sentence-level evidence, claim x sentence, max confidence, contradicts tie precedence"
         ),
         "golden_v0": results["golden-v0"],
         "golden_v0_1": results["golden-v0.1"],
@@ -167,7 +180,7 @@ def main() -> None:
     report["markdown_sha256"] = hashlib.sha256(OUT_MD.read_bytes()).hexdigest()
     OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("\n".join(lines))
-    
+
 
 if __name__ == "__main__":
     main()

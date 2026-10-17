@@ -74,9 +74,7 @@ def test_different_domains_alone_remain_unknown() -> None:
 
 
 @given(st.text(min_size=1), st.text(min_size=1))
-def test_disjoint_origin_ids_have_no_known_dependency(
-    left_origin: str, right_origin: str
-) -> None:
+def test_disjoint_origin_ids_have_no_known_dependency(left_origin: str, right_origin: str) -> None:
     if left_origin == right_origin:
         return
     left = evidence("e1", canonical_url=None, origin_id=left_origin)

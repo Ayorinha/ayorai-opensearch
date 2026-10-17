@@ -45,8 +45,7 @@ class CouncilRunResult:
 class VoteParticipant(Protocol):
     model_id: str
 
-    def vote(self, prompt: str) -> CouncilVote:
-        ...
+    def vote(self, prompt: str) -> CouncilVote: ...
 
 
 class ProviderParticipant:
@@ -71,9 +70,7 @@ def parse_vote_response(model_id: str, response: ProviderResponse) -> CouncilVot
     if not first.startswith(prefix):
         raise ValueError("Council response must start with DECISION=<state>")
     raw = first.removeprefix(prefix).strip().lower()
-    allowed = {
-        item.value for item in CouncilDecision if item is not CouncilDecision.ABSTAIN
-    }
+    allowed = {item.value for item in CouncilDecision if item is not CouncilDecision.ABSTAIN}
     if raw not in allowed:
         raise ValueError(f"unsupported Council decision: {raw}")
     return CouncilVote(model_id, CouncilDecision(raw), rationale.strip())
@@ -86,9 +83,7 @@ def deliberate(votes: list[CouncilVote]) -> CouncilResult:
 
     counts = Counter(vote.decision for vote in votes)
     highest = max(counts.values())
-    winners = sorted(
-        decision.value for decision, count in counts.items() if count == highest
-    )
+    winners = sorted(decision.value for decision, count in counts.items() if count == highest)
     if len(winners) != 1:
         return CouncilResult(
             CouncilDecision.ABSTAIN,

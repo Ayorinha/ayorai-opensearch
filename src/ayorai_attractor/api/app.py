@@ -196,12 +196,8 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
         evidence_items: list[Evidence | dict[str, object]] = []
         for item in request2.evidence:
             evidence_data = item.model_dump()
-            if (
-                evidence_data["end_offset"] <= evidence_data["start_offset"]
-                or (
-                    evidence_data["origin_id"] is None
-                    and evidence_data["canonical_url"] is None
-                )
+            if evidence_data["end_offset"] <= evidence_data["start_offset"] or (
+                evidence_data["origin_id"] is None and evidence_data["canonical_url"] is None
             ):
                 evidence_items.append(evidence_data)
             else:
@@ -212,20 +208,22 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
                 except ValidationError:
                     evidence_items.append(evidence_data)
 
-        result = adjudicate({
-            "protocol_version": request2.protocol_version,
-            "claim_id": request2.claim_id,
-            "claim_text": request2.claim_text,
-            "atoms": [item.model_dump() for item in request2.atoms],
-            "evidence": evidence_items,
-            "stances": [item.model_dump() for item in request2.stances],
-            "source_texts": request2.source_texts,
-            "out_of_scope": request2.out_of_scope,
-            "factual_claim": request2.factual_claim,
-            "temporal_anchor_present": request2.temporal_anchor_present,
-            "retrieval_succeeded": request2.retrieval_succeeded,
-            "evidence_pool_integrity_ok": request2.evidence_pool_integrity_ok,
-        })
+        result = adjudicate(
+            {
+                "protocol_version": request2.protocol_version,
+                "claim_id": request2.claim_id,
+                "claim_text": request2.claim_text,
+                "atoms": [item.model_dump() for item in request2.atoms],
+                "evidence": evidence_items,
+                "stances": [item.model_dump() for item in request2.stances],
+                "source_texts": request2.source_texts,
+                "out_of_scope": request2.out_of_scope,
+                "factual_claim": request2.factual_claim,
+                "temporal_anchor_present": request2.temporal_anchor_present,
+                "retrieval_succeeded": request2.retrieval_succeeded,
+                "evidence_pool_integrity_ok": request2.evidence_pool_integrity_ok,
+            }
+        )
         response_policy = None
         if result.decision_state == "ABSTAINED":
             response_policy = (
@@ -277,11 +275,7 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
                 }
             ],
         ) from exc
-    status = (
-        ResponsePolicy.ABSTAIN_NO_ANSWER
-        if verdict is Verdict.UNVERIFIED
-        else verdict
-    )
+    status = ResponsePolicy.ABSTAIN_NO_ANSWER if verdict is Verdict.UNVERIFIED else verdict
     api_verdict = None if status is ResponsePolicy.ABSTAIN_NO_ANSWER else verdict
     return VerificationAPIResponse(
         status=status,
@@ -318,7 +312,6 @@ def audit_trace(trace_id: str) -> AuditTraceResponse:
     return saved
 
 
-
 def _verify_contracts_schema_only(
     body: Annotated[VerificationRequest | Judge2VerificationRequest, Body()],
 ) -> VerificationAPIResponse | Judge2VerificationResponse:  # pragma: no cover
@@ -335,9 +328,7 @@ def _openapi_with_verify_schemas() -> dict[str, Any]:
 
     phantom_path = "/__verify_contracts__"
     phantom = APIRoute(phantom_path, _verify_contracts_schema_only, methods=["POST"])
-    schema = get_openapi(
-        title=app.title, version=app.version, routes=[*app.routes, phantom]
-    )
+    schema = get_openapi(title=app.title, version=app.version, routes=[*app.routes, phantom])
     schema["paths"].pop(phantom_path, None)
     verification_schema = schema["components"]["schemas"].get("VerificationRequest")
     if isinstance(verification_schema, dict):

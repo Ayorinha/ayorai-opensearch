@@ -22,8 +22,7 @@ def confusion_matrix(
         raise ValueError("labels must be Judge verdict states")
     counts = Counter(zip(expected, predicted, strict=True))
     return {
-        gold: {guess: counts[(gold, guess)] for guess in VERDICT_ORDER}
-        for gold in VERDICT_ORDER
+        gold: {guess: counts[(gold, guess)] for guess in VERDICT_ORDER} for gold in VERDICT_ORDER
     }
 
 
@@ -73,14 +72,8 @@ def mcnemar_exact_pvalue(
 ) -> float:
     if not (len(expected) == len(predicted_a) == len(predicted_b)):
         raise ValueError("all sequences must have same length")
-    b = sum(
-        a == g and c != g
-        for g, a, c in zip(expected, predicted_a, predicted_b, strict=True)
-    )
-    c = sum(
-        a != g and d == g
-        for g, a, d in zip(expected, predicted_a, predicted_b, strict=True)
-    )
+    b = sum(a == g and c != g for g, a, c in zip(expected, predicted_a, predicted_b, strict=True))
+    c = sum(a != g and d == g for g, a, d in zip(expected, predicted_a, predicted_b, strict=True))
     n = b + c
     if n == 0:
         return 1.0

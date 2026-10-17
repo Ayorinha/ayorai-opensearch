@@ -57,8 +57,7 @@ class Judge2AtomRequest(BaseModel):
         gt=0,
         le=9007199254740991,
         description=(
-            "Exclusive end offset in source text; must be within the "
-            "RFC 8785 safe-integer range."
+            "Exclusive end offset in source text; must be within the RFC 8785 safe-integer range."
         ),
     )
 
@@ -72,8 +71,12 @@ class Judge2StanceRequest(BaseModel):
     atom_id: str = Field(min_length=1)
     evidence_id: str = Field(min_length=1)
     stance: Literal[
-        "SUPPORTS", "CONTRADICTS", "NEUTRAL",
-        "supports", "contradicts", "neutral",
+        "SUPPORTS",
+        "CONTRADICTS",
+        "NEUTRAL",
+        "supports",
+        "contradicts",
+        "neutral",
     ]
 
 

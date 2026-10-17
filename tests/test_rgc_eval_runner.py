@@ -36,7 +36,7 @@ DOCS = {
 
 
 def _passage_text(passage: Any) -> str:
-    return TEXT[passage.start:passage.end]
+    return TEXT[passage.start : passage.end]
 
 
 def _case(case_id: str, claim: str, excerpt: str) -> dict[str, Any]:
@@ -44,8 +44,14 @@ def _case(case_id: str, claim: str, excerpt: str) -> dict[str, Any]:
     return {
         "case_id": case_id,
         "claim": claim,
-        "evidence": [{"document_id": "sint-1", "excerpt": excerpt,
-                      "start_offset": start, "end_offset": start + len(excerpt)}],
+        "evidence": [
+            {
+                "document_id": "sint-1",
+                "excerpt": excerpt,
+                "start_offset": start,
+                "end_offset": start + len(excerpt),
+            }
+        ],
     }
 
 
@@ -85,7 +91,7 @@ def test_segmentation_loses_no_text_in_real_corpus() -> None:
     for document in RUNNER["load_documents"]().values():
         cursor = 0
         for passage in RUNNER["segment"](document):
-            assert document.text[cursor:passage.start].strip() == ""
+            assert document.text[cursor : passage.start].strip() == ""
             cursor = passage.end
         assert document.text[cursor:].strip() == ""
 
@@ -106,12 +112,21 @@ def test_tokenizer_keeps_numbers_and_drops_function_words() -> None:
 @pytest.mark.parametrize(
     ("claim", "excerpt", "verdict"),
     [
-        ("O cancelamento será efetivado em até 2 dias.",
-         "§ 1º O cancelamento será efetivado em até 2 (dois) dias.", "SUPPORTED"),
-        ("O cancelamento será efetivado em até 9 dias.",
-         "§ 1º O cancelamento será efetivado em até 2 (dois) dias.", "REFUTED"),
-        ("O cliente tem direito a reembolso por satélite.",
-         "II - por meio eletrônico.", "UNVERIFIED"),
+        (
+            "O cancelamento será efetivado em até 2 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+            "SUPPORTED",
+        ),
+        (
+            "O cancelamento será efetivado em até 9 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+            "REFUTED",
+        ),
+        (
+            "O cliente tem direito a reembolso por satélite.",
+            "II - por meio eletrônico.",
+            "UNVERIFIED",
+        ),
     ],
 )
 def test_oracle_prediction_goes_through_judge2(claim: str, excerpt: str, verdict: str) -> None:
@@ -191,33 +206,53 @@ def test_majority_tie_breaks_by_vocabulary_order() -> None:
 
 def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
     cases = [
-        _case("s1", "O cancelamento será efetivado em até 2 dias.",
-              "§ 1º O cancelamento será efetivado em até 2 (dois) dias."),
-        _case("s2", "O cancelamento será efetivado em até 9 dias.",
-              "§ 1º O cancelamento será efetivado em até 2 (dois) dias."),
+        _case(
+            "s1",
+            "O cancelamento será efetivado em até 2 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        ),
+        _case(
+            "s2",
+            "O cancelamento será efetivado em até 9 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        ),
         _case("s3", "Algo ambíguo.", "II - por meio eletrônico."),
     ]
     labels = {"s1": "SUPPORTED", "s2": "REFUTED", "s3": "RULE_GAP"}
     for mode in ("oracle", "retrieval"):
-        result = RUNNER["evaluate"](cases, labels, DOCS, mode=mode, vocabulary="judge2",
-                                    iterations=100)
+        result = RUNNER["evaluate"](
+            cases, labels, DOCS, mode=mode, vocabulary="judge2", iterations=100
+        )
         assert result["excluded"] == [{"case_id": "s3", "label": "RULE_GAP"}]
         assert [row["predicted"] for row in result["cases"]] == ["SUPPORTED", "REFUTED"]
         assert result["decision_states"] == {"DECIDED": 2}
     with pytest.raises(ValueError, match="unknown cases"):
-        RUNNER["evaluate"](cases, {**labels, "s9": "SUPPORTED"}, DOCS, mode="oracle",
-                           vocabulary="judge2", iterations=10)
+        RUNNER["evaluate"](
+            cases,
+            {**labels, "s9": "SUPPORTED"},
+            DOCS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
     with pytest.raises(ValueError, match="duplicate case"):
-        RUNNER["evaluate"]([*cases, cases[0]], labels, DOCS, mode="oracle",
-                           vocabulary="judge2", iterations=10)
+        RUNNER["evaluate"](
+            [*cases, cases[0]], labels, DOCS, mode="oracle", vocabulary="judge2", iterations=10
+        )
     with pytest.raises(ValueError, match="without a label"):
-        RUNNER["evaluate"](cases, {"s1": "SUPPORTED"}, DOCS, mode="oracle",
-                           vocabulary="judge2", iterations=10)
+        RUNNER["evaluate"](
+            cases, {"s1": "SUPPORTED"}, DOCS, mode="oracle", vocabulary="judge2", iterations=10
+        )
 
 
 def test_evaluate_reports_abstentions_mapped_to_unverified() -> None:
-    cases = [_case("s1", "O cancelamento será efetivado em até 2 dias.",
-                   "§ 1º O cancelamento será efetivado em até 2 (dois) dias.")]
+    cases = [
+        _case(
+            "s1",
+            "O cancelamento será efetivado em até 2 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        )
+    ]
     module_globals = RUNNER["evaluate"].__globals__
     original = module_globals["predict"]
 
@@ -228,8 +263,9 @@ def test_evaluate_reports_abstentions_mapped_to_unverified() -> None:
 
     module_globals["predict"] = abstaining_predict
     try:
-        result = RUNNER["evaluate"](cases, {"s1": "UNVERIFIED"}, DOCS, mode="oracle",
-                                    vocabulary="judge2", iterations=10)
+        result = RUNNER["evaluate"](
+            cases, {"s1": "UNVERIFIED"}, DOCS, mode="oracle", vocabulary="judge2", iterations=10
+        )
     finally:
         module_globals["predict"] = original
     assert result["decision_states"] == {"ABSTAINED": 1}
@@ -254,22 +290,50 @@ def test_strict_corpus_export_is_accepted_by_golden_checker(tmp_path: Path) -> N
 
 def test_cli_run_writes_report(tmp_path: Path) -> None:
     documents = tmp_path / "docs.jsonl"
-    documents.write_text(json.dumps({
-        "source_id": "sint-1", "source_url": "https://example.test/sint-1",
-        "source_license": "sintético", "retrieved_at": "2026-10-13T00:00:00Z", "text": TEXT,
-    }, ensure_ascii=False) + "\n", encoding="utf-8")
+    documents.write_text(
+        json.dumps(
+            {
+                "source_id": "sint-1",
+                "source_url": "https://example.test/sint-1",
+                "source_license": "sintético",
+                "retrieved_at": "2026-10-13T00:00:00Z",
+                "text": TEXT,
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     cases = tmp_path / "cases.jsonl"
-    cases.write_text(json.dumps(_case(
-        "s1", "O cancelamento será efetivado em até 2 dias.",
-        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
-    ), ensure_ascii=False) + "\n", encoding="utf-8")
+    cases.write_text(
+        json.dumps(
+            _case(
+                "s1",
+                "O cancelamento será efetivado em até 2 dias.",
+                "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+            ),
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     labels = tmp_path / "labels.jsonl"
     labels.write_text(json.dumps({"case_id": "s1", "verdict": "SUPPORTED"}) + "\n")
     out = tmp_path / "report.json"
-    code = RUNNER["main"]([
-        "run", str(cases), "--labels", str(labels), "--documents", str(documents),
-        "--mode", "retrieval", "--out", str(out),
-    ])
+    code = RUNNER["main"](
+        [
+            "run",
+            str(cases),
+            "--labels",
+            str(labels),
+            "--documents",
+            str(documents),
+            "--mode",
+            "retrieval",
+            "--out",
+            str(out),
+        ]
+    )
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
     assert report["metrics"]["system"]["accuracy"] == 1.0
@@ -293,7 +357,9 @@ def _compound(case_id: str, claim: str, parts: list[str]) -> dict[str, Any]:
 
 def _predict(case: dict[str, Any]) -> dict[str, Any]:
     result: dict[str, Any] = RUNNER["predict"](
-        case["claim"], RUNNER["oracle_passages"](case, DOCS), DOCS,
+        case["claim"],
+        RUNNER["oracle_passages"](case, DOCS),
+        DOCS,
         atoms=RUNNER["case_atoms"](case),
     )
     return result
@@ -301,8 +367,9 @@ def _predict(case: dict[str, Any]) -> dict[str, Any]:
 
 def test_compound_claim_with_one_unconfirmed_part_is_partially_supported() -> None:
     claim = "O cancelamento será efetivado em até 2 dias e o plano terá multa de 10%."
-    case = _compound("k4", claim, ["O cancelamento será efetivado em até 2 dias",
-                                   "o plano terá multa de 10%"])
+    case = _compound(
+        "k4", claim, ["O cancelamento será efetivado em até 2 dias", "o plano terá multa de 10%"]
+    )
     result = _predict(case)
     assert result["judge_verdict"] == "PARTIALLY_SUPPORTED"
     assert result["stances"] == ["SUPPORTS", "NEUTRAL"]
@@ -313,8 +380,9 @@ def test_compound_claim_with_one_unconfirmed_part_is_partially_supported() -> No
 
 def test_compound_claim_with_a_contradicted_part_is_refuted() -> None:
     claim = "O cancelamento será efetivado em até 9 dias e o plano terá multa de 10%."
-    case = _compound("k1", claim, ["O cancelamento será efetivado em até 9 dias",
-                                   "o plano terá multa de 10%"])
+    case = _compound(
+        "k1", claim, ["O cancelamento será efetivado em até 9 dias", "o plano terá multa de 10%"]
+    )
     assert _predict(case)["judge_verdict"] == "REFUTED"
 
 
@@ -339,16 +407,26 @@ def test_case_without_atoms_keeps_single_atom_behaviour() -> None:
     ("atoms", "message"),
     [
         ([{"start_offset": 0, "end_offset": 5}], "two or more"),
-        ([{"start_offset": 0, "end_offset": 5}, {"start_offset": 3, "end_offset": 9}],
-         "non-overlapping"),
-        ([{"start_offset": 0, "end_offset": 5}, {"start_offset": 6, "end_offset": 999}],
-         "outside the claim"),
-        ([{"start_offset": 0, "end_offset": 5}, {"start_offset": 5, "end_offset": 6}],
-         "blank"),
-        ([{"start_offset": 0, "end_offset": 5, "text": "Outro"},
-          {"start_offset": 6, "end_offset": 10}], "does not match"),
-        ([{"start_offset": "0", "end_offset": 5}, {"start_offset": 6, "end_offset": 10}],
-         "integers"),
+        (
+            [{"start_offset": 0, "end_offset": 5}, {"start_offset": 3, "end_offset": 9}],
+            "non-overlapping",
+        ),
+        (
+            [{"start_offset": 0, "end_offset": 5}, {"start_offset": 6, "end_offset": 999}],
+            "outside the claim",
+        ),
+        ([{"start_offset": 0, "end_offset": 5}, {"start_offset": 5, "end_offset": 6}], "blank"),
+        (
+            [
+                {"start_offset": 0, "end_offset": 5, "text": "Outro"},
+                {"start_offset": 6, "end_offset": 10},
+            ],
+            "does not match",
+        ),
+        (
+            [{"start_offset": "0", "end_offset": 5}, {"start_offset": 6, "end_offset": 10}],
+            "integers",
+        ),
     ],
 )
 def test_invalid_atom_annotation_stops_the_run(atoms: list[dict[str, Any]], message: str) -> None:
@@ -360,8 +438,15 @@ def test_invalid_atom_annotation_stops_the_run(atoms: list[dict[str, Any]], mess
 
 def test_evaluate_uses_annotated_atoms() -> None:
     claim = "O cancelamento será efetivado em até 2 dias e o plano terá multa de 10%."
-    case = _compound("e1", claim, ["O cancelamento será efetivado em até 2 dias",
-                                   "o plano terá multa de 10%"])
-    result = RUNNER["evaluate"]([case], {"e1": "PARTIALLY_SUPPORTED"}, DOCS, mode="oracle",
-                                vocabulary="judge2", iterations=10)
+    case = _compound(
+        "e1", claim, ["O cancelamento será efetivado em até 2 dias", "o plano terá multa de 10%"]
+    )
+    result = RUNNER["evaluate"](
+        [case],
+        {"e1": "PARTIALLY_SUPPORTED"},
+        DOCS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=10,
+    )
     assert result["cases"][0]["predicted"] == "PARTIALLY_SUPPORTED"

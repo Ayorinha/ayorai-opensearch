@@ -15,6 +15,7 @@ def test_search_request_preserves_legacy_integer_boolean_coercion() -> None:
     assert zero.require_primary_source is False
     assert one.require_primary_source is True
 
+
 def test_opensearch_preserves_legacy_max_agents_coercion() -> None:
     """Legacy /v1/opensearch accepted lax integer forms before #163; keep them."""
     client = TestClient(app)
@@ -271,7 +272,6 @@ def test_r1_a_schema_valid_inputs_never_return_http_500(
     assert response.status_code in {200, 422}
 
 
-
 def test_r1_a_unexpected_value_error_from_judge_remains_http_500(monkeypatch) -> None:
     import importlib
 
@@ -302,9 +302,7 @@ def r2_a_request(**overrides: object) -> dict[str, object]:
         "protocol_version": "r2-a",
         "claim_id": "c1",
         "claim_text": "Claim A",
-        "atoms": [
-            {"id": "a1", "text": "Claim A", "start_offset": 0, "end_offset": 7}
-        ],
+        "atoms": [{"id": "a1", "text": "Claim A", "start_offset": 0, "end_offset": 7}],
         "evidence": [
             {
                 "id": "e1",
@@ -318,9 +316,7 @@ def r2_a_request(**overrides: object) -> dict[str, object]:
                 "origin_id": "origin-e1",
             }
         ],
-        "stances": [
-            {"id": "s1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"}
-        ],
+        "stances": [{"id": "s1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"}],
         "source_texts": {"source-e1": "Claim A"},
     }
     payload.update(overrides)
@@ -341,9 +337,7 @@ def test_r2_a_returns_complete_canonical_decided_result() -> None:
 
 
 def test_r2_a_returns_abstained_without_factual_verdict() -> None:
-    response = TestClient(app).post(
-        "/v1/verify", json=r2_a_request(out_of_scope=True)
-    )
+    response = TestClient(app).post("/v1/verify", json=r2_a_request(out_of_scope=True))
 
     assert response.status_code == 200
     result = response.json()["result"]
@@ -353,9 +347,7 @@ def test_r2_a_returns_abstained_without_factual_verdict() -> None:
 
 
 def test_r2_a_returns_invalid_input_as_canonical_result() -> None:
-    response = TestClient(app).post(
-        "/v1/verify", json=r2_a_request(atoms=[])
-    )
+    response = TestClient(app).post("/v1/verify", json=r2_a_request(atoms=[]))
 
     assert response.status_code == 200
     result = response.json()["result"]
@@ -461,8 +453,6 @@ def test_r2_a_rejects_unknown_nested_atom_and_stance_fields() -> None:
 
     assert client.post("/v1/verify", json=bad_atom).status_code == 422
     assert client.post("/v1/verify", json=bad_stance).status_code == 422
-
-
 
 
 def test_openapi_documents_r1_a_stance_requires_evidence() -> None:

@@ -12,9 +12,7 @@ class FakeBackend:
     def __init__(self) -> None:
         self.calls: list[tuple[str, str]] = []
 
-    def classify(
-        self, claim_text: str, evidence_text: str
-    ) -> dict[str, float | str]:
+    def classify(self, claim_text: str, evidence_text: str) -> dict[str, float | str]:
         self.calls.append((claim_text, evidence_text))
         if "TARGET" in evidence_text:
             return {"stance": "supports", "confidence": 0.9}

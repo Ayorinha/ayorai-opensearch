@@ -28,9 +28,7 @@ def rrf_fuse(
     totals: dict[str, float] = {}
     for weight, ranking in ((lexical_weight, lexical), (semantic_weight, semantic)):
         for rank, hit in enumerate(ranking, start=1):
-            totals[hit.document_id] = totals.get(hit.document_id, 0.0) + (
-                weight / (k + rank)
-            )
+            totals[hit.document_id] = totals.get(hit.document_id, 0.0) + (weight / (k + rank))
 
     return [
         RankedHit(document_id=document_id, score=score)

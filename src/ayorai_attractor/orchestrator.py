@@ -63,10 +63,7 @@ class Attractor:
             return SearchResponse(
                 query=request.query,
                 mode=request.mode,
-                answer=(
-                    "Execution stopped because the configured provider "
-                    "is unavailable."
-                ),
+                answer=("Execution stopped because the configured provider is unavailable."),
                 verification=None,
                 operation_status="failed",
                 confidence=None,

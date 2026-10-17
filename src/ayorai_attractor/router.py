@@ -29,8 +29,5 @@ class AdaptiveRouter:
             }
             roles = [role for role in INITIAL_ROLES if role.id in ids]
         selected_count = min(limit, len(roles))
-        reason = (
-            f"mode={mode}; selected={selected_count} "
-            f"of {len(INITIAL_ROLES)} initial roles"
-        )
+        reason = f"mode={mode}; selected={selected_count} of {len(INITIAL_ROLES)} initial roles"
         return RoutingDecision(roles=roles[:limit], reason=reason)

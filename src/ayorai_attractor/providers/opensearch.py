@@ -77,7 +77,6 @@ def build_opensearch_provider() -> OpenSearchProvider | None:
     )
 
 
-
 class HybridOpenSearchProvider(OpenSearchProvider):
     """OpenSearch provider combining lexical and neural retrieval with RRF."""
 
@@ -147,11 +146,7 @@ class HybridOpenSearchProvider(OpenSearchProvider):
             lexical_weight=self.lexical_weight,
             semantic_weight=self.semantic_weight,
         )
-        by_id = {
-            str(hit.get("_id")): hit
-            for hit in [*lexical, *semantic]
-            if hit.get("_id")
-        }
+        by_id = {str(hit.get("_id")): hit for hit in [*lexical, *semantic] if hit.get("_id")}
         excerpts = []
         for ranked in fused[:10]:
             source = by_id[ranked.document_id].get("_source", {})

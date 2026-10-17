@@ -13,11 +13,7 @@ def test_openapi_status_accepts_verdicts_and_response_policies() -> None:
     references = {item["$ref"].rsplit("/", 1)[-1] for item in status["anyOf"]}
     assert references == {"Verdict", "ResponsePolicy"}
 
-    accepted_values = {
-        value
-        for name in references
-        for value in schema[name]["enum"]
-    }
+    accepted_values = {value for name in references for value in schema[name]["enum"]}
     assert accepted_values == {
         "verified",
         "supported",

@@ -5,6 +5,7 @@ ATTRACTOR_AUDIT_DB is deliberately overridden with ":memory:" before the API
 module is imported; tests that exercise persistence explicitly use tmp_path
 and monkeypatch their store instance.
 """
+
 import hashlib
 import os
 from collections.abc import Iterator
@@ -36,9 +37,7 @@ def snapshot_runtime_data(directory: Path) -> tuple[bool, Snapshot]:
     return True, files
 
 
-def runtime_data_changes(
-    before: tuple[bool, Snapshot], after: tuple[bool, Snapshot]
-) -> list[str]:
+def runtime_data_changes(before: tuple[bool, Snapshot], after: tuple[bool, Snapshot]) -> list[str]:
     """Describe only runtime data created, modified, or removed during a test session."""
     existed_before, old_files = before
     exists_after, new_files = after

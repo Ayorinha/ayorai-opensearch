@@ -33,10 +33,7 @@ class VerificationPipeline:
             claim.id: [item.id for item in evidence if item.claim_id == claim.id]
             for claim in claims
         }
-        citations = {
-            claim.text: evidence_by_claim[claim.id]
-            for claim in claims
-        }
+        citations = {claim.text: evidence_by_claim[claim.id] for claim in claims}
         available = {item.id for item in evidence}
         synthesis = self.synthesizer.synthesize(
             [claim.text for claim in claims],

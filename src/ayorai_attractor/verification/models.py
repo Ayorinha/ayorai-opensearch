@@ -78,9 +78,7 @@ class StanceEdge(StrictModel):
             try:
                 return Stance(value)
             except ValueError as exc:
-                raise ValueError(
-                    "stance must be supports, contradicts or neutral"
-                ) from exc
+                raise ValueError("stance must be supports, contradicts or neutral") from exc
         return value
 
 

@@ -3,9 +3,20 @@ from pathlib import Path
 
 PATTERNS = ("golden-v1*", "golden_v1*")
 IGNORE_DIRS = {
-    ".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache",
-    ".tox", ".nox", ".venv", "venv", "node_modules", "build", "dist",
-    ".attractor", ".hypothesis",
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".tox",
+    ".nox",
+    ".venv",
+    "venv",
+    "node_modules",
+    "build",
+    "dist",
+    ".attractor",
+    ".hypothesis",
 }
 
 

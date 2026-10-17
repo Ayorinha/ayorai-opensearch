@@ -80,9 +80,7 @@ def test_translation_loads_fake_model_and_translates_without_network(
     assert tokenizer_loader_calls == [
         {"args": ("fixture-model",), "revision": "immutable-revision", "use_fast": False}
     ]
-    assert model_loader_calls == [
-        {"args": ("fixture-model",), "revision": "immutable-revision"}
-    ]
+    assert model_loader_calls == [{"args": ("fixture-model",), "revision": "immutable-revision"}]
     assert tokenizer.calls[0][0] == ("texto original",)
     assert tokenizer.calls[0][1] == {"return_tensors": "pt", "truncation": True}
     assert model.generated_with == [{"input_ids": [1, 2, 3]}]

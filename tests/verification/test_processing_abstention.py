@@ -23,7 +23,7 @@ def doc() -> RetrievedDocument:
 
 class BadClaimProvider:
     def execute(self, prompt: str):
-        return type("R", (), {"text": '{"claims":[{"text":"ok","confidence":2.0}]}'} )()
+        return type("R", (), {"text": '{"claims":[{"text":"ok","confidence":2.0}]}'})()
 
 
 class BadStanceProvider:

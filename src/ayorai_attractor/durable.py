@@ -33,9 +33,7 @@ class WorkflowState:
         status = payload["status"]
         if not isinstance(workflow_id, str) or not isinstance(step, int):
             raise ValueError("invalid workflow checkpoint types")
-        if not isinstance(completed, list) or not all(
-            isinstance(item, str) for item in completed
-        ):
+        if not isinstance(completed, list) or not all(isinstance(item, str) for item in completed):
             raise ValueError("invalid completed-step list")
         if not isinstance(status, str):
             raise ValueError("invalid workflow status")

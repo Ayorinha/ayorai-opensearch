@@ -46,18 +46,21 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
         ).fetchone()
         assert connection.execute("PRAGMA user_version").fetchone() == (2,)
     assert stored == (None, None, "completed", "r2-v2", 2)
-    assert ReplayBundle.build(
-        "tr_persisted",
-        [
-            {
-                "event": "audit.completed",
-                "verification": "not_adjudicated",
-                "evidence_count": 0,
-                "failure_count": 0,
-            }
-        ],
-        version="r2-v2",
-    ).digest == digest
+    assert (
+        ReplayBundle.build(
+            "tr_persisted",
+            [
+                {
+                    "event": "audit.completed",
+                    "verification": "not_adjudicated",
+                    "evidence_count": 0,
+                    "failure_count": 0,
+                }
+            ],
+            version="r2-v2",
+        ).digest
+        == digest
+    )
 
 
 def _create_legacy_schema(path, row) -> None:  # type: ignore[no-untyped-def]
@@ -112,9 +115,7 @@ def test_schema_v1_migration_preserves_legacy_value_and_digest(tmp_path) -> None
                 """,
                 (trace_id,),
             ).fetchone()
-        assert migrated == (
-            "supported", None, "not_recorded", legacy_digest, "r2-v1", 2
-        )
+        assert migrated == ("supported", None, "not_recorded", legacy_digest, "r2-v1", 2)
 
     # Reopening an already migrated database must be idempotent.
     with AuditTraceStore(str(path)):
@@ -166,9 +167,7 @@ def test_migration_preserves_corrupted_digest_and_get_reports_invalid(tmp_path) 
     path = tmp_path / "corrupted.sqlite3"
     trace_id = "tr_corrupted"
     corrupted_digest = "0" * 64
-    _create_legacy_schema(
-        path, (trace_id, "supported", 1, 1, 0, 0, 0, corrupted_digest)
-    )
+    _create_legacy_schema(path, (trace_id, "supported", 1, 1, 0, 0, 0, corrupted_digest))
 
     with AuditTraceStore(str(path)) as store:
         saved = store.get(trace_id)
@@ -192,8 +191,7 @@ def test_verify_detects_adulterated_counts(tmp_path) -> None:
         store.record(response, report)
         assert store.verify("tr_counts") == "valid"
         store._connection.execute(
-            "UPDATE audit_traces SET evidence_count = evidence_count + 1 "
-            "WHERE trace_id = ?",
+            "UPDATE audit_traces SET evidence_count = evidence_count + 1 WHERE trace_id = ?",
             ("tr_counts",),
         )
         store._connection.commit()

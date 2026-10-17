@@ -41,9 +41,7 @@ class FakeEngine:
         )
 
 
-def test_audit_endpoint_returns_deterministic_report(
-    monkeypatch, tmp_path, request
-) -> None:  # type: ignore[no-untyped-def]
+def test_audit_endpoint_returns_deterministic_report(monkeypatch, tmp_path, request) -> None:  # type: ignore[no-untyped-def]
     from ayorai_attractor.audit_store import AuditTraceStore
 
     monkeypatch.setattr(api, "engine", FakeEngine())
@@ -77,9 +75,7 @@ def test_audit_endpoint_rejects_short_query() -> None:
     assert response.status_code == 422
 
 
-def test_audit_trace_lookup_returns_persisted_metadata(
-    monkeypatch, tmp_path, request
-) -> None:  # type: ignore[no-untyped-def]
+def test_audit_trace_lookup_returns_persisted_metadata(monkeypatch, tmp_path, request) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.setattr(api, "engine", FakeEngine())
     from ayorai_attractor.audit_store import AuditTraceStore
 
@@ -106,9 +102,7 @@ def test_audit_trace_lookup_returns_persisted_metadata(
     assert body["evidence_count"] == 2
 
 
-def test_audit_trace_lookup_returns_404_for_unknown_trace(
-    monkeypatch, tmp_path, request
-) -> None:  # type: ignore[no-untyped-def]
+def test_audit_trace_lookup_returns_404_for_unknown_trace(monkeypatch, tmp_path, request) -> None:  # type: ignore[no-untyped-def]
     from ayorai_attractor.audit_store import AuditTraceStore
 
     store = AuditTraceStore(str(tmp_path / "audit.sqlite3"))

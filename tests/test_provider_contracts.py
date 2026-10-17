@@ -55,9 +55,7 @@ def test_openai_compatible_response_contract(monkeypatch: pytest.MonkeyPatch) ->
             return None
 
         def read(self) -> bytes:
-            return json.dumps(
-                {"choices": [{"message": {"content": "answer"}}]}
-            ).encode()
+            return json.dumps({"choices": [{"message": {"content": "answer"}}]}).encode()
 
     monkeypatch.setattr(
         "ayorai_attractor.providers.openai_compatible.request.urlopen",

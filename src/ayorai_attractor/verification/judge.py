@@ -14,6 +14,7 @@ class InvalidJudgeInput(ValueError):
         self.code = code
         self.field = field
 
+
 _GLOBAL_PRECEDENCE = (
     Verdict.REFUTED,
     Verdict.CONFLICTING,
@@ -42,9 +43,7 @@ def has_complete_provenance(evidence: Evidence) -> bool:
     )
 
 
-def judge_claim(
-    claim: Claim, evidence: list[Evidence], stances: list[StanceEdge]
-) -> ClaimJudgment:
+def judge_claim(claim: Claim, evidence: list[Evidence], stances: list[StanceEdge]) -> ClaimJudgment:
     by_id = {item.id: item for item in evidence}
     if len(by_id) != len(evidence):
         raise InvalidJudgeInput("DUPLICATE_ID", "evidence", "evidence ids must be unique")
@@ -115,8 +114,6 @@ def judge(
     if len(claim_ids) != len(claims):
         raise InvalidJudgeInput("DUPLICATE_ID", "claims", "claim ids must be unique")
     if any(edge.claim_id not in claim_ids for edge in stances):
-        raise InvalidJudgeInput(
-            "DANGLING_REFERENCE", "stances", "stance references unknown claim"
-        )
+        raise InvalidJudgeInput("DANGLING_REFERENCE", "stances", "stance references unknown claim")
     judgments = [judge_claim(claim, evidence, stances) for claim in claims]
     return judgments, aggregate_verdict(judgments)

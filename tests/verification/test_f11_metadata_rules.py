@@ -113,9 +113,13 @@ def test_incomplete_retrieval_metadata_is_preserved() -> None:
             "offsets": [0, 57],
         }
     }
-    evidence = FixtureRetriever(docs, ["doc-a"]).retrieve("query")[0].to_evidence(
-        "c1",
-        evidence_id="e1",
+    evidence = (
+        FixtureRetriever(docs, ["doc-a"])
+        .retrieve("query")[0]
+        .to_evidence(
+            "c1",
+            evidence_id="e1",
+        )
     )
     assert evidence.provenance_complete is False
 
@@ -129,9 +133,7 @@ def test_numeric_mismatch_with_different_attribute_is_neutral() -> None:
 
 def test_same_number_with_different_entity_is_neutral() -> None:
     claim = claim_item("Company X revenue was 100 million USD.")
-    item = evidence(
-        "e1", source_id="source-a", excerpt="Company Y revenue was 100 million USD."
-    )
+    item = evidence("e1", source_id="source-a", excerpt="Company Y revenue was 100 million USD.")
     result = RuleStanceDetector().detect([claim], [item])
     assert result.edges[0].edge.stance is Stance.NEUTRAL
 
@@ -158,15 +160,13 @@ def test_unknown_provenance_does_not_count_for_verified() -> None:
 
 
 def test_numeric_alignment_internal_contracts() -> None:
-    assert _numeric_facts("Revenue was 100 million USD.") == [
-        ("100", "usd:million", "revenue")
-    ]
-    assert _numeric_facts("The figure is 120 million USD.") == [
-        ("120", "usd:million", "figure")
-    ]
+    assert _numeric_facts("Revenue was 100 million USD.") == [("100", "usd:million", "revenue")]
+    assert _numeric_facts("The figure is 120 million USD.") == [("120", "usd:million", "figure")]
     assert _numeric_facts_align(
         "Revenue was 100 million USD.", "The figure is 120 million USD."
     ) == (False, False, False)
-    assert _numeric_facts_align(
-        "Revenue was 100 million USD.", "Revenue was 120 million USD."
-    ) == (True, False, True)
+    assert _numeric_facts_align("Revenue was 100 million USD.", "Revenue was 120 million USD.") == (
+        True,
+        False,
+        True,
+    )

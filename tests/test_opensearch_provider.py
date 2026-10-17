@@ -101,7 +101,6 @@ def test_opensearch_propagates_http_errors(monkeypatch: pytest.MonkeyPatch) -> N
         OpenSearchProvider("https://search.example.test", "documents").execute("query")
 
 
-
 def test_hybrid_opensearch_fuses_lexical_and_neural_hits(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -5,9 +5,7 @@ class FailureEngine:
     def __init__(self) -> None:
         self.failures: list[Failure] = []
 
-    def record(
-        self, failure_type: FailureType, message: str, recoverable: bool = True
-    ) -> Failure:
+    def record(self, failure_type: FailureType, message: str, recoverable: bool = True) -> Failure:
         failure = Failure(
             type=failure_type,
             message=message,

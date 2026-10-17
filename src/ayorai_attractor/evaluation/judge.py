@@ -14,9 +14,7 @@ from ayorai_attractor.verification.models import Claim, Evidence, StanceEdge
 def evaluate_judge_suite(path: Path) -> dict[str, Any]:
     """Evaluate explicit Claim/Evidence/Stance fixtures without an LLM."""
     cases = [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     results: list[dict[str, Any]] = []
     confusion: Counter[tuple[str, str]] = Counter()

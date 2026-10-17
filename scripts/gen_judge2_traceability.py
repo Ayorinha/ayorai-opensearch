@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Generate the Judge 2 rule-to-test-to-Golden traceability matrix."""
+
 from __future__ import annotations
 
 import argparse
@@ -17,16 +18,30 @@ GOLDENS = (
     ROOT / "evals" / "golden" / "v0.1-r2.jsonl",
 )
 EXPECTED_IDS = [
-    "G1", "G2", "E1", "E2", "E3", "A1", "A2", "A3", "A4",
-    "R0", "R1", "R2", "R3", "K1", "K2", "K3", "K4", "K5",
+    "G1",
+    "G2",
+    "E1",
+    "E2",
+    "E3",
+    "A1",
+    "A2",
+    "A3",
+    "A4",
+    "R0",
+    "R1",
+    "R2",
+    "R3",
+    "K1",
+    "K2",
+    "K3",
+    "K4",
+    "K5",
 ]
 
 
 def read_golden(path: Path) -> list[dict[str, Any]]:
     return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
 
 
@@ -67,9 +82,7 @@ def load_and_validate_rules() -> list[dict[str, Any]]:
             ):
                 missing.append(f"{rule['id']}: missing {test_path}::{name}")
     if missing:
-        raise SystemExit(
-            "traceability rules without executable tests:\n" + "\n".join(missing)
-        )
+        raise SystemExit("traceability rules without executable tests:\n" + "\n".join(missing))
     return rules
 
 
@@ -90,22 +103,16 @@ def render() -> str:
         "|---|---|---|---|",
     ]
     for rule in rules:
-        test_text = "<br>".join(
-            f"{test_path}::{name}" for test_path, name in rule["tests"]
-        )
+        test_text = "<br>".join(f"{test_path}::{name}" for test_path, name in rule["tests"])
         golden_text: list[str] = []
         for name, cases in datasets:
             ids = [
-                str(case.get("id", "?"))
-                for case in cases
-                if case_matches(case, rule["selector"])
+                str(case.get("id", "?")) for case in cases if case_matches(case, rule["selector"])
             ]
             if ids:
                 golden_text.append(f"{name}: {', '.join(ids)}")
         golden = "<br>".join(golden_text) or rule["note"] or "—"
-        lines.append(
-            f"| **{rule['id']}** | {rule['meaning']} | {test_text} | {golden} |"
-        )
+        lines.append(f"| **{rule['id']}** | {rule['meaning']} | {test_text} | {golden} |")
     lines.extend(
         [
             "",

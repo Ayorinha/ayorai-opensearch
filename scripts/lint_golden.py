@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Lint the closed-world Golden v0 contract without executing the ATTRACTOR."""
+
 from __future__ import annotations
 
 import argparse
@@ -19,9 +20,7 @@ def normalize_question(value: str) -> str:
 
 
 def verdict_signature(case: dict[str, Any]) -> tuple[Any, ...]:
-    claims = tuple(
-        claim.get("verdict") for claim in case.get("expected_claims", [])
-    )
+    claims = tuple(claim.get("verdict") for claim in case.get("expected_claims", []))
     return (
         case.get("expected_verdict"),
         case.get("global"),
@@ -67,20 +66,14 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
 
         for doc_id in pool:
             if doc_id not in corpus_ids:
-                errors.append(
-                    f"{case_id}: evidence_pool references missing document {doc_id}"
-                )
+                errors.append(f"{case_id}: evidence_pool references missing document {doc_id}")
 
         for doc_id in case.get("must_cite", []):
             if doc_id not in pool:
-                errors.append(
-                    f"{case_id}: must_cite document {doc_id} is outside evidence_pool"
-                )
+                errors.append(f"{case_id}: must_cite document {doc_id} is outside evidence_pool")
 
         if not pool and not str(case.get("response_status", "")).startswith("ABSTAIN/"):
-            errors.append(
-                f"{case_id}: evidence_pool is empty but case is not ABSTAIN"
-            )
+            errors.append(f"{case_id}: evidence_pool is empty but case is not ABSTAIN")
 
         question = case.get("query")
         if isinstance(question, str):
@@ -103,22 +96,16 @@ def lint_golden(golden_path: Path, corpus_path: Path) -> list[str]:
                 or not contrast
                 or not all(isinstance(item, str) for item in contrast)
             ):
-                errors.append(
-                    f"{case['id']}: contrast_with must be a non-empty list of case ids"
-                )
+                errors.append(f"{case['id']}: contrast_with must be a non-empty list of case ids")
 
     if len(golden) != 34:
         errors.append(f"expected 34 golden cases, found {len(golden)}")
     if len(corpus) != 52:
         errors.append(f"expected 52 corpus documents, found {len(corpus)}")
 
-    missing_locales = [
-        doc.get("doc_id") for doc in corpus if not doc.get("locale")
-    ]
+    missing_locales = [doc.get("doc_id") for doc in corpus if not doc.get("locale")]
     if missing_locales:
-        errors.append(
-            f"documents missing locale: {', '.join(map(str, missing_locales))}"
-        )
+        errors.append(f"documents missing locale: {', '.join(map(str, missing_locales))}")
 
     return errors
 

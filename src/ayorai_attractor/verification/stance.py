@@ -82,41 +82,118 @@ _SLASH_DATE_RE = re.compile(r"\b(?P<a>\d{1,2})/(?P<b>\d{1,2})/(?P<year>\d{4})\b"
 _DIRECTION_TERMS: dict[str, tuple[str, int]] = {
     **dict.fromkeys(
         (
-            "subiu", "subiram", "sobe", "sobem", "subir",
-            "aumentou", "aumentaram", "aumenta", "aumentam", "aumentar", "aumento",
-            "cresceu", "cresceram", "cresce", "crescem", "crescer", "crescimento",
-            "increased", "increase", "increases", "rose", "rise", "rises",
-            "grew", "grow", "grows",
+            "subiu",
+            "subiram",
+            "sobe",
+            "sobem",
+            "subir",
+            "aumentou",
+            "aumentaram",
+            "aumenta",
+            "aumentam",
+            "aumentar",
+            "aumento",
+            "cresceu",
+            "cresceram",
+            "cresce",
+            "crescem",
+            "crescer",
+            "crescimento",
+            "increased",
+            "increase",
+            "increases",
+            "rose",
+            "rise",
+            "rises",
+            "grew",
+            "grow",
+            "grows",
         ),
         ("change", 1),
     ),
     **dict.fromkeys(
         (
-            "caiu", "caíram", "cairam", "cai", "caem", "cair", "queda",
-            "diminuiu", "diminuíram", "diminuiram", "diminui", "diminuem", "diminuir",
-            "diminuição", "diminuicao",
-            "reduziu", "reduziram", "reduz", "reduzem", "redução", "reducao",
-            "encolheu", "encolheram", "encolhe", "encolhem",
-            "decreased", "decrease", "decreases", "fell", "fall", "falls",
-            "declined", "decline", "declines", "dropped", "drop", "drops",
+            "caiu",
+            "caíram",
+            "cairam",
+            "cai",
+            "caem",
+            "cair",
+            "queda",
+            "diminuiu",
+            "diminuíram",
+            "diminuiram",
+            "diminui",
+            "diminuem",
+            "diminuir",
+            "diminuição",
+            "diminuicao",
+            "reduziu",
+            "reduziram",
+            "reduz",
+            "reduzem",
+            "redução",
+            "reducao",
+            "encolheu",
+            "encolheram",
+            "encolhe",
+            "encolhem",
+            "decreased",
+            "decrease",
+            "decreases",
+            "fell",
+            "fall",
+            "falls",
+            "declined",
+            "decline",
+            "declines",
+            "dropped",
+            "drop",
+            "drops",
         ),
         ("change", -1),
     ),
     **dict.fromkeys(
         (
-            "aprovou", "aprovaram", "aprova", "aprovam", "aprovado", "aprovada",
-            "aprovados", "aprovadas", "aprovação", "aprovacao",
-            "approved", "approves", "approve",
+            "aprovou",
+            "aprovaram",
+            "aprova",
+            "aprovam",
+            "aprovado",
+            "aprovada",
+            "aprovados",
+            "aprovadas",
+            "aprovação",
+            "aprovacao",
+            "approved",
+            "approves",
+            "approve",
         ),
         ("approval", 1),
     ),
     **dict.fromkeys(
         (
-            "rejeitou", "rejeitaram", "rejeita", "rejeitam", "rejeitado", "rejeitada",
-            "rejeitados", "rejeitadas", "rejeição", "rejeicao",
-            "reprovou", "reprovaram", "reprovado", "reprovada",
-            "vetou", "vetaram", "vetado", "vetada",
-            "rejected", "rejects", "reject",
+            "rejeitou",
+            "rejeitaram",
+            "rejeita",
+            "rejeitam",
+            "rejeitado",
+            "rejeitada",
+            "rejeitados",
+            "rejeitadas",
+            "rejeição",
+            "rejeicao",
+            "reprovou",
+            "reprovaram",
+            "reprovado",
+            "reprovada",
+            "vetou",
+            "vetaram",
+            "vetado",
+            "vetada",
+            "rejected",
+            "rejects",
+            "reject",
         ),
         ("approval", -1),
     ),
@@ -156,7 +233,14 @@ _STOPWORDS = frozenset(
 )
 _UNIT_WORDS = frozenset(
     {
-        "usd", "eur", "brl", "ms", "million", "millions", "billion", "billions",
+        "usd",
+        "eur",
+        "brl",
+        "ms",
+        "million",
+        "millions",
+        "billion",
+        "billions",
         "employees",
         "people",
         "customers",
@@ -172,8 +256,24 @@ _UNIT_WORDS = frozenset(
     }
 )
 _PT_MARKERS = frozenset(
-    {"não", "nao", "uma", "para", "com", "que", "foi", "são", "sao",
-     "empresa", "receita", "ano", "dos", "das", "em", "por"}
+    {
+        "não",
+        "nao",
+        "uma",
+        "para",
+        "com",
+        "que",
+        "foi",
+        "são",
+        "sao",
+        "empresa",
+        "receita",
+        "ano",
+        "dos",
+        "das",
+        "em",
+        "por",
+    }
 )
 _ENTITY_PATTERN = r"\b(?:company|empresa)\s+(?P<name>[A-Za-zÀ-ÿ][\wÀ-ÿ-]*)\b"
 _ENTITY_RE = re.compile(
@@ -181,8 +281,22 @@ _ENTITY_RE = re.compile(
     re.IGNORECASE | re.UNICODE,
 )
 _EN_MARKERS = frozenset(
-    {"the", "was", "were", "with", "that", "company", "revenue", "year",
-     "from", "for", "and", "not", "this", "reported"}
+    {
+        "the",
+        "was",
+        "were",
+        "with",
+        "that",
+        "company",
+        "revenue",
+        "year",
+        "from",
+        "for",
+        "and",
+        "not",
+        "this",
+        "reported",
+    }
 )
 
 
@@ -223,18 +337,74 @@ def _has_negation(text: str) -> bool:
 # bound on a quantity, not a negated predicate.
 _COMPARATIVES = frozenset(
     {
-        "superior", "superiores", "inferior", "inferiores", "excede", "exceder",
-        "exceda", "excedam", "ultrapassa", "ultrapassar", "ultrapasse", "maior",
-        "maiores", "menor", "menores", "mais", "menos",
+        "superior",
+        "superiores",
+        "inferior",
+        "inferiores",
+        "excede",
+        "exceder",
+        "exceda",
+        "excedam",
+        "ultrapassa",
+        "ultrapassar",
+        "ultrapasse",
+        "maior",
+        "maiores",
+        "menor",
+        "menores",
+        "mais",
+        "menos",
     }
 )
 _FUNCTION_WORDS = frozenset(
     {
-        "das", "dos", "para", "com", "que", "pela", "pelo", "pelos", "pelas", "uma",
-        "por", "entre", "sobre", "até", "ate", "sem", "mais", "menos", "seu", "sua",
-        "seus", "suas", "ser", "ter", "foi", "são", "sao", "não", "nao", "quando",
-        "como", "este", "esta", "esse", "essa", "nos", "nas", "aos", "the", "and",
-        "for", "with", "was", "were", "from", "that", "this",
+        "das",
+        "dos",
+        "para",
+        "com",
+        "que",
+        "pela",
+        "pelo",
+        "pelos",
+        "pelas",
+        "uma",
+        "por",
+        "entre",
+        "sobre",
+        "até",
+        "ate",
+        "sem",
+        "mais",
+        "menos",
+        "seu",
+        "sua",
+        "seus",
+        "suas",
+        "ser",
+        "ter",
+        "foi",
+        "são",
+        "sao",
+        "não",
+        "nao",
+        "quando",
+        "como",
+        "este",
+        "esta",
+        "esse",
+        "essa",
+        "nos",
+        "nas",
+        "aos",
+        "the",
+        "and",
+        "for",
+        "with",
+        "was",
+        "were",
+        "from",
+        "that",
+        "this",
     }
 )
 
@@ -392,9 +562,7 @@ def _dates_conflict(claim_text: str, evidence_text: str) -> bool:
     evidence_dates = _extract_dates(evidence_text)
     if not claim_dates or not evidence_dates:
         return False
-    return not any(
-        _same_date(left, right) for left in claim_dates for right in evidence_dates
-    )
+    return not any(_same_date(left, right) for left in claim_dates for right in evidence_dates)
 
 
 def _strip_dates(text: str) -> str:
@@ -466,19 +634,30 @@ _ATTRIBUTE_ALIASES = {
 }
 # Durations share one scale per family so "1 ano" and "12 meses" compare.
 _DURATION_WORDS: dict[str, tuple[str, Decimal]] = {
-    "ano": ("months", Decimal(12)), "anos": ("months", Decimal(12)),
-    "year": ("months", Decimal(12)), "years": ("months", Decimal(12)),
-    "mês": ("months", Decimal(1)), "mes": ("months", Decimal(1)),
-    "meses": ("months", Decimal(1)), "month": ("months", Decimal(1)),
+    "ano": ("months", Decimal(12)),
+    "anos": ("months", Decimal(12)),
+    "year": ("months", Decimal(12)),
+    "years": ("months", Decimal(12)),
+    "mês": ("months", Decimal(1)),
+    "mes": ("months", Decimal(1)),
+    "meses": ("months", Decimal(1)),
+    "month": ("months", Decimal(1)),
     "months": ("months", Decimal(1)),
-    "dia": ("days", Decimal(1)), "dias": ("days", Decimal(1)),
-    "day": ("days", Decimal(1)), "days": ("days", Decimal(1)),
-    "hora": ("hours", Decimal(1)), "horas": ("hours", Decimal(1)),
-    "hour": ("hours", Decimal(1)), "hours": ("hours", Decimal(1)),
+    "dia": ("days", Decimal(1)),
+    "dias": ("days", Decimal(1)),
+    "day": ("days", Decimal(1)),
+    "days": ("days", Decimal(1)),
+    "hora": ("hours", Decimal(1)),
+    "horas": ("hours", Decimal(1)),
+    "hour": ("hours", Decimal(1)),
+    "hours": ("hours", Decimal(1)),
 }
 _MEASURE_WORDS = {
-    "vez": "times", "vezes": "times", "times": "times",
-    "diasmulta": "day_fines", "diamulta": "day_fines",
+    "vez": "times",
+    "vezes": "times",
+    "times": "times",
+    "diasmulta": "day_fines",
+    "diamulta": "day_fines",
 }
 _DAY_FINE_RE = re.compile(r"\bdias?-multa\b", re.IGNORECASE)
 _EXACT_UNITS = frozenset({"year", "fraction", "multiplier"})
@@ -554,8 +733,10 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
             continue
         following = tokens[index + 1] if index + 1 < len(tokens) else ""
         money = _currency_and_scale(tokens, index)
-        if "%" in token or following in _PERCENT_WORDS or (
-            following == "por" and index + 2 < len(tokens) and tokens[index + 2] == "cento"
+        if (
+            "%" in token
+            or following in _PERCENT_WORDS
+            or (following == "por" and index + 2 < len(tokens) and tokens[index + 2] == "cento")
         ):
             unit = "percent"
         elif money is not None:
@@ -741,9 +922,7 @@ def _confirmed_as_written(
     return False
 
 
-def _numeric_facts_align(
-    claim_text: str, evidence_text: str
-) -> tuple[bool, bool, bool]:
+def _numeric_facts_align(claim_text: str, evidence_text: str) -> tuple[bool, bool, bool]:
     """Return (conflict, agreement, every_claim_fact_matched)."""
     alignment = _numeric_alignment(claim_text, evidence_text)
     return alignment.conflict, alignment.agreement, alignment.all_matched
@@ -774,8 +953,7 @@ class StanceDetector(Protocol):
         self,
         claims: Sequence[ExtractedClaim],
         evidence: Sequence[Evidence],
-    ) -> StanceDetectionResult:
-        ...
+    ) -> StanceDetectionResult: ...
 
 
 class RuleStanceDetector:
@@ -805,17 +983,13 @@ class RuleStanceDetector:
             }
             for item in (x for x in evidence if x.claim_id == claim_item.claim.id):
                 evidence_tokens = {
-                    token.casefold()
-                    for token in _TOKEN_RE.findall(item.excerpt)
-                    if len(token) > 2
+                    token.casefold() for token in _TOKEN_RE.findall(item.excerpt) if len(token) > 2
                 }
                 lexical = len(claim_tokens & evidence_tokens) / max(len(claim_tokens), 1)
                 alignment = _numeric_alignment(claim_item.claim.text, item.excerpt)
                 # Generic units (durations, fractions, measures) carry no subject:
                 # they decide only when claim and evidence share the proposition.
-                shares_proposition = (
-                    _content_overlap(claim_item.claim.text, item.excerpt) >= 0.25
-                )
+                shares_proposition = _content_overlap(claim_item.claim.text, item.excerpt) >= 0.25
                 numeric_conflict = alignment.specific_conflict or (
                     alignment.generic_conflict and shares_proposition
                 )
@@ -965,8 +1139,7 @@ class NLIStanceDetector(StanceDetector):
                             self.model,
                             f"{self.version}|window={start}:{end}",
                             _sha256(
-                                claim_item.claim.text + "\n"
-                                + item.excerpt[local_start:local_end]
+                                claim_item.claim.text + "\n" + item.excerpt[local_start:local_end]
                             ),
                             _sha256(f"{stance}|{confidence:.12f}|{start}|{end}"),
                         ),
@@ -1017,9 +1190,7 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
                 if claim_lang != document_lang:
                     if claim_lang == "pt":
                         translated_claim = self.translator.translate(claim)
-                        translation_hash = self.translator.provenance_hash(
-                            claim, translated_claim
-                        )
+                        translation_hash = self.translator.provenance_hash(claim, translated_claim)
                     elif document_lang == "pt":
                         translated_document = self.translator.translate(document)
                         translation_hash = self.translator.provenance_hash(
@@ -1074,7 +1245,6 @@ class TranslatedNLIStanceDetector(NLIStanceDetector):
                     )
                 )
         return StanceDetectionResult(tuple(output))
-
 
 
 def _sentence_windows(evidence: Evidence) -> list[tuple[int, int, str]]:

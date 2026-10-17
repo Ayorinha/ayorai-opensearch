@@ -43,14 +43,11 @@ def optimize(
         raise ValueError("candidate_id values must be unique")
 
     evaluations = tuple(
-        Evaluation(candidate.candidate_id, float(evaluator(candidate)))
-        for candidate in candidates
+        Evaluation(candidate.candidate_id, float(evaluator(candidate))) for candidate in candidates
     )
     selected_id = min(
         evaluations,
         key=lambda item: (-item.score, item.candidate_id),
     ).candidate_id
-    selected = next(
-        candidate for candidate in candidates if candidate.candidate_id == selected_id
-    )
+    selected = next(candidate for candidate in candidates if candidate.candidate_id == selected_id)
     return OptimizationResult(selected=selected, evaluations=evaluations)

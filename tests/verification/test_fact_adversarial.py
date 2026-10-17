@@ -159,6 +159,7 @@ def test_translated_pt_document_preserves_original_offsets() -> None:
     provenance = result.edges[0].provenance
     assert f"window=0:{len(document)}" in provenance.version
     import hashlib
+
     expected = hashlib.sha256(("The claim." + "\n" + document).encode("utf-8")).hexdigest()
     assert provenance.input_sha256 == expected
 
