@@ -1,8 +1,11 @@
-"""Local append-only audit trace persistence for R2.
+"""Local audit trace persistence for R2.
 
-The store persists audit metadata and a content-addressed replay digest. It does
-not persist raw prompts, evidence excerpts, credentials, or model outputs.
-SQLite schema changes are versioned with PRAGMA user_version.
+The normal store API appends records and rejects reuse of an existing trace_id.
+Replay digests can detect changes to the fields covered by replay verification,
+but this SQLite store is not tamper-proof against direct database edits or an
+administrator with write access. It does not persist raw prompts, evidence
+excerpts, credentials, or model outputs. SQLite schema changes are versioned
+with PRAGMA user_version.
 """
 
 from __future__ import annotations
@@ -21,6 +24,10 @@ _R2_V1: Final = "r2-v1"
 _R2_V2: Final = "r2-v2"
 ReplayVersion = Literal["r2-v1", "r2-v2"]
 ReplayIntegrity = Literal["valid", "invalid"]
+
+
+class DuplicateAuditTraceError(ValueError):
+    """Raised when an audit trace ID has already been recorded."""
 
 
 class AuditTraceStore:
@@ -185,9 +192,10 @@ class AuditTraceStore:
             }
         ]
         replay = ReplayBundle.build(response.trace_id, events, version=_R2_V2)
-        self._connection.execute(
-            """
-            INSERT OR REPLACE INTO audit_traces (
+        try:
+            self._connection.execute(
+                """
+            INSERT INTO audit_traces (
                 trace_id, legacy_verification, verification, operation_status,
                 evidence_count, independent_evidence_count,
                 verified_evidence_count, failure_count, finding_count,
@@ -205,8 +213,14 @@ class AuditTraceStore:
                 replay.digest,
                 _R2_V2,
                 _SCHEMA_VERSION,
-            ),
-        )
+                ),
+            )
+        except sqlite3.IntegrityError as exc:
+            if "audit_traces.trace_id" in str(exc) or "UNIQUE constraint failed" in str(exc):
+                raise DuplicateAuditTraceError(
+                    f"Audit trace already exists: {report.trace_id}"
+                ) from exc
+            raise
         self._connection.commit()
         return replay.digest
 
