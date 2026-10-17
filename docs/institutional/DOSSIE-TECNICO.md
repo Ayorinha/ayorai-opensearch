@@ -1,5 +1,7 @@
 **[RASCUNHO — revisão do autor pendente]**
 
+> **Estado atual:** consulte a [fonte única de status](../STATUS.md). Este dossiê preserva seu contexto técnico e não é uma fonte independente de status de implementação.
+
 # AYORAI ATTRACTOR — Dossiê técnico
 
 ## Problema
