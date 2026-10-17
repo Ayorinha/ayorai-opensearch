@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from ayorai_attractor.api.auth import APIKeyAuthMiddleware
+from ayorai_attractor.api.auth import APIKeyAuthMiddleware, validate_auth_configuration
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
 from ayorai_attractor.models import (
@@ -42,6 +42,7 @@ audit_store = AuditTraceStore()
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Release persistent resources when the API process shuts down."""
+    validate_auth_configuration()
     try:
         yield
     finally:
