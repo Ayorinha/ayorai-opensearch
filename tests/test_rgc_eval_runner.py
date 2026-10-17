@@ -450,3 +450,73 @@ def test_evaluate_uses_annotated_atoms() -> None:
         iterations=10,
     )
     assert result["cases"][0]["predicted"] == "PARTIALLY_SUPPORTED"
+
+
+# ------------------------------------------- rectified stratum (Amendment 4)
+
+
+def _rectified_cases() -> list[dict[str, Any]]:
+    supported = _case("r1", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    refuted = _case("r2", "O cancelamento será efetivado em até 9 dias.", CANCEL)
+    plain = _case("r3", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    supported["rectified"] = True
+    refuted["rectified"] = True
+    plain["rectified"] = False
+    return [supported, refuted, plain]
+
+
+def test_rectified_mark_defaults_to_false_and_must_be_boolean() -> None:
+    case = _case("r0", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    assert RUNNER["case_rectified"](case) is False
+    case["rectified"] = True
+    assert RUNNER["case_rectified"](case) is True
+    for bad in ("true", 1, None, "sim"):
+        case["rectified"] = bad
+        with pytest.raises(ValueError, match="rectified must be true or false"):
+            RUNNER["case_rectified"](case)
+
+
+def test_rectified_cases_are_reported_as_a_separate_stratum() -> None:
+    labels = {"r1": "SUPPORTED", "r2": "SUPPORTED", "r3": "SUPPORTED"}
+    result = RUNNER["evaluate"](
+        _rectified_cases(), labels, DOCS, mode="oracle", vocabulary="judge2", iterations=50
+    )
+    # Primary metrics keep every evaluable case, rectified or not.
+    assert result["metrics"]["n"] == 3
+    assert [row["rectified"] for row in result["cases"]] == [True, True, False]
+    rectified, plain = result["strata"]["rectified"], result["strata"]["not_rectified"]
+    assert rectified["n"] == 2
+    assert rectified["system"]["accuracy"] == 0.5
+    assert rectified["confusion"]["SUPPORTED"]["REFUTED"] == 1
+    assert plain["n"] == 1
+    assert plain["system"]["accuracy"] == 1.0
+    assert "primary_criterion" not in rectified
+
+
+def test_rectified_mark_does_not_change_the_judge_output() -> None:
+    marked = _rectified_cases()
+    unmarked = [{k: v for k, v in case.items() if k != "rectified"} for case in marked]
+    labels = {"r1": "SUPPORTED", "r2": "REFUTED", "r3": "SUPPORTED"}
+    run = RUNNER["evaluate"]
+    with_mark = run(marked, labels, DOCS, mode="oracle", vocabulary="judge2", iterations=20)
+    without = run(unmarked, labels, DOCS, mode="oracle", vocabulary="judge2", iterations=20)
+    assert [r["output_sha256"] for r in with_mark["cases"]] == [
+        r["output_sha256"] for r in without["cases"]
+    ]
+    assert with_mark["metrics"] == without["metrics"]
+    assert without["strata"]["rectified"] == {"n": 0}
+    assert without["strata"]["not_rectified"]["n"] == 3
+
+
+def test_invalid_rectified_mark_stops_the_run() -> None:
+    cases = _rectified_cases()
+    cases[0]["rectified"] = "true"
+    with pytest.raises(ValueError, match="rectified must be true or false"):
+        RUNNER["evaluate"](
+            cases,
+            {"r1": "SUPPORTED", "r2": "REFUTED", "r3": "SUPPORTED"},
+            DOCS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )

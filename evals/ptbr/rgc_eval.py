@@ -13,7 +13,11 @@ Pipeline per case (no learned component, no network):
      (dispositivos: ``Art.``, ``§``, ``Parágrafo único``, incisos, alíneas),
      ranked with BM25 against the claim, and the top-k passages are used.
 2. Stance: ``RuleStanceDetector`` on each (claim, passage) pair.
-3. Verdict: Judge 2.0 ``adjudicate`` with one atom covering the whole claim.
+3. Verdict: Judge 2.0 ``adjudicate`` with one atom covering the whole claim,
+   or with the annotated ``atoms`` of a compound claim (DEC-010, option A).
+
+Cases marked ``rectified: true`` (Protocol Amendment 4, DEC-011 option A)
+stay in the primary metrics and are also reported as a separate stratum.
 
 Subcommands:
     run            evaluate cases against human labels and write a report
@@ -49,7 +53,7 @@ from ayorai_attractor.verification.stance import RuleStanceDetector
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.2.0"
+RUNNER_VERSION = "rgc-eval/0.3.0"
 SEED = 20261003
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
@@ -243,6 +247,18 @@ def case_atoms(case: Mapping[str, Any]) -> list[tuple[int, int]] | None:
     if spans != sorted(spans) or any(a[1] > b[0] for a, b in zip(spans, spans[1:], strict=False)):
         raise ValueError(f"{case_id}: atom spans must be sorted and non-overlapping")
     return spans
+
+
+def case_rectified(case: Mapping[str, Any]) -> bool:
+    """Return the ``rectified`` mark of a case (Protocol Amendment 4, DEC-011).
+
+    Absent means ``False``. When present it must be a JSON boolean; any other
+    value stops the run instead of being coerced.
+    """
+    value = case.get("rectified", False)
+    if not isinstance(value, bool):
+        raise ValueError(f"{case['case_id']}: rectified must be true or false")
+    return value
 
 
 def predict(
@@ -458,6 +474,23 @@ def compute_metrics(
     }
 
 
+def stratum_metrics(
+    gold: Sequence[str], pred: Sequence[str], vocabulary: str, *, iterations: int
+) -> dict[str, Any]:
+    """Descriptive metrics for a stratum; no H1 decision is taken on a stratum."""
+    if not gold:
+        return {"n": 0}
+    ci = bootstrap_ci(gold, pred, iterations=iterations)
+    return {
+        "n": len(gold),
+        "gold_counts": {label: list(gold).count(label) for label in VOCABULARIES[vocabulary]},
+        "invalid_predictions": list(pred).count(INVALID),
+        "system": {name: round(fn(gold, pred), 6) for name, fn in METRICS.items()},
+        "system_ci95": {name: [round(v, 6) for v in pair] for name, pair in ci.items()},
+        "confusion": confusion(gold, pred, vocabulary),
+    }
+
+
 # ---------------------------------------------------------------------- run
 
 
@@ -526,6 +559,7 @@ def evaluate(
             excluded.append({"case_id": case_id, "label": gold})
             continue
         atoms = case_atoms(case)
+        rectified = case_rectified(case)
         if index is None:
             prediction = predict(
                 case["claim"], oracle_passages(case, documents), documents, atoms=atoms
@@ -541,7 +575,15 @@ def evaluate(
             )
             prediction["retrieval_scores"] = [round(s, 6) for _, s in hits]
         label = to_label(prediction, vocabulary)
-        rows.append({"case_id": case_id, "gold": gold, "predicted": label, **prediction})
+        rows.append(
+            {
+                "case_id": case_id,
+                "gold": gold,
+                "predicted": label,
+                "rectified": rectified,
+                **prediction,
+            }
+        )
     if unlabeled:
         raise ValueError(f"cases without a label (labels must be complete): {unlabeled}")
     extra = sorted(set(labels) - seen)
@@ -552,8 +594,20 @@ def evaluate(
     gold_labels = [str(r["gold"]) for r in rows]
     predicted = [str(r["predicted"]) for r in rows]
     states = [str(r["decision_state"]) for r in rows]
+    strata: dict[str, Any] = {}
+    for name, flag in (("rectified", True), ("not_rectified", False)):
+        chosen = [i for i, r in enumerate(rows) if r["rectified"] is flag]
+        strata[name] = stratum_metrics(
+            [gold_labels[i] for i in chosen],
+            [predicted[i] for i in chosen],
+            vocabulary,
+            iterations=iterations,
+        )
     return {
         "metrics": compute_metrics(gold_labels, predicted, vocabulary, iterations=iterations),
+        # Amendment 4 (DEC-011, option A): rectified cases stay in the primary
+        # metrics and are also reported as a separate, descriptive stratum.
+        "strata": strata,
         # DEC-009: ABSTAINED is scored as UNVERIFIED; report how many predictions
         # came from each original Judge state so the mapping stays visible.
         "decision_states": {state: states.count(state) for state in sorted(set(states))},
