@@ -54,6 +54,9 @@ package-dir = {"" = "src"}
 where = ["src"]
 include = ["ayorai_attractor*"]
 
+[tool.setuptools.package-data]
+ayorai_attractor = ["py.typed"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
