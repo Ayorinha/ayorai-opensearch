@@ -1,7 +1,11 @@
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
+from starlette.types import Message, Receive, Scope, Send
 
 from ayorai_attractor.api import app as api
+from ayorai_attractor.api.app import RequestBodyLimitMiddleware
 from ayorai_attractor.models import (
     Evidence,
     QualityMode,
@@ -132,3 +136,95 @@ def test_api_lifespan_closes_audit_store(monkeypatch) -> None:  # type: ignore[n
     with TestClient(api.app):
         pass
     assert closed == [True]
+
+
+def _run_request_body_limit(
+    max_body_bytes: int | None,
+    chunks: list[bytes],
+    headers: list[tuple[bytes, bytes]] | None = None,
+) -> list[Message]:
+    events: list[Message] = []
+    index = 0
+
+    scope: Scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": "POST",
+        "scheme": "http",
+        "path": "/test",
+        "raw_path": b"/test",
+        "query_string": b"",
+        "root_path": "",
+        "headers": headers or [],
+        "client": ("testclient", 1234),
+        "server": ("testserver", 80),
+    }
+
+    async def receive() -> Message:
+        nonlocal index
+        if index >= len(chunks):
+            return {"type": "http.disconnect"}
+        chunk = chunks[index]
+        index += 1
+        return {
+            "type": "http.request",
+            "body": chunk,
+            "more_body": index < len(chunks),
+        }
+
+    async def send(message: Message) -> None:
+        events.append(message)
+
+    async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
+        message = await receive()
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": message.get("body", b"")})
+
+    middleware = RequestBodyLimitMiddleware(endpoint, max_body_bytes=max_body_bytes)
+    asyncio.run(middleware(scope, receive, send))
+    return events
+
+
+async def _unused_asgi_app(scope: Scope, receive: Receive, send: Send) -> None:
+    return None
+
+
+def test_request_body_limit_rejects_content_length_before_parsing() -> None:
+    events = _run_request_body_limit(
+        8,
+        [b"123456789"],
+        headers=[(b"content-length", b"9")],
+    )
+
+    assert events[0]["status"] == 413
+    assert events[1]["body"] == (b'{"detail":"Request body exceeds the configured size limit"}')
+
+
+def test_request_body_limit_rejects_oversized_stream_without_content_length() -> None:
+    events = _run_request_body_limit(8, [b"1234", b"56789"])
+
+    assert events[0]["status"] == 413
+    assert events[1]["body"] == (b'{"detail":"Request body exceeds the configured size limit"}')
+
+
+def test_request_body_limit_allows_body_at_or_below_limit() -> None:
+    events = _run_request_body_limit(8, [b"1234", b"5678"])
+
+    assert events[0]["status"] == 200
+    assert events[1]["body"] == b"12345678"
+
+
+def test_request_body_limit_reads_configured_environment_value(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("ATTRACTOR_MAX_BODY_BYTES", "8")
+
+    events = _run_request_body_limit(None, [b"123456789"])
+
+    assert events[0]["status"] == 413
+
+
+def test_request_body_limit_rejects_invalid_environment_value(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("ATTRACTOR_MAX_BODY_BYTES", "not-a-number")
+
+    with pytest.raises(ValueError, match="ATTRACTOR_MAX_BODY_BYTES must be a positive integer"):
+        RequestBodyLimitMiddleware(_unused_asgi_app)

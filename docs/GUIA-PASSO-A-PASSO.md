@@ -134,3 +134,27 @@ Eles representam correções, congelamento de avaliação, ajustes de métricas,
 - validar AYORAI-PT-NLI sob regras de proveniência;
 - executar avaliação independente no Golden v1;
 - medir segurança, latência e auditabilidade antes de qualquer adoção operacional.
+
+## Limite de tamanho do corpo HTTP
+
+A API aplica um limite de tamanho ao corpo de cada requisição HTTP antes de o FastAPI/Pydantic analisar o conteúdo. O padrão é **2 MiB (2.097.152 bytes)**. Uma requisição acima do limite recebe HTTP **413** com JSON, sem alterar os modelos Pydantic nem o contrato OpenAPI congelado.
+
+Configure o limite em bytes pela variável de ambiente `ATTRACTOR_MAX_BODY_BYTES`. O valor deve ser um inteiro positivo; um valor inválido ou menor/igual a zero impede a inicialização do middleware.
+
+Exemplo para iniciar a API com limite de 1 MiB:
+
+~~~bash
+ATTRACTOR_MAX_BODY_BYTES=1048576 uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000
+~~~
+
+Verificação manual contra um servidor Uvicorn real, usando o limite padrão de 2 MiB:
+
+~~~bash
+# Terminal 1
+uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000
+
+# Terminal 2: o corpo excede 2 MiB; espera-se HTTP 413 e JSON.
+python -c "import urllib.error, urllib.request; data=b'x'*(2*1024*1024+1); req=urllib.request.Request('http://127.0.0.1:8000/v1/verify', data=data, headers={'Content-Type':'application/json'}, method='POST'); exec('try:\n r=urllib.request.urlopen(req)\n print(r.status, r.read())\nexcept urllib.error.HTTPError as e:\n print(e.code, e.read().decode())')"
+~~~
+
+O comando acima usa bytes que não são JSON de propósito: a checagem de tamanho deve rejeitar o corpo antes da análise JSON. Não exponha o servidor publicamente apenas para executar esse teste.

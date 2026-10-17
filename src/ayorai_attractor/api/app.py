@@ -1,4 +1,5 @@
 import json
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
@@ -7,6 +8,7 @@ from fastapi import Body, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
@@ -82,12 +84,81 @@ _HTTP_404_RESPONSE: dict[str, Any] = {
     },
 }
 
+
+_DEFAULT_MAX_BODY_BYTES = 2 * 1024 * 1024
+
+
+class RequestBodyLimitMiddleware:
+    """Bound buffered HTTP request bodies before application-level parsing."""
+
+    def __init__(self, app: ASGIApp, max_body_bytes: int | None = None) -> None:
+        self.app = app
+        if max_body_bytes is None:
+            raw_limit = os.getenv("ATTRACTOR_MAX_BODY_BYTES", str(_DEFAULT_MAX_BODY_BYTES))
+            try:
+                max_body_bytes = int(raw_limit)
+            except ValueError as exc:
+                raise ValueError("ATTRACTOR_MAX_BODY_BYTES must be a positive integer") from exc
+        if max_body_bytes <= 0:
+            raise ValueError("ATTRACTOR_MAX_BODY_BYTES must be a positive integer")
+        self.max_body_bytes = max_body_bytes
+
+    async def _reject(self, scope: Scope, receive: Receive, send: Send) -> None:
+        response = JSONResponse(
+            status_code=413,
+            content={"detail": "Request body exceeds the configured size limit"},
+        )
+        await response(scope, receive, send)
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        raw_content_length = headers.get(b"content-length")
+        if raw_content_length is not None:
+            try:
+                content_length = int(raw_content_length)
+            except ValueError:
+                content_length = 0
+            if content_length > self.max_body_bytes:
+                await self._reject(scope, receive, send)
+                return
+
+        body = bytearray()
+        while True:
+            message = await receive()
+            if message["type"] == "http.disconnect":
+                return
+            if message["type"] != "http.request":
+                continue
+            body.extend(message.get("body", b""))
+            if len(body) > self.max_body_bytes:
+                await self._reject(scope, receive, send)
+                return
+            if not message.get("more_body", False):
+                break
+
+        replayed = False
+
+        async def replay_receive() -> Message:
+            nonlocal replayed
+            if not replayed:
+                replayed = True
+                return {"type": "http.request", "body": bytes(body), "more_body": False}
+            return {"type": "http.disconnect"}
+
+        await self.app(scope, replay_receive, send)
+
+
 app = FastAPI(
     title="AYORAI ATTRACTOR",
     version="0.1.0",
     description="Adaptive multi-agent intelligence and verification engine.",
     lifespan=lifespan,
 )
+app.add_middleware(RequestBodyLimitMiddleware)
 
 
 @app.get("/health")
