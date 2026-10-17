@@ -416,3 +416,13 @@ def _openapi_with_verify_schemas() -> dict[str, Any]:
 
 
 app.openapi = _openapi_with_verify_schemas  # type: ignore[method-assign]
+
+
+# Install last so request IDs also cover authentication and body-limit rejections.
+def _install_request_context_middleware() -> None:
+    from ayorai_attractor.api.request_context import RequestContextMiddleware
+
+    app.add_middleware(RequestContextMiddleware)
+
+
+_install_request_context_middleware()
