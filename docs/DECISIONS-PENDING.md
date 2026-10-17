@@ -6,6 +6,27 @@ Owner and final decision-maker: Anderson Leon Ayora
 Independent reviewer: revisor independente  
 Source: execution plan v5, work queue
 
+## Índice de decisões (atualizado em 2026-10-17)
+
+Este índice só localiza registros; o texto de cada decisão continua sendo a fonte. **Atenção:** os identificadores DEC-007 e DEC-008 foram usados duas vezes, com significados diferentes. Até decisão do mantenedor sobre renumeração, cite sempre o identificador com o qualificador desta tabela.
+
+| ID | Assunto | Estado | Registro |
+|---|---|---|---|
+| DEC-001 | `uv.lock` e digests de imagens Docker | Pendente | Este arquivo |
+| DEC-002 | Licença e proveniência das fontes | Aprovada (2026-10-13) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-002--política-de-licença-e-proveniência-das-fontes) |
+| DEC-003 | ADR-001 → `Accepted` | Pendente | Este arquivo |
+| DEC-004 | Documentação comercial e nome do repositório | Pendente | Este arquivo |
+| DEC-005 | r1-a: entrada inválida retorna 422 | Aprovada (2026-10-11); implementada na PR #139 (v0.4.0) | Este arquivo |
+| DEC-006 | Prioridade do motor de stance em português | Pendente | Este arquivo |
+| DEC-007 (release) | Publicar v0.4.0 | Aprovada (2026-10-11) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md) |
+| DEC-007 (RGC) | Vocabulário de cinco vereditos do RGC | Aprovada (2026-10-15); Emenda 2 mesclada na PR #193 | Este arquivo |
+| DEC-008 (release) | Publicar v0.5.0 | Aprovada (2026-10-13) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md) |
+| DEC-008 (RGC) | Autoria dos casos do RGC | Aprovada (2026-10-15) | Este arquivo |
+| DEC-009 | Abstenção avaliada como `UNVERIFIED` | Aprovada (2026-10-15); executor na PR #195 | Este arquivo |
+| DEC-010 | Afirmações compostas (opção A) | Aprovada (2026-10-16); executor na PR #203, Emenda 3 na PR #205 | Este arquivo |
+| DEC-011 | Guia de anotação após o piloto 01 | Aprovada (2026-10-17); Emenda 4 na PR #227 | Este arquivo |
+| DEC-012 | Decisões 1–4 do log de auditoria (ADR-010) | Registrada em PR aberta (#225), ainda não mesclada | PR #225 |
+
 ## Decisões aprovadas
 
 ### DEC-007 — Vocabulário de rótulos do benchmark RGC
@@ -16,6 +37,7 @@ Source: execution plan v5, work queue
 - **Decisão:** O benchmark RGC usa os cinco vereditos definidos em `rules/judge-2.0.0.json` (`enums.verdict`), com a semântica da ADR-009 (K1–K5), e não a semântica da ADR-002. Esta decisão vale somente para o RGC; Golden v0, v0.1 e derivados r2 permanecem inalterados. `VERIFIED` não é rótulo de referência no RGC; corroboração R0–R3 é um eixo separado e não é anotada no v1.
 - **Implementação documental:** Emenda 2 em `docs/eval/PROTOCOL-GOLDEN-V1.md`; lista histórica do pré-registro preservada como histórica.
 - **Estado:** Aprovada; a implementação documental aguarda revisão e merge pelo mantenedor.
+- **Atualização (2026-10-17):** a Emenda 2 foi mesclada na [PR #193](https://github.com/Ayorinha/ayorai-opensearch/pull/193) em 2026-10-15.
 
 ### DEC-008 — Autoria dos casos do benchmark RGC
 
@@ -45,6 +67,7 @@ Source: execution plan v5, work queue
   - **B — não escolhida:** o v1 aceita apenas afirmações atômicas; afirmações compostas ficam para o v2. A ausência de `PARTIALLY_SUPPORTED` no v1 seria declarada explicitamente, com regra para identificar/excluir afirmações compostas.
 - **Fato que motivou a decisão:** o executor anterior tratava cada afirmação como um único átomo. Pelas regras A1–A4 de `rules/judge-2.0.0.json`, um átomo pode resultar em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`; K4 exige dois ou mais átomos para `PARTIALLY_SUPPORTED`. `CONFLICTING` continua possível pela regra A4. Ver [RUNNER-RGC-v1.md §5](eval/RUNNER-RGC-v1.md#5-limitações-conhecidas).
 - **Estado:** aprovada. O código (PR #203) está mesclado; a emenda ao protocolo segue em PR própria. A mesclagem não equivale à validação do executor no benchmark definitivo.
+- **Atualização (2026-10-17):** a Emenda 3 foi mesclada na [PR #205](https://github.com/Ayorinha/ayorai-opensearch/pull/205) em 2026-10-16.
 
 ### DEC-005 — r1-a: entrada inválida retorna 500
 
@@ -58,6 +81,7 @@ Source: execution plan v5, work queue
 - **Limites:** Não alterar a fixture baseline na PR do ResponsePolicy. Não alterar goldens, corpus, manifestos ou hashes congelados. Não permitir que entradas do schema r1-a produzam HTTP 500.
 - **Evidência inicial:** PR #132 congelou os três comportamentos atuais de HTTP 500 antes da mudança de código: https://github.com/Ayorinha/ayorai-opensearch/pull/132
 - **Status de implementação:** Aprovada; implementação pendente em PR separada após ResponsePolicy.
+- **Atualização (2026-10-17):** implementada na [PR #139](https://github.com/Ayorinha/ayorai-opensearch/pull/139), mesclada em 2026-10-11 e publicada na v0.4.0 (ver `CHANGELOG.md`).
 
 ### DEC-006 — Prioridade do motor de stance em português (ADR-008)
 
@@ -90,6 +114,7 @@ Source: execution plan v5, work queue
   3. Defer both until the reproducibility workflow and maintenance policy are specified.
 - **Impact to assess:** Developer setup, CI, container builds, security updates, reproducibility instructions, and dependency-update cadence.
 - **Approval gate:** Anderson selects an option; revisor independente reviews the implementation proposal before any implementation PR.
+- **Fato verificado (2026-10-17):** a main ainda não contém `uv.lock`, e `docker/Dockerfile` usa a tag móvel `python:3.12-slim`, sem digest. O endurecimento da PR #222 não resolveu esta decisão.
 
 ## DEC-002 — F4.2: licensing and provenance of source material
 
