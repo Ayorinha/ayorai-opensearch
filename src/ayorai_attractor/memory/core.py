@@ -1,7 +1,8 @@
 """In-memory key/value store for research notes.
 
 Status: experimental — fora do escopo verificado. Ver docs/TRACEABILITY-MASTER.md.
-Not used by the verification pipeline, the Judge or the public API; the interface may change without a deprecation period. See docs/EXPERIMENTAL-MODULES.md.
+Not used by the verification pipeline, the Judge or the public API; the interface may
+change without a deprecation period. See docs/EXPERIMENTAL-MODULES.md.
 """
 
 from dataclasses import dataclass
