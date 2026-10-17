@@ -6,6 +6,27 @@ Owner and final decision-maker: Anderson Leon Ayora
 Independent reviewer: revisor independente  
 Source: execution plan v5, work queue
 
+## Índice de decisões (atualizado em 2026-10-17)
+
+Este índice só localiza registros; o texto de cada decisão continua sendo a fonte. **Atenção:** os identificadores DEC-007 e DEC-008 foram usados duas vezes, com significados diferentes. Até decisão do mantenedor sobre renumeração, cite sempre o identificador com o qualificador desta tabela.
+
+| ID | Assunto | Estado | Registro |
+|---|---|---|---|
+| DEC-001 | `uv.lock` e digests de imagens Docker | Pendente | Este arquivo |
+| DEC-002 | Licença e proveniência das fontes | Aprovada (2026-10-13) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-002--política-de-licença-e-proveniência-das-fontes) |
+| DEC-003 | ADR-001 → `Accepted` | Pendente | Este arquivo |
+| DEC-004 | Documentação comercial e nome do repositório | Pendente | Este arquivo |
+| DEC-005 | r1-a: entrada inválida retorna 422 | Aprovada (2026-10-11); implementada na PR #139 (v0.4.0) | Este arquivo |
+| DEC-006 | Prioridade do motor de stance em português | Pendente | Este arquivo |
+| DEC-007 (release) | Publicar v0.4.0 | Aprovada (2026-10-11) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md) |
+| DEC-007 (RGC) | Vocabulário de cinco vereditos do RGC | Aprovada (2026-10-15); Emenda 2 mesclada na PR #193 | Este arquivo |
+| DEC-008 (release) | Publicar v0.5.0 | Aprovada (2026-10-13) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md) |
+| DEC-008 (RGC) | Autoria dos casos do RGC | Aprovada (2026-10-15) | Este arquivo |
+| DEC-009 | Abstenção avaliada como `UNVERIFIED` | Aprovada (2026-10-15); executor na PR #195 | Este arquivo |
+| DEC-010 | Afirmações compostas (opção A) | Aprovada (2026-10-16); executor na PR #203, Emenda 3 na PR #205 | Este arquivo |
+| DEC-011 | Guia de anotação após o piloto 01 | Aprovada (2026-10-17); Emenda 4 na PR #227 | Este arquivo |
+| DEC-012 | Decisões 1–4 do log de auditoria (ADR-010) | Registrada em PR aberta (#225), ainda não mesclada | PR #225 |
+
 ## Decisões aprovadas
 
 ### DEC-007 — Vocabulário de rótulos do benchmark RGC
@@ -16,6 +37,7 @@ Source: execution plan v5, work queue
 - **Decisão:** O benchmark RGC usa os cinco vereditos definidos em `rules/judge-2.0.0.json` (`enums.verdict`), com a semântica da ADR-009 (K1–K5), e não a semântica da ADR-002. Esta decisão vale somente para o RGC; Golden v0, v0.1 e derivados r2 permanecem inalterados. `VERIFIED` não é rótulo de referência no RGC; corroboração R0–R3 é um eixo separado e não é anotada no v1.
 - **Implementação documental:** Emenda 2 em `docs/eval/PROTOCOL-GOLDEN-V1.md`; lista histórica do pré-registro preservada como histórica.
 - **Estado:** Aprovada; a implementação documental aguarda revisão e merge pelo mantenedor.
+- **Atualização (2026-10-17):** a Emenda 2 foi mesclada na [PR #193](https://github.com/Ayorinha/ayorai-opensearch/pull/193) em 2026-10-15.
 
 ### DEC-008 — Autoria dos casos do benchmark RGC
 
@@ -45,6 +67,7 @@ Source: execution plan v5, work queue
   - **B — não escolhida:** o v1 aceita apenas afirmações atômicas; afirmações compostas ficam para o v2. A ausência de `PARTIALLY_SUPPORTED` no v1 seria declarada explicitamente, com regra para identificar/excluir afirmações compostas.
 - **Fato que motivou a decisão:** o executor anterior tratava cada afirmação como um único átomo. Pelas regras A1–A4 de `rules/judge-2.0.0.json`, um átomo pode resultar em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`; K4 exige dois ou mais átomos para `PARTIALLY_SUPPORTED`. `CONFLICTING` continua possível pela regra A4. Ver [RUNNER-RGC-v1.md §5](eval/RUNNER-RGC-v1.md#5-limitações-conhecidas).
 - **Estado:** aprovada. O código (PR #203) está mesclado; a emenda ao protocolo segue em PR própria. A mesclagem não equivale à validação do executor no benchmark definitivo.
+- **Atualização (2026-10-17):** a Emenda 3 foi mesclada na [PR #205](https://github.com/Ayorinha/ayorai-opensearch/pull/205) em 2026-10-16.
 
 ### DEC-005 — r1-a: entrada inválida retorna 500
 
@@ -58,6 +81,7 @@ Source: execution plan v5, work queue
 - **Limites:** Não alterar a fixture baseline na PR do ResponsePolicy. Não alterar goldens, corpus, manifestos ou hashes congelados. Não permitir que entradas do schema r1-a produzam HTTP 500.
 - **Evidência inicial:** PR #132 congelou os três comportamentos atuais de HTTP 500 antes da mudança de código: https://github.com/Ayorinha/ayorai-opensearch/pull/132
 - **Status de implementação:** Aprovada; implementação pendente em PR separada após ResponsePolicy.
+- **Atualização (2026-10-17):** implementada na [PR #139](https://github.com/Ayorinha/ayorai-opensearch/pull/139), mesclada em 2026-10-11 e publicada na v0.4.0 (ver `CHANGELOG.md`).
 
 ### DEC-006 — Prioridade do motor de stance em português (ADR-008)
 
@@ -90,6 +114,7 @@ Source: execution plan v5, work queue
   3. Defer both until the reproducibility workflow and maintenance policy are specified.
 - **Impact to assess:** Developer setup, CI, container builds, security updates, reproducibility instructions, and dependency-update cadence.
 - **Approval gate:** Anderson selects an option; revisor independente reviews the implementation proposal before any implementation PR.
+- **Fato verificado (2026-10-17):** a main ainda não contém `uv.lock`, e `docker/Dockerfile` usa a tag móvel `python:3.12-slim`, sem digest. O endurecimento da PR #222 não resolveu esta decisão.
 
 ## DEC-002 — F4.2: licensing and provenance of source material
 
@@ -145,7 +170,9 @@ Source: execution plan v5, work queue
 ## DEC-011 — Guia de anotação do RGC após o piloto (fase 1)
 
 - **Data da proposta:** 16/10/2026
-- **Status:** Pendente (Anderson)
+- **Data da aprovação:** 17/10/2026
+- **Decisor:** Anderson Leon Ayora
+- **Status:** Aprovada; implementação documental e piloto exploratório autorizados conforme os gates abaixo.
 - **Bloqueia:** segundo piloto, congelamento do protocolo RGC e redação dos 300 casos definitivos.
 - **Origem:** piloto exploratório de 20 casos (fase 1 do [protocolo](eval/PROTOCOL-GOLDEN-V1.md)), rotulado pelo mantenedor em 16/10/2026. Os rótulos do piloto não integram o benchmark e não foram exportados para o repositório. Os achados abaixo se referem aos casos pelo identificador do piloto.
 - **Distribuição observada no piloto:** 9 `SUPPORTED`, 11 `REFUTED`, 0 `UNVERIFIED`, 0 `PARTIALLY_SUPPORTED`, 0 `CONFLICTING`, 0 `RULE_GAP`. O piloto não continha caso projetado para `PARTIALLY_SUPPORTED` ou `CONFLICTING`; essas regras ainda não foram exercitadas por um anotador humano.
@@ -169,7 +196,7 @@ Source: execution plan v5, work queue
   - **B:** alterar o Judge ou o detector de stance para reconhecer precedência temporal e o marcador "Onde se lê". Exige ADR, nova versão de regras, testes e hashes novos; fica fora do v1.
   - **C:** excluir do v1 todo dispositivo retificado (arts. 84, 86, 34, 90, 93 e 96 da Resolução 765/2023 e do Anexo), com registro no log de exclusões.
 - **Recomendação técnica:** A. Mede o sistema como ele é, sem alterar o Judge, e torna a limitação visível em vez de escondê-la. B pode ser proposta para o v2 com base no estrato medido.
-- **Escolha do mantenedor (17/10/2026):** opção **A**. Registrada aqui; a DEC-011 como um todo continua pendente até a aprovação das Partes 1 e 3 e do ponto aberto.
+- **Escolha do mantenedor (17/10/2026):** opção **A**, aprovada. O rótulo de referência segue o texto vigente após as retificações; redações superadas em “Onde se lê” não contam como apoio. Casos afetados recebem `rectified: true` e são reportados em estrato separado; o Judge permanece inalterado.
 
 ### Parte 3 — Valores, quantificadores e modalidade
 
@@ -185,7 +212,7 @@ Source: execution plan v5, work queue
   | A afirmação troca **dever por faculdade** (ou o inverso), ou **permissão por proibição** | `REFUTED` | "pode ser cobrado" vs. "sem ônus" (pilot-06); "configura restrição vedada" vs. "não configura" (pilot-09) |
   | A afirmação transforma **"preferencialmente"** em obrigação ("deve ser por meio eletrônico") sem dizer "exclusivamente" | **ponto aberto** | Anderson decide: `REFUTED` (o texto não obriga) ou excluir esse tipo de afirmação do v1 |
 
-- **Recomendação técnica:** adotar a tabela. Para o ponto aberto, recomenda-se **não redigir** afirmações desse tipo no v1, porque a fronteira depende de interpretação jurídica que o protocolo não deve delegar ao anotador.
+- **Decisão do mantenedor (17/10/2026):** tabela aprovada. Afirmações que transformem “preferencialmente” em obrigação sem suporte textual explícito ficam excluídas do v1; não serão rotuladas por inferência interpretativa.
 
 ### Encaminhamento proposto após aprovação
 
@@ -195,7 +222,8 @@ Source: execution plan v5, work queue
 
 - **Isolamento (DEC-008):** os textos do primeiro piloto foram consultados em assistentes externos (Grok, ChatGPT). O mantenedor confirmou (17/10/2026) que a justificativa de pilot-04 foi redigida com auxílio do Grok; os demais rótulos foram dados por ele. Por ser descartado, isso não afeta o benchmark. Para o segundo piloto e para o conjunto definitivo, nenhum caso pode ser enviado a ferramenta de IA antes do congelamento e da execução única.
 - **Impacto:** guia de anotação, protocolo, pré-registro e relatório. Não altera código, regras do Judge, hashes ou artefatos Golden.
-- **Aprovação necessária:** Anderson aprova as Partes 1 a 3 (com a opção da Parte 2 e o ponto aberto da Parte 3) antes do segundo piloto.
+- **Aprovação registrada (17/10/2026):** Anderson aprovou as três partes: (1) ausência de confirmação = `UNVERIFIED`; `REFUTED` exige contradição explícita e justificativa com citação incompatível; (2) opção A para retificação; (3) tabela de valores, quantificadores e modalidade, excluindo do v1 afirmações que convertam “preferencialmente” em obrigação sem suporte textual explícito.
+- **Próximo gate:** executar o segundo piloto com cerca de 10 casos novos, usando apenas fontes oficiais verificadas e anotação humana independente de ferramentas de IA. Os casos do piloto serão descartados e não poderão ser enviados a assistentes/modelos. Após análise dos resultados, solicitar congelamento formal do protocolo antes de redigir os 300 casos definitivos.
 
 ## Queue rules
 
