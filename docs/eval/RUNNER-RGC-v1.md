@@ -58,7 +58,7 @@ Depois de congelados, qualquer mudança nesses valores exige emenda datada antes
 
 ## 6. Achado durante a implementação (fora do escopo deste executor)
 
-Uma requisição `r2-a` válida com `evidence[].canonical_url` preenchido retorna `INVALID_INPUT / SCHEMA_VIOLATION` em vez de ser adjudicada. A causa e a correção estão em revisão na PR #192; até que ela seja mesclada pelo mantenedor, não declarar o defeito corrigido nem presumir CI verde. A PR documenta a hipótese confirmada e os testes propostos: https://github.com/Ayorinha/ayorai-opensearch/pull/192.
+Uma regressão de `canonical_url` em `r2-a` foi corrigida e mesclada na [PR #192](https://github.com/Ayorinha/ayorai-opensearch/pull/192), com testes de regressão. Essa correção não equivale à validação do benchmark RGC: o executor continua proposto, exercitado apenas com fixtures sintéticas e sujeito ao congelamento formal do protocolo.
 
 ## 7. Uso (somente após rótulos completos e parâmetros congelados)
 
