@@ -5,8 +5,7 @@
 | Versão de referência | v0.5.0, publicada em 2026-10-13 (tag no commit `e9eccb50e4904b8f33004a414a5666477378c67a`; DOI 10.5281/zenodo.23344005) |
 | Estado auditado | `main` em `ab13f737236d649587051783dd0c5d6e8832178e` (2026-10-17) |
 | Intervalo | 58 commits na `main` desde a tag; 56 PRs mescladas (#104, #106 e #171–#234, com lacunas na numeração) |
-| Autor da auditoria | Claude (implementador), a pedido do mantenedor |
-| Responsável pelo projeto | Anderson Leon Ayora |
+| Solicitante | Anderson Leon Ayora (mantenedor) |
 | Natureza | Documento de engenharia. Não altera código, decisões, ADRs, regras, Golden, manifestos ou hashes. |
 
 ## 0. Método e regra de evidência
