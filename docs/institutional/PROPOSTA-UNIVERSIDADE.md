@@ -1,5 +1,7 @@
 **[RASCUNHO — revisão do autor pendente]**
 
+> **Estado atual:** consulte a [fonte única de status](../STATUS.md). Esta proposta preserva o contexto institucional; não é uma fonte independente de status de implementação.
+
 # Proposta de colaboração em pesquisa
 
 ## Objetivo
