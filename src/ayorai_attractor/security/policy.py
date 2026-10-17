@@ -1,3 +1,14 @@
+"""Capability allow-list for tool calls.
+
+Status: experimental. Not used by the verification pipeline, the Judge or the
+public API; the interface may change without a deprecation period. See
+docs/EXPERIMENTAL-MODULES.md.
+
+Deny by default: an unknown capability is not authorized. ``requires_approval``
+is recorded but NOT enforced by ``authorize()``; callers must check it
+themselves before running a capability that requires approval.
+"""
+
 from dataclasses import dataclass
 
 
