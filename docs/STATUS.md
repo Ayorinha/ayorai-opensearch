@@ -4,7 +4,7 @@ Updated: 2026-10-17
 
 ## Source of truth
 
-The [TRACEABILITY MASTER](TRACEABILITY-MASTER.md) is the canonical project requirements and evidence matrix. This page is an index, not an independent source of project metrics, test counts, coverage percentages, benchmark results, or implementation status.
+This file is the **single source of current project status**: release state, active work, maturity labels and current blockers are maintained here only. The [TRACEABILITY MASTER](TRACEABILITY-MASTER.md) remains the canonical requirements-and-evidence matrix, but is not a second current-status dashboard. Other progress, milestone and institutional documents may preserve historical snapshots; current status must link back to this page.
 
 ## Current execution
 
