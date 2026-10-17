@@ -1,0 +1,82 @@
+// Generates RFC 6962 test vectors with the transparency-dev/merkle reference.
+package main
+
+import (
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/transparency-dev/merkle/rfc6962"
+	"github.com/transparency-dev/merkle/testonly"
+)
+
+type incl struct {
+	Index uint64   `json:"index"`
+	Size  uint64   `json:"size"`
+	Proof []string `json:"proof"`
+}
+type cons struct {
+	Size1 uint64   `json:"size1"`
+	Size2 uint64   `json:"size2"`
+	Proof []string `json:"proof"`
+}
+
+func hx(b [][]byte) []string {
+	out := []string{}
+	for _, x := range b {
+		out = append(out, hex.EncodeToString(x))
+	}
+	return out
+}
+
+func main() {
+	const n = 17
+	tree := testonly.New(rfc6962.DefaultHasher)
+	leaves := []string{}
+	for i := 0; i < n; i++ {
+		leaf := []byte(fmt.Sprintf("ayorai-vector-leaf-%02d", i))
+		if i < 8 {
+			leaf = testonly.LeafInputs()[i]
+		}
+		leaves = append(leaves, hex.EncodeToString(leaf))
+		tree.AppendData(leaf)
+	}
+	roots := []string{}
+	for s := uint64(0); s <= n; s++ {
+		roots = append(roots, hex.EncodeToString(tree.HashAt(s)))
+	}
+	leafHashes := []string{}
+	for i := uint64(0); i < n; i++ {
+		leafHashes = append(leafHashes, hex.EncodeToString(tree.LeafHash(i)))
+	}
+	inclusions := []incl{}
+	for s := uint64(1); s <= n; s++ {
+		for i := uint64(0); i < s; i++ {
+			p, err := tree.InclusionProof(i, s)
+			if err != nil {
+				panic(err)
+			}
+			inclusions = append(inclusions, incl{i, s, hx(p)})
+		}
+	}
+	consistencies := []cons{}
+	for s2 := uint64(1); s2 <= n; s2++ {
+		for s1 := uint64(1); s1 <= s2; s1++ {
+			p, err := tree.ConsistencyProof(s1, s2)
+			if err != nil {
+				panic(err)
+			}
+			consistencies = append(consistencies, cons{s1, s2, hx(p)})
+		}
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", " ")
+	_ = enc.Encode(map[string]any{
+		"leaves_hex":    leaves,
+		"leaf_hashes":   leafHashes,
+		"roots":         roots,
+		"inclusion":     inclusions,
+		"consistency":   consistencies,
+	})
+}
