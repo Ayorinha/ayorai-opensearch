@@ -138,7 +138,6 @@ def test_api_lifespan_closes_audit_store(monkeypatch) -> None:  # type: ignore[n
     assert closed == [True]
 
 
-
 def _run_request_body_limit(
     max_body_bytes: int | None,
     chunks: list[bytes],
@@ -199,7 +198,9 @@ def test_request_body_limit_rejects_content_length_before_parsing() -> None:
     )
 
     assert events[0]["status"] == 413
-    assert events[1]["body"] == b'{"detail":"Request body exceeds the configured size limit"}'
+    assert events[1]["body"] == (
+        b'{"detail":"Request body exceeds the configured size limit"}'
+    )
 
 
 def test_request_body_limit_rejects_oversized_stream_without_content_length() -> None:
