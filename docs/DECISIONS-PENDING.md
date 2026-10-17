@@ -1,6 +1,6 @@
-# Pending Decisions
+# Decision Register — Approved and Pending
 
-This file records decisions that require explicit maintainer approval. It is a queue, not an approval record. No item below authorizes implementation or changes to an accepted ADR by itself.
+This file preserves both historical approved decisions and decisions that still require explicit maintainer approval. It is not a pure pending queue: use each item's recorded status to determine whether a decision is approved, and respect its stated implementation limits. An approved decision authorizes only the scope explicitly recorded; it does not by itself freeze a benchmark, approve unrelated code changes, or modify an accepted ADR.
 
 Owner and final decision-maker: Anderson Leon Ayora  
 Independent reviewer: revisor independente  
@@ -202,7 +202,7 @@ Source: execution plan v5, work queue
 
 ## Queue rules
 
-- These are pending decisions, not accepted architecture or authorization to implement.
-- Record the selected option, rationale, date, and approving maintainer before changing an item to decided.
+- These rules apply only to entries whose status is still pending; they do not override the approved-decision records above.
+- For a pending item, record the selected option, rationale, date, and approving maintainer before changing its status to decided.
 - Keep implementation in a separate PR unless the maintainer explicitly approves a documentation-only decision record.
 - Do not claim legal clearance, production readiness, or performance beyond the evidence actually available.
