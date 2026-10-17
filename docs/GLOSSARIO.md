@@ -38,7 +38,7 @@ Veredito reservado a uma afirmação composta: pelo menos uma parte está apoiad
 
 ### REFUTED
 
-Há contradição admissível suficiente para refutar o átomo; em uma afirmação composta, a regra de precedência determina REFUTED se algum átomo receber esse veredito. Fonte: [ADR-009, seções 7 e 9](adr/ADR-009-deterministic-adjudication-contract.md).
+Há pelo menos um cluster admissível de contradição e nenhum cluster admissível de apoio para o átomo. Em uma afirmação composta, a regra de precedência determina REFUTED se algum átomo receber esse veredito. Fonte: [ADR-009, seções 7 e 9](adr/ADR-009-deterministic-adjudication-contract.md).
 
 ### UNVERIFIED
 
