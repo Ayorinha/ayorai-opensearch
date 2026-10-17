@@ -120,6 +120,7 @@ Out of scope:
 | E | No technical isolation gate prevents hidden Golden v1 leakage into development/training. | high |
 | F | No automated training-data license manifest gate prevents EVAL_ONLY contamination before training. | high |
 | G | No technical control prevents tuning against visible evaluation results. | medium |
+| R1 | Audit records are not tamper-resistant against database administrators; `/v1/verify` verdicts are not recorded. See proposed ADR-010. | high |
 
 ## 5. Non-goals
 

@@ -4,7 +4,7 @@ from contextlib import closing
 import pytest
 
 from ayorai_attractor.audit import AuditReport
-from ayorai_attractor.audit_store import AuditTraceStore
+from ayorai_attractor.audit_store import AuditTraceStore, DuplicateAuditTraceError
 from ayorai_attractor.models import SearchResponse
 from ayorai_attractor.replay import ReplayBundle
 
@@ -210,3 +210,27 @@ def test_verify_unknown_trace_raises_value_error(tmp_path) -> None:
 def test_missing_trace_returns_none(tmp_path) -> None:
     with AuditTraceStore(str(tmp_path / "audit.sqlite3")) as store:
         assert store.get("missing") is None
+
+
+def test_record_rejects_duplicate_trace_id_and_preserves_original(tmp_path) -> None:
+    response = SearchResponse(
+        query="original query",
+        mode="balanced",
+        answer="original answer",
+        operation_status="completed",
+        trace_id="tr_duplicate",
+    )
+    report = AuditReport.from_response(response)
+    with AuditTraceStore(str(tmp_path / "duplicate.sqlite3")) as store:
+        original_digest = store.record(response, report)
+        original = store.get("tr_duplicate")
+        assert original is not None
+
+        with pytest.raises(DuplicateAuditTraceError, match="already exists"):
+            store.record(response, report)
+
+        saved = store.get("tr_duplicate")
+        assert saved is not None
+        assert saved == original
+        assert saved.replay_digest == original_digest
+        assert saved.operation_status == "completed"
