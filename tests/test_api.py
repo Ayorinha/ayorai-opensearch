@@ -207,7 +207,9 @@ def test_request_body_limit_rejects_oversized_stream_without_content_length() ->
     events = _run_request_body_limit(8, [b"1234", b"56789"])
 
     assert events[0]["status"] == 413
-    assert events[1]["body"] == b'{"detail":"Request body exceeds the configured size limit"}'
+    assert events[1]["body"] == (
+        b'{"detail":"Request body exceeds the configured size limit"}'
+    )
 
 
 def test_request_body_limit_allows_body_at_or_below_limit() -> None:
