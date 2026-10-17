@@ -23,6 +23,9 @@ Não envie credenciais, tokens, dados pessoais, financeiros ou material confiden
 
 PRs devem manter CI, segurança e CodeQL verdes. Resultados de benchmark/eval só devem ser publicados com o run do GitHub Actions que os produziu.
 
+## Contribuições assistidas por ferramentas automatizadas
+
+Ferramentas automatizadas podem auxiliar o trabalho, mas o projeto mantém identidade própria. As regras completas estão em [AGENTS.md](AGENTS.md) e valem também para colaboradores humanos: nenhuma assinatura, link ou crédito promocional de ferramenta em materiais públicos; autoria e proveniência sempre verificáveis; autoridade exclusiva do mantenedor sobre merges e releases; artefatos protegidos; restrições do benchmark RGC; e diretriz de soberania tecnológica.
 
 ## DCO
 
