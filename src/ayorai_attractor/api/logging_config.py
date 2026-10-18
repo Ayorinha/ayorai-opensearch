@@ -16,9 +16,13 @@ def resolve_log_level() -> int:
     raw = os.getenv("ATTRACTOR_LOG_LEVEL", _DEFAULT_LEVEL).strip().upper() or _DEFAULT_LEVEL
     if raw not in _ALLOWED_LEVELS:
         raise ValueError(f"ATTRACTOR_LOG_LEVEL must be one of {', '.join(_ALLOWED_LEVELS)}")
-    level = logging.getLevelName(raw)
-    assert isinstance(level, int)
-    return level
+    return {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
+    }[raw]
 
 
 def configure_logging() -> None:
