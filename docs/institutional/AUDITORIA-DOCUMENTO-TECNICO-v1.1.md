@@ -102,3 +102,13 @@ Nenhum destes itens foi alterado nesta revisão.
 ## 6. Recomendação
 
 **Pronto para divulgação com ressalvas.** A v1.1 corrige os erros comprovados e delimita as afirmações que dependiam de contexto. Antes de usar o documento em contexto jurídico, conferir os dispositivos do item 5.5. Os itens 5.1 a 5.3 não impedem a divulgação, porque a v1.1 já apresenta a informação correta, mas mantêm divergência entre o documento e arquivos do repositório até serem tratados.
+
+
+## 7. Acompanhamento após a auditoria — 18/10/2026
+
+- **Correção estatística documental:** foram acrescentadas notas datadas E6 em `docs/adr/ADR-005-hybrid-multilingual-stance.md` e `docs/eval/F1-RESULTS.md`. Elas preservam os registros históricos e esclarecem que a significância do teste exato bilateral de McNemar depende dos pares discordantes; acurácia isolada não basta.
+- **Referências jurídicas:** conferidas em fontes oficiais do Planalto em 18/10/2026: CPC, Lei nº 13.105/2015, art. 369 (`https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13105.htm`) e CPP, Decreto-Lei nº 3.689/1941, arts. 158-A a 158-F (`https://www.planalto.gov.br/ccivil_03/decreto-lei/del3689compilado.htm`). A conferência confirma o texto dos dispositivos citados, não constitui parecer jurídico nem valida qualquer conclusão jurídica aplicada ao projeto.
+- **README e caminho C:** a versão de `README.md` consultada nesta branch não contém atualmente os valores 26,67% ou 23,33% nem a afirmação específica identificada no achado 2 da seção 5. Por isso, nenhuma alteração foi feita no README; a divergência permanece registrada como item a reavaliar se a versão do arquivo mudar.
+- **Robustez / provenance:** não foi alterado o contrato r2-a nem a regra do Judge. Tornar `provenance_complete` obrigatório ou derivado é uma decisão de desenho que exige ADR, testes e versionamento explícito; não deve ser feito silenciosamente em uma PR documental.
+- **Narrativa pessoal:** não foi inventado nem acrescentado relato autobiográfico. O mantenedor poderá editar esse trecho se quiser acrescentar fatos em primeira pessoa.
+- **PDF v1.1:** as correções E6 acima alteram os arquivos Markdown do repositório, não o PDF binário já anexado à PR. Antes do merge, o PDF deve ser regenerado para incluir a nota estatística atualizada e a referência jurídica conferida, ou a PR deve declarar claramente que essas atualizações só estão no relatório de acompanhamento e programar uma versão posterior do PDF.
