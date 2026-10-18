@@ -14,8 +14,8 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 
 1. Compare da tag v0.5.0 (`e9eccb5`) até a `main` auditada (`d8411d9`): 80 commits, conforme compare do GitHub. A estrutura de pais não foi revalidada por clone local nesta sessão.
 2. API REST do GitHub: PRs mescladas e abertas, check-runs, ruleset `Protecao-main-ATTRACTOR`, releases e comentários.
-3. Última execução local declarada: **658 testes aprovados em `ab13f737`** (Python 3.13.16, `pytest -q`), resultado histórico, não reexecutado neste ciclo. Para o SHA auditado `d8411d90f8905442ac02568cc9179ce42afec69a`, os checks do GitHub terminaram com sucesso, incluindo Python 3.11/3.12/3.13, `golden-regression`, `judge-regression`, `security` e os demais checks de CI consultados. Não foi feita execução local nesta sessão.
-4. Para o SHA `d8411d90f8905442ac02568cc9179ce42afec69a`, os workflows `Security` e `CodeQL`, além dos checks obrigatórios, terminaram com sucesso. Essas evidências valem para esse SHA, não para cabeças de PR diferentes.
+3. Última execução local declarada: **658 testes aprovados em `ab13f737`** (Python 3.13.16, `pytest -q`), resultado histórico, não reexecutado neste ciclo. Para o SHA auditado `d8411d90f8905442ac02568cc9179ce42afec69a`, os seis checks obrigatórios e os demais checks de CI não específicos de branch terminaram com sucesso. O job `rgc-design-simulation` é intencionalmente específico da branch da PR #241; a execução separada passou no SHA `0e515e9c76328c7023b24394459acc21d9e2bd0a` (run `39091010493`). Não foi feita execução local nesta sessão.
+4. Para o SHA `d8411d90f8905442ac02568cc9179ce42afec69a`, `Security`, `CodeQL` e os seis checks obrigatórios terminaram com sucesso; a simulação estatística foi executada separadamente no SHA da PR #241. Essas evidências valem para os SHAs citados, não para cabeças de PR diferentes.
 5. Leitura direta dos arquivos citados, com caminho e linha.
 
 ### Legenda
@@ -130,7 +130,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | #247 | README alinhado à evidência | Mesclada por squash após revisão e checks verdes |
 | #248 | Escopo de módulos experimentais | Mesclada por squash após correção de E501 e checks verdes no SHA final |
 | #249 | Fonte única de status | Mesclada por squash após revisão e checks verdes no SHA final |
-| #251 | Atualização da página canônica de status | Mesclada por squash; CI, Security e CodeQL verdes no SHA `a2c08e5` |
+| #251 | Atualização da página canônica de status | Mesclada por squash; atualização da página canônica; a versão final de status deste ciclo está reservada à Onda 10 (#255) |
 | #253 | Evidência reproduzível de Schemathesis | Mesclada por squash; preserva logs, OpenAPI servido e exemplos Hypothesis para futuras falhas. A issue #250 foi fechada após a correção #259 e permanece sob observação de recorrência. |
 | #254 | Correção de estado DEC-012 | Mesclada por squash; índice atualizado após a #225 |
 | #255 | Reconciliação da fonte única de status | Aberta; reservada para a Onda 10, último merge deste ciclo, com `docs/STATUS.md` a atualizar após as Ondas 2–5 |
