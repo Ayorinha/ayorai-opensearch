@@ -2,7 +2,7 @@ Revisão por ferramenta automatizada, publicada pelo mantenedor.
 
 # Auditoria do Documento Técnico Público — v1.0 → v1.1
 
-- **Documento auditado:** `docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.0.pdf` (commit `9be3a38`, preservado sem alteração).
+- **Documento auditado:** versão v1.0 do PDF, adicionada no commit `9be3a38` e substituída pela v1.1; o arquivo original continua acessível no histórico do repositório.
 - **Versão revisada:** `docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf`.
 - **Base de conferência:** `main` no commit `ae44c2380d07635966ba036563681f151cd5a937` (18/10/2026).
 - **Data da auditoria:** 18/10/2026.
