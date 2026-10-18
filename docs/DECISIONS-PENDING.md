@@ -27,6 +27,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-011 | Guia de anotação após o piloto 01 | Aprovada (2026-10-17); Emenda 4 na PR #227 | Este arquivo |
 | DEC-012 | Decisões 1–4 do log de auditoria (ADR-010) | Registro mesclado na PR #225 em 2026-10-17; implementação e validação continuam sujeitas aos gates da ADR-010 | [PR #225](https://github.com/Ayorinha/ayorai-opensearch/pull/225) |
 | DEC-013 | Autorização de execução e merge por agente neste ciclo | Aprovada por ordem do mantenedor (2026-10-18); escopo limitado | Este arquivo |
+| DEC-014 | Baseline primário e descritivo do RGC | Aprovada por ordem do mantenedor (2026-10-18); Emenda 5 | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -237,6 +238,18 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Registro:** a PR #256 foi mesclada neste ciclo. Cada PR mesclada neste ciclo deve conter a linha: “Mesclada sob a autorização DEC-013 do mantenedor; revisão humana independente dispensada neste ciclo (achado F-01 permanece aberto).”
 - **Estado:** autorizada pelo mantenedor em 2026-10-18; não equivale a revisão humana independente nem encerra F-01.
 - Ausência do campo rectified tratada como false (não retificado), decisão do mantenedor em 2026-10-18, implementada na PR #232.
+
+
+## DEC-014 — Baseline primário e descritivo do RGC
+
+- **Data:** 2026-10-18
+- **Decisor:** Anderson Leon Ayora, mantenedor do repositório.
+- **Opção aprovada:** B como baseline primário; A como referência descritiva.
+- **Baseline primário B:** fixar a classe majoritária exclusivamente a partir dos rótulos da partição pública de desenvolvimento (70%), registrar a classe antes de qualquer execução no conjunto oculto e aplicá-la sem alteração à avaliação confirmatória. O cálculo não usa os rótulos da partição avaliada para escolher a classe.
+- **Baseline descritivo A:** calcular a classe majoritária na própria partição avaliada e reportá-la apenas como “baseline-oráculo descritivo da prevalência observada”. A não é classificador operacional e nunca é usada como base do teste H1.
+- **Implementação autorizada:** a simulação de desenho gera partições de desenvolvimento e avaliação com a mesma prevalência populacional, deriva B da partição de desenvolvimento, calcula H1 contra B e reporta A ao lado. Seed 20261003, 10.000 reamostragens de bootstrap e 200 repetições por célula são mantidos. Todos os números da simulação são sintéticos, não resultados do benchmark RGC PT-BR.
+- **Limites:** esta decisão e a Emenda 5 não congelam o protocolo, não alteram o pré-registro, não autorizam acessar ou executar casos do benchmark e não mudam o Judge, Golden, manifestos ou hashes congelados.
+- **Estado:** aprovada pelo mantenedor nesta ordem em 2026-10-18; Emenda 5 a registra em `docs/eval/PROTOCOL-GOLDEN-V1.md`.
 
 ## Queue rules
 
