@@ -169,3 +169,24 @@ def test_api_key_mode_rejects_short_keys_even_when_configured(
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Unauthorized"}
+
+
+@pytest.mark.parametrize("header_name", ["Authorization", "X-API-Key"])
+def test_api_key_mode_rejects_duplicate_credential_headers(
+    monkeypatch: pytest.MonkeyPatch,
+    header_name: str,
+) -> None:
+    key = secrets.token_urlsafe(32)
+    pepper = _set_pepper(monkeypatch)
+    monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_HMAC_SHA256", _digest(key, pepper))
+    value = f"Bearer {key}" if header_name == "Authorization" else key
+
+    with _client() as client:
+        response = client.get(
+            "/private",
+            headers=[(header_name, value), (header_name, value)],
+        )
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Unauthorized"}
