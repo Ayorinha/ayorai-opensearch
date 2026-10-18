@@ -1,4 +1,4 @@
-"""Tests for optional API-key authentication."""
+"""Tests for API-key authentication defaults and behavior."""
 
 import hashlib
 import hmac
@@ -36,9 +36,20 @@ def _set_pepper(monkeypatch: pytest.MonkeyPatch) -> str:
     return pepper
 
 
-def test_authentication_is_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_authentication_fails_closed_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ATTRACTOR_AUTH_MODE", raising=False)
     monkeypatch.delenv("ATTRACTOR_API_KEYS_HMAC_SHA256", raising=False)
+    monkeypatch.delenv("ATTRACTOR_API_KEY_PEPPER", raising=False)
+
+    with pytest.raises(ValueError, match="ATTRACTOR_API_KEY_PEPPER must be"):
+        with _client() as client:
+            client.get("/private")
+
+
+def test_authentication_can_be_disabled_only_explicitly(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "off")
+    monkeypatch.delenv("ATTRACTOR_API_KEYS_HMAC_SHA256", raising=False)
+    monkeypatch.delenv("ATTRACTOR_API_KEY_PEPPER", raising=False)
 
     with _client() as client:
         response = client.get("/private")
@@ -155,6 +166,64 @@ def test_api_key_mode_rejects_short_keys_even_when_configured(
 
     with _client() as client:
         response = client.get("/private", headers={"X-API-Key": short_key})
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Unauthorized"}
+
+
+@pytest.mark.parametrize("header_name", ["Authorization", "X-API-Key"])
+def test_api_key_mode_rejects_duplicate_credential_headers(
+    monkeypatch: pytest.MonkeyPatch,
+    header_name: str,
+) -> None:
+    key = secrets.token_urlsafe(32)
+    pepper = _set_pepper(monkeypatch)
+    monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_HMAC_SHA256", _digest(key, pepper))
+    value = f"Bearer {key}" if header_name == "Authorization" else key
+
+    with _client() as client:
+        response = client.get(
+            "/private",
+            headers=[(header_name, value), (header_name, value)],
+        )
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Unauthorized"}
+
+
+def test_api_key_mode_accepts_any_key_during_rotation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    active_key = secrets.token_urlsafe(32)
+    next_key = secrets.token_urlsafe(32)
+    pepper = _set_pepper(monkeypatch)
+    monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
+    monkeypatch.setenv(
+        "ATTRACTOR_API_KEYS_HMAC_SHA256",
+        f"{_digest(active_key, pepper)},{_digest(next_key, pepper)}",
+    )
+
+    with _client() as client:
+        active_response = client.get("/private", headers={"X-API-Key": active_key})
+        next_response = client.get("/private", headers={"X-API-Key": next_key})
+
+    assert active_response.status_code == 200
+    assert next_response.status_code == 200
+
+def test_api_key_mode_rejects_both_credential_mechanisms(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    key = secrets.token_urlsafe(32)
+    pepper = _set_pepper(monkeypatch)
+    monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_HMAC_SHA256", _digest(key, pepper))
+
+    with _client() as client:
+        response = client.get(
+            "/private",
+            headers={"Authorization": f"Bearer {key}", "X-API-Key": key},
+        )
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Unauthorized"}

@@ -105,7 +105,7 @@ jobs:
       - name: Start API
         run: |
           set -euo pipefail
-          uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000 > /tmp/attractor-api.log 2>&1 &
+          ATTRACTOR_AUTH_MODE=off uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000 > /tmp/attractor-api.log 2>&1 &
           for attempt in $(seq 1 30); do
             if curl --fail --silent http://127.0.0.1:8000/openapi.json > /tmp/openapi-live.json; then
               echo "API ready on attempt ${attempt}/30"
