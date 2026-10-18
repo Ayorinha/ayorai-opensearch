@@ -26,6 +26,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-010 | Afirmações compostas (opção A) | Aprovada (2026-10-16); executor na PR #203, Emenda 3 na PR #205 | Este arquivo |
 | DEC-011 | Guia de anotação após o piloto 01 | Aprovada (2026-10-17); Emenda 4 na PR #227 | Este arquivo |
 | DEC-012 | Decisões 1–4 do log de auditoria (ADR-010) | Registro mesclado na PR #225 em 2026-10-17; implementação e validação continuam sujeitas aos gates da ADR-010 | [PR #225](https://github.com/Ayorinha/ayorai-opensearch/pull/225) |
+| DEC-013 | Autorização de execução e merge por agente neste ciclo | Aprovada por ordem do mantenedor (2026-10-18); escopo limitado | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -224,6 +225,17 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Impacto:** guia de anotação, protocolo, pré-registro e relatório. Não altera código, regras do Judge, hashes ou artefatos Golden.
 - **Aprovação registrada (17/10/2026):** Anderson aprovou as três partes: (1) ausência de confirmação = `UNVERIFIED`; `REFUTED` exige contradição explícita e justificativa com citação incompatível; (2) opção A para retificação; (3) tabela de valores, quantificadores e modalidade, excluindo do v1 afirmações que convertam “preferencialmente” em obrigação sem suporte textual explícito.
 - **Próximo gate:** executar o segundo piloto com cerca de 10 casos novos, usando apenas fontes oficiais verificadas e anotação humana independente de ferramentas de IA. Os casos do piloto serão descartados e não poderão ser enviados a assistentes/modelos. Após análise dos resultados, solicitar congelamento formal do protocolo antes de redigir os 300 casos definitivos.
+
+
+## DEC-013 — Autorização de execução e merge por agente (ciclo de 2026-10-18)
+
+- **Data:** 2026-10-18
+- **Decisor:** Anderson Leon Ayora, criador e mantenedor do repositório.
+- **Escopo:** autoriza, exclusivamente neste ciclo, a execução das ondas e a atualização, abertura, comentário, merge e fechamento das PRs #232, #241, #242, #255 e #257, além das PRs abertas para cumprir a ordem final de execução. A PR #256 foi mesclada neste ciclo e deve ser registrada no status.
+- **Revisão:** a revisão humana independente fica dispensada apenas para este ciclo por autorização expressa do mantenedor. O achado F-01 permanece aberto; esta dispensa não deve ser descrita como revisão independente realizada.
+- **Limites:** não autoriza alterar tags, releases, configuração do repositório, regras do Judge, Golden, hashes congelados, fontes RGC capturadas, pré-registros nem criar, rotular ou executar casos do benchmark RGC. Permanecem obrigatórios os portões técnicos, checks do SHA final e proteção dos artefatos definidos na ordem do mantenedor.
+- **Registro:** a PR #256 foi mesclada neste ciclo. Cada PR mesclada neste ciclo deve conter a linha: “Mesclada sob a autorização DEC-013 do mantenedor; revisão humana independente dispensada neste ciclo (achado F-01 permanece aberto).”
+- **Estado:** autorizada pelo mantenedor em 2026-10-18; não equivale a revisão humana independente nem encerra F-01.
 
 ## Queue rules
 
