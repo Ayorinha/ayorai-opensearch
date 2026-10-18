@@ -52,11 +52,13 @@ Teste exato de McNemar bilateral. A baseline de classe majoritária acerta m = 1
 ```python
 from math import comb
 
+
 def exact_mcnemar(b, c):
     n = b + c
     if n == 0:
         return 1.0
     return min(1.0, 2 * sum(comb(n, i) for i in range(min(b, c) + 1)) / 2**n)
+
 
 n, m = 30, 13
 for k in range(m, n + 1):
