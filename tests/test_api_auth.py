@@ -211,6 +211,7 @@ def test_api_key_mode_accepts_any_key_during_rotation(
     assert active_response.status_code == 200
     assert next_response.status_code == 200
 
+
 def test_api_key_mode_rejects_both_credential_mechanisms(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
