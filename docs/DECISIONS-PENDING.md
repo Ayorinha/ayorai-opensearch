@@ -28,6 +28,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-012 | Decisões 1–4 do log de auditoria (ADR-010) | Registro mesclado na PR #225 em 2026-10-17; implementação e validação continuam sujeitas aos gates da ADR-010 | [PR #225](https://github.com/Ayorinha/ayorai-opensearch/pull/225) |
 | DEC-013 | Autorização de execução e merge por agente neste ciclo | Aprovada por ordem do mantenedor (2026-10-18); escopo limitado | Este arquivo |
 | DEC-014 | Baseline primário e descritivo do RGC | Aprovada por ordem do mantenedor (2026-10-18); Emenda 5 | Este arquivo |
+| DEC-015 | Autorização da Etapa 2 (manual técnico) | Aprovada (2026-10-18); escopo documental | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -250,6 +251,19 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Implementação autorizada:** a simulação de desenho gera partições de desenvolvimento e avaliação com a mesma prevalência populacional, deriva B da partição de desenvolvimento, calcula H1 contra B e reporta A ao lado. Seed 20261003, 10.000 reamostragens de bootstrap e 200 repetições por célula são mantidos. Todos os números da simulação são sintéticos, não resultados do benchmark RGC PT-BR.
 - **Limites:** esta decisão e a Emenda 5 não congelam o protocolo, não alteram o pré-registro, não autorizam acessar ou executar casos do benchmark e não mudam o Judge, Golden, manifestos ou hashes congelados.
 - **Estado:** aprovada pelo mantenedor nesta ordem em 2026-10-18; Emenda 5 a registra em `docs/eval/PROTOCOL-GOLDEN-V1.md`.
+
+## DEC-015 — Autorização da Etapa 2 (manual técnico)
+
+- **Data:** 2026-10-18
+- **Decisor:** Anderson Leon Ayora, mantenedor do repositório.
+- **Escopo autorizado:** escrever, abrir, atualizar e mesclar PRs exclusivamente de documentação para a Etapa 2 do Manual Técnico, incluindo os Passos 0 a 3 definidos pelo mantenedor. A autorização cobre os arquivos documentais indicados em cada passo e, no Passo 1, a alteração da descrição do pacote e do texto de ajuda da CLI.
+- **Revisão:** revisão humana independente dispensada nesta etapa por autorização expressa do mantenedor. O achado F-01 permanece aberto; esta dispensa não deve ser descrita como revisão independente realizada.
+- **Regras de evidência:** toda afirmação técnica do manual deve apontar para arquivo, teste, workflow ou SHA. Antes de usar fatos fornecidos pelo mantenedor, confirmar no código da `main`; em caso de divergência, prevalece o código e a diferença deve ser registrada.
+- **Processo:** uma PR por passo, criada a partir da `main` atual. Mesclar somente com todos os checks verdes no SHA final; usar squash e mensagem escrita manualmente no formato “<título> (#n)” seguido de uma ou duas linhas. Cada PR mesclada deve registrar: “Mesclada sob a autorização DEC-015 do mantenedor; revisão humana independente dispensada nesta etapa (F-01 permanece aberto).” Se uma branch não puder ser atualizada, recriar a PR a partir da `main` e fechar a anterior apontando para a nova.
+- **Falha intermitente específica:** se somente o check “Schemathesis all contract checks” falhar numa PR que não altera código da API, reexecutar o job; se persistir, registrar a ocorrência e seguir.
+- **Padrão editorial:** português do Brasil; nomes de campos, rotas e comandos permanecem exatamente como no código. Cada capítulo começa com “Estado: Atual · Referência: main @ <SHA curto> · Atualizado: <AAAA-MM-DD>” e “Fontes de verdade: <arquivos e testes>”, seguido de Propósito → Como funciona → Contratos e parâmetros → Limites conhecidos → Evidências → Ver também. Tom técnico e sóbrio; não usar “garante”, “certificado”, “à prova de adulteração” ou “pronto para produção”; preferir “implementado”, “implementado como biblioteca”, “proposto” e “não implementado”.
+- **Exclusões expressas:** não alterar tags, releases, configuração do repositório, regras do Judge, Golden, hashes, fontes RGC, pré-registros, protocolo, OpenAPI ou casos do benchmark. Não alterar comportamento do produto nem arquivos protegidos.
+- **Estado:** autorizado pelo mantenedor em 2026-10-18; F-01 continua aberto.
 
 ## Queue rules
 
