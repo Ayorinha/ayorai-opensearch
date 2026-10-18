@@ -520,3 +520,26 @@ def test_invalid_rectified_mark_stops_the_run() -> None:
             vocabulary="judge2",
             iterations=10,
         )
+
+
+@pytest.mark.parametrize(
+    ("labels", "case_id"),
+    [
+        ({"r4": "RULE_GAP"}, "excluded"),
+        ({}, "unlabeled"),
+    ],
+)
+def test_invalid_rectified_mark_is_rejected_even_when_case_is_not_scored(
+    labels: dict[str, str], case_id: str
+) -> None:
+    case = _case("r4", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    case["rectified"] = "true"
+    with pytest.raises(ValueError, match="rectified must be true or false"):
+        RUNNER["evaluate"](
+            [case],
+            labels,
+            DOCS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
