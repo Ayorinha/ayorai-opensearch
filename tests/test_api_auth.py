@@ -190,3 +190,27 @@ def test_api_key_mode_rejects_duplicate_credential_headers(
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Unauthorized"}
+
+
+def test_api_key_mode_accepts_any_key_during_rotation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    active_key = secrets.token_urlsafe(32)
+    next_key = secrets.token_urlsafe(32)
+    pepper = _set_pepper(monkeypatch)
+    monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
+    monkeypatch.setenv(
+        "ATTRACTOR_API_KEYS_HMAC_SHA256",
+        f"{_digest(active_key, pepper)},{_digest(next_key, pepper)}",
+    )
+
+    with _client() as client:
+        active_response = client.get(
+            "/private", headers={"X-API-Key": active_key}
+        )
+        next_response = client.get(
+            "/private", headers={"X-API-Key": next_key}
+        )
+
+    assert active_response.status_code == 200
+    assert next_response.status_code == 200
