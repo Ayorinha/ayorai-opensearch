@@ -127,7 +127,7 @@ Esta seção registra explicitamente o limite de evidência para módulos identi
 
 | Módulo | Tratamento atual | Condição para sair deste estado |
 |---|---|---|
-| `src/ayorai_attractor/cli/main.py` | Teste mínimo de contrato incluído em `tests/test_cli_contract.py` na PR F1.4; comportamento ainda não classificado como verificado até CI no SHA final. | `tests/test_cli_contract.py`: ajuda lista `search`/`eval`, `eval` grava relatório JSON para suite suportada e rejeita suite desconhecida sem gravar saída. | [PENDENTE DE VERIFICAÇÃO]; aguarda suíte completa e check-run verde no SHA exato. |
+| `src/ayorai_attractor/cli/main.py` | Teste mínimo de contrato incluído em `tests/test_cli_contract.py` na PR F1.4; comportamento ainda não classificado como verificado até CI no SHA final. | `tests/test_cli_contract.py`: ajuda lista `search`/`eval`, `eval` grava relatório JSON para suite suportada e rejeita suite desconhecida sem gravar saída. [PENDENTE DE VERIFICAÇÃO]; aguarda suíte completa e check-run verde no SHA exato. |
 | `src/ayorai_attractor/memory/core.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
 | `src/ayorai_attractor/observability/audit.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
 | `src/ayorai_attractor/observability/opentelemetry.py` | **Experimental — fora do escopo verificado.** | Adicionar teste mínimo de contrato em PR revisada ou manter explicitamente este limite. |
