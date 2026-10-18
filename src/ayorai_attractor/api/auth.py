@@ -117,10 +117,11 @@ class APIKeyAuthMiddleware:
             await self._unauthorized(scope, receive, send)
             return
         presented_digest = _api_key_digest(presented_key, self.pepper)
-        matched = any(
-            hmac.compare_digest(presented_digest, configured_digest)
-            for configured_digest in self.key_hashes
-        )
+        # Compare every configured digest so the matching key's position
+        # in a rotation list does not short-circuit the loop.
+        matched = False
+        for configured_digest in self.key_hashes:
+            matched |= hmac.compare_digest(presented_digest, configured_digest)
         if not matched:
             await self._unauthorized(scope, receive, send)
             return
