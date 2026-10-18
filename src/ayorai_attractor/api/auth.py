@@ -88,6 +88,11 @@ class APIKeyAuthMiddleware:
                 # depending on which duplicate a proxy/server chooses.
                 return None
             normalized[header_name] = header_value
+        # Reject simultaneous credential mechanisms as well as duplicate
+        # instances: different intermediaries may prefer different headers.
+        if b"authorization" in normalized and b"x-api-key" in normalized:
+            return None
+
         authorization = normalized.get(b"authorization", b"").decode("latin-1").strip()
         if authorization:
             scheme, separator, token = authorization.partition(" ")
