@@ -54,7 +54,4 @@ Os nomes e a validação dos campos são definidos em `verification/api_models.p
 
 ## Ver também
 
-- [Arquitetura](02-arquitetura.md)
-- [Judge determinístico](03-judge.md)
-- [API](04-api.md)
 - [Status atual](../STATUS.md)
