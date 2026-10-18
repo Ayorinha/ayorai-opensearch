@@ -19,7 +19,7 @@ security:
 	bandit -r src/ayorai_attractor
 
 run:
-	uvicorn ayorai_attractor.api.app:app --reload --lifespan on
+	uvicorn ayorai_attractor.api.app:app --reload --lifespan on --no-access-log
 
 reproduce:
 	python scripts/reproduce.py

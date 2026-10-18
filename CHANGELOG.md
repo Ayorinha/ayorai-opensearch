@@ -17,6 +17,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - Six experimental modules covered by minimal tests and labelled out of verified scope (PR #214).
 
 ### Fixed
+- Structured privacy-safe JSON access records now reach Uvicorn output; the server's default access logger is disabled in the Docker and `make run` commands to avoid duplicate records and query-string leakage.
 - Enforce fail-closed startup with Uvicorn's explicit `--lifespan on`: Docker, `make run`, API startup examples and contract-test workflows now force lifespan startup; real-server regression tests cover missing authentication configuration.
 - `pip install`ed packages can load the Judge rules: a byte-identical copy of `rules/judge-2.0.0.json` ships as package data; `rules_sha256` unchanged (PR #224).
 - r2-a evidence with `canonical_url` is adjudicated instead of returning `SCHEMA_VIOLATION` (issue #182, PR #192).
