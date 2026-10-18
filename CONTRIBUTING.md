@@ -23,6 +23,17 @@ Não envie credenciais, tokens, dados pessoais, financeiros ou material confiden
 
 PRs devem manter CI, segurança e CodeQL verdes. Resultados de benchmark/eval só devem ser publicados com o run do GitHub Actions que os produziu.
 
+## Revisão humana independente
+
+Mudanças em autenticação, segurança, contratos do Judge, artefatos congelados, protocolo estatístico ou resultados de benchmark devem receber revisão humana independente antes do merge, quando houver colaborador elegível disponível. A revisão deve avaliar o SHA exato da cabeça da PR e registrar:
+
+- escopo e commit SHA revisados;
+- testes e evidências consultados;
+- achados, riscos residuais e bloqueios;
+- conclusão explícita: aprovada, aprovada com ressalvas ou mudanças solicitadas.
+
+Checks verdes e avaliações produzidas por ferramentas automatizadas não substituem revisão humana independente. Se não houver revisão independente disponível, o estado deve permanecer explicitamente pendente; não registrar aprovação que não ocorreu. Nenhuma conta individual é designada por este guia como revisora.
+
 ## Contribuições assistidas por ferramentas automatizadas
 
 O projeto utiliza ferramentas automatizadas de apoio à escrita de código, documentação e revisão, sob supervisão e responsabilidade do mantenedor.
