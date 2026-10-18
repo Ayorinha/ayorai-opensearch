@@ -1,6 +1,8 @@
 # Para investidores e parceiros
 
 > **Aviso:** este documento descreve uma oportunidade de produto e uma arquitetura de engenharia. Não constitui parecer jurídico, financeiro ou regulatório.
+>
+> **Estado atual do projeto:** consulte a [fonte única de status](STATUS.md). Este documento é material institucional e não deve ser usado como fonte independente de status de implementação.
 
 ## Problema
 

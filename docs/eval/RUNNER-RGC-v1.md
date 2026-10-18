@@ -50,7 +50,7 @@ Depois de congelados, qualquer mudança nesses valores exige emenda datada antes
 
 ## 5. Limitações conhecidas (declaradas antes dos dados)
 
-- **Átomos anotados, não decompostos automaticamente:** o executor não divide afirmações por conta própria. Sem o campo `atoms`, a afirmação é um único átomo e, pelas regras A1–A4, só pode resultar em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`. `PARTIALLY_SUPPORTED` (regra K4) só é alcançável quando o caso traz dois ou mais átomos anotados. Por isso, todo caso de referência rotulado `PARTIALLY_SUPPORTED` deve trazer os átomos; a regra de anotação entra na emenda ao protocolo que registra a DEC-010. Casos sem `atoms` produzem exatamente o mesmo resultado e o mesmo `output_sha256` da versão anterior do executor. Esta descrição e o executor permanecem **[PROPOSTO]**.
+- **Átomos anotados, não decompostos automaticamente:** o executor não divide afirmações por conta própria. Sem o campo `atoms`, a afirmação é um único átomo e, pelas regras A1–A4, só pode resultar em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`. `PARTIALLY_SUPPORTED` (regra K4) só é alcançável quando o caso traz dois ou mais átomos anotados. Por isso, todo caso de referência rotulado `PARTIALLY_SUPPORTED` deve trazer os átomos; a regra de anotação está na Emenda 3 do protocolo (PR #205, mesclada em 2026-10-16). Casos sem `atoms` produzem exatamente o mesmo resultado e o mesmo `output_sha256` da versão anterior do executor. Esta descrição e o executor permanecem **[PROPOSTO]**.
 - **Stance lexical:** o `RuleStanceDetector` compara números, datas e sobreposição de palavras; paráfrases fortes e negações implícitas tendem a sair como `NEUTRAL` → `UNVERIFIED`.
 - **Dispositivo sem o caput:** um inciso recuperado isoladamente não carrega o texto do caput do artigo.
 - **Ruído do DOU:** cabeçalhos e rodapés de página extraídos pelo `pdftotext` ficam anexados ao dispositivo anterior.
@@ -59,7 +59,7 @@ Depois de congelados, qualquer mudança nesses valores exige emenda datada antes
 
 ## 6. Achado durante a implementação (fora do escopo deste executor)
 
-Uma requisição `r2-a` válida com `evidence[].canonical_url` preenchido retorna `INVALID_INPUT / SCHEMA_VIOLATION` em vez de ser adjudicada. A causa e a correção estão em revisão na PR #192; até que ela seja mesclada pelo mantenedor, não declarar o defeito corrigido nem presumir CI verde. A PR documenta a hipótese confirmada e os testes propostos: https://github.com/Ayorinha/ayorai-opensearch/pull/192.
+Uma requisição `r2-a` válida com `evidence[].canonical_url` preenchido retornava `INVALID_INPUT / SCHEMA_VIOLATION` em vez de ser adjudicada (issue #182). A correção, com testes de regressão, foi mesclada pelo mantenedor na [PR #192](https://github.com/Ayorinha/ayorai-opensearch/pull/192) em 2026-10-15. O executor continua sem preencher `canonical_url` (§5); essa escolha não depende mais do defeito.
 
 ## 7. Uso (somente após rótulos completos e parâmetros congelados)
 

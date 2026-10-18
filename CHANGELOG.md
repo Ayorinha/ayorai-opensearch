@@ -4,9 +4,29 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
-### Fixed
-- Verify the configurable HTTP request-body limit against a real Uvicorn server for oversized bodies with Content-Length and chunked bodies without Content-Length.
+### Added
+- API-key authentication (`ATTRACTOR_AUTH_MODE=off|api_key`): `Authorization: Bearer` or `X-API-Key`, keyed HMAC-SHA-256 digests compared in constant time, mandatory 32-byte pepper, fail-closed configuration, `/health` stays public (initial implementation PR #219; secure-by-default correction in this PR). The application now defaults to `api_key` and refuses to start when required key material is missing or malformed. `off` must be selected explicitly for isolated local development only. The OpenAPI contract is unchanged.
+- `X-Request-ID` propagation and one privacy-safe JSON access record per request; bodies, claims, excerpts, query strings and credentials are never logged (PR #221).
+- RGC benchmark preparation (no benchmark result exists): DEC-002 source policy (#176), byte-exact capture of Resolution Anatel 765/2023 and its two rectifications with SHA-256 (#177), deterministic derived text (#178), proposed runner `rgc-eval` with Judge decision-state counts and annotated atoms for compound claims (#179, #195, #203), protocol Amendments 2–4 (#193, #205, #227), discarded exploratory pilot report (#209) and blank second-pilot worksheet (#229). The protocol is not frozen.
+- `make reproduce` re-runs the CI evidence with one command (PR #213); fixed Schemathesis seed with saved reports (PR #212); `py.typed` and strict mypy gate for the RGC runner (PR #215).
+- Proposed ADR-010, verifiable audit log (PR #220). Not implemented; no audit field exists in the API.
 
+### Changed
+- Docker runtime hardened: non-root user, image `HEALTHCHECK` on `/health`, host port bound to `127.0.0.1`, Compose defaults to `api_key` mode (PR #222); the container smoke test now exercises authenticated and unauthenticated calls (PR #226).
+- Repository formatted with `ruff format` (AST-identical) and formatting enforced in CI (PR #216).
+- Six experimental modules covered by minimal tests and labelled out of verified scope (PR #214).
+
+### Fixed
+- Enforce fail-closed startup with Uvicorn's explicit `--lifespan on`: Docker, `make run`, API startup examples and contract-test workflows now force lifespan startup; real-server regression tests cover missing authentication configuration.
+- `pip install`ed packages can load the Judge rules: a byte-identical copy of `rules/judge-2.0.0.json` ships as package data; `rules_sha256` unchanged (PR #224).
+- r2-a evidence with `canonical_url` is adjudicated instead of returning `SCHEMA_VIOLATION` (issue #182, PR #192).
+- Duplicate trace IDs are rejected by the audit trail; integrity limits documented (PR #217).
+- Configurable HTTP request-body size limit enforced (PR #218) and verified against a real Uvicorn server for oversized bodies with Content-Length and chunked bodies without Content-Length (PR #223).
+
+
+### Governança
+- Descrições de pull requests padronizadas sem rodapés de ferramentas em 17/10/2026. O conteúdo técnico e o histórico de commits foram preservados; o histórico de edição das descrições permanece disponível no GitHub.
+- Revisões produzidas por ferramenta automatizada passam a ser identificadas como tal; pareceres anteriores foram reidentificados. A revisão humana independente das PRs desde a v0.5.0 continua pendente.
 
 ## [0.5.0] — 2026-10-13
 

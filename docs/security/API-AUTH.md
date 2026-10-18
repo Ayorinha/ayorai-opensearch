@@ -1,6 +1,6 @@
 # API key authentication
 
-The API is unauthenticated by default for backwards compatibility. Enable authentication explicitly before exposing a deployment to an untrusted network.
+API-key authentication is enabled by default. The application refuses to start when API-key mode is selected but the pepper or digest list is missing or malformed. For an isolated local development environment only, set `ATTRACTOR_AUTH_MODE=off` explicitly; never use that mode on a network-facing deployment.
 
 ## Configuration
 
@@ -30,10 +30,10 @@ Example configuration (replace both placeholders with your own secrets/digests):
 export ATTRACTOR_AUTH_MODE=api_key
 export ATTRACTOR_API_KEY_PEPPER='REPLACE_WITH_64_HEX_CHAR_SECRET'
 export ATTRACTOR_API_KEYS_HMAC_SHA256='REPLACE_WITH_64_CHARACTER_HMAC_SHA256_HEX_DIGEST'
-uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000
+uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000 --lifespan on
 ~~~
 
-The placeholders above are intentionally invalid and must be replaced. In `api_key` mode, missing or malformed pepper/digest configuration prevents the middleware from starting. Supported modes are `off` and `api_key`; `off` is the default.
+The placeholders above are intentionally invalid and must be replaced. In `api_key` mode, missing or malformed pepper/digest configuration prevents the middleware from starting. Supported modes are `off` and `api_key`; `api_key` is the default. The `/health` endpoint remains public.
 
 ## Sending authenticated requests
 
@@ -53,7 +53,7 @@ Keep the raw key in a secret manager or environment supplied by the deployment p
 - Protect and rotate the pepper separately; changing the pepper requires regenerating every configured digest.
 - Restrict access to environment configuration and deployment logs.
 - Authentication is not a substitute for network controls, rate limiting, authorization scopes, or secret rotation procedures.
-- The default `off` mode preserves existing API behavior. Operators must explicitly enable `api_key` mode when required by their deployment.
+- The default mode is `api_key` and the application refuses to start without valid key material. Set `ATTRACTOR_AUTH_MODE=off` explicitly only for isolated local development; never use it for a network-facing deployment.
 
 ## Why HMAC-SHA-256 and not a password-hashing function
 

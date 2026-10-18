@@ -6,6 +6,28 @@ Owner and final decision-maker: Anderson Leon Ayora
 Independent reviewer: revisor independente  
 Source: execution plan v5, work queue
 
+## Índice de decisões (atualizado em 2026-10-17)
+
+Este índice só localiza registros; o texto de cada decisão continua sendo a fonte. **Atenção:** os identificadores DEC-007 e DEC-008 foram usados duas vezes, com significados diferentes. Até decisão do mantenedor sobre renumeração, cite sempre o identificador com o qualificador desta tabela.
+
+| ID | Assunto | Estado | Registro |
+|---|---|---|---|
+| DEC-001 | `uv.lock` e digests de imagens Docker | Pendente | Este arquivo |
+| DEC-002 | Licença e proveniência das fontes | Aprovada (2026-10-13) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-002--política-de-licença-e-proveniência-das-fontes) |
+| DEC-003 | ADR-001 → `Accepted` | Pendente | Este arquivo |
+| DEC-004 | Documentação comercial e nome do repositório | Pendente | Este arquivo |
+| DEC-005 | r1-a: entrada inválida retorna 422 | Aprovada (2026-10-11); implementada na PR #139 (v0.4.0) | Este arquivo |
+| DEC-006 | Prioridade do motor de stance em português | Pendente | Este arquivo |
+| DEC-007 (release) | Publicar v0.4.0 | Aprovada (2026-10-11) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md) |
+| DEC-007 (RGC) | Vocabulário de cinco vereditos do RGC | Aprovada (2026-10-15); Emenda 2 mesclada na PR #193 | Este arquivo |
+| DEC-008 (release) | Publicar v0.5.0 | Aprovada (2026-10-13) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md) |
+| DEC-008 (RGC) | Autoria dos casos do RGC | Aprovada (2026-10-15) | Este arquivo |
+| DEC-009 | Abstenção avaliada como `UNVERIFIED` | Aprovada (2026-10-15); executor na PR #195 | Este arquivo |
+| DEC-010 | Afirmações compostas (opção A) | Aprovada (2026-10-16); executor na PR #203, Emenda 3 na PR #205 | Este arquivo |
+| DEC-011 | Guia de anotação após o piloto 01 | Aprovada (2026-10-17); Emenda 4 na PR #227 | Este arquivo |
+| DEC-012 | Decisões 1–4 do log de auditoria (ADR-010) | Registro mesclado na PR #225 em 2026-10-17; implementação e validação continuam sujeitas aos gates da ADR-010 | [PR #225](https://github.com/Ayorinha/ayorai-opensearch/pull/225) |
+| DEC-013 | Autorização de execução e merge por agente neste ciclo | Aprovada por ordem do mantenedor (2026-10-18); escopo limitado | Este arquivo |
+
 ## Decisões aprovadas
 
 ### DEC-007 — Vocabulário de rótulos do benchmark RGC
@@ -16,6 +38,7 @@ Source: execution plan v5, work queue
 - **Decisão:** O benchmark RGC usa os cinco vereditos definidos em `rules/judge-2.0.0.json` (`enums.verdict`), com a semântica da ADR-009 (K1–K5), e não a semântica da ADR-002. Esta decisão vale somente para o RGC; Golden v0, v0.1 e derivados r2 permanecem inalterados. `VERIFIED` não é rótulo de referência no RGC; corroboração R0–R3 é um eixo separado e não é anotada no v1.
 - **Implementação documental:** Emenda 2 em `docs/eval/PROTOCOL-GOLDEN-V1.md`; lista histórica do pré-registro preservada como histórica.
 - **Estado:** Aprovada; a implementação documental aguarda revisão e merge pelo mantenedor.
+- **Atualização (2026-10-17):** a Emenda 2 foi mesclada na [PR #193](https://github.com/Ayorinha/ayorai-opensearch/pull/193) em 2026-10-15.
 
 ### DEC-008 — Autoria dos casos do benchmark RGC
 
@@ -45,6 +68,7 @@ Source: execution plan v5, work queue
   - **B — não escolhida:** o v1 aceita apenas afirmações atômicas; afirmações compostas ficam para o v2. A ausência de `PARTIALLY_SUPPORTED` no v1 seria declarada explicitamente, com regra para identificar/excluir afirmações compostas.
 - **Fato que motivou a decisão:** o executor anterior tratava cada afirmação como um único átomo. Pelas regras A1–A4 de `rules/judge-2.0.0.json`, um átomo pode resultar em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`; K4 exige dois ou mais átomos para `PARTIALLY_SUPPORTED`. `CONFLICTING` continua possível pela regra A4. Ver [RUNNER-RGC-v1.md §5](eval/RUNNER-RGC-v1.md#5-limitações-conhecidas).
 - **Estado:** aprovada. O código (PR #203) está mesclado; a emenda ao protocolo segue em PR própria. A mesclagem não equivale à validação do executor no benchmark definitivo.
+- **Atualização (2026-10-17):** a Emenda 3 foi mesclada na [PR #205](https://github.com/Ayorinha/ayorai-opensearch/pull/205) em 2026-10-16.
 
 ### DEC-005 — r1-a: entrada inválida retorna 500
 
@@ -58,6 +82,7 @@ Source: execution plan v5, work queue
 - **Limites:** Não alterar a fixture baseline na PR do ResponsePolicy. Não alterar goldens, corpus, manifestos ou hashes congelados. Não permitir que entradas do schema r1-a produzam HTTP 500.
 - **Evidência inicial:** PR #132 congelou os três comportamentos atuais de HTTP 500 antes da mudança de código: https://github.com/Ayorinha/ayorai-opensearch/pull/132
 - **Status de implementação:** Aprovada; implementação pendente em PR separada após ResponsePolicy.
+- **Atualização (2026-10-17):** implementada na [PR #139](https://github.com/Ayorinha/ayorai-opensearch/pull/139), mesclada em 2026-10-11 e publicada na v0.4.0 (ver `CHANGELOG.md`).
 
 ### DEC-006 — Prioridade do motor de stance em português (ADR-008)
 
@@ -90,6 +115,7 @@ Source: execution plan v5, work queue
   3. Defer both until the reproducibility workflow and maintenance policy are specified.
 - **Impact to assess:** Developer setup, CI, container builds, security updates, reproducibility instructions, and dependency-update cadence.
 - **Approval gate:** Anderson selects an option; revisor independente reviews the implementation proposal before any implementation PR.
+- **Fato verificado (2026-10-17):** a main ainda não contém `uv.lock`, e `docker/Dockerfile` usa a tag móvel `python:3.12-slim`, sem digest. O endurecimento da PR #222 não resolveu esta decisão.
 
 ## DEC-002 — F4.2: licensing and provenance of source material
 
@@ -199,6 +225,17 @@ Source: execution plan v5, work queue
 - **Impacto:** guia de anotação, protocolo, pré-registro e relatório. Não altera código, regras do Judge, hashes ou artefatos Golden.
 - **Aprovação registrada (17/10/2026):** Anderson aprovou as três partes: (1) ausência de confirmação = `UNVERIFIED`; `REFUTED` exige contradição explícita e justificativa com citação incompatível; (2) opção A para retificação; (3) tabela de valores, quantificadores e modalidade, excluindo do v1 afirmações que convertam “preferencialmente” em obrigação sem suporte textual explícito.
 - **Próximo gate:** executar o segundo piloto com cerca de 10 casos novos, usando apenas fontes oficiais verificadas e anotação humana independente de ferramentas de IA. Os casos do piloto serão descartados e não poderão ser enviados a assistentes/modelos. Após análise dos resultados, solicitar congelamento formal do protocolo antes de redigir os 300 casos definitivos.
+
+
+## DEC-013 — Autorização de execução e merge por agente (ciclo de 2026-10-18)
+
+- **Data:** 2026-10-18
+- **Decisor:** Anderson Leon Ayora, criador e mantenedor do repositório.
+- **Escopo:** autoriza, exclusivamente neste ciclo, a execução das ondas e a atualização, abertura, comentário, merge e fechamento das PRs #232, #241, #242, #255 e #257, além das PRs abertas para cumprir a ordem final de execução. A PR #256 foi mesclada neste ciclo e deve ser registrada no status.
+- **Revisão:** a revisão humana independente fica dispensada apenas para este ciclo por autorização expressa do mantenedor. O achado F-01 permanece aberto; esta dispensa não deve ser descrita como revisão independente realizada.
+- **Limites:** não autoriza alterar tags, releases, configuração do repositório, regras do Judge, Golden, hashes congelados, fontes RGC capturadas, pré-registros nem criar, rotular ou executar casos do benchmark RGC. Permanecem obrigatórios os portões técnicos, checks do SHA final e proteção dos artefatos definidos na ordem do mantenedor.
+- **Registro:** a PR #256 foi mesclada neste ciclo. Cada PR mesclada neste ciclo deve conter a linha: “Mesclada sob a autorização DEC-013 do mantenedor; revisão humana independente dispensada neste ciclo (achado F-01 permanece aberto).”
+- **Estado:** autorizada pelo mantenedor em 2026-10-18; não equivale a revisão humana independente nem encerra F-01.
 
 ## Queue rules
 

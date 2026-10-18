@@ -2,6 +2,12 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## 2026-10-17 — Fix #250: Schemathesis legacy `max_agents` checks on `/v1/audit`
+
+- Fixed the Schemathesis contract-test configuration: `POST /v1/audit` shares `SearchRequest` with `POST /v1/opensearch`, so both routes intentionally retain legacy `max_agents` coercion (numeric strings, integral floats and booleans) restored in #169.
+- The general Schemathesis run now excludes both routes, and the dedicated run includes both while excluding only `negative_data_rejection`. All other checks, including `positive_data_acceptance`, remain enabled for both routes.
+- This is a test-configuration correction, not an API behavior change. OpenAPI and `SearchRequest` are unchanged.
+
 ## 2026-10-15 — Fix #182: `evidence[].canonical_url` on `r2-a`
 
 - Fixed: an `r2-a` request with a valid `evidence[].canonical_url` returned `INVALID_INPUT / SCHEMA_VIOLATION` instead of being adjudicated. Cause: the validated `HttpUrl` reached the canonical-input serializer, which rejected the type.
@@ -34,4 +40,3 @@ All public API contract changes are additive unless explicitly identified otherw
 - Restored the pre-#163 behavior of `max_agents`: numeric strings (e.g. `"5"`), integral floats and booleans are accepted again, as they were before #163. The change in #163 had rejected them, which broke existing clients of a legacy route.
 - The OpenAPI schema keeps the preferred JSON integer form (1..100) and now describes the legacy coercion.
 - Schemathesis excludes only `negative_data_rejection` for `POST /v1/opensearch`, with the reason versioned in `scripts/run_schemathesis_contract.sh`.
-

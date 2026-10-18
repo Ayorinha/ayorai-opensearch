@@ -85,6 +85,8 @@ def test_request_body_limit_rejects_oversized_bodies_on_real_uvicorn(
             "127.0.0.1",
             "--port",
             str(port),
+            "--lifespan",
+            "on",
             "--log-level",
             "warning",
         ],
