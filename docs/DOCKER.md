@@ -48,3 +48,7 @@ The second command should receive HTTP 401 when API-key authentication is enable
 - Keep .env out of version control and restrict access to the host and container runtime.
 - The HMAC pepper should be protected separately from stored digest values. Rotating it requires regenerating all configured API-key digests.
 - The health check only confirms process/API responsiveness; it does not prove dependency health or application correctness.
+
+## Runtime access logging
+
+The API emits one structured JSON access record per HTTP request through the application logger. Records include the request ID, method, route template, response status and duration; request bodies, claims, evidence excerpts, credentials and query strings are excluded. `ATTRACTOR_LOG_LEVEL` accepts `DEBUG`, `INFO` (default), `WARNING`, `ERROR` or `CRITICAL`. An unrecognized value prevents startup. The Docker command disables Uvicorn's default access logger so that the structured record is the single access-log line and query strings are not emitted by the server logger.
