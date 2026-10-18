@@ -134,7 +134,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | #253 | Evidência reproduzível de Schemathesis | Aberta; todos os checks passaram no SHA `e1e141e`; a falha histórica da issue #250 não foi reproduzida, e a PR preserva logs/OpenAPI/exemplos para futuras falhas |
 | #254 | Correção de estado DEC-012 | Aberta; checks passaram no SHA `366c66f`; corrige o índice que ainda dizia que #225 não havia sido mesclada |
 | #255 | Reconciliação da fonte única de status | Aberta; o SHA anterior `a50f013` passou os checks; a atualização posterior do status está no SHA `e606d9f`, com checks a revalidar |
-| #252 | Autenticação fail-closed por padrão | Aberta; no SHA `0044e15a`, a revisão adicional rejeita cabeçalhos duplicados e a presença simultânea de `Authorization` e `X-API-Key`. Checks desse SHA em execução; o SHA anterior verde não comprova o novo commit |
+| #252 | Autenticação fail-closed por padrão | Aberta; no SHA `0044e15a`, a revisão adicional rejeita cabeçalhos duplicados e a presença simultânea de `Authorization` e `X-API-Key`. Todos os checks exigidos passaram nesse SHA; revisão humana independente e merge continuam pendentes |
 | #189 | Dependabot: `transformers` < 6 | Aberta; no SHA `ff0ca338` todos os workflows passaram, incluindo carregamento dos pesos e inferência real do modelo NLI fixado em CPU com Transformers 5.20.1 e a suíte completa; revisão humana independente e merge pendentes |
 
 ## 4. Achados
