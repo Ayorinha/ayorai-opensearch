@@ -17,7 +17,7 @@ def search(
     mode: QualityMode = QualityMode.BALANCED,
     max_agents: int = 5,
 ) -> None:
-    """Run an evidence-first multi-agent search task."""
+    """Run the configured search/provider pipeline and return its structured result."""
     result = engine.run(SearchRequest(query=query, mode=mode, max_agents=max_agents))
     typer.echo(
         json.dumps(
