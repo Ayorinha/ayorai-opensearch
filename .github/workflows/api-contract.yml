@@ -116,7 +116,26 @@ jobs:
           done
           test -s /tmp/openapi-live.json
       - name: Exercise documented API contract
-        run: /tmp/st/bin/st run http://127.0.0.1:8000/openapi.json --url http://127.0.0.1:8000 --checks not_a_server_error
+        run: |
+          set -o pipefail
+          mkdir -p reports/schemathesis .hypothesis/examples
+          cp /tmp/openapi-live.json reports/schemathesis/openapi-live.json
+          /tmp/st/bin/st run http://127.0.0.1:8000/openapi.json --url http://127.0.0.1:8000 --checks not_a_server_error 2>&1 | tee reports/schemathesis/schemathesis.log
       - name: Show API log on failure
         if: failure()
         run: cat /tmp/attractor-api.log
+      - name: Collect reproducible Schemathesis evidence
+        if: always()
+        run: |
+          mkdir -p reports/schemathesis
+          if [ -f /tmp/attractor-api.log ]; then cp /tmp/attractor-api.log reports/schemathesis/api.log; fi
+          if [ -f /tmp/openapi-live.json ]; then cp /tmp/openapi-live.json reports/schemathesis/openapi-live.json; fi
+          if [ -d .hypothesis/examples ]; then cp -R .hypothesis/examples reports/schemathesis/hypothesis-examples; fi
+      - name: Upload Schemathesis evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: schemathesis-evidence-${{ github.sha }}
+          path: reports/schemathesis/
+          if-no-files-found: warn
+          retention-days: 14
