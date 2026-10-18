@@ -58,3 +58,8 @@ With n=30, a paired improvement over the 43.33% majority baseline at p<0.05 requ
 No release or tag is created by F1. ADR-002 remains the final-verdict authority.
 
 This policy is not legal advice; review by an intellectual-property specialist is recommended before commercial use.
+
+
+## E6 Statistical clarification — 2026-10-18
+
+The historical sentence above saying “approximately 60% accuracy” is an oversimplification and must not be read as a sufficient threshold for statistical significance. For n=30 and a 43.33% majority baseline, the exact two-sided McNemar result depends on the paired discordant cases, not accuracy alone. In the best possible overlap arrangement, 18/30 (60.00%) yields p=0.0625, while 19/30 (63.33%) yields p=0.0312; other overlap arrangements can require substantially higher accuracy. See the derivation and limitations in `docs/institutional/AUDITORIA-DOCUMENTO-TECNICO-v1.1.md`, section 3. This dated clarification preserves the historical decision record; it does not change any measured result or rerun the evaluation.
