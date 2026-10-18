@@ -4,85 +4,80 @@
 
 # AYORAI ATTRACTOR
 
-### Verificação de respostas de IA baseada em evidências
+### Auditoria técnica de respostas de inteligência artificial baseada em evidências
 
-**Afirmações rastreáveis. Decisões reproduzíveis. Limites explícitos.**
+**Da afirmação à evidência. Da evidência a um resultado verificável.**
 
 [![CI](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/ci.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/ci.yml)
 [![Security](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/security.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/security.yml)
 [![CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/codeql.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Licença Apache-2.0](https://img.shields.io/badge/licença-Apache--2.0-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23344005.svg)](https://doi.org/10.5281/zenodo.23344005)
 
-[Visão geral](#visão-geral) · [Como funciona](#como-funciona) · [Estado atual](#estado-atual) · [Documentação](docs/INDEX.md) · [Quickstart](#quickstart)
+[Entenda o projeto](#o-que-é) · [Como funciona](#como-funciona) · [Estado e limites](#o-que-está-comprovado-hoje) · [Documentação](docs/INDEX.md) · [Instalação](#começar)
 
 </div>
 
 ---
 
-## Visão geral
+## O que é
 
-Sistemas generativos podem produzir respostas convincentes cujas afirmações não são sustentadas pelas fontes citadas. O **AYORAI ATTRACTOR** pesquisa e implementa uma camada de verificação que relaciona afirmações a evidências e aplica regras explícitas para produzir um resultado rastreável.
+O **AYORAI ATTRACTOR** é um projeto open source de engenharia para verificar respostas de inteligência artificial no nível de cada afirmação. Seu objetivo é tornar mais fácil examinar **o que foi afirmado, quais evidências foram usadas, como elas se relacionam com a afirmação e por que determinada classificação foi emitida**.
 
-O projeto distingue análise assistida por modelos da autoridade que decide o resultado final.
+O problema que ele aborda é concreto: uma resposta pode parecer convincente e citar uma fonte sem que essa fonte sustente o que foi dito. Em contextos que exigem responsabilidade, não basta receber uma resposta fluente; é preciso poder inspecionar a relação entre afirmação e evidência.
 
-> **Inteligência ≠ Autorização ≠ Execução**
+O ATTRACTOR desenvolve uma abordagem estruturada para essa verificação. Ele não promete eliminar todas as alucinações nem provar que uma fonte externa é verdadeira.
 
 ## Como funciona
 
 ```mermaid
-flowchart LR
-    A["Resposta de IA"] --> B["Afirmações"]
+flowchart TD
+    A["Resposta ou afirmação a verificar"] --> B["Identificação das afirmações"]
     B --> C["Evidências e proveniência"]
-    C --> D["Análise de posicionamento"]
+    C --> D["Análise: suporte, contradição ou neutralidade"]
     D --> E["Judge determinístico"]
-    E --> F["Resultado"]
-    E --> G["Trilha de auditoria"]
+    E --> F["Veredito segundo regras versionadas"]
+    E --> G["Referências para inspeção e reprodução"]
 ```
 
-- **Afirmações:** unidades verificáveis extraídas da resposta.
-- **Evidências:** fontes e referências que permitem inspecionar o suporte apresentado.
-- **Judge determinístico:** aplica regras versionadas e é a única autoridade para o veredito final.
-- **Rastreabilidade:** registra referências e hashes conforme os contratos documentados.
+1. **Delimitar a afirmação:** definir exatamente o que está sendo verificado.
+2. **Relacionar evidências:** identificar fontes e trechos relevantes, preservando referências de proveniência disponíveis.
+3. **Analisar a relação:** classificar se a evidência apoia, contradiz ou não esclarece a afirmação.
+4. **Aplicar o Judge:** regras determinísticas versionadas selecionam o veredito final.
+5. **Inspecionar e reproduzir:** consultar os artefatos e testes correspondentes para entender o resultado dentro dos limites definidos.
 
-O Judge 2.0 define cinco vereditos: `SUPPORTED`, `PARTIALLY_SUPPORTED`, `UNVERIFIED`, `REFUTED` e `CONFLICTING`.
+### A separação fundamental
 
-## Princípios de engenharia
+> **Inteligência ≠ Autorização ≠ Execução**
 
-- **Determinismo:** regras explícitas e verificações reproduzíveis.
-- **Auditabilidade:** evidências e decisões podem ser inspecionadas.
-- **Segurança:** riscos e limites são documentados e testados; não se presume imunidade a ataques.
-- **Integridade:** hashes SHA-256 identificam conteúdo conforme semânticas documentadas; não provam que uma afirmação é verdadeira.
-- **Transparência:** resultados, limitações e estado de implementação são apresentados sem transformar propostas em funcionalidades concluídas.
+Modelos podem auxiliar a análise. **Não são a autoridade do veredito final.** O Judge determinístico aplica o contrato explícito do sistema. A aplicação que consome o resultado também não deve transformar uma sugestão de modelo em decisão factual sem passar pelas regras previstas.
 
-## Estado atual
+Os cinco vereditos do Judge 2.0 são: `SUPPORTED`, `PARTIALLY_SUPPORTED`, `UNVERIFIED`, `REFUTED` e `CONFLICTING`. A semântica completa está no [contrato e na rastreabilidade do Judge 2.0](docs/judge2/TRACEABILITY.md).
 
-O ATTRACTOR é uma **implementação de referência de pesquisa e engenharia**. Não deve ser interpretado como sistema certificado ou como garantia universal de correção factual.
+## Por que isso importa para auditoria
 
-- O contrato do Judge 2.0 e seus testes estão no repositório.
-- Os resultados publicados de Golden v0 e Golden v0.1 são evidências históricas de desenvolvimento, baseadas em dados sintéticos em inglês.
-- **Ainda não há resultado de benchmark em português.** O protocolo RGC está em desenvolvimento e não está congelado.
-- O log de auditoria verificável completo não está implementado nem implantado.
+O ATTRACTOR busca tornar a verificação de respostas de IA mais **inspecionável, rastreável e reproduzível**, em vez de depender apenas de uma explicação em linguagem natural.
 
-Consulte o [estado técnico atual](docs/STATUS.md) antes de reutilizar métricas ou descrever capacidades do projeto.
+- **Rastreabilidade:** conectar a afirmação às evidências e às referências disponíveis.
+- **Regras explícitas:** manter a decisão final separada da análise assistida por modelos.
+- **Reprodutibilidade:** versionar regras, conjuntos de avaliação e artefatos relevantes.
+- **Verificação técnica:** usar testes automatizados, regressões e verificações de segurança.
+- **Limites declarados:** distinguir resultados medidos, funcionalidades implementadas e trabalho ainda em desenvolvimento.
 
-## Documentação
+Esses princípios podem apoiar pesquisas e projetos que necessitam avaliar respostas geradas por IA. A adequação a um uso real depende de validação no domínio, qualidade das fontes, configuração, controles operacionais e revisão humana.
 
-| Quero entender… | Consulte |
-|---|---|
-| Por onde começar e qual documento ler | [Índice da documentação](docs/INDEX.md) |
-| Instalação, execução e testes | [Guia passo a passo](docs/GUIA-PASSO-A-PASSO.md) |
-| Estado, entregas e limitações atuais | [Status técnico](docs/STATUS.md) |
-| Arquitetura, contratos e evidências de implementação | [Matriz de rastreabilidade](docs/TRACEABILITY-MASTER.md) · [ADRs](docs/adr/README.md) |
-| Decisões de arquitetura | [Registros de decisão (ADRs)](docs/adr/README.md) |
-| Método e resultados de avaliação | [Documentação de avaliação](docs/eval/) |
-| Riscos e limites de segurança | [Modelo de ameaças](docs/THREAT-MODEL.md) |
-| Rastreabilidade de requisitos e evidências | [Matriz de rastreabilidade](docs/TRACEABILITY-MASTER.md) |
-| Considerações regulatórias brasileiras | [Conformidade no Brasil](docs/CONFORMIDADE-BRASIL.md) |
-| Autoria e citação acadêmica | [Autoria](docs/AUTHORSHIP.md) · [CITATION.cff](CITATION.cff) |
+## O que está comprovado hoje
 
-## Quickstart
+O repositório contém implementação de verificação, contrato do Judge 2.0, testes de regressão e conjuntos sintéticos de avaliação. Há resultados históricos documentados para Golden v0 e Golden v0.1, produzidos em inglês e voltados ao desenvolvimento do sistema.
+
+**Ainda não há resultado de benchmark em português.** O protocolo RGC permanece em desenvolvimento e não está congelado. Resultados sintéticos não demonstram desempenho em produção nem generalização para documentos jurídicos brasileiros.
+
+O projeto **não é apresentado como certificado**, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só. Hashes ajudam a verificar a integridade de artefatos; não provam a veracidade de seu conteúdo.
+
+Para saber o estado mais recente, consulte o [Status técnico](docs/STATUS.md). Ele é a referência para entregas, verificações e limitações atuais; relatórios antigos descrevem somente a revisão e o commit a que se referem.
+
+## Começar
 
 Requer Python 3.11, 3.12 ou 3.13.
 
@@ -93,24 +88,26 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 pytest
-ruff check .
-mypy src/ayorai_attractor
 ```
 
-Para executar a reprodução documentada, consulte o guia e use `make reproduce` após a instalação das dependências indicadas.
+No Windows, ative o ambiente virtual pelo mecanismo equivalente. Para avaliações opcionais que usam backends NLI, consulte o [guia de execução](docs/GUIA-PASSO-A-PASSO.md).
 
-## Escopo e responsabilidade
+## Navegue pela documentação
 
-O ATTRACTOR apoia a verificação baseada em evidências. Não substitui revisão humana, não constitui aconselhamento jurídico e não demonstra, por si só, conformidade regulatória, generalização para produção ou detecção de toda alucinação. A autoridade do resultado final permanece no Judge determinístico; modelos não autorizam nem emitem o veredito final.
+A documentação foi organizada por finalidade para que cada leitor encontre o nível de detalhe adequado, sem transformar a página inicial em um inventário técnico.
 
-## Versões e citação
+- **Quero entender a solução:** [Visão geral da arquitetura](docs/ARCHITECTURE.md)
+- **Quero instalar e executar:** [Guia passo a passo](docs/GUIA-PASSO-A-PASSO.md)
+- **Quero verificar o estado real:** [Status técnico](docs/STATUS.md)
+- **Quero conferir regras e decisões:** [Judge 2.0](docs/judge2/TRACEABILITY.md) · [Decisões de arquitetura](docs/adr/README.md)
+- **Quero avaliar evidências, riscos e limites:** [Modelo de ameaças](docs/THREAT-MODEL.md) · [Considerações para o Brasil](docs/CONFORMIDADE-BRASIL.md)
+- **Quero encontrar os documentos restantes:** [Índice completo da documentação](docs/INDEX.md)
 
-- Release v0.5.0: [Zenodo DOI 10.5281/zenodo.23344005](https://doi.org/10.5281/zenodo.23344005)
-- DOI conceitual (todas as versões): [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082)
-- Licença: [Apache-2.0](LICENSE)
-- Direção técnica e autoria: Anderson Leon Ayora
+## Projeto aberto e responsabilidade
 
----
+O AYORAI ATTRACTOR é distribuído sob a licença [Apache-2.0](LICENSE). A documentação técnica e os artefatos de avaliação devem ser lidos considerando sua versão, escopo e limitações. O sistema apoia a análise; não substitui profissionais responsáveis, revisão humana, controles internos ou avaliação jurídica.
+
+**Princípio do projeto:** toda conclusão relevante deve poder ser examinada à luz das evidências e das regras que a produziram.
 
 <div align="center">
 
