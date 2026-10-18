@@ -56,29 +56,39 @@ As prevalências de referência são: equilibrada (20/20/20/20/20%), desbalancea
 
 ### Poder simulado com prevalência desbalanceada (40/30/15/10/5%)
 
-200 repetições Monte Carlo por célula. Cada estimativa de probabilidade tem incerteza Monte Carlo; perto de 50%, o erro-padrão é aproximadamente 3,5 pontos percentuais. Os números são estimativas de desenho, não garantias de poder nem resultados de benchmark.
+Resultados de 200 repetições Monte Carlo por célula. A partição de desenvolvimento contém 70% do total correspondente (210 para avaliação n=90; 700 para avaliação n=300); ambas as partições são amostradas da mesma prevalência populacional. B é escolhido na partição de desenvolvimento; A é calculado na avaliação e reportado apenas como descritivo. As probabilidades são sintéticas e não são resultados do benchmark PT-BR.
 
-| n avaliado | Acurácia-alvo do sistema | P(H1 apoiada), independência | P(H1 apoiada), correlação positiva-alvo 0,5 |
-|---:|---:|---:|---:|
-| 90 | 0,50 | 0,270 | 0,370 |
-| 90 | 0,55 (+15 pp sobre 0,40 esperado) | 0,445 | 0,715 |
-| 90 | 0,60 | 0,730 | 0,900 |
-| 90 | 0,70 | 0,985 | 0,995 |
-| 300 | 0,50 | 0,590 | 0,530 |
-| 300 | 0,55 (+15 pp sobre 0,40 esperado) | 0,905 | 0,935 |
-| 300 | 0,60 | 1,000 | 0,995 |
-| 300 | 0,70 | 1,000 | 1,000 |
+| n avaliação | n desenvolvimento | Acurácia-alvo do sistema | Acurácia média B | Acurácia média A (descritiva) | P(H1 contra B), independência | P(H1 contra B), phi-alvo 0,5 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 90 | 210 | 0,50 | 0,393 | 0,401 | 0,230 | 0,370 |
+| 90 | 210 | 0,55 | 0,405 | 0,411 | 0,445 | 0,675 |
+| 90 | 210 | 0,60 | 0,399 | 0,409 | 0,735 | 0,905 |
+| 90 | 210 | 0,70 | 0,392 | 0,403 | 0,975 | 1,000 |
+| 300 | 700 | 0,50 | 0,400 | 0,400 | 0,510 | 0,475 |
+| 300 | 700 | 0,55 | 0,397 | 0,397 | 0,915 | 0,920 |
+| 300 | 700 | 0,60 | 0,399 | 0,399 | 0,995 | 0,995 |
+| 300 | 700 | 0,70 | 0,400 | 0,401 | 1,000 | 1,000 |
 
 ### Sensibilidade à prevalência
 
-| Prevalência | n | Acurácia-alvo | P(H1), independência | P(H1), correlação positiva-alvo 0,5 |
-|---|---:|---:|---:|---:|
-| equilibrada (20% por classe) | 90 | 0,50 | 0,940 | 0,995 |
-| equilibrada (20% por classe) | 300 | 0,50 | 1,000 | 1,000 |
-| muito desbalanceada (55/25/10/6/4%) | 90 | 0,60 | 0,080 | 0,195 |
-| muito desbalanceada (55/25/10/6/4%) | 90 | 0,70 | 0,435 | 0,765 |
-| muito desbalanceada (55/25/10/6/4%) | 300 | 0,60 | 0,165 | 0,130 |
-| muito desbalanceada (55/25/10/6/4%) | 300 | 0,70 | 0,930 | 0,960 |
+| Prevalência | n avaliação | n desenvolvimento | Acurácia-alvo | Acurácia média B | Acurácia média A (descritiva) | P(H1 contra B), independência | P(H1 contra B), phi-alvo 0,5 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| equilibrada (20% por classe) | 90 | 210 | 0,50 | 0,204 | 0,259 | 0,960 | 0,990 |
+| equilibrada (20% por classe) | 90 | 210 | 0,55 | 0,204 | 0,261 | 0,995 | 1,000 |
+| equilibrada (20% por classe) | 90 | 210 | 0,60 | 0,205 | 0,258 | 1,000 | 1,000 |
+| equilibrada (20% por classe) | 90 | 210 | 0,70 | 0,199 | 0,260 | 1,000 | 1,000 |
+| equilibrada (20% por classe) | 300 | 700 | 0,50 | 0,205 | 0,231 | 1,000 | 1,000 |
+| equilibrada (20% por classe) | 300 | 700 | 0,55 | 0,199 | 0,231 | 1,000 | 1,000 |
+| equilibrada (20% por classe) | 300 | 700 | 0,60 | 0,201 | 0,231 | 1,000 | 1,000 |
+| equilibrada (20% por classe) | 300 | 700 | 0,70 | 0,199 | 0,231 | 1,000 | 1,000 |
+| muito desbalanceada (55/25/10/6/4%) | 90 | 210 | 0,50 | 0,551 | 0,551 | 0,005 | 0,005 |
+| muito desbalanceada (55/25/10/6/4%) | 90 | 210 | 0,55 | 0,551 | 0,551 | 0,020 | 0,040 |
+| muito desbalanceada (55/25/10/6/4%) | 90 | 210 | 0,60 | 0,551 | 0,551 | 0,085 | 0,135 |
+| muito desbalanceada (55/25/10/6/4%) | 90 | 210 | 0,70 | 0,545 | 0,545 | 0,520 | 0,745 |
+| muito desbalanceada (55/25/10/6/4%) | 300 | 700 | 0,50 | 0,550 | 0,550 | 0,000 | 0,000 |
+| muito desbalanceada (55/25/10/6/4%) | 300 | 700 | 0,55 | 0,550 | 0,550 | 0,015 | 0,015 |
+| muito desbalanceada (55/25/10/6/4%) | 300 | 700 | 0,60 | 0,549 | 0,549 | 0,115 | 0,085 |
+| muito desbalanceada (55/25/10/6/4%) | 300 | 700 | 0,70 | 0,552 | 0,552 | 0,875 | 0,930 |
 
 **Interpretação importante:** o poder depende da prevalência e da diferença real entre a acurácia do sistema e a classe majoritária. Com prevalência 55/25/10/6/4%, uma acurácia de 0,60 não supera a baseline majoritária esperada de 0,55 em 10 pontos percentuais; não se deve esperar que H1 passe. Os valores de sensibilidade não autorizam escolher a prevalência depois de ver resultados reais.
 
@@ -125,6 +135,6 @@ A decisão sobre baseline foi tomada pelo mantenedor em 2026-10-18 e registrada 
 
 ## Reprodução
 
-Comando: python scripts/simulate_rgc_design.py
+Comando: `python scripts/simulate_rgc_design.py`.
 
-Seed de simulação 20261003; 200 repetições de poder por célula; IC95% com 10.000 reamostragens pareadas e seed 20261003. NumPy é usado apenas como aceleração opcional; sem ele, o script usa diretamente o bootstrap em Python do executor. A saída completa da execução que fundamenta esta tabela deve ser anexada à PR após executar o script no ambiente de desenvolvimento. Não houve execução local deste arquivo nesta sessão; os valores da tabela foram produzidos por uma simulação independente com a mesma sequência de índices bootstrap e o mesmo modelo declarado, e precisam ser confirmados executando o arquivo atualizado antes de aprovar a PR.
+Execução registrada no GitHub Actions: run [39090642680](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39090642680), SHA `4454e8faa7dd19ade429adcd6578663af2060056`, Python 3.12 e NumPy 2.3.3. O artefato `rgc-design-simulation-8edecc64a710be1818321185c8f29637ee939e1d` preserva a saída completa. Seed 20261003; 200 repetições por célula; IC95% com 10.000 reamostragens pareadas. Os valores são exclusivamente sintéticos e não são resultado de benchmark. e seed 20261003. NumPy é usado apenas como aceleração opcional; sem ele, o script usa diretamente o bootstrap em Python do executor. A saída completa da execução que fundamenta esta tabela deve ser anexada à PR após executar o script no ambiente de desenvolvimento. Não houve execução local deste arquivo nesta sessão; os valores da tabela foram produzidos por uma simulação independente com a mesma sequência de índices bootstrap e o mesmo modelo declarado, e precisam ser confirmados executando o arquivo atualizado antes de aprovar a PR.

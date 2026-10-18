@@ -171,7 +171,7 @@ def power(rng: Random) -> None:
         "very_imbalanced": [0.55, 0.25, 0.10, 0.06, 0.04],
     }
     print(
-        "\\nprevalence       dev_n eval_n system_acc  B_primary_acc  A_descriptive_acc "
+        "\nprevalence       dev_n eval_n system_acc  B_primary_acc  A_descriptive_acc "
         "P(H1_B independent)  P(H1_B positive_phi_target_0.5)"
     )
     for scenario_index, (name, prevalence) in enumerate(prevalences.items()):
@@ -190,21 +190,33 @@ def power(rng: Random) -> None:
                     baseline_b = [baseline_b_label] * n
                     baseline_a_label = _majority_label(gold)
                     baseline_a = [baseline_a_label] * n
-                    baseline_b_accuracy = sum(
-                        actual == guess for actual, guess in zip(gold, baseline_b, strict=True)
-                    ) / n
-                    baseline_a_accuracy = sum(
-                        actual == guess for actual, guess in zip(gold, baseline_a, strict=True)
-                    ) / n
+                    baseline_b_accuracy = (
+                        sum(
+                            actual == guess
+                            for actual, guess in zip(gold, baseline_b, strict=True)
+                        )
+                        / n
+                    )
+                    baseline_a_accuracy = (
+                        sum(
+                            actual == guess
+                            for actual, guess in zip(gold, baseline_a, strict=True)
+                        )
+                        / n
+                    )
                     baseline_b_accuracies.append(baseline_b_accuracy)
                     baseline_a_accuracies.append(baseline_a_accuracy)
                     for phi_index, phi in enumerate((0.0, POSITIVE_PHI_TARGET)):
                         predicted = _system_predictions(
                             scenario_rng, gold, baseline_b_label, system_accuracy, phi
                         )
-                        accuracy = sum(
-                            actual == guess for actual, guess in zip(gold, predicted, strict=True)
-                        ) / n
+                        accuracy = (
+                            sum(
+                                actual == guess
+                                for actual, guess in zip(gold, predicted, strict=True)
+                            )
+                            / n
+                        )
                         margin = accuracy - baseline_b_accuracy
                         ci_lower = _accuracy_ci_lower(gold, predicted, indices)
                         p_value = mcnemar_exact_pvalue(gold, predicted, baseline_b)
