@@ -63,7 +63,7 @@ def test_uvicorn_refuses_to_start_without_auth_configuration(
 
 
 def _cmd_has_lifespan_on(command: str) -> bool:
-    return re.search(r"--lifespan[\"',\\s=]+on\\b", command) is not None
+    return re.search(r"--lifespan[\"',\s=]+on\b", command) is not None
 
 
 def test_dockerfile_command_forces_lifespan_on() -> None:
