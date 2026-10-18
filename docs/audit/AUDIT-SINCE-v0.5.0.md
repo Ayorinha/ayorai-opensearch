@@ -37,7 +37,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | Request ID e log de acesso | IMPLEMENTADO | Sem corpo, afirmações, trechos, *query string* ou credenciais no registro. |
 | Limite de tamanho do corpo HTTP | IMPLEMENTADO | 2 MiB por padrão; testado com Uvicorn real, com e sem `Content-Length`. |
 | Contêiner Docker | IMPLEMENTADO — LIMITADO | Usuário não root, `HEALTHCHECK`, porta só em `127.0.0.1`, smoke test autenticado. **Imagem base sem digest** (DEC-001 pendente). |
-| Registro de auditoria verificável (ADR-010) | PROPOSTO / EM PR | O armazenamento atual **não** é à prova de adulteração. Decisões 1–4 em PR (#225); biblioteca da fase 1 em PR (#236). Nenhum campo de auditoria na API. |
+| Registro de auditoria verificável (ADR-010) | IMPLEMENTADO — LIMITADO / EM PR | O armazenamento atual **não** é à prova de adulteração. DEC-012 foi registrada e mesclada em #225; a biblioteca pura da fase 1 e seus vetores foram mesclados em #236. Nenhum campo de auditoria na API, armazenamento de eventos ou serviço de log verificável implantado. |
 | Benchmark RGC PT-BR | PENDENTE | Fontes capturadas, executor proposto, emendas 1–4. **Protocolo não congelado. Nenhum resultado.** |
 | Reprodutibilidade e CI | IMPLEMENTADO | `make reproduce`, seed fixa no Schemathesis, `ruff format` obrigatório, `mypy --strict` no executor, `py.typed`. |
 | Cadeia de suprimentos | PENDENTE | Sem `uv.lock`, sem digest de imagem, sem SBOM, sem assinatura de release (DEC-001 pendente). |
@@ -133,8 +133,8 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | #251 | Atualização da página canônica de status | Mesclada por squash; CI, Security e CodeQL verdes no SHA `a2c08e5` |
 | #253 | Evidência reproduzível de Schemathesis | Aberta; todos os checks passaram no SHA `e1e141e`; a falha histórica da issue #250 não foi reproduzida, e a PR preserva logs/OpenAPI/exemplos para futuras falhas |
 | #254 | Correção de estado DEC-012 | Aberta; checks passaram no SHA `366c66f`; corrige o índice que ainda dizia que #225 não havia sido mesclada |
-| #255 | Reconciliação da fonte única de status | Aberta; todos os checks passaram no SHA `117b09d`; atualiza a lista de PRs e decisões pendentes |
-| #252 | Autenticação fail-closed por padrão | Aberta; o SHA anterior passou os gates, e uma revisão posterior adicionou rejeição de cabeçalhos de credencial duplicados. O SHA `63507d2` está sob reexecução de CI; não considerar concluído até todos os checks passarem |
+| #255 | Reconciliação da fonte única de status | Aberta; o SHA anterior `a50f013` passou os checks; a atualização posterior do status está no SHA `e606d9f`, com checks a revalidar |
+| #252 | Autenticação fail-closed por padrão | Aberta; no SHA `0044e15a`, a revisão adicional rejeita cabeçalhos duplicados e a presença simultânea de `Authorization` e `X-API-Key`. Checks desse SHA em execução; o SHA anterior verde não comprova o novo commit |
 | #189 | Dependabot: `transformers` < 6 | Aberta; no SHA `ff0ca338` todos os workflows passaram, incluindo carregamento dos pesos e inferência real do modelo NLI fixado em CPU com Transformers 5.20.1 e a suíte completa; revisão humana independente e merge pendentes |
 
 ## 4. Achados
