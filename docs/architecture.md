@@ -1,27 +1,23 @@
-# Architecture
+# Arquitetura
 
-## Core layers
+A referência atual para os limites verificados entre serviço e biblioteca é o [Manual Técnico — capítulo 02: Arquitetura](manual/02-arquitetura.md). Este arquivo funciona como resumo de navegação; descrições conceituais antigas não devem ser lidas como componentes integrados sem confirmação no código.
 
-### Brain
-Owns orchestration policy, routing and execution budgets.
+## Caminhos atuais
 
-### Agents
-An agent is a cognitive role, not a model. Multiple agents can share one provider, and one agent can be evaluated across multiple providers.
+- A API está definida em `src/ayorai_attractor/api/app.py`. As rotas operacionais usam `Attractor`; `POST /v1/verify` despacha os contratos r1-a e r2-a para seus caminhos de Judge.
+- A CLI está definida em `src/ayorai_attractor/cli/main.py`. O comando `search` chama `Attractor.run()`; o comando `eval` chama `evaluate_golden_v0()`.
+- `src/ayorai_attractor/orchestrator.py` seleciona cinco classes concretas em `IMPLEMENTED_AGENTS`.
+- `src/ayorai_attractor/agents/roles.py` declara 26 itens de metadados em `INITIAL_ROLES`; eles não equivalem a 26 implementações de agentes.
 
-### Providers
-Providers expose capabilities such as reasoning, search, embeddings or local inference. Registry metadata will evolve to include health, latency, cost and benchmark scores.
+## Limites de integração
 
-### Evidence
-Externally grounded claims should carry provenance. The target graph is:
+`verification/claim_pipeline.py` é usado pela avaliação Golden. `verification/pipeline.py` e `synthesis.py` formam outro pipeline de biblioteca e não são importados diretamente pelos entrypoints da API ou da CLI. Os detalhes e a lista de módulos confirmados fora desses caminhos estão no [capítulo 02](manual/02-arquitetura.md).
 
-question -> claim -> source -> extract -> cross-check -> contradiction -> verification
+## Fontes de verdade
 
-### Failure Engine
-Failures are first-class data. Recoverable failures should trigger retry, fallback or replanning; blocking failures should stop unsafe execution.
-
-### Evolution
-Future self-improvement is sandboxed:
-
-DISCOVER -> VERIFY -> SECURITY CHECK -> EXPERIMENT -> BENCHMARK -> CANARY -> PROMOTE / ROLLBACK
-
-No production component should rewrite itself without an explicit promotion boundary.
+- `src/ayorai_attractor/api/app.py`
+- `src/ayorai_attractor/cli/main.py`
+- `src/ayorai_attractor/orchestrator.py`
+- `src/ayorai_attractor/agents/core.py`
+- `src/ayorai_attractor/agents/roles.py`
+- `src/ayorai_attractor/evaluation/golden.py`
