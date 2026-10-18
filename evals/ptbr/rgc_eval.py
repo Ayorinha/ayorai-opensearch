@@ -551,6 +551,9 @@ def evaluate(
         if case_id in seen:
             raise ValueError(f"{case_id}: duplicate case")
         seen.add(case_id)
+        # Validate schema-level metadata even for excluded or unlabeled cases;
+        # malformed annotations must never be silently skipped.
+        rectified = case_rectified(case)
         gold = labels.get(case_id)
         if gold is None:
             unlabeled.append(case_id)
@@ -559,7 +562,6 @@ def evaluate(
             excluded.append({"case_id": case_id, "label": gold})
             continue
         atoms = case_atoms(case)
-        rectified = case_rectified(case)
         if index is None:
             prediction = predict(
                 case["claim"], oracle_passages(case, documents), documents, atoms=atoms
