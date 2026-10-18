@@ -80,7 +80,14 @@ class APIKeyAuthMiddleware:
 
     @staticmethod
     def _extract_key(headers: Iterable[tuple[bytes, bytes]]) -> str | None:
-        normalized = {name.lower(): value for name, value in headers}
+        normalized: dict[bytes, bytes] = {}
+        for name, value in headers:
+            key = name.lower()
+            if key in {b"authorization", b"x-api-key"} and key in normalized:
+                # Reject ambiguous duplicate credential headers rather than
+                # depending on which duplicate a proxy/server chooses.
+                return None
+            normalized[key] = value
         authorization = normalized.get(b"authorization", b"").decode("latin-1").strip()
         if authorization:
             scheme, separator, token = authorization.partition(" ")
