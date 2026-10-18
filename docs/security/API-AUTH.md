@@ -53,7 +53,7 @@ Keep the raw key in a secret manager or environment supplied by the deployment p
 - Protect and rotate the pepper separately; changing the pepper requires regenerating every configured digest.
 - Restrict access to environment configuration and deployment logs.
 - Authentication is not a substitute for network controls, rate limiting, authorization scopes, or secret rotation procedures.
-- The default `off` mode preserves existing API behavior. Operators must explicitly enable `api_key` mode when required by their deployment.
+- The default mode is `api_key` and the application refuses to start without valid key material. Set `ATTRACTOR_AUTH_MODE=off` explicitly only for isolated local development; never use it for a network-facing deployment.
 
 ## Why HMAC-SHA-256 and not a password-hashing function
 
