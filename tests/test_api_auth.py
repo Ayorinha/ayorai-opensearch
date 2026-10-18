@@ -205,12 +205,8 @@ def test_api_key_mode_accepts_any_key_during_rotation(
     )
 
     with _client() as client:
-        active_response = client.get(
-            "/private", headers={"X-API-Key": active_key}
-        )
-        next_response = client.get(
-            "/private", headers={"X-API-Key": next_key}
-        )
+        active_response = client.get("/private", headers={"X-API-Key": active_key})
+        next_response = client.get("/private", headers={"X-API-Key": next_key})
 
     assert active_response.status_code == 200
     assert next_response.status_code == 200
