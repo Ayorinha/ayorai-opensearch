@@ -27,7 +27,7 @@ Este capítulo separa os entrypoints de serviço dos componentes de biblioteca e
 
 ```mermaid
 flowchart TB
-  subgraph Serviço["Camada de serviço"]
+  subgraph Service["Camada de serviço"]
     API["api/app.py"]
     CLI["cli/main.py"]
     ORCH["orchestrator.py — Attractor"]
@@ -41,7 +41,7 @@ flowchart TB
     CLI --> EVAL
   end
 
-  subgraph Biblioteca["Biblioteca e avaliação"]
+  subgraph Library["Biblioteca e avaliação"]
     CP["verification/claim_pipeline.py"]
     EXT["verification/extraction.py"]
     ST["verification/stance.py"]
