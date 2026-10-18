@@ -1,4 +1,4 @@
-"""Optional API-key authentication for the HTTP API."""
+"""API-key authentication for the HTTP API; enabled by default."""
 
 from __future__ import annotations
 
@@ -21,7 +21,8 @@ MIN_API_KEY_LENGTH = 32
 
 
 def _load_configuration() -> tuple[str, tuple[str, ...], bytes | None]:
-    mode = os.getenv("ATTRACTOR_AUTH_MODE", "off").strip().lower()
+    # Fail closed: an unconfigured deployment must not silently expose the API.
+    mode = os.getenv("ATTRACTOR_AUTH_MODE", "api_key").strip().lower()
     if mode not in {"off", "api_key"}:
         raise ValueError("ATTRACTOR_AUTH_MODE must be 'off' or 'api_key'")
 
@@ -66,7 +67,8 @@ def validate_auth_configuration() -> None:
 class APIKeyAuthMiddleware:
     """Authenticate HTTP requests with keyed HMAC-SHA-256 digests of API keys.
 
-    Authentication is disabled by default. In api_key mode, configure
+    Authentication is enabled by default. For local development only, set
+    ATTRACTOR_AUTH_MODE=off explicitly. In api_key mode, configure
     ATTRACTOR_API_KEYS_HMAC_SHA256 with comma-separated HMAC-SHA-256 hex digests
     and ATTRACTOR_API_KEY_PEPPER with a separately managed 32-byte secret.
     Raw API keys are never read from configuration or written to logs.
@@ -78,7 +80,19 @@ class APIKeyAuthMiddleware:
 
     @staticmethod
     def _extract_key(headers: Iterable[tuple[bytes, bytes]]) -> str | None:
-        normalized = {name.lower(): value for name, value in headers}
+        normalized: dict[bytes, bytes] = {}
+        for name, header_value in headers:
+            header_name = name.lower()
+            if header_name in {b"authorization", b"x-api-key"} and header_name in normalized:
+                # Reject ambiguous duplicate credential headers rather than
+                # depending on which duplicate a proxy/server chooses.
+                return None
+            normalized[header_name] = header_value
+        # Reject simultaneous credential mechanisms as well as duplicate
+        # instances: different intermediaries may prefer different headers.
+        if b"authorization" in normalized and b"x-api-key" in normalized:
+            return None
+
         authorization = normalized.get(b"authorization", b"").decode("latin-1").strip()
         if authorization:
             scheme, separator, token = authorization.partition(" ")
@@ -108,10 +122,11 @@ class APIKeyAuthMiddleware:
             await self._unauthorized(scope, receive, send)
             return
         presented_digest = _api_key_digest(presented_key, self.pepper)
-        matched = any(
-            hmac.compare_digest(presented_digest, configured_digest)
-            for configured_digest in self.key_hashes
-        )
+        # Compare every configured digest so the matching key's position
+        # in a rotation list does not short-circuit the loop.
+        matched = False
+        for configured_digest in self.key_hashes:
+            matched |= hmac.compare_digest(presented_digest, configured_digest)
         if not matched:
             await self._unauthorized(scope, receive, send)
             return
