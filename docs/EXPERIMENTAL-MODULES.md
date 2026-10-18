@@ -1,6 +1,8 @@
 # Experimental modules
 
-Updated: 2026-10-17
+Updated: 2026-10-18
+
+For the current, code-checked boundary between the service entrypoints and the library, see [Manual Técnico — capítulo 02: Arquitetura](manual/02-arquitetura.md). This list is a subset of explicitly documented experimental modules, not a complete inventory of every module outside the API/CLI import paths. The 26 entries in `agents/roles.py` are role metadata; `orchestrator.py` currently wires five concrete agent classes.
 
 The modules below ship in the `ayorai_attractor` package but are **not used** by the verification pipeline, the deterministic Judge, the evaluation runners or the public API. They are kept importable so that existing imports of the published package (v0.5.0) do not break. Their interfaces may change without a deprecation period. Behaviour is pinned by `tests/test_experimental_modules.py`.
 

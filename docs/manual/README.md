@@ -5,7 +5,7 @@ Etapa 2 · documentação em português do Brasil.
 ## Sumário
 
 1. [01-visao-geral.md](01-visao-geral.md) — **em redação**
-2. `02-arquitetura.md` — **em redação**
+2. [02-arquitetura.md](02-arquitetura.md) — **em redação**
 3. `03-judge.md` — **em redação**
 4. `04-api.md` — **em redação**
 5. `05-operacao.md` — **em redação**
