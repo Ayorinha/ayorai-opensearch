@@ -236,6 +236,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Limites:** não autoriza alterar tags, releases, configuração do repositório, regras do Judge, Golden, hashes congelados, fontes RGC capturadas, pré-registros nem criar, rotular ou executar casos do benchmark RGC. Permanecem obrigatórios os portões técnicos, checks do SHA final e proteção dos artefatos definidos na ordem do mantenedor.
 - **Registro:** a PR #256 foi mesclada neste ciclo. Cada PR mesclada neste ciclo deve conter a linha: “Mesclada sob a autorização DEC-013 do mantenedor; revisão humana independente dispensada neste ciclo (achado F-01 permanece aberto).”
 - **Estado:** autorizada pelo mantenedor em 2026-10-18; não equivale a revisão humana independente nem encerra F-01.
+- Ausência do campo rectified tratada como false (não retificado), decisão do mantenedor em 2026-10-18, implementada na PR #232.
 
 ## Queue rules
 
