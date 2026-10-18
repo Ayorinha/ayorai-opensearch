@@ -4,7 +4,8 @@
 Part 1 simulates inter-annotator agreement over five classes.
 Part 2 simulates H1 against a primary constant-class baseline B learned only
 from an independent 70% development partition. The descriptive baseline A is
-the evaluation partition's own majority class and is never used for H1. System correctness is simulated under two dependence assumptions:
+the evaluation partition's own majority class and is never used for H1.
+System correctness is simulated under two dependence assumptions:
 independent correctness indicators, and a target positive phi correlation of
 0.5 with baseline correctness. The joint probability is clipped to its
 mathematically feasible bounds, so the achieved correlation may be below 0.5.
@@ -169,7 +170,10 @@ def power(rng: Random) -> None:
         "imbalanced": [0.40, 0.30, 0.15, 0.10, 0.05],
         "very_imbalanced": [0.55, 0.25, 0.10, 0.06, 0.04],
     }
-    print("\nprevalence       dev_n eval_n system_acc  B_primary_acc  A_descriptive_acc  P(H1_B independent)  P(H1_B positive_phi_target_0.5)")
+    print(
+        "\\nprevalence       dev_n eval_n system_acc  B_primary_acc  A_descriptive_acc "
+        "P(H1_B independent)  P(H1_B positive_phi_target_0.5)"
+    )
     for scenario_index, (name, prevalence) in enumerate(prevalences.items()):
         scenario_rng = Random(SEED + scenario_index)
         for n in (90, 300):
