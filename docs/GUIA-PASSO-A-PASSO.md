@@ -144,7 +144,7 @@ Configure o limite em bytes pela variável de ambiente `ATTRACTOR_MAX_BODY_BYTES
 Exemplo para iniciar a API com limite de 1 MiB:
 
 ~~~bash
-ATTRACTOR_MAX_BODY_BYTES=1048576 uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000
+ATTRACTOR_MAX_BODY_BYTES=1048576 uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000 --lifespan on --lifespan on
 ~~~
 
 Verificação manual contra um servidor Uvicorn real, usando o limite padrão de 2 MiB:
