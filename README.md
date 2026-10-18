@@ -74,7 +74,7 @@ Consulte o [estado técnico atual](docs/STATUS.md) antes de reutilizar métricas
 | Por onde começar e qual documento ler | [Índice da documentação](docs/INDEX.md) |
 | Instalação, execução e testes | [Guia passo a passo](docs/GUIA-PASSO-A-PASSO.md) |
 | Estado, entregas e limitações atuais | [Status técnico](docs/STATUS.md) |
-| Arquitetura e contratos técnicos | [Manual técnico](docs/technical/README.md) |
+| Arquitetura, contratos e evidências de implementação | [Matriz de rastreabilidade](docs/TRACEABILITY-MASTER.md) · [ADRs](docs/adr/README.md) |
 | Decisões de arquitetura | [Registros de decisão (ADRs)](docs/adr/README.md) |
 | Método e resultados de avaliação | [Documentação de avaliação](docs/eval/) |
 | Riscos e limites de segurança | [Modelo de ameaças](docs/THREAT-MODEL.md) |
