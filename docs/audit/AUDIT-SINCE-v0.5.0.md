@@ -51,7 +51,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 |---|---|---|---|
 | Evidências `r2-a` com `canonical_url` são adjudicadas, sem `SCHEMA_VIOLATION` | IMPLEMENTADO | PR #192 (issue #182); testes de regressão na PR | — |
 | Regras do Judge distribuídas no pacote | IMPLEMENTADO | PR #224; `src/ayorai_attractor/verification/judge2/__init__.py:26`; `tests/verification/test_judge2_packaged_rules.py` (4 testes: identidade de bytes, `rules_sha256` canônico, *checkout* × instalado) | Duas cópias byte a byte idênticas; o teste falha se divergirem |
-| Regras, Golden e hashes congelados inalterados desde a v0.5.0 | IMPLEMENTADO | `golden-regression`, `judge-regression` e `golden-smoke` verdes em `ab13f73` | — |
+| Regras, Golden e hashes congelados inalterados desde a v0.5.0 | IMPLEMENTADO | `golden-regression`, `judge-regression` e `golden-smoke` verdes no SHA auditado `d8411d90f8905442ac02568cc9179ce42afec69a` | — |
 | Remoção de `ResponseStatus`, `verification`, `confidence` e do caminho `r1-a` | PENDENTE | Adiada para v0.6.0 pela DEC-008 (release) | Ainda presentes; nada removido |
 
 ### 2.2 API, autenticação e privacidade
@@ -60,8 +60,8 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 |---|---|---|---|
 | Autenticação por API key | IMPLEMENTADO — LIMITADO | PRs #252 e #256; `src/ayorai_attractor/api/auth.py`, `tests/test_api_auth.py`; checks verdes nos SHAs mesclados. | `api_key` é o padrão e a inicialização falha fechada sem configuração válida; `--lifespan on` assegura a validação no arranque. `/health` permanece público; não há rate limiting, expiração ou revogação individual. |
 | Autenticação dentro do contêiner | IMPLEMENTADO | PR #226; `.github/workflows/docker.yml`: `/health` público, 401 sem chave e com chave inválida, 200 com chave válida | Credenciais efêmeras geradas no CI |
-| `X-Request-ID` e log de acesso JSON | IMPLEMENTADO | PR #221; `src/ayorai_attractor/api/request_context.py:14` (padrão `[A-Za-z0-9-]{1,64}`); `tests/test_api_request_context.py` (5 testes) | Os testes cobrem campos conhecidos. Não há verificação formal de que nenhum campo futuro vaze dados. |
-| Limite de corpo HTTP (413) | IMPLEMENTADO | PRs #218 e #223; `src/ayorai_attractor/api/app.py:90`; `tests/test_api.py:200–223`; `tests/test_api_uvicorn_body_limit.py` | — |
+| `X-Request-ID` e log de acesso JSON | IMPLEMENTADO | PRs #221 e #260; `src/ayorai_attractor/api/request_context.py:14` (padrão `[A-Za-z0-9-]{1,64}`); `tests/test_api_request_context.py` e `tests/test_api_uvicorn_access_log.py` (Uvicorn real) | O evento registra request ID, método, rota, status e duração; não registra corpo nem query string. O teste real verifica que um segredo em query string não aparece na saída. Não há garantia formal contra todo futuro campo adicionado. |
+| Limite de corpo HTTP (413) | IMPLEMENTADO | PRs #218 e #223; `src/ayorai_attractor/api/app.py:92,95`; `tests/test_api.py:200–223`; `tests/test_api_uvicorn_body_limit.py` | — |
 | Contrato OpenAPI | IMPLEMENTADO | Workflows `api-contract.yml` e `schemathesis-all.yml`; seed fixa desde a PR #212 | A matriz anterior relatou uma falha não reproduzida. Os runs consultados dos SHAs documentados para #234 e #245 terminaram com sucesso; o run falho exato e seu caso falsificador não foram localizados. Ver F-06 e issue #250. |
 
 ### 2.3 Distribuição e contêiner
@@ -78,7 +78,7 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 |---|---|---|---|
 | Rejeição de `trace_id` duplicado | IMPLEMENTADO — LIMITADO | PR #217; `src/ayorai_attractor/audit_store.py:29,220` (`DuplicateAuditTraceError`); `tests/test_audit_store.py` (8 testes) | **Não** é à prova de adulteração: quem tem acesso ao banco altera linha e digest juntos (limite documentado na própria PR e na ADR-010, R1) |
 | Persistência dos vereditos de `/v1/verify` | PENDENTE | ADR-010, R2 | Nada é gravado no servidor |
-| ADR-010 (log Merkle C2SP) | PROPOSTO / IMPLEMENTADO — LIMITADO | PR #220 mantém o desenho proposto; DEC-012 foi registrada e mesclada na #225; a biblioteca pura da fase 1 foi mesclada na #236 | Sem persistência, API de gravação, checkpoints assinados ou implantação; o log verificável não está implementado como serviço |
+| ADR-010 (log Merkle C2SP) | ACCEPTED IN PART / IMPLEMENTADO — LIMITADO | PR #220 mantém o desenho; DEC-012 foi registrada em #225; a biblioteca pura da fase 1 foi mesclada na #236 | Sem persistência, API de gravação, checkpoints assinados ou implantação; o log verificável não está implementado como serviço |
 | Fase 1: hashing RFC 6962, provas e compromissos com sal | IMPLEMENTADO — LIMITADO | PR #236 mesclada; vetores e testes em `tests/auditlog/`; checks obrigatórios verdes no SHA revisado antes do merge | Biblioteca pura. Não constitui log implantado. |
 | Fases 2–4 (checkpoints assinados, gravação, testemunhas, carimbo do tempo) | PENDENTE | ADR-010, perguntas 5–7 abertas | — |
 
@@ -89,9 +89,9 @@ Nenhum item é classificado como implementado sem **código na `main`**, **teste
 | Política de fontes (DEC-002) | IMPLEMENTADO | PR #176; `docs/DECISIONS-APPROVED.md` | Não é parecer jurídico |
 | Captura byte a byte e texto derivado da Resolução Anatel 765/2023 e de duas retificações | IMPLEMENTADO | PRs #177 e #178; `evals/ptbr/sources/`; `evals/ptbr/SOURCES-REGISTRY.json`; `tests/test_source_artifacts.py`, `test_source_derived_text.py`, `test_sources_registry.py` | A captura não interpreta vigência |
 | Pré-registro | PROPOSTO | PR #174; `docs/eval/PREREGISTRATION-RGC-v1.md`, marcado **[PROPOSTO]** | Ver a proposta estatística (PR #241) |
-| Protocolo com Emendas 1–4 | IMPLEMENTADO como documento; **não congelado** | `docs/eval/PROTOCOL-GOLDEN-V1.md`; PRs #193, #205 e #227 | O congelamento exige registro explícito do mantenedor |
-| Executor `rgc-eval/0.2.0` (abstenção, átomos) | IMPLEMENTADO — LIMITADO | PRs #179, #195 e #203; `evals/ptbr/rgc_eval.py:52`; `tests/test_rgc_eval_runner.py` (23 testes, só fixtures sintéticas) | Marcado [PROPOSTO]; só validado com dados sintéticos |
-| Estrato `rectified` (DEC-011, Emenda 4) | IMPLEMENTADO | PR #232, mesclada; ausência de `rectified` equivale a `false` e o campo é validado mesmo em casos excluídos ou sem rótulo. |
+| Protocolo com Emendas 1–5 | IMPLEMENTADO como documento; **não congelado** | `docs/eval/PROTOCOL-GOLDEN-V1.md`; PRs #193, #205, #227 e #241 | DEC-014/Emenda 5 define apenas os baselines; o congelamento exige registro explícito separado do mantenedor. |
+| Executor `rgc-eval/0.3.0` (abstenção, átomos e estrato `rectified`) | IMPLEMENTADO — LIMITADO | PRs #179, #195, #203 e #232; `evals/ptbr/rgc_eval.py:56–58`; `tests/test_rgc_eval_runner.py` (fixtures sintéticas) | Marcado [PROPOSTO]; validado apenas com dados sintéticos, sem resultado de benchmark. |
+| Estrato `rectified` (DEC-011, Emenda 4) | IMPLEMENTADO | PR #232, mesclada; ausência de `rectified` equivale a `false` e o campo é validado mesmo em casos excluídos ou sem rótulo. | Nenhum resultado de benchmark foi produzido. |
 | Verificador offline da ficha do piloto 2 | IMPLEMENTADO | PR #233; `scripts/check_pilot_worksheet.py`; `tests/test_check_pilot_worksheet.py` (11 testes) | Só regras mecânicas; não avalia rótulos |
 | Piloto exploratório 01 | Concluído e descartado | `docs/eval/PILOT-RGC-01-REPORT.md` | Casos redigidos por IA; anotador único; sistema não executado |
 | Segundo piloto humano | PENDENTE | Ficha em branco: `docs/eval/PILOT-RGC-02-WORKSHEET.md` | Trabalho humano, sem IA |
