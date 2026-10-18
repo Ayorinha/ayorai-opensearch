@@ -1,6 +1,6 @@
 # API key authentication
 
-The API is unauthenticated by default for backwards compatibility. Enable authentication explicitly before exposing a deployment to an untrusted network.
+API-key authentication is enabled by default. The application refuses to start when API-key mode is selected but the pepper or digest list is missing or malformed. For an isolated local development environment only, set `ATTRACTOR_AUTH_MODE=off` explicitly; never use that mode on a network-facing deployment.
 
 ## Configuration
 
@@ -33,7 +33,7 @@ export ATTRACTOR_API_KEYS_HMAC_SHA256='REPLACE_WITH_64_CHARACTER_HMAC_SHA256_HEX
 uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000
 ~~~
 
-The placeholders above are intentionally invalid and must be replaced. In `api_key` mode, missing or malformed pepper/digest configuration prevents the middleware from starting. Supported modes are `off` and `api_key`; `off` is the default.
+The placeholders above are intentionally invalid and must be replaced. In `api_key` mode, missing or malformed pepper/digest configuration prevents the middleware from starting. Supported modes are `off` and `api_key`; `api_key` is the default. The `/health` endpoint remains public.
 
 ## Sending authenticated requests
 
