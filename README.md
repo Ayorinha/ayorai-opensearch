@@ -14,7 +14,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)
 
-🇧🇷 [Português](#em-português) · 📘 [Guia passo a passo](docs/GUIA-PASSO-A-PASSO.md) · ⚖️ [Conformidade no Brasil](docs/CONFORMIDADE-BRASIL.md) · 💼 [Para investidores e parceiros](docs/INVESTIDORES.md)
+🇧🇷 [Português](#em-português) · 📘 [Guia passo a passo](docs/GUIA-PASSO-A-PASSO.md) · ⚖️ [Conformidade no Brasil](docs/CONFORMIDADE-BRASIL.md)
 
 </div>
 
@@ -48,9 +48,11 @@ flowchart LR
 
 The model may read, classify or assist evidence analysis. It does not become the authority that selects the final verdict. This is scoped claim-evidence mismatch detection, not a guarantee that every hallucination will be detected.
 
-## Six possible verdicts
+## Five Judge 2.0 verdicts
 
-<code>VERIFIED</code> · <code>SUPPORTED</code> · <code>PARTIALLY_SUPPORTED</code> · <code>UNVERIFIED</code> · <code>REFUTED</code> · <code>CONFLICTING</code>
+<code>SUPPORTED</code> · <code>PARTIALLY_SUPPORTED</code> · <code>UNVERIFIED</code> · <code>REFUTED</code> · <code>CONFLICTING</code>
+
+`VERIFIED` is **not** a Judge 2.0.0 verdict. It is a legacy compatibility label mapped to `SUPPORTED` with robustness `R3` in the compatibility layer; see [`rules/judge-2.0.0.json`](rules/judge-2.0.0.json) and [ADR-009](docs/adr/ADR-009-deterministic-adjudication-contract.md). Abstention and invalid input are decision states, not factual verdicts.
 
 When evidence conflicts, ATTRACTOR can return <code>CONFLICTING</code> instead of silently selecting a preferred source. When evidence is insufficient, it can return <code>UNVERIFIED</code> instead of guessing.
 
@@ -58,7 +60,7 @@ When evidence conflicts, ATTRACTOR can return <code>CONFLICTING</code> instead o
 
 - **Reproducible:** the same structured input and rules produce the same verification state.
 - **Auditable:** each result can retain claim, evidence, provenance and source-span references.
-- **Tamper-evident:** evaluation inputs and outputs can be content-addressed with SHA-256.
+- **Content-addressed evaluation evidence:** evaluation artifacts expose SHA-256 digests under documented semantics. The current audit store is **not tamper-proof**; a verifiable audit log is proposed in [ADR-010](docs/adr/ADR-010-verifiable-audit-log.md) and is not implemented.
 - **Multilingual by design:** Portuguese is a primary future evaluation target while English documents remain explicitly disclosed in the current development evidence.
 - **Injection-resilience design:** the threat model and evaluation corpus include instruction-like text in evidence; this is a tested risk area, not a claim of immunity. See [Threat Model](docs/THREAT-MODEL.md), [security tests](tests/test_verification_response_security.py), and the [traceability matrix](docs/TRACEABILITY-MASTER.md).
 - **Open core:** the verification boundary, evaluation methodology and engineering evidence are publicly inspectable.
@@ -118,7 +120,7 @@ Local `.attractor/` audit and replay data must not be versioned; evidence requir
 
 ## Roadmap — current execution sequence
 
-1. **Phase 1 — completed (v0.4.0):** single deterministic Judge authority for the final verdict, tamper-evident audit trail, and structured HTTP 422 errors.
+1. **Phase 1 — completed (v0.4.0):** single deterministic Judge authority for the final verdict, legacy audit trail with documented integrity limits, and structured HTTP 422 errors.
 2. **Phase 2 — Judge 2.0 — completed (v0.5.0):** items 2.1–2.7: the normative contract, gates, deterministic adjudication, API contracts, derived Golden sets, canonical-result explanations and generated traceability.
 3. **Reproducibility:** strengthen deterministic replay, provenance and auditable execution records.
 4. **PT-BR benchmark:** build and document an evidence-based benchmark focused on Brazilian telecommunications regulation, starting with Anatel's General Consumer Rights Regulation (RGC).
@@ -190,9 +192,17 @@ Use the [TRACEABILITY-MASTER](docs/TRACEABILITY-MASTER.md) as the current implem
 | Injection resistance is addressed | [Threat Model](docs/THREAT-MODEL.md), security tests, and synthetic Golden injection cases; these do not establish immunity to all attacks. |
 | Regulatory compliance | No certification or legal compliance is claimed; see [Brazil compliance notes](docs/CONFORMIDADE-BRASIL.md). |
 
-## Status
+## Current status
 
-**Research and engineering reference implementation.**
+**Research and engineering reference implementation.** Status below is scoped to evidence in the repository, not a production deployment claim.
+
+- **Works today:** deterministic Judge 2.0 verdict rules and decision states are defined in [`rules/judge-2.0.0.json`](rules/judge-2.0.0.json), with implementation and tests in [`src/ayorai_attractor/verification/judge.py`](src/ayorai_attractor/verification/judge.py), [`tests/verification/test_judge2_adjudication.py`](tests/verification/test_judge2_adjudication.py), and [`tests/verification/test_judge2_gates.py`](tests/verification/test_judge2_gates.py). Golden v0/v0.1 remain historical development evidence, not production generalization.
+- **In progress:** verifiable audit-log phases are tracked in [ADR-010](docs/adr/ADR-010-verifiable-audit-log.md). Owner decisions were recorded and merged in [PR #225](https://github.com/Ayorinha/ayorai-opensearch/pull/225); the phase-1 pure core library was merged in [PR #236](https://github.com/Ayorinha/ayorai-opensearch/pull/236). Neither change provides a deployed log: storage, checkpoints and API recording remain later phases. Statistical design clarifications remain a proposal in [PR #241](https://github.com/Ayorinha/ayorai-opensearch/pull/241). Open PRs are not implemented until merged and verified.
+- **Not yet demonstrated:** no Portuguese RGC benchmark result exists and the protocol is not frozen; the verifiable audit log is not implemented or deployed; no certification, regulatory endorsement, production generalization or universal factual accuracy has been demonstrated. See the [RGC evaluation status](docs/eval/TRACEABILITY.md), [ADR-010](docs/adr/ADR-010-verifiable-audit-log.md), and [TRACEABILITY-MASTER Q2](docs/TRACEABILITY-MASTER.md).
+
+### Verified core and scope boundary
+
+The core verified by the current repository evidence is limited to the deterministic Judge 2.0 contract, the rule bundle and its adjudication/gate tests, and the published Golden evaluation/reproduction checks. See [`rules/judge-2.0.0.json`](rules/judge-2.0.0.json), the [Judge 2.0 traceability record](docs/judge2/TRACEABILITY.md), and the [Q2 scope boundary](docs/TRACEABILITY-MASTER.md). The Q2 section explicitly lists experimental or not-yet-verified modules; their presence in the tree must not be read as verification.
 
 ATTRACTOR is **not certified**, does not constitute legal advice, and does not by itself establish regulatory compliance. It is designed to support evidence traceability, reproducibility, auditability and controlled AI-assisted verification.
 
@@ -223,3 +233,5 @@ Apache-2.0. See [LICENSE](LICENSE).
 - Concept DOI (all versions): [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082)
 - v0.5.0: [10.5281/zenodo.23344005](https://doi.org/10.5281/zenodo.23344005)
 - v0.4.0: [10.5281/zenodo.23300849](https://doi.org/10.5281/zenodo.23300849)
+
+- [Para investidores e parceiros](docs/INVESTIDORES.md) — material institucional separado do resumo técnico.

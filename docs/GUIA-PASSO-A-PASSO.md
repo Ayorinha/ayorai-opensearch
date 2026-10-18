@@ -144,14 +144,14 @@ Configure o limite em bytes pela variável de ambiente `ATTRACTOR_MAX_BODY_BYTES
 Exemplo para iniciar a API com limite de 1 MiB:
 
 ~~~bash
-ATTRACTOR_MAX_BODY_BYTES=1048576 uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000
+ATTRACTOR_MAX_BODY_BYTES=1048576 uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000 --lifespan on
 ~~~
 
 Verificação manual contra um servidor Uvicorn real, usando o limite padrão de 2 MiB:
 
 ~~~bash
 # Terminal 1
-uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000
+uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000 --lifespan on
 
 # Terminal 2: o corpo excede 2 MiB; espera-se HTTP 413 e JSON.
 python -c "import urllib.error, urllib.request; data=b'x'*(2*1024*1024+1); req=urllib.request.Request('http://127.0.0.1:8000/v1/verify', data=data, headers={'Content-Type':'application/json'}, method='POST'); exec('try:\n r=urllib.request.urlopen(req)\n print(r.status, r.read())\nexcept urllib.error.HTTPError as e:\n print(e.code, e.read().decode())')"

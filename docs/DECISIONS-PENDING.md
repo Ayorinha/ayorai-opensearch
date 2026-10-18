@@ -25,7 +25,9 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-009 | Abstenção avaliada como `UNVERIFIED` | Aprovada (2026-10-15); executor na PR #195 | Este arquivo |
 | DEC-010 | Afirmações compostas (opção A) | Aprovada (2026-10-16); executor na PR #203, Emenda 3 na PR #205 | Este arquivo |
 | DEC-011 | Guia de anotação após o piloto 01 | Aprovada (2026-10-17); Emenda 4 na PR #227 | Este arquivo |
-| DEC-012 | Decisões 1–4 do log de auditoria (ADR-010) | Registrada em PR aberta (#225), ainda não mesclada | PR #225 |
+| DEC-012 | Decisões 1–4 do log de auditoria (ADR-010) | Registro mesclado na PR #225 em 2026-10-17; implementação e validação continuam sujeitas aos gates da ADR-010 | [PR #225](https://github.com/Ayorinha/ayorai-opensearch/pull/225) |
+| DEC-013 | Autorização de execução e merge por agente neste ciclo | Aprovada por ordem do mantenedor (2026-10-18); escopo limitado | Este arquivo |
+| DEC-014 | Baseline primário e descritivo do RGC | Aprovada por ordem do mantenedor (2026-10-18); Emenda 5 | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -65,7 +67,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Opções consideradas (texto preservado):**
   - **A — escolhida:** o anotador marca as partes (átomos) de cada afirmação composta, incluindo offsets; o executor usa esses átomos para adjudicação. O formato e a regra entram em uma emenda ao protocolo e no pré-registro antes da anotação definitiva. A opção preserva a semântica da Emenda 2 e permite avaliar o Judge com afirmações compostas.
   - **B — não escolhida:** o v1 aceita apenas afirmações atômicas; afirmações compostas ficam para o v2. A ausência de `PARTIALLY_SUPPORTED` no v1 seria declarada explicitamente, com regra para identificar/excluir afirmações compostas.
-- **Fato que motivou a decisão:** o executor anterior tratava cada afirmação como um único átomo. Pelas regras A1–A4 de `rules/judge-2.0.0.json`, um átomo pode resultar em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`; K4 exige dois ou mais átomos para `PARTIALLY_SUPPORTED`. `CONFLICTING` continua possível pela regra A4. Ver [RUNNER-RGC-v1.md §5](eval/RUNNER-RGC-v1.md#5-limitações-conhecidas).
+- **Fato que motivou a decisão:** o executor anterior tratava cada afirmação como um único átomo. Pelas regras A1–A4 de `rules/judge-2.0.0.json`, um átomo pode resultar em `SUPPORTED`, `REFUTED`, `CONFLICTING` ou `UNVERIFIED`; K4 exige dois ou mais átomos para `PARTIALLY_SUPPORTED`. `CONFLICTING` continua possível pela regra A4. Ver [RUNNER-RGC-v1.md §5](eval/RUNNER-RGC-v1.md#5-limitações-conhecidas-declaradas-antes-dos-dados).
 - **Estado:** aprovada. O código (PR #203) está mesclado; a emenda ao protocolo segue em PR própria. A mesclagem não equivale à validação do executor no benchmark definitivo.
 - **Atualização (2026-10-17):** a Emenda 3 foi mesclada na [PR #205](https://github.com/Ayorinha/ayorai-opensearch/pull/205) em 2026-10-16.
 
@@ -224,6 +226,30 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Impacto:** guia de anotação, protocolo, pré-registro e relatório. Não altera código, regras do Judge, hashes ou artefatos Golden.
 - **Aprovação registrada (17/10/2026):** Anderson aprovou as três partes: (1) ausência de confirmação = `UNVERIFIED`; `REFUTED` exige contradição explícita e justificativa com citação incompatível; (2) opção A para retificação; (3) tabela de valores, quantificadores e modalidade, excluindo do v1 afirmações que convertam “preferencialmente” em obrigação sem suporte textual explícito.
 - **Próximo gate:** executar o segundo piloto com cerca de 10 casos novos, usando apenas fontes oficiais verificadas e anotação humana independente de ferramentas de IA. Os casos do piloto serão descartados e não poderão ser enviados a assistentes/modelos. Após análise dos resultados, solicitar congelamento formal do protocolo antes de redigir os 300 casos definitivos.
+
+
+## DEC-013 — Autorização de execução e merge por agente (ciclo de 2026-10-18)
+
+- **Data:** 2026-10-18
+- **Decisor:** Anderson Leon Ayora, criador e mantenedor do repositório.
+- **Escopo:** autoriza, exclusivamente neste ciclo, a execução das ondas e a atualização, abertura, comentário, merge e fechamento das PRs #232, #241, #242, #255 e #257, além das PRs abertas para cumprir a ordem final de execução. A PR #256 foi mesclada neste ciclo e deve ser registrada no status.
+- **Revisão:** a revisão humana independente fica dispensada apenas para este ciclo por autorização expressa do mantenedor. O achado F-01 permanece aberto; esta dispensa não deve ser descrita como revisão independente realizada.
+- **Limites:** não autoriza alterar tags, releases, configuração do repositório, regras do Judge, Golden, hashes congelados, fontes RGC capturadas, pré-registros nem criar, rotular ou executar casos do benchmark RGC. Permanecem obrigatórios os portões técnicos, checks do SHA final e proteção dos artefatos definidos na ordem do mantenedor.
+- **Registro:** a PR #256 foi mesclada neste ciclo. Cada PR mesclada neste ciclo deve conter a linha: “Mesclada sob a autorização DEC-013 do mantenedor; revisão humana independente dispensada neste ciclo (achado F-01 permanece aberto).”
+- **Estado:** autorizada pelo mantenedor em 2026-10-18; não equivale a revisão humana independente nem encerra F-01.
+- Ausência do campo rectified tratada como false (não retificado), decisão do mantenedor em 2026-10-18, implementada na PR #232.
+
+
+## DEC-014 — Baseline primário e descritivo do RGC
+
+- **Data:** 2026-10-18
+- **Decisor:** Anderson Leon Ayora, mantenedor do repositório.
+- **Opção aprovada:** B como baseline primário; A como referência descritiva.
+- **Baseline primário B:** fixar a classe majoritária exclusivamente a partir dos rótulos da partição pública de desenvolvimento (70%), registrar a classe antes de qualquer execução no conjunto oculto e aplicá-la sem alteração à avaliação confirmatória. O cálculo não usa os rótulos da partição avaliada para escolher a classe.
+- **Baseline descritivo A:** calcular a classe majoritária na própria partição avaliada e reportá-la apenas como “baseline-oráculo descritivo da prevalência observada”. A não é classificador operacional e nunca é usada como base do teste H1.
+- **Implementação autorizada:** a simulação de desenho gera partições de desenvolvimento e avaliação com a mesma prevalência populacional, deriva B da partição de desenvolvimento, calcula H1 contra B e reporta A ao lado. Seed 20261003, 10.000 reamostragens de bootstrap e 200 repetições por célula são mantidos. Todos os números da simulação são sintéticos, não resultados do benchmark RGC PT-BR.
+- **Limites:** esta decisão e a Emenda 5 não congelam o protocolo, não alteram o pré-registro, não autorizam acessar ou executar casos do benchmark e não mudam o Judge, Golden, manifestos ou hashes congelados.
+- **Estado:** aprovada pelo mantenedor nesta ordem em 2026-10-18; Emenda 5 a registra em `docs/eval/PROTOCOL-GOLDEN-V1.md`.
 
 ## Queue rules
 

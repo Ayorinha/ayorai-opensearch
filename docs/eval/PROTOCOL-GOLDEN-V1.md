@@ -68,3 +68,8 @@ Esta emenda registra a aprovação explícita do mantenedor. O segundo piloto co
 7. **Gate posterior.** Após o piloto, revisar ambiguidades e documentar o resultado. Congelar o protocolo somente por registro explícito do mantenedor depois dessa revisão. Só então iniciar a redação dos 300 casos definitivos. Não alterar código, regras do Judge, Golden históricos, manifestos ou hashes congelados nesta emenda.
 
 A decisão foi aprovada por Anderson Leon Ayora em 2026-10-17 e a Emenda 4 foi incorporada pela PR #227, mesclada pelo mantenedor. O protocolo continua sem congelamento formal: depende da revisão do segundo piloto exploratório e de registro explícito de congelamento. O benchmark PT-BR não tem resultado validado neste estágio.
+
+
+## Emenda 5 (2026-10-18) — Baseline primário e descritivo do RGC (DEC-014)
+
+Aprovada explicitamente por Anderson Leon Ayora, mantenedor, na ordem final de execução de 2026-10-18. Para o teste primário H1, o baseline B é a classe majoritária determinada exclusivamente pelos rótulos da partição pública de desenvolvimento (70%), registrada antes de qualquer execução no conjunto oculto e aplicada sem alteração à avaliação confirmatória. O baseline A, calculado pela classe majoritária da própria partição avaliada, é reportado apenas como “baseline-oráculo descritivo da prevalência observada”; nunca é classificador operacional nem base do teste H1. Esta emenda registra somente a definição de baseline aprovada na [DEC-014](../DECISIONS-PENDING.md#dec-014--baseline-primário-e-descritivo-do-rgc). Não congela o protocolo e não altera outras regras, o pré-registro, o Judge ou artefatos Golden.

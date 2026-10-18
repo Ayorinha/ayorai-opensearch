@@ -1,7 +1,7 @@
 # [PROPOSTA] Revisão do desenho estatístico do RGC antes do congelamento
 
-**Estado:** proposta para decisão do mantenedor. **Não altera** o pré-registro, o protocolo, as decisões DEC-007 a DEC-011, o executor nem o Judge.
-**Data:** 2026-10-17
+**Estado:** proposta atualizada conforme a decisão DEC-014 e a Emenda 5; não congela o protocolo nem altera o pré-registro ou o Judge.
+**Data:** 2026-10-18
 **Origem:** rodada 3 da revisão independente (item E), com simulação reproduzível em scripts/simulate_rgc_design.py.
 **Dados usados:** somente rótulos sintéticos aleatórios. Nenhum caso de piloto ou do benchmark foi lido; o sistema não foi executado.
 **Limite de interpretação:** esta simulação de desenho não é resultado do benchmark RGC PT-BR. O protocolo não está congelado e não existe resultado de benchmark em português.
@@ -44,15 +44,15 @@ O pré-registro reserva 30% dos casos como conjunto oculto (§3.3), mas o crité
 
 ### Correção do modelo de simulação
 
-A simulação anterior tratava a baseline como uma variável Bernoulli independente por caso. Isso não representava a baseline descrita no executor. A nova simulação:
+A simulação anterior escolhia a classe majoritária usando os rótulos da própria partição avaliada. A decisão DEC-014 define B como baseline primário operacional e A como baseline-oráculo descritivo. A simulação atualizada:
 
-1. gera rótulos de referência multiclasse com prevalências declaradas;
-2. determina, em cada partição simulada, a classe de referência majoritária e prevê essa classe constante para todos os casos, com desempate pela ordem de classes declarada;
+1. gera uma partição de desenvolvimento pública de 70% e uma partição de avaliação de 30%, ambas com a mesma prevalência populacional declarada;
+2. deriva B exclusivamente dos rótulos de desenvolvimento e mantém essa classe constante em toda a avaliação, com desempate pela ordem de classes declarada; calcula A separadamente a partir da própria partição de avaliação, apenas para descrição;
 3. modela a correção do sistema em dois cenários: indicadores de acerto independentes da baseline e indicadores com correlação phi positiva-alvo de 0,5. O valor conjunto é limitado aos limites matematicamente possíveis; portanto, a correlação efetiva pode ser inferior a 0,5;
 4. calcula IC95% da acurácia do sistema por bootstrap pareado de casos com 10.000 reamostragens e seed 20261003, e calcula margem e McNemar exato bilateral usando as funções de src/ayorai_attractor/evaluation/stats.py, as mesmas usadas por evals/ptbr/rgc_eval.py;
-5. declara H1 apoiada somente se **todas** as condições do critério primário forem satisfeitas: margem de pelo menos 10 pontos percentuais, limite inferior do IC95% do sistema acima da acurácia da baseline e McNemar exato bilateral p < 0,05.
+5. declara H1 apoiada contra B somente se **todas** as condições do critério primário forem satisfeitas: margem de pelo menos 10 pontos percentuais, limite inferior do IC95% do sistema acima da acurácia de B e McNemar exato bilateral p < 0,05. A acurácia média de A é reportada ao lado, sem participar do teste H1.
 
-As prevalências de referência são: equilibrada (20/20/20/20/20%), desbalanceada (40/30/15/10/5%) e muito desbalanceada (55/25/10/6/4%). A acurácia da baseline não é fixada em 40%: ela é a fração da classe majoritária observada em cada partição. Em uma distribuição equilibrada, escolher a classe majoritária depois de observar a partição pode produzir acurácia de baseline acima de 20%; essa é a definição conservadora da baseline simulada e deve ser lida como tal.
+As prevalências de referência são: equilibrada (20/20/20/20/20%), desbalanceada (40/30/15/10/5%) e muito desbalanceada (55/25/10/6/4%). A acurácia de B é a proporção de rótulos da avaliação que coincidem com a classe escolhida independentemente na partição de desenvolvimento. A acurácia de A é a proporção da classe majoritária observada na própria avaliação; por usar os rótulos avaliados para escolher a classe, A é um baseline-oráculo descritivo da prevalência observada, nunca um classificador operacional e nunca a base do teste H1.
 
 ### Poder simulado com prevalência desbalanceada (40/30/15/10/5%)
 
@@ -104,18 +104,15 @@ Todos os trechos vêm de um único ato normativo, e vários casos podem tratar d
 
 ## 5. Pontos verificados que não exigem mudança
 
-- **Baseline:** o executor calcula a classe majoritária a partir dos rótulos da própria partição avaliada e prevê essa classe para todos os casos. A simulação agora representa essa definição. Por ser estimada na partição avaliada, a baseline usa informação da distribuição de referência; isso precisa continuar explicitado como escolha conservadora do desenho.
+- **Baseline primário B (DEC-014):** a classe majoritária é derivada exclusivamente da partição pública de desenvolvimento (70%), registrada antes de qualquer execução no conjunto oculto, e aplicada sem alteração à avaliação confirmatória. A definição é operacional e não usa rótulos avaliados para escolher a classe.
+- **Baseline descritivo A:** a classe majoritária calculada na partição avaliada é reportada somente como “baseline-oráculo descritivo da prevalência observada”; nunca é apresentada como classificador nem usada como base do teste H1.
 - **Comparações múltiplas:** o pré-registro só testa H1. Métricas por classe, por categoria e o estrato rectified são descritivos e não geram teste de hipótese; recomenda-se declarar isso no relatório para impedir leitura de "significância" em estratos.
 - **McNemar exato bilateral** é adequado para comparar classificadores nos mesmos casos; a implementação usada é mcnemar_exact_pvalue em src/ayorai_attractor/evaluation/stats.py. Não se recomenda trocar o método aprovado nesta proposta.
 - **Compromisso do conjunto oculto:** publicar o SHA-256 do arquivo ajuda a demonstrar depois que ele não mudou. Isso **não** protege contra vazamento de conteúdo; isso depende de controle de acesso e procedimento documentado.
 
-## 6. Decisões pedidas ao mantenedor
+## 6. Estado das decisões
 
-1. Leitura do critério de concordância: A, B ou C da seção 2.
-2. Partição do critério primário H1: A, B ou C da seção 3.
-3. Incluir o campo de artigo de origem para o bootstrap agrupado (seção 4): sim ou não.
-
-Depois da decisão, as escolhas entram como **Emenda 5** do protocolo e nota datada no pré-registro, antes do congelamento. Nenhuma dessas escolhas foi feita nesta PR.
+A decisão sobre baseline foi tomada pelo mantenedor em 2026-10-18 e registrada em [DEC-014](../DECISIONS-PENDING.md#dec-014--baseline-primário-e-descritivo-do-rgc). A Emenda 5 registra apenas essa definição no protocolo; não congela o protocolo nem resolve as decisões pendentes sobre concordância, partição confirmatória ou bootstrap agrupado. Os demais itens desta proposta continuam sujeitos a decisões próprias.
 
 ## Referências
 

@@ -1,5 +1,7 @@
 **[RASCUNHO — revisão do autor pendente]**
 
+> **Estado atual:** consulte a [fonte única de status](../STATUS.md). Este plano preserva o contexto e as metas propostas; não é uma fonte independente de status de implementação.
+
 # Plano de trabalho — ciclo de pesquisa de 12 meses
 
 ## Objetivo e ponto de partida

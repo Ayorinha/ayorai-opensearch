@@ -2,6 +2,8 @@
 
 Updated: 2026-10-17
 
+> **Current status source:** use [docs/STATUS.md](STATUS.md). This page preserves the historical progress narrative and references; it is not an independent source of current status.
+
 ## Canonical progress record
 
 The [TRACEABILITY MASTER](TRACEABILITY-MASTER.md) is the single source of truth for requirements, implementation mapping, tests, evidence labels, known limitations, and items not implemented or not independently verified.
