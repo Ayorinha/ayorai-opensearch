@@ -13,6 +13,10 @@ from pathlib import Path
 
 import pytest
 
+# Unit tests explicitly opt into unauthenticated mode. Production defaults to
+# api_key and fails startup when key material has not been configured.
+os.environ["ATTRACTOR_AUTH_MODE"] = "off"
+
 # This runs before test modules import the API application.
 os.environ["ATTRACTOR_AUDIT_DB"] = ":memory:"
 
@@ -38,7 +42,7 @@ def snapshot_runtime_data(directory: Path) -> tuple[bool, Snapshot]:
 
 
 def runtime_data_changes(before: tuple[bool, Snapshot], after: tuple[bool, Snapshot]) -> list[str]:
-    """Describe only runtime data created, modified, or removed during a test session."""
+    """Describe only runtime data created, modified, or removed during the test session."""
     existed_before, old_files = before
     exists_after, new_files = after
     changes: list[str] = []
