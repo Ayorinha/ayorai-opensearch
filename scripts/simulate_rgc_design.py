@@ -191,17 +191,11 @@ def power(rng: Random) -> None:
                     baseline_a_label = _majority_label(gold)
                     baseline_a = [baseline_a_label] * n
                     baseline_b_accuracy = (
-                        sum(
-                            actual == guess
-                            for actual, guess in zip(gold, baseline_b, strict=True)
-                        )
+                        sum(actual == guess for actual, guess in zip(gold, baseline_b, strict=True))
                         / n
                     )
                     baseline_a_accuracy = (
-                        sum(
-                            actual == guess
-                            for actual, guess in zip(gold, baseline_a, strict=True)
-                        )
+                        sum(actual == guess for actual, guess in zip(gold, baseline_a, strict=True))
                         / n
                     )
                     baseline_b_accuracies.append(baseline_b_accuracy)
