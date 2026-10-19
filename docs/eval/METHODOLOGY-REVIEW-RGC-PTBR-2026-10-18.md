@@ -27,35 +27,35 @@ As conclusões abaixo referem-se ao conteúdo desses documentos no estado consul
 
 ## 3. Achados prioritários
 
-### M-01 — Vocabulário de rótulos e matriz de confusão não alinhados
+### M-01 — Escopo histórico da matriz 6×6 precisa ficar explícito (sem defeito RGC comprovado)
 
-**Evidência:** o protocolo RGC define cinco vereditos. `docs/eval/STATISTICS.md` descreve uma matriz 6×6 explicitamente vinculada aos seis estados históricos da ADR-002. Essa diferença, por si só, não prova defeito: o arquivo de estatísticas pode estar documentando corretamente apenas o contrato legado. A revisão documental ainda não verificou o executor RGC e o formato do relatório ponta a ponta.
+**Evidência:** `docs/eval/RUNNER-RGC-v1.md` já especifica o vocabulário `judge2` de cinco estados para RGC e reserva `adr002` de seis estados como alternativa histórica não usada no RGC. `docs/eval/STATISTICS.md` descreve a matriz 6×6 para os estados ADR-002. Portanto, a documentação consultada não demonstra, por si só, um defeito no RGC.
 
-**Risco:** reutilizar a matriz 6×6 para RGC sem adaptação produziria uma representação incompatível; por outro lado, substituir globalmente a matriz histórica poderia quebrar a compatibilidade dos conjuntos antigos.
+**Risco residual:** leitores podem interpretar a estatística 6×6 como universal se não notarem a distinção de vocabulário no executor.
 
-**Recomendação:** confirmar no código e nos testes se o executor/relatório RGC usa uma matriz 5×5 e se as rotinas legadas continuam vinculadas ao contrato antigo. Se a documentação estatística for intencionalmente genérica/legada, esclarecer o escopo em vez de declarar uma inconsistência já comprovada. Não alterar Goldens históricos.
+**Recomendação:** tratar como esclarecimento de escopo, não como bug confirmado. Na revisão de implementação, conferir os testes de `evals/ptbr/rgc_eval.py` e `tests/test_rgc_eval_runner.py`; se confirmarem o contrato de cinco rótulos, explicitar em `STATISTICS.md` que a matriz 6×6 é legada e que RGC usa o vocabulário `judge2`. Não alterar Goldens históricos.
 
-**Critério de encerramento:** contratos, executor, testes e relatórios estão alinhados por benchmark; qualquer matriz legada fica explicitamente identificada como histórica.
+**Critério de encerramento:** escopo documentado e teste do executor confirmando o vocabulário de cinco estados no RGC.
 
-### M-02 — Tratamento de previsões ausentes ou inválidas precisa ser operacionalmente inequívoco
+### M-02 — Distinguir linha de previsão ausente de previsão inválida por caso
 
-**Evidência:** o pré-registro determina que previsões ausentes ou inválidas sejam reportadas como falha de execução, sem removê-las silenciosamente do denominador nem convertê-las em acertos. `STATISTICS.md` diz que previsões ausentes são rejeitadas, sem definir no trecho documental se a execução inteira é invalidada, se o caso permanece como falha ou como o denominador é preservado.
+**Evidência:** `docs/eval/RUNNER-RGC-v1.md` já afirma que previsões `INVALID_PREDICTION` permanecem no denominador e contam como erro, enquanto casos sem rótulo, rótulos inexistentes e casos duplicados interrompem a execução. `docs/eval/STATISTICS.md` diz que previsões ausentes são rejeitadas, mas não define, nesse arquivo genérico, se “ausente” significa linha/registro faltante no arquivo ou saída inválida do Judge.
 
-**Risco:** diferentes interpretações podem produzir métricas não comparáveis ou seleção pós-hoc dos casos avaliados.
+**Risco residual:** confundir erro de formato/integridade do conjunto com saída inválida por caso pode levar a regras distintas para denominador e falhas técnicas.
 
-**Recomendação:** especificar antes do congelamento uma regra única para: (a) falha técnica global; (b) saída inválida por caso; (c) ausência de previsão; (d) repetição autorizada de execução; e (e) inclusão no denominador. Publicar contagens de falhas e preservar a primeira execução válida segundo o protocolo. Não converter automaticamente falha técnica em um rótulo factual sem decisão prévia.
+**Recomendação:** preservar a regra já declarada no executor: saída inválida por caso conta como erro no denominador; estrutura de entrada incompleta/inconsistente aborta a execução. Confirmar essa distinção nos testes e garantir que o relatório registre as contagens correspondentes. Não excluir casos ou repetir execução oportunisticamente.
 
-**Critério de encerramento:** protocolo, executor, testes e relatório implementam a mesma regra, sem exclusões silenciosas nem repetição oportunista.
+**Critério de encerramento:** distinção entre falha de integridade de entrada e previsão inválida por caso está coberta por teste e descrita no relatório.
 
-### M-03 — Plano de intervalos de confiança precisa especificar o estimador para cada métrica
+### M-03 — Alinhar o plano de IC entre executor, pré-registro e estatísticas gerais
 
-**Evidência:** o pré-registro pede IC95% para accuracy, balanced accuracy e macro-F1 por bootstrap percentil, com 10.000 reamostragens e seed fixa. `STATISTICS.md` descreve de forma mais específica o IC de accuracy e não estabelece no texto consultado a mesma regra para todas as métricas do RGC.
+**Evidência:** o pré-registro e `docs/eval/RUNNER-RGC-v1.md` já indicam bootstrap percentil com 10.000 reamostragens e seed `20261003` para accuracy, balanced accuracy e macro-F1; o executor documenta usar a mesma sequência de reamostragem para as três métricas. `docs/eval/STATISTICS.md` é mais genérico e só descreve explicitamente o IC de accuracy.
 
-**Risco:** os relatórios podem calcular intervalos de formas diferentes ou omitir intervalos para métricas secundárias.
+**Risco residual:** a documentação estatística genérica pode não refletir o contrato RGC; ainda é preciso confirmar implementação, tratamento de classes ausentes em reamostragens e cobertura dos testes.
 
-**Recomendação:** documentar um algoritmo determinístico para cada métrica. Considerar bootstrap estratificado por rótulo de referência como análise de sensibilidade quando houver classes raras; se adotado como análise principal, justificar e congelar a escolha antes de ver resultados. Informar classes ausentes, número de reamostragens, seed, método do intervalo e tratamento de amostras bootstrap sem alguma classe.
+**Recomendação:** não inventar um novo método nem alterar o plano aprovado nesta revisão. Comparar implementação e testes com o executor/pré-registro; documentar os detalhes efetivamente implementados (incluindo comportamento com classes ausentes) e deixar qualquer mudança metodológica para emenda prévia explícita.
 
-**Critério de encerramento:** teste unitário ou fixture sintética verifica os cálculos; o relatório registra método e parâmetros; simulações sintéticas são claramente identificadas como simulações, nunca como resultados RGC.
+**Critério de encerramento:** código, testes, pré-registro e relatório concordam sobre métricas, número de reamostragens, seed, método percentil e tratamento de casos-limite; simulações sintéticas não são apresentadas como resultados RGC.
 
 ### M-04 — Cohen's kappa não basta como resumo da qualidade da anotação
 
