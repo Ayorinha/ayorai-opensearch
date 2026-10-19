@@ -107,3 +107,8 @@ The implementation defect was that MarianTranslationBackend.provenance_version h
 ## E5 Path B precautionary license status — 2026-10-09
 
 The runtime classification for Path B is temporarily **EVAL_ONLY until the OPUS source-license inventory is complete**. This supersedes the E4 operational classification of Path B as COMMERCIAL_DEFAULT for current use, while preserving the historical F1 measurement and its original metrics. This temporary restriction is a conservative operational decision; it is not a finding that OPUS is non-commercial (NC). The normative registry, ADR-005 and all translation call sites now use this status explicitly. No evaluation was run, and no Golden, corpus, threshold, manifest, or historical metric was changed.
+
+
+## E6 Statistical clarification — 2026-10-18
+
+The historical sentence above saying “approximately 60% accuracy” is an oversimplification and must not be read as a sufficient threshold for statistical significance. For n=30 and a 43.33% majority baseline, the exact two-sided McNemar result depends on the paired discordant cases, not accuracy alone. In the best possible overlap arrangement, 18/30 (60.00%) yields p=0.0625, while 19/30 (63.33%) yields p=0.0312; other overlap arrangements can require substantially higher accuracy. See the derivation and limitations in `docs/institutional/AUDITORIA-DOCUMENTO-TECNICO-v1.1.md`, section 3. This dated clarification preserves the historical measurement record; it does not change any measured result or rerun the evaluation.
