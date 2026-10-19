@@ -29,13 +29,13 @@ As conclusões abaixo referem-se ao conteúdo desses documentos no estado consul
 
 ### M-01 — Vocabulário de rótulos e matriz de confusão não alinhados
 
-**Evidência:** o protocolo RGC declara cinco vereditos do Judge 2.0: `SUPPORTED`, `REFUTED`, `UNVERIFIED`, `PARTIALLY_SUPPORTED` e `CONFLICTING`. Já `docs/eval/STATISTICS.md` descreve uma matriz 6×6 fixa para os seis estados da ADR-002.
+**Evidência:** o protocolo RGC define cinco vereditos. `docs/eval/STATISTICS.md` descreve uma matriz 6×6 explicitamente vinculada aos seis estados históricos da ADR-002. Essa diferença, por si só, não prova defeito: o arquivo de estatísticas pode estar documentando corretamente apenas o contrato legado. A revisão documental ainda não verificou o executor RGC e o formato do relatório ponta a ponta.
 
-**Risco:** uma implementação ou relatório que reutilize literalmente a matriz antiga pode produzir uma representação inconsistente com os rótulos de referência RGC.
+**Risco:** reutilizar a matriz 6×6 para RGC sem adaptação produziria uma representação incompatível; por outro lado, substituir globalmente a matriz histórica poderia quebrar a compatibilidade dos conjuntos antigos.
 
-**Recomendação:** antes do congelamento, documentar explicitamente a matriz 5×5 para RGC e preservar a matriz 6×6 somente para os conjuntos históricos que realmente usam esse contrato. Conferir o código do executor e testes, não apenas a documentação. Não alterar os Goldens históricos.
+**Recomendação:** confirmar no código e nos testes se o executor/relatório RGC usa uma matriz 5×5 e se as rotinas legadas continuam vinculadas ao contrato antigo. Se a documentação estatística for intencionalmente genérica/legada, esclarecer o escopo em vez de declarar uma inconsistência já comprovada. Não alterar Goldens históricos.
 
-**Critério de encerramento:** protocolo, estatísticas, executor e relatório usam o mesmo vocabulário para RGC; os conjuntos históricos mantêm seus contratos originais.
+**Critério de encerramento:** contratos, executor, testes e relatórios estão alinhados por benchmark; qualquer matriz legada fica explicitamente identificada como histórica.
 
 ### M-02 — Tratamento de previsões ausentes ou inválidas precisa ser operacionalmente inequívoco
 
@@ -127,9 +127,19 @@ As conclusões abaixo referem-se ao conteúdo desses documentos no estado consul
 
 **Critério de encerramento:** gate de congelamento explícito e registro completo da execução confirmatória.
 
+### M-11 — Definição da baseline no pré-registro conflita com a DEC-014 aprovada
+
+**Evidência:** a seção 4 do pré-registro diz que a baseline de classe majoritária é calculada exclusivamente a partir dos rótulos de referência da partição avaliada. Já a DEC-014, registrada em `docs/STATUS.md`, define a baseline B como primária, derivada somente dos 70% públicos de desenvolvimento e fixada antes da avaliação; a baseline A é uma baseline-oráculo descritiva calculada na partição de avaliação e não fundamenta H1. O próprio texto do pré-registro menciona a baseline de classe majoritária sem distinguir claramente A e B, enquanto os critérios de sucesso de H1 usam “a baseline” no singular.
+
+**Risco:** se a redação atual for seguida literalmente, a baseline usada para testar H1 pode ser calculada com rótulos do conjunto avaliado, contrariando a DEC-014 e contaminando a comparação confirmatória. Também fica ambíguo qual baseline define a margem de 10 pontos percentuais, o IC e o teste de McNemar.
+
+**Recomendação:** antes do congelamento, harmonizar o pré-registro com a DEC-014 sem alterar a decisão aprovada: identificar explicitamente B como baseline primária operacional, calculada apenas no conjunto público e congelada antes da avaliação; identificar A como análise descritiva/oráculo, calculada no conjunto de avaliação e claramente excluída da hipótese H1 e dos critérios de sucesso. Especificar como as previsões de cada baseline são aplicadas aos mesmos casos avaliados, e verificar o protocolo, o executor, os testes e o plano estatístico em conjunto. Qualquer mudança de definição deve exigir emenda explícita do mantenedor antes de observar resultados.
+
+**Critério de encerramento:** pré-registro, DEC-014, executor e relatório nomeiam e usam A/B de forma consistente; H1 compara o sistema apenas com B; A é reportada como descritiva e nunca apresentada como baseline primária.
+
 ## 4. Sequência recomendada
 
-1. **Revisão documental:** resolver M-01 a M-03 e registrar decisão para M-04 a M-10; preservar todas as decisões aprovadas até que uma emenda seja explicitamente aceita.
+1. **Revisão documental:** resolver M-01 a M-03 e M-11 e registrar decisão para M-04 a M-10; preservar todas as decisões aprovadas até que uma emenda seja explicitamente aceita.
 2. **Piloto humano 02:** o mantenedor realiza cerca de 10 casos novos usando a ficha existente, sem ferramentas de IA e sem executar o sistema. Não versionar a ficha preenchida nem compartilhar os casos com assistentes.
 3. **Revisão pós-piloto:** registrar somente achados metodológicos necessários; não incorporar os casos do piloto ao conjunto definitivo.
 4. **Gate de congelamento:** o mantenedor aprova explicitamente o protocolo revisado. Se houver mudança de regra, registrar emenda datada e justificativa antes de coletar casos definitivos.
