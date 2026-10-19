@@ -101,6 +101,7 @@ A documentação foi organizada por finalidade para que cada leitor encontre o n
 - **Quero verificar o estado real:** [Status técnico](docs/STATUS.md)
 - **Quero conferir regras e decisões:** [Judge 2.0](docs/judge2/TRACEABILITY.md) · [Decisões de arquitetura](docs/adr/README.md)
 - **Quero avaliar evidências, riscos e limites:** [Modelo de ameaças](docs/THREAT-MODEL.md) · [Considerações para o Brasil](docs/CONFORMIDADE-BRASIL.md)
+- **Quero ler ou baixar o documento técnico completo:** [Documento técnico público AYORAI ATTRACTOR v1.1 (PDF)](docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf)
 - **Quero encontrar os documentos restantes:** [Índice completo da documentação](docs/INDEX.md)
 
 ## Projeto aberto e responsabilidade
