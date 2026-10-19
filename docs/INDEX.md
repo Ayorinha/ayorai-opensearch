@@ -9,6 +9,7 @@ A documentação é organizada por finalidade. Comece pelo README para entender 
 3. **Executar e verificar:** [Guia passo a passo](GUIA-PASSO-A-PASSO.md) — ambiente, testes e reprodução documentada.
 4. **Conferir o estado atual:** [Status técnico](STATUS.md) — entregas, verificações e limitações vigentes.
 5. **Inspecionar os contratos:** [Rastreabilidade do Judge 2.0](judge2/TRACEABILITY.md) — regras e referências aos testes.
+6. **Ler ou baixar a apresentação técnica completa:** [Documento técnico público AYORAI ATTRACTOR v1.1 (PDF)](institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf) — visão institucional consolidada do projeto; consulte também o [status técnico](STATUS.md) para o estado atual.
 
 ## Documentação por tema
 
@@ -22,6 +23,7 @@ A documentação é organizada por finalidade. Comece pelo README para entender 
 | Segurança | [Modelo de ameaças](THREAT-MODEL.md) | Entender riscos considerados, controles e exclusões. |
 | Contexto brasileiro | [Conformidade no Brasil](CONFORMIDADE-BRASIL.md) | Conhecer possíveis pontos de apoio e limites regulatórios. |
 | Avaliação | [Guia de execução](GUIA-PASSO-A-PASSO.md) e os artefatos de avaliação no repositório | Reproduzir resultados e consultar as limitações dos conjuntos. |
+| Documento técnico institucional | [Documento técnico público v1.1 (PDF)](institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf) | Consultar a apresentação técnica consolidada; para o estado vigente, confira também o Status técnico. |
 | Autoria e citação | [Autoria](AUTHORSHIP.md) · [CITATION.cff](../CITATION.cff) | Atribuir e citar o projeto corretamente. |
 
 ## Como interpretar os resultados
