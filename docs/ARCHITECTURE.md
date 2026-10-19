@@ -12,12 +12,12 @@ O ATTRACTOR trata a verificação como uma relação entre afirmações delimita
 
 ```mermaid
 flowchart TD
-    A["Entrada: afirmação e contexto"] --> B["Pipeline de afirmações"]
-    B --> C["Seleção e registro de evidências"]
-    C --> D["Análise de relação da evidência"]
-    D --> E["Judge determinístico"]
-    E --> F["Veredito estruturado"]
-    F --> G["Inspeção por testes e artefatos"]
+    A["Entrada:<br/>afirmação e contexto"] --> B["Pipeline de<br/>afirmações"]
+    B --> C["Seleção e registro<br/>de evidências"]
+    C --> D["Análise de relação<br/>da evidência"]
+    D --> E["Judge<br/>determinístico"]
+    E --> F["Veredito<br/>estruturado"]
+    F --> G["Inspeção por testes<br/>e artefatos"]
 ```
 
 ### Etapa 1 — Entrada e afirmações
