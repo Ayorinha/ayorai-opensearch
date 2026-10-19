@@ -89,10 +89,10 @@ A mesma afirmação de “aproximadamente 60%” aparece em `docs/adr/ADR-005-hy
 
 ## 5. Pontos abertos que exigem decisão do mantenedor
 
-Nenhum destes itens foi alterado nesta revisão.
+Este inventário registra os pontos identificados na primeira revisão. O estado atualizado está indicado em cada item abaixo e nas seções 7–9; os itens não devem ser considerados pendentes sem consultar essas atualizações.
 
-1. **ADR-005 e `F1-RESULTS.md`** contêm a afirmação dos 60% (achado 1). Proposta: nota datada de correção em cada arquivo, sem reescrever o texto original.
-2. **`README.md`** ainda apresenta 26,67% como valor do caminho C no Golden v0 sem a nota de `F1.2-RESULTS.md`. Proposta: acrescentar a nota de que o código atual mede 23,33%.
+1. **ADR-005 e `F1-RESULTS.md` — resolvido documentalmente.** As notas E6 datadas foram acrescentadas aos dois arquivos, preservando os registros históricos e esclarecendo que acurácia isolada não estabelece significância. Ver seção 7.
+2. **`README.md` — divergência não reproduzida na branch examinada.** A seção 7 registra que a versão consultada não contém os valores ou a afirmação apontados no achado. Não foi feita alteração; reavaliar somente se o conteúdo relevante reaparecer.
 3. **Semântica de robustez (achados 8 e 9).** R3 depende de `provenance_complete`, declarado pelo chamador e com padrão `true`; clusters distintos significam apenas ausência de dependência detectada. Proposta para avaliação em ADR: tornar `provenance_complete` obrigatório no r2-a, ou derivá-lo dos critérios da ADR-006 §2, e registrar a justificativa da ordem R1 < R2 < R3. Qualquer mudança exige nova versão das regras.
 4. **Origem do projeto (capítulo 2).** O relato pessoal do autor não está documentado no repositório; pode ser acrescentado pelo autor numa revisão futura.
 5. **CPC art. 369 e CPP arts. 158-A a 158-F.** As páginas do Planalto vieram truncadas no acesso desta revisão; os dispositivos devem ser conferidos no texto oficial antes de qualquer uso jurídico do documento.
@@ -101,7 +101,7 @@ Nenhum destes itens foi alterado nesta revisão.
 
 ## 6. Recomendação
 
-**Pronto para divulgação com ressalvas.** A v1.1 corrige os erros comprovados e delimita as afirmações que dependiam de contexto. Antes de usar o documento em contexto jurídico, conferir os dispositivos do item 5.5. Os itens 5.1 a 5.3 não impedem a divulgação, porque a v1.1 já apresenta a informação correta, mas mantêm divergência entre o documento e arquivos do repositório até serem tratados.
+**Pronto para revisão final do mantenedor, com ressalvas.** A v1.1 corrige os erros documentais identificados e delimita afirmações dependentes de contexto. A nota estatística foi propagada para os registros Markdown conforme a seção 7. A conferência jurídica continua exigindo validação humana antes de qualquer uso jurídico. As limitações de proveniência, a fonte de geração não versionada e a situação do DCO permanecem explicitamente registradas.
 
 
 ## 7. Acompanhamento após a auditoria — 18/10/2026
