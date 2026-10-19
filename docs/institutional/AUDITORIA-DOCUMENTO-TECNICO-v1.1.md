@@ -96,7 +96,7 @@ Nenhum destes itens foi alterado nesta revisão.
 3. **Semântica de robustez (achados 8 e 9).** R3 depende de `provenance_complete`, declarado pelo chamador e com padrão `true`; clusters distintos significam apenas ausência de dependência detectada. Proposta para avaliação em ADR: tornar `provenance_complete` obrigatório no r2-a, ou derivá-lo dos critérios da ADR-006 §2, e registrar a justificativa da ordem R1 < R2 < R3. Qualquer mudança exige nova versão das regras.
 4. **Origem do projeto (capítulo 2).** O relato pessoal do autor não está documentado no repositório; pode ser acrescentado pelo autor numa revisão futura.
 5. **CPC art. 369 e CPP arts. 158-A a 158-F.** As páginas do Planalto vieram truncadas no acesso desta revisão; os dispositivos devem ser conferidos no texto oficial antes de qualquer uso jurídico do documento.
-6. **Descrição da PR.** O rodapé adicionado automaticamente à descrição da PR deve ser removido manualmente pelo mantenedor.
+6. **Descrição da PR.** A descrição da PR deve refletir o estado final do PDF e da auditoria; a descrição será reconciliada com os dados registrados na seção 9.
 7. **DCO.** Os commits desta PR não têm linha `Signed-off-by`; cabe ao mantenedor decidir se a regra se aplica aos próprios commits.
 
 ## 6. Recomendação
@@ -111,7 +111,7 @@ Nenhum destes itens foi alterado nesta revisão.
 - **README e caminho C:** a versão de `README.md` consultada nesta branch não contém atualmente os valores 26,67% ou 23,33% nem a afirmação específica identificada no achado 2 da seção 5. Por isso, nenhuma alteração foi feita no README; a divergência permanece registrada como item a reavaliar se a versão do arquivo mudar.
 - **Robustez / provenance:** não foi alterado o contrato r2-a nem a regra do Judge. Tornar `provenance_complete` obrigatório ou derivado é uma decisão de desenho que exige ADR, testes e versionamento explícito; não deve ser feito silenciosamente em uma PR documental.
 - **Narrativa pessoal:** não foi inventado nem acrescentado relato autobiográfico. O mantenedor poderá editar esse trecho se quiser acrescentar fatos em primeira pessoa.
-- **PDF v1.1:** as correções E6 acima alteram os arquivos Markdown do repositório, não o PDF binário já anexado à PR. Antes do merge, o PDF deve ser regenerado para incluir a nota estatística atualizada e a referência jurídica conferida, ou a PR deve declarar claramente que essas atualizações só estão no relatório de acompanhamento e programar uma versão posterior do PDF.
+- **PDF v1.1 — registro histórico:** no momento em que esta seção foi escrita, o PDF ainda não havia sido regenerado. Essa pendência foi resolvida pela regeneração documentada na seção 8; a seção 8 prevalece sobre esta observação temporal.
 
 ## 8. Regeneração do PDF v1.1 — revisão de acompanhamento, 18/10/2026
 
@@ -159,7 +159,7 @@ Divergências entre o PDF anterior e os Markdown que foram corrigidas: R1 (o PDF
 
 | Verificação | Resultado |
 |---|---|
-| Estado da PR #267 (API REST do GitHub) | Aberta, não mesclada, base `main`, cabeça `6d3d7b4` antes desta revisão. |
+| Estado da PR #267 (API REST do GitHub) | Na verificação registrada à época, aberta e não mesclada, base `main`, cabeça `6d3d7b4`. O estado mais recente é registrado na seção 9. |
 | Check-runs do commit `6d3d7b4` | 19 concluídos com sucesso (incluindo `test (3.11)`, `test (3.12)`, `test (3.13)`, `golden-regression`, `judge-regression`, `security`, CodeQL, Schemathesis e OpenAPI); `rgc-design-simulation` pulado por desenho. |
 | `pytest -q` em `6d3d7b4`, Python 3.13.16, ambiente virtual local | 1.058 testes aprovados, nenhuma falha. A falha de ambiente registrada na seção 4 (`dist-packages`) não ocorre em ambiente virtual. |
 | Afirmações técnicas contra o código | Conferidos: autoridade do Judge e teste T7 (`tests/verification/test_judge2_canonical_output.py`), T9 sem rede, `provenance_complete` com padrão `true`, exigência de `origin_id` ou `canonical_url`, predicados de robustez, licenças dos caminhos A e B, comandos `search` e `eval` da CLI, estado da ADR-010, DEC-013, DEC-014, piloto 02, 903 commits na `main`, datas das releases e DOIs. |
@@ -194,9 +194,42 @@ Resultado: o PDF não contém publicidade nem propaganda de cloud.
 ### 8.6 Divergências não resolvidas
 
 - A seção 7 afirma conferência oficial do CPC e do CPP que esta revisão não conseguiu reproduzir (8.5, item 1).
-- A descrição da PR #267 pode ainda conter o rodapé automático mencionado na seção 5, item 6; não foi alterada nesta revisão.
+- A descrição da PR #267 foi revisada para refletir o PDF regenerado, o hash publicado e as ressalvas documentais; consulte a seção 9 para o estado final verificado.
 
 ### 8.7 Decisões para o mantenedor
 
 - **Fonte do PDF.** Para regenerações futuras reproduzíveis, a fonte HTML e as imagens da marca d'água podem ser acrescentadas ao repositório (por exemplo, em `docs/institutional/fonte/`). Não foram incluídas porque isso amplia o escopo desta PR.
 - **Merge.** A PR continua aberta e sem merge; a decisão é exclusiva do mantenedor.
+
+
+## 9. Reconciliação final e estado da PR — 18/10/2026
+
+Esta seção atualiza os registros operacionais anteriores, que foram escritos em momentos diferentes durante a revisão. Em caso de conflito temporal, esta seção e a identificação do artefato na seção 8 prevalecem sobre observações anteriores.
+
+### 9.1 Artefato publicado na branch
+
+- **PDF:** `docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf`.
+- **SHA-256 registrado:** `468e471ce8be3efd18edcf0ec03d3478b7fdd75a907ad836d9cd99d730a40b44`.
+- **Formato registrado:** PDF 1.7, A4, 31 páginas.
+- **Estado documental:** a seção 8 registra abertura, validação estrutural, extração de texto, links internos, presença da marca d'água e inspeção contra publicidade. Essas verificações são as relatadas pelo executor da regeneração; não devem ser descritas como auditoria jurídica independente.
+- **Fonte de geração:** o HTML e os recursos de origem não foram incluídos nesta PR. Isso limita a reprodutibilidade da geração; a fonte pode ser adicionada em alteração futura, com decisão explícita de escopo.
+
+### 9.2 Estado do repositório e dos checks
+
+Na consulta ao GitHub que motivou esta atualização, a PR #267 estava aberta, não mesclada, com base `main` e HEAD `6d4770236ec64d9e4059d1ad61ac6e2a2f60e7f5`. Os workflows associados a esse SHA foram consultados e os sete workflows retornados estavam concluídos com sucesso: CI, Security, Dependency Review, CodeQL, Schemathesis Full API Contract, API Contract Guard e Golden r2 Migration. A consulta de status combinado não retornou status individuais; por isso, este relatório não interpreta esse resultado vazio como prova adicional de aprovação. O relatório anterior registra 19 check-runs no SHA anterior `6d3d7b4`, não no HEAD final.
+
+A presente atualização da auditoria e da descrição da PR cria um novo commit e pode alterar o HEAD da PR. Portanto, os resultados dos checks acima **não devem ser atribuídos automaticamente ao novo HEAD**. Antes do merge, confirmar no GitHub que os checks obrigatórios estão concluídos e aprovados para o HEAD mais recente, incluindo os checks de segurança, regressão do Judge, Golden e contrato de API.
+
+### 9.3 Descrição da PR e decisões ainda abertas
+
+A descrição da PR foi alinhada ao PDF regenerado, ao SHA-256 registrado, às limitações jurídicas e à decisão de manter a PR aberta. A PR não deve ser mesclada automaticamente como parte desta atualização.
+
+Permanecem decisões do mantenedor:
+1. Se a fonte HTML e os recursos da marca d'água serão arquivados no repositório para futuras regenerações.
+2. Se a regra DCO se aplica aos commits desta PR e, em caso afirmativo, qual é o procedimento permitido para regularização sem reescrever indevidamente o histórico.
+3. Se haverá revisão humana das referências ao CPC e ao CPP antes de qualquer uso jurídico do PDF. A documentação não é parecer jurídico.
+4. Se o contexto de mercado sem fonte específica será mantido como contexto não avaliado ou receberá uma referência verificável em revisão futura.
+
+### 9.4 Conclusão operacional
+
+O PDF v1.1 foi registrado como regenerado e validado pelo executor, e o SHA-256 acima identifica o arquivo informado como publicado. A auditoria documental explicita limitações, não reivindica resultados de benchmark PT-BR, certificações ou parcerias inexistentes e registra a ausência de publicidade promocional no conteúdo verificado. A PR deve permanecer aberta até que os checks do HEAD final sejam confirmados e o mantenedor conclua as decisões pendentes. Nenhum merge, tag ou release é autorizado por esta seção.
