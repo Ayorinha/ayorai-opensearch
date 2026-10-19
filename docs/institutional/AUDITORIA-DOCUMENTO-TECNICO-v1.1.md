@@ -112,3 +112,91 @@ Nenhum destes itens foi alterado nesta revisão.
 - **Robustez / provenance:** não foi alterado o contrato r2-a nem a regra do Judge. Tornar `provenance_complete` obrigatório ou derivado é uma decisão de desenho que exige ADR, testes e versionamento explícito; não deve ser feito silenciosamente em uma PR documental.
 - **Narrativa pessoal:** não foi inventado nem acrescentado relato autobiográfico. O mantenedor poderá editar esse trecho se quiser acrescentar fatos em primeira pessoa.
 - **PDF v1.1:** as correções E6 acima alteram os arquivos Markdown do repositório, não o PDF binário já anexado à PR. Antes do merge, o PDF deve ser regenerado para incluir a nota estatística atualizada e a referência jurídica conferida, ou a PR deve declarar claramente que essas atualizações só estão no relatório de acompanhamento e programar uma versão posterior do PDF.
+
+## 8. Regeneração do PDF v1.1 — revisão de acompanhamento, 18/10/2026
+
+Esta seção registra a regeneração do PDF pendente desde a seção 7. Nenhum código, regra do Judge, Golden, manifesto, hash congelado, pré-registro, ADR, captura de fonte ou release foi alterado. Os valores históricos (Golden v0 e v0.1, `output_sha256` do exemplo, contagens de testes e commits) foram preservados sem recálculo.
+
+### 8.1 Identificação da versão revisada
+
+| Item | Valor |
+|---|---|
+| Arquivo | `docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf` |
+| SHA-256 do PDF final | `468e471ce8be3efd18edcf0ec03d3478b7fdd75a907ad836d9cd99d730a40b44` |
+| Tamanho e páginas | 498.841 bytes; 31 páginas A4; PDF 1.7 |
+| PDF substituído | SHA-256 `8f42f46005c079d439b0172bb57a6cb3907d707f6a2a8a18e7eeb4d8101a63ac` (446.845 bytes, 37 páginas), do commit `5425162`/`93ef9b9`; continua acessível no histórico |
+| Base de conteúdo | `main` em `ae44c2380d07635966ba036563681f151cd5a937` (inalterada em 18/10/2026) e branch `docs/documento-tecnico-pdf` em `6d3d7b4a9253668dba95f93d6c60effede11fc4b` |
+| Geração | HTML e CSS próprios renderizados com WeasyPrint 70.0 (pydyf 0.13.0, fontTools 4.65.0), fontes Inter e DejaVu Sans Mono embutidas, as mesmas da versão anterior |
+| Fonte HTML usada na geração | SHA-256 `0f4272609bdd22030ff3687835f7e4715fd1c3e8422bf6c965af0cc2db5782e5`; não incluída no repositório (ver 8.7) |
+| Imagem da marca d'água | logotipo AYORAI ATTRACTOR fornecido pelo mantenedor, SHA-256 `f69f8f24cdb0494e9af22b29b3650036d9474dca80e113fc45c355efa7903611` |
+
+O arquivo-fonte em HTML da v1.0/v1.1 original não estava no repositório; o documento foi reconstruído a partir do texto extraído do PDF anterior e da inspeção visual das páginas, mantendo a capa, a paleta, a tipografia, a ordem dos 20 capítulos, as 13 figuras, as tabelas e os selos de estado. Duas gerações sucessivas a partir da mesma fonte produzem texto idêntico (`pdftotext`), mas não bytes idênticos, porque o subconjunto das fontes embutidas varia entre execuções. Por isso, o SHA-256 acima identifica este arquivo publicado, e não uma compilação reproduzível byte a byte.
+
+### 8.2 Alterações no PDF
+
+| # | Local | Alteração | Fonte de conferência |
+|---|---|---|---|
+| R1 | Cap. 14 | Nova subseção sobre o teste exato bilateral de McNemar: definição dos pares discordantes b e c, fórmula, tabela 18/30, 19/30 e 24/30 com melhor e pior arranjo, e caixa de correção da v1.0 que menciona as notas E6. | Seção 3 deste relatório; notas E6 em `docs/adr/ADR-005-hybrid-multilingual-stance.md` e `docs/eval/F1-RESULTS.md` |
+| R2 | Cap. 11 e ref. 9–10 | O aviso jurídico deixa de dizer que CPC art. 369 e CPP arts. 158-A a 158-F não foram conferidos e passa a registrar a conferência oficial de 18/10/2026 descrita na seção 7; a URL do CPP passa a ser a do texto compilado. Mantida a ressalva de que não há parecer jurídico nem conformidade. | Seção 7 deste relatório (ver limitação em 8.5) |
+| R3 | Cap. 8 | “Falha fechada” e “defesa vem de fora” estavam no presente, como se implantados. Passam a ser desenho proposto da ADR-010 (fase 3), ainda não implantado. | ADR-010, decisão 3 e fase 3; `docs/STATUS.md` |
+| R4 | Cap. 1, 8, 15 e fig. 8 e 12 | ADR-010 descrita como “aceita em parte” (decisões 1–4), com decisões 5–7 em aberto, em vez de “decidida”. | ADR-010, linha de status; `docs/STATUS.md` |
+| R5 | Cap. 6, fig. 4 e 5, glossário | Etapa 5 renomeada para “Clusters de dependência”; o cluster 1 conta como “1 cluster”, não “1 fonte independente”; acrescentado que vínculos não declarados pelo chamador produzem clusters distintos. Robustez R2/R3 descrita como proveniência “declarada”; incluída a proposta em aberto sobre `provenance_complete`. Diretriz 6 passa a dizer “clusters distintos” em vez de “independentes”. | `verification/clusters.py`, `verification/judge2/adjudication.py` (`_robustness`), `verification/api_models.py` (`provenance_complete: bool = True`), `verification/models.py` (`origin_id` ou `canonical_url`) |
+| R6 | Cap. 1, 12, 14 e 16 | Estado do benchmark PT-BR explicitado: piloto 01 concluído e descartado sem execução do sistema; piloto 02 é o próximo passo e só tem ficha em branco; protocolo não congelado; nenhum caso definitivo; nenhum resultado. H1 identificada como hipótese. | `docs/STATUS.md`; `docs/eval/PREREGISTRATION-RGC-v1.md` (nota DEC-011); `docs/eval/PILOT-RGC-02-WORKSHEET.md` |
+| R7 | Sumário | Quadro “Como ler” passa a distinguir resultado medido, hipótese, proposta e funcionalidade não implementada; selo PARCIAL explicado. | Pedido do mantenedor |
+| R8 | Cap. 2 | A paráfrase de `docs/INVESTIDORES.md` incluía “perante um auditor, um perito ou um juiz”, que não está na fonte. Passa a reproduzir a crítica registrada (linha 68) e atribui a exigência de reprodutibilidade às ADR-002 e ADR-009. | `docs/INVESTIDORES.md`, linha 68 |
+| R9 | Cap. 12 e ref. 20 | Removida a referência 20 (página comercial de comparação entre dois fornecedores), que não era citada no texto e não sustentava a frase sobre provedores. A frase passou a indicar que é contexto geral de mercado não avaliado pelo projeto. Acrescentadas chamadas [6], [8] e [12] às referências já listadas. “Já exige” sobre a Res. CNJ 615 trocado por “trata de”. | Inspeção contra publicidade (8.4) |
+| R10 | Cap. 7 | Caminho A: indicada a licença CC BY-NC 4.0 do XNLI; caminho B: a restrição EVAL_ONLY é operacional, não constatação de licença NC; recomendação de revisão por especialista atribuída à política e à ADR-005. | `docs/legal/MODEL-LICENSE-POLICY.md`; nota E5 de `docs/eval/F1-RESULTS.md` |
+| R11 | Cap. 9 e 10 | Recibo e prova de inclusão do `/v1/verify` e “recibo juntável aos autos” marcados como proposta dependente da ADR-010. Exemplo de requisição indicado como abreviado. | ADR-010 |
+| R12 | Cap. 14 | Resultados Golden rotulados como “medidos e históricos”, sem recálculo. | `docs/eval/F1-RESULTS.md`; `docs/eval/F1.2-RESULTS.md` |
+| R13 | Cap. 20 | Descrição do `README.md` atualizada (não contém mais “evidências v0.3.0”); acrescentados `MODEL-LICENSE-POLICY.md`, `F1-RESULTS.md` e este relatório; lista de ADRs corrigida para os arquivos existentes (ADR-002 a ADR-006, ADR-009 e ADR-010). | Árvore do repositório em `6d3d7b4` |
+| R14 | Paginação | A v1.1 anterior tinha uma página com duas linhas (pág. 22) e outras quase vazias. Nenhuma página da nova versão tem menos de um terço de conteúdo, salvo finais de capítulo. Capítulo 19 renomeado para “Glossário e histórico de revisões”. | Inspeção visual e `pdftotext` |
+| R15 | Todas as páginas | Marca d'água com o logotipo do projeto, centrada, em azul-marinho com opacidade de cerca de 8,5% nas páginas internas e em branco com cerca de 15% na capa; desenhada atrás do conteúdo, com fundos de tabelas e quadros semitransparentes para não encobri-la. | Pedido do mantenedor |
+| R16 | Cap. 19 e 20 | Histórico de revisões e nota final atualizados com esta regeneração e com a nova execução da suíte de testes. | Seção 8.3 |
+
+Divergências entre o PDF anterior e os Markdown que foram corrigidas: R1 (o PDF não citava as notas E6), R2 (o PDF dizia que CPC e CPP não haviam sido conferidos, ao contrário da seção 7), R3, R4 e R8.
+
+### 8.3 Verificações executadas
+
+| Verificação | Resultado |
+|---|---|
+| Estado da PR #267 (API REST do GitHub) | Aberta, não mesclada, base `main`, cabeça `6d3d7b4` antes desta revisão. |
+| Check-runs do commit `6d3d7b4` | 19 concluídos com sucesso (incluindo `test (3.11)`, `test (3.12)`, `test (3.13)`, `golden-regression`, `judge-regression`, `security`, CodeQL, Schemathesis e OpenAPI); `rgc-design-simulation` pulado por desenho. |
+| `pytest -q` em `6d3d7b4`, Python 3.13.16, ambiente virtual local | 1.058 testes aprovados, nenhuma falha. A falha de ambiente registrada na seção 4 (`dist-packages`) não ocorre em ambiente virtual. |
+| Afirmações técnicas contra o código | Conferidos: autoridade do Judge e teste T7 (`tests/verification/test_judge2_canonical_output.py`), T9 sem rede, `provenance_complete` com padrão `true`, exigência de `origin_id` ou `canonical_url`, predicados de robustez, licenças dos caminhos A e B, comandos `search` e `eval` da CLI, estado da ADR-010, DEC-013, DEC-014, piloto 02, 903 commits na `main`, datas das releases e DOIs. |
+| Abertura e integridade do PDF | `pdfinfo`, `qpdf --check` (sem erros de sintaxe ou de stream) e `pypdf` abrem o arquivo; 31 páginas; fontes embutidas. |
+| Extração de texto | `pdftotext` em todas as páginas: nenhuma página vazia, nenhum caractere U+FFFD ou de controle. |
+| Links internos | 60 links do sumário e de referências internas; todos resolvem para destinos existentes. As URLs externas são texto, como na versão anterior. |
+| Marca d'água | Presente nas 31 páginas (`pdfimages -list`). |
+| Correções incorporadas | Busca no texto extraído pelos trechos das correções R1–R6 e pelo `output_sha256` do exemplo: todos presentes. |
+| Comparação com a versão anterior | Comparação frase a frase do texto extraído; as diferenças correspondem às alterações listadas em 8.2 ou a mudanças de quebra de linha e de layout de tabelas. |
+
+### 8.4 Inspeção contra publicidade e propaganda de cloud
+
+Busca, sem distinção de maiúsculas, no texto extraído do PDF final pelos termos: nuvem, cloud, AWS, Amazon, Azure, Microsoft, Google, Oracle, IBM, Vectara, Cleanlab, rfp.wiki, Anthropic, Claude, OpenAI, ChatGPT, Gemini, Copilot, Hugging, patrocín, parceri, oferta, desconto, gratuit, assine, compre e WeasyPrint.
+
+- Nenhuma ocorrência de provedor de cloud, de fornecedor de modelo ou da ferramenta usada para gerar ou revisar o documento, nem de linguagem de oferta ou chamada comercial.
+- “nuvem”: uma ocorrência, na frase neutra do capítulo 12 sobre recursos semelhantes de grandes provedores, sem nomes nem recomendação.
+- “parceri”: duas ocorrências, ambas negando parceria.
+- Removida a referência comercial rfp.wiki (R9).
+- Permanecem, por serem dependências reais ou dados de proveniência descritos de forma neutra: GitHub e GitHub Actions, Dependabot, CodeQL, Bandit, Zenodo (DOI), FastAPI, Typer, Uvicorn e SQLite.
+- Os metadados do PDF contêm o campo técnico padrão `Producer: WeasyPrint 70.0`, gravado automaticamente pelo gerador; não é conteúdo visível nem promocional e foi mantido por proveniência.
+
+Resultado: o PDF não contém publicidade nem propaganda de cloud.
+
+### 8.5 Limitações que continuam abertas
+
+1. **CPC art. 369 e CPP arts. 158-A a 158-F.** Nesta revisão, as páginas do Planalto voltaram truncadas pela ferramenta de leitura e o acesso direto foi bloqueado pela rede do ambiente; só os textos iniciais dos arts. 77, 79, 80 e 81 do CPC foram lidos no texto oficial. O PDF registra a conferência com base na seção 7; esta revisão não a refez de forma independente. Recomenda-se nova conferência humana antes de uso jurídico.
+2. **Semântica de robustez e clusters.** `provenance_complete` continua declarado pelo chamador e com padrão `true`; clusters distintos continuam significando apenas ausência de dependência detectada. Qualquer mudança exige ADR e nova versão das regras (seção 5, item 3).
+3. **Contexto de mercado no capítulo 12.** A frase sobre plataformas comerciais e provedores de nuvem ficou sem fonte específica após a remoção da referência comercial; está marcada no texto como contexto não avaliado.
+4. **Narrativa pessoal (capítulo 2)** e **DCO dos commits** continuam como na seção 5, itens 4 e 7.
+5. **Indicadores históricos.** “1.057 testes”, “~9,0 mil” e “~10,1 mil linhas” e os 823/813/7 commits de 13/10/2026 foram preservados da v1.1 e não recalculados nesta revisão.
+
+### 8.6 Divergências não resolvidas
+
+- A seção 7 afirma conferência oficial do CPC e do CPP que esta revisão não conseguiu reproduzir (8.5, item 1).
+- A descrição da PR #267 pode ainda conter o rodapé automático mencionado na seção 5, item 6; não foi alterada nesta revisão.
+
+### 8.7 Decisões para o mantenedor
+
+- **Fonte do PDF.** Para regenerações futuras reproduzíveis, a fonte HTML e as imagens da marca d'água podem ser acrescentadas ao repositório (por exemplo, em `docs/institutional/fonte/`). Não foram incluídas porque isso amplia o escopo desta PR.
+- **Merge.** A PR continua aberta e sem merge; a decisão é exclusiva do mantenedor.
