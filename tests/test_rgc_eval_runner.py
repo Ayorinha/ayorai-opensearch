@@ -521,7 +521,7 @@ def test_evaluate_uses_annotated_atoms() -> None:
         {"e1": "PARTIALLY_SUPPORTED"},
         DOCS,
         development_labels=DEV_LABELS,
-            mode="oracle",
+        mode="oracle",
         vocabulary="judge2",
         iterations=10,
     )
@@ -555,8 +555,13 @@ def test_rectified_mark_defaults_to_false_and_must_be_boolean() -> None:
 def test_rectified_cases_are_reported_as_a_separate_stratum() -> None:
     labels = {"r1": "SUPPORTED", "r2": "SUPPORTED", "r3": "SUPPORTED"}
     result = RUNNER["evaluate"](
-        _rectified_cases(), labels, DOCS, development_labels=DEV_LABELS,
-            mode="oracle", vocabulary="judge2", iterations=50
+        _rectified_cases(),
+        labels,
+        DOCS,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=50,
     )
     # Primary metrics keep every evaluable case, rectified or not.
     assert result["metrics"]["n"] == 3
@@ -575,10 +580,24 @@ def test_rectified_mark_does_not_change_the_judge_output() -> None:
     unmarked = [{k: v for k, v in case.items() if k != "rectified"} for case in marked]
     labels = {"r1": "SUPPORTED", "r2": "REFUTED", "r3": "SUPPORTED"}
     run = RUNNER["evaluate"]
-    with_mark = run(marked, labels, DOCS, development_labels=DEV_LABELS,
-            mode="oracle", vocabulary="judge2", iterations=20)
-    without = run(unmarked, labels, DOCS, development_labels=DEV_LABELS,
-            mode="oracle", vocabulary="judge2", iterations=20)
+    with_mark = run(
+        marked,
+        labels,
+        DOCS,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+    )
+    without = run(
+        unmarked,
+        labels,
+        DOCS,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+    )
     assert [r["output_sha256"] for r in with_mark["cases"]] == [
         r["output_sha256"] for r in without["cases"]
     ]
