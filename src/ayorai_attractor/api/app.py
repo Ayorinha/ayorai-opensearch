@@ -257,9 +257,9 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
         raise RequestValidationError(
             [
                 {
-                    "type": "model_attributes_type",
+                    "type": "missing",
                     "loc": ("body",),
-                    "msg": "Input should be a valid dictionary or object to extract fields from",
+                    "msg": "Field required",
                     "input": None,
                 }
             ],
