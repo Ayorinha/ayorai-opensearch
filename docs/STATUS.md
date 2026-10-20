@@ -1,8 +1,18 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-10-18
+Updated: 2026-10-20
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
+
+## Current execution snapshot (2026-10-20)
+
+- Current `main` SHA after PR #279: `7a4a26805f70726fca63560d7ab05ae71207c4e2` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/7a4a26805f70726fca63560d7ab05ae71207c4e2)). The connector returned no combined-status entries for this merge commit, so this page does not assert that its required checks passed; check the SHA-specific Actions runs before relying on main status.
+- PR #273 merged the methodological review. Its findings are documented, but the RGC protocol remains **not frozen**.
+- PR #274 merged the implementation correction so baseline B is derived only from the public development partition. The dated DEC-014 amendment proposal remains separate and unapproved in [PR #277](https://github.com/Ayorinha/ayorai-opensearch/pull/277).
+- PR #275 clarified that `RULE_GAP` is an exploratory pilot-only marker, not a Judge verdict and not a metric/concordance label.
+- PR #278 corrected H1 runner suite selection and strengthened report-manifest integrity checks; it does not establish benchmark performance.
+- PR #279 clarified the statistics contract: legacy ADR-002 6×6 matrix versus RGC `judge2` vocabulary, and missing prediction records versus present `INVALID_PREDICTION` values.
+- The only open PR observed at this refresh is [#277](https://github.com/Ayorinha/ayorai-opensearch/pull/277), a methodological proposal. Do not merge it or treat it as an execution authorization without the required maintainer decision.
 
 ## Main SHA and checks
 
