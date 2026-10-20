@@ -14,7 +14,7 @@
 
 ## Meta orientativa de composição
 
-O protocolo propõe aproximadamente 10 casos, procurando incluir, quando fontes elegíveis sustentarem os exemplos, pelo menos 3 casos compostos parcialmente apoiados, 1 caso com fontes primárias divergentes, 1 caso que envolva retificação e 2 casos sem evidência suficiente (`UNVERIFIED`). Isso é uma meta condicionada, não uma quota: não fabricar casos, forçar rótulos nem usar fonte cuja vigência/proveniência não possa ser conferida. Registre limitações na revisão final.
+O protocolo propõe aproximadamente 10 casos, procurando incluir, quando fontes elegíveis sustentarem os exemplos, pelo menos 3 casos compostos parcialmente apoiados, 1 caso com fontes divergentes (`CONFLICTING`), 1 caso que envolva retificação e 2 casos sem evidência suficiente (`UNVERIFIED`). Isso é uma meta condicionada, não uma quota: não fabricar casos, forçar rótulos nem usar fonte cuja vigência/proveniência não possa ser conferida. Registre limitações na revisão final.
 
 ## Valores permitidos
 
