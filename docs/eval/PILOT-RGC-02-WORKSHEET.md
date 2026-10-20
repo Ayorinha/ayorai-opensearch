@@ -16,6 +16,8 @@
 
 **Rótulo de referência:** `SUPPORTED`, `REFUTED`, `UNVERIFIED`, `PARTIALLY_SUPPORTED`, `CONFLICTING`.
 
+**Marcador exclusivo do piloto:** `RULE_GAP` pode ser usado quando as regras de anotação não permitem uma decisão consistente. Ele não é um veredito do Judge, não entra em métricas nem no cálculo de concordância e deve ser resolvido por revisão metodológica; os casos do piloto serão descartados.
+
 **Tipos de dificuldade:** número, data, negação, paráfrase, apoio parcial, entidade trocada (marcar os aplicáveis).
 
 ## Ficha de anotação — preencher manualmente
