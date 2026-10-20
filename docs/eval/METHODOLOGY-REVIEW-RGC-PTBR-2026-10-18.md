@@ -1,3 +1,5 @@
+Revisão por ferramenta automatizada, publicada pelo mantenedor.
+
 # Revisão metodológica crítica — benchmark RGC PT-BR
 
 **Estado:** proposta de revisão; não aprova nem congela o protocolo.  
@@ -135,7 +137,7 @@ As conclusões abaixo referem-se ao conteúdo desses documentos no estado consul
 
 **Risco:** usar rótulos da avaliação para determinar a baseline primária contraria a DEC-014 e contamina a comparação confirmatória. A margem de 10 pontos percentuais, o limite inferior do IC95% e o teste de McNemar poderiam ser calculados contra a baseline errada.
 
-**Ação proposta em 2026-10-20:** a [PR #274](https://github.com/Ayorinha/ayorai-opensearch/pull/274) propõe harmonizar o pré-registro e o executor: B deriva apenas dos rótulos humanos da partição pública, com integridade de IDs e hashes dos arquivos; A permanece descritiva; H1 usa exclusivamente B. A correção ainda depende da conclusão dos checks e da revisão normal. Até essa validação, M-11 deve ser tratado como **correção proposta, não encerrada**.
+**Estado em 2026-10-20:** a correção do executor foi integrada pela [PR #274](https://github.com/Ayorinha/ayorai-opensearch/pull/274), commit `c639d0fda7a6fb8ab29bb438611ee536b1f3ddc2`: B deriva dos rótulos humanos da partição pública de desenvolvimento, com validação da correspondência dos IDs e registro de hashes; A permanece descritiva; H1 usa exclusivamente B. Os checks das PRs documentais #273 e #275 ainda falharam porque os commits testados não continham a correção de compatibilidade da API que foi integrada depois. A redação do pré-registro foi alterada na #274 sem seguir o procedimento exigido para artefato protegido; a regularização dessa alteração metodológica permanece pendente de emenda datada e aprovação explícita do mantenedor. Portanto, a correção do executor está integrada, mas M-11 só deve ser encerrado após verificar os checks no estado atualizado e regularizar formalmente o pré-registro.
 
 **Critério de encerramento:** pré-registro, DEC-014, executor, testes e relatório nomeiam e usam A/B consistentemente; H1 compara o sistema apenas com B; A é descritiva; os testes passam no commit final e a correção é integrada sem alterar a definição aprovada.
 
