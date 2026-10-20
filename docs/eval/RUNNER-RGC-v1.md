@@ -23,7 +23,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
    - **Modo `retrieval`**: o texto de `DOCUMENTS.jsonl` é segmentado em dispositivos e os *k* melhores trechos são recuperados por BM25 (§3). Mede o sistema de ponta a ponta.
 2. **Stance**: `RuleStanceDetector` (versão registrada no relatório) para cada par (afirmação, trecho).
 3. **Veredito**: Judge 2.0 `adjudicate` (ADR-009). Afirmação simples: **um átomo** cobrindo a afirmação inteira. Afirmação composta (DEC-010, opção A): os átomos anotados no campo `atoms` do caso (dois ou mais trechos da afirmação, por `start_offset`/`end_offset`, ordenados e sem sobreposição); a posição é detectada por átomo contra cada trecho, e o veredito composto segue K1–K5. Anotação de átomos inválida interrompe a execução.
-4. **Estrato retificado** (Emenda 4, DEC-011 opção A; executor `rgc-eval/0.3.0`): o campo opcional `rectified` do caso deve ser booleano (`true`/`false`); ausência equivale a `false` e qualquer outro valor interrompe a execução. Casos retificados **permanecem** nas métricas primárias e também são reportados em `strata.rectified`; os demais em `strata.not_rectified`. Cada estrato traz `n`, contagens de referência, acurácia, acurácia balanceada, macro-F1, IC95% por bootstrap e matriz de confusão; nenhum critério H1 é decidido por estrato. A marca não entra no Judge: o `output_sha256` de cada caso é idêntico com ou sem o campo.
+4. **Estrato retificado** (Emenda 4, DEC-011 opção A; executor `rgc-eval/0.4.0`): o campo opcional `rectified` do caso deve ser booleano (`true`/`false`); ausência equivale a `false` e qualquer outro valor interrompe a execução. Casos retificados **permanecem** nas métricas primárias e também são reportados em `strata.rectified`; os demais em `strata.not_rectified`. Cada estrato traz `n`, contagens de referência, acurácia, acurácia balanceada, macro-F1, IC95% por bootstrap e matriz de confusão; nenhum critério H1 é decidido por estrato. A marca não entra no Judge: o `output_sha256` de cada caso é idêntico com ou sem o campo.
 5. **Mapeamento** (`to_label`): `DECIDED` → veredito do Judge; `ABSTAINED` → `UNVERIFIED` (DEC-009 aprovada); qualquer outro estado → `INVALID_PREDICTION`. No vocabulário histórico `adr002`, `SUPPORTED` com robustez `R3` → `VERIFIED` (ADR-009 §11), mas esse mapeamento não se aplica ao vocabulário RGC `judge2`.
 
 ## 3. Parâmetros propostos para congelamento
@@ -38,7 +38,8 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 | Macro-F1 | média sobre a união dos estados de referência e previstos, **incluindo** `INVALID_PREDICTION` (F1 = 0, escolha conservadora) | |
 | Acurácia balanceada | média das revocações dos estados presentes na referência | |
 | IC95% | bootstrap percentil, 10.000 reamostragens, seed `20261003`, mesma sequência de reamostragem para as três métricas | |
-| Baseline | classe majoritária da partição avaliada; empate desfeito pela ordem do vocabulário | |
+| Baseline B primária | classe majoritária da partição pública de desenvolvimento (70%); derivada dos rótulos de desenvolvimento e aplicada sem alteração à avaliação | DEC-014; arquivo e SHA-256 dos rótulos de desenvolvimento registrados no relatório |
+| Baseline A descritiva | classe majoritária da própria partição avaliada; empate desfeito pela ordem do vocabulário | somente prevalência observada; excluída de H1 |
 | Comparação | McNemar exato bilateral (`ayorai_attractor.evaluation.stats`) | |
 | Precisão das decisões | as três condições de H1 usam valores **não arredondados**; o arredondamento (6 casas) vale só para o relatório | |
 
@@ -64,10 +65,15 @@ Uma requisição `r2-a` válida com `evidence[].canonical_url` preenchido retorn
 ## 7. Uso (somente após rótulos completos e parâmetros congelados)
 
 ```bash
-python evals/ptbr/rgc_eval.py run <casos.jsonl> --labels <rotulos.jsonl> \
+python evals/ptbr/rgc_eval.py run <casos-avaliacao.jsonl> \
+    --labels <rotulos-avaliacao.jsonl> \
+    --development-cases <casos-desenvolvimento-publico.jsonl> \
+    --development-labels <rotulos-desenvolvimento-publico.jsonl> \
     --mode retrieval --out reports/rgc-<data>.json
 ```
 
 Formato dos rótulos (um por linha): `{"case_id": "...", "verdict": "SUPPORTED"}`.
+
+A execução exige a partição pública de desenvolvimento por `--development-cases` e seus rótulos humanos completos por `--development-labels`. O executor valida que os IDs dos dois arquivos correspondem exatamente, deriva B somente desses rótulos, registra os SHA-256 dos casos e rótulos e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
 
 Este executor não afirma validação, parceria ou endosso da Anatel ou de qualquer instituição.
