@@ -53,7 +53,7 @@ from ayorai_attractor.verification.stance import RuleStanceDetector
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.3.0"
+RUNNER_VERSION = "rgc-eval/0.4.0"
 SEED = 20261003
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
