@@ -33,6 +33,7 @@ DOCS = {
         "sint-1", "https://example.test/sint-1", "2026-10-13T00:00:00Z", TEXT, "sintético"
     )
 }
+DEV_LABELS = {"dev-1": "SUPPORTED", "dev-2": "SUPPORTED", "dev-3": "REFUTED"}
 
 
 def _passage_text(passage: Any) -> str:
@@ -167,9 +168,9 @@ def test_metrics_match_hand_computation() -> None:
     assert RUNNER["balanced_accuracy"](gold, pred) == pytest.approx((2 / 3 + 1 + 0) / 3)
     # F1: SUPPORTED 0.8, REFUTED 2/3, UNVERIFIED 0, INVALID_PREDICTION 0.
     assert RUNNER["macro_f1"](gold, pred) == pytest.approx((0.8 + 2 / 3 + 0 + 0) / 4)
-    metrics = RUNNER["compute_metrics"](gold, pred, "judge2", iterations=200)
-    assert metrics["baseline"]["label"] == "SUPPORTED"
-    assert metrics["baseline"]["accuracy"] == pytest.approx(0.6)
+    metrics = RUNNER["compute_metrics"](gold, pred, "judge2", baseline_label="SUPPORTED", iterations=200)
+    assert metrics["baseline_primary"]["label"] == "SUPPORTED"
+    assert metrics["baseline_primary"]["accuracy"] == pytest.approx(0.6)
     assert metrics["invalid_predictions"] == 1
     assert metrics["absent_gold_states"] == ["PARTIALLY_SUPPORTED", "CONFLICTING"]
     assert metrics["mcnemar"]["system_right_baseline_wrong"] == 1
@@ -177,7 +178,7 @@ def test_metrics_match_hand_computation() -> None:
     assert metrics["primary_criterion"]["h1_supported"] is False
     low, high = metrics["system_ci95"]["accuracy"]
     assert 0.0 <= low <= 0.6 <= high <= 1.0
-    assert metrics == RUNNER["compute_metrics"](gold, pred, "judge2", iterations=200)
+    assert metrics == RUNNER["compute_metrics"](gold, pred, "judge2", baseline_label="SUPPORTED", iterations=200)
 
 
 def test_h1_decision_uses_unrounded_values() -> None:
@@ -185,7 +186,7 @@ def test_h1_decision_uses_unrounded_values() -> None:
     # floating point represents as 0.0999...; it must still count as >= 10 pp.
     gold = ["SUPPORTED"] * 6 + ["REFUTED"] * 4
     pred = ["SUPPORTED"] * 6 + ["REFUTED"] + ["SUPPORTED"] * 3
-    metrics = RUNNER["compute_metrics"](gold, pred, "judge2", iterations=50)
+    metrics = RUNNER["compute_metrics"](gold, pred, "judge2", baseline_label="SUPPORTED", iterations=50)
     assert metrics["primary_criterion"]["margin_at_least_10pp"] is True
     # A margin of 9.999995 pp rounds to 0.1 at 6 decimals but must not pass.
     gold = ["SUPPORTED"] * 6 + ["REFUTED"] * 4
@@ -193,11 +194,52 @@ def test_h1_decision_uses_unrounded_values() -> None:
     original = RUNNER["METRICS"]["accuracy"]
     try:
         RUNNER["METRICS"]["accuracy"] = lambda g, p: 0.6 if len(set(p)) == 1 else 0.69999995
-        metrics = compute(gold, pred, "judge2", iterations=10)
+        metrics = compute(gold, pred, "judge2", baseline_label="SUPPORTED", iterations=10)
     finally:
         RUNNER["METRICS"]["accuracy"] = original
     assert metrics["system"]["accuracy"] == 0.7
     assert metrics["primary_criterion"]["margin_at_least_10pp"] is False
+
+
+def test_primary_baseline_b_uses_development_partition_not_evaluation_gold() -> None:
+    gold = ["REFUTED", "REFUTED", "SUPPORTED"]
+    pred = ["SUPPORTED", "SUPPORTED", "SUPPORTED"]
+    metrics = RUNNER["compute_metrics"](
+        gold, pred, "judge2", baseline_label="SUPPORTED", iterations=20
+    )
+    assert metrics["baseline_primary"]["name"] == "B"
+    assert metrics["baseline_primary"]["label"] == "SUPPORTED"
+    assert metrics["baseline_primary"]["accuracy"] == pytest.approx(1 / 3)
+    assert metrics["baseline_descriptive"]["name"] == "A"
+    assert metrics["baseline_descriptive"]["label"] == "REFUTED"
+    assert metrics["baseline_descriptive"]["accuracy"] == pytest.approx(2 / 3)
+    assert metrics["primary_criterion"]["baseline"] == "B"
+    assert metrics["mcnemar"]["baseline"] == "B"
+
+
+def test_development_baseline_rejects_empty_and_invalid_labels() -> None:
+    with pytest.raises(ValueError, match="must not be empty"):
+        RUNNER["development_baseline_label"]({}, "judge2")
+    with pytest.raises(ValueError, match="outside vocabulary"):
+        RUNNER["development_baseline_label"]({"dev-1": "RULE_GAP"}, "judge2")
+
+
+def test_evaluate_rejects_development_evaluation_overlap() -> None:
+    case = _case(
+        "dev-1",
+        "O cancelamento será efetivado em até 2 dias.",
+        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+    )
+    with pytest.raises(ValueError, match="partition overlap"):
+        RUNNER["evaluate"](
+            [case],
+            {"dev-1": "SUPPORTED"},
+            DOCS,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
 
 
 def test_majority_tie_breaks_by_vocabulary_order() -> None:
@@ -231,17 +273,20 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             cases,
             {**labels, "s9": "SUPPORTED"},
             DOCS,
+            development_labels=DEV_LABELS,
             mode="oracle",
             vocabulary="judge2",
             iterations=10,
         )
     with pytest.raises(ValueError, match="duplicate case"):
         RUNNER["evaluate"](
-            [*cases, cases[0]], labels, DOCS, mode="oracle", vocabulary="judge2", iterations=10
+            [*cases, cases[0]], labels, DOCS, development_labels=DEV_LABELS,
+            mode="oracle", vocabulary="judge2", iterations=10
         )
     with pytest.raises(ValueError, match="without a label"):
         RUNNER["evaluate"](
-            cases, {"s1": "SUPPORTED"}, DOCS, mode="oracle", vocabulary="judge2", iterations=10
+            cases, {"s1": "SUPPORTED"}, DOCS, development_labels=DEV_LABELS,
+            mode="oracle", vocabulary="judge2", iterations=10
         )
 
 
@@ -264,7 +309,8 @@ def test_evaluate_reports_abstentions_mapped_to_unverified() -> None:
     module_globals["predict"] = abstaining_predict
     try:
         result = RUNNER["evaluate"](
-            cases, {"s1": "UNVERIFIED"}, DOCS, mode="oracle", vocabulary="judge2", iterations=10
+            cases, {"s1": "UNVERIFIED"}, DOCS, development_labels=DEV_LABELS,
+            mode="oracle", vocabulary="judge2", iterations=10
         )
     finally:
         module_globals["predict"] = original
@@ -319,6 +365,17 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     )
     labels = tmp_path / "labels.jsonl"
     labels.write_text(json.dumps({"case_id": "s1", "verdict": "SUPPORTED"}) + "\n")
+    development_labels = tmp_path / "development-labels.jsonl"
+    development_labels.write_text(
+        "\n".join(
+            json.dumps(row)
+            for row in (
+                {"case_id": "dev-1", "verdict": "SUPPORTED"},
+                {"case_id": "dev-2", "verdict": "SUPPORTED"},
+                {"case_id": "dev-3", "verdict": "REFUTED"},
+            )
+        ) + "\n"
+    )
     out = tmp_path / "report.json"
     code = RUNNER["main"](
         [
@@ -326,6 +383,8 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
             str(cases),
             "--labels",
             str(labels),
+            "--development-labels",
+            str(development_labels),
             "--documents",
             str(documents),
             "--mode",
@@ -445,7 +504,8 @@ def test_evaluate_uses_annotated_atoms() -> None:
         [case],
         {"e1": "PARTIALLY_SUPPORTED"},
         DOCS,
-        mode="oracle",
+        development_labels=DEV_LABELS,
+            mode="oracle",
         vocabulary="judge2",
         iterations=10,
     )
@@ -479,7 +539,8 @@ def test_rectified_mark_defaults_to_false_and_must_be_boolean() -> None:
 def test_rectified_cases_are_reported_as_a_separate_stratum() -> None:
     labels = {"r1": "SUPPORTED", "r2": "SUPPORTED", "r3": "SUPPORTED"}
     result = RUNNER["evaluate"](
-        _rectified_cases(), labels, DOCS, mode="oracle", vocabulary="judge2", iterations=50
+        _rectified_cases(), labels, DOCS, development_labels=DEV_LABELS,
+            mode="oracle", vocabulary="judge2", iterations=50
     )
     # Primary metrics keep every evaluable case, rectified or not.
     assert result["metrics"]["n"] == 3
@@ -498,8 +559,10 @@ def test_rectified_mark_does_not_change_the_judge_output() -> None:
     unmarked = [{k: v for k, v in case.items() if k != "rectified"} for case in marked]
     labels = {"r1": "SUPPORTED", "r2": "REFUTED", "r3": "SUPPORTED"}
     run = RUNNER["evaluate"]
-    with_mark = run(marked, labels, DOCS, mode="oracle", vocabulary="judge2", iterations=20)
-    without = run(unmarked, labels, DOCS, mode="oracle", vocabulary="judge2", iterations=20)
+    with_mark = run(marked, labels, DOCS, development_labels=DEV_LABELS,
+            mode="oracle", vocabulary="judge2", iterations=20)
+    without = run(unmarked, labels, DOCS, development_labels=DEV_LABELS,
+            mode="oracle", vocabulary="judge2", iterations=20)
     assert [r["output_sha256"] for r in with_mark["cases"]] == [
         r["output_sha256"] for r in without["cases"]
     ]
@@ -516,6 +579,7 @@ def test_invalid_rectified_mark_stops_the_run() -> None:
             cases,
             {"r1": "SUPPORTED", "r2": "REFUTED", "r3": "SUPPORTED"},
             DOCS,
+            development_labels=DEV_LABELS,
             mode="oracle",
             vocabulary="judge2",
             iterations=10,
@@ -539,6 +603,7 @@ def test_invalid_rectified_mark_is_rejected_even_when_case_is_not_scored(
             [case],
             labels,
             DOCS,
+            development_labels=DEV_LABELS,
             mode="oracle",
             vocabulary="judge2",
             iterations=10,
