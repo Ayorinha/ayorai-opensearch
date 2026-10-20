@@ -569,6 +569,7 @@ def evaluate(
     labels: Mapping[str, str],
     documents: Mapping[str, Document],
     *,
+    development_cases: Iterable[Mapping[str, Any]],
     development_labels: Mapping[str, str],
     mode: str,
     vocabulary: str,
@@ -577,9 +578,22 @@ def evaluate(
     iterations: int = BOOTSTRAP_ITERATIONS,
 ) -> dict[str, Any]:
     cases = list(cases)
+    development_cases = list(development_cases)
+    development_case_ids = [str(case["case_id"]) for case in development_cases]
+    if len(set(development_case_ids)) != len(development_case_ids):
+        raise ValueError("duplicate case in development partition")
+    development_ids = set(development_case_ids)
+    missing_development_labels = sorted(development_ids - set(development_labels))
+    unknown_development_labels = sorted(set(development_labels) - development_ids)
+    if missing_development_labels or unknown_development_labels:
+        raise ValueError(
+            "development cases/labels mismatch: "
+            f"missing labels={missing_development_labels}, "
+            f"unknown labels={unknown_development_labels}"
+        )
     baseline_label = development_baseline_label(development_labels, vocabulary)
     evaluation_case_ids = [str(case["case_id"]) for case in cases]
-    overlap = sorted(set(evaluation_case_ids) & set(development_labels))
+    overlap = sorted(set(evaluation_case_ids) & development_ids)
     if overlap:
         raise ValueError(f"development/evaluation partition overlap: {overlap}")
 
@@ -656,7 +670,9 @@ def evaluate(
         ),
         "baseline_provenance": {
             "primary": "B",
+            "development_case_count": len(development_cases),
             "development_label_count": len(development_labels),
+            "development_labels_complete": True,
             "development_majority_label": baseline_label,
             "evaluation_development_id_overlap": False,
         },
@@ -680,10 +696,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     run.add_argument("cases", type=Path)
     run.add_argument("--labels", type=Path, required=True)
     run.add_argument(
+        "--development-cases",
+        type=Path,
+        required=True,
+        help="public 70% development partition cases",
+    )
+    run.add_argument(
         "--development-labels",
         type=Path,
         required=True,
-        help="public 70% development labels used to freeze primary baseline B",
+        help="complete human labels for the public 70% development partition",
     )
     run.add_argument("--documents", type=Path, default=DOCUMENTS)
     run.add_argument("--mode", choices=("oracle", "retrieval"), required=True)
@@ -702,11 +724,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"wrote {len(documents)} documents to {args.out}")
         return 0
 
+    development_cases = _read_jsonl(args.development_cases)
     development_labels = load_labels(args.development_labels, args.vocabulary)
     result = evaluate(
         _read_jsonl(args.cases),
         load_labels(args.labels, args.vocabulary),
         documents,
+        development_cases=development_cases,
         development_labels=development_labels,
         mode=args.mode,
         vocabulary=args.vocabulary,
@@ -722,6 +746,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "cases": str(args.cases),
             "cases_sha256": _sha256(args.cases),
             "labels_sha256": _sha256(args.labels),
+            "development_cases_sha256": _sha256(args.development_cases),
             "development_labels_sha256": _sha256(args.development_labels),
             "documents_sha256": _sha256(args.documents),
         },
