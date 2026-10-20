@@ -14,7 +14,9 @@ def test_runner_writes_consistent_json_markdown_and_manifest(
     repo_root = Path(__file__).resolve().parents[1]
     scripts_dir = repo_root / "scripts"
     monkeypatch.syspath_prepend(str(scripts_dir))
-    namespace = runpy.run_path(str(scripts_dir / "run_h1_eval.py"), run_name="h1_eval_runner_test")
+    namespace = runpy.run_path(
+        str(scripts_dir / "run_h1_eval.py"), run_name="h1_eval_runner_test"
+    )
 
     eval_root = tmp_path / "evals"
     golden_dir = eval_root / "golden"
@@ -27,7 +29,7 @@ def test_runner_writes_consistent_json_markdown_and_manifest(
     reports = tmp_path / "reports"
     reports.mkdir()
 
-    def fake_load_jsonl(path: Path) -> list[dict[str, Any]]:
+    def fake_load_jsonl(_path: Path) -> list[dict[str, Any]]:
         return [{"doc_id": "doc-1", "id": "case-0"}]
 
     def fake_metric_result() -> dict[str, Any]:
@@ -43,7 +45,9 @@ def test_runner_writes_consistent_json_markdown_and_manifest(
             "latency_ms": {"p50": 1.0, "p95": 2.0},
         }
 
-    def fake_suite(cases: list[dict[str, Any]], corpus: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    def fake_suite(
+        _cases: list[dict[str, Any]], _corpus: dict[str, dict[str, Any]]
+    ) -> dict[str, Any]:
         return {
             key: fake_metric_result()
             for key in ("A_baseline", "A_H1", "B_baseline", "B_H1")
