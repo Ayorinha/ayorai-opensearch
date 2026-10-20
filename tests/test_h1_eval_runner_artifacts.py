@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
-import runpy
 import sys
 from pathlib import Path
 from typing import Any
@@ -14,9 +14,7 @@ def test_runner_writes_consistent_json_markdown_and_manifest(
     repo_root = Path(__file__).resolve().parents[1]
     scripts_dir = repo_root / "scripts"
     monkeypatch.syspath_prepend(str(scripts_dir))
-    namespace = runpy.run_path(
-        str(scripts_dir / "run_h1_eval.py"), run_name="h1_eval_runner_test"
-    )
+    runner = importlib.import_module("run_h1_eval")
 
     eval_root = tmp_path / "evals"
     golden_dir = eval_root / "golden"
@@ -34,9 +32,7 @@ def test_runner_writes_consistent_json_markdown_and_manifest(
 
     def fake_metric_result() -> dict[str, Any]:
         return {
-            "results": [
-                {"id": "case-0", "expected": "SUPPORTED", "predicted": "SUPPORTED"}
-            ],
+            "results": [{"id": "case-0", "expected": "SUPPORTED", "predicted": "SUPPORTED"}],
             "accuracy": 1.0,
             "balanced_accuracy": 1.0,
             "macro_f1": 1.0,
@@ -48,21 +44,18 @@ def test_runner_writes_consistent_json_markdown_and_manifest(
     def fake_suite(
         _cases: list[dict[str, Any]], _corpus: dict[str, dict[str, Any]]
     ) -> dict[str, Any]:
-        return {
-            key: fake_metric_result()
-            for key in ("A_baseline", "A_H1", "B_baseline", "B_H1")
-        }
+        return {key: fake_metric_result() for key in ("A_baseline", "A_H1", "B_baseline", "B_H1")}
 
-    monkeypatch.setitem(namespace, "ROOT", tmp_path)
-    monkeypatch.setitem(namespace, "CORPUS", corpus_path)
-    monkeypatch.setitem(namespace, "OUT_JSON", reports / "h1-results.json")
-    monkeypatch.setitem(namespace, "OUT_MD", reports / "H1-RESULTS.md")
-    monkeypatch.setitem(namespace, "OUT_MANIFEST", reports / "h1-results.manifest.json")
-    monkeypatch.setitem(namespace, "_load_jsonl", fake_load_jsonl)
-    monkeypatch.setitem(namespace, "_suite", fake_suite)
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    monkeypatch.setattr(runner, "CORPUS", corpus_path)
+    monkeypatch.setattr(runner, "OUT_JSON", reports / "h1-results.json")
+    monkeypatch.setattr(runner, "OUT_MD", reports / "H1-RESULTS.md")
+    monkeypatch.setattr(runner, "OUT_MANIFEST", reports / "h1-results.manifest.json")
+    monkeypatch.setattr(runner, "_load_jsonl", fake_load_jsonl)
+    monkeypatch.setattr(runner, "_suite", fake_suite)
     monkeypatch.setattr(sys, "argv", ["run_h1_eval.py", "--suite", "golden-v0"])
 
-    namespace["main"]()
+    runner.main()
 
     json_path = reports / "h1-results.json"
     markdown_path = reports / "H1-RESULTS.md"
@@ -77,9 +70,11 @@ def test_runner_writes_consistent_json_markdown_and_manifest(
     assert "## golden-v0" in markdown
     assert "## golden-v0.1" not in markdown
     assert manifest["selected_suites"] == ["golden-v0"]
-    assert manifest["artifacts"][json_path.name]["sha256"] == hashlib.sha256(
-        json_path.read_bytes()
-    ).hexdigest()
-    assert manifest["artifacts"][markdown_path.name]["sha256"] == hashlib.sha256(
-        markdown_path.read_bytes()
-    ).hexdigest()
+    assert (
+        manifest["artifacts"][json_path.name]["sha256"]
+        == hashlib.sha256(json_path.read_bytes()).hexdigest()
+    )
+    assert (
+        manifest["artifacts"][markdown_path.name]["sha256"]
+        == hashlib.sha256(markdown_path.read_bytes()).hexdigest()
+    )
