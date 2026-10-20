@@ -141,8 +141,16 @@ def main() -> None:
         "golden_v0_1_sha256": hashlib.sha256(paths["golden-v0.1"].read_bytes()).hexdigest(),
         "models": {
             "A": {"model": A_MODEL, "revision": A_REVISION, "license": "EVAL_ONLY"},
-            "B_nli": {"model": B_MODEL, "revision": B_REVISION, "license": "EVAL_ONLY"},
-            "B_translation": {"model": B_TRANSLATOR, "revision": B_TRANSLATOR_REVISION},
+            "B_nli": {
+                "model": B_MODEL,
+                "revision": B_REVISION,
+                "license": "COMMERCIAL_DEFAULT",
+            },
+            "B_translation": {
+                "model": B_TRANSLATOR,
+                "revision": B_TRANSLATOR_REVISION,
+                "license": "EVAL_ONLY",
+            },
         },
         "seed": 20261003,
         "bootstrap_iterations": 10000,
