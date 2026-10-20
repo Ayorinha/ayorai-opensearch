@@ -67,12 +67,13 @@ Uma requisição `r2-a` válida com `evidence[].canonical_url` preenchido retorn
 ```bash
 python evals/ptbr/rgc_eval.py run <casos-avaliacao.jsonl> \
     --labels <rotulos-avaliacao.jsonl> \
+    --development-cases <casos-desenvolvimento-publico.jsonl> \
     --development-labels <rotulos-desenvolvimento-publico.jsonl> \
     --mode retrieval --out reports/rgc-<data>.json
 ```
 
 Formato dos rótulos (um por linha): `{"case_id": "...", "verdict": "SUPPORTED"}`.
 
-A execução exige rótulos humanos da partição pública de desenvolvimento por `--development-labels`. O executor deriva B somente desse arquivo, registra seu SHA-256 e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
+A execução exige a partição pública de desenvolvimento por `--development-cases` e seus rótulos humanos completos por `--development-labels`. O executor valida que os IDs dos dois arquivos correspondem exatamente, deriva B somente desses rótulos, registra os SHA-256 dos casos e rótulos e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
 
 Este executor não afirma validação, parceria ou endosso da Anatel ou de qualquer instituição.
