@@ -9,6 +9,11 @@ from typing import Any
 from run_f1_eval import _evaluate
 
 from ayorai_attractor.evaluation.golden import _load_jsonl
+from ayorai_attractor.evaluation.h1_suites import (
+    SUITE_CHOICES,
+    select_golden_suites,
+)
+from ayorai_attractor.evaluation.report_manifest import write_artifact_manifest
 from ayorai_attractor.evaluation.stats import mcnemar_exact_pvalue
 from ayorai_attractor.verification.nli import (
     EVAL_ONLY_LEVEL,
@@ -28,6 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "evals/corpus/documents.jsonl"
 OUT_JSON = ROOT / "reports/h1-results.json"
 OUT_MD = ROOT / "reports/H1-RESULTS.md"
+OUT_MANIFEST = ROOT / "reports/h1-results.manifest.json"
 A_MODEL = EVAL_ONLY_MODEL
 A_REVISION = EVAL_ONLY_REVISION
 B_TRANSLATOR = "Helsinki-NLP/opus-mt-ROMANCE-en"
@@ -110,15 +116,22 @@ def _suite(cases: list[dict[str, Any]], corpus: dict[str, dict[str, Any]]) -> di
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--suite", choices=("golden-v0", "golden-v0.1"), default="golden-v0.1")
-    parser.parse_args()
+    parser.add_argument(
+        "--suite",
+        choices=SUITE_CHOICES,
+        default="both",
+        help="Golden suite to evaluate (default: both, preserving the full comparative report)",
+    )
+    args = parser.parse_args()
     corpus = {str(x["doc_id"]): x for x in _load_jsonl(CORPUS)}
     paths = {
         "golden-v0": ROOT / "evals/golden/v0.jsonl",
         "golden-v0.1": ROOT / "evals/golden/v0.1.jsonl",
     }
+    selected_suites = select_golden_suites(args.suite)
     results: dict[str, Any] = {}
-    for name, path in paths.items():
+    for name in selected_suites:
+        path = paths[name]
         results[name] = _suite(_load_jsonl(path), corpus)
         for pair in (("A_baseline", "A_H1"), ("B_baseline", "B_H1")):
             results[name][f"mcnemar_{pair[0]}_vs_{pair[1]}"] = _paired(
@@ -130,16 +143,25 @@ def main() -> None:
         "golden_v0_1_sha256": hashlib.sha256(paths["golden-v0.1"].read_bytes()).hexdigest(),
         "models": {
             "A": {"model": A_MODEL, "revision": A_REVISION, "license": "EVAL_ONLY"},
-            "B_nli": {"model": B_MODEL, "revision": B_REVISION, "license": "EVAL_ONLY"},
-            "B_translation": {"model": B_TRANSLATOR, "revision": B_TRANSLATOR_REVISION},
+            "B_nli": {
+                "model": B_MODEL,
+                "revision": B_REVISION,
+                "license": "COMMERCIAL_DEFAULT",
+            },
+            "B_translation": {
+                "model": B_TRANSLATOR,
+                "revision": B_TRANSLATOR_REVISION,
+                "license": "EVAL_ONLY",
+            },
         },
         "seed": 20261003,
         "bootstrap_iterations": 10000,
         "method": (
             "sentence-level evidence, claim x sentence, max confidence, contradicts tie precedence"
         ),
-        "golden_v0": results["golden-v0"],
-        "golden_v0_1": results["golden-v0.1"],
+        "selected_suites": list(selected_suites),
+        "golden_v0": results.get("golden-v0"),
+        "golden_v0_1": results.get("golden-v0.1"),
     }
     stable = json.dumps(report, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     report["report_sha256"] = hashlib.sha256(stable).hexdigest()
@@ -152,7 +174,7 @@ def main() -> None:
         "Bootstrap: 10,000",
         "",
     ]
-    for suite in ("golden-v0", "golden-v0.1"):
+    for suite in selected_suites:
         lines += [
             f"## {suite}",
             "",
@@ -176,9 +198,13 @@ def main() -> None:
             )
         lines.append("")
     OUT_MD.write_text("\n".join(lines), encoding="utf-8")
-    report["json_sha256"] = hashlib.sha256(OUT_JSON.read_bytes()).hexdigest()
-    report["markdown_sha256"] = hashlib.sha256(OUT_MD.read_bytes()).hexdigest()
-    OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_artifact_manifest(
+        OUT_JSON,
+        OUT_MD,
+        OUT_MANIFEST,
+        commit=report["commit"],
+        selected_suites=selected_suites,
+    )
     print("\n".join(lines))
 
 
