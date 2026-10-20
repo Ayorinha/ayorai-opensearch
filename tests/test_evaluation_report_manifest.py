@@ -29,8 +29,12 @@ def test_manifest_hashes_final_artifact_bytes(tmp_path: Path) -> None:
 
     assert manifest["commit"] == "abc123"
     assert manifest["selected_suites"] == ["golden-v0.1"]
-    assert manifest["artifacts"]["results.json"]["sha256"] == hashlib.sha256(json_bytes).hexdigest()
-    assert manifest["artifacts"]["results.md"]["sha256"] == hashlib.sha256(markdown_bytes).hexdigest()
+    assert manifest["artifacts"]["results.json"]["sha256"] == (
+        hashlib.sha256(json_bytes).hexdigest()
+    )
+    assert manifest["artifacts"]["results.md"]["sha256"] == (
+        hashlib.sha256(markdown_bytes).hexdigest()
+    )
     assert manifest["artifacts"]["results.json"]["size_bytes"] == len(json_bytes)
     assert json.loads(manifest_path.read_text(encoding="utf-8")) == manifest
 
