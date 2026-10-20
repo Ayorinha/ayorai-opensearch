@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import pytest
+
 from ayorai_attractor.evaluation.report_manifest import (
     build_artifact_manifest,
     write_artifact_manifest,
@@ -51,18 +53,17 @@ def test_manifest_changes_when_final_artifact_changes(tmp_path: Path) -> None:
     after = build_artifact_manifest(
         json_path, markdown_path, commit="abc123", selected_suites=("golden-v0",)
     )
-    assert before["artifacts"]["results.json"]["sha256"] != after["artifacts"]["results.json"]["sha256"]
-
+    assert before["artifacts"]["results.json"]["sha256"] != (
+        after["artifacts"]["results.json"]["sha256"]
+    )
 
 
 def test_manifest_rejects_output_path_that_would_overwrite_an_artifact(tmp_path: Path) -> None:
     json_path = tmp_path / "results.json"
     markdown_path = tmp_path / "results.md"
-    json_path.write_text("{}\\n", encoding="utf-8")
-    markdown_path.write_text("# Results\\n", encoding="utf-8")
+    json_path.write_text("{}\n", encoding="utf-8")
+    markdown_path.write_text("# Results\n", encoding="utf-8")
     before = json_path.read_bytes()
-
-    import pytest
 
     with pytest.raises(ValueError, match="separate from artifact paths"):
         write_artifact_manifest(
