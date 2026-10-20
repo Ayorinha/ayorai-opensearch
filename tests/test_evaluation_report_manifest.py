@@ -78,12 +78,10 @@ def test_manifest_rejects_output_path_that_would_overwrite_an_artifact(tmp_path:
 
 
 def test_manifest_rejects_duplicate_suite_names_and_empty_commit(tmp_path: Path) -> None:
-    import pytest
-
     json_path = tmp_path / "results.json"
     markdown_path = tmp_path / "results.md"
-    json_path.write_text("{}\\n", encoding="utf-8")
-    markdown_path.write_text("# Results\\n", encoding="utf-8")
+    json_path.write_text("{}\n", encoding="utf-8")
+    markdown_path.write_text("# Results\n", encoding="utf-8")
 
     with pytest.raises(ValueError, match="commit must be non-empty"):
         build_artifact_manifest(
