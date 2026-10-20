@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def build_artifact_manifest(
@@ -16,7 +16,7 @@ def build_artifact_manifest(
     selected_suites: Sequence[str],
 ) -> dict[str, object]:
     """Hash final artifact bytes from outside the artifacts they describe."""
-    artifacts = {}
+    artifacts: dict[str, dict[str, str | int]] = {}
     for path in (json_path, markdown_path):
         artifacts[path.name] = {
             "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
