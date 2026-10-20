@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 import hashlib
 import json
 from pathlib import Path
-from collections.abc import Sequence
 
 
 def build_artifact_manifest(
