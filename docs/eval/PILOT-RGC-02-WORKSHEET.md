@@ -12,9 +12,15 @@
 - Não inventar exemplos para cumprir uma quota. Se uma categoria não puder ser sustentada por fonte elegível, registrar a limitação.
 - Esta ficha não congela o protocolo. O congelamento depende de revisão do piloto e aprovação explícita posterior do mantenedor.
 
+## Meta orientativa de composição
+
+O protocolo propõe aproximadamente 10 casos, procurando incluir, quando fontes elegíveis sustentarem os exemplos, pelo menos 3 casos compostos parcialmente apoiados, 1 caso com fontes divergentes (`CONFLICTING`), 1 caso que envolva retificação e 2 casos sem evidência suficiente (`UNVERIFIED`). Isso é uma meta condicionada, não uma quota: não fabricar casos, forçar rótulos nem usar fonte cuja vigência/proveniência não possa ser conferida. Registre limitações na revisão final.
+
 ## Valores permitidos
 
 **Rótulo de referência:** `SUPPORTED`, `REFUTED`, `UNVERIFIED`, `PARTIALLY_SUPPORTED`, `CONFLICTING`.
+
+**Marcador exclusivo do piloto:** `RULE_GAP` pode ser usado quando as regras de anotação não permitem uma decisão consistente. Ele não é um veredito do Judge, não entra em métricas nem no cálculo de concordância e deve ser resolvido por revisão metodológica; os casos do piloto serão descartados.
 
 **Tipos de dificuldade:** número, data, negação, paráfrase, apoio parcial, entidade trocada (marcar os aplicáveis).
 
