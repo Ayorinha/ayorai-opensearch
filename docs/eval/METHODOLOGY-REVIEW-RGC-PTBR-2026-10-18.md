@@ -129,13 +129,15 @@ As conclusões abaixo referem-se ao conteúdo desses documentos no estado consul
 
 ### M-11 — Definição da baseline no pré-registro conflita com a DEC-014 aprovada
 
-**Evidência:** a seção 4 do pré-registro diz que a baseline de classe majoritária é calculada exclusivamente a partir dos rótulos de referência da partição avaliada. Já a DEC-014, registrada em `docs/STATUS.md`, define a baseline B como primária, derivada somente dos 70% públicos de desenvolvimento e fixada antes da avaliação; a baseline A é uma baseline-oráculo descritiva calculada na partição de avaliação e não fundamenta H1. O próprio texto do pré-registro menciona a baseline de classe majoritária sem distinguir claramente A e B, enquanto os critérios de sucesso de H1 usam “a baseline” no singular.
+**Evidência documental:** a seção 4 do pré-registro na `main` calculava a baseline majoritária a partir dos rótulos da partição avaliada, enquanto a DEC-014, registrada em `docs/STATUS.md`, define B como primária, derivada exclusivamente dos 70% públicos de desenvolvimento e fixada antes da avaliação. A baseline A é somente um oráculo descritivo da prevalência observada e não fundamenta H1.
 
-**Risco:** se a redação atual for seguida literalmente, a baseline usada para testar H1 pode ser calculada com rótulos do conjunto avaliado, contrariando a DEC-014 e contaminando a comparação confirmatória. Também fica ambíguo qual baseline define a margem de 10 pontos percentuais, o IC e o teste de McNemar.
+**Evidência de implementação:** na versão do executor em `main` examinada nesta revisão, `compute_metrics` derivava a classe majoritária a partir de `gold` da própria avaliação. Portanto, M-11 não era apenas ambiguidade textual: havia divergência concreta entre decisão aprovada e código executável.
 
-**Recomendação:** antes do congelamento, harmonizar o pré-registro com a DEC-014 sem alterar a decisão aprovada: identificar explicitamente B como baseline primária operacional, calculada apenas no conjunto público e congelada antes da avaliação; identificar A como análise descritiva/oráculo, calculada no conjunto de avaliação e claramente excluída da hipótese H1 e dos critérios de sucesso. Especificar como as previsões de cada baseline são aplicadas aos mesmos casos avaliados, e verificar o protocolo, o executor, os testes e o plano estatístico em conjunto. Qualquer mudança de definição deve exigir emenda explícita do mantenedor antes de observar resultados.
+**Risco:** usar rótulos da avaliação para determinar a baseline primária contraria a DEC-014 e contamina a comparação confirmatória. A margem de 10 pontos percentuais, o limite inferior do IC95% e o teste de McNemar poderiam ser calculados contra a baseline errada.
 
-**Critério de encerramento:** pré-registro, DEC-014, executor e relatório nomeiam e usam A/B de forma consistente; H1 compara o sistema apenas com B; A é reportada como descritiva e nunca apresentada como baseline primária.
+**Ação proposta em 2026-10-20:** a [PR #274](https://github.com/Ayorinha/ayorai-opensearch/pull/274) propõe harmonizar o pré-registro e o executor: B deriva apenas dos rótulos humanos da partição pública, com integridade de IDs e hashes dos arquivos; A permanece descritiva; H1 usa exclusivamente B. A correção ainda depende da conclusão dos checks e da revisão normal. Até essa validação, M-11 deve ser tratado como **correção proposta, não encerrada**.
+
+**Critério de encerramento:** pré-registro, DEC-014, executor, testes e relatório nomeiam e usam A/B consistentemente; H1 compara o sistema apenas com B; A é descritiva; os testes passam no commit final e a correção é integrada sem alterar a definição aprovada.
 
 ## 4. Sequência recomendada
 
