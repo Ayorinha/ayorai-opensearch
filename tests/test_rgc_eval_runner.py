@@ -397,7 +397,11 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     report = json.loads(out.read_text(encoding="utf-8"))
     assert report["metrics"]["system"]["accuracy"] == 1.0
     assert report["config"]["mode"] == "retrieval"
+    assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
+    assert report["metrics"]["baseline_descriptive"]["label"] == "SUPPORTED"
+    assert report["baseline_provenance"]["primary"] == "B"
     assert len(report["inputs"]["cases_sha256"]) == 64
+    assert len(report["inputs"]["development_labels_sha256"]) == 64
 
 
 # --- DEC-010 option A: annotated atoms for compound claims -------------------
