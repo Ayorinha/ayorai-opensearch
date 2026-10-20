@@ -110,15 +110,22 @@ def _suite(cases: list[dict[str, Any]], corpus: dict[str, dict[str, Any]]) -> di
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--suite", choices=("golden-v0", "golden-v0.1"), default="golden-v0.1")
-    parser.parse_args()
+    parser.add_argument(
+        "--suite",
+        choices=("golden-v0", "golden-v0.1", "both"),
+        default="both",
+        help="Golden suite to evaluate (default: both, preserving the full comparative report)",
+    )
+    args = parser.parse_args()
     corpus = {str(x["doc_id"]): x for x in _load_jsonl(CORPUS)}
     paths = {
         "golden-v0": ROOT / "evals/golden/v0.jsonl",
         "golden-v0.1": ROOT / "evals/golden/v0.1.jsonl",
     }
+    selected_suites = tuple(paths) if args.suite == "both" else (args.suite,)
     results: dict[str, Any] = {}
-    for name, path in paths.items():
+    for name in selected_suites:
+        path = paths[name]
         results[name] = _suite(_load_jsonl(path), corpus)
         for pair in (("A_baseline", "A_H1"), ("B_baseline", "B_H1")):
             results[name][f"mcnemar_{pair[0]}_vs_{pair[1]}"] = _paired(
@@ -138,8 +145,9 @@ def main() -> None:
         "method": (
             "sentence-level evidence, claim x sentence, max confidence, contradicts tie precedence"
         ),
-        "golden_v0": results["golden-v0"],
-        "golden_v0_1": results["golden-v0.1"],
+        "selected_suites": list(selected_suites),
+        "golden_v0": results.get("golden-v0"),
+        "golden_v0_1": results.get("golden-v0.1"),
     }
     stable = json.dumps(report, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     report["report_sha256"] = hashlib.sha256(stable).hexdigest()
@@ -152,7 +160,7 @@ def main() -> None:
         "Bootstrap: 10,000",
         "",
     ]
-    for suite in ("golden-v0", "golden-v0.1"):
+    for suite in selected_suites:
         lines += [
             f"## {suite}",
             "",
