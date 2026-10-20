@@ -53,8 +53,9 @@ def test_manifest_changes_when_final_artifact_changes(tmp_path: Path) -> None:
     after = build_artifact_manifest(
         json_path, markdown_path, commit="abc123", selected_suites=("golden-v0",)
     )
-    assert before["artifacts"]["results.json"]["sha256"] != (
-        after["artifacts"]["results.json"]["sha256"]
+    assert (
+        before["artifacts"]["results.json"]["sha256"]
+        != after["artifacts"]["results.json"]["sha256"]
     )
 
 
