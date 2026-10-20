@@ -168,7 +168,9 @@ def test_metrics_match_hand_computation() -> None:
     assert RUNNER["balanced_accuracy"](gold, pred) == pytest.approx((2 / 3 + 1 + 0) / 3)
     # F1: SUPPORTED 0.8, REFUTED 2/3, UNVERIFIED 0, INVALID_PREDICTION 0.
     assert RUNNER["macro_f1"](gold, pred) == pytest.approx((0.8 + 2 / 3 + 0 + 0) / 4)
-    metrics = RUNNER["compute_metrics"](gold, pred, "judge2", baseline_label="SUPPORTED", iterations=200)
+    metrics = RUNNER["compute_metrics"](
+        gold, pred, "judge2", baseline_label="SUPPORTED", iterations=200
+    )
     assert metrics["baseline_primary"]["label"] == "SUPPORTED"
     assert metrics["baseline_primary"]["accuracy"] == pytest.approx(0.6)
     assert metrics["invalid_predictions"] == 1
@@ -178,7 +180,9 @@ def test_metrics_match_hand_computation() -> None:
     assert metrics["primary_criterion"]["h1_supported"] is False
     low, high = metrics["system_ci95"]["accuracy"]
     assert 0.0 <= low <= 0.6 <= high <= 1.0
-    assert metrics == RUNNER["compute_metrics"](gold, pred, "judge2", baseline_label="SUPPORTED", iterations=200)
+    assert metrics == RUNNER["compute_metrics"](
+        gold, pred, "judge2", baseline_label="SUPPORTED", iterations=200
+    )
 
 
 def test_h1_decision_uses_unrounded_values() -> None:
@@ -186,7 +190,9 @@ def test_h1_decision_uses_unrounded_values() -> None:
     # floating point represents as 0.0999...; it must still count as >= 10 pp.
     gold = ["SUPPORTED"] * 6 + ["REFUTED"] * 4
     pred = ["SUPPORTED"] * 6 + ["REFUTED"] + ["SUPPORTED"] * 3
-    metrics = RUNNER["compute_metrics"](gold, pred, "judge2", baseline_label="SUPPORTED", iterations=50)
+    metrics = RUNNER["compute_metrics"](
+        gold, pred, "judge2", baseline_label="SUPPORTED", iterations=50
+    )
     assert metrics["primary_criterion"]["margin_at_least_10pp"] is True
     # A margin of 9.999995 pp rounds to 0.1 at 6 decimals but must not pass.
     gold = ["SUPPORTED"] * 6 + ["REFUTED"] * 4
@@ -263,7 +269,13 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
     labels = {"s1": "SUPPORTED", "s2": "REFUTED", "s3": "RULE_GAP"}
     for mode in ("oracle", "retrieval"):
         result = RUNNER["evaluate"](
-            cases, labels, DOCS, development_labels=DEV_LABELS, mode=mode, vocabulary="judge2", iterations=100
+            cases,
+            labels,
+            DOCS,
+            development_labels=DEV_LABELS,
+            mode=mode,
+            vocabulary="judge2",
+            iterations=100
         )
         assert result["excluded"] == [{"case_id": "s3", "label": "RULE_GAP"}]
         assert [row["predicted"] for row in result["cases"]] == ["SUPPORTED", "REFUTED"]
