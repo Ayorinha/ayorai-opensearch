@@ -418,9 +418,21 @@ def bootstrap_ci(
 
 
 def majority_label(gold: Sequence[str], vocabulary: str) -> str:
+    if not gold:
+        raise ValueError("cannot determine majority label from an empty partition")
+    invalid = sorted(set(gold) - set(VOCABULARIES[vocabulary]))
+    if invalid:
+        raise ValueError(f"labels outside vocabulary {vocabulary}: {invalid}")
     counts = Counter(gold)
     order = VOCABULARIES[vocabulary]
     return min(counts, key=lambda label: (-counts[label], order.index(label)))
+
+
+def development_baseline_label(labels: Mapping[str, str], vocabulary: str) -> str:
+    """Derive primary baseline B only from public development reference labels."""
+    if not labels:
+        raise ValueError("development labels must not be empty")
+    return majority_label(list(labels.values()), vocabulary)
 
 
 def confusion(gold: Sequence[str], pred: Sequence[str], vocabulary: str) -> dict[str, Any]:
@@ -430,23 +442,43 @@ def confusion(gold: Sequence[str], pred: Sequence[str], vocabulary: str) -> dict
 
 
 def compute_metrics(
-    gold: Sequence[str], pred: Sequence[str], vocabulary: str, *, iterations: int
+    gold: Sequence[str],
+    pred: Sequence[str],
+    vocabulary: str,
+    *,
+    baseline_label: str,
+    iterations: int,
 ) -> dict[str, Any]:
-    baseline_label = majority_label(gold, vocabulary)
-    baseline = [baseline_label] * len(gold)
+    """Score H1 against baseline B; report baseline A as descriptive only."""
+    if baseline_label not in VOCABULARIES[vocabulary]:
+        raise ValueError(f"baseline B label {baseline_label!r} is outside vocabulary {vocabulary}")
+
+    # Baseline B is frozen from public development labels before evaluation.
+    baseline_b = [baseline_label] * len(gold)
+    # Baseline A is an oracle summary of evaluation-label prevalence, not an
+    # operational classifier and never part of the H1 decision.
+    baseline_a_label = majority_label(gold, vocabulary)
+    baseline_a = [baseline_a_label] * len(gold)
+
     # Decisions use unrounded values; rounding is applied only to the report.
     system = {name: fn(gold, pred) for name, fn in METRICS.items()}
-    base = {name: fn(gold, baseline) for name, fn in METRICS.items()}
+    base_b = {name: fn(gold, baseline_b) for name, fn in METRICS.items()}
+    base_a = {name: fn(gold, baseline_a) for name, fn in METRICS.items()}
     ci = bootstrap_ci(gold, pred, iterations=iterations)
-    margin = system["accuracy"] - base["accuracy"]
-    discordant_system = sum(p == g and b != g for g, p, b in zip(gold, pred, baseline, strict=True))
-    discordant_base = sum(p != g and b == g for g, p, b in zip(gold, pred, baseline, strict=True))
-    p_value = mcnemar_exact_pvalue(gold, pred, baseline)
+    margin = system["accuracy"] - base_b["accuracy"]
+    discordant_system = sum(
+        p == g and b != g for g, p, b in zip(gold, pred, baseline_b, strict=True)
+    )
+    discordant_base = sum(
+        p != g and b == g for g, p, b in zip(gold, pred, baseline_b, strict=True)
+    )
+    p_value = mcnemar_exact_pvalue(gold, pred, baseline_b)
     primary = {
+        "baseline": "B",
         "accuracy_margin_pp": round(100 * margin, 4),
         # Tolerance only absorbs binary floating-point error (e.g. 0.7 - 0.6).
         "margin_at_least_10pp": margin >= 0.10 - 1e-12,
-        "ci_lower_above_baseline": ci["accuracy"][0] > base["accuracy"],
+        "ci_lower_above_baseline": ci["accuracy"][0] > base_b["accuracy"],
         "mcnemar_p_below_0_05": p_value < 0.05,
     }
     primary["h1_supported"] = all(
@@ -460,11 +492,18 @@ def compute_metrics(
         "invalid_predictions": pred.count(INVALID),
         "system": {name: round(value, 6) for name, value in system.items()},
         "system_ci95": {name: [round(v, 6) for v in pair] for name, pair in ci.items()},
-        "baseline": {
+        "baseline_primary": {
+            "name": "B",
             "label": baseline_label,
-            **{name: round(value, 6) for name, value in base.items()},
+            **{name: round(value, 6) for name, value in base_b.items()},
+        },
+        "baseline_descriptive": {
+            "name": "A",
+            "label": baseline_a_label,
+            **{name: round(value, 6) for name, value in base_a.items()},
         },
         "mcnemar": {
+            "baseline": "B",
             "system_right_baseline_wrong": discordant_system,
             "system_wrong_baseline_right": discordant_base,
             "p_value_exact_two_sided": round(p_value, 8),
@@ -532,12 +571,20 @@ def evaluate(
     labels: Mapping[str, str],
     documents: Mapping[str, Document],
     *,
+    development_labels: Mapping[str, str],
     mode: str,
     vocabulary: str,
     top_k: int = DEFAULT_TOP_K,
     granularity: str = "dispositivo",
     iterations: int = BOOTSTRAP_ITERATIONS,
 ) -> dict[str, Any]:
+    cases = list(cases)
+    baseline_label = development_baseline_label(development_labels, vocabulary)
+    evaluation_case_ids = [str(case["case_id"]) for case in cases]
+    overlap = sorted(set(evaluation_case_ids) & set(development_labels))
+    if overlap:
+        raise ValueError(f"development/evaluation partition overlap: {overlap}")
+
     index: BM25Index | None = None
     if mode == "retrieval":
         passages = [p for doc in documents.values() for p in segment(doc, granularity)]
@@ -606,7 +653,15 @@ def evaluate(
             iterations=iterations,
         )
     return {
-        "metrics": compute_metrics(gold_labels, predicted, vocabulary, iterations=iterations),
+        "metrics": compute_metrics(
+            gold_labels, predicted, vocabulary, baseline_label=baseline_label, iterations=iterations
+        ),
+        "baseline_provenance": {
+            "primary": "B",
+            "development_label_count": len(development_labels),
+            "development_majority_label": baseline_label,
+            "evaluation_development_id_overlap": False,
+        },
         # Amendment 4 (DEC-011, option A): rectified cases stay in the primary
         # metrics and are also reported as a separate, descriptive stratum.
         "strata": strata,
@@ -626,6 +681,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     run = sub.add_parser("run")
     run.add_argument("cases", type=Path)
     run.add_argument("--labels", type=Path, required=True)
+    run.add_argument(
+        "--development-labels",
+        type=Path,
+        required=True,
+        help="public 70% development labels used to freeze primary baseline B",
+    )
     run.add_argument("--documents", type=Path, default=DOCUMENTS)
     run.add_argument("--mode", choices=("oracle", "retrieval"), required=True)
     run.add_argument("--vocabulary", choices=tuple(VOCABULARIES), default="judge2")
@@ -643,10 +704,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"wrote {len(documents)} documents to {args.out}")
         return 0
 
+    development_labels = load_labels(args.development_labels, args.vocabulary)
     result = evaluate(
         _read_jsonl(args.cases),
         load_labels(args.labels, args.vocabulary),
         documents,
+        development_labels=development_labels,
         mode=args.mode,
         vocabulary=args.vocabulary,
         top_k=args.top_k,
@@ -661,6 +724,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "cases": str(args.cases),
             "cases_sha256": _sha256(args.cases),
             "labels_sha256": _sha256(args.labels),
+            "development_labels_sha256": _sha256(args.development_labels),
             "documents_sha256": _sha256(args.documents),
         },
         "config": {
@@ -671,6 +735,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             "bm25": {"k1": BM25_K1, "b": BM25_B},
             "stance_detector": f"{RuleStanceDetector.component}/{RuleStanceDetector.version}",
             "bootstrap": {"iterations": BOOTSTRAP_ITERATIONS, "seed": SEED},
+            "baseline_primary": {
+                "name": "B",
+                "development_label_count": len(development_labels),
+                "label": development_baseline_label(development_labels, args.vocabulary),
+            },
+            "baseline_descriptive": {
+                "name": "A",
+                "source": "evaluation gold labels; descriptive only",
+            },
         },
         **result,
     }
@@ -679,7 +752,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     m = result["metrics"]
     print(
         f"n={m['n']} accuracy={m['system']['accuracy']} "
-        f"baseline={m['baseline']['accuracy']} h1={m['primary_criterion']['h1_supported']}"
+        f"baseline_B={m['baseline_primary']['accuracy']} "
+        f"baseline_A_descriptive={m['baseline_descriptive']['accuracy']} "
+        f"h1={m['primary_criterion']['h1_supported']}"
     )
     return 0
 
