@@ -252,6 +252,19 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
 )
 def verify(payload: Annotated[Any, Body()]) -> Any:
     """Dispatch r1-a unchanged or expose the canonical Judge 2.0.0 result for r2-a."""
+    if payload is None:
+        # Preserve the frozen r1-a HTTP 422 response for a JSON null request.
+        raise RequestValidationError(
+            [
+                {
+                    "type": "model_attributes_type",
+                    "loc": ("body",),
+                    "msg": "Input should be a valid dictionary or object to extract fields from",
+                    "input": None,
+                }
+            ],
+            body=payload,
+        )
     version = payload.get("schema_version", "r1-a") if isinstance(payload, dict) else "r1-a"
 
     if version == "r2-a":
