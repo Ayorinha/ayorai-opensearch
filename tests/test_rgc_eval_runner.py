@@ -294,6 +294,47 @@ def test_evaluate_requires_complete_development_labels() -> None:
         )
 
 
+def test_evaluate_rejects_duplicate_development_case_ids() -> None:
+    case = _case(
+        "eval-1",
+        "O cancelamento será efetivado em até 2 dias.",
+        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+    )
+    with pytest.raises(ValueError, match="duplicate case in development partition"):
+        RUNNER["evaluate"](
+            [case],
+            {"eval-1": "SUPPORTED"},
+            DOCS,
+            development_cases=[
+                {"case_id": "dev-1"},
+                {"case_id": "dev-1"},
+            ],
+            development_labels={"dev-1": "SUPPORTED"},
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_evaluate_rejects_labels_without_development_cases() -> None:
+    case = _case(
+        "eval-1",
+        "O cancelamento será efetivado em até 2 dias.",
+        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+    )
+    with pytest.raises(ValueError, match="cases/labels mismatch"):
+        RUNNER["evaluate"](
+            [case],
+            {"eval-1": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels={**DEV_LABELS, "dev-extra": "REFUTED"},
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
 def test_evaluate_rejects_development_evaluation_overlap() -> None:
     case = _case(
         "dev-1",
