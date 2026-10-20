@@ -9,7 +9,6 @@ from ayorai_attractor.evaluation.stats import (
     mcnemar_exact_pvalue,
 )
 
-VALID = ("VERIFIED", "SUPPORTED", "PARTIALLY_SUPPORTED", "UNVERIFIED", "REFUTED", "CONFLICTING")
 
 
 def test_confusion_matrix_conserves_every_observation() -> None:
