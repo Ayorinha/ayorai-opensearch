@@ -38,7 +38,8 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 | Macro-F1 | média sobre a união dos estados de referência e previstos, **incluindo** `INVALID_PREDICTION` (F1 = 0, escolha conservadora) | |
 | Acurácia balanceada | média das revocações dos estados presentes na referência | |
 | IC95% | bootstrap percentil, 10.000 reamostragens, seed `20261003`, mesma sequência de reamostragem para as três métricas | |
-| Baseline | classe majoritária da partição avaliada; empate desfeito pela ordem do vocabulário | |
+| Baseline B primária | classe majoritária da partição pública de desenvolvimento (70%); derivada dos rótulos de desenvolvimento e aplicada sem alteração à avaliação | DEC-014; arquivo e SHA-256 dos rótulos de desenvolvimento registrados no relatório |
+| Baseline A descritiva | classe majoritária da própria partição avaliada; empate desfeito pela ordem do vocabulário | somente prevalência observada; excluída de H1 |
 | Comparação | McNemar exato bilateral (`ayorai_attractor.evaluation.stats`) | |
 | Precisão das decisões | as três condições de H1 usam valores **não arredondados**; o arredondamento (6 casas) vale só para o relatório | |
 
@@ -64,10 +65,14 @@ Uma requisição `r2-a` válida com `evidence[].canonical_url` preenchido retorn
 ## 7. Uso (somente após rótulos completos e parâmetros congelados)
 
 ```bash
-python evals/ptbr/rgc_eval.py run <casos.jsonl> --labels <rotulos.jsonl> \
+python evals/ptbr/rgc_eval.py run <casos-avaliacao.jsonl> \
+    --labels <rotulos-avaliacao.jsonl> \
+    --development-labels <rotulos-desenvolvimento-publico.jsonl> \
     --mode retrieval --out reports/rgc-<data>.json
 ```
 
 Formato dos rótulos (um por linha): `{"case_id": "...", "verdict": "SUPPORTED"}`.
+
+A execução exige rótulos humanos da partição pública de desenvolvimento por `--development-labels`. O executor deriva B somente desse arquivo, registra seu SHA-256 e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
 
 Este executor não afirma validação, parceria ou endosso da Anatel ou de qualquer instituição.
