@@ -42,9 +42,7 @@ def test_confusion_matrix_rejects_mismatched_lengths(
         (["SUPPORTED"], ["UNKNOWN"]),
     ],
 )
-def test_confusion_matrix_rejects_unknown_labels(
-    expected: list[str], predicted: list[str]
-) -> None:
+def test_confusion_matrix_rejects_unknown_labels(expected: list[str], predicted: list[str]) -> None:
     with pytest.raises(ValueError, match="Judge verdict states"):
         confusion_matrix(expected, predicted)
 
@@ -123,9 +121,7 @@ def test_mcnemar_is_symmetric_when_systems_are_swapped() -> None:
     gold = ["SUPPORTED", "SUPPORTED", "REFUTED", "REFUTED", "UNVERIFIED"]
     first = ["SUPPORTED", "REFUTED", "REFUTED", "SUPPORTED", "UNVERIFIED"]
     second = ["REFUTED", "SUPPORTED", "SUPPORTED", "REFUTED", "SUPPORTED"]
-    assert mcnemar_exact_pvalue(gold, first, second) == mcnemar_exact_pvalue(
-        gold, second, first
-    )
+    assert mcnemar_exact_pvalue(gold, first, second) == mcnemar_exact_pvalue(gold, second, first)
 
 
 def test_mcnemar_rejects_mismatched_lengths() -> None:
