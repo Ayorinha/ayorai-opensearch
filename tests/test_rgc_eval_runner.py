@@ -464,10 +464,7 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     labels.write_text(json.dumps({"case_id": "s1", "verdict": "SUPPORTED"}) + "\n")
     development_cases = tmp_path / "development-cases.jsonl"
     development_cases.write_text(
-        "\n".join(
-            json.dumps({"case_id": case_id})
-            for case_id in ("dev-1", "dev-2", "dev-3")
-        )
+        "\n".join(json.dumps({"case_id": case_id}) for case_id in ("dev-1", "dev-2", "dev-3"))
         + "\n"
     )
     development_labels = tmp_path / "development-labels.jsonl"
