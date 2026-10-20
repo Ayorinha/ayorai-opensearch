@@ -10,7 +10,7 @@
 
 O objetivo é medir, de forma reproduzível, a capacidade do AYORAI ATTRACTOR de verificar afirmações em português brasileiro contra o texto oficial do Regulamento Geral de Direitos do Consumidor de Serviços de Telecomunicações (RGC), aprovado pela Resolução Anatel nº 765/2023.
 
-**Hipótese principal (H1):** em um conjunto de avaliação definido e anotado antes da execução, o sistema alcançará acurácia superior à baseline de classe majoritária. A hipótese será avaliada somente após a aprovação deste pré-registro, a liberação da coleta e a conclusão das etapas de proveniência e anotação.
+**Hipótese principal (H1):** em um conjunto de avaliação definido e anotado antes da execução, o sistema alcançará acurácia superior à **baseline B**, calculada exclusivamente a partir dos rótulos humanos da partição pública de desenvolvimento (70%) e fixada antes da avaliação confirmatória. A **baseline A** é calculada a partir dos rótulos da própria partição avaliada e será reportada somente como referência descritiva/oráculo da prevalência observada; não fundamenta H1. A hipótese será avaliada somente após a aprovação deste pré-registro, a liberação da coleta e a conclusão das etapas de proveniência e anotação.
 
 Este estudo é independente. Não implica nem afirma parceria, apoio, revisão, endosso ou validação da Anatel, nem de qualquer universidade ou outra instituição.
 
@@ -78,8 +78,8 @@ Relatar, para o conjunto completo elegível e por categoria quando o tamanho per
 3. **Macro-F1**.
 4. **Tamanho amostral (`n`)**, total e por estado de referência; informar explicitamente estados ausentes.
 5. **Intervalos de confiança de 95%** para acurácia, acurácia balanceada e macro-F1. Usar bootstrap percentil com 10.000 reamostragens e seed fixa `20261003`; registrar método e seed no relatório.
-6. **Baseline de classe majoritária**, calculada exclusivamente a partir dos rótulos de referência da partição avaliada, com sua acurácia e métricas correspondentes. A baseline não poderá ser usada para alterar o conjunto.
-7. **Comparação pareada por McNemar**, teste exato bilateral, comparando as previsões do sistema e da baseline nos mesmos casos, conforme `docs/eval/STATISTICS.md`. Informar o número de pares discordantes e o valor-p; não interpretar significância estatística como prova de validade jurídica.
+6. **Baseline primária B**, classe majoritária derivada exclusivamente dos rótulos humanos da partição pública de desenvolvimento (70%), congelada antes da execução confirmatória e aplicada como previsão constante aos mesmos casos avaliados. Registrar os arquivos de casos e rótulos de desenvolvimento, seus SHA-256, a correspondência completa entre IDs, a contagem de rótulos e o rótulo majoritário. **Baseline A**, classe majoritária calculada a partir dos rótulos da própria partição avaliada, é reportada apenas como oráculo descritivo da prevalência observada; não é classificador operacional nem base de H1.
+7. **Comparação pareada por McNemar**, teste exato bilateral, comparando as previsões do sistema e da baseline B nos mesmos casos, conforme `docs/eval/STATISTICS.md`. Informar o número de pares discordantes e o valor-p; não interpretar significância estatística como prova de validade jurídica.
 
 A ordem dos casos, a versão do conjunto, o SHA do commit do sistema, as configurações, as versões de dependências e os artefatos necessários à reprodução deverão constar no relatório. Previsões ausentes ou inválidas serão reportadas como falha de execução conforme regra congelada antes da avaliação; não serão silenciosamente removidas do denominador nem convertidas em acertos.
 
@@ -91,12 +91,12 @@ Os critérios abaixo são propostos antes da coleta e não poderão ser alterado
 
 ### Sucesso no critério primário
 
-Declarar que H1 recebeu suporte **somente se todas** as condições forem satisfeitas no conjunto de avaliação definido:
-- acurácia do sistema pelo menos **10 pontos percentuais** acima da acurácia da baseline de classe majoritária;
-- limite inferior do IC95% da acurácia do sistema acima do valor pontual da acurácia da baseline;
-- teste exato de McNemar bilateral contra a baseline com p < 0,05.
+Declarar que H1 recebeu suporte **somente se todas** as condições forem satisfeitas no conjunto de avaliação definido, sempre comparando com a **baseline B**:
+- acurácia do sistema pelo menos **10 pontos percentuais** acima da acurácia da baseline B;
+- limite inferior do IC95% da acurácia do sistema acima do valor pontual da acurácia da baseline B;
+- teste exato de McNemar bilateral entre sistema e baseline B com p < 0,05.
 
-Acurácia balanceada e macro-F1 são métricas secundárias obrigatórias; nota: a acurácia balanceada da baseline de classe majoritária equivale a 1/K, onde K é o número de estados presentes na partição avaliada.
+Acurácia balanceada e macro-F1 do sistema e de ambas as baselines são métricas secundárias obrigatórias. A baseline A é calculada usando rótulos de avaliação e, portanto, não pode ser usada para seleção, ajuste, critério de sucesso ou decisão H1.
 
 Além disso, publicar sempre acurácia, macro-F1, IC95%, matriz de confusão e resultados por categoria/estado, independentemente do sucesso primário. Se a baseline não permitir uma comparação informativa para determinada métrica ou houver estado ausente, declarar a limitação explicitamente.
 
