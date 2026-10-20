@@ -9,7 +9,10 @@ from typing import Any
 from run_f1_eval import _evaluate
 
 from ayorai_attractor.evaluation.golden import _load_jsonl
-from ayorai_attractor.evaluation.h1_suites import SUITE_CHOICES, select_golden_suites
+from ayorai_attractor.evaluation.h1_suites import (
+    SUITE_CHOICES,
+    select_golden_suites,
+)
 from ayorai_attractor.evaluation.stats import mcnemar_exact_pvalue
 from ayorai_attractor.verification.nli import (
     EVAL_ONLY_LEVEL,
