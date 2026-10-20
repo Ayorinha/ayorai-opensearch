@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from ayorai_attractor.evaluation.stats import (
     VERDICT_ORDER,
