@@ -10,7 +10,6 @@ from ayorai_attractor.evaluation.stats import (
 )
 
 
-
 def test_confusion_matrix_conserves_every_observation() -> None:
     expected = ["SUPPORTED", "SUPPORTED", "REFUTED", "UNVERIFIED", "REFUTED"]
     predicted = ["SUPPORTED", "REFUTED", "REFUTED", "CONFLICTING", "SUPPORTED"]
