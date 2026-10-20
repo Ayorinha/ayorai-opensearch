@@ -469,9 +469,7 @@ def compute_metrics(
     discordant_system = sum(
         p == g and b != g for g, p, b in zip(gold, pred, baseline_b, strict=True)
     )
-    discordant_base = sum(
-        p != g and b == g for g, p, b in zip(gold, pred, baseline_b, strict=True)
-    )
+    discordant_base = sum(p != g and b == g for g, p, b in zip(gold, pred, baseline_b, strict=True))
     p_value = mcnemar_exact_pvalue(gold, pred, baseline_b)
     primary = {
         "baseline": "B",
