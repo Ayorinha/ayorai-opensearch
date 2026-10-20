@@ -223,6 +223,45 @@ def test_primary_baseline_b_uses_development_partition_not_evaluation_gold() -> 
     assert metrics["mcnemar"]["baseline"] == "B"
 
 
+def test_evaluate_derives_baseline_b_from_development_partition() -> None:
+    cases = [
+        _case(
+            "eval-1",
+            "O cancelamento será efetivado em até 2 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        ),
+        _case(
+            "eval-2",
+            "O cliente tem direito a cancelar o plano sem multa.",
+            "Art. 2º O cliente fictício tem direito a cancelar o plano sem multa.",
+        ),
+        _case(
+            "eval-3",
+            "O cancelamento será efetivado em até 9 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        ),
+    ]
+    labels = {"eval-1": "SUPPORTED", "eval-2": "SUPPORTED", "eval-3": "REFUTED"}
+    development_labels = {
+        "dev-a": "REFUTED",
+        "dev-b": "REFUTED",
+        "dev-c": "SUPPORTED",
+    }
+    result = RUNNER["evaluate"](
+        cases,
+        labels,
+        DOCS,
+        development_labels=development_labels,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+    )
+    assert result["metrics"]["baseline_primary"]["label"] == "REFUTED"
+    assert result["metrics"]["baseline_primary"]["accuracy"] == pytest.approx(1 / 3)
+    assert result["metrics"]["baseline_descriptive"]["label"] == "SUPPORTED"
+    assert result["metrics"]["baseline_descriptive"]["accuracy"] == pytest.approx(2 / 3)
+
+
 def test_development_baseline_rejects_empty_and_invalid_labels() -> None:
     with pytest.raises(ValueError, match="must not be empty"):
         RUNNER["development_baseline_label"]({}, "judge2")
@@ -275,7 +314,7 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             development_labels=DEV_LABELS,
             mode=mode,
             vocabulary="judge2",
-            iterations=100
+            iterations=100,
         )
         assert result["excluded"] == [{"case_id": "s3", "label": "RULE_GAP"}]
         assert [row["predicted"] for row in result["cases"]] == ["SUPPORTED", "REFUTED"]
@@ -292,13 +331,23 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
         )
     with pytest.raises(ValueError, match="duplicate case"):
         RUNNER["evaluate"](
-            [*cases, cases[0]], labels, DOCS, development_labels=DEV_LABELS,
-            mode="oracle", vocabulary="judge2", iterations=10
+            [*cases, cases[0]],
+            labels,
+            DOCS,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
         )
     with pytest.raises(ValueError, match="without a label"):
         RUNNER["evaluate"](
-            cases, {"s1": "SUPPORTED"}, DOCS, development_labels=DEV_LABELS,
-            mode="oracle", vocabulary="judge2", iterations=10
+            cases,
+            {"s1": "SUPPORTED"},
+            DOCS,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
         )
 
 
@@ -321,8 +370,13 @@ def test_evaluate_reports_abstentions_mapped_to_unverified() -> None:
     module_globals["predict"] = abstaining_predict
     try:
         result = RUNNER["evaluate"](
-            cases, {"s1": "UNVERIFIED"}, DOCS, development_labels=DEV_LABELS,
-            mode="oracle", vocabulary="judge2", iterations=10
+            cases,
+            {"s1": "UNVERIFIED"},
+            DOCS,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
         )
     finally:
         module_globals["predict"] = original
@@ -386,7 +440,8 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
                 {"case_id": "dev-2", "verdict": "SUPPORTED"},
                 {"case_id": "dev-3", "verdict": "REFUTED"},
             )
-        ) + "\n"
+        )
+        + "\n"
     )
     out = tmp_path / "report.json"
     code = RUNNER["main"](
