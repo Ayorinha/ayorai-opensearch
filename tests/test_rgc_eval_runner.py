@@ -263,7 +263,7 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
     labels = {"s1": "SUPPORTED", "s2": "REFUTED", "s3": "RULE_GAP"}
     for mode in ("oracle", "retrieval"):
         result = RUNNER["evaluate"](
-            cases, labels, DOCS, mode=mode, vocabulary="judge2", iterations=100
+            cases, labels, DOCS, development_labels=DEV_LABELS, mode=mode, vocabulary="judge2", iterations=100
         )
         assert result["excluded"] == [{"case_id": "s3", "label": "RULE_GAP"}]
         assert [row["predicted"] for row in result["cases"]] == ["SUPPORTED", "REFUTED"]
