@@ -9,6 +9,7 @@ from typing import Any
 from run_f1_eval import _evaluate
 
 from ayorai_attractor.evaluation.golden import _load_jsonl
+from ayorai_attractor.evaluation.h1_suites import SUITE_CHOICES, select_golden_suites
 from ayorai_attractor.evaluation.stats import mcnemar_exact_pvalue
 from ayorai_attractor.verification.nli import (
     EVAL_ONLY_LEVEL,
@@ -112,7 +113,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--suite",
-        choices=("golden-v0", "golden-v0.1", "both"),
+        choices=SUITE_CHOICES,
         default="both",
         help="Golden suite to evaluate (default: both, preserving the full comparative report)",
     )
@@ -122,7 +123,7 @@ def main() -> None:
         "golden-v0": ROOT / "evals/golden/v0.jsonl",
         "golden-v0.1": ROOT / "evals/golden/v0.1.jsonl",
     }
-    selected_suites = tuple(paths) if args.suite == "both" else (args.suite,)
+    selected_suites = select_golden_suites(args.suite)
     results: dict[str, Any] = {}
     for name in selected_suites:
         path = paths[name]
