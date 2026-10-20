@@ -13,6 +13,7 @@ from ayorai_attractor.evaluation.h1_suites import (
     SUITE_CHOICES,
     select_golden_suites,
 )
+from ayorai_attractor.evaluation.report_manifest import write_artifact_manifest
 from ayorai_attractor.evaluation.stats import mcnemar_exact_pvalue
 from ayorai_attractor.verification.nli import (
     EVAL_ONLY_LEVEL,
@@ -32,6 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "evals/corpus/documents.jsonl"
 OUT_JSON = ROOT / "reports/h1-results.json"
 OUT_MD = ROOT / "reports/H1-RESULTS.md"
+OUT_MANIFEST = ROOT / "reports/h1-results.manifest.json"
 A_MODEL = EVAL_ONLY_MODEL
 A_REVISION = EVAL_ONLY_REVISION
 B_TRANSLATOR = "Helsinki-NLP/opus-mt-ROMANCE-en"
@@ -196,9 +198,13 @@ def main() -> None:
             )
         lines.append("")
     OUT_MD.write_text("\n".join(lines), encoding="utf-8")
-    report["json_sha256"] = hashlib.sha256(OUT_JSON.read_bytes()).hexdigest()
-    report["markdown_sha256"] = hashlib.sha256(OUT_MD.read_bytes()).hexdigest()
-    OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_artifact_manifest(
+        OUT_JSON,
+        OUT_MD,
+        OUT_MANIFEST,
+        commit=report["commit"],
+        selected_suites=selected_suites,
+    )
     print("\n".join(lines))
 
 
