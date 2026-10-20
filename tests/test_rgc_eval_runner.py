@@ -33,6 +33,7 @@ DOCS = {
         "sint-1", "https://example.test/sint-1", "2026-10-13T00:00:00Z", TEXT, "sintético"
     )
 }
+DEV_CASES = [{"case_id": "dev-1"}, {"case_id": "dev-2"}, {"case_id": "dev-3"}]
 DEV_LABELS = {"dev-1": "SUPPORTED", "dev-2": "SUPPORTED", "dev-3": "REFUTED"}
 
 
@@ -251,6 +252,11 @@ def test_evaluate_derives_baseline_b_from_development_partition() -> None:
         cases,
         labels,
         DOCS,
+        development_cases=[
+            {"case_id": "dev-a"},
+            {"case_id": "dev-b"},
+            {"case_id": "dev-c"},
+        ],
         development_labels=development_labels,
         mode="oracle",
         vocabulary="judge2",
@@ -269,6 +275,25 @@ def test_development_baseline_rejects_empty_and_invalid_labels() -> None:
         RUNNER["development_baseline_label"]({"dev-1": "RULE_GAP"}, "judge2")
 
 
+def test_evaluate_requires_complete_development_labels() -> None:
+    case = _case(
+        "eval-1",
+        "O cancelamento será efetivado em até 2 dias.",
+        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+    )
+    with pytest.raises(ValueError, match="cases/labels mismatch"):
+        RUNNER["evaluate"](
+            [case],
+            {"eval-1": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels={"dev-1": "SUPPORTED", "dev-2": "SUPPORTED"},
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
 def test_evaluate_rejects_development_evaluation_overlap() -> None:
     case = _case(
         "dev-1",
@@ -280,6 +305,7 @@ def test_evaluate_rejects_development_evaluation_overlap() -> None:
             [case],
             {"dev-1": "SUPPORTED"},
             DOCS,
+            development_cases=DEV_CASES,
             development_labels=DEV_LABELS,
             mode="oracle",
             vocabulary="judge2",
@@ -311,6 +337,7 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             cases,
             labels,
             DOCS,
+            development_cases=DEV_CASES,
             development_labels=DEV_LABELS,
             mode=mode,
             vocabulary="judge2",
@@ -324,6 +351,7 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             cases,
             {**labels, "s9": "SUPPORTED"},
             DOCS,
+            development_cases=DEV_CASES,
             development_labels=DEV_LABELS,
             mode="oracle",
             vocabulary="judge2",
@@ -334,6 +362,7 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             [*cases, cases[0]],
             labels,
             DOCS,
+            development_cases=DEV_CASES,
             development_labels=DEV_LABELS,
             mode="oracle",
             vocabulary="judge2",
@@ -344,6 +373,7 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             cases,
             {"s1": "SUPPORTED"},
             DOCS,
+            development_cases=DEV_CASES,
             development_labels=DEV_LABELS,
             mode="oracle",
             vocabulary="judge2",
@@ -373,6 +403,7 @@ def test_evaluate_reports_abstentions_mapped_to_unverified() -> None:
             cases,
             {"s1": "UNVERIFIED"},
             DOCS,
+            development_cases=DEV_CASES,
             development_labels=DEV_LABELS,
             mode="oracle",
             vocabulary="judge2",
@@ -431,6 +462,14 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     )
     labels = tmp_path / "labels.jsonl"
     labels.write_text(json.dumps({"case_id": "s1", "verdict": "SUPPORTED"}) + "\n")
+    development_cases = tmp_path / "development-cases.jsonl"
+    development_cases.write_text(
+        "\n".join(
+            json.dumps({"case_id": case_id})
+            for case_id in ("dev-1", "dev-2", "dev-3")
+        )
+        + "\n"
+    )
     development_labels = tmp_path / "development-labels.jsonl"
     development_labels.write_text(
         "\n".join(
@@ -450,6 +489,8 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
             str(cases),
             "--labels",
             str(labels),
+            "--development-cases",
+            str(development_cases),
             "--development-labels",
             str(development_labels),
             "--documents",
@@ -468,6 +509,7 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     assert report["metrics"]["baseline_descriptive"]["label"] == "SUPPORTED"
     assert report["baseline_provenance"]["primary"] == "B"
     assert len(report["inputs"]["cases_sha256"]) == 64
+    assert len(report["inputs"]["development_cases_sha256"]) == 64
     assert len(report["inputs"]["development_labels_sha256"]) == 64
 
 
@@ -575,6 +617,7 @@ def test_evaluate_uses_annotated_atoms() -> None:
         [case],
         {"e1": "PARTIALLY_SUPPORTED"},
         DOCS,
+        development_cases=DEV_CASES,
         development_labels=DEV_LABELS,
         mode="oracle",
         vocabulary="judge2",
@@ -613,6 +656,7 @@ def test_rectified_cases_are_reported_as_a_separate_stratum() -> None:
         _rectified_cases(),
         labels,
         DOCS,
+        development_cases=DEV_CASES,
         development_labels=DEV_LABELS,
         mode="oracle",
         vocabulary="judge2",
@@ -639,6 +683,7 @@ def test_rectified_mark_does_not_change_the_judge_output() -> None:
         marked,
         labels,
         DOCS,
+        development_cases=DEV_CASES,
         development_labels=DEV_LABELS,
         mode="oracle",
         vocabulary="judge2",
@@ -648,6 +693,7 @@ def test_rectified_mark_does_not_change_the_judge_output() -> None:
         unmarked,
         labels,
         DOCS,
+        development_cases=DEV_CASES,
         development_labels=DEV_LABELS,
         mode="oracle",
         vocabulary="judge2",
@@ -669,6 +715,7 @@ def test_invalid_rectified_mark_stops_the_run() -> None:
             cases,
             {"r1": "SUPPORTED", "r2": "REFUTED", "r3": "SUPPORTED"},
             DOCS,
+            development_cases=DEV_CASES,
             development_labels=DEV_LABELS,
             mode="oracle",
             vocabulary="judge2",
@@ -693,6 +740,7 @@ def test_invalid_rectified_mark_is_rejected_even_when_case_is_not_scored(
             [case],
             labels,
             DOCS,
+            development_cases=DEV_CASES,
             development_labels=DEV_LABELS,
             mode="oracle",
             vocabulary="judge2",
