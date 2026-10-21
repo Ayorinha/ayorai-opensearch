@@ -736,7 +736,7 @@ def test_protocol_freeze_rejects_stale_document_hash(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    with pytest.raises(ValueError, match="protocol hash differs"):
+    with pytest.raises(ValueError, match="protocol_sha256 differs"):
         RUNNER["validate_protocol_freeze"](tmp_path)
 
 
