@@ -113,6 +113,8 @@ Além disso, publicar sempre acurácia, macro-F1, IC95%, matriz de confusão e r
 
 A publicação do resultado é obrigatória mesmo se for negativo, inconclusivo ou contrário à hipótese. Não haverá mudança de regra, limiar, modelo, partição ou caso em resposta aos resultados dentro deste estudo.
 
+**Nota datada (2026-10-21) — DEC-018:** a redação original de H1 e seus critérios permanece preservada como histórico; o escopo confirmatório vigente está na [Emenda 8](#emenda-8-2026-10-21--escopo-confirmatório-de-h1-dec-018-opção-a).
+
 ## 6. Limitações e afirmações proibidas
 
 O benchmark medirá desempenho somente no escopo, versão da fonte, conjunto de afirmações e procedimento de anotação documentados. Não demonstrará, por si só, capacidade de interpretar toda a legislação brasileira, aconselhar consumidores, determinar direitos em casos concretos ou substituir revisão humana.
@@ -161,3 +163,13 @@ Por aprovação explícita do mantenedor em 2026-10-21, o contrato de avaliaçã
 4. Esta emenda prevalece sobre a interpretação da redação histórica do §4; a redação anterior permanece intacta acima para rastreabilidade.
 
 O executor já implementa o mapeamento de saída inválida e a validação de rótulos completos; os testes sintéticos verificam ambos os lados da distinção. Esta emenda não altera o estado geral **[PROPOSTO]**, não congela o protocolo, não cria nem rotula casos, não autoriza o piloto 02 ou execução do ATTRACTOR sobre casos RGC e não produz métricas RGC.
+
+
+## Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. **Partição oculta (~90 casos):** é a única partição primária para testar H1 e aplicar o critério confirmatório pré-registrado.
+2. **Partição pública (~210 casos):** uso somente para desenvolvimento e métricas descritivas/exploratórias; não entra no teste confirmatório de H1 e seus resultados devem ser apresentados separadamente.
+3. O relatório deve identificar explicitamente a partição avaliada e preservar os hashes/contagens das entradas. O executor deve exigir a declaração `hidden` ou `development` e não calcular/relatar H1 como testada quando a partição declarada for `development`.
+4. Esta emenda não altera os critérios numéricos de H1, não congela o protocolo e não autoriza executar o sistema em casos RGC. O protocolo permanece **[PROPOSTO]**; o piloto 02 humano e os demais gates seguem pendentes.
