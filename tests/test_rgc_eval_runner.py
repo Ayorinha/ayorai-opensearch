@@ -575,6 +575,9 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
             "manifest_sha256": "a" * 64,
             "protocol_sha256": "b" * 64,
             "preregistration_sha256": "c" * 64,
+            "runner_spec_sha256": "d" * 64,
+            "runner_code_sha256": "e" * 64,
+            "runner_version": RUNNER["RUNNER_VERSION"],
             "approved_by": "Synthetic test approver",
             "approved_at": "2026-10-21",
         },
@@ -652,6 +655,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert report["runner_version"] == "rgc-eval/0.5.0"
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
+    assert report["protocol_freeze"]["runner_code_sha256"] == "e" * 64
     assert report["metrics"]["system"]["accuracy"] == 1.0
     assert report["config"]["mode"] == "retrieval"
     assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
@@ -667,10 +671,17 @@ def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Pat
     eval_dir.mkdir(parents=True)
     protocol = eval_dir / "PROTOCOL-GOLDEN-V1.md"
     preregistration = eval_dir / "PREREGISTRATION-RGC-v1.md"
+    runner_spec = eval_dir / "RUNNER-RGC-v1.md"
+    runner_code = tmp_path / "evals" / "ptbr" / "rgc_eval.py"
+    runner_code.parent.mkdir(parents=True)
     manifest_path = eval_dir / "PROTOCOL-FREEZE.json"
     protocol.write_text("Status: CONGELADO — aprovado após revisão humana.\n", encoding="utf-8")
     preregistration.write_text(
         "**Estado:** [CONGELADO] — critérios congelados.\n", encoding="utf-8"
+    )
+    runner_spec.write_text("**Estado:** [CONGELADO] — executor congelado.\n", encoding="utf-8")
+    runner_code.write_text(
+        f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\n', encoding="utf-8"
     )
     with pytest.raises(ValueError, match="requires both documents"):
         RUNNER["validate_protocol_freeze"](tmp_path)
@@ -682,6 +693,9 @@ def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Pat
         "approved_at": "2026-10-21",
         "protocol_sha256": RUNNER["_sha256"](protocol),
         "preregistration_sha256": RUNNER["_sha256"](preregistration),
+        "runner_spec_sha256": RUNNER["_sha256"](runner_spec),
+        "runner_code_sha256": RUNNER["_sha256"](runner_code),
+        "runner_version": RUNNER["RUNNER_VERSION"],
     }
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
@@ -700,8 +714,15 @@ def test_protocol_freeze_rejects_stale_document_hash(tmp_path: Path) -> None:
     eval_dir.mkdir(parents=True)
     protocol = eval_dir / "PROTOCOL-GOLDEN-V1.md"
     preregistration = eval_dir / "PREREGISTRATION-RGC-v1.md"
+    runner_spec = eval_dir / "RUNNER-RGC-v1.md"
+    runner_code = tmp_path / "evals" / "ptbr" / "rgc_eval.py"
+    runner_code.parent.mkdir(parents=True)
     protocol.write_text("Status: CONGELADO\n", encoding="utf-8")
     preregistration.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
+    runner_spec.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
+    runner_code.write_text(
+        f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\n', encoding="utf-8"
+    )
     manifest_path = eval_dir / "PROTOCOL-FREEZE.json"
     manifest_path.write_text(
         json.dumps(
@@ -712,6 +733,9 @@ def test_protocol_freeze_rejects_stale_document_hash(tmp_path: Path) -> None:
                 "approved_at": "2026-10-21",
                 "protocol_sha256": "0" * 64,
                 "preregistration_sha256": RUNNER["_sha256"](preregistration),
+                "runner_spec_sha256": RUNNER["_sha256"](runner_spec),
+                "runner_code_sha256": "0" * 64,
+                "runner_version": RUNNER["RUNNER_VERSION"],
             }
         ),
         encoding="utf-8",
