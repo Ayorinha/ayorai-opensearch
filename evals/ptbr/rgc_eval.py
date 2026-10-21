@@ -418,7 +418,11 @@ def bootstrap_ci(
 
 
 def bootstrap_ci_by_cluster(
-    gold: Sequence[str], pred: Sequence[str], cluster_ids: Sequence[str], *, iterations: int = BOOTSTRAP_ITERATIONS
+    gold: Sequence[str],
+    pred: Sequence[str],
+    cluster_ids: Sequence[str],
+    *,
+    iterations: int = BOOTSTRAP_ITERATIONS,
 ) -> dict[str, list[float]]:
     """Percentile 95% CI by cluster; each sampled cluster contributes all its cases."""
     if len(gold) != len(pred) or len(gold) != len(cluster_ids):
@@ -531,7 +535,11 @@ def compute_metrics(
         "system": {name: round(value, 6) for name, value in system.items()},
         "system_ci95": {name: [round(v, 6) for v in pair] for name, pair in ci.items()},
         **(
-            {"system_ci95_case_bootstrap": {name: [round(v, 6) for v in pair] for name, pair in ci_case.items()}}
+            {
+                "system_ci95_case_bootstrap": {
+                    name: [round(v, 6) for v in pair] for name, pair in ci_case.items()
+                }
+            }
             if cluster_ids is not None
             else {}
         ),
@@ -679,7 +687,9 @@ def evaluate(
         if partition == "hidden" and (
             not isinstance(cluster_id, str) or not cluster_id.strip()
         ):
-            raise ValueError(f"{case_id}: missing or invalid bootstrap_cluster_id for hidden partition")
+            raise ValueError(
+                f"{case_id}: missing or invalid bootstrap_cluster_id for hidden partition"
+            )
         atoms = case_atoms(case)
         if index is None:
             prediction = predict(
