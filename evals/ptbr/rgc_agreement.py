@@ -1,4 +1,5 @@
 """Compute human inter-annotator agreement; never annotate or execute the system."""
+
 from __future__ import annotations
 
 import argparse
@@ -63,9 +64,7 @@ def _cohen_kappa(
     column_marginals = {
         label: sum(matrix[row][label] for row in VOCABULARY) for label in VOCABULARY
     }
-    expected = sum(
-        row_marginals[label] * column_marginals[label] for label in VOCABULARY
-    ) / (n * n)
+    expected = sum(row_marginals[label] * column_marginals[label] for label in VOCABULARY) / (n * n)
     denominator = 1.0 - expected
     if abs(denominator) <= 1e-12:
         return None, observed, matrix
@@ -153,9 +152,7 @@ def compute_agreement(
         "gate_threshold": GATE_THRESHOLD,
         "gate_passed": kappa is not None and kappa >= GATE_THRESHOLD,
         "observed_agreement": round(observed, 6),
-        "ci95_case_bootstrap": (
-            [round(value, 6) for value in ci95] if ci95 is not None else None
-        ),
+        "ci95_case_bootstrap": ([round(value, 6) for value in ci95] if ci95 is not None else None),
         "bootstrap": {
             "method": "percentile_case_bootstrap",
             "iterations": iterations,
@@ -184,9 +181,7 @@ def main() -> int:
         seed=args.seed,
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(
-        json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(
         f"n={result['n_eligible']} kappa={result['cohen_kappa']} "
         f"gate_passed={result['gate_passed']} out={args.out}"
