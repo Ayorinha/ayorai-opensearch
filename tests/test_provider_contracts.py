@@ -1,6 +1,7 @@
 import json
 from types import SimpleNamespace
 from typing import Any
+from urllib.error import URLError
 
 import pytest
 
@@ -103,3 +104,43 @@ def test_opensearch_response_contract(monkeypatch: pytest.MonkeyPatch) -> None:
     assert response.source == "https://example.test/documents"
     assert response.excerpt == "Doc: text"
     assert response.independent is True
+
+
+def test_openai_compatible_provider_rejects_non_https() -> None:
+    provider = OpenAICompatibleProvider(base_url="http://example.test/v1", api_key="test")
+    with pytest.raises(ValueError, match="HTTPS"):
+        provider.execute("query")
+
+
+def test_openai_compatible_provider_wraps_url_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail_request(*args: Any, **kwargs: Any) -> Any:
+        raise URLError("offline")
+
+    monkeypatch.setattr(
+        "ayorai_attractor.providers.openai_compatible.request.urlopen", fail_request
+    )
+    provider = OpenAICompatibleProvider(api_key="test")
+    with pytest.raises(RuntimeError, match="Provider request failed"):
+        provider.execute("query")
+
+
+def test_openai_compatible_provider_rejects_malformed_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, *args: Any) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b"{}"
+
+    monkeypatch.setattr(
+        "ayorai_attractor.providers.openai_compatible.request.urlopen",
+        lambda *args, **kwargs: FakeResponse(),
+    )
+    provider = OpenAICompatibleProvider(api_key="test")
+    with pytest.raises(RuntimeError, match="invalid chat response"):
+        provider.execute("query")
