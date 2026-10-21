@@ -129,3 +129,15 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 3. Cada caso elegível na partição oculta deve fornecer `bootstrap_cluster_id`. Caso com artigo principal usa o ID canônico desse artigo. Caso cuja afirmação dependa conjuntamente de vários artigos sem um principal único recebe `bundle:` + IDs canônicos únicos em ordem lexical, separados por `+`; `cited_article_ids` conserva a lista completa de artigos citados. Casos com a mesma chave de cluster são reamostrados juntos; bundles são clusters próprios e devem ser contabilizados separadamente.
 4. O executor interrompe a execução confirmatória se o campo estiver ausente, vazio ou não for string. A regra de agrupamento é definida antes de qualquer caso definitivo e não pode ser ajustada após observar resultados.
 5. Esta emenda não congela o protocolo, não cria/rotula casos, não autoriza execução do ATTRACTOR sobre casos RGC e não altera Judge, Golden, fixtures, manifestos ou hashes congelados.
+
+
+## Emenda 10 (2026-10-21) — concordância entre anotadores (DEC-020, opção A aprovada)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. Calcular Cohen's kappa não ponderado sobre os cinco rótulos nominais definitivos.
+2. Aprovação do gate quando a estimativa pontual for `κ ≥ 0,6`. Reportar IC95% percentil por bootstrap de casos (10.000 reamostragens, seed `20261003`), sem exigir que o limite inferior seja ≥ 0,6.
+3. Reportar concordância observada, matriz de confusão e marginais por classe para cada anotador. Kappa indefinido por ausência de variação não satisfaz o gate.
+4. `RULE_GAP` fica fora do kappa: excluir um par quando qualquer anotador usar esse marcador e reportar separadamente total excluído e discordâncias entre esses pares.
+5. Os arquivos devem conter exatamente os mesmos IDs, sem duplicatas ou rótulos ausentes/desconhecidos. Falhas de integridade interrompem o cálculo, não são descartadas silenciosamente.
+6. Esta emenda não altera casos, não autoriza a segunda anotação (que deve ser humana e independente), não congela o protocolo e não produz métricas de benchmark.
