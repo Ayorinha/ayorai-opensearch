@@ -6,43 +6,38 @@ This file is the single source of current project status. Historical documents d
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## API contract note (2026-10-21) — r1-a JSON `null`
+## API contract note (2026-10-21) — r1-a JSON null
 
-PR #274 restored the `/v1/verify` JSON `null` request-body response to the frozen contract fixture: HTTP 422 with error type `missing`, as captured in `tests/fixtures/r1-a-error-baseline.json` from commit `c7e3868f3f6f34ce153d9ec6605645fad8681e2e`. The fixture was not changed; `tests/test_verification_api.py` compares each case byte-for-byte. A report says tags v0.4.0 and v0.5.0, installed with today's dependency resolution, returned `model_attributes_type`. This is consistent with a dependency-version-dependent FastAPI/Pydantic validation difference, but that cause has not been isolated by a controlled reproduction. No API behavior is changed by this note.
-
-
+The frozen contract remains HTTP 422 with error type `missing` and location `["body"]`; the fixture `tests/fixtures/r1-a-error-baseline.json` was not modified. The controlled isolated reproduction in [`scripts/repro_null_body_contract.py`](../scripts/repro_null_body_contract.py) tested 16 FastAPI/Pydantic combinations: FastAPI `0.115.0, 0.117.0, 0.119.0, 0.121.0, 0.123.0, 0.125.0, 0.127.0, 0.128.2`, each paired with Pydantic `2.10.0` and `2.13.5`, plus `httpx==0.27.2`. Both synthetic route styles reflecting the v0.4.0 typed-body route and v0.5.0 Any/Body + manual validation route returned 422 `missing`; direct `model_validate(None, from_attributes=True)` returned `model_attributes_type` in both tested Pydantic versions. No version threshold was identified; no dependency bound was added. Exact commands are recorded in CHANGELOG.md and the workflow from PR #339. This reproduces the relevant route styles in isolation rather than importing the tagged application, and does not establish behavior outside the tested matrix.
 
 ## Current execution snapshot (2026-10-21)
 
-- **Main SHA at this snapshot:** `8664286e81593c36e7901c596a6aa01a00cd05cf` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/8664286e81593c36e7901c596a6aa01a00cd05cf)).
-- **Latest CI evidence:** PR #294 head `7a7dfff8d172063fb58ccdbd14d8a50d2b27a1be` passed CI, including Python 3.11/3.12/3.13, `ruff check .`, `ruff format --check .`, strict mypy gates, and tests including `pytest -q`; CodeQL, Security, API Contract Guard, Schemathesis Full API Contract, Golden r2 Migration, and Dependency Review also passed. The RGC design simulation was skipped by its workflow condition; this is not a successful RGC simulation or benchmark evidence. These are checks on the PR head SHA, not a claim that a separate push-triggered run was observed on the resulting main merge SHA.
-- **PR #284 — audit trail:** merged as `2ed5aca25c260f6c689c00747da2b22591e52813`; restores the pre-#274 wording of H1 and §§4–5 and adds a dated corrective note without rewriting history.
-- **DEC-016:** recorded and merged in PR #286 (`d958474954c2215f90451130f95831a17cab56b9`); authorizes autonomous technical/documentary work subject to gates and limits. PRs #266 and #267 were retroactively ratified by the maintainer's order, without independent review. **F-01 remains open.**
-- **RGC baseline:** Emenda 6 was merged in PR #288 (`5a587ecb64abc6359c8fe36b8194b67dee3edda9`). Baseline B is primary from human reference labels in the public 70% development partition; A is descriptive only; ties in B use the fixed `judge2` vocabulary order in `majority_label`. The protocol remains **[PROPOSTO]**, not frozen.
-- **PR #277:** closed as superseded by Emenda 6. The comment now identifies the review as automated and not independent.
-- **r1-a JSON `null`:** PR #289 records the frozen fixture expectation (`missing`) and the reported `model_attributes_type` behavior from v0.4.0/v0.5.0 under current dependency resolution as an unresolved dependency-version hypothesis. PR #291 adds a clearer regression-test message. Both the fixture and API behavior remain unchanged.
-- **Report-manifest provenance:** PR #294 merged as `8664286e81593c36e7901c596a6aa01a00cd05cf`; a missing `GITHUB_SHA` is explicitly marked `non_ci_run: true`, and `commit: unknown` is rejected unless that marker is supplied.
-- **CodeQL dependency update:** PR #293 merged the SHA-pinned `github/codeql-action` v4.39.0 update as `76de473242174d5f6ebaf419f9d03cf6aa92c082`; the stale Dependabot PR #282 was closed as replaced.
-- **Human/scientific gates:** pilot 02 remains human-only; do not create, complete, or label pilot/benchmark cases, and do not execute ATTRACTOR on any RGC pilot/development/confirmatory cases. No RGC PT-BR benchmark result exists. Do not freeze the protocol until the human pilot 02 review and a separate explicit maintainer decision.
-- **Review status:** this cycle's reviews are automated, not independent. Do not describe them as independent reviews or institutional validation.
-
+- **Main snapshot SHA before this status-only update:** `7cf0d9ecb771712c8a9edd5351eaa47a79f33245`.
+- **CI run:** [GitHub Actions run 39606736766](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39606736766). Main SHA had 13 checks: 12 successful, 1 skipped by workflow condition (`rgc-design-simulation`), 0 failures. Python test jobs 3.11, 3.12 and 3.13 passed.
+- **Test evidence:** `pytest -q` — 1,123 passed, 1 skipped; coverage — 4,214 statements, 251 missed, 94%. The targeted additions brought `plugins/registry.py` to 26/26 statements and `providers/openai_compatible.py` to 30/30 statements.
+- **Strict typing:** CI gate now runs `mypy --strict evals/ptbr/rgc_eval.py evals/ptbr/rgc_agreement.py`; the blocking gate passed on PR #353. Main's `typecheck-strict (non-blocking)` also passed.
+- **Security:** [security run 39606736914](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39606736914) succeeded; `pip-audit` reported no known vulnerabilities and Bandit reported no issues. Remaining Bandit comment-parser warnings were removed in PR #354.
+- **Merged work in this cycle:** #306 (manual 05), #308 (manual 06), #309 (manual 07), #335/#337 (DEC-017), #339 (JSON-null reproduction), #342 (DEC-018), #345 (manual 08), #349 (DEC-019), #351 (DEC-020), #352 (methodology review), #353 (coverage and strict mypy), #354 (Bandit warning cleanup), #355 (manual 09), #356 (manual 10), #357 (Unreleased/release draft), #358 (branch-cleanup audit).
+- **Closed as duplicate/superseded:** #307, #328, #330, #334, #336, #338, #340, #343, #344, #346, #348, #350. Comments identify the replacement PRs.
+- **Open PRs at snapshot time:** none.
+- **Branch cleanup:** 205 remote branches were enumerated; 147 existing branches associated with merged PRs or explicitly superseded/duplicate PRs were listed as candidates. **Zero branches were deleted** because the available GitHub integration has no remote branch-delete operation. See [branch cleanup audit](audit/BRANCH-CLEANUP-2026-10-21.md).
+- **Scientific boundary:** DEC-017, DEC-018, DEC-019 and DEC-020 are approved; the RGC protocol remains `[PROPOSTO]` and is not frozen. No pilot/benchmark cases were created, completed or labeled, and the ATTRACTOR was not run on RGC cases. No RGC metrics were produced.
 
 ## Release and system boundaries
 
-- Latest release: v0.5.0 (2026-10-13), DOI [10.5281/zenodo.23344005](https://doi.org/10.5281/zenodo.23344005).
-- `main` is protected. Required checks are Python 3.11/3.12/3.13, `golden-regression`, `judge-regression`, and `security`.
-- The deterministic Judge alone is the factual authority. Automated checks, LLM outputs, and synthetic simulations do not replace human review or establish benchmark performance.
-- **No Portuguese benchmark result exists.** The exploratory pilot 01 was discarded; the system was not run on those cases. The RGC protocol is not frozen.
+- Latest published release remains **v0.5.0** (Zenodo DOI [10.5281/zenodo.23344005](https://doi.org/10.5281/zenodo.23344005)); all-versions DOI: [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082).
+- A v0.6.0 notes draft exists at `docs/release/v0.6.0-draft.md`. No tag or release was created or published in this cycle.
+- The RGC protocol remains `[PROPOSTO]`; approved decision options define rules but do not freeze the protocol or authorize a benchmark run.
+- No claims of certification, institutional validation, independent review or production readiness are supported by the current evidence.
 
 ## Maintainer decisions and governance
 
-- **DEC-013 (2026-10-18):** authorizes execution and merge of the defined PRs in this cycle. The waiver of independent human review applies only to this cycle; it does not mean a human independent review occurred. **F-01 remains open.**
-- **DEC-014 (2026-10-18):** baseline B is primary, derived only from the public 70% development partition and fixed for confirmatory evaluation. Baseline A is a descriptive oracle baseline calculated on the evaluation partition; it is never an operational classifier or the basis for H1.
-- **Emenda 6 (2026-10-21):** approved by the maintainer and merged in #288; it supersedes the earlier restriction on changing the preregistration while preserving the original text as history. It does not freeze the protocol.
-- **DEC-016 (2026-10-21):** autonomous work authorization and retroactive ratification of PRs #266/#267; no independent review was performed for those PRs. F-01 remains open.
-- **Protocol Amendment 5** records only the baseline definition. It does not freeze the RGC protocol.
-- **Open maintainer decisions:** DEC-001 (lockfile/image digest), DEC-003 (ADR-001 status), DEC-004 (commercial documentation/repository name), DEC-006 (Portuguese stance-engine priority), renumbering DEC-007/DEC-008 or retaining qualifiers, and ADR-010 questions 5–7 (writer, witnesses, timestamp).
-- **ADR-010:** “Accepted in part”; phase 1 is a pure library merged in #236. No event persistence, recording API, signed checkpoint service, or deployed verifiable audit log exists.
+- **DEC-017 — approved by the maintainer (2026-10-21), Option A:** a missing/integrity-invalid record interrupts; a present but invalid prediction counts as an error in the denominator. Implementation/doc alignment: PRs #335 and #337.
+- **DEC-018 — approved by the maintainer (2026-10-21), Option A:** H1 is confirmatory only on the hidden partition (~90 cases); the ~210 public cases are descriptive/exploratory. Executor requires an explicit partition. PR #342.
+- **DEC-019 — approved by the maintainer (2026-10-21), Option A:** article-cluster bootstrap is the primary 95% CI; case bootstrap is sensitivity. `bootstrap_cluster_id` is required for hidden cases, with canonical multi-article bundle rules. PR #349.
+- **DEC-020 — approved by the maintainer (2026-10-21), Option A:** unweighted Cohen's kappa, point-estimate gate `κ ≥ 0.6`, case-bootstrap 95% CI, confusion matrix/class marginals, and auditable `RULE_GAP` exclusions. Calculator and guide are in PR #351.
+- Other decisions remain as recorded in [DECISIONS-PENDING.md](DECISIONS-PENDING.md); do not infer approval from an implementation or CI result.
+- **Protocol freeze:** not approved by these decisions. The protocol remains proposed; no definitive case set has been created.
 
 ## Schemathesis issue #250
 
@@ -50,11 +45,19 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 
 ## Next human step: RGC pilot 02
 
-Run the second small pilot with human annotation without AI assistance, record methodological findings, and discard the pilot labels. Review those findings before deciding separately whether to freeze the protocol. Only after that gate should the definitive 300-case set, second annotation, agreement check (Cohen's kappa >= 0.6), and single system run be prepared. **Do not create or execute benchmark cases now.** No PT-BR benchmark results exist.
+1. Conduct pilot 02 with human annotation only and without AI assistance; record methodological findings and discard pilot labels as required by the protocol.
+2. Obtain a second annotation from a different person, independently of the first annotation. Only after both human annotation files exist should the agreement calculator be run; it has not processed real annotation data.
+3. Complete the independent human review F-01.
+4. Decide separately whether to freeze the protocol and whether the hidden partition's provenance/isolation gates are satisfied. No case creation, labeling, system execution or benchmark metrics are authorized before those gates.
 
 ## Deferred work
 
-Waves 6, 7, 8, and 9 are postponed to the next technical-manual stage and were not executed in this cycle. The manual should distinguish implemented code, library-only functionality, proposed work, and unimplemented work, with a verifiable source for each claim.
+- Manual chapters 05–10 are linked in `docs/manual/README.md`; chapters 01–04 remain marked in drafting.
+- Coverage is 94% overall. The next useful targets include `verification/extraction.py`, `audit.py`, and `orchestrator.py`; the registry and OpenAI-compatible provider now have 100% line coverage.
+- Strict mypy now covers both RGC evaluation modules. Keep the scope evidence-driven and extend it only where the gate passes.
+- Security CI is clean: pip-audit found no known vulnerabilities; Bandit found no issues after comment-parser warning cleanup.
+- v0.6.0 notes remain a draft; do not create a tag or publish a release.
+- Remote branch deletion remains blocked by missing connector capability. The audit records candidates but does not claim deletion.
 
 ## Engineering gates
 
