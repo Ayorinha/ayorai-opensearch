@@ -168,6 +168,7 @@ def check_case(case: Case, documents: Mapping[str, str]) -> list[str]:
     problems: list[str] = []
     for key, label in (
         ("case_id", "Identificador"),
+        ("source_id", "Identificador da fonte"),
         ("claim", "Afirmação"),
         ("source_url", "Fonte oficial (URL)"),
         ("excerpt", "Trecho literal exato"),
@@ -179,23 +180,23 @@ def check_case(case: Case, documents: Mapping[str, str]) -> list[str]:
 
     excerpt = _strip_quotes(case.get("excerpt"))
     source_id = case.get("source_id").strip("` ")
-    scope: Mapping[str, str] = documents
+    scope: Mapping[str, str] = {}
     if source_id and source_id in documents:
         scope = {source_id: documents[source_id]}
-    if excerpt:
+    elif source_id:
+        problems.append(
+            "a fonte indicada não está no corpus capturado; registrar a fonte (DEC-002) "
+            "antes de usá-la"
+        )
+    if excerpt and source_id in documents:
         if not _literal_locations(excerpt, scope):
             if any(_normalise(excerpt) in _normalise(text) for text in scope.values()):
                 problems.append(
                     "trecho só confere após normalizar espaços/quebras de linha; "
                     "transcreva exatamente como no artefato capturado (Emenda 1)"
                 )
-            elif source_id and source_id not in documents:
-                problems.append(
-                    "trecho não encontrado e a fonte indicada não está no corpus capturado; "
-                    "registrar a fonte (DEC-002) antes de usá-la"
-                )
             else:
-                problems.append("trecho não aparece literalmente na fonte capturada (Emenda 1)")
+                problems.append("trecho não aparece literalmente na fonte declarada (Emenda 1)")
 
     if case.get("checked").lower() not in {"sim", "s"}:
         problems.append("a conferência literal da fonte não foi confirmada com 'Sim'")
