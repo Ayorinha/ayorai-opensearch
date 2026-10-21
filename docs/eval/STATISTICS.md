@@ -40,3 +40,8 @@ A hipótese H1 é testada somente sobre a partição oculta (~90 casos). Os caso
 ## Bootstrap por cluster de artigo — DEC-019 (aprovada em 2026-10-21)
 
 O intervalo de confiança primário para H1 usa reamostragem de clusters de artigo; o bootstrap por caso é uma análise de sensibilidade. O campo `bootstrap_cluster_id` é obrigatório nos casos elegíveis da partição oculta. Caso com artigo principal usa seu identificador canônico; caso dependente de múltiplos artigos sem principal único usa `bundle:` com IDs canônicos únicos em ordem lexical, separados por `+`. `cited_article_ids` mantém a lista completa de referências. A amostragem sorteia com reposição tantos clusters quantos clusters únicos existem, inclui todos os casos do cluster sorteado e preserva multiplicidade de sorteios. Publicar método, seed, iterações, número de clusters e os dois intervalos. Esta decisão não congela o protocolo nem autoriza avaliação RGC.
+
+
+## Concordância entre anotadores — DEC-020 (aprovada em 2026-10-21)
+
+A ferramenta `evals/ptbr/rgc_agreement.py` calcula Cohen's kappa não ponderado para os cinco rótulos nominais definitivos, com gate pela estimativa pontual `κ ≥ 0,6`, IC95% percentil bootstrap por caso (10.000 reamostragens, seed `20261003`), concordância observada, matriz de confusão e marginais por classe. Exclui pares em que qualquer anotador usa `RULE_GAP` e reporta as exclusões separadamente. A ferramenta interrompe se os arquivos de anotação não tiverem IDs exatamente correspondentes ou contiverem duplicatas/rótulos inválidos. Nenhum arquivo de anotação humana foi fornecido ou processado nesta execução.
