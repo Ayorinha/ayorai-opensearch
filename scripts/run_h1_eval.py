@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -137,8 +138,12 @@ def main() -> None:
             results[name][f"mcnemar_{pair[0]}_vs_{pair[1]}"] = _paired(
                 results[name][pair[0]], results[name][pair[1]]
             )
+    github_sha = os.environ.get("GITHUB_SHA")
+    non_ci_run = not bool(github_sha and github_sha.strip())
+    commit = github_sha.strip() if github_sha and github_sha.strip() else "unknown"
     report = {
-        "commit": __import__("os").environ.get("GITHUB_SHA", "unknown"),
+        "commit": commit,
+        "non_ci_run": non_ci_run,
         "golden_v0_sha256": hashlib.sha256(paths["golden-v0"].read_bytes()).hexdigest(),
         "golden_v0_1_sha256": hashlib.sha256(paths["golden-v0.1"].read_bytes()).hexdigest(),
         "models": {
@@ -170,6 +175,7 @@ def main() -> None:
         "# H1 Results — Sentence Aggregation",
         "",
         f"Commit: {report['commit']}",
+        f"Non-CI run: {report['non_ci_run']}",
         "Seed: 20261003",
         "Bootstrap: 10,000",
         "",
@@ -204,6 +210,7 @@ def main() -> None:
         OUT_MANIFEST,
         commit=report["commit"],
         selected_suites=selected_suites,
+        non_ci_run=non_ci_run,
     )
     print("\n".join(lines))
 

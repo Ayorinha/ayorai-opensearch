@@ -14,10 +14,13 @@ def build_artifact_manifest(
     *,
     commit: str,
     selected_suites: Sequence[str],
+    non_ci_run: bool = False,
 ) -> dict[str, object]:
     """Hash final artifact bytes from outside the artifacts they describe."""
     if not commit.strip():
         raise ValueError("commit must be non-empty")
+    if commit.strip() == "unknown" and not non_ci_run:
+        raise ValueError("commit must be a known SHA unless non_ci_run is true")
     if not selected_suites or any(not suite.strip() for suite in selected_suites):
         raise ValueError("selected_suites must contain non-empty suite names")
     if len(set(selected_suites)) != len(selected_suites):
@@ -35,6 +38,7 @@ def build_artifact_manifest(
     return {
         "schema_version": "1",
         "commit": commit,
+        "non_ci_run": non_ci_run,
         "selected_suites": list(selected_suites),
         "artifacts": artifacts,
     }
@@ -47,6 +51,7 @@ def write_artifact_manifest(
     *,
     commit: str,
     selected_suites: Sequence[str],
+    non_ci_run: bool = False,
 ) -> dict[str, object]:
     if manifest_path.resolve() in {json_path.resolve(), markdown_path.resolve()}:
         raise ValueError("manifest path must be separate from artifact paths")
@@ -55,6 +60,7 @@ def write_artifact_manifest(
         markdown_path,
         commit=commit,
         selected_suites=selected_suites,
+        non_ci_run=non_ci_run,
     )
     manifest_path.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
