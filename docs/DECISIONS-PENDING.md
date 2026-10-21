@@ -252,6 +252,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Implementação autorizada:** a simulação de desenho gera partições de desenvolvimento e avaliação com a mesma prevalência populacional, deriva B da partição de desenvolvimento, calcula H1 contra B e reporta A ao lado. Seed 20261003, 10.000 reamostragens de bootstrap e 200 repetições por célula são mantidos. Todos os números da simulação são sintéticos, não resultados do benchmark RGC PT-BR.
 - **Limites:** esta decisão e a Emenda 5 não congelam o protocolo, não alteram o pré-registro, não autorizam acessar ou executar casos do benchmark e não mudam o Judge, Golden, manifestos ou hashes congelados.
 - **Estado:** aprovada pelo mantenedor nesta ordem em 2026-10-18; Emenda 5 a registra em `docs/eval/PROTOCOL-GOLDEN-V1.md`.
+- **Atualização datada (2026-10-21) — Emenda 6:** Anderson aprovou explicitamente a incorporação da definição B/A ao pré-registro. A restrição anterior de que a DEC-014/Emenda 5 “não altera o pré-registro” é superada por esta emenda aprovada, que mantém a redação anterior como histórico e acrescenta a interpretação vigente para H1. O desempate de B segue a ordem fixa do vocabulário `judge2` em `majority_label`. O estado do protocolo permanece **[PROPOSTO]**; não há congelamento nem autorização de execução. Implementação documental proposta na PR da Emenda 6.
 
 ## DEC-015 — Autorização da Etapa 2 (manual técnico)
 

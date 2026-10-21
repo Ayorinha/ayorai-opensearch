@@ -73,3 +73,14 @@ A decisão foi aprovada por Anderson Leon Ayora em 2026-10-17 e a Emenda 4 foi i
 ## Emenda 5 (2026-10-18) — Baseline primário e descritivo do RGC (DEC-014)
 
 Aprovada explicitamente por Anderson Leon Ayora, mantenedor, na ordem final de execução de 2026-10-18. Para o teste primário H1, o baseline B é a classe majoritária determinada exclusivamente pelos rótulos da partição pública de desenvolvimento (70%), registrada antes de qualquer execução no conjunto oculto e aplicada sem alteração à avaliação confirmatória. O baseline A, calculado pela classe majoritária da própria partição avaliada, é reportado apenas como “baseline-oráculo descritivo da prevalência observada”; nunca é classificador operacional nem base do teste H1. Esta emenda registra somente a definição de baseline aprovada na [DEC-014](../DECISIONS-PENDING.md#dec-014--baseline-primário-e-descritivo-do-rgc). Não congela o protocolo e não altera outras regras, o pré-registro, o Judge ou artefatos Golden.
+
+
+
+## Emenda 6 (2026-10-21) — baseline primária e descritiva do RGC (DEC-014)
+
+Esta emenda foi aprovada explicitamente por Anderson Leon Ayora, mantenedor, em 2026-10-21. Ela complementa a Emenda 5 e registra a interpretação correspondente no pré-registro, sem congelar o protocolo.
+
+1. **Baseline B primária:** determinar a classe majoritária exclusivamente a partir dos rótulos humanos de referência da partição pública de desenvolvimento (70%). Registrar rótulos, contagens e classe escolhida antes de qualquer execução na partição oculta; aplicar B sem alteração à avaliação confirmatória e comparar H1 contra essa baseline.
+2. **Baseline A descritiva:** calcular a classe majoritária a partir dos rótulos da própria partição avaliada e reportá-la somente como referência descritiva/oráculo da prevalência observada. A não é um classificador operacional e não é usada para H1.
+3. **Desempate determinístico:** se houver empate de frequência em B, usar a ordem fixa do vocabulário `judge2`, conforme `VOCABULARIES["judge2"]` em `evals/ptbr/rgc_eval.py` e a função `majority_label`. Essa regra é parte da reprodutibilidade, não uma decisão manual após observar resultados.
+4. **Preservação histórica e limites:** a redação original do pré-registro permanece visível como histórico, acompanhada de nota datada. A Emenda 6 supera a restrição anterior de que a decisão de baseline não alteraria o pré-registro, mas não modifica regras do Judge, Golden, manifestos, hashes congelados ou fontes capturadas. O estado geral continua **[PROPOSTO]** até a revisão do piloto 02 humano e decisão explícita separada de congelamento. Nenhum caso será criado, rotulado ou executado por esta emenda; nenhum resultado de benchmark é produzido.
