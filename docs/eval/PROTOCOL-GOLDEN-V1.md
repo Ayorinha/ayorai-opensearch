@@ -129,3 +129,14 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 3. Cada caso elegível na partição oculta deve fornecer `bootstrap_cluster_id`. Caso com artigo principal usa o ID canônico desse artigo. Caso cuja afirmação dependa conjuntamente de vários artigos sem um principal único recebe `bundle:` + IDs canônicos únicos em ordem lexical, separados por `+`; `cited_article_ids` conserva a lista completa de artigos citados. Casos com a mesma chave de cluster são reamostrados juntos; bundles são clusters próprios e devem ser contabilizados separadamente.
 4. O executor interrompe a execução confirmatória se o campo estiver ausente, vazio ou não for string. A regra de agrupamento é definida antes de qualquer caso definitivo e não pode ser ajustada após observar resultados.
 5. Esta emenda não congela o protocolo, não cria/rotula casos, não autoriza execução do ATTRACTOR sobre casos RGC e não altera Judge, Golden, fixtures, manifestos ou hashes congelados.
+
+
+## Emenda 10 (2026-10-21) — kappa de Cohen (DEC-020, opção A aprovada)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. Usar kappa de Cohen não ponderado para os cinco rótulos definitivos: `SUPPORTED`, `REFUTED`, `UNVERIFIED`, `PARTIALLY_SUPPORTED` e `CONFLICTING`.
+2. O gate é kappa pontual ≥ 0,6; reportar IC95% bootstrap por caso, concordância observada, matriz de confusão e distribuição de rótulos por anotador.
+3. Excluir `RULE_GAP` do cálculo e reportá-lo separadamente. Ausência de registro, IDs incompatíveis, duplicatas e rótulos desconhecidos interrompem o cálculo.
+4. Usar 10.000 reamostragens e seed `20261003`; replicações com kappa indefinido são excluídas do IC e contadas. Sem replicações válidas, IC indisponível e gate reprovado.
+5. Esta emenda não congela o protocolo nem autoriza piloto 02, execução RGC ou cálculo sobre dados reais antes da segunda anotação humana independente.
