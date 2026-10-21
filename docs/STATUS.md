@@ -83,7 +83,6 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 
 **Next blocking dependency:** a human must conduct pilot 02 privately, without AI assistance and without running the ATTRACTOR, then record only methodological findings. A second annotator and independent human review remain necessary before a maintainer freeze decision and any definitive dataset work.
 
-
 ## Incremental benchmark-integrity update — 2026-10-21 (runner 0.6.0)
 
 **Reference SHA before this status update:** `970af6ddc7d912552e18fbc01bed534242f9b56a`. This status-only PR records the subsequent integrity work; read the merge commit for the resulting `main` SHA.
