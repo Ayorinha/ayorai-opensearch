@@ -36,7 +36,7 @@ python evals/ptbr/rgc_agreement.py \
   --out <relatorio-concordancia.json>
 ```
 
-A saída é um relatório de concordância, não uma métrica do ATTRACTOR nem um resultado de benchmark. Não executar com rótulos fictícios para simular concordância humana; testes automatizados usam apenas dados sintéticos em memória.
+A saída é um relatório de concordância, não uma métrica do ATTRACTOR nem um resultado de benchmark. O relatório inclui os SHA-256 exatos dos dois arquivos de anotação em `inputs.annotation_a_sha256` e `inputs.annotation_b_sha256`, sem copiar seu conteúdo. Não executar com rótulos fictícios para simular concordância humana; testes automatizados usam apenas dados sintéticos em memória.
 
 ## Pendências humanas
 
