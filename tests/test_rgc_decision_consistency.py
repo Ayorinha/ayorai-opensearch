@@ -9,20 +9,36 @@ ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "docs" / "DECISIONS-PENDING.md"
 PREREGISTRATION = ROOT / "docs" / "eval" / "PREREGISTRATION-RGC-v1.md"
 PROTOCOL = ROOT / "docs" / "eval" / "PROTOCOL-GOLDEN-V1.md"
-
-# Decisions that normatively define a numbered amendment in the RGC documents.
-DECISION_AMENDMENTS = {
-    "DEC-017": 7,
-    "DEC-018": 8,
-    "DEC-019": 9,
-    "DEC-020": 10,
-}
+APPROVED = {17: 7, 18: 8, 19: 9, 20: 10}
 
 
-def _approved_amendment_exists(document: str, amendment: int, decision: str) -> bool:
-    """Require a normative Emenda heading, never a Proposta heading."""
-    pattern = rf"(?m)^## Emenda {amendment} \([^\n]*{re.escape(decision)}[^\n]*aprovad[^\n]*\)"
-    return re.search(pattern, document, flags=re.IGNORECASE) is not None
+def _approved_decisions(index: str) -> dict[int, int]:
+    """Require the maintainer's dated Option A approval in the decision index."""
+    approved: dict[int, int] = {}
+    for decision, amendment in APPROVED.items():
+        pattern = re.compile(
+            rf"^\\| DEC-{decision:03d} \\|[^\\n]*\\|\\s*Aprovada pelo mantenedor "
+            rf"\\(2026-10-21\\); opção A\\s*\\|",
+            re.MULTILINE,
+        )
+        if pattern.search(index):
+            approved[decision] = amendment
+    return approved
+
+
+def _approved_amendment_exists(document: str, amendment: int, decision: int) -> bool:
+    """Require a dated normative amendment heading, never a Proposta heading."""
+    heading = re.compile(
+        rf"^## Emenda {amendment} \\(2026-10-21\\)[^\\n]*$",
+        re.MULTILINE,
+    )
+    for match in heading.finditer(document):
+        title = match.group(0)
+        if "Proposta" in title:
+            continue
+        if f"DEC-{decision:03d}" in title and "aprovada" in title.lower():
+            return True
+    return False
 
 
 def test_approved_index_decisions_have_normative_amendments_in_both_documents() -> None:
@@ -30,50 +46,51 @@ def test_approved_index_decisions_have_normative_amendments_in_both_documents() 
     preregistration = PREREGISTRATION.read_text(encoding="utf-8")
     protocol = PROTOCOL.read_text(encoding="utf-8")
 
-    for decision, amendment in DECISION_AMENDMENTS.items():
-        index_rows = [
-            line for line in index.splitlines() if f"| {decision} |" in line and "Aprovada" in line
-        ]
-        if not index_rows:
-            continue
-        assert _approved_amendment_exists(preregistration, amendment, decision), (
-            f"{decision} is approved in the index but Emenda {amendment} "
-            "is missing or not normatively approved in the pre-registration"
-        )
-        assert _approved_amendment_exists(protocol, amendment, decision), (
-            f"{decision} is approved in the index but Emenda {amendment} "
-            "is missing or not normatively approved in the protocol"
-        )
+    approved = _approved_decisions(index)
+    assert approved == APPROVED, f"unexpected approved decision set: {approved}"
+
+    problems: list[str] = []
+    for decision, amendment in approved.items():
+        for path, document in (
+            (PREREGISTRATION, preregistration),
+            (PROTOCOL, protocol),
+        ):
+            if not _approved_amendment_exists(document, amendment, decision):
+                problems.append(
+                    f"{path.relative_to(ROOT)}: DEC-{decision:03d} has no "
+                    f"approved normative Emenda {amendment}"
+                )
+    assert not problems, "\\n".join(problems)
 
 
 def test_approved_decisions_do_not_retain_unmarked_vigente_pending_notes() -> None:
-    approved = {"DEC-017", "DEC-018", "DEC-019", "DEC-020"}
+    index = INDEX.read_text(encoding="utf-8")
+    approved_ids = {f"DEC-{decision:03d}" for decision in _approved_decisions(index)}
     for path in (PREREGISTRATION, PROTOCOL):
         lines = path.read_text(encoding="utf-8").splitlines()
-        for index, line in enumerate(lines):
-            if "vigente" not in line.casefold() or "permanece pendente" not in line.casefold():
+        for position, line in enumerate(lines):
+            if not ("vigente" in line.casefold() and "permanece pendente" in line.casefold()):
                 continue
-            decisions = {decision for decision in approved if decision in line}
-            for decision in decisions:
-                next_nonblank = next(
-                    (candidate.strip() for candidate in lines[index + 1 :] if candidate.strip()),
-                    "",
-                )
-                assert "superada" in next_nonblank.casefold(), (
-                    f"{path.relative_to(ROOT)}:{index + 1} marks {decision} "
-                    "as vigente/pendente without an immediate superada note"
-                )
+            if not any(decision in line for decision in approved_ids):
+                continue
+            next_nonempty = next(
+                (candidate.strip() for candidate in lines[position + 1 :] if candidate.strip()),
+                "",
+            )
+            assert "superada" in next_nonempty.casefold(), (
+                f"{path.relative_to(ROOT)}:{position + 1}: contradictory pending note "
+                "lacks an immediate superada note"
+            )
 
 
 def test_consolidated_reading_lists_every_approved_amendment() -> None:
-    document = PREREGISTRATION.read_text(encoding="utf-8")
-    match = re.search(
-        r"(?ms)^\*\*Leitura consolidada \(2026-10-21\)\*\*\s*(.*?)(?=^\*\*Registro histórico|^## )",
-        document,
-    )
-    assert match is not None, "The consolidated reading block is missing"
-    block = match.group(1)
+    preregistration = PREREGISTRATION.read_text(encoding="utf-8")
+    start = preregistration.find("**Leitura consolidada (2026-10-21)**")
+    assert start >= 0, "missing consolidated reading block"
+    end = preregistration.find("\\n## 1.", start)
+    assert end >= 0, "consolidated reading block must precede section 1"
+    block = preregistration[start:end]
     for amendment in range(6, 11):
-        assert re.search(rf"\[Emenda {amendment}\b", block), (
-            f"The consolidated reading block omits Emenda {amendment}"
+        assert re.search(rf"\\[Emenda {amendment}\\b", block), (
+            f"consolidated reading omits Emenda {amendment}"
         )
