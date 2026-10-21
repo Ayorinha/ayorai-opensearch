@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import runpy
+
 import pytest
 
-from scripts.kappa_golden_pt import calculate_agreement
+KAPPA = runpy.run_path("scripts/kappa_golden_pt.py")
 
 
 def test_agreement_reports_unweighted_kappa_ci_matrix_and_rule_gap_exclusion() -> None:
@@ -21,7 +23,7 @@ def test_agreement_reports_unweighted_kappa_ci_matrix_and_rule_gap_exclusion() -
         "pilot-gap": "SUPPORTED",
     }
 
-    report = calculate_agreement(annotator_a, annotator_b, iterations=200)
+    report = KAPPA["calculate_agreement"](annotator_a, annotator_b, iterations=200)
 
     assert report["n_included"] == 4
     assert report["n_rule_gap_excluded"] == 1
@@ -37,7 +39,7 @@ def test_agreement_reports_unweighted_kappa_ci_matrix_and_rule_gap_exclusion() -
 
 def test_agreement_rejects_missing_annotation_records() -> None:
     with pytest.raises(ValueError, match="conjuntos de ids"):
-        calculate_agreement(
+        KAPPA["calculate_agreement"](
             {"case-1": "SUPPORTED", "case-2": "REFUTED"},
             {"case-1": "SUPPORTED"},
             iterations=50,
@@ -46,7 +48,7 @@ def test_agreement_rejects_missing_annotation_records() -> None:
 
 def test_agreement_rejects_unknown_labels() -> None:
     with pytest.raises(ValueError, match="rótulo inválido"):
-        calculate_agreement(
+        KAPPA["calculate_agreement"](
             {"case-1": "UNKNOWN"},
             {"case-1": "SUPPORTED"},
             iterations=50,
