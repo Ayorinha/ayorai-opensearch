@@ -609,11 +609,15 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
     """Require an explicit freeze decision bound to the exact protocol documents."""
     protocol_path = root / "docs" / "eval" / "PROTOCOL-GOLDEN-V1.md"
     preregistration_path = root / "docs" / "eval" / "PREREGISTRATION-RGC-v1.md"
+    runner_spec_path = root / "docs" / "eval" / "RUNNER-RGC-v1.md"
+    runner_code_path = root / "evals" / "ptbr" / "rgc_eval.py"
     manifest_path = root / "docs" / "eval" / "PROTOCOL-FREEZE.json"
 
     try:
         protocol_text = protocol_path.read_text(encoding="utf-8")
         preregistration_text = preregistration_path.read_text(encoding="utf-8")
+        runner_spec_text = runner_spec_path.read_text(encoding="utf-8")
+        runner_code_bytes = runner_code_path.read_bytes()
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(
@@ -627,10 +631,15 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
     preregistration_status = next(
         (line for line in preregistration_text.splitlines() if line.startswith("**Estado:**")), ""
     )
+    runner_spec_status = next(
+        (line for line in runner_spec_text.splitlines() if line.startswith("**Estado:**")), ""
+    )
     if not re.match(r"(?i)^Status:\s*\[?CONGELADO\]?(?:\s|—|$)", protocol_status):
         raise ValueError("RGC evaluation blocked: annotation protocol is not marked CONGELADO")
     if not re.match(r"(?i)^\*\*Estado:\*\*\s*\[CONGELADO\]", preregistration_status):
         raise ValueError("RGC evaluation blocked: preregistration is not marked [CONGELADO]")
+    if not re.match(r"(?i)^\*\*Estado:\*\*\s*\[CONGELADO\]", runner_spec_status):
+        raise ValueError("RGC evaluation blocked: runner specification is not marked [CONGELADO]")
 
     required = {
         "schema_version",
@@ -639,6 +648,9 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
         "approved_at",
         "protocol_sha256",
         "preregistration_sha256",
+        "runner_spec_sha256",
+        "runner_code_sha256",
+        "runner_version",
     }
     if not isinstance(manifest, dict) or set(manifest) != required:
         raise ValueError("RGC evaluation blocked: freeze manifest has an invalid schema")
@@ -659,17 +671,24 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
 
     protocol_sha256 = _sha256(protocol_path)
     preregistration_sha256 = _sha256(preregistration_path)
-    if manifest["protocol_sha256"] != protocol_sha256:
-        raise ValueError("RGC evaluation blocked: protocol hash differs from freeze manifest")
-    if manifest["preregistration_sha256"] != preregistration_sha256:
-        raise ValueError(
-            "RGC evaluation blocked: preregistration hash differs from freeze manifest"
-        )
+    runner_spec_sha256 = _sha256(runner_spec_path)
+    runner_code_sha256 = hashlib.sha256(runner_code_bytes).hexdigest()
+    expected_hashes = {
+        "protocol_sha256": protocol_sha256,
+        "preregistration_sha256": preregistration_sha256,
+        "runner_spec_sha256": runner_spec_sha256,
+        "runner_code_sha256": runner_code_sha256,
+    }
+    for field, actual_hash in expected_hashes.items():
+        if manifest[field] != actual_hash:
+            raise ValueError(f"RGC evaluation blocked: {field} differs from freeze manifest")
+    if manifest["runner_version"] != RUNNER_VERSION:
+        raise ValueError("RGC evaluation blocked: runner version differs from freeze manifest")
 
     return {
         "manifest_sha256": _sha256(manifest_path),
-        "protocol_sha256": protocol_sha256,
-        "preregistration_sha256": preregistration_sha256,
+        **expected_hashes,
+        "runner_version": RUNNER_VERSION,
         "approved_by": manifest["approved_by"],
         "approved_at": manifest["approved_at"],
     }
