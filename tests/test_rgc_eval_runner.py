@@ -636,6 +636,7 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     )
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
+    assert report["runner_version"] == "rgc-eval/0.5.0"
     assert report["metrics"]["system"]["accuracy"] == 1.0
     assert report["config"]["mode"] == "retrieval"
     assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
