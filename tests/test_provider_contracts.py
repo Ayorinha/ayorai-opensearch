@@ -1,7 +1,7 @@
 import json
-from urllib.error import URLError
 from types import SimpleNamespace
 from typing import Any
+from urllib.error import URLError
 
 import pytest
 
