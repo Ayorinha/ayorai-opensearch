@@ -292,7 +292,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Data de registro:** 2026-10-21. A presente decisão autoriza o processo de trabalho; cada decisão científica permanece sujeita a seu próprio registro e aprovação explícita.
 
 
-## DEC-017 — Registro ausente versus INVALID_PREDICTION
+## DEC-017: Registro ausente versus INVALID_PREDICTION
 
 - **Data:** 2026-10-21
 - **Estado:** PENDENTE — esta entrada é uma proposta para decisão explícita do mantenedor, não uma aprovação nem autorização de execução.
