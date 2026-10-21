@@ -33,6 +33,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Pendente; recomendação A, aguardando decisão explícita do mantenedor | Este arquivo |
 | DEC-018 | Escopo confirmatório de H1 no RGC | Pendente; recomendação A: conjunto oculto (~90 casos) como primário | Este arquivo |
 | DEC-019 | Bootstrap agrupado por artigo do RGC | Pendente; recomendação A: bootstrap por cluster de artigo como análise primária | Este arquivo |
+| DEC-020 | Critério de concordância entre anotadores | Pendente; recomendação A: estimativa pontual de kappa ≥ 0,6 e métricas descritivas complementares | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -334,3 +335,17 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Recomendação técnica:** Opção A, com bootstrap por artigo como primário e bootstrap por caso como sensibilidade descritiva. Antes de qualquer coleta definitiva, definir o campo de agrupamento, a atribuição de casos que citam vários dispositivos e o tratamento de amostras degeneradas ou de poucos clusters. Não trocar de método após observar resultados.
 - **Se aprovada:** acrescentar nota de emenda datada ao pré-registro e alinhar protocolo, esquema, executor, testes e relatório antes de avaliação confirmatória. Qualquer simulação usada para verificar a mecânica deve usar dados sintéticos claramente identificados, sem casos do RGC.
 - **Limites:** não criar ou rotular casos, não alterar o executor nesta PR, não executar ATTRACTOR, não produzir métricas RGC PT-BR e não congelar o protocolo.
+
+
+## DEC-020 — Critério de concordância entre anotadores
+
+- **Data:** 2026-10-21
+- **Estado:** PENDENTE — recomendação técnica para decisão explícita do mantenedor; não altera o limiar vigente.
+- **Pergunta:** como operacionalizar o requisito atual de Cohen's kappa ≥ 0,6 para a segunda anotação independente: estimativa pontual, limite inferior do IC95% ou critério duplo?
+- **Contexto verificável:** docs/eval/PROTOCOL-GOLDEN-V1.md exige kappa ≥ 0,6 para promover o conjunto a v1, mas não especifica se o limiar se aplica à estimativa pontual ou ao limite inferior do intervalo. docs/eval/PROPOSAL-RGC-STATISTICAL-DESIGN.md, seção 2, apresenta simulações sintéticas que ilustram o efeito do desbalanceamento e a maior exigência de usar o limite inferior; esses valores não são resultados de anotação nem de benchmark.
+- **Opção A — recomendada, pendente:** Cohen's kappa não ponderado para rótulos nominais, com estimativa pontual ≥ 0,6 como gate, reportando também IC95%, concordância observada, matriz de confusão e distribuição/concordância por classe quando interpretável. Usar somente os cinco rótulos definitivos; RULE_GAP é marcador do piloto e fica fora do cálculo. **Prós:** preserva o limiar atualmente escrito, torna o cálculo reprodutível e mostra a incerteza sem alterar o gate após observar dados. **Contras:** a estimativa pontual pode ser instável com classes raras; kappa é sensível à prevalência e não resume sozinho todos os padrões de divergência.
+- **Opção B — exigir limite inferior do IC95% ≥ 0,6:** **Prós:** critério mais conservador quanto à incerteza. **Contras:** é substancialmente mais exigente; as simulações sintéticas da proposta mostram baixa frequência de aprovação em cenários de anotação desbalanceados mesmo com anotadores razoavelmente consistentes, o que pode transformar a incerteza amostral em veto ao conjunto.
+- **Opção C — exigir kappa ≥ 0,6 e Gwet AC1 ≥ 0,6:** **Prós:** apresenta uma medida adicional menos sensível à prevalência. **Contras:** adiciona um gate não especificado atualmente, combina coeficientes com modelos de acaso diferentes e exigiria justificar previamente o critério duplo.
+- **Recomendação técnica:** Opção A. Especificar unidade de análise por caso, rótulos elegíveis, regra para anotações ausentes e cálculo do IC95%; publicar matriz de confusão e concordância observada para tornar divergências visíveis. AC1 pode ser reportado como sensibilidade descritiva, sem substituir o kappa nem virar critério após ver os resultados.
+- **Se aprovada:** registrar emenda datada no protocolo e, se necessário, no pré-registro antes da anotação definitiva. A segunda anotação deve ser feita por uma pessoa distinta, sem acesso aos rótulos iniciais; divergências e adjudicação permanecem registradas caso a caso.
+- **Limites:** esta entrada não aprova o critério, não cria nem rotula casos, não calcula concordância de benchmark, não executa ATTRACTOR e não congela o protocolo.
