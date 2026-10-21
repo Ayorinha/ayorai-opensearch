@@ -4,6 +4,18 @@ Updated: 2026-10-20
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
+## Current execution snapshot (2026-10-21)
+
+- **Current `main`:** `f61830624180f6efb122816260ff062908895934` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/f61830624180f6efb122816260ff062908895934)).
+- **SHA-specific CI:** run [#39518200273](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39518200273) completed successfully. The full `pytest -q` step passed in `namespace-compatibility`; Python 3.11, 3.12, and 3.13 tests, Golden regression, Judge regression, Golden smoke, Golden lint, namespace compatibility, workflow lint, and the non-blocking typecheck passed.
+- **Security workflows:** [CodeQL #39518200285](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39518200285) and [Security #39518200503](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39518200503) completed successfully. Dependabot's dynamic runs also completed successfully; they are not substitutes for CI.
+- **RGC design simulation:** skipped on `main` by workflow condition. This is not a passing RGC simulation and is not benchmark evidence.
+- **RGC baseline implementation:** PR #274 is merged. Current synthetic tests assert that primary baseline B is derived from development labels and can differ from descriptive baseline A computed from evaluation labels. The repository's CI ran these tests; no local test command was run in this environment.
+- **Pending methodology:** [PR #277](https://github.com/Ayorinha/ayorai-opensearch/pull/277) remains open in Draft with one commit (`d9b546ed4eabbfa051c7b35a19fca667c8d64493`), no submitted reviews, and no issue or inline comments at the time checked. Its recorded base SHA (`5719db48fc82c726671af7c9c7f7ef386d161edb`) predates current `main`; reconcile the base and re-review the resulting diff before any future approval or merge decision.
+- **Invalid-prediction wording:** the proposal in [AMENDMENT-PROPOSAL-2026-10-20-INVALID-PREDICTION.md](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/eval/AMENDMENT-PROPOSAL-2026-10-20-INVALID-PREDICTION.md) remains pending. Do not silently change the pre-registration.
+- **Human gates:** pilot 02 remains human-only. Do not use AI to create or label pilot/benchmark cases and do not run ATTRACTOR on pilot cases. No confirmatory RGC execution, protocol approval, or protocol freeze is authorized by this status update.
+- **Scope of evidence:** passing CI verifies only the checks actually run. It does not establish scientific validity, external validation, or any RGC benchmark result.
+
 ## Execution snapshot before PR #280 merge (2026-10-20)
 
 - `main` SHA immediately after PR #279 and before PR #280: `7a4a26805f70726fca63560d7ab05ae71207c4e2` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/7a4a26805f70726fca63560d7ab05ae71207c4e2)). The connector returned no combined-status entries for this merge commit, so this page does not assert that its required checks passed; check the SHA-specific Actions runs before relying on main status.
