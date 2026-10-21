@@ -684,9 +684,7 @@ def evaluate(
             excluded.append({"case_id": case_id, "label": gold})
             continue
         cluster_id = case.get("bootstrap_cluster_id")
-        if partition == "hidden" and (
-            not isinstance(cluster_id, str) or not cluster_id.strip()
-        ):
+        if partition == "hidden" and (not isinstance(cluster_id, str) or not cluster_id.strip()):
             raise ValueError(
                 f"{case_id}: missing or invalid bootstrap_cluster_id for hidden partition"
             )
