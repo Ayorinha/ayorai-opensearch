@@ -118,3 +118,14 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 2. Os aproximadamente 210 casos públicos servem apenas para desenvolvimento e estatísticas descritivas/exploratórias. Não entram no teste H1, não podem ser combinados com a partição oculta para aumentar o denominador confirmatório e devem ser reportados separadamente.
 3. O executor registra a partição declarada no relatório; em `development`, não apresenta H1 como testada. A declaração de partição é metadado operacional e não substitui evidência de isolamento ou proveniência.
 4. Os critérios numéricos de sucesso/falha de H1 permanecem inalterados. Esta emenda não congela o protocolo, não autoriza criar/rotular casos nem executar ATTRACTOR sobre casos RGC, e não altera Judge, Golden, fixtures, manifestos ou hashes congelados.
+
+
+## Emenda 10 (2026-10-21) — kappa de Cohen (DEC-020, opção A aprovada)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. Usar kappa de Cohen não ponderado para os cinco rótulos definitivos: `SUPPORTED`, `REFUTED`, `UNVERIFIED`, `PARTIALLY_SUPPORTED` e `CONFLICTING`.
+2. O gate é kappa pontual ≥ 0,6; reportar IC95% bootstrap por caso, concordância observada, matriz de confusão e distribuição de rótulos por anotador.
+3. Excluir `RULE_GAP` do cálculo e reportá-lo separadamente. Ausência de registro, IDs incompatíveis, duplicatas e rótulos desconhecidos interrompem o cálculo.
+4. Usar 10.000 reamostragens e seed `20261003`; replicações com kappa indefinido são excluídas do IC e contadas. Sem replicações válidas, IC indisponível e gate reprovado.
+5. Esta emenda não congela o protocolo nem autoriza piloto 02, execução RGC ou cálculo sobre dados reais antes da segunda anotação humana independente.
