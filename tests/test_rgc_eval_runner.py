@@ -210,6 +210,18 @@ def test_metrics_match_hand_computation() -> None:
     )
 
 
+def test_development_partition_does_not_claim_h1_tested() -> None:
+    case = _case("dev-case", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    result = RUNNER["evaluate"](
+        [case], {"dev-case": "SUPPORTED"}, DOCS,
+        development_cases=DEV_CASES, development_labels=DEV_LABELS,
+        mode="oracle", vocabulary="judge2", iterations=20, partition="development",
+    )
+    assert result["partition"] == "development"
+    assert result["metrics"]["primary_criterion"]["h1_tested"] is False
+    assert result["metrics"]["primary_criterion"]["h1_supported"] is False
+
+
 def test_h1_decision_uses_unrounded_values() -> None:
     # 7 of 10 right vs a 6-of-10 baseline: margin is exactly 10 pp, which binary
     # floating point represents as 0.0999...; it must still count as >= 10 pp.
@@ -559,6 +571,8 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
             str(documents),
             "--mode",
             "retrieval",
+            "--partition",
+            "development",
             "--out",
             str(out),
         ]
