@@ -621,9 +621,17 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
             "docs/eval/PROTOCOL-FREEZE.json"
         ) from exc
 
-    if not re.search(r"(?im)^Status:\s*\[?CONGELADO\]?(?:\s|—|$)", protocol_text):
+    protocol_status = next(
+        (line for line in protocol_text.splitlines() if line.startswith("Status:")), ""
+    )
+    preregistration_status = next(
+        (line for line in preregistration_text.splitlines() if line.startswith("**Estado:**")), ""
+    )
+    if not re.match(r"(?i)^Status:\s*\[?CONGELADO\]?(?:\s|—|$)", protocol_status):
         raise ValueError("RGC evaluation blocked: annotation protocol is not marked CONGELADO")
-    if not re.search(r"(?im)^\*\*Estado:\*\*\s*\[CONGELADO\]", preregistration_text):
+    if not re.match(
+        r"(?i)^\*\*Estado:\*\*\s*\[CONGELADO\]", preregistration_status
+    ):
         raise ValueError("RGC evaluation blocked: preregistration is not marked [CONGELADO]")
 
     required = {
@@ -636,7 +644,11 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
     }
     if not isinstance(manifest, dict) or set(manifest) != required:
         raise ValueError("RGC evaluation blocked: freeze manifest has an invalid schema")
-    if manifest["schema_version"] != 1 or manifest["status"] != "FROZEN":
+    if (
+        type(manifest["schema_version"]) is not int
+        or manifest["schema_version"] != 1
+        or manifest["status"] != "FROZEN"
+    ):
         raise ValueError("RGC evaluation blocked: freeze manifest status must be FROZEN")
     if not isinstance(manifest["approved_by"], str) or not manifest["approved_by"].strip():
         raise ValueError("RGC evaluation blocked: freeze approver is missing")
