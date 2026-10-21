@@ -4,6 +4,9 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+### Evaluation tooling
+- **2026-10-21 — executor RGC `rgc-eval/0.5.0`:** incrementa `RUNNER_VERSION` porque `--partition` é obrigatório e o relatório passa a identificar o intervalo primário por cluster de artigo (DEC-019/Emenda 9), com bootstrap por caso como sensibilidade. O relatório sintético testa explicitamente `runner_version`; não houve execução sobre casos RGC nem produção de métricas RGC.
+
 ### Compatibility notes
 - **2026-10-21 — r1-a JSON `null` request body (controlled reproduction):** PR #274 restored the `/v1/verify` response to the frozen contract in `tests/fixtures/r1-a-error-baseline.json` (captured from `c7e3868f3f6f34ce153d9ec6605645fad8681e2e`); `null_body` expects HTTP 422 with type `missing`, and the fixture was not modified. The isolated script `scripts/repro_null_body_contract.py` ran with Python 3.11 across FastAPI `0.115.0`, `0.117.0`, `0.119.0`, `0.121.0`, `0.123.0`, `0.125.0`, `0.127.0`, `0.128.2`, each paired with Pydantic `2.10.0` and `2.13.5` and `httpx==0.27.2` (16 combinations; matrix in the workflow introduced by this PR). In every combination, both synthetic route styles returned HTTP 422 `missing` at `loc=["body"]`; direct `model_validate(None, from_attributes=True)` returned `model_attributes_type` in both tested Pydantic versions. No FastAPI/Pydantic threshold was identified in the tested range. The evidence does not justify a dependency bound in `pyproject.toml`. Exact per-job commands: `python -m pip install "fastapi==${{ matrix.fastapi }}" "pydantic==${{ matrix.pydantic }}" "httpx==0.27.2"` then `python scripts/repro_null_body_contract.py`. This note changes no API behavior or frozen fixture.
 
