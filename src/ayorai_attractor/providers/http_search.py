@@ -24,6 +24,7 @@ class HttpSearchProvider(Provider):
             headers["Authorization"] = f"Bearer {self.api_key}"
         req = request.Request(f"{self.endpoint}?{query}", headers=headers)
         try:
+            # B310 is suppressed: the configured endpoint is required to use HTTPS above; this adapter intentionally supports configurable HTTPS search services.
             with request.urlopen(req, timeout=30) as response:  # nosec B310
                 data = json.load(response)
         except error.URLError as exc:
