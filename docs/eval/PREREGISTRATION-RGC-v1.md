@@ -95,6 +95,8 @@ A ordem dos casos, a versão do conjunto, o SHA do commit do sistema, as configu
 
 **Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
 
+**Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
+
 Golden v0 e Golden v0.1 são conjuntos de desenvolvimento existentes e deverão ser reportados lado a lado sempre que números dessas avaliações forem citados. Eles não serão misturados ao conjunto RGC nem tratados como evidência de generalização para documentos em português.
 
 ## 5. Critérios de sucesso e falha — fixados antes dos dados
@@ -124,6 +126,8 @@ A publicação do resultado é obrigatória mesmo se for negativo, inconclusivo 
 **Nota histórica (2026-10-21) — PR #326:** a redação original de H1 foi marcada como histórica e a Emenda 8 foi apresentada como aprovada. A nota corretiva vigente abaixo esclarece que essa aprovação não é operativa nesta execução.
 
 **Nota corretiva vigente (2026-10-21) — DEC-018 permanece pendente:** o Prompt Mestre vigente exige manter decisões científicas não decididas pelo mantenedor como pendentes. O texto de Emenda 8 ao final é uma proposta não normativa até decisão explícita; a redação original de H1 e §5 permanece preservada.
+
+**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
 **Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
