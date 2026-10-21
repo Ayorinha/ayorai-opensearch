@@ -84,6 +84,13 @@ def test_bootstrap_iterations_must_be_positive() -> None:
         AGREEMENT["compute_agreement"]({"a": "SUPPORTED"}, {"a": "SUPPORTED"}, iterations=0)
 
 
+def test_all_rule_gap_pairs_abort_instead_of_returning_a_kappa() -> None:
+    labels_a = {"a": "RULE_GAP"}
+    labels_b = {"a": "RULE_GAP"}
+    with pytest.raises(ValueError, match="no eligible cases remain"):
+        AGREEMENT["compute_agreement"](labels_a, labels_b, iterations=10)
+
+
 def test_kappa_is_undefined_without_marginal_variation_and_does_not_pass_gate() -> None:
     labels = {"a": "SUPPORTED", "b": "SUPPORTED", "c": "SUPPORTED"}
     result = AGREEMENT["compute_agreement"](labels, labels, iterations=100)
