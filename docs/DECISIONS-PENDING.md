@@ -31,7 +31,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-015 | Autorização da Etapa 2 (manual técnico) | Aprovada (2026-10-18); escopo documental | Este arquivo |
 | DEC-016 | Autorização de trabalho autônomo e ratificação documental | Aprovada por ordem do mantenedor (2026-10-21); limites científicos preservados | Este arquivo |
 | DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
-| DEC-018 | Escopo confirmatório de H1 no RGC | Pendente; recomendação A: conjunto oculto (~90 casos) como primário | Este arquivo |
+| DEC-018 | Escopo confirmatório de H1 no RGC | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
 | DEC-019 | Bootstrap agrupado por artigo do RGC | Pendente; recomendação A: bootstrap por cluster de artigo como análise primária | Este arquivo |
 | DEC-020 | Critério de concordância entre anotadores | Pendente; recomendação A: estimativa pontual de kappa ≥ 0,6 e métricas descritivas complementares | Este arquivo |
 
@@ -317,7 +317,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 ## DEC-018 — Escopo confirmatório de H1 no RGC
 
 - **Data:** 2026-10-21
-- **Estado:** PENDENTE — opções e recomendação técnica; nenhuma opção foi aprovada pelo mantenedor.
+- **Estado original (histórico):** PENDENTE — opções e recomendação técnica.
 - **Pergunta:** H1 deve ser testada primariamente apenas no conjunto oculto de aproximadamente 90 casos, em todos os 300 casos, ou após ampliar a amostra?
 - **Contexto verificável:** `docs/eval/PROPOSAL-RGC-STATISTICAL-DESIGN.md` descreve uma divisão proposta de 70% para desenvolvimento público e 30% para avaliação oculta. A mesma proposta reconhece que o poder estatístico depende da prevalência e do efeito real. A recomendação anterior de usar todos os 300 casos consta como proposta histórica, não como decisão aprovada. A Emenda 6 resolveu a definição da baseline B/A, não o escopo confirmatório de H1.
 - **Opção A — recomendada, pendente:** usar somente a partição oculta (~90 casos) como análise confirmatória primária; usar os 210 casos públicos para desenvolvimento e reportar métricas sobre eles apenas como descritivas/exploratórias, separadas do teste H1. **Prós:** maior proteção contra vazamento de desenvolvimento para avaliação; interpretação confirmatória mais defensável. **Contras:** menor poder, intervalos potencialmente largos e maior chance de resultado inconclusivo para efeitos moderados.
@@ -326,6 +326,9 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Recomendação técnica:** Opção A. É a alternativa mais conservadora diante da separação pública/oculta e do histórico de desenvolvimento; reportar o resultado dos 300 casos em blocos distintos, sem misturar métricas exploratórias com a inferência confirmatória. A simulação sintética existente pode orientar planejamento, mas não substitui os dados reais nem prova poder para o conjunto final.
 - **Consequência se aprovada:** registrar uma emenda datada no pré-registro e alinhar protocolo, plano estatístico e executor antes de qualquer avaliação confirmatória. Não alterar critérios após observar resultados.
 - **Limites:** esta entrada não decide H1, não congela o protocolo, não cria ou rotula casos, não executa o ATTRACTOR e não produz números de benchmark RGC PT-BR.
+
+
+- **Aprovação do mantenedor (2026-10-21):** opção A aprovada. H1 será testada apenas na partição oculta (~90 casos); os 210 casos públicos são descritivos/exploratórios e não entram no teste confirmatório. O executor passa a exigir declaração explícita de partição e suprime o critério H1 quando a partição é `development`. A decisão não congela o protocolo, não autoriza execução nem altera casos ou rótulos.
 
 
 ## DEC-019 — Bootstrap agrupado por artigo do RGC
