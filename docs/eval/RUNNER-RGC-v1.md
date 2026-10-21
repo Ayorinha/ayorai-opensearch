@@ -14,7 +14,8 @@ O subcomando `run` agora falha fechado enquanto o protocolo estiver proposto ou 
 
 1. `docs/eval/PROTOCOL-GOLDEN-V1.md` com a linha de estado iniciada por `Status: CONGELADO`;
 2. `docs/eval/PREREGISTRATION-RGC-v1.md` com `**Estado:** [CONGELADO]`;
-3. `docs/eval/PROTOCOL-FREEZE.json`, aprovado pelo mantenedor, com exatamente estes campos:
+3. `docs/eval/RUNNER-RGC-v1.md` com `**Estado:** [CONGELADO]`;
+4. `docs/eval/PROTOCOL-FREEZE.json`, aprovado pelo mantenedor, com exatamente estes campos:
 
 ```json
 {
@@ -23,13 +24,16 @@ O subcomando `run` agora falha fechado enquanto o protocolo estiver proposto ou 
   "approved_by": "Nome do mantenedor que aprovou",
   "approved_at": "AAAA-MM-DD",
   "protocol_sha256": "SHA-256 exato de PROTOCOL-GOLDEN-V1.md",
-  "preregistration_sha256": "SHA-256 exato de PREREGISTRATION-RGC-v1.md"
+  "preregistration_sha256": "SHA-256 exato de PREREGISTRATION-RGC-v1.md",
+  "runner_spec_sha256": "SHA-256 exato de RUNNER-RGC-v1.md",
+  "runner_code_sha256": "SHA-256 exato de evals/ptbr/rgc_eval.py",
+  "runner_version": "rgc-eval/versão aprovada"
 }
 ```
 
-O JSON acima é apenas um esquema ilustrativo, **não** um manifesto válido nem autorização para executar. O manifesto real só deve ser criado depois do piloto humano 02, da revisão dos achados e de uma decisão explícita de congelamento. O executor compara os hashes do manifesto com os arquivos atuais; qualquer alteração posterior nos dois documentos bloqueia a execução até uma nova decisão e atualização auditável do manifesto.
+O JSON acima é apenas um esquema ilustrativo, **não** um manifesto válido nem autorização para executar. O manifesto real só deve ser criado depois do piloto humano 02, da revisão dos achados e de uma decisão explícita de congelamento. O executor compara os hashes do manifesto com os arquivos atuais; qualquer alteração posterior no protocolo, pré-registro, especificação ou código do executor bloqueia a execução até nova aprovação e atualização auditável do manifesto.
 
-O relatório registra o hash do manifesto, os hashes dos dois documentos, o responsável e a data declarados. Esse mecanismo detecta divergência de artefatos; não substitui a revisão humana nem prova, sozinho, a autenticidade da aprovação. `export-corpus` permanece disponível sem congelamento porque apenas exporta a fonte capturada e não executa o sistema sobre casos.
+O relatório registra o hash do manifesto, os hashes dos quatro artefatos vinculados, a versão do executor, o responsável e a data declarados. Esse mecanismo detecta divergência de artefatos; não substitui a revisão humana nem prova, sozinho, a autenticidade da aprovação. `export-corpus` permanece disponível sem congelamento porque apenas exporta a fonte capturada e não executa o sistema sobre casos.
 
 ## 1. Salvaguardas
 
