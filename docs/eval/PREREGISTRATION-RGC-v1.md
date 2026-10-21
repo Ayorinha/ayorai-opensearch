@@ -168,6 +168,8 @@ Texto proposto para decisão explícita do mantenedor; DEC-017 permanece **PENDE
 
 O executor já implementa o mapeamento de saída inválida e a validação de rótulos completos; os testes sintéticos verificam ambos os lados da distinção. Esta emenda não altera o estado geral **[PROPOSTO]**, não congela o protocolo, não cria nem rotula casos, não autoriza o piloto 02 ou execução do ATTRACTOR sobre casos RGC e não produz métricas RGC.
 
+**Nota datada (2026-10-21) — DEC-019:** o método vigente para IC está definido na [Emenda 9](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a-aprovada). O texto histórico permanece preservado.
+
 
 ## Proposta de Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A; PENDENTE)
 
@@ -189,3 +191,27 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 2. **Partição pública (~210 casos):** uso somente para desenvolvimento e métricas descritivas/exploratórias; não entra no teste confirmatório de H1 e seus resultados devem ser apresentados separadamente.
 3. O relatório deve identificar explicitamente a partição avaliada e preservar os hashes/contagens das entradas. O executor exige a declaração `hidden` ou `development` e não calcula/relata H1 como testada quando a partição declarada for `development`.
 4. Esta emenda não altera os critérios numéricos de H1, não congela o protocolo e não autoriza executar o sistema em casos RGC. O protocolo permanece **[PROPOSTO]**; o piloto 02 humano e os demais gates seguem pendentes.
+
+
+**Nota vigente (2026-10-21) — DEC-019 aprovada:** a Emenda 9 no fim do documento define `bootstrap_cluster_id`, a regra de bundle multiartigo e o bootstrap primário por cluster; a redação histórica anterior permanece preservada.
+
+## Emenda 9 (2026-10-21) — bootstrap por cluster de artigo (DEC-019, opção A aprovada)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. O intervalo percentil de 95% primário usa bootstrap por cluster de artigo, com 10.000 reamostragens e seed `20261003`. Cada réplica sorteia com reposição tantos clusters quantos clusters únicos existem e inclui todos os casos de cada cluster sorteado, preservando a multiplicidade do sorteio.
+2. O bootstrap por caso é uma análise de sensibilidade separada, com a mesma quantidade de iterações e seed. Ambos os intervalos devem ser reportados com unidade de reamostragem identificada; somente o intervalo por artigo alimenta o critério primário de H1.
+3. Cada caso elegível da partição oculta deve conter `bootstrap_cluster_id`, string estável e não vazia. Caso com artigo principal usa o identificador canônico desse artigo. Caso cuja afirmação dependa conjuntamente de vários artigos sem principal único usa `bundle:` seguido dos IDs canônicos únicos em ordem lexical, separados por `+`. `cited_article_ids` mantém a lista completa de artigos citados quando aplicável.
+4. Casos com a mesma chave são reamostrados juntos; bundles são clusters próprios e devem ser contabilizados separadamente. A execução confirmatória falha se o campo estiver ausente ou inválido.
+5. Esta emenda não congela o protocolo, não cria/rotula casos, não autoriza execução do ATTRACTOR sobre casos RGC e não altera Judge, Golden, fixtures, manifestos ou hashes congelados.
+
+
+## Emenda 9 (2026-10-21) — bootstrap por cluster de artigo (DEC-019, opção A aprovada)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. **Primário:** bootstrap percentil de 95% por cluster de artigo, 10.000 reamostragens, seed fixa `20261003`. Cada réplica sorteia com reposição tantos clusters quantos clusters únicos existirem e inclui todos os casos de cada cluster sorteado, preservando multiplicidade.
+2. **Sensibilidade:** bootstrap por caso com 10.000 reamostragens e seed `20261003`, publicado separadamente. Só o intervalo por artigo alimenta o critério primário de H1.
+3. **Campo de agrupamento:** cada caso elegível da partição oculta deve ter `bootstrap_cluster_id`, string estável e não vazia. Se há artigo principal, usar seu ID canônico. Se a afirmação depende conjuntamente de vários artigos sem principal único, usar `bundle:` + IDs canônicos únicos em ordem lexical, separados por `+`. `cited_article_ids` conserva a lista completa de artigos citados.
+4. Casos com a mesma chave são reamostrados juntos. Cada `bundle:` é cluster composto próprio; relatar quantidade de clusters e bundles. O executor interrompe se o campo estiver ausente ou inválido.
+5. A emenda não congela o protocolo, não cria ou rotula casos, não autoriza execução RGC e não altera Judge, Golden, fixtures, manifestos ou hashes congelados.
