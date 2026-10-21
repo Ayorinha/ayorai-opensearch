@@ -398,7 +398,7 @@ def bootstrap_ci(
     gold: Sequence[str], pred: Sequence[str], *, iterations: int = BOOTSTRAP_ITERATIONS
 ) -> dict[str, list[float]]:
     """Percentile 95% CI; one shared resample sequence for all metrics."""
-    rng = Random(SEED)  # nosec B311 - deterministic statistical bootstrap
+    rng = Random(SEED)  # nosec B311
     n = len(gold)
     samples: dict[str, list[float]] = {name: [] for name in METRICS}
     for _ in range(iterations):
@@ -435,7 +435,7 @@ def bootstrap_ci_by_cluster(
     for index, cluster in enumerate(cluster_ids):
         groups.setdefault(cluster, []).append(index)
     keys = sorted(groups)
-    rng = Random(SEED)  # nosec B311 - deterministic statistical bootstrap
+    rng = Random(SEED)  # nosec B311
     samples: dict[str, list[float]] = {name: [] for name in METRICS}
     for _ in range(iterations):
         selected = [keys[rng.randrange(len(keys))] for _ in keys]
