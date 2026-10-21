@@ -77,3 +77,8 @@ Formato dos rótulos (um por linha): `{"case_id": "...", "verdict": "SUPPORTED"}
 A execução exige a partição pública de desenvolvimento por `--development-cases` e seus rótulos humanos completos por `--development-labels`. O argumento obrigatório `--partition` declara a partição do arquivo de avaliação: `hidden` habilita o critério confirmatório de H1; `development` calcula somente métricas descritivas e marca H1 como não testada. O executor valida que os IDs dos dois arquivos correspondem exatamente, deriva B somente desses rótulos, registra os SHA-256 dos casos e rótulos e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
 
 Este executor não afirma validação, parceria ou endosso da Anatel ou de qualquer instituição.
+
+
+## DEC-020 — concordância de anotadores
+
+A ferramenta `scripts/kappa_golden_pt.py` recebe dois JSONL com os mesmos IDs e rótulos humanos, calcula kappa de Cohen não ponderado e reporta IC95% bootstrap, concordância observada, matriz de confusão, distribuição de rótulos e gate pontual ≥ 0,6. `RULE_GAP` é excluído do coeficiente e contado separadamente. Não usar esta ferramenta até que a segunda anotação tenha sido realizada por outra pessoa, sem acesso aos rótulos iniciais. Testes sintéticos verificam a mecânica, não a concordância do conjunto real.
