@@ -13,6 +13,6 @@ Etapa 2 · documentação em português do Brasil.
 7. [07-reprodutibilidade.md](07-reprodutibilidade.md) — **em redação**
 8. [08-avaliacao.md](08-avaliacao.md) — **em redação**
 9. [09-auditoria.md](09-auditoria.md) — **em redação**
-10. `10-governanca.md` — **em redação**
+10. [10-governanca.md](10-governanca.md) — **em redação**
 
 Os capítulos serão vinculados aqui quando forem criados em seus respectivos passos. Cada afirmação técnica deverá apontar para evidências identificáveis na árvore do repositório.
