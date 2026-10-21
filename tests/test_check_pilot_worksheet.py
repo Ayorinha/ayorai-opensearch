@@ -72,6 +72,18 @@ def test_excerpt_must_match_the_declared_source() -> None:
     assert any("fonte indicada não está no corpus" in problem for problem in report["p2-01"])
 
 
+def test_excerpt_from_another_source_is_rejected() -> None:
+    documents = {
+        "sint-1": DOC_TEXT,
+        "sint-2": "Art. 9º Texto diferente e sintético.\\n",
+    }
+    worksheet = _case(
+        **{"Identificador da fonte / caminho do artefato capturado": "sint-2"}
+    )
+    report = CHECKER["check_worksheet"](worksheet, documents)
+    assert any("não aparece literalmente na fonte declarada" in p for p in report["p2-01"])
+
+
 def test_blank_template_has_no_filled_case() -> None:
     template = (ROOT / "docs" / "eval" / "PILOT-RGC-02-WORKSHEET.md").read_text(encoding="utf-8")
     assert CHECKER["check_worksheet"](template, DOCS) == {}
