@@ -18,7 +18,7 @@ Este capítulo descreve o executor de avaliação que existe no repositório e s
 
 A baseline B é derivada dos rótulos humanos completos da partição pública de desenvolvimento, antes da avaliação. A baseline A é derivada da distribuição dos rótulos de avaliação e é somente descritiva; ela não participa da hipótese primária. A implementação de B aplica a ordem fixa do vocabulário para desempate, conforme o pré-registro.
 
-A hipótese H1 contém critérios pré-especificados e não deve ser reconfigurada após observar resultados. A decisão DEC-018 aprovada pelo mantenedor restringe a análise confirmatória à partição oculta (~90 casos); a partição pública (~210 casos) serve apenas para desenvolvimento e descrição. O argumento `--partition` é metadado operacional, não evidência suficiente de isolamento. A execução confirmatória continua bloqueada pelos gates humanos e pelo estado [PROPOSTO] do protocolo.
+A hipótese H1 contém critérios pré-especificados e não deve ser reconfigurada após observar resultados. A decisão do mantenedor registrada na DEC-018 restringe a análise confirmatória à partição oculta (~90 casos); a partição pública (~210 casos) serve apenas para desenvolvimento e descrição. O argumento `--partition` é metadado operacional, não evidência suficiente de isolamento. A execução confirmatória continua bloqueada pelos gates humanos e pelo estado [PROPOSTO] do protocolo.
 
 ## Interpretação das métricas
 
