@@ -96,3 +96,14 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 **Scientific status is unchanged:** the RGC PT-BR protocol remains `[PROPOSTO]`, not frozen. No real pilot or definitive benchmark cases were created, reviewed or labeled by this engineering work. The ATTRACTOR was not run on RGC cases and no RGC metrics were produced. No real freeze manifest, tag or release was created. F-01 remains open and automated review is not independent human review.
 
 **Blocking human work:** conduct pilot 02 privately without AI assistance or ATTRACTOR execution; obtain a second independent annotation; complete human review F-01; then make separate maintainer decisions about protocol freeze and the hidden partition's provenance/isolation gates.
+
+
+## Additional benchmark-integrity limitation — independent annotator identity
+
+The RGC runner binds annotation A and B by SHA-256, verifies the agreement report and requires a passing Cohen's kappa gate plus an approval/adjudication record. These controls establish artifact integrity, not the real-world identity of the people who produced the two files. The current manifest schema does not independently prove that annotator A and annotator B are different people.
+
+- **Operational gate:** the human approver must explicitly attest that the annotations were produced independently by two different people and preserve the attestation with the private study records.
+- **Possible technical hardening:** add distinct pseudonymous annotator identifiers to the agreement report and approval manifest, validate that the identifiers differ, and test missing/equal identifiers fail closed.
+- **Decision boundary:** this would change the benchmark artifact schema and must be explicitly approved by the maintainer before implementation. No such schema change is made here.
+
+This limitation does not authorize pilot case creation, system execution, protocol freeze, or benchmark claims.
