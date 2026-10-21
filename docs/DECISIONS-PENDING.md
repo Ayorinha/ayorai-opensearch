@@ -31,6 +31,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-015 | Autorização da Etapa 2 (manual técnico) | Aprovada (2026-10-18); escopo documental | Este arquivo |
 | DEC-016 | Autorização de trabalho autônomo e ratificação documental | Aprovada por ordem do mantenedor (2026-10-21); limites científicos preservados | Este arquivo |
 | DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Pendente; recomendação A, aguardando decisão explícita do mantenedor | Este arquivo |
+| DEC-018 | Escopo confirmatório de H1 no RGC | Pendente; recomendação A: conjunto oculto (~90 casos) como primário | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -304,3 +305,17 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Recomendação:** manter a Opção A, mas não a aplicar como decisão normativa até aprovação explícita. Se aprovada, registrar emenda datada no pré-registro e alinhar protocolo, executor e relatório antes de qualquer avaliação confirmatória.
 - **Limites:** nenhum caso de piloto ou benchmark foi criado, completado, rotulado ou executado para esta análise; não há resultados RGC PT-BR novos. Esta decisão não altera a fixture congelada nem autoriza avaliação.
 
+
+
+## DEC-018 — Escopo confirmatório de H1 no RGC
+
+- **Data:** 2026-10-21
+- **Estado:** PENDENTE — opções e recomendação técnica; nenhuma opção foi aprovada pelo mantenedor.
+- **Pergunta:** H1 deve ser testada primariamente apenas no conjunto oculto de aproximadamente 90 casos, em todos os 300 casos, ou após ampliar a amostra?
+- **Contexto verificável:** `docs/eval/PROPOSAL-RGC-STATISTICAL-DESIGN.md` descreve uma divisão proposta de 70% para desenvolvimento público e 30% para avaliação oculta. A mesma proposta reconhece que o poder estatístico depende da prevalência e do efeito real. A recomendação anterior de usar todos os 300 casos consta como proposta histórica, não como decisão aprovada. A Emenda 6 resolveu a definição da baseline B/A, não o escopo confirmatório de H1.
+- **Opção A — recomendada, pendente:** usar somente a partição oculta (~90 casos) como análise confirmatória primária; usar os 210 casos públicos para desenvolvimento e reportar métricas sobre eles apenas como descritivas/exploratórias, separadas do teste H1. **Prós:** maior proteção contra vazamento de desenvolvimento para avaliação; interpretação confirmatória mais defensável. **Contras:** menor poder, intervalos potencialmente largos e maior chance de resultado inconclusivo para efeitos moderados.
+- **Opção B — todos os 300 como análise confirmatória, oculto como sensibilidade:** **Prós:** maior tamanho amostral e potencial poder estatístico. **Contras:** a partição pública é definida para desenvolvimento e pode ter influenciado escolhas do sistema; a validade confirmatória exige evidência documentada de que casos, rótulos e resultados públicos não foram usados para ajustar o sistema ou os critérios, o que precisa ser demonstrado e não presumido.
+- **Opção C — ampliar a amostra para aumentar o oculto (por exemplo, ~150 casos ocultos):** **Prós:** potencial de melhorar precisão e poder sem reutilizar os casos públicos como confirmação. **Contras:** aumenta o esforço de coleta/anotação, exige rever o plano amostral e requer emenda explícita antes de qualquer coleta definitiva.
+- **Recomendação técnica:** Opção A. É a alternativa mais conservadora diante da separação pública/oculta e do histórico de desenvolvimento; reportar o resultado dos 300 casos em blocos distintos, sem misturar métricas exploratórias com a inferência confirmatória. A simulação sintética existente pode orientar planejamento, mas não substitui os dados reais nem prova poder para o conjunto final.
+- **Consequência se aprovada:** registrar uma emenda datada no pré-registro e alinhar protocolo, plano estatístico e executor antes de qualquer avaliação confirmatória. Não alterar critérios após observar resultados.
+- **Limites:** esta entrada não decide H1, não congela o protocolo, não cria ou rotula casos, não executa o ATTRACTOR e não produz números de benchmark RGC PT-BR.
