@@ -18,7 +18,9 @@ A missing prediction record is an input-integrity problem: the prediction file d
 
 For the RGC executor, a present prediction that cannot be mapped to the `judge2` vocabulary is represented as `INVALID_PREDICTION`. It remains in the evaluation denominator and counts as an incorrect prediction. This is distinct from a missing record, duplicate case, missing human label, or unknown case ID, which must stop the run. The report should retain the invalid-prediction count.
 
-**Nota de resolução (2026-10-21) — DEC-017, opção A aprovada:** a discrepância documental foi resolvida pela Emenda 7 de `PREREGISTRATION-RGC-v1.md` e de `PROTOCOL-GOLDEN-V1.md`. Registro ausente/duplicado, ID desconhecido ou rótulo humano ausente interrompe a execução; predição presente não mapeável para `judge2` vira `INVALID_PREDICTION`, permanece no denominador e conta como erro. Esta decisão não congela o protocolo nem autoriza avaliação confirmatória. Consulte [DEC-017 — Registro ausente versus INVALID_PREDICTION](../DECISIONS-PENDING.md#dec-017--registro-ausente-versus-invalidprediction).
+**Nota histórica (PR #323, 2026-10-21; não vigente):** uma atualização anterior marcou a Opção A como aprovada e descreveu a discrepância como resolvida. Esta linha é preservada como histórico da alteração.
+
+**Nota vigente (2026-10-21) — DEC-017 PENDENTE:** o executor atual distingue falha de integridade de uma predição presente inválida, mas a interpretação normativa continua pendente de decisão explícita e emenda datada aprovada. Não considerar esta nota uma aprovação nem executar avaliação confirmatória. Consulte [DEC-017 — Registro ausente versus INVALID_PREDICTION](../DECISIONS-PENDING.md#dec-017--registro-ausente-versus-invalidprediction) e a [proposta de emenda pendente](AMENDMENT-PROPOSAL-2026-10-20-INVALID-PREDICTION.md).
 
 A benchmark report should publish the dataset/suite version, case count, system commit, point accuracy, bootstrap interval, confusion matrix, and—when comparing two systems on identical cases—the paired McNemar result. The report should preserve system identifiers and raw metrics so downstream readers can make their own assessment.
 
