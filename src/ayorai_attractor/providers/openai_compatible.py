@@ -48,7 +48,7 @@ class OpenAICompatibleProvider(Provider):
             method="POST",
         )
         try:
-            # B310 is suppressed: the configured base URL is required to use HTTPS above; this adapter intentionally supports configurable OpenAI-compatible HTTPS servers.
+            undefined
             with request.urlopen(req, timeout=60) as response:  # nosec B310
                 data = json.load(response)
         except error.URLError as exc:
