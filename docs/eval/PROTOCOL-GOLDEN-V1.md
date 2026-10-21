@@ -101,8 +101,6 @@ A decisão do mantenedor registrada na DEC-017 aprova a Opção A. O contrato di
 
 **Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
 
-**Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
-
 Texto proposto, sujeito à decisão explícita do mantenedor:
 
 1. **Falha de integridade — interromper:** arquivo sem exatamente um registro por caso elegível, registro duplicado, ID desconhecido, rótulo humano ausente ou estrutura inconsistente invalida a execução. Não preencher, excluir ou imputar silenciosamente registros.
@@ -115,8 +113,6 @@ Texto proposto, sujeito à decisão explícita do mantenedor:
 ## Proposta de Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A; PENDENTE)
 
 **Nota corretiva datada (2026-10-21):** a PR #326 registrou a Opção A como aprovada, mas o Prompt Mestre vigente exige manter DEC-018 pendente até decisão científica explícita do mantenedor. O conteúdo abaixo é preservado como proposta não normativa, não como regra aprovada.
-
-**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
 **Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
