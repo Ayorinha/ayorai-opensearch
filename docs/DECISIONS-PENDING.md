@@ -31,7 +31,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-015 | Autorização da Etapa 2 (manual técnico) | Aprovada (2026-10-18); escopo documental | Este arquivo |
 | DEC-016 | Autorização de trabalho autônomo e ratificação documental | Aprovada por ordem do mantenedor (2026-10-21); limites científicos preservados | Este arquivo |
 | DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
-| DEC-018 | Escopo confirmatório de H1 no RGC | Pendente; recomendação A: conjunto oculto (~90 casos) como primário | Este arquivo |
+| DEC-018 | Escopo confirmatório de H1 no RGC | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
 | DEC-019 | Bootstrap agrupado por artigo do RGC | Pendente; recomendação A: bootstrap por cluster de artigo como análise primária | Este arquivo |
 | DEC-020 | Critério de concordância entre anotadores | Pendente; recomendação A: estimativa pontual de kappa ≥ 0,6 e métricas descritivas complementares | Este arquivo |
 
@@ -330,7 +330,10 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 
 
 - **Registro histórico da PR #326 (2026-10-21; não vigente):** a PR #326 registrou a frase “Aprovação do mantenedor (2026-10-21): opção A aprovada” e propôs H1 apenas na partição oculta, com metadado de partição no executor. Esta redação é preservada como histórico da alteração, não como decisão vigente.
-- **Nota corretiva datada (2026-10-21) — estado vigente:** DEC-018 permanece **PENDENTE**. O Prompt Mestre vigente exige preparar opções e recomendação sem decidir pelo mantenedor. A Opção A continua recomendação técnica até aprovação explícita; alterações no executor não constituem aprovação normativa.
+- **Nota corretiva histórica (2026-10-21):** uma revisão intermediária classificou DEC-018 como pendente. Essa leitura é superada pela aprovação explícita do mantenedor no Prompt Mestre 2 vigente.
+
+
+- **Aprovação explícita do mantenedor (2026-10-21):** Opção A aprovada. H1 será testada somente na partição oculta (~90 casos); os 210 casos públicos são descritivos/exploratórios e não entram no teste confirmatório. O executor exige a partição declarada e não apresenta H1 como testada em `development`. Esta decisão não congela o protocolo, não autoriza execução nem altera casos ou rótulos.
 
 
 ## DEC-019 — Bootstrap agrupado por artigo do RGC
