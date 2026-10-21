@@ -23,7 +23,9 @@ Subcommands:
     run            evaluate cases against human labels and write a report
     export-corpus  write the strict 5-field corpus read by check_golden_pt.py
 
-The ``run`` subcommand requires a labels file. There is no predictions-only
+The ``run`` subcommand requires complete human labels and an explicit,
+hash-bound protocol-freeze manifest. It refuses to execute while the protocol
+is proposed, under review, or changed after freezing. There is no predictions-only
 mode, so the system cannot be run on cases before they are labelled.
 """
 
@@ -603,6 +605,76 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
+    """Require an explicit freeze decision bound to the exact protocol documents."""
+    protocol_path = root / "docs" / "eval" / "PROTOCOL-GOLDEN-V1.md"
+    preregistration_path = root / "docs" / "eval" / "PREREGISTRATION-RGC-v1.md"
+    manifest_path = root / "docs" / "eval" / "PROTOCOL-FREEZE.json"
+
+    try:
+        protocol_text = protocol_path.read_text(encoding="utf-8")
+        preregistration_text = preregistration_path.read_text(encoding="utf-8")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(
+            "RGC evaluation blocked: protocol freeze requires both documents and "
+            "docs/eval/PROTOCOL-FREEZE.json"
+        ) from exc
+
+    protocol_status = next(
+        (line for line in protocol_text.splitlines() if line.startswith("Status:")), ""
+    )
+    preregistration_status = next(
+        (line for line in preregistration_text.splitlines() if line.startswith("**Estado:**")), ""
+    )
+    if not re.match(r"(?i)^Status:\s*\[?CONGELADO\]?(?:\s|—|$)", protocol_status):
+        raise ValueError("RGC evaluation blocked: annotation protocol is not marked CONGELADO")
+    if not re.match(r"(?i)^\*\*Estado:\*\*\s*\[CONGELADO\]", preregistration_status):
+        raise ValueError("RGC evaluation blocked: preregistration is not marked [CONGELADO]")
+
+    required = {
+        "schema_version",
+        "status",
+        "approved_by",
+        "approved_at",
+        "protocol_sha256",
+        "preregistration_sha256",
+    }
+    if not isinstance(manifest, dict) or set(manifest) != required:
+        raise ValueError("RGC evaluation blocked: freeze manifest has an invalid schema")
+    if (
+        type(manifest["schema_version"]) is not int
+        or manifest["schema_version"] != 1
+        or manifest["status"] != "FROZEN"
+    ):
+        raise ValueError("RGC evaluation blocked: freeze manifest status must be FROZEN")
+    if not isinstance(manifest["approved_by"], str) or not manifest["approved_by"].strip():
+        raise ValueError("RGC evaluation blocked: freeze approver is missing")
+    if not isinstance(manifest["approved_at"], str):
+        raise ValueError("RGC evaluation blocked: freeze approval date is missing")
+    try:
+        datetime.fromisoformat(manifest["approved_at"])
+    except ValueError as exc:
+        raise ValueError("RGC evaluation blocked: approved_at must be ISO 8601") from exc
+
+    protocol_sha256 = _sha256(protocol_path)
+    preregistration_sha256 = _sha256(preregistration_path)
+    if manifest["protocol_sha256"] != protocol_sha256:
+        raise ValueError("RGC evaluation blocked: protocol hash differs from freeze manifest")
+    if manifest["preregistration_sha256"] != preregistration_sha256:
+        raise ValueError(
+            "RGC evaluation blocked: preregistration hash differs from freeze manifest"
+        )
+
+    return {
+        "manifest_sha256": _sha256(manifest_path),
+        "protocol_sha256": protocol_sha256,
+        "preregistration_sha256": preregistration_sha256,
+        "approved_by": manifest["approved_by"],
+        "approved_at": manifest["approved_at"],
+    }
+
+
 def _git_commit() -> str | None:
     try:
         out = subprocess.run(
@@ -832,6 +904,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"wrote {len(documents)} documents to {args.out}")
         return 0
 
+    try:
+        protocol_freeze = validate_protocol_freeze()
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
     development_cases = _read_jsonl(args.development_cases)
     development_labels = load_labels(args.development_labels, args.vocabulary)
     result = evaluate(
@@ -848,6 +926,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     report = {
         "runner_version": RUNNER_VERSION,
+        "protocol_freeze": protocol_freeze,
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_commit": _git_commit(),
         "python": sys.version.split()[0],
