@@ -619,9 +619,9 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
             "docs/eval/PROTOCOL-FREEZE.json"
         ) from exc
 
-    if not re.search(r"(?im)^Status:\\s*\\[?CONGELADO\\]?(?:\\s|—|$)", protocol_text):
+    if not re.search(r"(?im)^Status:\s*\[?CONGELADO\]?(?:\s|—|$)", protocol_text):
         raise ValueError("RGC evaluation blocked: annotation protocol is not marked CONGELADO")
-    if not re.search(r"(?im)^\\*\\*Estado:\\*\\*\\s*\\[CONGELADO\\]", preregistration_text):
+    if not re.search(r"(?im)^\*\*Estado:\*\*\s*\[CONGELADO\]", preregistration_text):
         raise ValueError("RGC evaluation blocked: preregistration is not marked [CONGELADO]")
 
     required = {
