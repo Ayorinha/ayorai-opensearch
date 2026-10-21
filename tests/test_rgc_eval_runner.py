@@ -213,9 +213,15 @@ def test_metrics_match_hand_computation() -> None:
 def test_development_partition_does_not_claim_h1_tested() -> None:
     case = _case("dev-case", "O cancelamento será efetivado em até 2 dias.", CANCEL)
     result = RUNNER["evaluate"](
-        [case], {"dev-case": "SUPPORTED"}, DOCS,
-        development_cases=DEV_CASES, development_labels=DEV_LABELS,
-        mode="oracle", vocabulary="judge2", iterations=20, partition="development",
+        [case],
+        {"dev-case": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+        partition="development",
     )
     assert result["partition"] == "development"
     assert result["metrics"]["primary_criterion"]["h1_tested"] is False
