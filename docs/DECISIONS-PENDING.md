@@ -299,6 +299,8 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 
 ## DEC-017 — Registro ausente versus INVALID_PREDICTION
 
+**Estado vigente:** Aprovada pelo mantenedor (2026-10-21), opção A — Emenda 7.
+
 - **Data:** 2026-10-21
 - **Estado original (histórico):** PENDENTE — proposta para decisão explícita do mantenedor.
 - **Pergunta:** no contrato de avaliação RGC, como distinguir um registro de predição ausente de uma predição presente cujo valor é inválido?
@@ -316,6 +318,8 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 
 
 ## DEC-018 — Escopo confirmatório de H1 no RGC
+
+**Estado vigente:** Aprovada pelo mantenedor (2026-10-21), opção A — Emenda 8.
 
 - **Data:** 2026-10-21
 - **Estado original (histórico):** PENDENTE — opções e recomendação técnica.
@@ -338,6 +342,8 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 
 ## DEC-019 — Bootstrap agrupado por artigo do RGC
 
+**Estado vigente:** Aprovada pelo mantenedor (2026-10-21), opção A — Emenda 9.
+
 - **Data:** 2026-10-21
 - **Estado original (histórico):** PENDENTE — proposta metodológica; não altera o método pré-registrado nem autoriza avaliação.
 - **Pergunta:** os intervalos de confiança de H1 devem reamostrar casos individualmente ou agrupar a reamostragem pela unidade de artigo/dispositivo do RGC?
@@ -354,6 +360,8 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 
 
 ## DEC-020 — Critério de concordância entre anotadores
+
+**Estado vigente:** Aprovada pelo mantenedor (2026-10-21), opção A — Emenda 10.
 
 - **Data:** 2026-10-21
 - **Estado original (histórico):** PENDENTE — recomendação técnica para decisão explícita do mantenedor; não altera o limiar vigente.
