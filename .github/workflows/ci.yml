@@ -182,7 +182,7 @@ jobs:
       - name: Strict mypy blocking — evidence
         run: mypy --strict src/ayorai_attractor/evidence
       - name: Strict mypy blocking — RGC evaluation runner
-        run: mypy --strict evals/ptbr/rgc_eval.py
+        run: mypy --strict evals/ptbr/rgc_eval.py evals/ptbr/rgc_agreement.py
       - name: Prove unclosed SQLite connections fail the warning gate
         if: matrix.python-version == '3.13'
         shell: bash
