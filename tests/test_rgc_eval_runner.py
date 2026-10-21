@@ -758,12 +758,10 @@ def test_protocol_freeze_rejects_runner_artifact_drift(
     runner_spec = eval_dir / "RUNNER-RGC-v1.md"
     runner_code = tmp_path / "evals" / "ptbr" / "rgc_eval.py"
     runner_code.parent.mkdir(parents=True)
-    protocol.write_text("Status: CONGELADO\\n", encoding="utf-8")
-    preregistration.write_text("**Estado:** [CONGELADO]\\n", encoding="utf-8")
-    runner_spec.write_text("**Estado:** [CONGELADO]\\n", encoding="utf-8")
-    runner_code.write_text(
-        f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\\n', encoding="utf-8"
-    )
+    protocol.write_text("Status: CONGELADO\n", encoding="utf-8")
+    preregistration.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
+    runner_spec.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
+    runner_code.write_text(f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\n', encoding="utf-8")
     manifest = {
         "schema_version": 1,
         "status": "FROZEN",
