@@ -675,6 +675,11 @@ def evaluate(
         if gold in EXCLUSION_LABELS:
             excluded.append({"case_id": case_id, "label": gold})
             continue
+        cluster_id = case.get("bootstrap_cluster_id")
+        if partition == "hidden" and (
+            not isinstance(cluster_id, str) or not cluster_id.strip()
+        ):
+            raise ValueError(f"{case_id}: missing or invalid bootstrap_cluster_id for hidden partition")
         atoms = case_atoms(case)
         if index is None:
             prediction = predict(
@@ -697,6 +702,7 @@ def evaluate(
                 "gold": gold,
                 "predicted": label,
                 "rectified": rectified,
+                "bootstrap_cluster_id": cluster_id,
                 **prediction,
             }
         )
@@ -719,8 +725,16 @@ def evaluate(
             vocabulary,
             iterations=iterations,
         )
+    cluster_ids = (
+        [str(row["bootstrap_cluster_id"]) for row in rows] if partition == "hidden" else None
+    )
     metrics = compute_metrics(
-        gold_labels, predicted, vocabulary, baseline_label=baseline_label, iterations=iterations
+        gold_labels,
+        predicted,
+        vocabulary,
+        baseline_label=baseline_label,
+        iterations=iterations,
+        cluster_ids=cluster_ids,
     )
     if partition == "development":
         metrics["primary_criterion"] = {
