@@ -1,5 +1,8 @@
 # Auditoria técnica — AYORAI ATTRACTOR desde a v0.5.0
 
+
+> **Atualização datada (2026-10-21):** a tabela abaixo registra o estado do protocolo no momento da auditoria original. A Emenda 6 foi posteriormente incorporada pela PR #288 (`5a587ecb64abc6359c8fe36b8194b67dee3edda9`), registrando baseline B primária e A descritiva também no pré-registro. A referência a “Emendas 1–5” abaixo é histórica; o protocolo atual documenta a Emenda 6 e continua não congelado.
+
 | Campo | Valor |
 |---|---|
 | Versão de referência | v0.5.0, publicada em 2026-10-13 (tag no commit `e9eccb50e4904b8f33004a414a5666477378c67a`; DOI 10.5281/zenodo.23344005) |
