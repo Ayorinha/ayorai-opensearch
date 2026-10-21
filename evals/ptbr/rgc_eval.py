@@ -842,7 +842,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             "granularity": args.granularity,
             "bm25": {"k1": BM25_K1, "b": BM25_B},
             "stance_detector": f"{RuleStanceDetector.component}/{RuleStanceDetector.version}",
-            "bootstrap": {"iterations": BOOTSTRAP_ITERATIONS, "seed": SEED},
+            "bootstrap": {
+                "iterations": BOOTSTRAP_ITERATIONS,
+                "seed": SEED,
+                "primary_unit": "article_cluster" if args.partition == "hidden" else "case",
+                "sensitivity_unit": "case" if args.partition == "hidden" else None,
+            },
             "baseline_primary": {
                 "name": "B",
                 "development_label_count": len(development_labels),
