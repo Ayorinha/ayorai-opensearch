@@ -10,18 +10,20 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 
 The frozen contract remains HTTP 422 with error type `missing` and location `["body"]`; the fixture `tests/fixtures/r1-a-error-baseline.json` was not modified. The controlled isolated reproduction in [`scripts/repro_null_body_contract.py`](../scripts/repro_null_body_contract.py) tested 16 FastAPI/Pydantic combinations: FastAPI `0.115.0, 0.117.0, 0.119.0, 0.121.0, 0.123.0, 0.125.0, 0.127.0, 0.128.2`, each paired with Pydantic `2.10.0` and `2.13.5`, plus `httpx==0.27.2`. Both synthetic route styles reflecting the v0.4.0 typed-body route and v0.5.0 Any/Body + manual validation route returned 422 `missing`; direct `model_validate(None, from_attributes=True)` returned `model_attributes_type` in both tested Pydantic versions. No version threshold was identified; no dependency bound was added. Exact commands are recorded in CHANGELOG.md and the workflow from PR #339. This reproduces the relevant route styles in isolation rather than importing the tagged application, and does not establish behavior outside the tested matrix.
 
+**Correction dated 2026-10-21:** the paragraph above describes only the initial 16-combination matrix and is historical. The expanded controlled bisection found the first change in the typed-route style between FastAPI `0.150.0` (`missing`) and `0.151.0` (`model_attributes_type`); the v0.5.0 explicit `payload is None` guard preserves HTTP 422 `missing` through FastAPI `0.157.0` with Pydantic tested through `2.14.1`. No API, fixture or dependency bound changed; see the final bisection result in `CHANGELOG.md`.
+
 ## Current execution snapshot (2026-10-21)
 
-- **Main snapshot SHA before this status-only update:** `7cf0d9ecb771712c8a9edd5351eaa47a79f33245`.
-- **CI run:** [GitHub Actions run 39606736766](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39606736766). Main SHA had 13 checks: 12 successful, 1 skipped by workflow condition (`rgc-design-simulation`), 0 failures. Python test jobs 3.11, 3.12 and 3.13 passed.
-- **Test evidence:** `pytest -q` — 1,123 passed, 1 skipped; coverage — 4,214 statements, 251 missed, 94%. The targeted additions brought `plugins/registry.py` to 26/26 statements and `providers/openai_compatible.py` to 30/30 statements.
-- **Strict typing:** CI gate now runs `mypy --strict evals/ptbr/rgc_eval.py evals/ptbr/rgc_agreement.py`; the blocking gate passed on PR #353. Main's `typecheck-strict (non-blocking)` also passed.
-- **Security:** [security run 39606736914](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39606736914) succeeded; `pip-audit` reported no known vulnerabilities and Bandit reported no issues. Remaining Bandit comment-parser warnings were removed in PR #354.
-- **Merged work in this cycle:** #306 (manual 05), #308 (manual 06), #309 (manual 07), #335/#337 (DEC-017), #339 (JSON-null reproduction), #342 (DEC-018), #345 (manual 08), #349 (DEC-019), #351 (DEC-020), #352 (methodology review), #353 (coverage and strict mypy), #354 (Bandit warning cleanup), #355 (manual 09), #356 (manual 10), #357 (Unreleased/release draft), #358 (branch-cleanup audit).
-- **Closed as duplicate/superseded:** #307, #328, #330, #334, #336, #338, #340, #343, #344, #346, #348, #350. Comments identify the replacement PRs.
-- **Open PRs at snapshot time:** none.
-- **Branch cleanup:** 205 remote branches were enumerated; 147 existing branches associated with merged PRs or explicitly superseded/duplicate PRs were listed as candidates. **Zero branches were deleted** because the available GitHub integration has no remote branch-delete operation. See [branch cleanup audit](audit/BRANCH-CLEANUP-2026-10-21.md).
-- **Scientific boundary:** DEC-017, DEC-018, DEC-019 and DEC-020 are approved; the RGC protocol remains `[PROPOSTO]` and is not frozen. No pilot/benchmark cases were created, completed or labeled, and the ATTRACTOR was not run on RGC cases. No RGC metrics were produced.
+- **Main snapshot SHA before this final status/release-only PR:** `fc12c38e5bc2967642d2bd941d01fc52b4f206fb`.
+- **CI:** [run 39636033742](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39636033742) completed successfully on that SHA: 13 checks, 12 successful, 1 skipped by workflow condition (`rgc-design-simulation`), no failures. Python 3.11, 3.12 and 3.13 jobs passed.
+- **Security and CodeQL:** [security run 39636033527](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39636033527) and [CodeQL run 39636033686](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39636033686) succeeded.
+- **Test evidence:** the CI test jobs ran `pytest -W error::ResourceWarning -W error::pytest.PytestUnraisableExceptionWarning --cov=ayorai_attractor --cov-report=xml --cov-report=json --cov-report=term-missing`: **1,129 passed, 1 skipped**; coverage **4,214 statements, 251 missed, 94%**. The namespace-compatibility job also ran `pytest -q` successfully.
+- **Quality commands observed in CI:** `ruff check .`, `ruff format --check .`, and `mypy --strict evals/ptbr/rgc_eval.py evals/ptbr/rgc_agreement.py` all passed.
+- **Merged PRs since the previous snapshot:** #369 (approved-amendment consistency test; merge SHA `1e77df724d432b05d230b112afd3ca6ff83eb3b0`), #370 (historical amendment consistency; merge SHA `7fc9ae9708ff8ee46ffe2398efa4d6024d36ce90`), and #373 (Bandit `# nosec` rationales; merge SHA `fc12c38e5bc2967642d2bd941d01fc52b4f206fb`).
+- **Closed without merge as superseded:** #367 and #372 were replaced by #373; #368 was replaced by #370; #371 was replaced by this final status/release update. The PR conversations record the replacements.
+- **Open PRs at snapshot time:** this final status/release-only PR is the only remaining open PR; no other work PR is open. After it merges, no PR should remain open.
+- **Branch cleanup:** no remote branches were deleted. The candidate audit remains in [the branch-cleanup audit](audit/BRANCH-CLEANUP-2026-10-21.md); actual deletion is deferred to the maintainer as instructed.
+- **Scientific boundary:** DEC-017, DEC-018, DEC-019 and DEC-020 are approved. The RGC protocol remains `[PROPOSTO]` and is not frozen. No pilot/benchmark cases were created, completed or labeled; ATTRACTOR was not run on RGC cases and no RGC metrics were produced.
 
 ## Release and system boundaries
 
@@ -52,9 +54,7 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 
 ## Deferred work
 
-- Manual chapters 05–10 are linked in `docs/manual/README.md`; chapters 01–04 remain marked in drafting.
-
-**Correction dated 2026-10-21:** this statement is stale: chapters 01–04 have `Estado: Atual`. Treat the preceding sentence as historical snapshot text, not current chapter status.
+- Manual chapters 01–04 have `Estado: Atual`; chapters 05–10 are linked in `docs/manual/README.md`.
 - Coverage is 94% overall. The next useful targets include `verification/extraction.py`, `audit.py`, and `orchestrator.py`; the registry and OpenAI-compatible provider now have 100% line coverage.
 - Strict mypy now covers both RGC evaluation modules. Keep the scope evidence-driven and extend it only where the gate passes.
 - Security CI is clean: pip-audit found no known vulnerabilities; Bandit found no issues after comment-parser warning cleanup.
