@@ -700,6 +700,8 @@ def validate_annotation_approval(
     labels_path: Path,
     development_cases_path: Path,
     development_labels_path: Path,
+    annotation_a_path: Path,
+    annotation_b_path: Path,
     agreement_report_path: Path,
     approval_manifest_path: Path,
     adjudication_record_path: Path,
@@ -773,6 +775,8 @@ def validate_annotation_approval(
             "labels_sha256": _sha256(labels_path),
             "development_cases_sha256": _sha256(development_cases_path),
             "development_labels_sha256": _sha256(development_labels_path),
+            "annotation_a_sha256": _sha256(annotation_a_path),
+            "annotation_b_sha256": _sha256(annotation_b_path),
             "agreement_report_sha256": _sha256(agreement_report_path),
             "adjudication_record_sha256": _sha256(adjudication_record_path),
         }
@@ -987,6 +991,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     run = sub.add_parser("run")
     run.add_argument("cases", type=Path)
     run.add_argument("--labels", type=Path, required=True)
+    run.add_argument("--annotation-a", type=Path, required=True)
+    run.add_argument("--annotation-b", type=Path, required=True)
     run.add_argument("--agreement-report", type=Path, required=True)
     run.add_argument("--annotation-approval", type=Path, required=True)
     run.add_argument("--adjudication-record", type=Path, required=True)
@@ -1032,6 +1038,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.labels,
             args.development_cases,
             args.development_labels,
+            args.annotation_a,
+            args.annotation_b,
             args.agreement_report,
             args.annotation_approval,
             args.adjudication_record,
