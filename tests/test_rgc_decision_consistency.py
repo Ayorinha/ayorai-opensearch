@@ -32,8 +32,7 @@ def test_approved_index_decisions_have_normative_amendments_in_both_documents() 
 
     for decision, amendment in DECISION_AMENDMENTS.items():
         index_rows = [
-            line for line in index.splitlines()
-            if f"| {decision} |" in line and "Aprovada" in line
+            line for line in index.splitlines() if f"| {decision} |" in line and "Aprovada" in line
         ]
         if not index_rows:
             continue
