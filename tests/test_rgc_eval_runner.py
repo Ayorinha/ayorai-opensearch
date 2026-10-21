@@ -773,6 +773,10 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     adjudication = tmp_path / "adjudication.md"
     cases.write_text("{}\\n", encoding="utf-8")
     labels.write_text("{}\\n", encoding="utf-8")
+    development_cases = tmp_path / "development-cases.jsonl"
+    development_labels = tmp_path / "development-labels.jsonl"
+    development_cases.write_text("{}\\n", encoding="utf-8")
+    development_labels.write_text("{}\\n", encoding="utf-8")
     adjudication.write_text("synthetic only\\n", encoding="utf-8")
     agreement.write_text(
         json.dumps(
