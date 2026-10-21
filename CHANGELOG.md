@@ -33,6 +33,16 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 - Descrições de pull requests padronizadas sem rodapés de ferramentas em 17/10/2026. O conteúdo técnico e o histórico de commits foram preservados; o histórico de edição das descrições permanece disponível no GitHub.
 - Revisões produzidas por ferramenta automatizada passam a ser identificadas como tal; pareceres anteriores foram reidentificados. A revisão humana independente das PRs desde a v0.5.0 continua pendente.
 
+
+### RGC methodology and tooling (2026-10-21)
+- DEC-017 through DEC-020 were explicitly approved and recorded in dated amendments. The RGC protocol remains [PROPOSTO] and unfrozen.
+- The RGC executor now separates the hidden confirmatory partition from public descriptive development data, and supports article-cluster bootstrap as the primary confidence interval with case bootstrap as sensitivity. No RGC cases were created or evaluated.
+- Added a deterministic inter-annotator agreement calculator for unweighted Cohen's kappa, with a point-estimate gate of 0.6, a case-bootstrap 95% interval, confusion matrix, class marginals and auditable RULE_GAP exclusions. It has only been tested with synthetic data; no human annotation files were processed.
+- A controlled FastAPI/Pydantic matrix did not identify a dependency-version threshold for the frozen JSON-null body contract; no dependency bound was added and the fixture remains unchanged.
+- Expanded test coverage for plugin registry and provider error paths, extended strict mypy to both RGC evaluation modules, and removed remaining Bandit comment-parser warnings. The security CI reported no known dependency vulnerabilities.
+- Added technical manual chapters for operations, security, reproducibility, evaluation, audit and governance. Documentation and CI evidence do not constitute certification, independent review or production readiness.
+- Human pilot annotation, second independent annotation, F-01 independent review and the decision to freeze the protocol remain pending.
+
 ## [0.5.0] — 2026-10-13
 
 ### Added
