@@ -45,3 +45,5 @@ PR #323 recorded the following prior state: “Status: approved by maintainer on
 
 
 **Approval record (2026-10-21):** Option A is the operative decision. Missing/duplicate prediction records, unknown case IDs, missing human labels, or malformed input stop the run; a present output unmappable to `judge2` becomes `INVALID_PREDICTION`, stays in the denominator, and counts as an error. The protocol remains proposed and unfrozen; no confirmatory run is authorized by this approval.
+
+**Nota de consistência (2026-10-21):** a aprovação normativa é a decisão do mantenedor registrada na DEC-017 e formalizada pela Emenda 7; as passagens anteriores que dizem que DEC-017 está pendente são apenas histórico.
