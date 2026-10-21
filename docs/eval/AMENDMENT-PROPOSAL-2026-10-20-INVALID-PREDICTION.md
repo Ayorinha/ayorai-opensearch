@@ -1,7 +1,9 @@
 # Proposed dated amendment — RGC invalid-prediction handling (20/10/2026)
 
-**Status:** approved by maintainer on 2026-10-21; Option A.  
-**Effect:** the approved distinction is recorded in Emenda 7 of the pre-registration and protocol. The protocol remains proposed and unfrozen; no annotation or confirmatory execution is authorized.
+**Current status (2026-10-21):** proposal pending explicit maintainer decision; Option A remains a recommendation, not an approval.  
+**Immediate effect:** none. This proposal does not alter the active pre-registration, freeze the protocol, authorize definitive annotation, or authorize a confirmatory execution.
+
+**Corrective note (2026-10-21):** PR #323 marked Option A as approved. The current Master Prompt requires DEC-017 to remain pending until the maintainer explicitly decides the scientific question. The previous status is preserved in Git history and summarized in the historical note below; it is not the current normative state.
 
 ## Reason
 
@@ -26,9 +28,13 @@ The current text should not be silently reinterpreted. This proposal records a p
 
 ## Maintainer decision
 
-- [x] Approved explicitly by Anderson Leon Ayora — Option A
+- [ ] Approved explicitly by Anderson Leon Ayora — Option A
 - [ ] Rejected
 - [ ] Changes requested
 
-**Decision date:** 2026-10-21.  
+**Decision date:** pending.  
 **Decision owner:** Anderson Leon Ayora.
+
+## Historical status note (2026-10-21)
+
+PR #323 recorded the following prior state: “Status: approved by maintainer on 2026-10-21; Option A,” checked “Approved explicitly by Anderson Leon Ayora — Option A,” and assigned decision date 2026-10-21. This historical entry is retained for traceability. Under the current Master Prompt, DEC-017 remains pending and the recorded approval is not treated as a current decision.
