@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import runpy
 from pathlib import Path
 from typing import Any
@@ -97,3 +99,40 @@ def test_kappa_is_undefined_without_marginal_variation_and_does_not_pass_gate() 
     assert result["cohen_kappa"] is None
     assert result["gate_passed"] is False
     assert result["ci95_case_bootstrap"] is None
+
+
+def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> None:
+    labels = [
+        ("a", "SUPPORTED"),
+        ("b", "REFUTED"),
+        ("c", "UNVERIFIED"),
+        ("d", "PARTIALLY_SUPPORTED"),
+        ("e", "CONFLICTING"),
+    ]
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    content = "".join(
+        json.dumps({"case_id": case_id, "label": label}) + "\n" for case_id, label in labels
+    )
+    annotation_a.write_text(content, encoding="utf-8")
+    annotation_b.write_text(content, encoding="utf-8")
+    output = tmp_path / "agreement.json"
+
+    assert AGREEMENT["main"](
+        [
+            "--annotation-a",
+            str(annotation_a),
+            "--annotation-b",
+            str(annotation_b),
+            "--out",
+            str(output),
+            "--iterations",
+            "20",
+        ]
+    ) == 0
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["gate_passed"] is True
+    assert report["inputs"] == {
+        "annotation_a_sha256": hashlib.sha256(annotation_a.read_bytes()).hexdigest(),
+        "annotation_b_sha256": hashlib.sha256(annotation_b.read_bytes()).hexdigest(),
+    }
