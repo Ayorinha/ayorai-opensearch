@@ -1,7 +1,7 @@
 # Proposed dated amendment — RGC invalid-prediction handling (20/10/2026)
 
-**Status:** proposal pending explicit maintainer approval.  
-**Immediate effect:** none. This document does not alter the current pre-registration, freeze the protocol, authorize definitive annotation, or authorize a confirmatory execution.
+**Status:** approved by maintainer on 2026-10-21; Option A.  
+**Effect:** the approved distinction is recorded in Emenda 7 of the pre-registration and protocol. The protocol remains proposed and unfrozen; no annotation or confirmatory execution is authorized.
 
 ## Reason
 
@@ -26,9 +26,9 @@ The current text should not be silently reinterpreted. This proposal records a p
 
 ## Maintainer decision
 
-- [ ] Approved explicitly by Anderson Leon Ayora
+- [x] Approved explicitly by Anderson Leon Ayora — Option A
 - [ ] Rejected
 - [ ] Changes requested
 
-**Decision date:** pending.  
+**Decision date:** 2026-10-21.  
 **Decision owner:** Anderson Leon Ayora.
