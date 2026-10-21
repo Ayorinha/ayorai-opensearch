@@ -726,11 +726,15 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> None:
     cases = tmp_path / "cases.jsonl"
     labels = tmp_path / "labels.jsonl"
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
     agreement = tmp_path / "agreement.json"
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
     cases.write_text("{}\\n", encoding="utf-8")
     labels.write_text("{}\\n", encoding="utf-8")
+    annotation_a.write_text("synthetic A\\n", encoding="utf-8")
+    annotation_b.write_text("synthetic B\\n", encoding="utf-8")
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
     development_cases.write_text("{}\\n", encoding="utf-8")
@@ -743,8 +747,8 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
                 "cohen_kappa": 0.4,
                 "gate_passed": False,
                 "inputs": {
-                    "annotation_a_sha256": "a" * 64,
-                    "annotation_b_sha256": "b" * 64,
+                    "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                    "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
                 },
             }
         ),
@@ -763,8 +767,8 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
                 "development_labels_sha256": "0" * 64,
                 "agreement_report_sha256": "0" * 64,
                 "adjudication_record_sha256": "0" * 64,
-                "annotation_a_sha256": "a" * 64,
-                "annotation_b_sha256": "b" * 64,
+                "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
                 "cohen_kappa": 0.4,
             }
         ),
@@ -772,7 +776,15 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
     )
     with pytest.raises(ValueError, match="human annotator agreement gate did not pass"):
         RUNNER["validate_annotation_approval"](
-            cases, labels, development_cases, development_labels, agreement, approval, adjudication
+            cases,
+            labels,
+            development_cases,
+            development_labels,
+            annotation_a,
+            annotation_b,
+            agreement,
+            approval,
+            adjudication,
         )
 
 
@@ -784,6 +796,8 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     adjudication = tmp_path / "adjudication.md"
     cases.write_text("{}\\n", encoding="utf-8")
     labels.write_text("{}\\n", encoding="utf-8")
+    annotation_a.write_text("synthetic A\\n", encoding="utf-8")
+    annotation_b.write_text("synthetic B\\n", encoding="utf-8")
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
     development_cases.write_text("{}\\n", encoding="utf-8")
