@@ -23,7 +23,7 @@ The frozen contract remains HTTP 422 with error type `missing` and location `["b
 - **Closed as duplicate/superseded:** #307, #328, #330, #334, #336, #338, #340, #343, #344, #346, #348, #350. Comments identify the replacement PRs.
 - **Open PRs at snapshot time:** none.
 
-**Nota de atualização (2026-10-21):** o bloco de snapshot acima é histórico, não o estado atual. A PR #369 foi mesclada (`1e77df724d432b05d230b112afd3ca6ff83eb3b0`) e adicionou o teste `tests/test_rgc_decision_consistency.py`. A PR #367 para justificativas `nosec` ainda estava em andamento na última verificação; confirmar seu desfecho e o SHA final antes da publicação deste status.
+**Nota de atualização (2026-10-21):** o bloco de snapshot acima é histórico, não o estado atual. A PR #369 foi mesclada (`1e77df724d432b05d230b112afd3ca6ff83eb3b0`) e adicionou o teste `tests/test_rgc_decision_consistency.py`. A PR #367 foi fechada sem merge por base desatualizada; a substituta #372 reaplica as justificativas `nosec` sobre a main atual e aguarda os checks obrigatórios.
 - **Branch cleanup:** 205 remote branches were enumerated; 147 existing branches associated with merged PRs or explicitly superseded/duplicate PRs were listed as candidates. **Zero branches were deleted** because the available GitHub integration has no remote branch-delete operation. See [branch cleanup audit](audit/BRANCH-CLEANUP-2026-10-21.md).
 - **Scientific boundary:** DEC-017, DEC-018, DEC-019 and DEC-020 are approved; the RGC protocol remains `[PROPOSTO]` and is not frozen. No pilot/benchmark cases were created, completed or labeled, and the ATTRACTOR was not run on RGC cases. No RGC metrics were produced.
 
