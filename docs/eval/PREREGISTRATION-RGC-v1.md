@@ -127,6 +127,8 @@ A publicação do resultado é obrigatória mesmo se for negativo, inconclusivo 
 
 **Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
+**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
+
 ## 6. Limitações e afirmações proibidas
 
 O benchmark medirá desempenho somente no escopo, versão da fonte, conjunto de afirmações e procedimento de anotação documentados. Não demonstrará, por si só, capacidade de interpretar toda a legislação brasileira, aconselhar consumidores, determinar direitos em casos concretos ou substituir revisão humana.
@@ -176,6 +178,8 @@ A decisão do mantenedor registrada na DEC-017 aprova a Opção A. O contrato di
 
 ## Proposta de Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A; PENDENTE)
 
+**Nota (2026-10-21):** proposta superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
+
 Texto proposto para decisão explícita do mantenedor; DEC-017 permanece **PENDENTE**. A frase original “Por aprovação explícita do mantenedor em 2026-10-21” foi registrada pela PR #323 e é histórica, não vigente. Se a Opção A vier a ser aprovada em uma decisão futura, o contrato distinguirá integridade da entrada e qualidade da saída por caso:
 
 1. O arquivo de rótulos humanos deve conter exatamente um rótulo para cada caso elegível; caso sem rótulo, rótulo para caso inexistente, caso duplicado, registro ausente ou estrutura inconsistente interrompe a execução. Não descartar, imputar nem remover silenciosamente esses registros.
@@ -189,6 +193,8 @@ O executor já implementa o mapeamento de saída inválida e a validação de r�
 
 ## Proposta de Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A; PENDENTE)
 
+**Nota (2026-10-21):** proposta superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
+
 Texto proposto para decisão explícita do mantenedor; DEC-018 permanece **PENDENTE**. Se aprovada futuramente, a regra proposta será:
 
 1. **Partição oculta (~90 casos):** é a única partição primária para testar H1 e aplicar o critério confirmatório pré-registrado.
@@ -198,6 +204,8 @@ Texto proposto para decisão explícita do mantenedor; DEC-018 permanece **PENDE
 
 
 **Nota de leitura vigente (2026-10-21) — DEC-018:** a aprovação explícita da Opção A está registrada na Emenda 8 aprovada ao final. Notas anteriores que descrevem DEC-018 como pendente são históricas e superadas; o estado geral do protocolo continua **[PROPOSTO]** e não está congelado.
+
+**Nota (2026-10-21):** superada pelo quadro “Leitura consolidada (2026-10-21)” no topo; mantida apenas como histórico.
 
 **Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
