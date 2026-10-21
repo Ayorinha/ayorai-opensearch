@@ -852,6 +852,23 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
             adjudication,
         )
 
+    manifest = json.loads(approval.read_text(encoding="utf-8"))
+    manifest["labels_sha256"] = RUNNER["_sha256"](labels)
+    approval.write_text(json.dumps(manifest), encoding="utf-8")
+    annotation_a.write_text("changed annotation A\\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="annotation_a_sha256 differs from approval manifest"):
+        RUNNER["validate_annotation_approval"](
+            cases,
+            labels,
+            development_cases,
+            development_labels,
+            annotation_a,
+            annotation_b,
+            agreement,
+            approval,
+            adjudication,
+        )
+
 
 def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Path) -> None:
     eval_dir = tmp_path / "docs" / "eval"
