@@ -13,7 +13,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 - O subcomando `run` exige um arquivo de rótulos humanos completo (`--labels`). Não existe modo "só previsões"; por isso o sistema não pode ser rodado sobre casos ainda não rotulados, evitando que a saída do sistema influencie a anotação.
 - Casos sem rótulo, rótulos de casos inexistentes e casos duplicados interrompem a execução (erro), em vez de serem descartados em silêncio.
 - Rótulo `RULE_GAP` (lacuna nas regras de anotação, usado somente no piloto) remove o caso do denominador e é sempre listado em `excluded` no relatório; no conjunto definitivo, `RULE_GAP` é proibido no campo `label`.
-- **DEC-017 (PENDENTE; opção A recomendada):** o executor atual interrompe a execução diante de registro ausente/duplicado, ID desconhecido, rótulo humano ausente ou arquivo inconsistente; uma predição presente não mapeável para `judge2` recebe `INVALID_PREDICTION`, permanece no denominador e conta como erro. Esta linha descreve o comportamento implementado, não aprova a interpretação normativa. A regra continua pendente de decisão explícita e emenda datada; não executar avaliação confirmatória antes desse gate.
+- **DEC-017 (Opção A aprovada em 2026-10-21):** o executor interrompe a execução diante de registro ausente/duplicado, ID desconhecido, rótulo humano ausente ou arquivo inconsistente; uma predição presente não mapeável para `judge2` recebe `INVALID_PREDICTION`, permanece no denominador e conta como erro. A aprovação não autoriza avaliação confirmatória e não congela o protocolo.
 - O relatório registra: versão do executor, commit, versão do Python, SHA-256 dos casos, dos rótulos e dos documentos, configuração completa, cada previsão com o `output_sha256` do Judge e a contagem de previsões cujo estado original do Judge foi `ABSTAINED`.
 
 ## 2. Pipeline por caso (determinístico, sem rede, sem componente aprendido)
@@ -74,6 +74,6 @@ python evals/ptbr/rgc_eval.py run <casos-avaliacao.jsonl> \
 
 Formato dos rótulos (um por linha): `{"case_id": "...", "verdict": "SUPPORTED"}`.
 
-A execução exige a partição pública de desenvolvimento por `--development-cases` e seus rótulos humanos completos por `--development-labels`. DEC-017 (aprovada em 2026-10-21): ausência de rótulo, duplicata, rótulo desconhecido ou inconsistência estrutural interrompe a execução; quando existe predição mas ela não pode ser mapeada para o vocabulário, `INVALID_PREDICTION` permanece no denominador e conta como incorreta. O executor valida que os IDs dos dois arquivos correspondem exatamente, deriva B somente desses rótulos, registra os SHA-256 dos casos e rótulos e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
+A execução exige a partição pública de desenvolvimento por `--development-cases` e seus rótulos humanos completos por `--development-labels`. O executor valida que os IDs dos dois arquivos correspondem exatamente, deriva B somente desses rótulos, registra os SHA-256 dos casos e rótulos e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
 
 Este executor não afirma validação, parceria ou endosso da Anatel ou de qualquer instituição.

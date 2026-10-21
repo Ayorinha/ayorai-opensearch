@@ -163,7 +163,7 @@ def test_label_mapping() -> None:
 
 
 def test_missing_label_vs_present_invalid_prediction_synthetic() -> None:
-    """Test current runner mechanics with synthetic data; this does not approve DEC-017."""
+    """Verify DEC-017 mechanics with synthetic data only; no RGC cases are evaluated."""
     case = _case("synthetic-missing-label", "O cancelamento será efetivado em até 2 dias.", CANCEL)
     with pytest.raises(ValueError, match="without a label"):
         RUNNER["evaluate"](
