@@ -228,9 +228,15 @@ def test_hidden_partition_rejects_missing_bootstrap_cluster_id() -> None:
     case.pop("bootstrap_cluster_id")
     with pytest.raises(ValueError, match="bootstrap_cluster_id"):
         RUNNER["evaluate"](
-            [case], {"no-cluster": "SUPPORTED"}, DOCS,
-            development_cases=DEV_CASES, development_labels=DEV_LABELS,
-            mode="oracle", vocabulary="judge2", iterations=20, partition="hidden",
+            [case],
+            {"no-cluster": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
         )
 
 
