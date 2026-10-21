@@ -32,6 +32,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-016 | Autorização de trabalho autônomo e ratificação documental | Aprovada por ordem do mantenedor (2026-10-21); limites científicos preservados | Este arquivo |
 | DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Pendente; recomendação A, aguardando decisão explícita do mantenedor | Este arquivo |
 | DEC-018 | Escopo confirmatório de H1 no RGC | Pendente; recomendação A: conjunto oculto (~90 casos) como primário | Este arquivo |
+| DEC-019 | Bootstrap agrupado por artigo do RGC | Pendente; recomendação A: bootstrap por cluster de artigo como análise primária | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -319,3 +320,17 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Recomendação técnica:** Opção A. É a alternativa mais conservadora diante da separação pública/oculta e do histórico de desenvolvimento; reportar o resultado dos 300 casos em blocos distintos, sem misturar métricas exploratórias com a inferência confirmatória. A simulação sintética existente pode orientar planejamento, mas não substitui os dados reais nem prova poder para o conjunto final.
 - **Consequência se aprovada:** registrar uma emenda datada no pré-registro e alinhar protocolo, plano estatístico e executor antes de qualquer avaliação confirmatória. Não alterar critérios após observar resultados.
 - **Limites:** esta entrada não decide H1, não congela o protocolo, não cria ou rotula casos, não executa o ATTRACTOR e não produz números de benchmark RGC PT-BR.
+
+
+## DEC-019 — Bootstrap agrupado por artigo do RGC
+
+- **Data:** 2026-10-21
+- **Estado:** PENDENTE — proposta metodológica; não altera o método pré-registrado nem autoriza avaliação.
+- **Pergunta:** os intervalos de confiança de H1 devem reamostrar casos individualmente ou agrupar a reamostragem pela unidade de artigo/dispositivo do RGC?
+- **Contexto verificável:** `docs/eval/PROPOSAL-RGC-STATISTICAL-DESIGN.md`, seção 4, observa que vários casos podem tratar do mesmo artigo e que o bootstrap atual reamostra casos como se fossem independentes. O pré-registro atual especifica bootstrap percentil com 10.000 reamostragens e seed fixa `20261003`; qualquer alteração exige emenda datada antes da avaliação confirmatória.
+- **Opção A — recomendada, pendente:** bootstrap por cluster de artigo como análise primária: sortear artigos com reposição e incluir todos os casos pertencentes a cada artigo sorteado; manter 10.000 reamostragens e a seed pré-especificada, se a decisão final preservar esses parâmetros. Reportar bootstrap por caso apenas como análise de sensibilidade. **Prós:** considera a dependência entre casos do mesmo artigo e reduz o risco de intervalos artificialmente estreitos. **Contras:** exige metadado estável de artigo/dispositivo por caso, uma regra anterior para casos multiartigo e quantidade suficiente de clusters independentes.
+- **Opção B — manter bootstrap por caso como primário:** **Prós:** preserva o pré-registro atual, é simples e mantém comparabilidade com o executor existente. **Contras:** pressupõe independência entre casos; se houver correlação por artigo, pode subestimar a incerteza.
+- **Opção C — reportar ambos como análises co-primárias:** **Prós:** torna visível a sensibilidade ao nível de agrupamento. **Contras:** complica a interpretação de H1 e cria ambiguidade sobre qual intervalo fundamenta o critério primário, a menos que a regra seja pré-especificada.
+- **Recomendação técnica:** Opção A, com bootstrap por artigo como primário e bootstrap por caso como sensibilidade descritiva. Antes de qualquer coleta definitiva, definir o campo de agrupamento, a atribuição de casos que citam vários dispositivos e o tratamento de amostras degeneradas ou de poucos clusters. Não trocar de método após observar resultados.
+- **Se aprovada:** acrescentar nota de emenda datada ao pré-registro e alinhar protocolo, esquema, executor, testes e relatório antes de avaliação confirmatória. Qualquer simulação usada para verificar a mecânica deve usar dados sintéticos claramente identificados, sem casos do RGC.
+- **Limites:** não criar ou rotular casos, não alterar o executor nesta PR, não executar ATTRACTOR, não produzir métricas RGC PT-BR e não congelar o protocolo.
