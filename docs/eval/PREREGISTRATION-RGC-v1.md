@@ -8,7 +8,7 @@
 
 **Leitura consolidada (2026-10-21)**
 
-Emendas vigentes para leitura conjunta: [Emenda 6 — baseline primária e descritiva](#emenda-6-vigente), [Emenda 7 — registros ausentes e predições inválidas](#emenda-7-vigente), [Emenda 8 — escopo confirmatório de H1](#emenda-8-vigente), [Emenda 9 — bootstrap por cluster de artigo](#emenda-9-vigente) e [Emenda 10 — concordância entre anotadores](#emenda-10-vigente). O estado do documento e do protocolo continua **[PROPOSTO]**; não estão congelados, e esta consolidação não autoriza execução RGC.
+Emendas vigentes para leitura conjunta: [Emenda 6 — baseline primária e descritiva](#emenda-6-2026-10-21--baseline-primária-e-descritiva-dec-014-aprovada-pelo-mantenedor), [Emenda 7 — registros ausentes e predições inválidas](#emenda-7-2026-10-21--registros-ausentes-e-predições-inválidas-dec-017-opção-a-aprovada), [Emenda 8 — escopo confirmatório de H1](#emenda-8-2026-10-21--escopo-confirmatório-de-h1-dec-018-opção-a-aprovada), [Emenda 9 — bootstrap por cluster de artigo](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a-aprovada) e [Emenda 10 — concordância entre anotadores](#emenda-10-2026-10-21--concordância-entre-anotadores-dec-020-opção-a-aprovada). O estado do documento e do protocolo continua **[PROPOSTO]**; não estão congelados, e esta consolidação não autoriza execução RGC.
 
 **Registro histórico — nota de leitura vigente (2026-10-21):** os §§ 1, 4 (itens 6–7) e 5 deveriam ser lidos em conjunto com a Emenda 6. Esta nota foi superada pelo quadro “Leitura consolidada” acima.
 
@@ -160,13 +160,11 @@ A Resolução e suas alterações, ressalvas de vigência, remissões ou consoli
 Atualização datada (2026-10-21) — resolução documental: a Emenda 6 foi incorporada pela PR #288 (merge SHA `5a587ecb64abc6359c8fe36b8194b67dee3edda9`). A pendência citada na nota corretiva anterior é histórica e foi resolvida quanto à definição B/A: a Emenda 6 acrescenta a interpretação aprovada, preservando a redação original. Permanecem [PROPOSTO] o protocolo e a decisão separada de congelamento; nenhum piloto ou benchmark foi executado por esta atualização.
 
 
-<a id="emenda-6-vigente"></a>
 ## Emenda 6 (2026-10-21) — baseline primária e descritiva (DEC-014, aprovada pelo mantenedor)
 
  para a hipótese H1 e a avaliação confirmatória, a baseline B é a classe majoritária derivada exclusivamente dos rótulos humanos de referência da partição pública de desenvolvimento (70%). O rótulo majoritário deve ser determinado e registrado antes de qualquer execução na partição oculta, e aplicado sem alteração aos mesmos casos avaliados. A baseline A, calculada a partir dos rótulos da própria partição avaliada, é somente uma referência descritiva da prevalência observada; não é classificador operacional e não fundamenta H1. Em caso de empate na baseline B, aplicar a ordem fixa do vocabulário `judge2` implementada por `majority_label` em `evals/ptbr/rgc_eval.py`; não introduzir desempate manual. Esta emenda preserva como registro histórico a redação original dos §§1, 4 e 5 acima e define a interpretação aplicável ao plano confirmatório daqui em diante. O documento e o protocolo permanecem **[PROPOSTO]**; esta emenda não congela o protocolo, não autoriza criar/rotular casos nem executar o sistema, e não produz resultados de benchmark.
 
 
-<a id="emenda-7-vigente"></a>
 ## Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A aprovada)
 
 A decisão do mantenedor registrada na DEC-017 aprova a Opção A. O contrato distingue integridade da entrada e qualidade da saída por caso:
@@ -203,7 +201,6 @@ Texto proposto para decisão explícita do mantenedor; DEC-018 permanece **PENDE
 
 **Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
-<a id="emenda-8-vigente"></a>
 ## Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A aprovada)
 
 Pela decisão do mantenedor registrada na DEC-018, opção A, aprovada em 2026-10-21:
@@ -214,9 +211,8 @@ Pela decisão do mantenedor registrada na DEC-018, opção A, aprovada em 2026-1
 4. Esta emenda não altera os critérios numéricos de H1, não congela o protocolo e não autoriza executar o sistema em casos RGC. O protocolo permanece **[PROPOSTO]**; o piloto 02 humano e os demais gates seguem pendentes.
 
 
-**Nota datada (2026-10-21) — DEC-019:** a opção aprovada e a regra multiartigo estão na [Emenda 9](#emenda-9-vigente). A proposta anterior permanece preservada como histórico.
+**Nota datada (2026-10-21) — DEC-019:** a opção aprovada e a regra multiartigo estão na [Emenda 9](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a-aprovada). A proposta anterior permanece preservada como histórico.
 
-<a id="emenda-9-vigente"></a>
 ## Emenda 9 (2026-10-21) — bootstrap por cluster de artigo (DEC-019, opção A aprovada)
 
 Pela decisão do mantenedor registrada na DEC-019, opção A, aprovada em 2026-10-21:
@@ -228,7 +224,6 @@ Pela decisão do mantenedor registrada na DEC-019, opção A, aprovada em 2026-1
 5. A emenda não altera critérios de H1, não congela o protocolo, não cria ou rotula casos e não autoriza execução RGC. Os resultados do bootstrap por caso são apenas sensibilidade; não escolher o intervalo que mais favoreça a hipótese.
 
 
-<a id="emenda-10-vigente"></a>
 ## Emenda 10 (2026-10-21) — concordância entre anotadores (DEC-020, opção A aprovada)
 
 Pela decisão do mantenedor registrada na DEC-020, opção A, aprovada em 2026-10-21:
