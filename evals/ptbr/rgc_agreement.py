@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -166,20 +167,24 @@ def compute_agreement(
     }
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--annotation-a", type=Path, required=True)
     parser.add_argument("--annotation-b", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--iterations", type=int, default=DEFAULT_ITERATIONS)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     result = compute_agreement(
         load_annotations(args.annotation_a),
         load_annotations(args.annotation_b),
         iterations=args.iterations,
         seed=args.seed,
     )
+    result["inputs"] = {
+        "annotation_a_sha256": hashlib.sha256(args.annotation_a.read_bytes()).hexdigest(),
+        "annotation_b_sha256": hashlib.sha256(args.annotation_b.read_bytes()).hexdigest(),
+    }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(

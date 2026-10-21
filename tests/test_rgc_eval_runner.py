@@ -612,6 +612,46 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     )
     labels = tmp_path / "labels.jsonl"
     labels.write_text(json.dumps({"case_id": "s1", "verdict": "SUPPORTED"}) + "\n")
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    annotation_a.write_text("synthetic annotation A\\n", encoding="utf-8")
+    annotation_b.write_text("synthetic annotation B\\n", encoding="utf-8")
+    agreement_report = tmp_path / "agreement.json"
+    agreement_report.write_text(
+        json.dumps(
+            {
+                "method": "cohen_kappa_unweighted",
+                "cohen_kappa": 0.8,
+                "gate_passed": True,
+                "inputs": {
+                    "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                    "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    adjudication_record = tmp_path / "adjudication.md"
+    adjudication_record.write_text("Synthetic test only; no real annotations.\\n", encoding="utf-8")
+    annotation_approval = tmp_path / "annotation-approval.json"
+    annotation_approval.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "status": "APPROVED",
+                "approved_by": "Synthetic test approver",
+                "approved_at": "2026-10-21",
+                "cases_sha256": RUNNER["_sha256"](cases),
+                "labels_sha256": RUNNER["_sha256"](labels),
+                "agreement_report_sha256": RUNNER["_sha256"](agreement_report),
+                "adjudication_record_sha256": RUNNER["_sha256"](adjudication_record),
+                "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+                "cohen_kappa": 0.8,
+            }
+        ),
+        encoding="utf-8",
+    )
     development_cases = tmp_path / "development-cases.jsonl"
     development_cases.write_text(
         "\n".join(json.dumps({"case_id": case_id}) for case_id in ("dev-1", "dev-2", "dev-3"))
@@ -629,6 +669,10 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         )
         + "\n"
     )
+    approval_data = json.loads(annotation_approval.read_text(encoding="utf-8"))
+    approval_data["development_cases_sha256"] = RUNNER["_sha256"](development_cases)
+    approval_data["development_labels_sha256"] = RUNNER["_sha256"](development_labels)
+    annotation_approval.write_text(json.dumps(approval_data), encoding="utf-8")
     out = tmp_path / "report.json"
     code = RUNNER["main"](
         [
@@ -636,6 +680,16 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
             str(cases),
             "--labels",
             str(labels),
+            "--annotation-a",
+            str(annotation_a),
+            "--annotation-b",
+            str(annotation_b),
+            "--agreement-report",
+            str(agreement_report),
+            "--annotation-approval",
+            str(annotation_approval),
+            "--adjudication-record",
+            str(adjudication_record),
             "--development-cases",
             str(development_cases),
             "--development-labels",
@@ -656,6 +710,8 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
     assert report["protocol_freeze"]["runner_code_sha256"] == "e" * 64
+    assert report["annotation_approval"]["approved_by"] == "Synthetic test approver"
+    assert report["annotation_approval"]["cohen_kappa"] == 0.8
     assert report["metrics"]["system"]["accuracy"] == 1.0
     assert report["config"]["mode"] == "retrieval"
     assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
@@ -664,6 +720,153 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert len(report["inputs"]["cases_sha256"]) == 64
     assert len(report["inputs"]["development_cases_sha256"]) == 64
     assert len(report["inputs"]["development_labels_sha256"]) == 64
+
+
+def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> None:
+    cases = tmp_path / "cases.jsonl"
+    labels = tmp_path / "labels.jsonl"
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    agreement = tmp_path / "agreement.json"
+    approval = tmp_path / "approval.json"
+    adjudication = tmp_path / "adjudication.md"
+    cases.write_text("{}\\n", encoding="utf-8")
+    labels.write_text("{}\\n", encoding="utf-8")
+    annotation_a.write_text("synthetic A\\n", encoding="utf-8")
+    annotation_b.write_text("synthetic B\\n", encoding="utf-8")
+    development_cases = tmp_path / "development-cases.jsonl"
+    development_labels = tmp_path / "development-labels.jsonl"
+    development_cases.write_text("{}\\n", encoding="utf-8")
+    development_labels.write_text("{}\\n", encoding="utf-8")
+    adjudication.write_text("synthetic only\\n", encoding="utf-8")
+    agreement.write_text(
+        json.dumps(
+            {
+                "method": "cohen_kappa_unweighted",
+                "cohen_kappa": 0.4,
+                "gate_passed": False,
+                "inputs": {
+                    "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                    "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    approval.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "status": "APPROVED",
+                "approved_by": "Synthetic approver",
+                "approved_at": "2026-10-21",
+                "cases_sha256": "0" * 64,
+                "labels_sha256": "0" * 64,
+                "development_cases_sha256": "0" * 64,
+                "development_labels_sha256": "0" * 64,
+                "agreement_report_sha256": "0" * 64,
+                "adjudication_record_sha256": "0" * 64,
+                "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+                "cohen_kappa": 0.4,
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="human annotator agreement gate did not pass"):
+        RUNNER["validate_annotation_approval"](
+            cases,
+            labels,
+            development_cases,
+            development_labels,
+            annotation_a,
+            annotation_b,
+            agreement,
+            approval,
+            adjudication,
+        )
+
+
+def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
+    cases = tmp_path / "cases.jsonl"
+    labels = tmp_path / "labels.jsonl"
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    agreement = tmp_path / "agreement.json"
+    approval = tmp_path / "approval.json"
+    adjudication = tmp_path / "adjudication.md"
+    cases.write_text("{}\\n", encoding="utf-8")
+    labels.write_text("{}\\n", encoding="utf-8")
+    annotation_a.write_text("synthetic A\\n", encoding="utf-8")
+    annotation_b.write_text("synthetic B\\n", encoding="utf-8")
+    development_cases = tmp_path / "development-cases.jsonl"
+    development_labels = tmp_path / "development-labels.jsonl"
+    development_cases.write_text("{}\\n", encoding="utf-8")
+    development_labels.write_text("{}\\n", encoding="utf-8")
+    adjudication.write_text("synthetic only\\n", encoding="utf-8")
+    agreement.write_text(
+        json.dumps(
+            {
+                "method": "cohen_kappa_unweighted",
+                "cohen_kappa": 0.8,
+                "gate_passed": True,
+                "inputs": {
+                    "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                    "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    approval.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "status": "APPROVED",
+                "approved_by": "Synthetic approver",
+                "approved_at": "2026-10-21",
+                "cases_sha256": RUNNER["_sha256"](cases),
+                "labels_sha256": "0" * 64,
+                "development_cases_sha256": RUNNER["_sha256"](development_cases),
+                "development_labels_sha256": RUNNER["_sha256"](development_labels),
+                "agreement_report_sha256": RUNNER["_sha256"](agreement),
+                "adjudication_record_sha256": RUNNER["_sha256"](adjudication),
+                "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+                "cohen_kappa": 0.8,
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="labels_sha256 differs from approval manifest"):
+        RUNNER["validate_annotation_approval"](
+            cases,
+            labels,
+            development_cases,
+            development_labels,
+            annotation_a,
+            annotation_b,
+            agreement,
+            approval,
+            adjudication,
+        )
+
+    manifest = json.loads(approval.read_text(encoding="utf-8"))
+    manifest["labels_sha256"] = RUNNER["_sha256"](labels)
+    approval.write_text(json.dumps(manifest), encoding="utf-8")
+    annotation_a.write_text("changed annotation A\\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="annotation_a_sha256 differs from approval manifest"):
+        RUNNER["validate_annotation_approval"](
+            cases,
+            labels,
+            development_cases,
+            development_labels,
+            annotation_a,
+            annotation_b,
+            agreement,
+            approval,
+            adjudication,
+        )
 
 
 def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Path) -> None:
