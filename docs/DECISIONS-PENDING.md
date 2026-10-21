@@ -32,7 +32,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-016 | Autorização de trabalho autônomo e ratificação documental | Aprovada por ordem do mantenedor (2026-10-21); limites científicos preservados | Este arquivo |
 | DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
 | DEC-018 | Escopo confirmatório de H1 no RGC | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
-| DEC-019 | Bootstrap agrupado por artigo do RGC | Pendente; recomendação A: bootstrap por cluster de artigo como análise primária | Este arquivo |
+| DEC-019 | Bootstrap agrupado por artigo do RGC | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
 | DEC-020 | Critério de concordância entre anotadores | Pendente; recomendação A: estimativa pontual de kappa ≥ 0,6 e métricas descritivas complementares | Este arquivo |
 
 ## Decisões aprovadas
@@ -339,7 +339,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 ## DEC-019 — Bootstrap agrupado por artigo do RGC
 
 - **Data:** 2026-10-21
-- **Estado:** PENDENTE — proposta metodológica; não altera o método pré-registrado nem autoriza avaliação.
+- **Estado original (histórico):** PENDENTE — proposta metodológica; não altera o método pré-registrado nem autoriza avaliação.
 - **Pergunta:** os intervalos de confiança de H1 devem reamostrar casos individualmente ou agrupar a reamostragem pela unidade de artigo/dispositivo do RGC?
 - **Contexto verificável:** `docs/eval/PROPOSAL-RGC-STATISTICAL-DESIGN.md`, seção 4, observa que vários casos podem tratar do mesmo artigo e que o bootstrap atual reamostra casos como se fossem independentes. O pré-registro atual especifica bootstrap percentil com 10.000 reamostragens e seed fixa `20261003`; qualquer alteração exige emenda datada antes da avaliação confirmatória.
 - **Opção A — recomendada, pendente:** bootstrap por cluster de artigo como análise primária: sortear artigos com reposição e incluir todos os casos pertencentes a cada artigo sorteado; manter 10.000 reamostragens e a seed pré-especificada, se a decisão final preservar esses parâmetros. Reportar bootstrap por caso apenas como análise de sensibilidade. **Prós:** considera a dependência entre casos do mesmo artigo e reduz o risco de intervalos artificialmente estreitos. **Contras:** exige metadado estável de artigo/dispositivo por caso, uma regra anterior para casos multiartigo e quantidade suficiente de clusters independentes.
@@ -348,6 +348,9 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Recomendação técnica:** Opção A, com bootstrap por artigo como primário e bootstrap por caso como sensibilidade descritiva. Antes de qualquer coleta definitiva, definir o campo de agrupamento, a atribuição de casos que citam vários dispositivos e o tratamento de amostras degeneradas ou de poucos clusters. Não trocar de método após observar resultados.
 - **Se aprovada:** acrescentar nota de emenda datada ao pré-registro e alinhar protocolo, esquema, executor, testes e relatório antes de avaliação confirmatória. Qualquer simulação usada para verificar a mecânica deve usar dados sintéticos claramente identificados, sem casos do RGC.
 - **Limites:** não criar ou rotular casos, não alterar o executor nesta PR, não executar ATTRACTOR, não produzir métricas RGC PT-BR e não congelar o protocolo.
+
+
+- **Aprovação datada (2026-10-21):** o mantenedor aprovou a Opção A. O IC primário usa bootstrap percentil por cluster de artigo; bootstrap por caso é sensibilidade. Campo obrigatório na partição oculta: `bootstrap_cluster_id`. Caso com artigo principal usa seu ID canônico; dependência conjunta de múltiplos artigos sem principal único usa `bundle:` + IDs canônicos únicos ordenados lexicalmente e unidos por `+`. `cited_article_ids` preserva a lista completa quando disponível. A decisão não congela o protocolo nem autoriza avaliação.
 
 
 ## DEC-020 — Critério de concordância entre anotadores
