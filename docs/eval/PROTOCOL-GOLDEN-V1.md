@@ -114,6 +114,8 @@ Texto proposto, sujeito à decisão explícita do mantenedor:
 
 **Nota corretiva datada (2026-10-21):** a PR #326 registrou a Opção A como aprovada, mas o Prompt Mestre vigente exige manter DEC-018 pendente até decisão científica explícita do mantenedor. O conteúdo abaixo é preservado como proposta não normativa, não como regra aprovada.
 
+**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
+
 Texto proposto, sujeito à decisão explícita do mantenedor:
 
 1. A análise confirmatória de H1 utiliza exclusivamente a partição oculta (~90 casos), definida antes da execução e mantida isolada do desenvolvimento.
