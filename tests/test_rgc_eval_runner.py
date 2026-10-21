@@ -612,6 +612,10 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     )
     labels = tmp_path / "labels.jsonl"
     labels.write_text(json.dumps({"case_id": "s1", "verdict": "SUPPORTED"}) + "\n")
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    annotation_a.write_text("synthetic annotation A\\n", encoding="utf-8")
+    annotation_b.write_text("synthetic annotation B\\n", encoding="utf-8")
     agreement_report = tmp_path / "agreement.json"
     agreement_report.write_text(
         json.dumps(
@@ -619,7 +623,10 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
                 "method": "cohen_kappa_unweighted",
                 "cohen_kappa": 0.8,
                 "gate_passed": True,
-                "inputs": {"annotation_a_sha256": "f" * 64, "annotation_b_sha256": "1" * 64},
+                "inputs": {
+                    "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                    "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+                },
             }
         ),
         encoding="utf-8",
@@ -638,8 +645,8 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
                 "labels_sha256": RUNNER["_sha256"](labels),
                 "agreement_report_sha256": RUNNER["_sha256"](agreement_report),
                 "adjudication_record_sha256": RUNNER["_sha256"](adjudication_record),
-                "annotation_a_sha256": "f" * 64,
-                "annotation_b_sha256": "1" * 64,
+                "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
                 "cohen_kappa": 0.8,
             }
         ),
@@ -673,6 +680,10 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
             str(cases),
             "--labels",
             str(labels),
+            "--annotation-a",
+            str(annotation_a),
+            "--annotation-b",
+            str(annotation_b),
             "--agreement-report",
             str(agreement_report),
             "--annotation-approval",
