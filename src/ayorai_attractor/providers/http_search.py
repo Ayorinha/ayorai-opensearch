@@ -24,7 +24,7 @@ class HttpSearchProvider(Provider):
             headers["Authorization"] = f"Bearer {self.api_key}"
         req = request.Request(f"{self.endpoint}?{query}", headers=headers)
         try:
-            with request.urlopen(req, timeout=30) as response:  # nosec B310 - HTTPS-only endpoint
+            with request.urlopen(req, timeout=30) as response:  # nosec B310
                 data = json.load(response)
         except error.URLError as exc:
             raise RuntimeError(f"Search request failed: {exc}") from exc
