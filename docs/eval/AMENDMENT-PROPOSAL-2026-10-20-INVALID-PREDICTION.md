@@ -5,6 +5,8 @@
 
 **Corrective note (2026-10-21):** PR #323 marked Option A as approved. The current Master Prompt requires DEC-017 to remain pending until the maintainer explicitly decides the scientific question. The previous status is preserved in Git history and summarized in the historical note below; it is not the current normative state.
 
+**Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
+
 ## Reason
 
 The proposed pre-registration `docs/eval/PREREGISTRATION-RGC-v1.md`, §4, says that missing or invalid predictions will be reported as execution failure. The current RGC runner and `docs/eval/STATISTICS.md` distinguish two situations:
@@ -38,6 +40,8 @@ The current text should not be silently reinterpreted. This proposal records a p
 ## Historical status note (2026-10-21)
 
 PR #323 recorded the following prior state: “Status: approved by maintainer on 2026-10-21; Option A,” checked “Approved explicitly by Anderson Leon Ayora — Option A,” and assigned decision date 2026-10-21. This historical entry is retained for traceability. Under the current Master Prompt, DEC-017 remains pending and the recorded approval is not treated as a current decision.
+
+**Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
 
 
 **Approval record (2026-10-21):** Option A is the operative decision. Missing/duplicate prediction records, unknown case IDs, missing human labels, or malformed input stop the run; a present output unmappable to `judge2` becomes `INVALID_PREDICTION`, stays in the denominator, and counts as an error. The protocol remains proposed and unfrozen; no confirmatory run is authorized by this approval.
