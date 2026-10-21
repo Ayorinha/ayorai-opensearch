@@ -8,6 +8,8 @@
 
 **Leitura vigente (2026-10-21):** os §§ 1, 4 (itens 6–7) e 5 devem ser lidos em conjunto com a [Emenda 6 ao final deste documento](#emenda-6-2026-10-21--baseline-primária-e-descritiva-dec-014-aprovada-pelo-mantenedor). A redação original desses parágrafos é preservada como registro histórico; a emenda explicita a interpretação vigente para a baseline primária e descritiva.
 
+**Nota corretiva vigente (2026-10-21) — DEC-017 permanece pendente:** a PR #323 registrou a Opção A como aprovada e acrescentou texto de Emenda 7. O Prompt Mestre vigente exige manter decisões científicas não decididas pelo mantenedor como pendentes. O texto de Emenda 7 abaixo fica preservado como proposta histórica não normativa até decisão explícita; a redação original do §4 continua preservada e nenhuma avaliação confirmatória é autorizada por esta nota.
+
 ## 1. Objetivo e hipótese
 
 O objetivo é medir, de forma reproduzível, a capacidade do AYORAI ATTRACTOR de verificar afirmações em português brasileiro contra o texto oficial do Regulamento Geral de Direitos do Consumidor de Serviços de Telecomunicações (RGC), aprovado pela Resolução Anatel nº 765/2023.
@@ -85,7 +87,7 @@ Relatar, para o conjunto completo elegível e por categoria quando o tamanho per
 
 A ordem dos casos, a versão do conjunto, o SHA do commit do sistema, as configurações, as versões de dependências e os artefatos necessários à reprodução deverão constar no relatório. Previsões ausentes ou inválidas serão reportadas como falha de execução conforme regra congelada antes da avaliação; não serão silenciosamente removidas do denominador nem convertidas em acertos.
 
-**Nota datada (2026-10-21) — DEC-017:** a redação acima é preservada como registro histórico. A interpretação vigente está na [Emenda 7](#emenda-7-2026-10-21--registros-ausentes-e-predições-inválidas-dec-017-opção-a).
+**Nota histórica (2026-10-21) — PR #323:** a redação acima foi marcada como histórica e o texto abaixo foi apresentado como Emenda 7 aprovada. A nota corretiva vigente no início deste documento esclarece que essa aprovação não é operativa nesta execução; DEC-017 permanece pendente.
 
 Golden v0 e Golden v0.1 são conjuntos de desenvolvimento existentes e deverão ser reportados lado a lado sempre que números dessas avaliações forem citados. Eles não serão misturados ao conjunto RGC nem tratados como evidência de generalização para documentos em português.
 
@@ -151,9 +153,9 @@ Atualização datada (2026-10-21) — resolução documental: a Emenda 6 foi inc
  para a hipótese H1 e a avaliação confirmatória, a baseline B é a classe majoritária derivada exclusivamente dos rótulos humanos de referência da partição pública de desenvolvimento (70%). O rótulo majoritário deve ser determinado e registrado antes de qualquer execução na partição oculta, e aplicado sem alteração aos mesmos casos avaliados. A baseline A, calculada a partir dos rótulos da própria partição avaliada, é somente uma referência descritiva da prevalência observada; não é classificador operacional e não fundamenta H1. Em caso de empate na baseline B, aplicar a ordem fixa do vocabulário `judge2` implementada por `majority_label` em `evals/ptbr/rgc_eval.py`; não introduzir desempate manual. Esta emenda preserva como registro histórico a redação original dos §§1, 4 e 5 acima e define a interpretação aplicável ao plano confirmatório daqui em diante. O documento e o protocolo permanecem **[PROPOSTO]**; esta emenda não congela o protocolo, não autoriza criar/rotular casos nem executar o sistema, e não produz resultados de benchmark.
 
 
-## Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A)
+## Proposta de Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A; PENDENTE)
 
-Por aprovação explícita do mantenedor em 2026-10-21, o contrato de avaliação distingue integridade da entrada e qualidade da saída por caso:
+Texto proposto para decisão explícita do mantenedor; DEC-017 permanece **PENDENTE**. A frase original “Por aprovação explícita do mantenedor em 2026-10-21” foi registrada pela PR #323 e é histórica, não vigente. Se a Opção A vier a ser aprovada em uma decisão futura, o contrato distinguirá integridade da entrada e qualidade da saída por caso:
 
 1. O arquivo de rótulos humanos deve conter exatamente um rótulo para cada caso elegível; caso sem rótulo, rótulo para caso inexistente, caso duplicado, registro ausente ou estrutura inconsistente interrompe a execução. Não descartar, imputar nem remover silenciosamente esses registros.
 2. Quando existe uma predição para o caso, mas seu estado/valor não pode ser mapeado para o vocabulário RGC `judge2`, registrar `INVALID_PREDICTION`, manter o caso no denominador e contar a predição como incorreta.
