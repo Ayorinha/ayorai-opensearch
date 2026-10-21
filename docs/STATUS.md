@@ -9,6 +9,21 @@ This file is the single source of current project status. Historical documents d
 PR #274 restored the `/v1/verify` JSON `null` request-body response to the frozen contract fixture: HTTP 422 with error type `missing`, as captured in `tests/fixtures/r1-a-error-baseline.json` from commit `c7e3868f3f6f34ce153d9ec6605645fad8681e2e`. The fixture was not changed; `tests/test_verification_api.py` compares each case byte-for-byte. A report says tags v0.4.0 and v0.5.0, installed with today's dependency resolution, returned `model_attributes_type`. This is consistent with a dependency-version-dependent FastAPI/Pydantic validation difference, but that cause has not been isolated by a controlled reproduction. No API behavior is changed by this note.
 
 
+
+## Current execution snapshot (2026-10-21)
+
+- **Main SHA at this snapshot:** `e52af8388d3e8b5a6fa89a49e74ed469328cc231` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/e52af8388d3e8b5a6fa89a49e74ed469328cc231)).
+- **Latest CI evidence:** PR #291 head `39de4f38d7de58c3fd70c877a4a3c8f5b5c686a3` passed CI, including Python 3.11/3.12/3.13, `ruff check .`, `ruff format --check .`, `mypy --strict evals/ptbr/rgc_eval.py`, and `pytest -q`; CodeQL, Security, API Contract Guard, Schemathesis Full API Contract, Golden r2 Migration, and Dependency Review also passed. The RGC design simulation was skipped by its workflow condition; this is not a successful RGC simulation or benchmark evidence. These are checks on the PR head SHA, not a claim that a separate push-triggered run was observed on the resulting main merge SHA.
+- **PR #284 — audit trail:** merged as `2ed5aca25c260f6c689c00747da2b22591e52813`; restores the pre-#274 wording of H1 and §§4–5 and adds a dated corrective note without rewriting history.
+- **DEC-016:** recorded and merged in PR #286 (`d958474954c2215f90451130f95831a17cab56b9)); authorizes autonomous technical/documentary work subject to gates and limits. PRs #266 and #267 were retroactively ratified by the maintainer's order, without independent review. **F-01 remains open.**
+- **RGC baseline:** Emenda 6 was merged in PR #288 (`5a587ecb64abc6359c8fe36b8194b67dee3edda9`). Baseline B is primary from human reference labels in the public 70% development partition; A is descriptive only; ties in B use the fixed `judge2` vocabulary order in `majority_label`. The protocol remains **[PROPOSTO]**, not frozen.
+- **PR #277:** closed as superseded by Emenda 6. The comment now identifies the review as automated and not independent.
+- **r1-a JSON `null`:** PR #289 records the frozen fixture expectation (`missing`) and the reported `model_attributes_type` behavior from v0.4.0/v0.5.0 under current dependency resolution as an unresolved dependency-version hypothesis. PR #291 adds a clearer regression-test message. Both the fixture and API behavior remain unchanged.
+- **Open dependency update:** PR #282's CodeQL action update passed its checks on head `babc12722add0bfe40bf503501b91d3a6f0dbc11`, but its base is stale after recent merges. Rebase or recreate it from current `main`, then rerun checks before merging.
+- **Human/scientific gates:** pilot 02 remains human-only; do not create, complete, or label pilot/benchmark cases, and do not execute ATTRACTOR on any RGC pilot/development/confirmatory cases. No RGC PT-BR benchmark result exists. Do not freeze the protocol until the human pilot 02 review and a separate explicit maintainer decision.
+- **Review status:** this cycle's reviews are automated, not independent. Do not describe them as independent reviews or institutional validation.
+
+
 ## Execution snapshot before PR #280 merge (2026-10-20)
 
 - `main` SHA immediately after PR #279 and before PR #280: `7a4a26805f70726fca63560d7ab05ae71207c4e2` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/7a4a26805f70726fca63560d7ab05ae71207c4e2)). The connector returned no combined-status entries for this merge commit, so this page does not assert that its required checks passed; check the SHA-specific Actions runs before relying on main status.
@@ -45,6 +60,11 @@ PR #274 restored the `/v1/verify` JSON `null` request-body response to the froze
 | [#241](https://github.com/Ayorinha/ayorai-opensearch/pull/241) | DEC-014 and Protocol Amendment 5; synthetic power simulation | `d8411d90f8905442ac02568cc9179ce42afec69a` |
 | [#242](https://github.com/Ayorinha/ayorai-opensearch/pull/242) | Reconcile technical audit and current findings | `919ba7b4f7d13b57aa198508c32523c999393863` |
 | [#255](https://github.com/Ayorinha/ayorai-opensearch/pull/255) | Final reconciliation of this status page | This is the final merge of the cycle |
+| [#284](https://github.com/Ayorinha/ayorai-opensearch/pull/284) | Restore RGC preregistration audit trail | `2ed5aca25c260f6c689c00747da2b22591e52813` |
+| [#286](https://github.com/Ayorinha/ayorai-opensearch/pull/286) | Record maintainer authorization DEC-016 | `d958474954c2215f90451130f95831a17cab56b9` |
+| [#288](https://github.com/Ayorinha/ayorai-opensearch/pull/288) | Incorporate RGC baseline B amendment 6 | `5a587ecb64abc6359c8fe36b8194b67dee3edda9` |
+| [#289](https://github.com/Ayorinha/ayorai-opensearch/pull/289) | Record frozen r1-a null-body contract history | `d2ac6420599c2106a2f81715626a2f7924b54f3a` |
+| [#291](https://github.com/Ayorinha/ayorai-opensearch/pull/291) | Clarify frozen r1-a null-body contract drift | `e52af8388d3e8b5a6fa89a49e74ed469328cc231` |
 
 Supporting changes already on main: #252 sets API-key authentication fail-closed by default; #253 preserves Schemathesis evidence artifacts; #254 corrects DEC-012 status; #256 enforces `--lifespan on` at startup.
 
@@ -52,6 +72,8 @@ Supporting changes already on main: #252 sets API-key authentication fail-closed
 
 - **DEC-013 (2026-10-18):** authorizes execution and merge of the defined PRs in this cycle. The waiver of independent human review applies only to this cycle; it does not mean a human independent review occurred. **F-01 remains open.**
 - **DEC-014 (2026-10-18):** baseline B is primary, derived only from the public 70% development partition and fixed for confirmatory evaluation. Baseline A is a descriptive oracle baseline calculated on the evaluation partition; it is never an operational classifier or the basis for H1.
+- **Emenda 6 (2026-10-21):** approved by the maintainer and merged in #288; it supersedes the earlier restriction on changing the preregistration while preserving the original text as history. It does not freeze the protocol.
+- **DEC-016 (2026-10-21):** autonomous work authorization and retroactive ratification of PRs #266/#267; no independent review was performed for those PRs. F-01 remains open.
 - **Protocol Amendment 5** records only the baseline definition. It does not freeze the RGC protocol.
 - **Open maintainer decisions:** DEC-001 (lockfile/image digest), DEC-003 (ADR-001 status), DEC-004 (commercial documentation/repository name), DEC-006 (Portuguese stance-engine priority), renumbering DEC-007/DEC-008 or retaining qualifiers, and ADR-010 questions 5–7 (writer, witnesses, timestamp).
 - **ADR-010:** “Accepted in part”; phase 1 is a pure library merged in #236. No event persistence, recording API, signed checkpoint service, or deployed verifiable audit log exists.
