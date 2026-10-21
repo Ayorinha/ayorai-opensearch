@@ -652,7 +652,9 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
     if manifest["protocol_sha256"] != protocol_sha256:
         raise ValueError("RGC evaluation blocked: protocol hash differs from freeze manifest")
     if manifest["preregistration_sha256"] != preregistration_sha256:
-        raise ValueError("RGC evaluation blocked: preregistration hash differs from freeze manifest")
+        raise ValueError(
+            "RGC evaluation blocked: preregistration hash differs from freeze manifest"
+        )
 
     return {
         "manifest_sha256": _sha256(manifest_path),
