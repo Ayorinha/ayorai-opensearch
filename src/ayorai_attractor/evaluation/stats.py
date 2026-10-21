@@ -52,7 +52,7 @@ def bootstrap_accuracy(
     if not expected or iterations < 1:
         raise ValueError("invalid bootstrap inputs")
     outcomes = [a == b for a, b in zip(expected, predicted, strict=True)]
-    undefined
+    # B311 is suppressed: seeded bootstrap resampling is statistical, not security-sensitive.
     rng = Random(seed)  # nosec B311
     samples = []
     for _ in range(iterations):
