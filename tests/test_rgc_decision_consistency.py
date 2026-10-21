@@ -17,8 +17,8 @@ def _approved_decisions(index: str) -> dict[int, int]:
     approved: dict[int, int] = {}
     for decision, amendment in APPROVED.items():
         pattern = re.compile(
-            rf"^\\| DEC-{decision:03d} \\|[^\\n]*\\|\\s*Aprovada pelo mantenedor "
-            rf"\\(2026-10-21\\); opção A\\s*\\|",
+            rf"^\| DEC-{decision:03d} \|[^\n]*\|\s*Aprovada pelo mantenedor "
+            rf"\(2026-10-21\); opção A\s*\|",
             re.MULTILINE,
         )
         if pattern.search(index):
@@ -29,7 +29,7 @@ def _approved_decisions(index: str) -> dict[int, int]:
 def _approved_amendment_exists(document: str, amendment: int, decision: int) -> bool:
     """Require a dated normative amendment heading, never a Proposta heading."""
     heading = re.compile(
-        rf"^## Emenda {amendment} \\(2026-10-21\\)[^\\n]*$",
+        rf"^## Emenda {amendment} \(2026-10-21\)[^\n]*$",
         re.MULTILINE,
     )
     for match in heading.finditer(document):
@@ -60,7 +60,7 @@ def test_approved_index_decisions_have_normative_amendments_in_both_documents() 
                     f"{path.relative_to(ROOT)}: DEC-{decision:03d} has no "
                     f"approved normative Emenda {amendment}"
                 )
-    assert not problems, "\\n".join(problems)
+    assert not problems, "\n".join(problems)
 
 
 def test_approved_decisions_do_not_retain_unmarked_vigente_pending_notes() -> None:
@@ -87,10 +87,10 @@ def test_consolidated_reading_lists_every_approved_amendment() -> None:
     preregistration = PREREGISTRATION.read_text(encoding="utf-8")
     start = preregistration.find("**Leitura consolidada (2026-10-21)**")
     assert start >= 0, "missing consolidated reading block"
-    end = preregistration.find("\\n## 1.", start)
+    end = preregistration.find("\n## 1.", start)
     assert end >= 0, "consolidated reading block must precede section 1"
     block = preregistration[start:end]
     for amendment in range(6, 11):
-        assert re.search(rf"\\[Emenda {amendment}\\b", block), (
+        assert re.search(rf"\[Emenda {amendment}\b", block), (
             f"consolidated reading omits Emenda {amendment}"
         )
