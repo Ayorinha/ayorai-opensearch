@@ -559,6 +559,8 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
             str(documents),
             "--mode",
             "retrieval",
+            "--partition",
+            "hidden",
             "--out",
             str(out),
         ]
@@ -573,6 +575,24 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     assert len(report["inputs"]["cases_sha256"]) == 64
     assert len(report["inputs"]["development_cases_sha256"]) == 64
     assert len(report["inputs"]["development_labels_sha256"]) == 64
+
+
+def test_dec018_development_partition_reports_metrics_without_testing_h1() -> None:
+    case = _case("dev-scope", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    result = RUNNER["evaluate"](
+        [case],
+        {"dev-scope": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+        partition="development",
+    )
+    assert result["evaluation_partition"] == "development"
+    assert result["metrics"]["primary_criterion"]["h1_supported"] is None
+    assert result["metrics"]["primary_criterion"]["not_tested"] is True
 
 
 # --- DEC-010 option A: annotated atoms for compound claims -------------------
