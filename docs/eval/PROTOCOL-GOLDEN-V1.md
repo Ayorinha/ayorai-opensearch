@@ -86,11 +86,26 @@ Esta emenda foi aprovada explicitamente por Anderson Leon Ayora, mantenedor, em 
 4. **Preservação histórica e limites:** a redação original do pré-registro permanece visível como histórico, acompanhada de nota datada. A Emenda 6 supera a restrição anterior de que a decisão de baseline não alteraria o pré-registro, mas não modifica regras do Judge, Golden, manifestos, hashes congelados ou fontes capturadas. O estado geral continua **[PROPOSTO]** até a revisão do piloto 02 humano e decisão explícita separada de congelamento. Nenhum caso será criado, rotulado ou executado por esta emenda; nenhum resultado de benchmark é produzido.
 
 
+## Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A aprovada)
+
+A decisão do mantenedor registrada na DEC-017 aprova a Opção A. O contrato distingue integridade da entrada e qualidade da saída por caso:
+
+1. O arquivo de rótulos humanos deve conter exatamente um rótulo para cada caso elegível. Caso sem rótulo, rótulo para caso inexistente, caso duplicado, registro ausente ou estrutura inconsistente interrompe a execução. Não descartar, imputar nem remover silenciosamente esses registros.
+2. Quando existe uma predição para o caso, mas seu estado/valor não pode ser mapeado para o vocabulário RGC `judge2`, registrar `INVALID_PREDICTION`, manter o caso no denominador e contar a predição como incorreta.
+3. O relatório deve informar a contagem de `INVALID_PREDICTION`. A baseline e o denominador não podem ser ajustados após observar resultados confirmatórios.
+4. Esta emenda prevalece sobre a interpretação da redação histórica do §4. A decisão não congela o protocolo, não autoriza criar/rotular casos nem executar o sistema e não produz resultados de benchmark.
+
 ## Proposta de Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A; PENDENTE)
 
 **Nota corretiva datada (2026-10-21):** a PR #323 registrou a Opção A como aprovada, mas o Prompt Mestre vigente exige manter DEC-017 pendente até decisão científica explícita do mantenedor. O conteúdo abaixo é preservado como proposta não normativa, não como regra aprovada.
 
+**Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
+
 Texto proposto, sujeito à decisão explícita do mantenedor:
+
+**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
+
+**Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
 
 1. **Falha de integridade — interromper:** arquivo sem exatamente um registro por caso elegível, registro duplicado, ID desconhecido, rótulo humano ausente ou estrutura inconsistente invalida a execução. Não preencher, excluir ou imputar silenciosamente registros.
 2. **Saída presente inválida — contar como erro:** quando há uma predição para o caso, mas o estado não pode ser mapeado para o vocabulário RGC `judge2`, atribuir `INVALID_PREDICTION`, mantê-la no denominador e contabilizá-la como incorreta.
@@ -102,6 +117,8 @@ Texto proposto, sujeito à decisão explícita do mantenedor:
 
 **Nota corretiva datada (2026-10-21):** a PR #326 registrou a Opção A como aprovada, mas o Prompt Mestre vigente exige manter DEC-018 pendente até decisão científica explícita do mantenedor. O conteúdo abaixo é preservado como proposta não normativa, não como regra aprovada.
 
+**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
+
 Texto proposto, sujeito à decisão explícita do mantenedor:
 
 1. A análise confirmatória de H1 utiliza exclusivamente a partição oculta (~90 casos), definida antes da execução e mantida isolada do desenvolvimento.
@@ -112,7 +129,7 @@ Texto proposto, sujeito à decisão explícita do mantenedor:
 
 ## Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A aprovada)
 
-Por aprovação explícita do mantenedor em 2026-10-21:
+Pela decisão do mantenedor registrada na DEC-018, opção A, aprovada em 2026-10-21:
 
 1. A análise confirmatória de H1 utiliza exclusivamente a partição oculta (~90 casos), definida antes da execução e mantida isolada do desenvolvimento.
 2. Os aproximadamente 210 casos públicos servem apenas para desenvolvimento e estatísticas descritivas/exploratórias. Não entram no teste H1, não podem ser combinados com a partição oculta para aumentar o denominador confirmatório e devem ser reportados separadamente.
@@ -122,7 +139,7 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 
 ## Emenda 9 (2026-10-21) — bootstrap por cluster de artigo (DEC-019, opção A aprovada)
 
-Por aprovação explícita do mantenedor em 2026-10-21:
+Pela decisão do mantenedor registrada na DEC-019, opção A, aprovada em 2026-10-21:
 
 1. O intervalo primário será o bootstrap percentil de 95% por cluster de artigo, com 10.000 reamostragens e seed `20261003`. Cada réplica sorteia com reposição o mesmo número de clusters únicos da amostra e inclui todos os casos dos clusters sorteados, preservando multiplicidade de sorteios.
 2. O bootstrap por caso permanece como análise de sensibilidade separada. Ambos devem ser publicados, com método/unidade claramente identificados; apenas o intervalo por artigo alimenta o critério primário de H1.
@@ -133,7 +150,7 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 
 ## Emenda 10 (2026-10-21) — concordância entre anotadores (DEC-020, opção A aprovada)
 
-Por aprovação explícita do mantenedor em 2026-10-21:
+Pela decisão do mantenedor registrada na DEC-020, opção A, aprovada em 2026-10-21:
 
 1. Calcular Cohen's kappa não ponderado sobre os cinco rótulos nominais definitivos.
 2. Aprovação do gate quando a estimativa pontual for `κ ≥ 0,6`. Reportar IC95% percentil por bootstrap de casos (10.000 reamostragens, seed `20261003`), sem exigir que o limite inferior seja ≥ 0,6.
