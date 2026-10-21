@@ -731,7 +731,9 @@ def validate_annotation_approval(
         "cohen_kappa",
     }
     if not isinstance(manifest, dict) or set(manifest) != required:
-        raise ValueError("RGC evaluation blocked: annotation approval manifest has an invalid schema")
+        raise ValueError(
+            "RGC evaluation blocked: annotation approval manifest has an invalid schema"
+        )
     if (
         type(manifest["schema_version"]) is not int
         or manifest["schema_version"] != 1
@@ -781,7 +783,9 @@ def validate_annotation_approval(
             "adjudication_record_sha256": _sha256(adjudication_record_path),
         }
     except OSError as exc:
-        raise ValueError("RGC evaluation blocked: an approved annotation artifact is missing") from exc
+        raise ValueError(
+            "RGC evaluation blocked: an approved annotation artifact is missing"
+        ) from exc
     for field, actual_hash in expected_hashes.items():
         if manifest[field] != actual_hash:
             raise ValueError(f"RGC evaluation blocked: {field} differs from approval manifest")
