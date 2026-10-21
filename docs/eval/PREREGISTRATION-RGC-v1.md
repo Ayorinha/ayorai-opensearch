@@ -176,6 +176,8 @@ A decisão do mantenedor registrada na DEC-017 aprova a Opção A. O contrato di
 
 ## Proposta de Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A; PENDENTE)
 
+**Nota (2026-10-21):** proposta superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
+
 Texto proposto para decisão explícita do mantenedor; DEC-017 permanece **PENDENTE**. A frase original “Por aprovação explícita do mantenedor em 2026-10-21” foi registrada pela PR #323 e é histórica, não vigente. Se a Opção A vier a ser aprovada em uma decisão futura, o contrato distinguirá integridade da entrada e qualidade da saída por caso:
 
 1. O arquivo de rótulos humanos deve conter exatamente um rótulo para cada caso elegível; caso sem rótulo, rótulo para caso inexistente, caso duplicado, registro ausente ou estrutura inconsistente interrompe a execução. Não descartar, imputar nem remover silenciosamente esses registros.
@@ -188,6 +190,8 @@ O executor já implementa o mapeamento de saída inválida e a validação de r�
 **Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
 
 ## Proposta de Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A; PENDENTE)
+
+**Nota (2026-10-21):** proposta superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
 Texto proposto para decisão explícita do mantenedor; DEC-018 permanece **PENDENTE**. Se aprovada futuramente, a regra proposta será:
 
