@@ -763,12 +763,15 @@ def validate_annotation_approval(
     if manifest["cohen_kappa"] != kappa:
         raise ValueError("RGC evaluation blocked: approved kappa differs from agreement report")
 
-    expected_hashes = {
-        "cases_sha256": _sha256(cases_path),
-        "labels_sha256": _sha256(labels_path),
-        "agreement_report_sha256": _sha256(agreement_report_path),
-        "adjudication_record_sha256": _sha256(adjudication_record_path),
-    }
+    try:
+        expected_hashes = {
+            "cases_sha256": _sha256(cases_path),
+            "labels_sha256": _sha256(labels_path),
+            "agreement_report_sha256": _sha256(agreement_report_path),
+            "adjudication_record_sha256": _sha256(adjudication_record_path),
+        }
+    except OSError as exc:
+        raise ValueError("RGC evaluation blocked: an approved annotation artifact is missing") from exc
     for field, actual_hash in expected_hashes.items():
         if manifest[field] != actual_hash:
             raise ValueError(f"RGC evaluation blocked: {field} differs from approval manifest")
