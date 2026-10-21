@@ -8,7 +8,7 @@
 
 **Leitura vigente (2026-10-21):** os §§ 1, 4 (itens 6–7) e 5 devem ser lidos em conjunto com a [Emenda 6 ao final deste documento](#emenda-6-2026-10-21--baseline-primária-e-descritiva-dec-014-aprovada-pelo-mantenedor). A redação original desses parágrafos é preservada como registro histórico; a emenda explicita a interpretação vigente para a baseline primária e descritiva.
 
-**Nota vigente (2026-10-21) — DEC-017 aprovada:** o mantenedor aprovou a Opção A neste Prompt Mestre. A Emenda 7 abaixo define a regra normativa; a redação original do §4 permanece preservada como histórico. A aprovação não congela o protocolo nem autoriza execução RGC.
+**Nota corretiva vigente (2026-10-21) — DEC-017 permanece pendente:** a PR #323 registrou a Opção A como aprovada e acrescentou texto de Emenda 7. O Prompt Mestre vigente exige manter decisões científicas não decididas pelo mantenedor como pendentes. O texto de Emenda 7 abaixo fica preservado como proposta histórica não normativa até decisão explícita; a redação original do §4 continua preservada e nenhuma avaliação confirmatória é autorizada por esta nota.
 
 ## 1. Objetivo e hipótese
 
@@ -169,9 +169,9 @@ Texto proposto para decisão explícita do mantenedor; DEC-017 permanece **PENDE
 O executor já implementa o mapeamento de saída inválida e a validação de rótulos completos; os testes sintéticos verificam ambos os lados da distinção. Esta emenda não altera o estado geral **[PROPOSTO]**, não congela o protocolo, não cria nem rotula casos, não autoriza o piloto 02 ou execução do ATTRACTOR sobre casos RGC e não produz métricas RGC.
 
 
-## Proposta de Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A; PENDENTE)
+## Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A aprovada)
 
-Texto proposto para decisão explícita do mantenedor; DEC-018 permanece **PENDENTE**. Se aprovada futuramente, a regra proposta será:
+Regra aprovada explicitamente pelo mantenedor em 2026-10-21:
 
 1. **Partição oculta (~90 casos):** é a única partição primária para testar H1 e aplicar o critério confirmatório pré-registrado.
 2. **Partição pública (~210 casos):** uso somente para desenvolvimento e métricas descritivas/exploratórias; não entra no teste confirmatório de H1 e seus resultados devem ser apresentados separadamente.
