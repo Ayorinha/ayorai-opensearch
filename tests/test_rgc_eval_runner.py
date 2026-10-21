@@ -662,6 +662,10 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         )
         + "\n"
     )
+    approval_data = json.loads(annotation_approval.read_text(encoding="utf-8"))
+    approval_data["development_cases_sha256"] = RUNNER["_sha256"](development_cases)
+    approval_data["development_labels_sha256"] = RUNNER["_sha256"](development_labels)
+    annotation_approval.write_text(json.dumps(approval_data), encoding="utf-8")
     out = tmp_path / "report.json"
     code = RUNNER["main"](
         [
@@ -716,6 +720,10 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
     adjudication = tmp_path / "adjudication.md"
     cases.write_text("{}\\n", encoding="utf-8")
     labels.write_text("{}\\n", encoding="utf-8")
+    development_cases = tmp_path / "development-cases.jsonl"
+    development_labels = tmp_path / "development-labels.jsonl"
+    development_cases.write_text("{}\\n", encoding="utf-8")
+    development_labels.write_text("{}\\n", encoding="utf-8")
     adjudication.write_text("synthetic only\\n", encoding="utf-8")
     agreement.write_text(
         json.dumps(
@@ -740,6 +748,8 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
                 "approved_at": "2026-10-21",
                 "cases_sha256": "0" * 64,
                 "labels_sha256": "0" * 64,
+                "development_cases_sha256": "0" * 64,
+                "development_labels_sha256": "0" * 64,
                 "agreement_report_sha256": "0" * 64,
                 "adjudication_record_sha256": "0" * 64,
                 "annotation_a_sha256": "a" * 64,
@@ -785,6 +795,8 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
                 "approved_at": "2026-10-21",
                 "cases_sha256": RUNNER["_sha256"](cases),
                 "labels_sha256": "0" * 64,
+                "development_cases_sha256": RUNNER["_sha256"](development_cases),
+                "development_labels_sha256": RUNNER["_sha256"](development_labels),
                 "agreement_report_sha256": RUNNER["_sha256"](agreement),
                 "adjudication_record_sha256": RUNNER["_sha256"](adjudication),
                 "annotation_a_sha256": "a" * 64,
