@@ -724,7 +724,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     run.add_argument("--top-k", type=int, default=DEFAULT_TOP_K)
     run.add_argument("--granularity", choices=("dispositivo", "artigo"), default="dispositivo")
     run.add_argument(
-        "--partition", choices=("hidden", "development"), required=True,
+        "--partition",
+        choices=("hidden", "development"),
+        required=True,
         help="hidden is confirmatory for H1; development is descriptive only",
     )
     run.add_argument("--out", type=Path, required=True)
