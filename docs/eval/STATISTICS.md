@@ -31,9 +31,9 @@ For reproducibility, both systems in a paired comparison must use the same order
 
 **Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
-A Opção A recomenda testar H1 somente sobre a partição oculta (~90 casos) e usar os casos públicos (~210) apenas para desenvolvimento e descrição. Esta é uma recomendação, não uma decisão aprovada; não altera o pré-registro nem autoriza execução.
+A Opção A recomenda testar H1 somente sobre a partição oculta (~90 casos) e usar os casos públicos (~210) apenas para desenvolvimento e descrição. Esta é uma recomendação, não uma decisão aprovada; não altera o pré-registro nem autoriza execução. DEC-018 permanece pendente de decisão explícita do mantenedor. A declaração de partição e o isolamento real também exigem evidência humana e não devem ser tratados como resolvidos por documentação.
 
-**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico. DEC-018 permanece pendente de decisão explícita do mantenedor. A declaração de partição e o isolamento real também exigem evidência humana e não devem ser tratados como resolvidos por documentação.
+**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
 **Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
