@@ -1,23 +1,23 @@
-# Branch cleanup audit — 2026-10-21
+# Branch cleanup audit — refreshed 2026-10-21
 
 - Repository: `Ayorinha/ayorai-opensearch`
-- Snapshot main SHA: `5c205f8ffacc247ebed77ab2dced1bf03e368d33`
+- Snapshot main SHA: `210af8fdf4fe48b4d092120617b261602eb8ea92`
 - Remote branches enumerated: 205 across three pages.
-- Closed/merged PR records examined: 348.
-- Eligible existing branches identified: 147.
-- Branches actually deleted in this run: **0**.
+- Closed/merged PR records examined: 350.
+- Existing eligible branches identified: 163.
+- Branches explicitly deleted by this cleanup operation: **0**.
 
 ## Result and limitation
 
-The available GitHub integration exposes branch listing, file/commit creation, ref updates and pull-request operations, but no remote branch-delete operation. No DELETE-ref request or `git push --delete` was executed, so this report deliberately does not claim that any remote branch was removed. The table below is the candidate set for the authorized cleanup; branch deletion remains blocked by tool capability and must not be inferred from PR merge/closure.
+The available GitHub integration exposes branch listing, file/commit creation, ref updates and pull-request operations, but no remote branch-delete operation. No DELETE-ref request or `git push --delete` was executed. This report does not claim that any remote branch was manually removed; GitHub may also automatically delete a PR head branch after merge, which is outside this cleanup action.
 
-The selection includes branches associated with merged PRs and the explicit duplicate/superseded PRs closed during this execution. It excludes `main`, `release/*`, `eval/rgc-pilot`, tag-like refs and branches without a PR association. No branch without a PR was selected.
+The candidate set includes existing remote branches associated with merged PRs and PRs explicitly closed as duplicate/superseded. It excludes `main`, `release/*`, `eval/rgc-pilot`, tag-like refs and branches without a PR association. Branches absent from the remote branch inventory were not listed, even if their PR is merged.
 
-## Deleted branches
+## Branches deleted by this operation
 
 None.
 
-## Eligible branches not deleted
+## Eligible existing branches not deleted
 
 | Remote branch | Associated PR(s) | PR status |
 |---|---|---|
@@ -41,6 +41,8 @@ None.
 | `docs/correct-v0-1-manifest-ancestry-note` | [#157](https://github.com/Ayorinha/ayorai-opensearch/pull/157) | mesclada |
 | `docs/dec-005-invalid-r1-a-inputs` | [#134](https://github.com/Ayorinha/ayorai-opensearch/pull/134) | mesclada |
 | `docs/dec-011-annotation-guide` | [#206](https://github.com/Ayorinha/ayorai-opensearch/pull/206) | mesclada |
+| `docs/decision-heading-normalization-2026-10-21` | [#312](https://github.com/Ayorinha/ayorai-opensearch/pull/312) | fechada como duplicada/superada |
+| `docs/decision-heading-normalization-2026-10-21-v2` | [#315](https://github.com/Ayorinha/ayorai-opensearch/pull/315) | fechada como duplicada/superada |
 | `docs/decisions-pending-v4` | [#130](https://github.com/Ayorinha/ayorai-opensearch/pull/130) | mesclada |
 | `docs/doi-v0.5.0` | [#171](https://github.com/Ayorinha/ayorai-opensearch/pull/171) | mesclada |
 | `docs/golden-v0-1-manifest` | [#131](https://github.com/Ayorinha/ayorai-opensearch/pull/131) | mesclada |
@@ -52,6 +54,7 @@ None.
 | `docs/m5-public-claims-audit` | [#138](https://github.com/Ayorinha/ayorai-opensearch/pull/138) | mesclada |
 | `docs/manual/chapter-05-operacao-2026-10-21` | [#307](https://github.com/Ayorinha/ayorai-opensearch/pull/307) | fechada como duplicada/superada |
 | `docs/manual/chapter-06-seguranca-2026-10-21` | [#308](https://github.com/Ayorinha/ayorai-opensearch/pull/308) | mesclada |
+| `docs/manual/chapter-08-avaliacao-2026-10-21` | [#341](https://github.com/Ayorinha/ayorai-opensearch/pull/341) | fechada como duplicada/superada |
 | `docs/manual/chapter-08-avaliacao-2026-10-21-rebased` | [#344](https://github.com/Ayorinha/ayorai-opensearch/pull/344) | fechada como duplicada/superada |
 | `docs/manual/chapter-08-avaliacao-rebased-2026-10-21` | [#346](https://github.com/Ayorinha/ayorai-opensearch/pull/346) | fechada como duplicada/superada |
 | `docs/master-gate-progress-2026-09-30` | [#26](https://github.com/Ayorinha/ayorai-opensearch/pull/26) | mesclada |
@@ -69,14 +72,22 @@ None.
 | `docs/q2-zero-coverage-scope` | [#141](https://github.com/Ayorinha/ayorai-opensearch/pull/141) | mesclada |
 | `docs/r20-r19-status` | [#80](https://github.com/Ayorinha/ayorai-opensearch/pull/80) | mesclada |
 | `docs/research-rn-001-second-layer-questioning` | [#152](https://github.com/Ayorinha/ayorai-opensearch/pull/152) | mesclada |
+| `docs/rgc-current-preregistration-reading-2026-10-21-rebased` | [#319](https://github.com/Ayorinha/ayorai-opensearch/pull/319) | fechada como duplicada/superada |
+| `docs/rgc-current-preregistration-reading-2026-10-21-v2` | [#322](https://github.com/Ayorinha/ayorai-opensearch/pull/322) | fechada como duplicada/superada |
+| `docs/rgc-preregistration-reading-note-2026-10-21` | [#310](https://github.com/Ayorinha/ayorai-opensearch/pull/310) | fechada como duplicada/superada |
+| `docs/rgc-preregistration-reading-note-2026-10-21-rebased` | [#318](https://github.com/Ayorinha/ayorai-opensearch/pull/318) | fechada como duplicada/superada |
+| `docs/rgc-preregistration-reading-note-2026-10-21-v2` | [#313](https://github.com/Ayorinha/ayorai-opensearch/pull/313) | fechada como duplicada/superada |
 | `docs/tech-radar-2026-10` | [#115](https://github.com/Ayorinha/ayorai-opensearch/pull/115) | mesclada |
 | `docs/threat-model` | [#94](https://github.com/Ayorinha/ayorai-opensearch/pull/94) | mesclada |
 | `docs/update-verification-status` | [#47](https://github.com/Ayorinha/ayorai-opensearch/pull/47) | mesclada |
+| `eval/dec-017-invalid-prediction-approval-2026-10-21` | [#317](https://github.com/Ayorinha/ayorai-opensearch/pull/317) | fechada como duplicada/superada |
+| `eval/dec-017-invalid-prediction-approval-2026-10-21-rebased` | [#321](https://github.com/Ayorinha/ayorai-opensearch/pull/321) | fechada como duplicada/superada |
 | `eval/dec-018-hidden-confirmatory-partition-2026-10-21-approved` | [#338](https://github.com/Ayorinha/ayorai-opensearch/pull/338) | fechada como duplicada/superada |
 | `eval/dec-018-hidden-confirmatory-partition-2026-10-21-final` | [#340](https://github.com/Ayorinha/ayorai-opensearch/pull/340) | fechada como duplicada/superada |
 | `eval/dec-018-hidden-confirmatory-partition-2026-10-21-final2` | [#343](https://github.com/Ayorinha/ayorai-opensearch/pull/343) | fechada como duplicada/superada |
 | `eval/dec-018-restore-approved-hidden-scope-2026-10-21` | [#334](https://github.com/Ayorinha/ayorai-opensearch/pull/334) | fechada como duplicada/superada |
 | `eval/dec-019-article-cluster-bootstrap-2026-10-21` | [#330](https://github.com/Ayorinha/ayorai-opensearch/pull/330) | fechada como duplicada/superada |
+| `eval/dec-019-article-cluster-bootstrap-2026-10-21-final` | [#347](https://github.com/Ayorinha/ayorai-opensearch/pull/347) | fechada como duplicada/superada |
 | `eval/dec-019-article-cluster-bootstrap-2026-10-21-rebased` | [#348](https://github.com/Ayorinha/ayorai-opensearch/pull/348) | fechada como duplicada/superada |
 | `eval/dec-020-kappa-criteria-2026-10-21-rebased` | [#350](https://github.com/Ayorinha/ayorai-opensearch/pull/350) | fechada como duplicada/superada |
 | `eval/f1.2-results` | [#113](https://github.com/Ayorinha/ayorai-opensearch/pull/113) | mesclada |
@@ -135,6 +146,7 @@ None.
 | `fix/golden-abstention-metric-contract` | [#82](https://github.com/Ayorinha/ayorai-opensearch/pull/82) | mesclada |
 | `fix/golden-runner-r20-newline` | [#79](https://github.com/Ayorinha/ayorai-opensearch/pull/79) | mesclada |
 | `fix/golden-runner-remove-canary` | [#68](https://github.com/Ayorinha/ayorai-opensearch/pull/68) | mesclada |
+| `fix/governance-restore-dec017-pending-2026-10-21` | [#329](https://github.com/Ayorinha/ayorai-opensearch/pull/329) | fechada como duplicada/superada |
 | `fix/opensearch-max-agents-legacy-coercion` | [#169](https://github.com/Ayorinha/ayorai-opensearch/pull/169) | mesclada |
 | `fix/path-b-license-provenance` | [#110](https://github.com/Ayorinha/ayorai-opensearch/pull/110) | mesclada |
 | `fix/pin-actions-sha` | [#96](https://github.com/Ayorinha/ayorai-opensearch/pull/96) | mesclada |
@@ -160,8 +172,12 @@ None.
 | `security/sbom-artifact` | [#84](https://github.com/Ayorinha/ayorai-opensearch/pull/84) | mesclada |
 | `test/f1-4-authority-cli-contract` | [#144](https://github.com/Ayorinha/ayorai-opensearch/pull/144) | mesclada |
 | `test/failure-engine-edge-cases` | [#44](https://github.com/Ayorinha/ayorai-opensearch/pull/44) | mesclada |
+| `test/null-body-fastapi-pydantic-compat-2026-10-21` | [#325](https://github.com/Ayorinha/ayorai-opensearch/pull/325) | fechada como duplicada/superada |
+| `test/null-body-fastapi-pydantic-compat-2026-10-21-final` | [#327](https://github.com/Ayorinha/ayorai-opensearch/pull/327) | fechada como duplicada/superada |
+| `test/null-body-fastapi-pydantic-compat-2026-10-21-final2` | [#332](https://github.com/Ayorinha/ayorai-opensearch/pull/332) | fechada como duplicada/superada |
 | `test/null-body-fastapi-pydantic-compat-2026-10-21-rebase-2` | [#336](https://github.com/Ayorinha/ayorai-opensearch/pull/336) | fechada como duplicada/superada |
 | `test/null-body-fastapi-pydantic-compat-2026-10-21-rebased` | [#328](https://github.com/Ayorinha/ayorai-opensearch/pull/328) | fechada como duplicada/superada |
+| `test/openai-compatible-error-contracts-2026-10-21` | [#324](https://github.com/Ayorinha/ayorai-opensearch/pull/324) | fechada como duplicada/superada |
 | `test/opensearch-provider-coverage` | [#45](https://github.com/Ayorinha/ayorai-opensearch/pull/45) | mesclada |
 | `test/property-evidence-graph` | [#41](https://github.com/Ayorinha/ayorai-opensearch/pull/41) | mesclada |
 | `test/provider-contracts` | [#42](https://github.com/Ayorinha/ayorai-opensearch/pull/42) | mesclada |
@@ -172,10 +188,11 @@ None.
 ## Protected and excluded branches
 
 - `main`
-- `release/v0.5.0` and any other `release/*` branch
+- Any `release/*` branch
 - `eval/rgc-pilot`
-- Tag refs and branches without a PR association
+- Tag refs
+- Branches without a PR association
 
 ## Follow-up
 
-Once a branch-delete operation is available, delete only the listed candidates after confirming no active workflow depends on them. Keep all excluded branches intact. This audit is not proof that cleanup was executed.
+When a branch-delete operation is available, delete only the listed candidates after confirming no active workflow depends on them. Keep all excluded branches intact. This inventory is not proof that cleanup was executed.
