@@ -84,3 +84,13 @@ Esta emenda foi aprovada explicitamente por Anderson Leon Ayora, mantenedor, em 
 2. **Baseline A descritiva:** calcular a classe majoritária a partir dos rótulos da própria partição avaliada e reportá-la somente como referência descritiva/oráculo da prevalência observada. A não é um classificador operacional e não é usada para H1.
 3. **Desempate determinístico:** se houver empate de frequência em B, usar a ordem fixa do vocabulário `judge2`, conforme `VOCABULARIES["judge2"]` em `evals/ptbr/rgc_eval.py` e a função `majority_label`. Essa regra é parte da reprodutibilidade, não uma decisão manual após observar resultados.
 4. **Preservação histórica e limites:** a redação original do pré-registro permanece visível como histórico, acompanhada de nota datada. A Emenda 6 supera a restrição anterior de que a decisão de baseline não alteraria o pré-registro, mas não modifica regras do Judge, Golden, manifestos, hashes congelados ou fontes capturadas. O estado geral continua **[PROPOSTO]** até a revisão do piloto 02 humano e decisão explícita separada de congelamento. Nenhum caso será criado, rotulado ou executado por esta emenda; nenhum resultado de benchmark é produzido.
+
+
+## Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. **Falha de integridade — interromper:** arquivo sem exatamente um registro por caso elegível, registro duplicado, ID desconhecido, rótulo humano ausente ou estrutura inconsistente invalida a execução. Não preencher, excluir ou imputar silenciosamente registros.
+2. **Saída presente inválida — contar como erro:** quando há uma predição para o caso, mas o estado não pode ser mapeado para o vocabulário RGC `judge2`, atribuir `INVALID_PREDICTION`, mantê-la no denominador e contabilizá-la como incorreta.
+3. O relatório deve publicar a contagem de predições inválidas. Essa regra não permite alterar denominador ou método depois de observar resultados confirmatórios.
+4. Esta emenda esclarece o contrato de avaliação e não altera o Judge, as fixtures Golden, os manifestos ou os hashes congelados. O protocolo continua **[PROPOSTO]**; não há congelamento, coleta definitiva ou execução autorizada por esta emenda.
