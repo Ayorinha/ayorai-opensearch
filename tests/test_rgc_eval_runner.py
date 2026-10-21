@@ -744,6 +744,49 @@ def test_protocol_freeze_rejects_stale_document_hash(tmp_path: Path) -> None:
         RUNNER["validate_protocol_freeze"](tmp_path)
 
 
+
+
+@pytest.mark.parametrize(
+    ("field", "bad_value", "message"),
+    [
+        ("runner_spec_sha256", "0" * 64, "runner_spec_sha256 differs"),
+        ("runner_code_sha256", "0" * 64, "runner_code_sha256 differs"),
+        ("runner_version", "rgc-eval/9.9.9", "runner version differs"),
+    ],
+)
+def test_protocol_freeze_rejects_runner_artifact_drift(
+    tmp_path: Path, field: str, bad_value: str, message: str
+) -> None:
+    eval_dir = tmp_path / "docs" / "eval"
+    eval_dir.mkdir(parents=True)
+    protocol = eval_dir / "PROTOCOL-GOLDEN-V1.md"
+    preregistration = eval_dir / "PREREGISTRATION-RGC-v1.md"
+    runner_spec = eval_dir / "RUNNER-RGC-v1.md"
+    runner_code = tmp_path / "evals" / "ptbr" / "rgc_eval.py"
+    runner_code.parent.mkdir(parents=True)
+    protocol.write_text("Status: CONGELADO\\n", encoding="utf-8")
+    preregistration.write_text("**Estado:** [CONGELADO]\\n", encoding="utf-8")
+    runner_spec.write_text("**Estado:** [CONGELADO]\\n", encoding="utf-8")
+    runner_code.write_text(
+        f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\\n', encoding="utf-8"
+    )
+    manifest = {
+        "schema_version": 1,
+        "status": "FROZEN",
+        "approved_by": "Anderson Leon Ayora",
+        "approved_at": "2026-10-21",
+        "protocol_sha256": RUNNER["_sha256"](protocol),
+        "preregistration_sha256": RUNNER["_sha256"](preregistration),
+        "runner_spec_sha256": RUNNER["_sha256"](runner_spec),
+        "runner_code_sha256": RUNNER["_sha256"](runner_code),
+        "runner_version": RUNNER["RUNNER_VERSION"],
+    }
+    manifest[field] = bad_value
+    (eval_dir / "PROTOCOL-FREEZE.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        RUNNER["validate_protocol_freeze"](tmp_path)
+
+
 def test_dec018_development_partition_reports_metrics_without_testing_h1() -> None:
     case = _case("dev-scope", "O cancelamento será efetivado em até 2 dias.", CANCEL)
     result = RUNNER["evaluate"](
