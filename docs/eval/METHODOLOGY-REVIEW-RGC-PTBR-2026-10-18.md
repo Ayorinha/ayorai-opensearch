@@ -197,3 +197,20 @@ Esta atualização complementa o estado observado em 2026-10-18/20. O texto hist
 - O ATTRACTOR não foi executado sobre casos de piloto, desenvolvimento ou avaliação confirmatória.
 - Não foram produzidos números de benchmark RGC PT-BR.
 - O protocolo continua **[PROPOSTO]** e só pode ser congelado após o piloto humano 02 e uma decisão explícita do mantenedor.
+
+
+## Atualização datada — decisões aprovadas e estado residual (2026-10-21)
+
+As aprovações explícitas do mantenedor no Prompt Mestre 2 foram incorporadas sem congelar o protocolo e sem executar avaliação RGC.
+
+| Achado | Estado após as decisões | Evidência e limite residual |
+|---|---|---|
+| M-02 — registro ausente versus predição inválida | **Resolvido normativamente** | DEC-017, Opção A, aprovada e registrada pela [PR #335](https://github.com/Ayorinha/ayorai-opensearch/pull/335); alinhamento do executor e dos textos na [PR #337](https://github.com/Ayorinha/ayorai-opensearch/pull/337). Falha de integridade interrompe; predição presente inválida permanece no denominador como erro. Nenhuma execução confirmatória ocorreu. |
+| M-03 — unidade do intervalo de confiança | **Resolvido metodologicamente e implementado** | DEC-019, Opção A, na [PR #349](https://github.com/Ayorinha/ayorai-opensearch/pull/349): bootstrap por cluster de artigo como primário; bootstrap por caso como sensibilidade; `bootstrap_cluster_id` obrigatório na partição oculta e regra canônica para bundles multiartigo. Não há métricas RGC produzidas. |
+| M-04 — concordância entre anotadores | **Regra definida; evidência humana pendente** | DEC-020, Opção A, na [PR #351](https://github.com/Ayorinha/ayorai-opensearch/pull/351): kappa de Cohen não ponderado, gate pela estimativa pontual ≥ 0,6, IC95%, matriz/marginais e exclusão auditável de `RULE_GAP`. A ferramenta foi testada apenas com dados sintéticos; nenhuma anotação humana foi processada. |
+| M-07 — partição pública/oculta e baseline | **Parcial; escopo confirmado** | DEC-018, Opção A, na [PR #342](https://github.com/Ayorinha/ayorai-opensearch/pull/342): H1 usa apenas a partição oculta (~90 casos); os ~210 públicos são descritivos. O executor exige `--partition`. A separação/proveniência do conjunto real não foi criada nem verificada, pois os casos definitivos ainda não existem. |
+| M-10 — confirmatório versus exploratório | **Parcial** | DEC-018 e o guia do executor separam H1 confirmatória de métricas públicas exploratórias. O protocolo continua **[PROPOSTO]** e o congelamento depende de decisão posterior; o piloto 02 e a segunda anotação continuam humanos. |
+| M-06 — meta e cobertura dos 300 casos | **Aberto** | Não foram aprovadas quotas por classe nem criada qualquer amostra. A meta de 300 permanece condicionada à revisão humana e ao planejamento de cobertura/precisão. |
+| F-01 — revisão independente | **Aberto** | As revisões e checks automatizados não são independentes. Uma pessoa externa deve revisar metodologia, evidências e limites antes de qualquer alegação de validação. |
+
+As decisões acima resolvem as regras metodológicas, não os gates empíricos. Nenhum caso de piloto/benchmark foi criado, completado ou rotulado; o ATTRACTOR não foi executado sobre casos RGC; nenhum resultado confirmatório foi calculado. A redação anterior deste relatório permanece preservada como histórico.
