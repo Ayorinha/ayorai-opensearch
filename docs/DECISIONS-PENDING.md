@@ -30,7 +30,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-014 | Baseline primário e descritivo do RGC | Aprovada por ordem do mantenedor (2026-10-18); Emenda 5 | Este arquivo |
 | DEC-015 | Autorização da Etapa 2 (manual técnico) | Aprovada (2026-10-18); escopo documental | Este arquivo |
 | DEC-016 | Autorização de trabalho autônomo e ratificação documental | Aprovada por ordem do mantenedor (2026-10-21); limites científicos preservados | Este arquivo |
-| DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Pendente; recomendação A, aguardando decisão explícita do mantenedor | Este arquivo |
+| DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
 | DEC-018 | Escopo confirmatório de H1 no RGC | Pendente; recomendação A: conjunto oculto (~90 casos) como primário | Este arquivo |
 | DEC-019 | Bootstrap agrupado por artigo do RGC | Pendente; recomendação A: bootstrap por cluster de artigo como análise primária | Este arquivo |
 | DEC-020 | Critério de concordância entre anotadores | Pendente; recomendação A: estimativa pontual de kappa ≥ 0,6 e métricas descritivas complementares | Este arquivo |
@@ -298,7 +298,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 ## DEC-017: Registro ausente versus INVALID_PREDICTION
 
 - **Data:** 2026-10-21
-- **Estado:** PENDENTE — esta entrada é uma proposta para decisão explícita do mantenedor, não uma aprovação nem autorização de execução.
+- **Estado original (histórico):** PENDENTE — proposta para decisão explícita do mantenedor.
 - **Pergunta:** no contrato de avaliação RGC, como distinguir um registro de predição ausente de uma predição presente cujo valor é inválido?
 - **Estado atual do executor:** um registro ausente, duplicado ou inconsistente é falha de integridade e interrompe a execução; uma predição presente mas inválida é mantida no denominador e contabilizada como erro. A nota de consistência em `docs/eval/STATISTICS.md` e a proposta [AMENDMENT-PROPOSAL-2026-10-20-INVALID-PREDICTION.md](eval/AMENDMENT-PROPOSAL-2026-10-20-INVALID-PREDICTION.md) registram que a redação atual do pré-registro pode ser interpretada de modo diferente.
 - **Opção A — recomendada, pendente de aprovação:** ausência/duplicidade/inconsistência interrompe por integridade; valor presente porém inválido conta como predição incorreta. **Prós:** separa falha de pipeline de erro do sistema, preserva denominador interpretável e corresponde ao comportamento atual do executor. **Contras:** exige redação normativa precisa e uma emenda datada ao pré-registro antes da avaliação confirmatória.
@@ -307,6 +307,9 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Recomendação:** manter a Opção A, mas não a aplicar como decisão normativa até aprovação explícita. Se aprovada, registrar emenda datada no pré-registro e alinhar protocolo, executor e relatório antes de qualquer avaliação confirmatória.
 - **Limites:** nenhum caso de piloto ou benchmark foi criado, completado, rotulado ou executado para esta análise; não há resultados RGC PT-BR novos. Esta decisão não altera a fixture congelada nem autoriza avaliação.
 
+
+
+- **Aprovação do mantenedor (2026-10-21):** opção A aprovada. Registros ausentes, duplicados ou inconsistentes e rótulos humanos ausentes interrompem a execução por falha de integridade; uma predição presente, porém inválida para o vocabulário `judge2`, recebe `INVALID_PREDICTION`, permanece no denominador e conta como erro. O pré-registro e o protocolo recebem emenda datada; executor e testes sintéticos documentam o comportamento. A aprovação não congela o protocolo, não autoriza anotação nem execução confirmatória e não altera fixtures, Judge ou Golden.
 
 
 ## DEC-018 — Escopo confirmatório de H1 no RGC
