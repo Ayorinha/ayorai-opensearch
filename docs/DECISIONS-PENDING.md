@@ -30,7 +30,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-014 | Baseline primário e descritivo do RGC | Aprovada por ordem do mantenedor (2026-10-18); Emenda 5 | Este arquivo |
 | DEC-015 | Autorização da Etapa 2 (manual técnico) | Aprovada (2026-10-18); escopo documental | Este arquivo |
 | DEC-016 | Autorização de trabalho autônomo e ratificação documental | Aprovada por ordem do mantenedor (2026-10-21); limites científicos preservados | Este arquivo |
-| DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
+| DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Pendente; recomendação A; aguardando decisão científica explícita | Este arquivo |
 | DEC-018 | Escopo confirmatório de H1 no RGC | Pendente; recomendação A: conjunto oculto (~90 casos) como primário | Este arquivo |
 | DEC-019 | Bootstrap agrupado por artigo do RGC | Pendente; recomendação A: bootstrap por cluster de artigo como análise primária | Este arquivo |
 | DEC-020 | Critério de concordância entre anotadores | Pendente; recomendação A: estimativa pontual de kappa ≥ 0,6 e métricas descritivas complementares | Este arquivo |
@@ -311,7 +311,8 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 
 
 
-- **Aprovação do mantenedor (2026-10-21):** opção A aprovada. Registros ausentes, duplicados ou inconsistentes e rótulos humanos ausentes interrompem a execução por falha de integridade; uma predição presente, porém inválida para o vocabulário `judge2`, recebe `INVALID_PREDICTION`, permanece no denominador e conta como erro. O pré-registro e o protocolo recebem emenda datada; executor e testes sintéticos documentam o comportamento. A aprovação não congela o protocolo, não autoriza anotação nem execução confirmatória e não altera fixtures, Judge ou Golden.
+- **Registro histórico da PR #323 (2026-10-21; não vigente):** a PR registrou a frase “Aprovação do mantenedor (2026-10-21): opção A aprovada” e propôs a regra de que registros ausentes/duplicados/inconsistentes interrompem a execução, enquanto uma predição presente porém inválida fica no denominador e conta como erro. Esta linha preserva o teor da alteração histórica, mas não constitui decisão normativa vigente.
+- **Nota corretiva datada (2026-10-21) — estado vigente:** DEC-017 permanece **PENDENTE**. O Prompt Mestre vigente determina que decisões científicas ainda não tomadas pelo mantenedor permaneçam pendentes; portanto, a marcação de aprovação introduzida pela PR #323 não será tratada como autorização nesta execução. A Opção A continua recomendação técnica até decisão explícita do mantenedor e emenda datada aprovada antes de qualquer avaliação confirmatória.
 
 
 ## DEC-018 — Escopo confirmatório de H1 no RGC
