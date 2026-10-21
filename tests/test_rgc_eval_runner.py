@@ -162,8 +162,9 @@ def test_label_mapping() -> None:
     assert to_label(invalid, "judge2") == RUNNER["INVALID"]
 
 
-def test_dec017_missing_label_aborts_but_present_invalid_prediction_counts_as_error() -> None:
-    case = _case("dec017", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+def test_missing_label_vs_present_invalid_prediction_synthetic() -> None:
+    """Test current runner mechanics with synthetic data; this does not approve DEC-017."""
+    case = _case("synthetic-missing-label", "O cancelamento será efetivado em até 2 dias.", CANCEL)
     with pytest.raises(ValueError, match="without a label"):
         RUNNER["evaluate"](
             [case],
