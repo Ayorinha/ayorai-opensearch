@@ -56,3 +56,6 @@ Não use o executor sobre casos RGC reais enquanto os gates humanos e a decisão
 - `docs/eval/PREREGISTRATION-RGC-v1.md`
 - `docs/eval/PROTOCOL-GOLDEN-V1.md`
 - `docs/DECISIONS-PENDING.md`
+
+
+**Nota de consistência (2026-10-21):** DEC-017, DEC-018, DEC-019 e DEC-020 estão aprovadas pelo mantenedor, conforme `docs/DECISIONS-PENDING.md` e as Emendas 7–10. A aprovação dessas decisões não congela o protocolo; os gates humanos continuam pendentes.
