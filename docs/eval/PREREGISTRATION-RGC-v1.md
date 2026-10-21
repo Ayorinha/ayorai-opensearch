@@ -127,8 +127,6 @@ A publicação do resultado é obrigatória mesmo se for negativo, inconclusivo 
 
 **Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
-**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
-
 ## 6. Limitações e afirmações proibidas
 
 O benchmark medirá desempenho somente no escopo, versão da fonte, conjunto de afirmações e procedimento de anotação documentados. Não demonstrará, por si só, capacidade de interpretar toda a legislação brasileira, aconselhar consumidores, determinar direitos em casos concretos ou substituir revisão humana.
