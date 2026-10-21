@@ -202,3 +202,16 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 3. **Campo obrigatório:** cada caso elegível da partição oculta deve conter `bootstrap_cluster_id`, string estável e não vazia. Para casos regidos principalmente por um artigo, usar o identificador canônico desse artigo. Se a afirmação depender conjuntamente de vários artigos e não houver artigo principal único, usar `bundle:` seguido dos identificadores canônicos ordenados lexicalmente e sem duplicatas, unidos por `+`. Manter `cited_article_ids` com a lista completa de artigos citados quando aplicável.
 4. Casos que compartilham o mesmo `bootstrap_cluster_id` são reamostrados como unidade. Clusters do tipo `bundle:` são unidades compostas próprias; sua contagem e a regra de composição devem ser reportadas. O executor rejeita cluster ausente/vazio na partição oculta.
 5. A emenda não altera critérios de H1, não congela o protocolo, não cria ou rotula casos e não autoriza execução RGC. Os resultados do bootstrap por caso são apenas sensibilidade; não escolher o intervalo que mais favoreça a hipótese.
+
+
+**Nota vigente (2026-10-21) — DEC-020 aprovada:** o critério vigente de concordância está na [Emenda 10](#emenda-10-2026-10-21--kappa-de-cohen-dec-020-opção-a-aprovada). A redação original permanece preservada como histórico.
+
+## Emenda 10 (2026-10-21) — kappa de Cohen (DEC-020, opção A aprovada)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. A concordância entre a primeira e a segunda anotação independente será calculada pelo kappa de Cohen não ponderado para cinco rótulos nominais: `SUPPORTED`, `REFUTED`, `UNVERIFIED`, `PARTIALLY_SUPPORTED` e `CONFLICTING`.
+2. O gate é a estimativa pontual de kappa ≥ 0,6. Reportar também IC95% percentil por bootstrap de casos, concordância observada, matriz de confusão e distribuição de rótulos de cada anotador. O IC informa incerteza, mas não substitui o limiar pontual.
+3. `RULE_GAP` é marcador de piloto, fica fora do kappa e deve ser contado separadamente. Caso sem registro de um dos anotadores, IDs divergentes, duplicatas ou rótulo desconhecido interrompem o cálculo; não imputar nem descartar silenciosamente anotações ausentes.
+4. O bootstrap usa 10.000 reamostragens e seed `20261003`; replicações em que kappa é matematicamente indefinido não entram no intervalo e sua contagem válida é reportada. Se não houver replicações válidas, o IC fica indisponível e o gate não passa.
+5. Esta emenda não cria/rotula casos, não calcula concordância real, não autoriza piloto 02 nem execução RGC, e não congela o protocolo. A segunda anotação deve ser feita por outra pessoa, sem acesso aos rótulos iniciais.
