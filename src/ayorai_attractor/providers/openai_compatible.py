@@ -48,7 +48,7 @@ class OpenAICompatibleProvider(Provider):
             method="POST",
         )
         try:
-            undefined
+            # B310 is suppressed: base URL validation requires HTTPS before request dispatch.
             with request.urlopen(req, timeout=60) as response:  # nosec B310
                 data = json.load(response)
         except error.URLError as exc:
