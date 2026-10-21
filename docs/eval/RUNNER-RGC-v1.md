@@ -13,7 +13,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 - O subcomando `run` exige um arquivo de rótulos humanos completo (`--labels`). Não existe modo "só previsões"; por isso o sistema não pode ser rodado sobre casos ainda não rotulados, evitando que a saída do sistema influencie a anotação.
 - Casos sem rótulo, rótulos de casos inexistentes e casos duplicados interrompem a execução (erro), em vez de serem descartados em silêncio.
 - Rótulo `RULE_GAP` (lacuna nas regras de anotação, usado somente no piloto) remove o caso do denominador e é sempre listado em `excluded` no relatório; no conjunto definitivo, `RULE_GAP` é proibido no campo `label`.
-- Previsões inválidas (`INVALID_PREDICTION`) permanecem no denominador e contam como erro, conforme o pré-registro §4.
+- **DEC-017 (opção A aprovada em 2026-10-21):** registro ausente/duplicado, ID desconhecido, rótulo humano ausente ou arquivo inconsistente interrompe a execução; uma predição presente não mapeável para `judge2` recebe `INVALID_PREDICTION`, permanece no denominador e conta como erro.
 - O relatório registra: versão do executor, commit, versão do Python, SHA-256 dos casos, dos rótulos e dos documentos, configuração completa, cada previsão com o `output_sha256` do Judge e a contagem de previsões cujo estado original do Judge foi `ABSTAINED`.
 
 ## 2. Pipeline por caso (determinístico, sem rede, sem componente aprendido)
