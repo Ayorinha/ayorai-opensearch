@@ -69,7 +69,7 @@ python evals/ptbr/rgc_eval.py run <casos-avaliacao.jsonl> \
     --labels <rotulos-avaliacao.jsonl> \
     --development-cases <casos-desenvolvimento-publico.jsonl> \
     --development-labels <rotulos-desenvolvimento-publico.jsonl> \
-    --mode retrieval --out reports/rgc-<data>.json
+    --mode retrieval --partition hidden --out reports/rgc-<data>.json
 ```
 
 Formato dos rótulos (um por linha): `{"case_id": "...", "verdict": "SUPPORTED"}`.
