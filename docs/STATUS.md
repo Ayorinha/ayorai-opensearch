@@ -34,27 +34,6 @@ PR #274 restored the `/v1/verify` JSON `null` request-body response to the froze
 - The deterministic Judge alone is the factual authority. Automated checks, LLM outputs, and synthetic simulations do not replace human review or establish benchmark performance.
 - **No Portuguese benchmark result exists.** The exploratory pilot 01 was discarded; the system was not run on those cases. The RGC protocol is not frozen.
 
-## PRs merged in this execution cycle
-
-| PR | Change | Squash commit |
-|---|---|---|
-| [#258](https://github.com/Ayorinha/ayorai-opensearch/pull/258) | DEC-013: authorization and limits for this execution cycle | `22fece06c7a58b05e11e7ee1aa3aad6191969c36` |
-| [#257](https://github.com/Ayorinha/ayorai-opensearch/pull/257) | Clarify verified agent runtime behavior | `6fbb58a1b16b5ee89f4117b8e37974c51baf18c5` |
-| [#232](https://github.com/Ayorinha/ayorai-opensearch/pull/232) | RGC `rectified` stratum and validation | `b7a076f2fcaf05b50599b8416574636ca4eb1f63` |
-| [#259](https://github.com/Ayorinha/ayorai-opensearch/pull/259) | Align Schemathesis legacy exclusion for `/v1/audit`; close issue #250 | `ec8b71be0d6e59ad93abd053a3df9d5ce0ea3c70` |
-| [#260](https://github.com/Ayorinha/ayorai-opensearch/pull/260) | Structured privacy-safe access logs under Uvicorn | `2da10d557c7d884d87e4f6baa1c55be94a3b32d7` |
-| [#261](https://github.com/Ayorinha/ayorai-opensearch/pull/261) | Automated relative Markdown link and anchor integrity | `3587248a9d0d981e5fb8b7d9a074ea250dbd08c2` |
-| [#241](https://github.com/Ayorinha/ayorai-opensearch/pull/241) | DEC-014 and Protocol Amendment 5; synthetic power simulation | `d8411d90f8905442ac02568cc9179ce42afec69a` |
-| [#242](https://github.com/Ayorinha/ayorai-opensearch/pull/242) | Reconcile technical audit and current findings | `919ba7b4f7d13b57aa198508c32523c999393863` |
-| [#255](https://github.com/Ayorinha/ayorai-opensearch/pull/255) | Final reconciliation of this status page | This is the final merge of the cycle |
-| [#284](https://github.com/Ayorinha/ayorai-opensearch/pull/284) | Restore RGC preregistration audit trail | `2ed5aca25c260f6c689c00747da2b22591e52813` |
-| [#286](https://github.com/Ayorinha/ayorai-opensearch/pull/286) | Record maintainer authorization DEC-016 | `d958474954c2215f90451130f95831a17cab56b9` |
-| [#288](https://github.com/Ayorinha/ayorai-opensearch/pull/288) | Incorporate RGC baseline B amendment 6 | `5a587ecb64abc6359c8fe36b8194b67dee3edda9` |
-| [#289](https://github.com/Ayorinha/ayorai-opensearch/pull/289) | Record frozen r1-a null-body contract history | `d2ac6420599c2106a2f81715626a2f7924b54f3a` |
-| [#291](https://github.com/Ayorinha/ayorai-opensearch/pull/291) | Clarify frozen r1-a null-body contract drift | `e52af8388d3e8b5a6fa89a49e74ed469328cc231` |
-
-Supporting changes already on main: #252 sets API-key authentication fail-closed by default; #253 preserves Schemathesis evidence artifacts; #254 corrects DEC-012 status; #256 enforces `--lifespan on` at startup.
-
 ## Maintainer decisions and governance
 
 - **DEC-013 (2026-10-18):** authorizes execution and merge of the defined PRs in this cycle. The waiver of independent human review applies only to this cycle; it does not mean a human independent review occurred. **F-01 remains open.**
