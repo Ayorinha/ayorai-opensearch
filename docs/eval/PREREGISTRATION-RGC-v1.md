@@ -8,7 +8,11 @@
 
 **Leitura consolidada (2026-10-21)**
 
-Emendas vigentes para leitura conjunta: [Emenda 6 — baseline primária e descritiva](#emenda-6-2026-10-21--baseline-primária-e-descritiva-dec-014-aprovada-pelo-mantenedor), [Emenda 7 — registros ausentes e predições inválidas](#emenda-7-2026-10-21--registros-ausentes-e-predições-inválidas-dec-017-opção-a-aprovada), [Emenda 8 — escopo confirmatório de H1](#emenda-8-2026-10-21--escopo-confirmatório-de-h1-dec-018-opção-a-aprovada), [Emenda 9 — bootstrap por cluster de artigo](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a-aprovada) e [Emenda 10 — concordância entre anotadores](#emenda-10-2026-10-21--concordância-entre-anotadores-dec-020-opção-a-aprovada). O estado do documento e do protocolo continua **[PROPOSTO]**; não estão congelados, e esta consolidação não autoriza execução RGC.
+Emendas vigentes para leitura conjunta: [Emenda 6 — baseline primária e descritiva](#emenda-6-vigente), [Emenda 7 — registros ausentes e predições inválidas](#emenda-7-vigente), [Emenda 8 — escopo confirmatório de H1](#emenda-8-vigente), [Emenda 9 — bootstrap por cluster de artigo](#emenda-9-vigente) e [Emenda 10 — concordância entre anotadores](#emenda-10-vigente). O estado do documento e do protocolo continua **[PROPOSTO]**; não estão congelados, e esta consolidação não autoriza execução RGC.
+
+**Registro histórico — nota de leitura vigente (2026-10-21):** os §§ 1, 4 (itens 6–7) e 5 deveriam ser lidos em conjunto com a Emenda 6. Esta nota foi superada pelo quadro “Leitura consolidada” acima.
+
+**Registro histórico — nota DEC-017 (2026-10-21):** o mantenedor aprovou a Opção A; a redação original do §4 permanece preservada como histórico. Esta nota foi superada pela Emenda 7 aprovada (DEC-017).
 
 ## 1. Objetivo e hipótese
 
@@ -156,11 +160,13 @@ A Resolução e suas alterações, ressalvas de vigência, remissões ou consoli
 Atualização datada (2026-10-21) — resolução documental: a Emenda 6 foi incorporada pela PR #288 (merge SHA `5a587ecb64abc6359c8fe36b8194b67dee3edda9`). A pendência citada na nota corretiva anterior é histórica e foi resolvida quanto à definição B/A: a Emenda 6 acrescenta a interpretação aprovada, preservando a redação original. Permanecem [PROPOSTO] o protocolo e a decisão separada de congelamento; nenhum piloto ou benchmark foi executado por esta atualização.
 
 
+<a id="emenda-6-vigente"></a>
 ## Emenda 6 (2026-10-21) — baseline primária e descritiva (DEC-014, aprovada pelo mantenedor)
 
  para a hipótese H1 e a avaliação confirmatória, a baseline B é a classe majoritária derivada exclusivamente dos rótulos humanos de referência da partição pública de desenvolvimento (70%). O rótulo majoritário deve ser determinado e registrado antes de qualquer execução na partição oculta, e aplicado sem alteração aos mesmos casos avaliados. A baseline A, calculada a partir dos rótulos da própria partição avaliada, é somente uma referência descritiva da prevalência observada; não é classificador operacional e não fundamenta H1. Em caso de empate na baseline B, aplicar a ordem fixa do vocabulário `judge2` implementada por `majority_label` em `evals/ptbr/rgc_eval.py`; não introduzir desempate manual. Esta emenda preserva como registro histórico a redação original dos §§1, 4 e 5 acima e define a interpretação aplicável ao plano confirmatório daqui em diante. O documento e o protocolo permanecem **[PROPOSTO]**; esta emenda não congela o protocolo, não autoriza criar/rotular casos nem executar o sistema, e não produz resultados de benchmark.
 
 
+<a id="emenda-7-vigente"></a>
 ## Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A aprovada)
 
 A decisão do mantenedor registrada na DEC-017 aprova a Opção A. O contrato distingue integridade da entrada e qualidade da saída por caso:
@@ -174,8 +180,6 @@ A decisão do mantenedor registrada na DEC-017 aprova a Opção A. O contrato di
 
 Texto proposto para decisão explícita do mantenedor; DEC-017 permanece **PENDENTE**. A frase original “Por aprovação explícita do mantenedor em 2026-10-21” foi registrada pela PR #323 e é histórica, não vigente. Se a Opção A vier a ser aprovada em uma decisão futura, o contrato distinguirá integridade da entrada e qualidade da saída por caso:
 
-**Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
-
 1. O arquivo de rótulos humanos deve conter exatamente um rótulo para cada caso elegível; caso sem rótulo, rótulo para caso inexistente, caso duplicado, registro ausente ou estrutura inconsistente interrompe a execução. Não descartar, imputar nem remover silenciosamente esses registros.
 2. Quando existe uma predição para o caso, mas seu estado/valor não pode ser mapeado para o vocabulário RGC `judge2`, registrar `INVALID_PREDICTION`, manter o caso no denominador e contar a predição como incorreta.
 3. O relatório deve informar a contagem de `INVALID_PREDICTION`. A baseline e o denominador não podem ser ajustados após observar resultados confirmatórios.
@@ -183,12 +187,11 @@ Texto proposto para decisão explícita do mantenedor; DEC-017 permanece **PENDE
 
 O executor já implementa o mapeamento de saída inválida e a validação de rótulos completos; os testes sintéticos verificam ambos os lados da distinção. Esta emenda não altera o estado geral **[PROPOSTO]**, não congela o protocolo, não cria nem rotula casos, não autoriza o piloto 02 ou execução do ATTRACTOR sobre casos RGC e não produz métricas RGC.
 
+**Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
 
 ## Proposta de Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A; PENDENTE)
 
 Texto proposto para decisão explícita do mantenedor; DEC-018 permanece **PENDENTE**. Se aprovada futuramente, a regra proposta será:
-
-**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
 1. **Partição oculta (~90 casos):** é a única partição primária para testar H1 e aplicar o critério confirmatório pré-registrado.
 2. **Partição pública (~210 casos):** uso somente para desenvolvimento e métricas descritivas/exploratórias; não entra no teste confirmatório de H1 e seus resultados devem ser apresentados separadamente.
@@ -198,6 +201,9 @@ Texto proposto para decisão explícita do mantenedor; DEC-018 permanece **PENDE
 
 **Nota de leitura vigente (2026-10-21) — DEC-018:** a aprovação explícita da Opção A está registrada na Emenda 8 aprovada ao final. Notas anteriores que descrevem DEC-018 como pendente são históricas e superadas; o estado geral do protocolo continua **[PROPOSTO]** e não está congelado.
 
+**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
+
+<a id="emenda-8-vigente"></a>
 ## Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A aprovada)
 
 Pela decisão do mantenedor registrada na DEC-018, opção A, aprovada em 2026-10-21:
@@ -208,8 +214,9 @@ Pela decisão do mantenedor registrada na DEC-018, opção A, aprovada em 2026-1
 4. Esta emenda não altera os critérios numéricos de H1, não congela o protocolo e não autoriza executar o sistema em casos RGC. O protocolo permanece **[PROPOSTO]**; o piloto 02 humano e os demais gates seguem pendentes.
 
 
-**Nota datada (2026-10-21) — DEC-019:** a opção aprovada e a regra multiartigo estão na [Emenda 9](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a-aprovada). A proposta anterior permanece preservada como histórico.
+**Nota datada (2026-10-21) — DEC-019:** a opção aprovada e a regra multiartigo estão na [Emenda 9](#emenda-9-vigente). A proposta anterior permanece preservada como histórico.
 
+<a id="emenda-9-vigente"></a>
 ## Emenda 9 (2026-10-21) — bootstrap por cluster de artigo (DEC-019, opção A aprovada)
 
 Pela decisão do mantenedor registrada na DEC-019, opção A, aprovada em 2026-10-21:
@@ -221,6 +228,7 @@ Pela decisão do mantenedor registrada na DEC-019, opção A, aprovada em 2026-1
 5. A emenda não altera critérios de H1, não congela o protocolo, não cria ou rotula casos e não autoriza execução RGC. Os resultados do bootstrap por caso são apenas sensibilidade; não escolher o intervalo que mais favoreça a hipótese.
 
 
+<a id="emenda-10-vigente"></a>
 ## Emenda 10 (2026-10-21) — concordância entre anotadores (DEC-020, opção A aprovada)
 
 Pela decisão do mantenedor registrada na DEC-020, opção A, aprovada em 2026-10-21:
