@@ -34,9 +34,8 @@ def test_synthetic_predictions_preserve_target_accuracy_under_independence() -> 
         phi_target=0.0,
     )
 
-    accuracy = (
-        sum(actual == predicted for actual, predicted in zip(gold, predictions, strict=True))
-        / len(gold)
-    )
+    accuracy = sum(
+        actual == predicted for actual, predicted in zip(gold, predictions, strict=True)
+    ) / len(gold)
     assert set(predictions) <= set(labels)
     assert abs(accuracy - 0.70) < 0.02
