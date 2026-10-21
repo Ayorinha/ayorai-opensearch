@@ -77,3 +77,10 @@ Formato dos rótulos (um por linha): `{"case_id": "...", "verdict": "SUPPORTED"}
 A execução exige a partição pública de desenvolvimento por `--development-cases` e seus rótulos humanos completos por `--development-labels`. O argumento obrigatório `--partition` declara a partição do arquivo de avaliação: `hidden` habilita o critério confirmatório de H1; `development` calcula somente métricas descritivas e marca H1 como não testada. O executor valida que os IDs dos dois arquivos correspondem exatamente, deriva B somente desses rótulos, registra os SHA-256 dos casos e rótulos e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
 
 Este executor não afirma validação, parceria ou endosso da Anatel ou de qualquer instituição.
+
+
+## DEC-019 — agrupamento do bootstrap por artigo
+
+Para cada caso elegível na partição oculta, `bootstrap_cluster_id` deve ser uma string não vazia e estável. Use o ID canônico do artigo que contém a regra principal que decide a afirmação. Se a afirmação depender conjuntamente de vários artigos sem um principal único, use `bundle:` seguido dos IDs canônicos únicos ordenados lexicalmente e unidos por `+`. `cited_article_ids` preserva a lista completa de artigos citados quando aplicável. Casos com a mesma chave são reamostrados juntos; bundles são clusters próprios. A execução confirmatória interrompe se o campo estiver ausente ou inválido.
+
+O relatório publica `system_ci95` como intervalo primário por cluster de artigo e `system_ci95_case_bootstrap` como sensibilidade por caso, além do número de clusters e da unidade de reamostragem. Ambos usam 10.000 iterações e seed `20261003`. Nenhum bootstrap real ou métrica RGC foi produzido por esta alteração.
