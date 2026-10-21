@@ -506,7 +506,8 @@ def compute_metrics(
             "system_wrong_baseline_right": discordant_base,
             "p_value_exact_two_sided": round(p_value, 8),
         },
-        "primary_criterion": primary,
+        "primary_criterion": {**primary, "h1_tested": partition == "hidden", "h1_supported": primary["h1_supported"] if partition == "hidden" else False},
+        "partition": partition,
         "confusion": confusion(gold, pred, vocabulary),
     }
 
@@ -576,7 +577,10 @@ def evaluate(
     top_k: int = DEFAULT_TOP_K,
     granularity: str = "dispositivo",
     iterations: int = BOOTSTRAP_ITERATIONS,
+    partition: str = "development",
 ) -> dict[str, Any]:
+    if partition not in {"hidden", "development"}:
+        raise ValueError("partition must be hidden or development")
     cases = list(cases)
     development_cases = list(development_cases)
     development_case_ids = [str(case["case_id"]) for case in development_cases]
@@ -709,6 +713,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     run.add_argument("--documents", type=Path, default=DOCUMENTS)
     run.add_argument("--mode", choices=("oracle", "retrieval"), required=True)
+    run.add_argument("--partition", choices=("hidden", "development"), required=True)
     run.add_argument("--vocabulary", choices=tuple(VOCABULARIES), default="judge2")
     run.add_argument("--top-k", type=int, default=DEFAULT_TOP_K)
     run.add_argument("--granularity", choices=("dispositivo", "artigo"), default="dispositivo")
@@ -736,6 +741,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         vocabulary=args.vocabulary,
         top_k=args.top_k,
         granularity=args.granularity,
+        partition=args.partition,
     )
     report = {
         "runner_version": RUNNER_VERSION,
@@ -752,6 +758,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         },
         "config": {
             "mode": args.mode,
+            "partition": args.partition,
             "vocabulary": args.vocabulary,
             "top_k": args.top_k,
             "granularity": args.granularity,
