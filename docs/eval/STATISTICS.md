@@ -35,3 +35,8 @@ A Opção A recomenda testar H1 somente sobre a partição oculta (~90 casos) e 
 ## Escopo confirmatório de H1 — DEC-018 (aprovada em 2026-10-21)
 
 A hipótese H1 é testada somente sobre a partição oculta (~90 casos). Os casos públicos (~210) são usados para desenvolvimento e descrição, nunca para o teste confirmatório. O executor exige `--partition hidden|development`, registra o valor no relatório e não relata H1 como testada quando `development` é declarado. A declaração é um controle explícito de execução, não prova de que o arquivo realmente contém a partição correta; proveniência e isolamento continuam sendo gates humanos. Esta regra não congela o protocolo nem autoriza uma execução RGC.
+
+
+## Concordância entre anotadores — DEC-020 aprovada (2026-10-21)
+
+O gate usa kappa de Cohen não ponderado com estimativa pontual ≥ 0,6. Reportar IC95% bootstrap por caso, concordância observada, matriz de confusão e contagens por rótulo para ambos os anotadores. `RULE_GAP` é excluído e contado separadamente. IDs ausentes ou diferentes, duplicatas e rótulos fora dos cinco vereditos interrompem o cálculo. A ferramenta reporta o número de replicações bootstrap válidas; kappa indefinido não passa o gate.
