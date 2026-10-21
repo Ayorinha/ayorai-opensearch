@@ -565,7 +565,20 @@ def test_strict_corpus_export_is_accepted_by_golden_checker(tmp_path: Path) -> N
     assert set(corpus) == set(RUNNER["load_documents"]())
 
 
-def test_cli_run_writes_report(tmp_path: Path) -> None:
+def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # This test exercises report serialization with a synthetic freeze attestation;
+    # the real repository protocol intentionally remains unfrozen.
+    monkeypatch.setitem(
+        RUNNER,
+        "validate_protocol_freeze",
+        lambda: {
+            "manifest_sha256": "a" * 64,
+            "protocol_sha256": "b" * 64,
+            "preregistration_sha256": "c" * 64,
+            "approved_by": "Synthetic test approver",
+            "approved_at": "2026-10-21",
+        },
+    )
     documents = tmp_path / "docs.jsonl"
     documents.write_text(
         json.dumps(
@@ -637,6 +650,8 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
     assert report["runner_version"] == "rgc-eval/0.5.0"
+    assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
+    assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
     assert report["metrics"]["system"]["accuracy"] == 1.0
     assert report["config"]["mode"] == "retrieval"
     assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
@@ -645,6 +660,62 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     assert len(report["inputs"]["cases_sha256"]) == 64
     assert len(report["inputs"]["development_cases_sha256"]) == 64
     assert len(report["inputs"]["development_labels_sha256"]) == 64
+
+
+
+
+
+def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Path) -> None:
+    eval_dir = tmp_path / "docs" / "eval"
+    eval_dir.mkdir(parents=True)
+    protocol = eval_dir / "PROTOCOL-GOLDEN-V1.md"
+    preregistration = eval_dir / "PREREGISTRATION-RGC-v1.md"
+    manifest_path = eval_dir / "PROTOCOL-FREEZE.json"
+    protocol.write_text("Status: CONGELADO — aprovado após revisão humana.\n", encoding="utf-8")
+    preregistration.write_text("**Estado:** [CONGELADO] — critérios congelados.\n", encoding="utf-8")
+    manifest = {
+        "schema_version": 1,
+        "status": "FROZEN",
+        "approved_by": "Anderson Leon Ayora",
+        "approved_at": "2026-10-21",
+        "protocol_sha256": RUNNER["_sha256"](protocol),
+        "preregistration_sha256": RUNNER["_sha256"](preregistration),
+    }
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = RUNNER["validate_protocol_freeze"](tmp_path)
+    assert result["approved_by"] == "Anderson Leon Ayora"
+    assert result["protocol_sha256"] == manifest["protocol_sha256"]
+    assert len(result["manifest_sha256"]) == 64
+
+    protocol.write_text("Status: alterado após congelamento.\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="protocol is not marked CONGELADO"):
+        RUNNER["validate_protocol_freeze"](tmp_path)
+
+
+def test_protocol_freeze_rejects_stale_document_hash(tmp_path: Path) -> None:
+    eval_dir = tmp_path / "docs" / "eval"
+    eval_dir.mkdir(parents=True)
+    protocol = eval_dir / "PROTOCOL-GOLDEN-V1.md"
+    preregistration = eval_dir / "PREREGISTRATION-RGC-v1.md"
+    protocol.write_text("Status: CONGELADO\n", encoding="utf-8")
+    preregistration.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
+    manifest_path = eval_dir / "PROTOCOL-FREEZE.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "status": "FROZEN",
+                "approved_by": "Anderson Leon Ayora",
+                "approved_at": "2026-10-21",
+                "protocol_sha256": "0" * 64,
+                "preregistration_sha256": RUNNER["_sha256"](preregistration),
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="protocol hash differs"):
+        RUNNER["validate_protocol_freeze"](tmp_path)
 
 
 def test_dec018_development_partition_reports_metrics_without_testing_h1() -> None:
