@@ -694,6 +694,96 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
     }
 
 
+
+def validate_annotation_approval(
+    cases_path: Path,
+    labels_path: Path,
+    agreement_report_path: Path,
+    approval_manifest_path: Path,
+    adjudication_record_path: Path,
+) -> dict[str, Any]:
+    """Require a passing human agreement report and approval bound to exact artifacts."""
+    try:
+        report = json.loads(agreement_report_path.read_text(encoding="utf-8"))
+        manifest = json.loads(approval_manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(
+            "RGC evaluation blocked: agreement report and annotation approval manifest are required"
+        ) from exc
+
+    required = {
+        "schema_version",
+        "status",
+        "approved_by",
+        "approved_at",
+        "cases_sha256",
+        "labels_sha256",
+        "agreement_report_sha256",
+        "adjudication_record_sha256",
+        "annotation_a_sha256",
+        "annotation_b_sha256",
+        "cohen_kappa",
+    }
+    if not isinstance(manifest, dict) or set(manifest) != required:
+        raise ValueError("RGC evaluation blocked: annotation approval manifest has an invalid schema")
+    if (
+        type(manifest["schema_version"]) is not int
+        or manifest["schema_version"] != 1
+        or manifest["status"] != "APPROVED"
+    ):
+        raise ValueError("RGC evaluation blocked: annotation approval status must be APPROVED")
+    if not isinstance(manifest["approved_by"], str) or not manifest["approved_by"].strip():
+        raise ValueError("RGC evaluation blocked: annotation approval author is missing")
+    if not isinstance(manifest["approved_at"], str):
+        raise ValueError("RGC evaluation blocked: annotation approval date is missing")
+    try:
+        datetime.fromisoformat(manifest["approved_at"])
+    except ValueError as exc:
+        raise ValueError("RGC evaluation blocked: annotation approved_at must be ISO 8601") from exc
+
+    if not isinstance(report, dict) or report.get("method") != "cohen_kappa_unweighted":
+        raise ValueError("RGC evaluation blocked: unsupported annotator agreement report")
+    kappa = report.get("cohen_kappa")
+    if (
+        report.get("gate_passed") is not True
+        or not isinstance(kappa, (int, float))
+        or isinstance(kappa, bool)
+        or kappa < 0.6
+    ):
+        raise ValueError("RGC evaluation blocked: human annotator agreement gate did not pass")
+    inputs = report.get("inputs")
+    if not isinstance(inputs, dict):
+        raise ValueError("RGC evaluation blocked: agreement report lacks annotation input hashes")
+    for field in ("annotation_a_sha256", "annotation_b_sha256"):
+        value = inputs.get(field)
+        if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value):
+            raise ValueError(f"RGC evaluation blocked: agreement report has invalid {field}")
+        if manifest[field] != value:
+            raise ValueError(f"RGC evaluation blocked: {field} differs from agreement report")
+    if manifest["cohen_kappa"] != kappa:
+        raise ValueError("RGC evaluation blocked: approved kappa differs from agreement report")
+
+    expected_hashes = {
+        "cases_sha256": _sha256(cases_path),
+        "labels_sha256": _sha256(labels_path),
+        "agreement_report_sha256": _sha256(agreement_report_path),
+        "adjudication_record_sha256": _sha256(adjudication_record_path),
+    }
+    for field, actual_hash in expected_hashes.items():
+        if manifest[field] != actual_hash:
+            raise ValueError(f"RGC evaluation blocked: {field} differs from approval manifest")
+
+    return {
+        "manifest_sha256": _sha256(approval_manifest_path),
+        **expected_hashes,
+        "annotation_a_sha256": manifest["annotation_a_sha256"],
+        "annotation_b_sha256": manifest["annotation_b_sha256"],
+        "cohen_kappa": kappa,
+        "approved_by": manifest["approved_by"],
+        "approved_at": manifest["approved_at"],
+    }
+
+
 def _git_commit() -> str | None:
     try:
         out = subprocess.run(
@@ -888,6 +978,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     run = sub.add_parser("run")
     run.add_argument("cases", type=Path)
     run.add_argument("--labels", type=Path, required=True)
+    run.add_argument("--agreement-report", type=Path, required=True)
+    run.add_argument("--annotation-approval", type=Path, required=True)
+    run.add_argument("--adjudication-record", type=Path, required=True)
     run.add_argument(
         "--development-cases",
         type=Path,
@@ -925,6 +1018,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         protocol_freeze = validate_protocol_freeze()
+        annotation_approval = validate_annotation_approval(
+            args.cases,
+            args.labels,
+            args.agreement_report,
+            args.annotation_approval,
+            args.adjudication_record,
+        )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -946,6 +1046,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     report = {
         "runner_version": RUNNER_VERSION,
         "protocol_freeze": protocol_freeze,
+        "annotation_approval": annotation_approval,
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_commit": _git_commit(),
         "python": sys.version.split()[0],
