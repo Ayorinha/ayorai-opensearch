@@ -86,9 +86,11 @@ Esta emenda foi aprovada explicitamente por Anderson Leon Ayora, mantenedor, em 
 4. **Preservação histórica e limites:** a redação original do pré-registro permanece visível como histórico, acompanhada de nota datada. A Emenda 6 supera a restrição anterior de que a decisão de baseline não alteraria o pré-registro, mas não modifica regras do Judge, Golden, manifestos, hashes congelados ou fontes capturadas. O estado geral continua **[PROPOSTO]** até a revisão do piloto 02 humano e decisão explícita separada de congelamento. Nenhum caso será criado, rotulado ou executado por esta emenda; nenhum resultado de benchmark é produzido.
 
 
-## Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A)
+## Proposta de Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A; PENDENTE)
 
-Por aprovação explícita do mantenedor em 2026-10-21:
+**Nota corretiva datada (2026-10-21):** a PR #323 registrou a Opção A como aprovada, mas o Prompt Mestre vigente exige manter DEC-017 pendente até decisão científica explícita do mantenedor. O conteúdo abaixo é preservado como proposta não normativa, não como regra aprovada.
+
+Texto proposto, sujeito à decisão explícita do mantenedor:
 
 1. **Falha de integridade — interromper:** arquivo sem exatamente um registro por caso elegível, registro duplicado, ID desconhecido, rótulo humano ausente ou estrutura inconsistente invalida a execução. Não preencher, excluir ou imputar silenciosamente registros.
 2. **Saída presente inválida — contar como erro:** quando há uma predição para o caso, mas o estado não pode ser mapeado para o vocabulário RGC `judge2`, atribuir `INVALID_PREDICTION`, mantê-la no denominador e contabilizá-la como incorreta.
