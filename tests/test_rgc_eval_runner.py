@@ -612,6 +612,39 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     )
     labels = tmp_path / "labels.jsonl"
     labels.write_text(json.dumps({"case_id": "s1", "verdict": "SUPPORTED"}) + "\n")
+    agreement_report = tmp_path / "agreement.json"
+    agreement_report.write_text(
+        json.dumps(
+            {
+                "method": "cohen_kappa_unweighted",
+                "cohen_kappa": 0.8,
+                "gate_passed": True,
+                "inputs": {"annotation_a_sha256": "f" * 64, "annotation_b_sha256": "1" * 64},
+            }
+        ),
+        encoding="utf-8",
+    )
+    adjudication_record = tmp_path / "adjudication.md"
+    adjudication_record.write_text("Synthetic test only; no real annotations.\\n", encoding="utf-8")
+    annotation_approval = tmp_path / "annotation-approval.json"
+    annotation_approval.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "status": "APPROVED",
+                "approved_by": "Synthetic test approver",
+                "approved_at": "2026-10-21",
+                "cases_sha256": RUNNER["_sha256"](cases),
+                "labels_sha256": RUNNER["_sha256"](labels),
+                "agreement_report_sha256": RUNNER["_sha256"](agreement_report),
+                "adjudication_record_sha256": RUNNER["_sha256"](adjudication_record),
+                "annotation_a_sha256": "f" * 64,
+                "annotation_b_sha256": "1" * 64,
+                "cohen_kappa": 0.8,
+            }
+        ),
+        encoding="utf-8",
+    )
     development_cases = tmp_path / "development-cases.jsonl"
     development_cases.write_text(
         "\n".join(json.dumps({"case_id": case_id}) for case_id in ("dev-1", "dev-2", "dev-3"))
@@ -636,6 +669,12 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
             str(cases),
             "--labels",
             str(labels),
+            "--agreement-report",
+            str(agreement_report),
+            "--annotation-approval",
+            str(annotation_approval),
+            "--adjudication-record",
+            str(adjudication_record),
             "--development-cases",
             str(development_cases),
             "--development-labels",
@@ -656,6 +695,8 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
     assert report["protocol_freeze"]["runner_code_sha256"] == "e" * 64
+    assert report["annotation_approval"]["approved_by"] == "Synthetic test approver"
+    assert report["annotation_approval"]["cohen_kappa"] == 0.8
     assert report["metrics"]["system"]["accuracy"] == 1.0
     assert report["config"]["mode"] == "retrieval"
     assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
