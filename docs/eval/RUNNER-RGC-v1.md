@@ -54,6 +54,8 @@ O manifesto de aprovação tem exatamente estes campos:
   "approved_at": "AAAA-MM-DD",
   "cases_sha256": "SHA-256 do arquivo de casos desta partição",
   "labels_sha256": "SHA-256 do arquivo de rótulos finais adjudicados",
+  "development_cases_sha256": "SHA-256 dos casos públicos de desenvolvimento",
+  "development_labels_sha256": "SHA-256 dos rótulos públicos de desenvolvimento",
   "agreement_report_sha256": "SHA-256 do relatório de concordância",
   "adjudication_record_sha256": "SHA-256 do registro de adjudicação",
   "annotation_a_sha256": "SHA-256 do arquivo do anotador A registrado no relatório",
