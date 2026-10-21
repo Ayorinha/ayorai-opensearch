@@ -672,7 +672,9 @@ def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Pat
     preregistration = eval_dir / "PREREGISTRATION-RGC-v1.md"
     manifest_path = eval_dir / "PROTOCOL-FREEZE.json"
     protocol.write_text("Status: CONGELADO — aprovado após revisão humana.\n", encoding="utf-8")
-    preregistration.write_text("**Estado:** [CONGELADO] — critérios congelados.\n", encoding="utf-8")
+    preregistration.write_text(
+        "**Estado:** [CONGELADO] — critérios congelados.\n", encoding="utf-8"
+    )
     with pytest.raises(ValueError, match="requires both documents"):
         RUNNER["validate_protocol_freeze"](tmp_path)
 
