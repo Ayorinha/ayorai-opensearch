@@ -20,7 +20,7 @@ For the RGC executor, a present prediction that cannot be mapped to the `judge2`
 
 **Nota histórica (PR #323, 2026-10-21; não vigente):** uma atualização anterior marcou a Opção A como aprovada e descreveu a discrepância como resolvida. Esta linha é preservada como histórico da alteração.
 
-**Nota vigente (2026-10-21) — DEC-017 PENDENTE:** o executor atual distingue falha de integridade de uma predição presente inválida, mas a interpretação normativa continua pendente de decisão explícita e emenda datada aprovada. Não considerar esta nota uma aprovação nem executar avaliação confirmatória. Consulte [DEC-017 — Registro ausente versus INVALID_PREDICTION](../DECISIONS-PENDING.md#dec-017--registro-ausente-versus-invalidprediction) e a [proposta de emenda pendente](AMENDMENT-PROPOSAL-2026-10-20-INVALID-PREDICTION.md).
+**Nota vigente (2026-10-21) — DEC-017 Opção A aprovada:** registro ausente/duplicado, ID desconhecido, rótulo humano ausente ou arquivo inconsistente interrompe a execução; predição presente não mapeável para `judge2` recebe `INVALID_PREDICTION`, permanece no denominador e conta como erro. A decisão não congela o protocolo nem autoriza execução confirmatória. Consulte [DEC-017 — Registro ausente versus INVALID_PREDICTION](../DECISIONS-PENDING.md#dec-017--registro-ausente-versus-invalidprediction).
 
 A benchmark report should publish the dataset/suite version, case count, system commit, point accuracy, bootstrap interval, confusion matrix, and—when comparing two systems on identical cases—the paired McNemar result. The report should preserve system identifiers and raw metrics so downstream readers can make their own assessment.
 
