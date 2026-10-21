@@ -59,10 +59,7 @@ def test_approved_decisions_have_normative_amendments_in_both_documents() -> Non
 
 def test_superseded_pending_notes_are_marked_immediately_afterward() -> None:
     index = DECISIONS.read_text(encoding="utf-8")
-    approved_ids = {
-        f"DEC-{decision:03d}"
-        for decision in _approved_decisions(index)
-    }
+    approved_ids = {f"DEC-{decision:03d}" for decision in _approved_decisions(index)}
     problems: list[str] = []
     for path in (PREREGISTRATION, PROTOCOL):
         lines = path.read_text(encoding="utf-8").splitlines()
