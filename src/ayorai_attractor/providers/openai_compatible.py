@@ -48,7 +48,7 @@ class OpenAICompatibleProvider(Provider):
             method="POST",
         )
         try:
-            with request.urlopen(req, timeout=60) as response:  # nosec B310 - HTTPS-only endpoint
+            with request.urlopen(req, timeout=60) as response:  # nosec B310
                 data = json.load(response)
         except error.URLError as exc:
             raise RuntimeError(f"Provider request failed: {exc}") from exc
