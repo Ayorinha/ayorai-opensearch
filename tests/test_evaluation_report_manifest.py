@@ -101,8 +101,8 @@ def test_manifest_rejects_duplicate_suite_names_and_empty_commit(tmp_path: Path)
 def test_manifest_requires_explicit_non_ci_marker_for_unknown_commit(tmp_path: Path) -> None:
     json_path = tmp_path / "results.json"
     markdown_path = tmp_path / "results.md"
-    json_path.write_text("{}\\n", encoding="utf-8")
-    markdown_path.write_text("# Results\\n", encoding="utf-8")
+    json_path.write_text("{}\n", encoding="utf-8")
+    markdown_path.write_text("# Results\n", encoding="utf-8")
 
     with pytest.raises(
         ValueError, match="commit must be a known SHA unless non_ci_run is true"
@@ -118,8 +118,8 @@ def test_manifest_requires_explicit_non_ci_marker_for_unknown_commit(tmp_path: P
 def test_manifest_marks_unknown_commit_as_non_ci_run(tmp_path: Path) -> None:
     json_path = tmp_path / "results.json"
     markdown_path = tmp_path / "results.md"
-    json_path.write_text("{}\\n", encoding="utf-8")
-    markdown_path.write_text("# Results\\n", encoding="utf-8")
+    json_path.write_text("{}\n", encoding="utf-8")
+    markdown_path.write_text("# Results\n", encoding="utf-8")
 
     manifest = build_artifact_manifest(
         json_path,
