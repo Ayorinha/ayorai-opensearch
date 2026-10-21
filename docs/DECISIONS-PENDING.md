@@ -6,7 +6,7 @@ Owner and final decision-maker: Anderson Leon Ayora
 Independent reviewer: revisor independente  
 Source: execution plan v5, work queue
 
-## Índice de decisões (atualizado em 2026-10-17)
+## Índice de decisões (atualizado em 2026-10-21)
 
 Este índice só localiza registros; o texto de cada decisão continua sendo a fonte. **Atenção:** os identificadores DEC-007 e DEC-008 foram usados duas vezes, com significados diferentes. Até decisão do mantenedor sobre renumeração, cite sempre o identificador com o qualificador desta tabela.
 
@@ -30,6 +30,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-014 | Baseline primário e descritivo do RGC | Aprovada por ordem do mantenedor (2026-10-18); Emenda 5 | Este arquivo |
 | DEC-015 | Autorização da Etapa 2 (manual técnico) | Aprovada (2026-10-18); escopo documental | Este arquivo |
 | DEC-016 | Autorização de trabalho autônomo e ratificação documental | Aprovada por ordem do mantenedor (2026-10-21); limites científicos preservados | Este arquivo |
+| DEC-017 | RGC: registro ausente versus INVALID_PREDICTION | Pendente; recomendação A, aguardando decisão explícita do mantenedor | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -288,3 +289,16 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Revisão e auditoria:** toda revisão automatizada deve ser descrita como “revisão automatizada (não independente)”. O achado F-01 permanece aberto até que exista revisão humana independente documentada.
 - **Regra de merge:** usar squash com mensagem `<título> (#n)`, seguida de 1–2 linhas e terminando exatamente com: “Mesclada sob a autorização DEC-016 do mantenedor; revisão automatizada, não independente (F-01 permanece aberto).”
 - **Data de registro:** 2026-10-21. A presente decisão autoriza o processo de trabalho; cada decisão científica permanece sujeita a seu próprio registro e aprovação explícita.
+
+
+## DEC-017 — Registro ausente versus INVALID_PREDICTION
+
+- **Data:** 2026-10-21
+- **Estado:** PENDENTE — esta entrada é uma proposta para decisão explícita do mantenedor, não uma aprovação nem autorização de execução.
+- **Pergunta:** no contrato de avaliação RGC, como distinguir um registro de predição ausente de uma predição presente cujo valor é inválido?
+- **Estado atual do executor:** um registro ausente, duplicado ou inconsistente é falha de integridade e interrompe a execução; uma predição presente mas inválida é mantida no denominador e contabilizada como erro. A nota de consistência em `docs/eval/STATISTICS.md` e a proposta [AMENDMENT-PROPOSAL-2026-10-20-INVALID-PREDICTION.md](eval/AMENDMENT-PROPOSAL-2026-10-20-INVALID-PREDICTION.md) registram que a redação atual do pré-registro pode ser interpretada de modo diferente.
+- **Opção A — recomendada, pendente de aprovação:** ausência/duplicidade/inconsistência interrompe por integridade; valor presente porém inválido conta como predição incorreta. **Prós:** separa falha de pipeline de erro do sistema, preserva denominador interpretável e corresponde ao comportamento atual do executor. **Contras:** exige redação normativa precisa e uma emenda datada ao pré-registro antes da avaliação confirmatória.
+- **Opção B — interromper também em qualquer valor inválido:** **Prós:** contrato de entrada estrito e simples. **Contras:** não contabiliza como erro do sistema um valor inválido já produzido e exigiria mudar o executor/estatística; pode ocultar a taxa de saída inválida.
+- **Opção C — contar ausência como erro, assim como valor inválido:** **Prós:** denominador fixo e análise mais simples. **Contras:** mistura ausência de registro (falha de integridade) com erro de predição e pode mascarar falhas de transporte/serialização.
+- **Recomendação:** manter a Opção A, mas não a aplicar como decisão normativa até aprovação explícita. Se aprovada, registrar emenda datada no pré-registro e alinhar protocolo, executor e relatório antes de qualquer avaliação confirmatória.
+- **Limites:** nenhum caso de piloto ou benchmark foi criado, completado, rotulado ou executado para esta análise; não há resultados RGC PT-BR novos. Esta decisão não altera a fixture congelada nem autoriza avaliação.
