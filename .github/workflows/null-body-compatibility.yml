@@ -23,6 +23,7 @@ jobs:
         fastapi:
           - "0.128.2"
           - "0.140.0"
+          # 0.150.1–0.150.8 are not published; 0.150.0 → 0.151.0 is the adjacent release boundary.
           - "0.150.0"
           - "0.151.0"
           - "0.152.0"
