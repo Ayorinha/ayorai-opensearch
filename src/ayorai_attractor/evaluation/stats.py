@@ -52,7 +52,7 @@ def bootstrap_accuracy(
     if not expected or iterations < 1:
         raise ValueError("invalid bootstrap inputs")
     outcomes = [a == b for a, b in zip(expected, predicted, strict=True)]
-    rng = Random(seed)  # nosec B311 - deterministic statistical bootstrap, not cryptography
+    rng = Random(seed)  # nosec B311
     samples = []
     for _ in range(iterations):
         samples.append(
