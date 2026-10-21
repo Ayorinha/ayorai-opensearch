@@ -23,7 +23,9 @@ Subcommands:
     run            evaluate cases against human labels and write a report
     export-corpus  write the strict 5-field corpus read by check_golden_pt.py
 
-The ``run`` subcommand requires a labels file. There is no predictions-only
+The ``run`` subcommand requires complete human labels and an explicit,
+hash-bound protocol-freeze manifest. It refuses to execute while the protocol
+is proposed, under review, or changed after freezing. There is no predictions-only
 mode, so the system cannot be run on cases before they are labelled.
 """
 
