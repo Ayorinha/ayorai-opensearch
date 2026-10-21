@@ -163,7 +163,7 @@ def test_label_mapping() -> None:
 
 
 def test_missing_label_vs_present_invalid_prediction_synthetic() -> None:
-    """Verify DEC-017 mechanics with synthetic data only; no RGC cases are evaluated."""
+    """Test current runner mechanics with synthetic data; this does not approve DEC-017."""
     case = _case("synthetic-missing-label", "O cancelamento será efetivado em até 2 dias.", CANCEL)
     with pytest.raises(ValueError, match="without a label"):
         RUNNER["evaluate"](
@@ -208,6 +208,24 @@ def test_metrics_match_hand_computation() -> None:
     assert metrics == RUNNER["compute_metrics"](
         gold, pred, "judge2", baseline_label="SUPPORTED", iterations=200
     )
+
+
+def test_development_partition_does_not_claim_h1_tested() -> None:
+    case = _case("dev-case", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    result = RUNNER["evaluate"](
+        [case],
+        {"dev-case": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+        partition="development",
+    )
+    assert result["partition"] == "development"
+    assert result["metrics"]["primary_criterion"]["h1_tested"] is False
+    assert result["metrics"]["primary_criterion"]["h1_supported"] is False
 
 
 def test_h1_decision_uses_unrounded_values() -> None:
@@ -559,6 +577,8 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
             str(documents),
             "--mode",
             "retrieval",
+            "--partition",
+            "development",
             "--out",
             str(out),
         ]
