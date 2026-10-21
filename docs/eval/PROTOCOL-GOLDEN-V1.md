@@ -118,3 +118,14 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 2. Os aproximadamente 210 casos públicos servem apenas para desenvolvimento e estatísticas descritivas/exploratórias. Não entram no teste H1, não podem ser combinados com a partição oculta para aumentar o denominador confirmatório e devem ser reportados separadamente.
 3. O executor registra a partição declarada no relatório; em `development`, não apresenta H1 como testada. A declaração de partição é metadado operacional e não substitui evidência de isolamento ou proveniência.
 4. Os critérios numéricos de sucesso/falha de H1 permanecem inalterados. Esta emenda não congela o protocolo, não autoriza criar/rotular casos nem executar ATTRACTOR sobre casos RGC, e não altera Judge, Golden, fixtures, manifestos ou hashes congelados.
+
+
+## Emenda 9 (2026-10-21) — bootstrap por cluster de artigo (DEC-019, opção A aprovada)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. O intervalo primário será o bootstrap percentil de 95% por cluster de artigo, com 10.000 reamostragens e seed `20261003`. Cada réplica sorteia com reposição o mesmo número de clusters únicos da amostra e inclui todos os casos dos clusters sorteados, preservando multiplicidade de sorteios.
+2. O bootstrap por caso permanece como análise de sensibilidade separada. Ambos devem ser publicados, com método/unidade claramente identificados; apenas o intervalo por artigo alimenta o critério primário de H1.
+3. Cada caso elegível na partição oculta deve fornecer `bootstrap_cluster_id`. Caso com artigo principal usa o ID canônico desse artigo. Caso cuja afirmação dependa conjuntamente de vários artigos sem um principal único recebe `bundle:` + IDs canônicos únicos em ordem lexical, separados por `+`; `cited_article_ids` conserva a lista completa de artigos citados. Casos com a mesma chave de cluster são reamostrados juntos; bundles são clusters próprios e devem ser contabilizados separadamente.
+4. O executor interrompe a execução confirmatória se o campo estiver ausente, vazio ou não for string. A regra de agrupamento é definida antes de qualquer caso definitivo e não pode ser ajustada após observar resultados.
+5. Esta emenda não congela o protocolo, não cria/rotula casos, não autoriza execução do ATTRACTOR sobre casos RGC e não altera Judge, Golden, fixtures, manifestos ou hashes congelados.
