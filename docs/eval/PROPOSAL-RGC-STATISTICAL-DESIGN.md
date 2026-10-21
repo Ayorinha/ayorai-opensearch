@@ -106,6 +106,8 @@ Leituras:
 
 **Recomendação técnica:** B, mantendo o conjunto oculto como análise de sensibilidade e alerta de possível contaminação. O sistema deve ficar congelado por commit antes da execução, e a execução deve registrar o SHA. A decisão continua pendente do mantenedor; esta proposta não emenda o protocolo nem o pré-registro.
 
+**Atualização datada (2026-10-21) — baseline B/A:** a decisão sobre a definição B primária e A descritiva foi aprovada pelo mantenedor e incorporada pela Emenda 6 na PR #288. A frase acima registra o estado da proposta em 2026-10-18 e permanece como histórico, não como status atual da decisão de baseline. Esta atualização não resolve o escopo confirmatório de H1, o bootstrap agrupado, o critério de concordância nem a regra de registros ausentes versus predições inválidas; esses itens permanecem decisões científicas separadas. O protocolo continua [PROPOSTO], sem congelamento ou execução autorizada.
+
 ## 4. Achado 3 — independência entre casos
 
 Todos os trechos vêm de um único ato normativo, e vários casos podem tratar do mesmo artigo. O bootstrap atual reamostra casos como se fossem independentes, o que pode estreitar os intervalos quando há casos correlacionados do mesmo dispositivo.
