@@ -112,7 +112,7 @@ def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> Non
     annotation_a = tmp_path / "annotation-a.jsonl"
     annotation_b = tmp_path / "annotation-b.jsonl"
     content = "".join(
-        json.dumps({"case_id": case_id, "label": label}) + "\\n" for case_id, label in labels
+        json.dumps({"case_id": case_id, "label": label}) + "\n" for case_id, label in labels
     )
     annotation_a.write_text(content, encoding="utf-8")
     annotation_b.write_text(content, encoding="utf-8")
