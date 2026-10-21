@@ -191,7 +191,7 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 4. Esta emenda não altera os critérios numéricos de H1, não congela o protocolo e não autoriza executar o sistema em casos RGC. O protocolo permanece **[PROPOSTO]**; o piloto 02 humano e os demais gates seguem pendentes.
 
 
-**Nota datada (2026-10-21) — DEC-019:** a opção aprovada e a regra multiartigo estão na [Emenda 9](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a). A proposta anterior permanece preservada como histórico.
+**Nota datada (2026-10-21) — DEC-019:** a opção aprovada e a regra multiartigo estão na [Emenda 9](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a-aprovada). A proposta anterior permanece preservada como histórico.
 
 ## Emenda 9 (2026-10-21) — bootstrap por cluster de artigo (DEC-019, opção A aprovada)
 
