@@ -8,6 +8,29 @@
 
 Este documento fixa **como** o sistema será executado sobre os casos do RGC, antes de qualquer execução sobre casos reais. O executor foi testado apenas com documentos e casos **sintéticos**. Nenhum caso do piloto ou do benchmark foi executado.
 
+## 0. Gate obrigatório de congelamento
+
+O subcomando `run` agora falha fechado enquanto o protocolo estiver proposto ou em revisão. Antes de qualquer avaliação (inclusive descritiva), devem existir:
+
+1. `docs/eval/PROTOCOL-GOLDEN-V1.md` com a linha de estado iniciada por `Status: CONGELADO`;
+2. `docs/eval/PREREGISTRATION-RGC-v1.md` com `**Estado:** [CONGELADO]`;
+3. `docs/eval/PROTOCOL-FREEZE.json`, aprovado pelo mantenedor, com exatamente estes campos:
+
+```json
+{
+  "schema_version": 1,
+  "status": "FROZEN",
+  "approved_by": "Nome do mantenedor que aprovou",
+  "approved_at": "AAAA-MM-DD",
+  "protocol_sha256": "SHA-256 exato de PROTOCOL-GOLDEN-V1.md",
+  "preregistration_sha256": "SHA-256 exato de PREREGISTRATION-RGC-v1.md"
+}
+```
+
+O JSON acima é apenas um esquema ilustrativo, **não** um manifesto válido nem autorização para executar. O manifesto real só deve ser criado depois do piloto humano 02, da revisão dos achados e de uma decisão explícita de congelamento. O executor compara os hashes do manifesto com os arquivos atuais; qualquer alteração posterior nos dois documentos bloqueia a execução até uma nova decisão e atualização auditável do manifesto.
+
+O relatório registra o hash do manifesto, os hashes dos dois documentos, o responsável e a data declarados. Esse mecanismo detecta divergência de artefatos; não substitui a revisão humana nem prova, sozinho, a autenticidade da aprovação. `export-corpus` permanece disponível sem congelamento porque apenas exporta a fonte capturada e não executa o sistema sobre casos.
+
 ## 1. Salvaguardas
 
 - O subcomando `run` exige um arquivo de rótulos humanos completo (`--labels`). Não existe modo "só previsões"; por isso o sistema não pode ser rodado sobre casos ainda não rotulados, evitando que a saída do sistema influencie a anotação.
