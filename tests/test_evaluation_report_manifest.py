@@ -30,6 +30,7 @@ def test_manifest_hashes_final_artifact_bytes(tmp_path: Path) -> None:
     )
 
     assert manifest["commit"] == "abc123"
+    assert manifest["non_ci_run"] is False
     assert manifest["selected_suites"] == ["golden-v0.1"]
     assert manifest["artifacts"]["results.json"]["sha256"] == (
         hashlib.sha256(json_bytes).hexdigest()
@@ -95,3 +96,38 @@ def test_manifest_rejects_duplicate_suite_names_and_empty_commit(tmp_path: Path)
             commit="abc123",
             selected_suites=("golden-v0", "golden-v0"),
         )
+
+
+def test_manifest_requires_explicit_non_ci_marker_for_unknown_commit(tmp_path: Path) -> None:
+    json_path = tmp_path / "results.json"
+    markdown_path = tmp_path / "results.md"
+    json_path.write_text("{}\\n", encoding="utf-8")
+    markdown_path.write_text("# Results\\n", encoding="utf-8")
+
+    with pytest.raises(
+        ValueError, match="commit must be a known SHA unless non_ci_run is true"
+    ):
+        build_artifact_manifest(
+            json_path,
+            markdown_path,
+            commit="unknown",
+            selected_suites=("golden-v0",),
+        )
+
+
+def test_manifest_marks_unknown_commit_as_non_ci_run(tmp_path: Path) -> None:
+    json_path = tmp_path / "results.json"
+    markdown_path = tmp_path / "results.md"
+    json_path.write_text("{}\\n", encoding="utf-8")
+    markdown_path.write_text("# Results\\n", encoding="utf-8")
+
+    manifest = build_artifact_manifest(
+        json_path,
+        markdown_path,
+        commit="unknown",
+        selected_suites=("golden-v0",),
+        non_ci_run=True,
+    )
+
+    assert manifest["commit"] == "unknown"
+    assert manifest["non_ci_run"] is True
