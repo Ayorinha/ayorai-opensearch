@@ -143,3 +143,6 @@ Execução registrada no GitHub Actions: run [39090642680](https://github.com/Ay
 
 
 **Atualização datada (2026-10-21) — DEC-019 aprovada, opção A:** a recomendação histórica das linhas acima que classificava o bootstrap por artigo como análise secundária é superada pela decisão explícita do mantenedor. A Emenda 9 do pré-registro e do protocolo define o bootstrap por cluster de artigo como primário e o bootstrap por caso como sensibilidade. O campo operacional é `bootstrap_cluster_id`; casos que dependem conjuntamente de múltiplos artigos sem um artigo principal usam uma chave `bundle:` com IDs canônicos únicos em ordem lexical, separados por `+`. Esta nota não reescreve a proposta histórica, não congela o protocolo e não autoriza execução RGC.
+
+
+**Nota datada (2026-10-21) — DEC-020 aprovada:** a Opção A foi aprovada explicitamente pelo mantenedor. O gate é kappa de Cohen não ponderado pontual ≥ 0,6; IC95%, concordância observada, matriz e distribuição por anotador são reportados, e `RULE_GAP` fica fora do cálculo. A simulação e a discussão acima permanecem resultados de desenho sintético, não dados de anotação.
