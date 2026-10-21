@@ -680,9 +680,7 @@ def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Pat
         "**Estado:** [CONGELADO] — critérios congelados.\n", encoding="utf-8"
     )
     runner_spec.write_text("**Estado:** [CONGELADO] — executor congelado.\n", encoding="utf-8")
-    runner_code.write_text(
-        f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\n', encoding="utf-8"
-    )
+    runner_code.write_text(f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}\n', encoding="utf-8")
     with pytest.raises(ValueError, match="requires both documents"):
         RUNNER["validate_protocol_freeze"](tmp_path)
 
@@ -720,9 +718,7 @@ def test_protocol_freeze_rejects_stale_document_hash(tmp_path: Path) -> None:
     protocol.write_text("Status: CONGELADO\n", encoding="utf-8")
     preregistration.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
     runner_spec.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
-    runner_code.write_text(
-        f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\n', encoding="utf-8"
-    )
+    runner_code.write_text(f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}\n', encoding="utf-8")
     manifest_path = eval_dir / "PROTOCOL-FREEZE.json"
     manifest_path.write_text(
         json.dumps(
@@ -742,8 +738,6 @@ def test_protocol_freeze_rejects_stale_document_hash(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="protocol hash differs"):
         RUNNER["validate_protocol_freeze"](tmp_path)
-
-
 
 
 @pytest.mark.parametrize(
