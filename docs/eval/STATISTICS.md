@@ -23,3 +23,8 @@ For the RGC executor, a present prediction that cannot be mapped to the `judge2`
 A benchmark report should publish the dataset/suite version, case count, system commit, point accuracy, bootstrap interval, confusion matrix, and—when comparing two systems on identical cases—the paired McNemar result. The report should preserve system identifiers and raw metrics so downstream readers can make their own assessment.
 
 For reproducibility, both systems in a paired comparison must use the same ordered gold-case sequence. Do not silently treat missing prediction records as ordinary model errors.
+
+
+## Escopo confirmatório de H1 — DEC-018 (aprovada em 2026-10-21)
+
+A hipótese H1 é testada somente sobre a partição oculta (~90 casos). Os casos públicos (~210) são usados para desenvolvimento e descrição, nunca para o teste confirmatório. O executor exige `--partition hidden|development`, registra o valor no relatório e não relata H1 como testada quando `development` é declarado. A declaração é um controle explícito de execução, não prova de que o arquivo realmente contém a partição correta; proveniência e isolamento continuam sendo gates humanos. Esta regra não congela o protocolo nem autoriza uma execução RGC.
