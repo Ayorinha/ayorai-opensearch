@@ -118,18 +118,21 @@ def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> Non
     annotation_b.write_text(content, encoding="utf-8")
     output = tmp_path / "agreement.json"
 
-    assert AGREEMENT["main"](
-        [
-            "--annotation-a",
-            str(annotation_a),
-            "--annotation-b",
-            str(annotation_b),
-            "--out",
-            str(output),
-            "--iterations",
-            "20",
-        ]
-    ) == 0
+    assert (
+        AGREEMENT["main"](
+            [
+                "--annotation-a",
+                str(annotation_a),
+                "--annotation-b",
+                str(annotation_b),
+                "--out",
+                str(output),
+                "--iterations",
+                "20",
+            ]
+        )
+        == 0
+    )
     report = json.loads(output.read_text(encoding="utf-8"))
     assert report["gate_passed"] is True
     assert report["inputs"] == {
