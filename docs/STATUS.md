@@ -4,6 +4,11 @@ Updated: 2026-10-21
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
+## API contract note (2026-10-21) — r1-a JSON `null`
+
+PR #274 restored the `/v1/verify` JSON `null` request-body response to the frozen contract fixture: HTTP 422 with error type `missing`, as captured in `tests/fixtures/r1-a-error-baseline.json` from commit `c7e3868f3f6f34ce153d9ec6605645fad8681e2e`. The fixture was not changed; `tests/test_verification_api.py` compares each case byte-for-byte. A report says tags v0.4.0 and v0.5.0, installed with today's dependency resolution, returned `model_attributes_type`. This is consistent with a dependency-version-dependent FastAPI/Pydantic validation difference, but that cause has not been isolated by a controlled reproduction. No API behavior is changed by this note.
+
+
 ## Execution snapshot before PR #280 merge (2026-10-20)
 
 - `main` SHA immediately after PR #279 and before PR #280: `7a4a26805f70726fca63560d7ab05ae71207c4e2` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/7a4a26805f70726fca63560d7ab05ae71207c4e2)). The connector returned no combined-status entries for this merge commit, so this page does not assert that its required checks passed; check the SHA-specific Actions runs before relying on main status.

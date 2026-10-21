@@ -4,6 +4,10 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+### Compatibility notes
+- **2026-10-21 — r1-a JSON `null` request body:** PR #274 restored the `/v1/verify` response to the frozen contract recorded in `tests/fixtures/r1-a-error-baseline.json` (captured from `c7e3868f3f6f34ce153d9ec6605645fad8681e2e`); the `null_body` case expects HTTP 422 with error type `missing`. The fixture remains unchanged and `tests/test_verification_api.py` compares the response against it. A report of running tags v0.4.0/v0.5.0 with today's dependency resolution observed `model_attributes_type`; a FastAPI/Pydantic version-dependent validation difference is a plausible explanation, not yet isolated by a controlled reproduction. This note does not change API behavior or the frozen fixture.
+
+
 ### Added
 - API-key authentication (`ATTRACTOR_AUTH_MODE=off|api_key`): `Authorization: Bearer` or `X-API-Key`, keyed HMAC-SHA-256 digests compared in constant time, mandatory 32-byte pepper, fail-closed configuration, `/health` stays public (initial implementation PR #219; secure-by-default correction in this PR). The application now defaults to `api_key` and refuses to start when required key material is missing or malformed. `off` must be selected explicitly for isolated local development only. The OpenAPI contract is unchanged.
 - `X-Request-ID` propagation and one privacy-safe JSON access record per request; bodies, claims, excerpts, query strings and credentials are never logged (PR #221).
