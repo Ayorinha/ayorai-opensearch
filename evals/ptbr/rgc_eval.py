@@ -700,7 +700,8 @@ def evaluate(
                 or members != sorted(set(members))
             ):
                 raise ValueError(
-                    f"{case_id}: bundle bootstrap_cluster_id must contain at least two unique, sorted IDs"
+                    f"{case_id}: bundle bootstrap_cluster_id must contain at least two "
+                    "unique, sorted IDs"
                 )
         atoms = case_atoms(case)
         if index is None:
