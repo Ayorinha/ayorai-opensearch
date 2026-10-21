@@ -35,6 +35,36 @@ O JSON acima é apenas um esquema ilustrativo, **não** um manifesto válido nem
 
 O relatório registra o hash do manifesto, os hashes dos quatro artefatos vinculados, a versão do executor, o responsável e a data declarados. Esse mecanismo detecta divergência de artefatos; não substitui a revisão humana nem prova, sozinho, a autenticidade da aprovação. `export-corpus` permanece disponível sem congelamento porque apenas exporta a fonte capturada e não executa o sistema sobre casos.
 
+### 0.1 Gate de concordância e aprovação das anotações
+
+O gate de congelamento não substitui a aprovação do conjunto anotado. Cada execução `run` também exige:
+
+- `--agreement-report`: relatório produzido por `evals/ptbr/rgc_agreement.py`, com Cohen's kappa não ponderado, `gate_passed: true` e hashes dos dois arquivos de anotação humana;
+- `--adjudication-record`: registro privado da revisão das divergências e da adjudicação humana;
+- `--annotation-approval`: manifesto aprovado pelo mantenedor que vincula o relatório de concordância, o registro de adjudicação, o arquivo exato de casos e o arquivo exato de rótulos finais.
+
+O manifesto de aprovação tem exatamente estes campos:
+
+```json
+{
+  "schema_version": 1,
+  "status": "APPROVED",
+  "approved_by": "Nome do mantenedor que aprovou",
+  "approved_at": "AAAA-MM-DD",
+  "cases_sha256": "SHA-256 do arquivo de casos desta partição",
+  "labels_sha256": "SHA-256 do arquivo de rótulos finais adjudicados",
+  "agreement_report_sha256": "SHA-256 do relatório de concordância",
+  "adjudication_record_sha256": "SHA-256 do registro de adjudicação",
+  "annotation_a_sha256": "SHA-256 do arquivo do anotador A registrado no relatório",
+  "annotation_b_sha256": "SHA-256 do arquivo do anotador B registrado no relatório",
+  "cohen_kappa": 0.6
+}
+```
+
+Este exemplo é apenas um esquema, não uma aprovação válida. O executor valida o gate de concordância, os hashes e a correspondência entre o relatório e o manifesto. Qualquer alteração nos casos, rótulos, relatório ou registro de adjudicação exige nova aprovação. Para partições públicas e ocultas, usar manifestos separados, cada um vinculado aos respectivos arquivos de casos e rótulos; o material oculto e os registros completos de anotação permanecem fora do repositório público.
+
+A aprovação é uma declaração auditável, não prova criptográfica da identidade do aprovador. Nenhum caso real, rótulo ou relatório de concordância é criado por esta implementação.
+
 ## 1. Salvaguardas
 
 - O subcomando `run` exige um arquivo de rótulos humanos completo (`--labels`). Não existe modo "só previsões"; por isso o sistema não pode ser rodado sobre casos ainda não rotulados, evitando que a saída do sistema influencie a anotação.
@@ -95,6 +125,9 @@ Uma requisição `r2-a` válida com `evidence[].canonical_url` preenchido retorn
 ```bash
 python evals/ptbr/rgc_eval.py run <casos-avaliacao.jsonl> \
     --labels <rotulos-avaliacao.jsonl> \
+    --agreement-report <relatorio-concordancia.json> \
+    --annotation-approval <aprovacao-da-particao.json> \
+    --adjudication-record <registro-privado-de-adjudicacao.md> \
     --development-cases <casos-desenvolvimento-publico.jsonl> \
     --development-labels <rotulos-desenvolvimento-publico.jsonl> \
     --partition hidden --mode retrieval --out reports/rgc-<data>.json
