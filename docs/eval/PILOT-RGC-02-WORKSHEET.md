@@ -2,6 +2,8 @@
 
 **Uso:** formulário vazio para preenchimento manual pelo anotador humano. Este arquivo não contém casos, afirmações, trechos, rótulos ou exemplos produzidos por IA.
 
+**Operação e isolamento:** consulte o [guia operacional do piloto 02](PILOT-RGC-02-OPERATIONS.md) antes de copiar esta ficha para uso local.
+
 ## Regras antes de começar
 
 - Preencher e rotular os casos sem consultar assistentes ou modelos de IA.
