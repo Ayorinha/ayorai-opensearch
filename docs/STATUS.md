@@ -52,7 +52,7 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 
 ## Deferred work
 
-- Manual chapters 05–10 are linked in `docs/manual/README.md`; chapters 01–04 remain marked in drafting.
+- Manual chapters 01–04 are marked `Estado: Atual`; chapters 05–10 are linked in `docs/manual/README.md`.
 - Coverage is 94% overall. The next useful targets include `verification/extraction.py`, `audit.py`, and `orchestrator.py`; the registry and OpenAI-compatible provider now have 100% line coverage.
 - Strict mypy now covers both RGC evaluation modules. Keep the scope evidence-driven and extend it only where the gate passes.
 - Security CI is clean: pip-audit found no known vulnerabilities; Bandit found no issues after comment-parser warning cleanup.
