@@ -103,7 +103,7 @@ A decisão do mantenedor registrada na DEC-017 aprova a Opção A. O contrato di
 
 Texto proposto, sujeito à decisão explícita do mantenedor:
 
-**Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
+**Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
 
 **Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
 
