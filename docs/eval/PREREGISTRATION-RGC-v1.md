@@ -8,7 +8,7 @@
 
 **Leitura vigente (2026-10-21):** os §§ 1, 4 (itens 6–7) e 5 devem ser lidos em conjunto com a [Emenda 6 ao final deste documento](#emenda-6-2026-10-21--baseline-primária-e-descritiva-dec-014-aprovada-pelo-mantenedor). A redação original desses parágrafos é preservada como registro histórico; a emenda explicita a interpretação vigente para a baseline primária e descritiva.
 
-**Nota corretiva vigente (2026-10-21) — DEC-017 permanece pendente:** a PR #323 registrou a Opção A como aprovada e acrescentou texto de Emenda 7. O Prompt Mestre vigente exige manter decisões científicas não decididas pelo mantenedor como pendentes. O texto de Emenda 7 abaixo fica preservado como proposta histórica não normativa até decisão explícita; a redação original do §4 continua preservada e nenhuma avaliação confirmatória é autorizada por esta nota.
+**Nota vigente (2026-10-21) — DEC-017 aprovada:** o mantenedor aprovou a Opção A neste Prompt Mestre. A Emenda 7 abaixo define a regra normativa; a redação original do §4 permanece preservada como histórico. A aprovação não congela o protocolo nem autoriza execução RGC.
 
 ## 1. Objetivo e hipótese
 
