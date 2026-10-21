@@ -791,6 +791,8 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
 def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     cases = tmp_path / "cases.jsonl"
     labels = tmp_path / "labels.jsonl"
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
     agreement = tmp_path / "agreement.json"
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
@@ -810,8 +812,8 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
                 "cohen_kappa": 0.8,
                 "gate_passed": True,
                 "inputs": {
-                    "annotation_a_sha256": "a" * 64,
-                    "annotation_b_sha256": "b" * 64,
+                    "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                    "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
                 },
             }
         ),
@@ -830,8 +832,8 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
                 "development_labels_sha256": RUNNER["_sha256"](development_labels),
                 "agreement_report_sha256": RUNNER["_sha256"](agreement),
                 "adjudication_record_sha256": RUNNER["_sha256"](adjudication),
-                "annotation_a_sha256": "a" * 64,
-                "annotation_b_sha256": "b" * 64,
+                "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
                 "cohen_kappa": 0.8,
             }
         ),
@@ -839,7 +841,15 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="labels_sha256 differs from approval manifest"):
         RUNNER["validate_annotation_approval"](
-            cases, labels, development_cases, development_labels, agreement, approval, adjudication
+            cases,
+            labels,
+            development_cases,
+            development_labels,
+            annotation_a,
+            annotation_b,
+            agreement,
+            approval,
+            adjudication,
         )
 
 
