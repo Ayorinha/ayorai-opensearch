@@ -576,10 +576,7 @@ def evaluate(
     top_k: int = DEFAULT_TOP_K,
     granularity: str = "dispositivo",
     iterations: int = BOOTSTRAP_ITERATIONS,
-    partition: str = "hidden",
 ) -> dict[str, Any]:
-    if partition not in {"hidden", "development"}:
-        raise ValueError("partition must be hidden or development")
     cases = list(cases)
     development_cases = list(development_cases)
     development_case_ids = [str(case["case_id"]) for case in development_cases]
@@ -667,18 +664,10 @@ def evaluate(
             vocabulary,
             iterations=iterations,
         )
-    metrics = compute_metrics(
-        gold_labels, predicted, vocabulary, baseline_label=baseline_label, iterations=iterations
-    )
-    if partition == "development":
-        metrics["primary_criterion"] = {
-            "h1_supported": None,
-            "not_tested": True,
-            "reason": "development partition is descriptive; H1 is confirmatory only on hidden",
-        }
     return {
-        "evaluation_partition": partition,
-        "metrics": metrics,
+        "metrics": compute_metrics(
+            gold_labels, predicted, vocabulary, baseline_label=baseline_label, iterations=iterations
+        ),
         "baseline_provenance": {
             "primary": "B",
             "development_case_count": len(development_cases),
@@ -723,12 +712,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     run.add_argument("--vocabulary", choices=tuple(VOCABULARIES), default="judge2")
     run.add_argument("--top-k", type=int, default=DEFAULT_TOP_K)
     run.add_argument("--granularity", choices=("dispositivo", "artigo"), default="dispositivo")
-    run.add_argument(
-        "--partition",
-        choices=("hidden", "development"),
-        required=True,
-        help="hidden is confirmatory for H1; development is descriptive only",
-    )
     run.add_argument("--out", type=Path, required=True)
     export = sub.add_parser("export-corpus")
     export.add_argument("--documents", type=Path, default=DOCUMENTS)
@@ -753,7 +736,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         vocabulary=args.vocabulary,
         top_k=args.top_k,
         granularity=args.granularity,
-        partition=args.partition,
     )
     report = {
         "runner_version": RUNNER_VERSION,
@@ -769,7 +751,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             "documents_sha256": _sha256(args.documents),
         },
         "config": {
-            "partition": args.partition,
             "mode": args.mode,
             "vocabulary": args.vocabulary,
             "top_k": args.top_k,
