@@ -84,3 +84,8 @@ Este executor não afirma validação, parceria ou endosso da Anatel ou de qualq
 Para cada caso elegível na partição oculta, `bootstrap_cluster_id` deve ser uma string não vazia e estável. Use o ID canônico do artigo que contém a regra principal que decide a afirmação. Se a afirmação depender conjuntamente de vários artigos sem um principal único, use `bundle:` seguido dos IDs canônicos únicos ordenados lexicalmente e unidos por `+`. `cited_article_ids` preserva a lista completa de artigos citados quando aplicável. Casos com a mesma chave são reamostrados juntos; bundles são clusters próprios. A execução confirmatória interrompe se o campo estiver ausente ou inválido.
 
 O relatório publica `system_ci95` como intervalo primário por cluster de artigo e `system_ci95_case_bootstrap` como sensibilidade por caso, além do número de clusters e da unidade de reamostragem. Ambos usam 10.000 iterações e seed `20261003`. Nenhum bootstrap real ou métrica RGC foi produzido por esta alteração.
+
+
+## DEC-020 — concordância de anotadores
+
+A ferramenta `scripts/kappa_golden_pt.py` recebe dois JSONL com os mesmos IDs e rótulos humanos, calcula kappa de Cohen não ponderado e reporta IC95% bootstrap, concordância observada, matriz de confusão, distribuição de rótulos e gate pontual ≥ 0,6. `RULE_GAP` é excluído do coeficiente e contado separadamente. Não usar esta ferramenta até que a segunda anotação tenha sido realizada por outra pessoa, sem acesso aos rótulos iniciais. Testes sintéticos verificam a mecânica, não a concordância do conjunto real.
