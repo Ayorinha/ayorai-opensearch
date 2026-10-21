@@ -722,7 +722,6 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert len(report["inputs"]["development_labels_sha256"]) == 64
 
 
-
 def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> None:
     cases = tmp_path / "cases.jsonl"
     labels = tmp_path / "labels.jsonl"
