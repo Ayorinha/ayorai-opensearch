@@ -104,9 +104,7 @@ def test_manifest_requires_explicit_non_ci_marker_for_unknown_commit(tmp_path: P
     json_path.write_text("{}\n", encoding="utf-8")
     markdown_path.write_text("# Results\n", encoding="utf-8")
 
-    with pytest.raises(
-        ValueError, match="commit must be a known SHA unless non_ci_run is true"
-    ):
+    with pytest.raises(ValueError, match="commit must be a known SHA unless non_ci_run is true"):
         build_artifact_manifest(
             json_path,
             markdown_path,
