@@ -5,6 +5,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 ## [Unreleased]
 
 ### Evaluation tooling
+- **2026-10-21 — executor RGC `rgc-eval/0.6.0`:** incrementa a versão do executor após a inclusão dos gates de congelamento do protocolo, integridade do runner, proveniência das fontes e aprovação humana das anotações (PRs #378–#382). A versão e o hash do código continuam sendo vinculados separadamente pelo manifesto de congelamento. Somente testes e simulações sintéticas foram executados; nenhum caso real RGC foi avaliado e nenhuma métrica de benchmark foi produzida.
 - **2026-10-21 — executor RGC `rgc-eval/0.5.0`:** incrementa `RUNNER_VERSION` porque `--partition` é obrigatório e o relatório passa a identificar o intervalo primário por cluster de artigo (DEC-019/Emenda 9), com bootstrap por caso como sensibilidade. O relatório sintético testa explicitamente `runner_version`; não houve execução sobre casos RGC nem produção de métricas RGC.
 
 ### Compatibility notes
