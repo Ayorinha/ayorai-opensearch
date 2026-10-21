@@ -46,6 +46,7 @@ def _case(case_id: str, claim: str, excerpt: str) -> dict[str, Any]:
     return {
         "case_id": case_id,
         "claim": claim,
+        "bootstrap_cluster_id": f"synthetic:{case_id}",
         "evidence": [
             {
                 "document_id": "sint-1",
@@ -183,6 +184,35 @@ def test_dec017_missing_label_aborts_but_present_invalid_prediction_counts_as_er
     assert metrics["n"] == 1
     assert metrics["invalid_predictions"] == 1
     assert metrics["system"]["accuracy"] == 0.0
+
+
+def test_article_cluster_bootstrap_is_deterministic_and_distinct_from_case_bootstrap() -> None:
+    gold = ["SUPPORTED"] * 4 + ["REFUTED"] * 4
+    predicted = ["SUPPORTED"] * 8
+    clusters = ["art:1"] * 4 + ["art:2"] * 4
+    clustered = RUNNER["bootstrap_ci_by_cluster"](gold, predicted, clusters, iterations=500)
+    repeated = RUNNER["bootstrap_ci_by_cluster"](gold, predicted, clusters, iterations=500)
+    case_level = RUNNER["bootstrap_ci"](gold, predicted, iterations=500)
+    assert clustered == repeated
+    assert clustered["accuracy"] == [0.0, 1.0]
+    assert clustered["accuracy"] != case_level["accuracy"]
+
+
+def test_hidden_partition_rejects_missing_bootstrap_cluster_id() -> None:
+    case = _case("no-cluster", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    case.pop("bootstrap_cluster_id")
+    with pytest.raises(ValueError, match="bootstrap_cluster_id"):
+        RUNNER["evaluate"](
+            [case],
+            {"no-cluster": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
 
 
 def test_metrics_match_hand_computation() -> None:
