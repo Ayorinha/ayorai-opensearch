@@ -107,3 +107,12 @@ The RGC runner binds annotation A and B by SHA-256, verifies the agreement repor
 - **Decision boundary:** this would change the benchmark artifact schema and must be explicitly approved by the maintainer before implementation. No such schema change is made here.
 
 This limitation does not authorize pilot case creation, system execution, protocol freeze, or benchmark claims.
+
+
+## Current execution update — 2026-10-21 (manual index reconciliation)
+
+- **Current reference SHA:** `620e39f7e2fb7437b576d7dc935cab6ffcbe08b0` ([PR #388 merge](https://github.com/Ayorinha/ayorai-opensearch/commit/620e39f7e2fb7437b576d7dc935cab6ffcbe08b0)).
+- **PR #388:** merged by squash after all seven associated workflow runs completed successfully: CI, Security, CodeQL, Dependency Review, API Contract Guard, Schemathesis Full API Contract, and Golden r2 Migration. The latest run results showed success for all seven workflows.
+- **Manual index:** `docs/manual/README.md` now links all ten existing chapters and explains that `Atual` is a documentation status, not proof of automatic revalidation against HEAD.
+- **Open PRs:** none were returned by the repository open-PR search immediately after the merge.
+- **Scientific and release boundaries unchanged:** RGC remains `[PROPOSTO]`, not frozen; no real pilot/benchmark cases or RGC metrics were created by this engineering work; F-01 and the independent human annotation/review gates remain open. v0.6.0 remains a draft and no release/tag is authorized by this update.
