@@ -113,6 +113,8 @@ Além disso, publicar sempre acurácia, macro-F1, IC95%, matriz de confusão e r
 
 A publicação do resultado é obrigatória mesmo se for negativo, inconclusivo ou contrário à hipótese. Não haverá mudança de regra, limiar, modelo, partição ou caso em resposta aos resultados dentro deste estudo.
 
+**Nota datada (2026-10-21) — DEC-019:** a regra vigente de intervalo de confiança está na [Emenda 9](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a); o texto original permanece preservado como histórico.
+
 **Nota datada (2026-10-21) — DEC-018:** a redação original de H1 e seus critérios permanece preservada como histórico; o escopo confirmatório vigente está na [Emenda 8](#emenda-8-2026-10-21--escopo-confirmatório-de-h1-dec-018-opção-a).
 
 ## 6. Limitações e afirmações proibidas
@@ -173,3 +175,14 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 2. **Partição pública (~210 casos):** uso somente para desenvolvimento e métricas descritivas/exploratórias; não entra no teste confirmatório de H1 e seus resultados devem ser apresentados separadamente.
 3. O relatório deve identificar explicitamente a partição avaliada e preservar os hashes/contagens das entradas. O executor deve exigir a declaração `hidden` ou `development` e não calcular/relatar H1 como testada quando a partição declarada for `development`.
 4. Esta emenda não altera os critérios numéricos de H1, não congela o protocolo e não autoriza executar o sistema em casos RGC. O protocolo permanece **[PROPOSTO]**; o piloto 02 humano e os demais gates seguem pendentes.
+
+
+## Emenda 9 (2026-10-21) — bootstrap por cluster de artigo (DEC-019, opção A)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. **Primário:** bootstrap percentil de 95% por cluster de artigo, com 10.000 reamostragens e seed fixa `20261003`. Em cada réplica, sortear com reposição tantos clusters quantos clusters únicos existirem e incluir todos os casos de cada cluster sorteado; se um cluster for sorteado mais de uma vez, seus casos entram com a mesma multiplicidade.
+2. **Sensibilidade:** bootstrap por caso com a mesma quantidade de iterações e seed, reportado separadamente e sem substituir o intervalo primário.
+3. **Campo obrigatório:** cada caso elegível da partição oculta deve conter `bootstrap_cluster_id`, string estável e não vazia. Para casos regidos principalmente por um artigo, usar o identificador canônico desse artigo. Se a afirmação depender conjuntamente de vários artigos e não houver artigo principal único, usar `bundle:` seguido dos identificadores canônicos ordenados lexicalmente e sem duplicatas, unidos por `+`. Manter `cited_article_ids` com a lista completa de artigos citados quando aplicável.
+4. Casos que compartilham o mesmo `bootstrap_cluster_id` são reamostrados como unidade. Clusters do tipo `bundle:` são unidades compostas próprias; sua contagem e a regra de composição devem ser reportadas. O executor rejeita cluster ausente/vazio na partição oculta.
+5. A emenda não altera critérios de H1, não congela o protocolo, não cria ou rotula casos e não autoriza execução RGC. Os resultados do bootstrap por caso são apenas sensibilidade; não escolher o intervalo que mais favoreça a hipótese.
