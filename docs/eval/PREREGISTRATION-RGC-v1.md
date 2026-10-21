@@ -175,3 +175,16 @@ Texto proposto para decisão explícita do mantenedor; DEC-018 permanece **PENDE
 2. **Partição pública (~210 casos):** uso somente para desenvolvimento e métricas descritivas/exploratórias; não entra no teste confirmatório de H1 e seus resultados devem ser apresentados separadamente.
 3. O relatório deve identificar explicitamente a partição avaliada e preservar os hashes/contagens das entradas. O executor deve exigir a declaração `hidden` ou `development` e não calcular/relatar H1 como testada quando a partição declarada for `development`.
 4. Esta emenda não altera os critérios numéricos de H1, não congela o protocolo e não autoriza executar o sistema em casos RGC. O protocolo permanece **[PROPOSTO]**; o piloto 02 humano e os demais gates seguem pendentes.
+
+
+**Nota de leitura vigente (2026-10-21) — DEC-018:** a aprovação explícita da Opção A está registrada na Emenda 8 ao final deste documento. As notas anteriores que descrevem DEC-018 como pendente são registros históricos, superados por esta aprovação; o estado geral do protocolo continua **[PROPOSTO]** e não está congelado.
+
+
+## Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A aprovada)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. **Partição oculta (~90 casos):** é a única partição primária para testar H1 e aplicar o critério confirmatório pré-registrado.
+2. **Partição pública (~210 casos):** uso somente para desenvolvimento e métricas descritivas/exploratórias; não entra no teste confirmatório de H1 e seus resultados devem ser apresentados separadamente.
+3. O relatório deve identificar explicitamente a partição avaliada e preservar os hashes/contagens das entradas. O executor exige a declaração `hidden` ou `development` e não calcula/relata H1 como testada quando a partição declarada for `development`.
+4. Esta emenda não altera os critérios numéricos de H1, não congela o protocolo e não autoriza executar o sistema em casos RGC. O protocolo permanece **[PROPOSTO]**; o piloto 02 humano e os demais gates seguem pendentes.
