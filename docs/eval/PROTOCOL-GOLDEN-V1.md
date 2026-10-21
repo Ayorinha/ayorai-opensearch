@@ -96,9 +96,11 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 4. Esta emenda esclarece o contrato de avaliação e não altera o Judge, as fixtures Golden, os manifestos ou os hashes congelados. O protocolo continua **[PROPOSTO]**; não há congelamento, coleta definitiva ou execução autorizada por esta emenda.
 
 
-## Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A)
+## Proposta de Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A; PENDENTE)
 
-Por aprovação explícita do mantenedor em 2026-10-21:
+**Nota corretiva datada (2026-10-21):** a PR #326 registrou a Opção A como aprovada, mas o Prompt Mestre vigente exige manter DEC-018 pendente até decisão científica explícita do mantenedor. O conteúdo abaixo é preservado como proposta não normativa, não como regra aprovada.
+
+Texto proposto, sujeito à decisão explícita do mantenedor:
 
 1. A análise confirmatória de H1 utiliza exclusivamente a partição oculta (~90 casos), definida antes da execução e mantida isolada do desenvolvimento.
 2. Os aproximadamente 210 casos públicos servem apenas para desenvolvimento e estatísticas descritivas/exploratórias. Não entram no teste H1, não podem ser combinados com a partição oculta para aumentar o denominador confirmatório e devem ser reportados separadamente.
