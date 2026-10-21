@@ -29,6 +29,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-013 | Autorização de execução e merge por agente neste ciclo | Aprovada por ordem do mantenedor (2026-10-18); escopo limitado | Este arquivo |
 | DEC-014 | Baseline primário e descritivo do RGC | Aprovada por ordem do mantenedor (2026-10-18); Emenda 5 | Este arquivo |
 | DEC-015 | Autorização da Etapa 2 (manual técnico) | Aprovada (2026-10-18); escopo documental | Este arquivo |
+| DEC-016 | Autorização de trabalho autônomo e ratificação documental | Aprovada por ordem do mantenedor (2026-10-21); limites científicos preservados | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -271,3 +272,18 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - Record the selected option, rationale, date, and approving maintainer before changing an item to decided.
 - Keep implementation in a separate PR unless the maintainer explicitly approves a documentation-only decision record.
 - Do not claim legal clearance, production readiness, or performance beyond the evidence actually available.
+
+
+### DEC-016 — Autorização de trabalho autônomo e ratificação documental
+
+- **Data da autorização:** 2026-10-21
+- **Decisor:** Anderson Leon Ayora, mantenedor do repositório.
+- **Status:** Aprovada por ordem explícita do mantenedor; registrada nesta PR. Esta autorização de processo não congela o protocolo RGC nem decide questões científicas pendentes.
+- **Escopo:** autoriza o agente a inspecionar, corrigir, testar, abrir e atualizar PRs, rebasear branches, resolver conflitos, reexecutar checks, mesclar por squash quando os gates definidos forem atendidos e continuar o backlog técnico/documental sem pedir confirmação a cada etapa.
+- **Regra para escolhas técnicas/editoriais:** escolher a alternativa conservadora e reversível, registrar a justificativa na PR e prosseguir. Decisões científicas ainda não tomadas pelo mantenedor permanecem pendentes, com opções, prós/contras e recomendação documentados; não devem bloquear tarefas independentes.
+- **Gates de merge:** antes de mesclar, exigir rebase na `main` atual, checks obrigatórios verdes no SHA final e evidência de execução de `pytest -q`, `ruff check .`, `ruff format --check .` e `mypy --strict evals/ptbr/rgc_eval.py`. Não declarar comandos executados sem evidência. Se a infraestrutura disponível impedir execução local, registrar a limitação e não afirmar que esse gate foi cumprido.
+- **Limites científicos e de integridade:** não congelar o protocolo antes do piloto 02 humano; não criar, completar ou rotular casos de piloto/benchmark; não executar ATTRACTOR em casos RGC nem produzir métricas RGC; não alterar Judge, Golden protegidos, manifestos, hashes congelados, fontes capturadas, fixtures congeladas, tags ou releases; não reescrever histórico; não chamar revisão própria ou da conta mantenedora de independente; não afirmar validação institucional, certificação ou prontidão de produção.
+- **Ratificação retroativa:** Anderson declara que as PRs #266 (reorganização do README) e #267 (PDF v1.1) foram realizadas sob sua ordem verbal e ratifica expressamente essas alterações nesta data. A DEC-015 cobria apenas o manual técnico; esta ratificação não altera esse escopo histórico e não representa revisão independente das PRs #266 ou #267.
+- **Revisão e auditoria:** toda revisão automatizada deve ser descrita como “revisão automatizada (não independente)”. O achado F-01 permanece aberto até que exista revisão humana independente documentada.
+- **Regra de merge:** usar squash com mensagem `<título> (#n)`, seguida de 1–2 linhas e terminando exatamente com: “Mesclada sob a autorização DEC-016 do mantenedor; revisão automatizada, não independente (F-01 permanece aberto).”
+- **Data de registro:** 2026-10-21. A presente decisão autoriza o processo de trabalho; cada decisão científica permanece sujeita a seu próprio registro e aprovação explícita.
