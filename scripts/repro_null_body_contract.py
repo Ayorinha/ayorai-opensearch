@@ -89,9 +89,7 @@ def main() -> int:
             f"type={error_type} "
             f"loc={json.dumps(detail.get('loc', []), ensure_ascii=False)}"
         )
-        if name == "v0.5.0-style" and (
-            response.status_code != 422 or error_type != "missing"
-        ):
+        if name == "v0.5.0-style" and (response.status_code != 422 or error_type != "missing"):
             raise AssertionError("v0.5.0-style must preserve HTTP 422 type=missing for JSON null")
     try:
         VerificationRequest.model_validate(None, from_attributes=True)
