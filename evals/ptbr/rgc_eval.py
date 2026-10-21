@@ -398,7 +398,7 @@ def bootstrap_ci(
     gold: Sequence[str], pred: Sequence[str], *, iterations: int = BOOTSTRAP_ITERATIONS
 ) -> dict[str, list[float]]:
     """Percentile 95% CI; one shared resample sequence for all metrics."""
-    # B311 is suppressed: seeded bootstrap resampling needs reproducibility, not cryptographic randomness.
+    undefined
     # B311 is suppressed: seeded cluster bootstrap resampling is statistical, not security-sensitive.
     rng = Random(SEED)  # nosec B311
     n = len(gold)
