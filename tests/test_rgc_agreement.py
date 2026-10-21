@@ -1,4 +1,5 @@
 """Synthetic unit tests for human annotator agreement; no real annotations."""
+
 from __future__ import annotations
 
 import runpy
