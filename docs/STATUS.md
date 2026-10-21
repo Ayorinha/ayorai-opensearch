@@ -4,6 +4,8 @@ Updated: 2026-10-21
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
+Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
+
 ## API contract note (2026-10-21) — r1-a JSON `null`
 
 PR #274 restored the `/v1/verify` JSON `null` request-body response to the frozen contract fixture: HTTP 422 with error type `missing`, as captured in `tests/fixtures/r1-a-error-baseline.json` from commit `c7e3868f3f6f34ce153d9ec6605645fad8681e2e`. The fixture was not changed; `tests/test_verification_api.py` compares each case byte-for-byte. A report says tags v0.4.0 and v0.5.0, installed with today's dependency resolution, returned `model_attributes_type`. This is consistent with a dependency-version-dependent FastAPI/Pydantic validation difference, but that cause has not been isolated by a controlled reproduction. No API behavior is changed by this note.
@@ -12,33 +14,18 @@ PR #274 restored the `/v1/verify` JSON `null` request-body response to the froze
 
 ## Current execution snapshot (2026-10-21)
 
-- **Main SHA at this snapshot:** `e52af8388d3e8b5a6fa89a49e74ed469328cc231` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/e52af8388d3e8b5a6fa89a49e74ed469328cc231)).
-- **Latest CI evidence:** PR #291 head `39de4f38d7de58c3fd70c877a4a3c8f5b5c686a3` passed CI, including Python 3.11/3.12/3.13, `ruff check .`, `ruff format --check .`, `mypy --strict evals/ptbr/rgc_eval.py`, and `pytest -q`; CodeQL, Security, API Contract Guard, Schemathesis Full API Contract, Golden r2 Migration, and Dependency Review also passed. The RGC design simulation was skipped by its workflow condition; this is not a successful RGC simulation or benchmark evidence. These are checks on the PR head SHA, not a claim that a separate push-triggered run was observed on the resulting main merge SHA.
+- **Main SHA at this snapshot:** `8664286e81593c36e7901c596a6aa01a00cd05cf` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/8664286e81593c36e7901c596a6aa01a00cd05cf)).
+- **Latest CI evidence:** PR #294 head `7a7dfff8d172063fb58ccdbd14d8a50d2b27a1be` passed CI, including Python 3.11/3.12/3.13, `ruff check .`, `ruff format --check .`, strict mypy gates, and tests including `pytest -q`; CodeQL, Security, API Contract Guard, Schemathesis Full API Contract, Golden r2 Migration, and Dependency Review also passed. The RGC design simulation was skipped by its workflow condition; this is not a successful RGC simulation or benchmark evidence. These are checks on the PR head SHA, not a claim that a separate push-triggered run was observed on the resulting main merge SHA.
 - **PR #284 — audit trail:** merged as `2ed5aca25c260f6c689c00747da2b22591e52813`; restores the pre-#274 wording of H1 and §§4–5 and adds a dated corrective note without rewriting history.
-- **DEC-016:** recorded and merged in PR #286 (`d958474954c2215f90451130f95831a17cab56b9)); authorizes autonomous technical/documentary work subject to gates and limits. PRs #266 and #267 were retroactively ratified by the maintainer's order, without independent review. **F-01 remains open.**
+- **DEC-016:** recorded and merged in PR #286 (`d958474954c2215f90451130f95831a17cab56b9`); authorizes autonomous technical/documentary work subject to gates and limits. PRs #266 and #267 were retroactively ratified by the maintainer's order, without independent review. **F-01 remains open.**
 - **RGC baseline:** Emenda 6 was merged in PR #288 (`5a587ecb64abc6359c8fe36b8194b67dee3edda9`). Baseline B is primary from human reference labels in the public 70% development partition; A is descriptive only; ties in B use the fixed `judge2` vocabulary order in `majority_label`. The protocol remains **[PROPOSTO]**, not frozen.
 - **PR #277:** closed as superseded by Emenda 6. The comment now identifies the review as automated and not independent.
 - **r1-a JSON `null`:** PR #289 records the frozen fixture expectation (`missing`) and the reported `model_attributes_type` behavior from v0.4.0/v0.5.0 under current dependency resolution as an unresolved dependency-version hypothesis. PR #291 adds a clearer regression-test message. Both the fixture and API behavior remain unchanged.
-- **Open dependency update:** PR #282's CodeQL action update passed its checks on head `babc12722add0bfe40bf503501b91d3a6f0dbc11`, but its base is stale after recent merges. Rebase or recreate it from current `main`, then rerun checks before merging.
+- **Report-manifest provenance:** PR #294 merged as `8664286e81593c36e7901c596a6aa01a00cd05cf`; a missing `GITHUB_SHA` is explicitly marked `non_ci_run: true`, and `commit: unknown` is rejected unless that marker is supplied.
+- **CodeQL dependency update:** PR #293 merged the SHA-pinned `github/codeql-action` v4.39.0 update as `76de473242174d5f6ebaf419f9d03cf6aa92c082`; the stale Dependabot PR #282 was closed as replaced.
 - **Human/scientific gates:** pilot 02 remains human-only; do not create, complete, or label pilot/benchmark cases, and do not execute ATTRACTOR on any RGC pilot/development/confirmatory cases. No RGC PT-BR benchmark result exists. Do not freeze the protocol until the human pilot 02 review and a separate explicit maintainer decision.
 - **Review status:** this cycle's reviews are automated, not independent. Do not describe them as independent reviews or institutional validation.
 
-
-## Execution snapshot before PR #280 merge (2026-10-20)
-
-- `main` SHA immediately after PR #279 and before PR #280: `7a4a26805f70726fca63560d7ab05ae71207c4e2` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/7a4a26805f70726fca63560d7ab05ae71207c4e2)). The connector returned no combined-status entries for this merge commit, so this page does not assert that its required checks passed; check the SHA-specific Actions runs before relying on main status.
-- PR #273 merged the methodological review. Its findings are documented, but the RGC protocol remains **not frozen**.
-- PR #274 merged the baseline-B implementation and also changed H1 and §§4–5 in `PREREGISTRATION-RGC-v1.md` without a dated approved amendment in that file. The corrective proposal in [PR #284](https://github.com/Ayorinha/ayorai-opensearch/pull/284) restores the pre-#274 wording and records the audit-trail gap; it does not alter the historical Git record or authorize execution. The discrepancy between the restored preregistration and Protocol Amendment 5 requires an explicit, dated maintainer decision.
-- PR #275 clarified that `RULE_GAP` is an exploratory pilot-only marker, not a Judge verdict and not a metric/concordance label.
-- PR #278 corrected H1 runner suite selection and strengthened report-manifest integrity checks; it does not establish benchmark performance.
-- PR #279 clarified the statistics contract: legacy ADR-002 6×6 matrix versus RGC `judge2` vocabulary, and missing prediction records versus present `INVALID_PREDICTION` values.
-- [PR #277](https://github.com/Ayorinha/ayorai-opensearch/pull/277) remains a Draft methodological proposal with a stale base SHA. Reconcile its base and re-review only after the preregistration correction is resolved. Do not merge it or treat it as execution authorization.
-
-## Main SHA and checks
-
-- **Main SHA immediately before the final status merge (#255):** `919ba7b4f7d13b57aa198508c32523c999393863`.
-- On that SHA, the six required checks passed: Python 3.11, Python 3.12, Python 3.13, `golden-regression`, `judge-regression`, and `security`. The branch-scoped `rgc-design-simulation` job is intentionally skipped on main; the synthetic simulation passed separately on PR #241 SHA `0e515e9c76328c7023b24394459acc21d9e2bd0a` (GitHub Actions run [39091010493](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39091010493)).
-- This is the base SHA for the final status PR. The squash commit for #255 advances `main`; its resulting SHA is the closing commit recorded in GitHub's merge history and in the final execution report.
 
 ## Release and system boundaries
 
