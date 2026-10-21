@@ -165,7 +165,7 @@ Atualização datada (2026-10-21) — resolução documental: a Emenda 6 foi inc
  para a hipótese H1 e a avaliação confirmatória, a baseline B é a classe majoritária derivada exclusivamente dos rótulos humanos de referência da partição pública de desenvolvimento (70%). O rótulo majoritário deve ser determinado e registrado antes de qualquer execução na partição oculta, e aplicado sem alteração aos mesmos casos avaliados. A baseline A, calculada a partir dos rótulos da própria partição avaliada, é somente uma referência descritiva da prevalência observada; não é classificador operacional e não fundamenta H1. Em caso de empate na baseline B, aplicar a ordem fixa do vocabulário `judge2` implementada por `majority_label` em `evals/ptbr/rgc_eval.py`; não introduzir desempate manual. Esta emenda preserva como registro histórico a redação original dos §§1, 4 e 5 acima e define a interpretação aplicável ao plano confirmatório daqui em diante. O documento e o protocolo permanecem **[PROPOSTO]**; esta emenda não congela o protocolo, não autoriza criar/rotular casos nem executar o sistema, e não produz resultados de benchmark.
 
 
-## Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, opção A aprovada)
+## Emenda 7 (2026-10-21) — registros ausentes e predições inválidas (DEC-017, controle negativo temporário)
 
 A decisão do mantenedor registrada na DEC-017 aprova a Opção A. O contrato distingue integridade da entrada e qualidade da saída por caso:
 
