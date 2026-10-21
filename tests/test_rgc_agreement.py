@@ -74,6 +74,16 @@ def test_bootstrap_interval_is_deterministic() -> None:
     assert first["bootstrap"] == second["bootstrap"]
 
 
+def test_unknown_label_is_rejected() -> None:
+    with pytest.raises(ValueError, match="invalid labels"):
+        AGREEMENT["compute_agreement"]({"a": "NOT_A_LABEL"}, {"a": "SUPPORTED"}, iterations=10)
+
+
+def test_bootstrap_iterations_must_be_positive() -> None:
+    with pytest.raises(ValueError, match="iterations must be positive"):
+        AGREEMENT["compute_agreement"]({"a": "SUPPORTED"}, {"a": "SUPPORTED"}, iterations=0)
+
+
 def test_kappa_is_undefined_without_marginal_variation_and_does_not_pass_gate() -> None:
     labels = {"a": "SUPPORTED", "b": "SUPPORTED", "c": "SUPPORTED"}
     result = AGREEMENT["compute_agreement"](labels, labels, iterations=100)
