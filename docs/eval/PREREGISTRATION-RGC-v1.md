@@ -202,3 +202,15 @@ Por aprovação explícita do mantenedor em 2026-10-21:
 3. **Campo obrigatório:** cada caso elegível da partição oculta deve conter `bootstrap_cluster_id`, string estável e não vazia. Para casos regidos principalmente por um artigo, usar o identificador canônico desse artigo. Se a afirmação depender conjuntamente de vários artigos e não houver artigo principal único, usar `bundle:` seguido dos identificadores canônicos ordenados lexicalmente e sem duplicatas, unidos por `+`. Manter `cited_article_ids` com a lista completa de artigos citados quando aplicável.
 4. Casos que compartilham o mesmo `bootstrap_cluster_id` são reamostrados como unidade. Clusters do tipo `bundle:` são unidades compostas próprias; sua contagem e a regra de composição devem ser reportadas. O executor rejeita cluster ausente/vazio na partição oculta.
 5. A emenda não altera critérios de H1, não congela o protocolo, não cria ou rotula casos e não autoriza execução RGC. Os resultados do bootstrap por caso são apenas sensibilidade; não escolher o intervalo que mais favoreça a hipótese.
+
+
+## Emenda 10 (2026-10-21) — concordância entre anotadores (DEC-020, opção A aprovada)
+
+Por aprovação explícita do mantenedor em 2026-10-21:
+
+1. Usar Cohen's kappa **não ponderado** para os cinco rótulos nominais definitivos de `judge2`.
+2. O gate é a estimativa pontual `κ ≥ 0,6`. Reportar também IC95% percentil por bootstrap de casos, com 10.000 reamostragens e seed `20261003`; o limite inferior do intervalo não é um gate adicional.
+3. Publicar concordância observada, matriz de confusão completa e marginais por classe para ambos os anotadores. Se o kappa for matematicamente indefinido por ausência de variação, não declarar o gate aprovado.
+4. `RULE_GAP` não é categoria do cálculo: excluir o par se qualquer anotador marcar `RULE_GAP` e reportar a contagem excluída e quantas dessas exclusões eram discordantes. Não excluir silenciosamente outros casos.
+5. Os arquivos das duas anotações devem ter exatamente os mesmos IDs e um rótulo válido por ID. ID ausente, ID extra, duplicado ou rótulo desconhecido interrompe o cálculo.
+6. A emenda não cria nem rotula casos, não calcula concordância real, não substitui a segunda anotação independente, não congela o protocolo e não autoriza execução do ATTRACTOR sobre casos RGC.
