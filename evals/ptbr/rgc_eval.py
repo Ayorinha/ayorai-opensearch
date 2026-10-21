@@ -23,10 +23,10 @@ Subcommands:
     run            evaluate cases against human labels and write a report
     export-corpus  write the strict 5-field corpus read by check_golden_pt.py
 
-The ``run`` subcommand requires complete human labels and an explicit,
-hash-bound protocol-freeze manifest. It refuses to execute while the protocol
-is proposed, under review, or changed after freezing. There is no predictions-only
-mode, so the system cannot be run on cases before they are labelled.
+The ``run`` subcommand requires complete human labels, a hash-bound protocol
+freeze manifest, and a human annotation-approval manifest tied to a passing
+independent agreement report. It refuses to execute while any approval is absent
+or any bound artifact changes. There is no predictions-only mode.
 """
 
 from __future__ import annotations
@@ -698,6 +698,8 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
 def validate_annotation_approval(
     cases_path: Path,
     labels_path: Path,
+    development_cases_path: Path,
+    development_labels_path: Path,
     agreement_report_path: Path,
     approval_manifest_path: Path,
     adjudication_record_path: Path,
@@ -718,6 +720,8 @@ def validate_annotation_approval(
         "approved_at",
         "cases_sha256",
         "labels_sha256",
+        "development_cases_sha256",
+        "development_labels_sha256",
         "agreement_report_sha256",
         "adjudication_record_sha256",
         "annotation_a_sha256",
@@ -767,6 +771,8 @@ def validate_annotation_approval(
         expected_hashes = {
             "cases_sha256": _sha256(cases_path),
             "labels_sha256": _sha256(labels_path),
+            "development_cases_sha256": _sha256(development_cases_path),
+            "development_labels_sha256": _sha256(development_labels_path),
             "agreement_report_sha256": _sha256(agreement_report_path),
             "adjudication_record_sha256": _sha256(adjudication_record_path),
         }
@@ -1024,6 +1030,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         annotation_approval = validate_annotation_approval(
             args.cases,
             args.labels,
+            args.development_cases,
+            args.development_labels,
             args.agreement_report,
             args.annotation_approval,
             args.adjudication_record,
