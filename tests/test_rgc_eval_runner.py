@@ -662,16 +662,15 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert len(report["inputs"]["development_labels_sha256"]) == 64
 
 
-
-
-
 def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Path) -> None:
     eval_dir = tmp_path / "docs" / "eval"
     eval_dir.mkdir(parents=True)
     protocol = eval_dir / "PROTOCOL-GOLDEN-V1.md"
     preregistration = eval_dir / "PREREGISTRATION-RGC-v1.md"
     manifest_path = eval_dir / "PROTOCOL-FREEZE.json"
-    protocol.write_text("Status: CONGELADO — aprovado após revisão humana.\n", encoding="utf-8")
+    protocol.write_text(
+        "Status: CONGELADO — aprovado após revisão humana.\n", encoding="utf-8"
+    )
     preregistration.write_text(
         "**Estado:** [CONGELADO] — critérios congelados.\n", encoding="utf-8"
     )
