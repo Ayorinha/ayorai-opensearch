@@ -113,7 +113,9 @@ Além disso, publicar sempre acurácia, macro-F1, IC95%, matriz de confusão e r
 
 A publicação do resultado é obrigatória mesmo se for negativo, inconclusivo ou contrário à hipótese. Não haverá mudança de regra, limiar, modelo, partição ou caso em resposta aos resultados dentro deste estudo.
 
-**Nota datada (2026-10-21) — DEC-018:** a redação original de H1 e seus critérios permanece preservada como histórico; o escopo confirmatório vigente está na [Emenda 8](#emenda-8-2026-10-21--escopo-confirmatório-de-h1-dec-018-opção-a).
+**Nota histórica (2026-10-21) — PR #326:** a redação original de H1 foi marcada como histórica e a Emenda 8 foi apresentada como aprovada. A nota corretiva vigente abaixo esclarece que essa aprovação não é operativa nesta execução.
+
+**Nota corretiva vigente (2026-10-21) — DEC-018 permanece pendente:** o Prompt Mestre vigente exige manter decisões científicas não decididas pelo mantenedor como pendentes. O texto de Emenda 8 ao final é uma proposta não normativa até decisão explícita; a redação original de H1 e §5 permanece preservada.
 
 ## 6. Limitações e afirmações proibidas
 
@@ -165,9 +167,9 @@ Por aprovação explícita do mantenedor em 2026-10-21, o contrato de avaliaçã
 O executor já implementa o mapeamento de saída inválida e a validação de rótulos completos; os testes sintéticos verificam ambos os lados da distinção. Esta emenda não altera o estado geral **[PROPOSTO]**, não congela o protocolo, não cria nem rotula casos, não autoriza o piloto 02 ou execução do ATTRACTOR sobre casos RGC e não produz métricas RGC.
 
 
-## Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A)
+## Proposta de Emenda 8 (2026-10-21) — escopo confirmatório de H1 (DEC-018, opção A; PENDENTE)
 
-Por aprovação explícita do mantenedor em 2026-10-21:
+Texto proposto para decisão explícita do mantenedor; DEC-018 permanece **PENDENTE**. Se aprovada futuramente, a regra proposta será:
 
 1. **Partição oculta (~90 casos):** é a única partição primária para testar H1 e aplicar o critério confirmatório pré-registrado.
 2. **Partição pública (~210 casos):** uso somente para desenvolvimento e métricas descritivas/exploratórias; não entra no teste confirmatório de H1 e seus resultados devem ser apresentados separadamente.
