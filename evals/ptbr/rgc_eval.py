@@ -417,6 +417,43 @@ def bootstrap_ci(
     return out
 
 
+def bootstrap_ci_by_cluster(
+    gold: Sequence[str],
+    pred: Sequence[str],
+    cluster_ids: Sequence[str],
+    *,
+    iterations: int = BOOTSTRAP_ITERATIONS,
+) -> dict[str, list[float]]:
+    """Percentile 95% CI resampling article clusters, retaining all cases per draw."""
+    if len(gold) != len(pred) or len(gold) != len(cluster_ids):
+        raise ValueError("gold, predictions, and cluster IDs must have equal lengths")
+    if not gold:
+        raise ValueError("cluster bootstrap requires at least one case")
+    if any(not isinstance(cluster, str) or not cluster.strip() for cluster in cluster_ids):
+        raise ValueError("bootstrap_cluster_id must be a non-empty string")
+    groups: dict[str, list[int]] = {}
+    for index, cluster in enumerate(cluster_ids):
+        groups.setdefault(cluster, []).append(index)
+    keys = sorted(groups)
+    rng = Random(SEED)  # nosec B311 - deterministic statistical bootstrap
+    samples: dict[str, list[float]] = {name: [] for name in METRICS}
+    for _ in range(iterations):
+        selected = [keys[rng.randrange(len(keys))] for _ in keys]
+        indices = [index for cluster in selected for index in groups[cluster]]
+        sampled_gold = [gold[index] for index in indices]
+        sampled_pred = [pred[index] for index in indices]
+        for name, fn in METRICS.items():
+            samples[name].append(fn(sampled_gold, sampled_pred))
+    out: dict[str, list[float]] = {}
+    for name, values in samples.items():
+        values.sort()
+        out[name] = [
+            values[int(0.025 * (iterations - 1))],
+            values[int(0.975 * (iterations - 1))],
+        ]
+    return out
+
+
 def majority_label(gold: Sequence[str], vocabulary: str) -> str:
     if not gold:
         raise ValueError("cannot determine majority label from an empty partition")
@@ -448,6 +485,7 @@ def compute_metrics(
     *,
     baseline_label: str,
     iterations: int,
+    cluster_ids: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     """Score H1 against baseline B; report baseline A as descriptive only."""
     if baseline_label not in VOCABULARIES[vocabulary]:
@@ -464,7 +502,12 @@ def compute_metrics(
     system = {name: fn(gold, pred) for name, fn in METRICS.items()}
     base_b = {name: fn(gold, baseline_b) for name, fn in METRICS.items()}
     base_a = {name: fn(gold, baseline_a) for name, fn in METRICS.items()}
-    ci = bootstrap_ci(gold, pred, iterations=iterations)
+    ci_case = bootstrap_ci(gold, pred, iterations=iterations)
+    ci = (
+        bootstrap_ci_by_cluster(gold, pred, cluster_ids, iterations=iterations)
+        if cluster_ids is not None
+        else ci_case
+    )
     margin = system["accuracy"] - base_b["accuracy"]
     discordant_system = sum(
         p == g and b != g for g, p, b in zip(gold, pred, baseline_b, strict=True)
@@ -490,6 +533,22 @@ def compute_metrics(
         "invalid_predictions": pred.count(INVALID),
         "system": {name: round(value, 6) for name, value in system.items()},
         "system_ci95": {name: [round(v, 6) for v in pair] for name, pair in ci.items()},
+        **(
+            {
+                "system_ci95_case_bootstrap": {
+                    name: [round(v, 6) for v in pair] for name, pair in ci_case.items()
+                }
+            }
+            if cluster_ids is not None
+            else {}
+        ),
+        "bootstrap_provenance": {
+            "primary_unit": "article_cluster" if cluster_ids is not None else "case",
+            "sensitivity_unit": "case" if cluster_ids is not None else None,
+            "cluster_count": len(set(cluster_ids)) if cluster_ids is not None else None,
+            "iterations": iterations,
+            "seed": SEED,
+        },
         "baseline_primary": {
             "name": "B",
             "label": baseline_label,
@@ -623,6 +682,13 @@ def evaluate(
         if gold in EXCLUSION_LABELS:
             excluded.append({"case_id": case_id, "label": gold})
             continue
+        cluster_id = case.get("bootstrap_cluster_id")
+        if partition == "hidden" and (
+            not isinstance(cluster_id, str) or not cluster_id.strip()
+        ):
+            raise ValueError(
+                f"{case_id}: missing or invalid bootstrap_cluster_id for hidden partition"
+            )
         atoms = case_atoms(case)
         if index is None:
             prediction = predict(
@@ -645,6 +711,7 @@ def evaluate(
                 "gold": gold,
                 "predicted": label,
                 "rectified": rectified,
+                "bootstrap_cluster_id": cluster_id,
                 **prediction,
             }
         )
@@ -667,8 +734,16 @@ def evaluate(
             vocabulary,
             iterations=iterations,
         )
+    cluster_ids = (
+        [str(row["bootstrap_cluster_id"]) for row in rows] if partition == "hidden" else None
+    )
     metrics = compute_metrics(
-        gold_labels, predicted, vocabulary, baseline_label=baseline_label, iterations=iterations
+        gold_labels,
+        predicted,
+        vocabulary,
+        baseline_label=baseline_label,
+        iterations=iterations,
+        cluster_ids=cluster_ids,
     )
     if partition == "development":
         metrics["primary_criterion"] = {
@@ -776,7 +851,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             "granularity": args.granularity,
             "bm25": {"k1": BM25_K1, "b": BM25_B},
             "stance_detector": f"{RuleStanceDetector.component}/{RuleStanceDetector.version}",
-            "bootstrap": {"iterations": BOOTSTRAP_ITERATIONS, "seed": SEED},
+            "bootstrap": {
+                "iterations": BOOTSTRAP_ITERATIONS,
+                "seed": SEED,
+                "primary_unit": "article_cluster" if args.partition == "hidden" else "case",
+                "sensitivity_unit": "case" if args.partition == "hidden" else None,
+            },
             "baseline_primary": {
                 "name": "B",
                 "development_label_count": len(development_labels),
