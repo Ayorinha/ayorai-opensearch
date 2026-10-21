@@ -393,6 +393,11 @@ def test_r1_a_error_responses_match_pre_r2_a_baseline_byte_for_byte() -> None:
     baseline = json.loads(fixture_path.read_text(encoding="utf-8"))
     assert baseline["captured_from"] == "c7e3868f3f6f34ce153d9ec6605645fad8681e2e"
 
+    assert any(case["name"] == "null_body" for case in baseline["cases"]), (
+        "Frozen r1-a error fixture must retain null_body; do not change the fixture "
+        "to accommodate dependency drift without a separate contract decision."
+    )
+
     client = TestClient(app, raise_server_exceptions=False)
     for case in baseline["cases"]:
         response = client.post(
@@ -400,8 +405,14 @@ def test_r1_a_error_responses_match_pre_r2_a_baseline_byte_for_byte() -> None:
             content=case["request"].encode("utf-8"),
             headers={"content-type": "application/json"},
         )
-        assert response.status_code == case["status"], case["name"]
-        assert response.content.decode("utf-8") == case["body"], case["name"]
+        failure_context = case["name"]
+        if case["name"] == "null_body":
+            failure_context = (
+                "JSON null body diverged from the frozen r1-a error fixture; "
+                "check FastAPI/Pydantic dependency resolution before changing the fixture."
+            )
+        assert response.status_code == case["status"], failure_context
+        assert response.content.decode("utf-8") == case["body"], failure_context
 
 
 def test_openapi_documents_both_verify_request_contracts() -> None:
