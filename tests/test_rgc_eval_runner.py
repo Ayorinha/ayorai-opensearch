@@ -162,6 +162,23 @@ def test_label_mapping() -> None:
     assert to_label(invalid, "judge2") == RUNNER["INVALID"]
 
 
+def test_dec017_missing_label_aborts_but_present_invalid_prediction_counts_as_error() -> None:
+    case = _case("dec017", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    with pytest.raises(ValueError, match="without a label"):
+        RUNNER["evaluate"](
+            [case], {}, DOCS, development_cases=DEV_CASES,
+            development_labels=DEV_LABELS, mode="oracle", vocabulary="judge2", iterations=20,
+        )
+    invalid = {"decision_state": "INVALID_INPUT", "judge_verdict": None, "robustness": "R0"}
+    assert RUNNER["to_label"](invalid, "judge2") == "INVALID_PREDICTION"
+    metrics = RUNNER["compute_metrics"](
+        ["SUPPORTED"], ["INVALID_PREDICTION"], "judge2", baseline_label="SUPPORTED", iterations=20
+    )
+    assert metrics["n"] == 1
+    assert metrics["invalid_predictions"] == 1
+    assert metrics["system"]["accuracy"] == 0.0
+
+
 def test_metrics_match_hand_computation() -> None:
     gold = ["SUPPORTED", "SUPPORTED", "SUPPORTED", "REFUTED", "UNVERIFIED"]
     pred = ["SUPPORTED", "SUPPORTED", "REFUTED", "REFUTED", RUNNER["INVALID"]]
