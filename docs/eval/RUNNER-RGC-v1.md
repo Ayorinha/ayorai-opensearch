@@ -74,6 +74,6 @@ python evals/ptbr/rgc_eval.py run <casos-avaliacao.jsonl> \
 
 Formato dos rótulos (um por linha): `{"case_id": "...", "verdict": "SUPPORTED"}`.
 
-A execução exige a partição pública de desenvolvimento por `--development-cases` e seus rótulos humanos completos por `--development-labels`. DEC-017 (aprovada em 2026-10-21): ausência de rótulo, duplicata, rótulo desconhecido ou inconsistência estrutural interrompe a execução; quando existe predição mas ela não pode ser mapeada para o vocabulário, `INVALID_PREDICTION` permanece no denominador e conta como incorreta. O executor valida que os IDs dos dois arquivos correspondem exatamente, deriva B somente desses rótulos, registra os SHA-256 dos casos e rótulos e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
+A execução exige a partição pública de desenvolvimento por `--development-cases` e seus rótulos humanos completos por `--development-labels`. O executor valida que os IDs dos dois arquivos correspondem exatamente, deriva B somente desses rótulos, registra os SHA-256 dos casos e rótulos e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
 
 Este executor não afirma validação, parceria ou endosso da Anatel ou de qualquer instituição.
