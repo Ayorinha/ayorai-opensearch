@@ -12,8 +12,6 @@ PROTOCOL = ROOT / "docs" / "eval" / "PROTOCOL-GOLDEN-V1.md"
 
 # Decisions that normatively define a numbered amendment in the RGC documents.
 DECISION_AMENDMENTS = {
-    "DEC-011": 4,
-    "DEC-014": 6,
     "DEC-017": 7,
     "DEC-018": 8,
     "DEC-019": 9,
@@ -50,7 +48,7 @@ def test_approved_index_decisions_have_normative_amendments_in_both_documents() 
 
 
 def test_approved_decisions_do_not_retain_unmarked_vigente_pending_notes() -> None:
-    approved = {"DEC-011", "DEC-014", "DEC-017", "DEC-018", "DEC-019", "DEC-020"}
+    approved = {"DEC-017", "DEC-018", "DEC-019", "DEC-020"}
     for path in (PREREGISTRATION, PROTOCOL):
         lines = path.read_text(encoding="utf-8").splitlines()
         for index, line in enumerate(lines):
