@@ -69,3 +69,16 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 - `/health` remains public; rate limiting and service-owned TLS are not implemented.
 - Green checks are SHA-specific and do not substitute for independent human review.
 - Do not claim benchmark results, legal compliance, production readiness, or institutional partnership without evidence.
+
+
+## Incremental benchmark-integrity update — 2026-10-21
+
+**Reference SHA before this status-only update:** `eade15e0e1475689f329d8d382c12eada2f894e1`. This snapshot records the merged engineering work below; the final SHA of this documentation update must be read from its merge commit, not predicted here.
+
+- **PR #378** — `feat(eval): enforce RGC protocol freeze gate`: RGC evaluation fails closed unless the protocol, preregistration, runner specification and an explicit freeze manifest are present.
+- **PR #379** — `fix(eval): bind RGC freeze to runner integrity`: the freeze manifest binds the exact protocol, preregistration, runner specification, runner code and runner version.
+- **PR #380** — `fix(eval): require declared source provenance in pilot checker`: each filled pilot case must identify a captured source, and the excerpt must be found literally in that declared source. Synthetic regression tests cover missing, unknown and mismatched source identifiers. PR #380 CI completed with 19 successful checks and one conditionally skipped design-simulation job; no checks failed.
+
+**Scientific status is unchanged:** the RGC PT-BR protocol remains `[PROPOSTO]`; no real pilot or benchmark cases were created or labeled by this engineering work, the ATTRACTOR was not run on RGC cases, and no RGC metrics were produced. No real freeze manifest, tag or release was created. The automated checks are not an independent human review, and F-01 remains open.
+
+**Next blocking dependency:** a human must conduct pilot 02 privately, without AI assistance and without running the ATTRACTOR, then record only methodological findings. A second annotator and independent human review remain necessary before a maintainer freeze decision and any definitive dataset work.
