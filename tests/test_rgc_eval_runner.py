@@ -569,7 +569,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     # This test exercises report serialization with a synthetic freeze attestation;
     # the real repository protocol intentionally remains unfrozen.
     monkeypatch.setitem(
-        RUNNER,
+        RUNNER["main"].__globals__,
         "validate_protocol_freeze",
         lambda: {
             "manifest_sha256": "a" * 64,
