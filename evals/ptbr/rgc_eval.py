@@ -506,8 +506,7 @@ def compute_metrics(
             "system_wrong_baseline_right": discordant_base,
             "p_value_exact_two_sided": round(p_value, 8),
         },
-        "primary_criterion": {**primary, "h1_tested": partition == "hidden", "h1_supported": primary["h1_supported"] if partition == "hidden" else False},
-        "partition": partition,
+        "primary_criterion": primary,
         "confusion": confusion(gold, pred, vocabulary),
     }
 
@@ -668,10 +667,15 @@ def evaluate(
             vocabulary,
             iterations=iterations,
         )
+    metrics = compute_metrics(
+        gold_labels, predicted, vocabulary, baseline_label=baseline_label, iterations=iterations
+    )
+    metrics["primary_criterion"]["h1_tested"] = partition == "hidden"
+    if partition == "development":
+        metrics["primary_criterion"]["h1_supported"] = False
     return {
-        "metrics": compute_metrics(
-            gold_labels, predicted, vocabulary, baseline_label=baseline_label, iterations=iterations
-        ),
+        "metrics": metrics,
+        "partition": partition,
         "baseline_provenance": {
             "primary": "B",
             "development_case_count": len(development_cases),
