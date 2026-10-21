@@ -694,7 +694,6 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
     }
 
 
-
 def validate_annotation_approval(
     cases_path: Path,
     labels_path: Path,
