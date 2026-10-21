@@ -27,6 +27,6 @@ A benchmark report should publish the dataset/suite version, case count, system 
 For reproducibility, both systems in a paired comparison must use the same ordered gold-case sequence. Do not silently treat missing prediction records as ordinary model errors.
 
 
-## Proposta de escopo confirmatório de H1 — DEC-018 (PENDENTE)
+## Escopo confirmatório de H1 — DEC-018 aprovada (2026-10-21)
 
-A Opção A recomenda testar H1 somente sobre a partição oculta (~90 casos) e usar os casos públicos (~210) apenas para desenvolvimento e descrição. Esta é uma recomendação, não uma decisão aprovada; não altera o pré-registro nem autoriza execução. DEC-018 permanece pendente de decisão explícita do mantenedor. A declaração de partição e o isolamento real também exigem evidência humana e não devem ser tratados como resolvidos por documentação.
+H1 só é testada na partição oculta (~90 casos). Os ~210 casos públicos são exclusivamente para desenvolvimento e métricas descritivas/exploratórias. O executor registra `partition` e em `development` não marca H1 como testada. O campo declarado não prova isolamento real; esse gate depende de evidência humana. O protocolo permanece [PROPOSTO] e nenhuma execução RGC é autorizada por esta documentação.
