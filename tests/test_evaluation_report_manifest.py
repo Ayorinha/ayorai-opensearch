@@ -118,12 +118,14 @@ def test_manifest_requires_explicit_non_ci_marker_for_unknown_commit(tmp_path: P
 def test_manifest_marks_unknown_commit_as_non_ci_run(tmp_path: Path) -> None:
     json_path = tmp_path / "results.json"
     markdown_path = tmp_path / "results.md"
+    manifest_path = tmp_path / "manifest.json"
     json_path.write_text("{}\n", encoding="utf-8")
     markdown_path.write_text("# Results\n", encoding="utf-8")
 
-    manifest = build_artifact_manifest(
+    manifest = write_artifact_manifest(
         json_path,
         markdown_path,
+        manifest_path,
         commit="unknown",
         selected_suites=("golden-v0",),
         non_ci_run=True,
@@ -131,3 +133,4 @@ def test_manifest_marks_unknown_commit_as_non_ci_run(tmp_path: Path) -> None:
 
     assert manifest["commit"] == "unknown"
     assert manifest["non_ci_run"] is True
+    assert json.loads(manifest_path.read_text(encoding="utf-8")) == manifest
