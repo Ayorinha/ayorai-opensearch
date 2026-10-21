@@ -38,7 +38,7 @@ Este documento fixa **como** o sistema será executado sobre os casos do RGC, an
 | Macro-F1 | média sobre a união dos estados de referência e previstos, **incluindo** `INVALID_PREDICTION` (F1 = 0, escolha conservadora) | |
 | Acurácia balanceada | média das revocações dos estados presentes na referência | |
 | IC95% | bootstrap percentil, 10.000 reamostragens, seed `20261003`, mesma sequência de reamostragem para as três métricas | |
-| Baseline B primária | classe majoritária da partição pública de desenvolvimento (70%); derivada dos rótulos de desenvolvimento e aplicada sem alteração à avaliação | DEC-014; arquivo e SHA-256 dos rótulos de desenvolvimento registrados no relatório |
+| Baseline B primária | classe majoritária dos rótulos humanos da partição pública de desenvolvimento (70%); aplicada sem alteração à avaliação; empate resolvido pela ordem fixa de `VOCABULARIES["judge2"]` | DEC-014/Emenda 6; `majority_label` em `evals/ptbr/rgc_eval.py`; registrar rótulos, contagens e SHA-256 no relatório |
 | Baseline A descritiva | classe majoritária da própria partição avaliada; empate desfeito pela ordem do vocabulário | somente prevalência observada; excluída de H1 |
 | Comparação | McNemar exato bilateral (`ayorai_attractor.evaluation.stats`) | |
 | Precisão das decisões | as três condições de H1 usam valores **não arredondados**; o arredondamento (6 casas) vale só para o relatório | |
