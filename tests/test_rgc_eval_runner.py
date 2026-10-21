@@ -760,7 +760,9 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="human annotator agreement gate did not pass"):
-        RUNNER["validate_annotation_approval"](cases, labels, agreement, approval, adjudication)
+        RUNNER["validate_annotation_approval"](
+            cases, labels, development_cases, development_labels, agreement, approval, adjudication
+        )
 
 
 def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
@@ -807,7 +809,9 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="labels_sha256 differs from approval manifest"):
-        RUNNER["validate_annotation_approval"](cases, labels, agreement, approval, adjudication)
+        RUNNER["validate_annotation_approval"](
+            cases, labels, development_cases, development_labels, agreement, approval, adjudication
+        )
 
 
 def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Path) -> None:
