@@ -82,3 +82,18 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 **Scientific status is unchanged:** the RGC PT-BR protocol remains `[PROPOSTO]`; no real pilot or benchmark cases were created or labeled by this engineering work, the ATTRACTOR was not run on RGC cases, and no RGC metrics were produced. No real freeze manifest, tag or release was created. The automated checks are not an independent human review, and F-01 remains open.
 
 **Next blocking dependency:** a human must conduct pilot 02 privately, without AI assistance and without running the ATTRACTOR, then record only methodological findings. A second annotator and independent human review remain necessary before a maintainer freeze decision and any definitive dataset work.
+
+
+## Incremental benchmark-integrity update — 2026-10-21 (runner 0.6.0)
+
+**Reference SHA before this status update:** `970af6ddc7d912552e18fbc01bed534242f9b56a`. This status-only PR records the subsequent integrity work; read the merge commit for the resulting `main` SHA.
+
+- **PR #381** — `docs(status): record RGC freeze and provenance gates`, SHA `9045549a81f4ad024782598698e2061a3a7d13c0`.
+- **PR #382** — `feat(eval): require RGC annotation approval evidence`, SHA `44291a2ad2b89e783f725394c9297d982c25536a`. Evaluation now requires human agreement/adjudication evidence bound to the exact annotation inputs, cases, labels, development partition and report; agreement reports preserve input hashes.
+- **PR #383** — `ci: run RGC design simulation on relevant changes`, SHA `ea4e7de19bfe9132501e466075334dddaede61d5`. The synthetic design simulation has a dedicated workflow, manual dispatch and artifact preservation.
+- **PR #384** — `test(rgc): cover synthetic design simulation invariants`, SHA `5ad402ab9f73e6b592d5fb75168d54030ae2a196`. Added deterministic tests for agreement coefficients, baseline tie-breaking and synthetic prediction accuracy. All checks, including the RGC design simulation, passed for this PR.
+- **PR #385** — `fix(eval): advance RGC runner version to 0.6.0`, SHA `970af6ddc7d912552e18fbc01bed534242f9b56a`. The executor version now matches the material changes to protocol-freeze, runner-integrity, source-provenance and annotation-approval gates. Its PR CI checks passed; the dedicated design-simulation workflow and post-merge checks were still running when this status note was prepared.
+
+**Scientific status is unchanged:** the RGC PT-BR protocol remains `[PROPOSTO]`, not frozen. No real pilot or definitive benchmark cases were created, reviewed or labeled by this engineering work. The ATTRACTOR was not run on RGC cases and no RGC metrics were produced. No real freeze manifest, tag or release was created. F-01 remains open and automated review is not independent human review.
+
+**Blocking human work:** conduct pilot 02 privately without AI assistance or ATTRACTOR execution; obtain a second independent annotation; complete human review F-01; then make separate maintainer decisions about protocol freeze and the hidden partition's provenance/isolation gates.
