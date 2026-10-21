@@ -253,6 +253,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 - **Limites:** esta decisão e a Emenda 5 não congelam o protocolo, não alteram o pré-registro, não autorizam acessar ou executar casos do benchmark e não mudam o Judge, Golden, manifestos ou hashes congelados.
 - **Estado:** aprovada pelo mantenedor nesta ordem em 2026-10-18; Emenda 5 a registra em `docs/eval/PROTOCOL-GOLDEN-V1.md`.
 - **Atualização datada (2026-10-21) — Emenda 6:** Anderson aprovou explicitamente a incorporação da definição B/A ao pré-registro. A restrição anterior de que a DEC-014/Emenda 5 “não altera o pré-registro” é superada por esta emenda aprovada, que mantém a redação anterior como histórico e acrescenta a interpretação vigente para H1. O desempate de B segue a ordem fixa do vocabulário `judge2` em `majority_label`. O estado do protocolo permanece **[PROPOSTO]**; não há congelamento nem autorização de execução. Implementação documental proposta na PR da Emenda 6.
+- **Atualização datada (2026-10-21):** a implementação documental deixou de ser proposta e foi incorporada pela PR #288 (`5a587ecb64abc6359c8fe36b8194b67dee3edda9`). A baseline B/A está registrada no pré-registro e no protocolo; o estado continua [PROPOSTO] e o congelamento segue dependente do piloto 02 humano e de decisão separada.
 
 ## DEC-015 — Autorização da Etapa 2 (manual técnico)
 
