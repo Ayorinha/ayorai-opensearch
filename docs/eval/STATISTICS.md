@@ -35,3 +35,8 @@ A Opção A recomenda testar H1 somente sobre a partição oculta (~90 casos) e 
 ## Escopo confirmatório de H1 — DEC-018 (aprovada em 2026-10-21)
 
 A hipótese H1 é testada somente sobre a partição oculta (~90 casos). Os casos públicos (~210) são usados para desenvolvimento e descrição, nunca para o teste confirmatório. O executor exige `--partition hidden|development`, registra o valor no relatório e não relata H1 como testada quando `development` é declarado. A declaração é um controle explícito de execução, não prova de que o arquivo realmente contém a partição correta; proveniência e isolamento continuam sendo gates humanos. Esta regra não congela o protocolo nem autoriza uma execução RGC.
+
+
+## Bootstrap por cluster de artigo — DEC-019 aprovada (2026-10-21)
+
+O IC95% primário de H1 usa reamostragem por cluster de artigo; o bootstrap por caso é análise de sensibilidade. O campo `bootstrap_cluster_id` é obrigatório nos casos elegíveis da partição oculta. Caso com artigo principal usa seu ID canônico; caso que depende conjuntamente de vários artigos sem principal único usa `bundle:` + IDs canônicos únicos em ordem lexical, separados por `+`. `cited_article_ids` mantém a lista completa de referências. Cada réplica sorteia com reposição tantos clusters quantos clusters únicos existem e inclui todos os casos dos clusters sorteados, preservando multiplicidade. Publicar método, seed, iterações, número de clusters e os dois intervalos. Nenhum bootstrap real ou métrica RGC foi produzido por esta alteração.
