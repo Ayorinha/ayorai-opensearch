@@ -38,6 +38,19 @@ def v050_style_app() -> FastAPI:
 
     @app.post("/v1/verify")
     def verify(payload: Annotated[Any, Body()]) -> dict[str, bool]:
+        if payload is None:
+            # Match the current API guard that preserves the frozen r1-a null-body contract.
+            raise RequestValidationError(
+                [
+                    {
+                        "type": "missing",
+                        "loc": ("body",),
+                        "msg": "Field required",
+                        "input": None,
+                    }
+                ],
+                body=payload,
+            )
         version = payload.get("schema_version", "r1-a") if isinstance(payload, dict) else "r1-a"
         if version == "r2-a":
             return {"ok": True}
@@ -70,11 +83,16 @@ def main() -> int:
         )
         body = response.json()
         detail = body.get("detail", [{}])[0]
+        error_type = detail.get("type", "<no-validation-error>")
         print(
             f"{name}: status={response.status_code} "
-            f"type={detail.get('type', '<no-validation-error>')} "
+            f"type={error_type} "
             f"loc={json.dumps(detail.get('loc', []), ensure_ascii=False)}"
         )
+        if name == "v0.5.0-style" and (
+            response.status_code != 422 or error_type != "missing"
+        ):
+            raise AssertionError("v0.5.0-style must preserve HTTP 422 type=missing for JSON null")
     try:
         VerificationRequest.model_validate(None, from_attributes=True)
     except ValidationError as exc:
