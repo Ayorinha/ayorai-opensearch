@@ -14,6 +14,7 @@ on:
       - "evals/ptbr/rgc_agreement.py"
       - "tests/test_rgc_eval_runner.py"
       - "tests/test_rgc_agreement.py"
+      - "tests/test_rgc_design_simulation.py"
       - ".github/workflows/rgc-design-simulation.yml"
 
 permissions:
