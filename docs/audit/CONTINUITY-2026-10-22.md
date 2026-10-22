@@ -11,7 +11,8 @@ Este documento registra uma leitura de continuidade da branch padrão em 2026-10
 - Mensagem do commit: `test(audit): cover report findings and failure severity`.
 - O commit declara alterações de testes, sem mudança no comportamento de produção, protocolo RGC, dados do benchmark ou metadados de release.
 - PR aberta identificada na consulta: [#391 — test(extraction): cover provenance and adapter contracts](https://github.com/Ayorinha/ayorai-opensearch/pull/391). A descrição declara escopo de testes e ausência de mudanças de produção, contrato API, protocolo RGC, dados do benchmark ou metadados de release.
-- A consulta ao endpoint de workflow runs associado ao SHA retornou zero execuções acionadas por PR. Esse endpoint filtra workflows de PR; portanto, o resultado **não confirma nem nega** o estado dos checks de push da `main`. Nenhum status de CI para o HEAD é afirmado neste registro.
+- A consulta ao endpoint de workflow runs associado ao SHA da `main` não retornou execuções acionadas por PR; esse endpoint não confirma nem nega os checks de push da `main`. Nenhum status de CI para o HEAD da `main` é afirmado neste registro.
+- Para a PR #391, head `db96e130d6a1b9291faf187ea12c5c6ba1e1f1f8`, foram consultadas sete execuções associadas à PR: CI (`39699096730`), Security (`39699096715`), CodeQL (`39699096759`), Dependency Review (`39699096750`), API Contract Guard (`39699096733`), Schemathesis Full API Contract (`39699096742`) e Golden r2 Migration (`39699096779`). Todas retornaram `completed` / `success` na consulta de 2026-10-22. Isso vale para esse SHA da PR #391, não para a `main` nem para commits futuros.
 
 ## Divergência documental a resolver
 
@@ -31,7 +32,7 @@ Este documento registra uma leitura de continuidade da branch padrão em 2026-10
 ## Próximos passos seguros
 
 1. Obter e registrar checks específicos do SHA atual da `main`; não inferir o estado do CI a partir de workflows de PR ausentes.
-2. Revisar a PR #391 sem aprová-la nem mesclá-la, verificando o diff e os checks efetivamente associados ao head da PR.
+2. A revisão de escopo e dos sete workflows da PR #391 foi realizada; registrar também a limitação dos testes sobre validação de payloads NLI malformados antes de tratar a cobertura como completa.
 3. Em trabalho documental separado, atualizar o snapshot de status somente com fatos confirmados e preservar os registros históricos.
 4. Aguardar trabalho humano do piloto 02, segunda anotação independente e F-01 antes de qualquer decisão de congelamento ou execução confirmatória.
 
