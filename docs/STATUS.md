@@ -6,18 +6,18 @@ This file is the single source of current project status. Historical documents d
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Current execution snapshot (2026-10-22)
+## Execution snapshot recorded on 2026-10-22
 
-- **Current main reference SHA:** `a44d0564d429d956898e819721299f715b46bda2` — [PR #393 merge commit](https://github.com/Ayorinha/ayorai-opensearch/commit/a44d0564d429d956898e819721299f715b46bda2).
+- **Main reference SHA when this snapshot was prepared:** `a44d0564d429d956898e819721299f715b46bda2` — [PR #393 merge commit](https://github.com/Ayorinha/ayorai-opensearch/commit/a44d0564d429d956898e819721299f715b46bda2).
 - **PR #391 merged:** [test(extraction): cover provenance and adapter contracts](https://github.com/Ayorinha/ayorai-opensearch/pull/391), squash SHA `bf49dba9e7e66bdc0af0203845547b8541e81cca`. The seven PR workflows passed for its reviewed head SHA.
 - **PR #393 merged:** [fix(extraction): validate NLI payloads and source offsets](https://github.com/Ayorinha/ayorai-opensearch/pull/393), squash SHA `a44d0564d429d956898e819721299f715b46bda2`. The seven PR workflows passed for reviewed head `e5b0be75295ff32fc5635e2ae8ccde4521980b9f`; these are PR-head results, not a claim that post-merge checks for the resulting main SHA were independently queried.
 - **Extraction hardening:** missing evidence end offsets now use `start_offset + len(content)`; NLI adapter payloads are validated strictly and malformed payloads are covered by regression tests. An omitted NLI confidence remains `0.0` as an unscored default, not as a Judge verdict.
-- **Open pull requests:** none were returned by the repository open-PR query immediately after PR #393 merged. This is a timestamped observation, not a permanent guarantee.
+- **PR #394 merged:** [docs(status): record extraction fixes and current PR state](https://github.com/Ayorinha/ayorai-opensearch/pull/394), squash SHA `f94e86db89eb000c4764c49b949a30d65e63e421`. This documentation follow-up clarifies that the snapshot above records the state at preparation time, not the current HEAD after this follow-up merge.
 - **Release state:** v0.5.0 remains the latest published release; v0.6.0 remains a draft. No tag or release was created by this work.
 - **Scientific boundary unchanged:** RGC PT-BR remains `[PROPOSTO]`, not frozen. Pilot 02, a second independent human annotation and independent human review F-01 remain pending. No RGC cases were created/labeled by AI, no ATTRACTOR execution over pilot/benchmark cases occurred, and no RGC metrics or external-validation claims were produced.
 - **Scope boundary:** Judge, Golden manifests/hashes, preregistration, benchmark cases and release metadata were not changed by PRs #391 or #393.
 
-Historical execution snapshots below remain historical and are not retroactively rewritten.
+The execution snapshot above is historical as of its preparation time. Historical snapshots below remain historical and are not retroactively rewritten.
 
 ## API contract note (2026-10-21) — r1-a JSON null
 
