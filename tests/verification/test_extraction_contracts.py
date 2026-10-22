@@ -56,7 +56,9 @@ def test_rule_extractor_records_deterministic_hashes_and_ids() -> None:
 
 def test_nli_extractor_records_backend_input_and_default_confidence() -> None:
     backend = StubNLIBackend([{"text": "A afirmação factual."}])
-    result = NLIClaimExtractor(backend, model="local-nli", version="1.2").extract("Resposta original.")
+    result = NLIClaimExtractor(
+        backend, model="local-nli", version="1.2"
+    ).extract("Resposta original.")
 
     assert backend.received == "Resposta original."
     assert result.claims[0].claim.id == "clm_001"
@@ -81,7 +83,7 @@ def test_llm_extractor_builds_prompt_and_validates_response() -> None:
     assert result.claims[0].claim.text == "A taxa foi de 5%."
     assert result.claims[0].confidence == 0.8
     assert result.claims[0].provenance.input_sha256 == hashlib.sha256(
-        "A resposta original.".encode("utf-8")
+        b"A resposta original."
     ).hexdigest()
 
 
