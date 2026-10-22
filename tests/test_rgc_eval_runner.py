@@ -1238,7 +1238,10 @@ def test_invalid_rectified_mark_is_rejected_even_when_case_is_not_scored(
     ("line", "message"),
     [
         ('{"case_id":123,"verdict":"SUPPORTED"}', "case_id must be a non-empty string"),
-        ('{"case_id":"x","verdict":"SUPPORTED","note":"extra"}', "expected exactly case_id and verdict"),
+        (
+            '{"case_id":"x","verdict":"SUPPORTED","note":"extra"}',
+            "expected exactly case_id and verdict",
+        ),
         ('{"case_id":"x"}', "expected exactly case_id and verdict"),
         ('{"case_id":" ","verdict":"SUPPORTED"}', "case_id must be a non-empty string"),
         ('{"case_id":"x","verdict":1}', "label 1"),
