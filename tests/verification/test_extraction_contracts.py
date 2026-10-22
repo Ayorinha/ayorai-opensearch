@@ -68,6 +68,24 @@ def test_nli_extractor_records_backend_input_and_default_confidence() -> None:
     assert result.claims[0].provenance.version == "1.2"
 
 
+@pytest.mark.parametrize(
+    "claim",
+    [
+        {"text": 123},
+        {"text": ""},
+        {"confidence": 0.5},
+        {"text": "claim", "confidence": 1.1},
+        {"text": "claim", "confidence": "0.5"},
+        {"text": "claim", "unexpected": True},
+    ],
+)
+def test_nli_extractor_rejects_invalid_payloads(claim: dict[str, object]) -> None:
+    extractor = NLIClaimExtractor(StubNLIBackend([claim]), model="local-nli", version="1.2")
+
+    with pytest.raises(ValidationError):
+        extractor.extract("Resposta original.")
+
+
 def test_llm_extractor_builds_prompt_and_validates_response() -> None:
     provider = StubProvider(
         json.dumps({"claims": [{"text": "A taxa foi de 5%.", "confidence": 0.8}]})
@@ -109,7 +127,7 @@ def test_llm_extractor_rejects_invalid_claim_payloads(payload: str) -> None:
 
 
 def test_retrieved_document_builds_evidence_with_content_hash_and_offsets() -> None:
-    content = "Trecho documental."
+    content = "Trecho"
     document = RetrievedDocument(
         id="doc-1",
         content=content,
@@ -131,7 +149,7 @@ def test_retrieved_document_builds_evidence_with_content_hash_and_offsets() -> N
     assert evidence.provenance_complete is True
 
 
-def test_retrieved_document_uses_content_length_when_end_offset_is_missing() -> None:
+def test_retrieved_document_end_offset_fallback_includes_source_start() -> None:
     content = "Fonte documental."
     document = RetrievedDocument(
         id="doc-2",
@@ -139,12 +157,14 @@ def test_retrieved_document_uses_content_length_when_end_offset_is_missing() -> 
         source_id="source-2",
         source_location="fixture://doc-2",
         retrieved_at=datetime(2026, 10, 21, tzinfo=UTC),
+        start_offset=7,
         canonical_url="https://example.test/source",
     )
 
     evidence = document.to_evidence("claim-2")
 
     assert evidence.id == "doc-2"
-    assert evidence.end_offset == len(content)
+    assert evidence.start_offset == 7
+    assert evidence.end_offset == 7 + len(content)
     assert str(evidence.canonical_url) == "https://example.test/source"
     assert evidence.origin_id is None
