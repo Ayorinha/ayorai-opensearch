@@ -1234,6 +1234,7 @@ def test_invalid_rectified_mark_is_rejected_even_when_case_is_not_scored(
             iterations=10,
         )
 
+
 @pytest.mark.parametrize(
     ("line", "message"),
     [
