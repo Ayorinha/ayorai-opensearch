@@ -170,7 +170,9 @@ class NLIClaimExtractor:
         claims: list[ExtractedClaim] = []
         for index, item in enumerate(raw, start=1):
             payload = NLIClaimPayload.model_validate(item)
-            serialized = json.dumps(payload.model_dump(mode="json"), ensure_ascii=False, sort_keys=True)
+            serialized = json.dumps(
+                payload.model_dump(mode="json"), ensure_ascii=False, sort_keys=True
+            )
             claims.append(
                 ExtractedClaim(
                     claim=Claim(id=f"clm_{index:03d}", text=payload.text),
