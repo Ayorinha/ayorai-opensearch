@@ -822,9 +822,7 @@ def load_labels(path: Path, vocabulary: str) -> dict[str, str]:
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
         if not isinstance(row, dict) or set(row) != {"case_id", "verdict"}:
-            raise ValueError(
-                f"{path}:{line_number}: expected exactly case_id and verdict"
-            )
+            raise ValueError(f"{path}:{line_number}: expected exactly case_id and verdict")
         case_id, verdict = row["case_id"], row["verdict"]
         if not isinstance(case_id, str) or not case_id.strip():
             raise ValueError(f"{path}:{line_number}: case_id must be a non-empty string")
