@@ -614,8 +614,8 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     labels.write_text(json.dumps({"case_id": "s1", "verdict": "SUPPORTED"}) + "\n")
     annotation_a = tmp_path / "annotation-a.jsonl"
     annotation_b = tmp_path / "annotation-b.jsonl"
-    annotation_a.write_text("synthetic annotation A\n", encoding="utf-8")
-    annotation_b.write_text("synthetic annotation B\n", encoding="utf-8")
+    annotation_a.write_text("synthetic annotation A\\n", encoding="utf-8")
+    annotation_b.write_text("synthetic annotation B\\n", encoding="utf-8")
     agreement_report = tmp_path / "agreement.json"
     agreement_report.write_text(
         json.dumps(
@@ -632,7 +632,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         encoding="utf-8",
     )
     adjudication_record = tmp_path / "adjudication.md"
-    adjudication_record.write_text("Synthetic test only; no real annotations.\n", encoding="utf-8")
+    adjudication_record.write_text("Synthetic test only; no real annotations.\\n", encoding="utf-8")
     annotation_approval = tmp_path / "annotation-approval.json"
     annotation_approval.write_text(
         json.dumps(
@@ -730,15 +730,15 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
     agreement = tmp_path / "agreement.json"
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
-    cases.write_text("{}\n", encoding="utf-8")
-    labels.write_text("{}\n", encoding="utf-8")
-    annotation_a.write_text("synthetic A\n", encoding="utf-8")
-    annotation_b.write_text("synthetic B\n", encoding="utf-8")
+    cases.write_text("{}\\n", encoding="utf-8")
+    labels.write_text("{}\\n", encoding="utf-8")
+    annotation_a.write_text("synthetic A\\n", encoding="utf-8")
+    annotation_b.write_text("synthetic B\\n", encoding="utf-8")
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
-    development_cases.write_text("{}\n", encoding="utf-8")
-    development_labels.write_text("{}\n", encoding="utf-8")
-    adjudication.write_text("synthetic only\n", encoding="utf-8")
+    development_cases.write_text("{}\\n", encoding="utf-8")
+    development_labels.write_text("{}\\n", encoding="utf-8")
+    adjudication.write_text("synthetic only\\n", encoding="utf-8")
     agreement.write_text(
         json.dumps(
             {
@@ -795,15 +795,15 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     agreement = tmp_path / "agreement.json"
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
-    cases.write_text("{}\n", encoding="utf-8")
-    labels.write_text("{}\n", encoding="utf-8")
-    annotation_a.write_text("synthetic A\n", encoding="utf-8")
-    annotation_b.write_text("synthetic B\n", encoding="utf-8")
+    cases.write_text("{}\\n", encoding="utf-8")
+    labels.write_text("{}\\n", encoding="utf-8")
+    annotation_a.write_text("synthetic A\\n", encoding="utf-8")
+    annotation_b.write_text("synthetic B\\n", encoding="utf-8")
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
-    development_cases.write_text("{}\n", encoding="utf-8")
-    development_labels.write_text("{}\n", encoding="utf-8")
-    adjudication.write_text("synthetic only\n", encoding="utf-8")
+    development_cases.write_text("{}\\n", encoding="utf-8")
+    development_labels.write_text("{}\\n", encoding="utf-8")
+    adjudication.write_text("synthetic only\\n", encoding="utf-8")
     agreement.write_text(
         json.dumps(
             {
@@ -854,7 +854,7 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     manifest = json.loads(approval.read_text(encoding="utf-8"))
     manifest["labels_sha256"] = RUNNER["_sha256"](labels)
     approval.write_text(json.dumps(manifest), encoding="utf-8")
-    annotation_a.write_text("changed annotation A\n", encoding="utf-8")
+    annotation_a.write_text("changed annotation A\\n", encoding="utf-8")
     with pytest.raises(ValueError, match="annotation_a_sha256 differs from approval manifest"):
         RUNNER["validate_annotation_approval"](
             cases,
@@ -1233,7 +1233,6 @@ def test_invalid_rectified_mark_is_rejected_even_when_case_is_not_scored(
             vocabulary="judge2",
             iterations=10,
         )
-
 
 @pytest.mark.parametrize(
     ("line", "message"),
