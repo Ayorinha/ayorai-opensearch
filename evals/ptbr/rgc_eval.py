@@ -811,14 +811,29 @@ def _git_commit() -> str | None:
 
 
 def load_labels(path: Path, vocabulary: str) -> dict[str, str]:
+    """Load strict JSONL gold labels without coercing malformed input."""
     allowed = set(VOCABULARIES[vocabulary]) | EXCLUSION_LABELS
     labels: dict[str, str] = {}
-    for row in _read_jsonl(path):
-        case_id, verdict = str(row["case_id"]), str(row["verdict"])
-        if verdict not in allowed:
-            raise ValueError(f"{case_id}: label {verdict!r} not in vocabulary {vocabulary}")
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        if not isinstance(row, dict) or set(row) != {"case_id", "verdict"}:
+            raise ValueError(
+                f"{path}:{line_number}: expected exactly case_id and verdict"
+            )
+        case_id, verdict = row["case_id"], row["verdict"]
+        if not isinstance(case_id, str) or not case_id.strip():
+            raise ValueError(f"{path}:{line_number}: case_id must be a non-empty string")
+        if not isinstance(verdict, str) or verdict not in allowed:
+            raise ValueError(
+                f"{path}:{line_number}: label {verdict!r} not in vocabulary {vocabulary}"
+            )
         if case_id in labels:
-            raise ValueError(f"{case_id}: duplicate label")
+            raise ValueError(f"{path}:{line_number}: duplicate label for {case_id!r}")
         labels[case_id] = verdict
     return labels
 
