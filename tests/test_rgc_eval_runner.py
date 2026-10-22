@@ -1248,9 +1248,7 @@ def test_invalid_rectified_mark_is_rejected_even_when_case_is_not_scored(
         ('{"case_id":"x","verdict":1}', "label 1"),
     ],
 )
-def test_load_labels_rejects_noncanonical_records(
-    tmp_path: Path, line: str, message: str
-) -> None:
+def test_load_labels_rejects_noncanonical_records(tmp_path: Path, line: str, message: str) -> None:
     path = tmp_path / "labels.jsonl"
     path.write_text(line + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match=message):
