@@ -27,6 +27,15 @@ class LLMClaimResponse(BaseModel):
     claims: list[LLMClaimPayload] = Field(min_length=1)
 
 
+class NLIClaimPayload(BaseModel):
+    """Strict adapter contract; missing confidence means unscored, not verified."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    text: str = Field(min_length=1)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
 _SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
 _TOKEN_RE = re.compile(r"[\wÀ-ÿ]+", re.UNICODE)
 
@@ -74,7 +83,11 @@ class RetrievedDocument:
     provenance_complete: bool = True
 
     def to_evidence(self, claim_id: str, *, evidence_id: str | None = None) -> Evidence:
-        end = self.end_offset if self.end_offset is not None else len(self.content)
+        end = (
+            self.end_offset
+            if self.end_offset is not None
+            else self.start_offset + len(self.content)
+        )
         return Evidence(
             id=evidence_id or self.id,
             claim_id=claim_id,
@@ -156,18 +169,18 @@ class NLIClaimExtractor:
         raw = self.backend.extract_claims(response)
         claims: list[ExtractedClaim] = []
         for index, item in enumerate(raw, start=1):
-            text = str(item["text"])
-            payload = json.dumps(item, ensure_ascii=False, sort_keys=True)
+            payload = NLIClaimPayload.model_validate(item)
+            serialized = json.dumps(payload.model_dump(mode="json"), ensure_ascii=False, sort_keys=True)
             claims.append(
                 ExtractedClaim(
-                    claim=Claim(id=f"clm_{index:03d}", text=text),
-                    confidence=float(item.get("confidence", 0.0)),
+                    claim=Claim(id=f"clm_{index:03d}", text=payload.text),
+                    confidence=payload.confidence,
                     provenance=ComponentProvenance(
                         component=self.component,
                         model=self.model,
                         version=self.version,
                         input_sha256=_sha256(response),
-                        output_sha256=_sha256(payload),
+                        output_sha256=_sha256(serialized),
                     ),
                 )
             )
