@@ -1233,3 +1233,29 @@ def test_invalid_rectified_mark_is_rejected_even_when_case_is_not_scored(
             vocabulary="judge2",
             iterations=10,
         )
+
+
+@pytest.mark.parametrize(
+    ("line", "message"),
+    [
+        ('{"case_id":123,"verdict":"SUPPORTED"}', "case_id must be a non-empty string"),
+        ('{"case_id":"x","verdict":"SUPPORTED","note":"extra"}', "expected exactly case_id and verdict"),
+        ('{"case_id":"x"}', "expected exactly case_id and verdict"),
+        ('{"case_id":" ","verdict":"SUPPORTED"}', "case_id must be a non-empty string"),
+        ('{"case_id":"x","verdict":1}', "label 1"),
+    ],
+)
+def test_load_labels_rejects_noncanonical_records(
+    tmp_path: Path, line: str, message: str
+) -> None:
+    path = tmp_path / "labels.jsonl"
+    path.write_text(line + "\\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        RUNNER["load_labels"](path, "judge2")
+
+
+def test_load_labels_rejects_blank_lines(tmp_path: Path) -> None:
+    path = tmp_path / "labels.jsonl"
+    path.write_text('{"case_id":"x","verdict":"SUPPORTED"}\\n\\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="blank lines are not allowed"):
+        RUNNER["load_labels"](path, "judge2")
