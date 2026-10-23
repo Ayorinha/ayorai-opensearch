@@ -66,7 +66,7 @@ The frozen contract remains HTTP 422 with error type `missing` and location `["b
 ## Release and system boundaries
 
 - Latest published release remains **v0.5.0** (Zenodo DOI [10.5281/zenodo.23344005](https://doi.org/10.5281/zenodo.23344005)); all-versions DOI: [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082).
-- A v0.6.0 notes draft exists at `docs/release/v0.6.0-draft.md`. No tag or release was created or published in this cycle.
+- As notas da v0.6.0 em preparação estão em `docs/release/v0.6.0.md`; a publicação permanece pendente. Nenhuma tag ou release foi criada ou publicada neste ciclo.
 - The RGC protocol remains `[PROPOSTO]`; approved decision options define rules but do not freeze the protocol or authorize a benchmark run.
 - No claims of certification, institutional validation, independent review or production readiness are supported by the current evidence.
 
