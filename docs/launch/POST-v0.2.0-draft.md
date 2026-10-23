@@ -1,5 +1,7 @@
 # Launch post draft — v0.2.0
 
+> **Aviso histórico — 2026-10-23:** este documento registra uma versão, auditoria, avaliação ou rascunho anterior; preserve-o como evidência histórica e não o trate como estado atual nem como resultado de benchmark vigente. Consulte docs/STATUS.md and the approved notes for the target release.
+
 > **Historical draft — not approved for publication.** Refresh all statements against the target release commit and verified Actions artifacts before use. The v0.2.0 figures below are historical baseline context, not current release metrics.
 
 ## Português

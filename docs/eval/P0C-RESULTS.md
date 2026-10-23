@@ -1,5 +1,7 @@
 # P0C — F0 Stabilization Results
 
+> **Aviso histórico — 2026-10-23:** este documento registra uma versão, auditoria, avaliação ou rascunho anterior; preserve-o como evidência histórica e não o trate como estado atual nem como resultado de benchmark vigente. Consulte docs/STATUS.md.
+
 ## Recovery trigger
 
 External review of p0-pipeline at c3b0deb found that the F0 report no longer matched the code: the verification path had regressed to retriever-derived claims, evaluation/golden.py called a mismatched ClaimVerificationPipeline constructor, and the regression suite was not green.

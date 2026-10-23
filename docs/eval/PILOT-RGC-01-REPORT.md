@@ -1,5 +1,7 @@
 # Relatório do piloto exploratório RGC PT-BR 01
 
+> **Aviso histórico — 2026-10-23:** este documento registra uma versão, auditoria, avaliação ou rascunho anterior; preserve-o como evidência histórica e não o trate como estado atual nem como resultado de benchmark vigente. Consulte docs/STATUS.md and docs/eval/PREREGISTRATION-RGC-v1.md.
+
 **Status: registro histórico de piloto exploratório — descartado; não é benchmark**  
 **Data do piloto:** 2026-10-16  
 **Anotador:** Anderson Leon Ayora  

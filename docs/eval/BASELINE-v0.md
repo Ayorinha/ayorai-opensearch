@@ -1,5 +1,8 @@
 # Golden v0 Baseline
 
+> **Aviso histórico — 2026-10-23:** este documento registra uma versão, auditoria, avaliação ou rascunho anterior; preserve-o como evidência histórica e não o trate como estado atual nem como resultado de benchmark vigente. Consulte docs/STATUS.md and the active evaluation preregistration.
+
+
 **System:** current-attractor  
 **Suite:** golden-v0  
 **Actions run:** https://github.com/Ayorinha/ayorai-opensearch/actions/runs/36759101933  

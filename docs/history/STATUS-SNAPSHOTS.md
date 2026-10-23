@@ -1,5 +1,8 @@
 # Historical STATUS snapshots
 
+> **Aviso histórico — 2026-10-23:** este documento registra uma versão, auditoria, avaliação ou rascunho anterior; preserve-o como evidência histórica e não o trate como estado atual nem como resultado de benchmark vigente. Consulte docs/STATUS.md and docs/TRACEABILITY-MASTER.md.
+
+
 Moved from `docs/STATUS.md` on 2026-10-21 to keep the live status page focused on the current snapshot. The sections below are preserved verbatim from main SHA `8664286e81593c36e7901c596a6aa01a00cd05cf`; historical claims are not current status.
 
 ## Execution snapshot before PR #280 merge (2026-10-20)

@@ -6,6 +6,17 @@ This file is the single source of current project status. Historical documents d
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
+## Documentação e referências — classificação de estado
+
+| Estado | Item | Interpretação atual |
+|---|---|---|
+| **VIGENTE** | `main` após a PR #399 | Linha de desenvolvimento; a versão global `0.6.0` está em preparação e ainda não deve ser tratada como release publicada. |
+| **VIGENTE** | Autenticação da API | `api_key` é o modo padrão; a aplicação falha fechada quando falta material obrigatório. Consulte `docs/api/CHANGELOG-API.md` para migração. |
+| **HISTÓRICO** | Release global `0.5.0` | Última versão publicada identificada neste registro. DOI específico da versão: [`10.5281/zenodo.23344005`](https://doi.org/10.5281/zenodo.23344005). |
+| **VIGENTE** | DOI de conceito no `CITATION.cff` | `10.5281/zenodo.23125082` é o DOI de conceito Zenodo para todas as versões; o DOI específico da v0.5.0 é `10.5281/zenodo.23344005`. O `CITATION.cff` ainda declara `version: 0.5.0` e `date-released: 2026-10-13`; qualquer atualização permanece pendente de aprovação explícita do mantenedor. |
+
+**Decisão pendente sobre DOI:** não alterar `CITATION.cff` nem substituir o DOI até aprovação explícita do mantenedor. Antes da preparação da release global `0.6.0`, decidir se o campo `doi` deve continuar apontando para o DOI de conceito ou passar ao DOI específico da versão; registrar a decisão e conferir a versão/data em conjunto. O DOI do conceito e o DOI de uma versão têm funções diferentes e não devem ser tratados como intercambiáveis.
+
 ## Consolidated process and RGC runner update — 2026-10-23
 
 - **Reference `main` SHA for this batch:** `641591973da25ede8234958b0a36b62423476630`.

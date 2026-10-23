@@ -1,5 +1,7 @@
 Revisão por ferramenta automatizada, publicada pelo mantenedor.
 
+> **Aviso histórico — 2026-10-23:** este documento registra uma versão, auditoria, avaliação ou rascunho anterior; preserve-o como evidência histórica e não o trate como estado atual nem como resultado de benchmark vigente. Consulte docs/STATUS.md and docs/eval/PREREGISTRATION-RGC-v1.md.
+
 # Revisão metodológica crítica — benchmark RGC PT-BR
 
 **Estado:** proposta de revisão; não aprova nem congela o protocolo.  

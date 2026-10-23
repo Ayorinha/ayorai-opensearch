@@ -1,5 +1,8 @@
 # Desvios de processo — mensagens de squash
 
+> **Aviso histórico — 2026-10-23:** este documento registra uma versão, auditoria, avaliação ou rascunho anterior; preserve-o como evidência histórica e não o trate como estado atual nem como resultado de benchmark vigente. Consulte docs/STATUS.md.
+
+
 **Data do registro:** 2026-10-21  
 **Escopo:** registrar os três desvios de formato de mensagem de commit identificados na revisão do histórico; não reescrever commits, não alterar a árvore histórica e não atribuir revisão independente.  
 **Revisão:** automatizada, não independente (F-01 permanece aberto).

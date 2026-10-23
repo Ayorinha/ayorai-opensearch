@@ -1,5 +1,7 @@
 # Phase 1 Closure — AYORAI ATTRACTOR
 
+> **Aviso histórico — 2026-10-23:** este documento registra uma versão, auditoria, avaliação ou rascunho anterior; preserve-o como evidência histórica e não o trate como estado atual nem como resultado de benchmark vigente. Consulte docs/STATUS.md and the release notes for the actually published version.
+
 **Status:** PREPARED / NOT CLOSED  
 **Reference main SHA after Q1 merge:** da05861e249a53d8a2f9ee57eb1a5e2a811e2651  
 **Release target:** v0.4.0 (documentation prepared; not released)
