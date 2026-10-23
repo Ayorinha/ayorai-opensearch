@@ -125,22 +125,15 @@ def load_documents(path: Path = DOCUMENTS) -> dict[str, Document]:
         for field in required:
             value = raw[field]
             if not isinstance(value, str) or not value.strip():
-                raise ValueError(
-                    f"{path}:{line_number}: {field} must be a non-empty string"
-                )
+                raise ValueError(f"{path}:{line_number}: {field} must be a non-empty string")
         source_id = raw["source_id"]
         text = raw["text"]
         declared = raw.get("text_sha256")
         if declared is not None:
             if not isinstance(declared, str) or re.fullmatch(r"[0-9a-f]{64}", declared) is None:
-                raise ValueError(
-                    f"{path}:{line_number}: "
-                    "text_sha256 must be 64 lowercase hex characters"
-                )
+                raise ValueError(f"{path}:{line_number}: text_sha256 must be 64 lowercase hex characters")
             if hashlib.sha256(text.encode()).hexdigest() != declared:
-                raise ValueError(
-                    f"{path}:{line_number}: text_sha256 mismatch for {source_id!r}"
-                )
+                raise ValueError(f"{path}:{line_number}: text_sha256 mismatch for {source_id!r}")
         if source_id in documents:
             raise ValueError(f"{path}:{line_number}: duplicate document {source_id!r}")
         documents[source_id] = Document(
