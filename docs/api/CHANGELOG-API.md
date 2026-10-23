@@ -7,7 +7,7 @@ All public API contract changes are additive unless explicitly identified otherw
 - **Comportamento padrão:** a aplicação inicia com `ATTRACTOR_AUTH_MODE=api_key`; se o material de chave exigido estiver ausente ou malformado, a inicialização falha fechada. Implantações que antes dependiam do modo sem autenticação devem configurar uma chave antes de atualizar.
 - **Envio da chave:** use `Authorization: Bearer <chave>` ou `X-API-Key: <chave>`, conforme a integração. `/health` continua público; as demais rotas protegidas exigem autenticação.
 - **Desenvolvimento isolado:** `ATTRACTOR_AUTH_MODE=off` deve ser definido explicitamente e não deve ser usado como configuração padrão de implantação.
-- **Migração:** provisionar a chave/pepper exigidos no ambiente, configurar os clientes e validar chamadas autenticadas antes de promover a versão. Não registrar chaves ou cabeçalhos de autorização em logs.
+- **Migração:** consulte o [guia de autenticação](../security/API-AUTH.md). Provisionar `ATTRACTOR_API_KEY_PEPPER` (segredo de 32 bytes em 64 caracteres hexadecimais) e `ATTRACTOR_API_KEYS_HMAC_SHA256` (lista separada por vírgulas de digests HMAC-SHA-256 de 64 caracteres hexadecimais), além de configurar os clientes e validar chamadas autenticadas antes de promover a versão. Nunca registrar chaves, pepper ou cabeçalhos de autorização em logs.
 - Esta nota descreve a linha global do produto `0.6.0`; não muda a versão separada do executor RGC (`rgc-eval/0.7.0`) nem afirma que a release global já foi publicada.
 
 ## 2026-10-17 — Fix #250: Schemathesis legacy `max_agents` checks on `/v1/audit`
