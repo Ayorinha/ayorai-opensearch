@@ -2,6 +2,14 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## 2026-10-23 — Preparação da versão global 0.6.0: autenticação obrigatória por padrão (mudança incompatível)
+
+- **Comportamento padrão:** a aplicação inicia com `ATTRACTOR_AUTH_MODE=api_key`; se o material de chave exigido estiver ausente ou malformado, a inicialização falha fechada. Implantações que antes dependiam do modo sem autenticação devem configurar uma chave antes de atualizar.
+- **Envio da chave:** use `Authorization: Bearer <chave>` ou `X-API-Key: <chave>`, conforme a integração. `/health` continua público; as demais rotas protegidas exigem autenticação.
+- **Desenvolvimento isolado:** `ATTRACTOR_AUTH_MODE=off` deve ser definido explicitamente e não deve ser usado como configuração padrão de implantação.
+- **Migração:** provisionar a chave/pepper exigidos no ambiente, configurar os clientes e validar chamadas autenticadas antes de promover a versão. Não registrar chaves ou cabeçalhos de autorização em logs.
+- Esta nota descreve a linha global do produto `0.6.0`; não muda a versão separada do executor RGC (`rgc-eval/0.7.0`) nem afirma que a release global já foi publicada.
+
 ## 2026-10-17 — Fix #250: Schemathesis legacy `max_agents` checks on `/v1/audit`
 
 - Fixed the Schemathesis contract-test configuration: `POST /v1/audit` shares `SearchRequest` with `POST /v1/opensearch`, so both routes intentionally retain legacy `max_agents` coercion (numeric strings, integral floats and booleans) restored in #169.
