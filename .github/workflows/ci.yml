@@ -323,7 +323,7 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          sha256sum *.tar.gz *.whl > SHA256SUMS.txt
+          sha256sum -- *.tar.gz *.whl > SHA256SUMS.txt
       - name: Verify distribution artifact checksums
         run: |
           set -euo pipefail
