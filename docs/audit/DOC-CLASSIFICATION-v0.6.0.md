@@ -121,7 +121,7 @@
 | HISTÓRICO | `docs/release/v0.3.0.md` | Notas de uma versão anterior já publicada; consultar docs/STATUS.md para a versão publicada vigente e docs/release/v0.6.0.md para o rascunho não publicado. |
 | HISTÓRICO | `docs/release/v0.4.0.md` | Notas de uma versão anterior já publicada; consultar docs/STATUS.md para a versão publicada vigente e docs/release/v0.6.0.md para o rascunho não publicado. |
 | HISTÓRICO | `docs/release/v0.5.0.md` | Notas de uma versão anterior já publicada; consultar docs/STATUS.md para a versão publicada vigente e docs/release/v0.6.0.md para o rascunho não publicado. |
-| VIGENTE | `docs/release/v0.6.0.md` | Notas da v0.6.0 em preparação, com publicação pendente e sem autorização de publicação. |
+| VIGENTE | `docs/release/v0.6.0.md` | Notas da v0.6.0 em preparação, com data oficial 2026-10-23 e publicação autorizada pelo mantenedor; ainda não publicada. |
 | VIGENTE | `docs/reports/JUDGE-2.0.0-GATES-REPORT.md` | Registra os resultados e limites dos gates do Judge 2.0.0, como evidência técnica de execução identificada. |
 | VIGENTE | `docs/research-contract.md` | Define os limites e compromissos do processo de pesquisa para distinguir método, evidência e conclusão. |
 | VIGENTE | `docs/research/README.md` | Indexa os documentos de pesquisa e orienta a consulta ao estado e escopo de cada linha de investigação. |
