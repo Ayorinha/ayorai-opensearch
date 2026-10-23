@@ -131,7 +131,8 @@ def load_documents(path: Path = DOCUMENTS) -> dict[str, Document]:
         declared = raw.get("text_sha256")
         if declared is not None:
             if not isinstance(declared, str) or re.fullmatch(r"[0-9a-f]{64}", declared) is None:
-                raise ValueError(f"{path}:{line_number}: text_sha256 must be 64 lowercase hex characters")
+                message = f"{path}:{line_number}: text_sha256 must be 64 lowercase hex characters"
+                raise ValueError(message)
             if hashlib.sha256(text.encode()).hexdigest() != declared:
                 raise ValueError(f"{path}:{line_number}: text_sha256 mismatch for {source_id!r}")
         if source_id in documents:
