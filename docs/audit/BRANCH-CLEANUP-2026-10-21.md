@@ -1,5 +1,8 @@
 # Branch cleanup audit — refreshed 2026-10-21
 
+> **Aviso histórico — 2026-10-23:** este documento registra uma versão, auditoria, avaliação ou rascunho anterior; preserve-o como evidência histórica e não o trate como estado atual nem como resultado de benchmark vigente. Consulte docs/STATUS.md.
+
+
 - Repository: `Ayorinha/ayorai-opensearch`
 - Snapshot main SHA: `210af8fdf4fe48b4d092120617b261602eb8ea92`
 - Remote branches enumerated: 205 across three pages.
