@@ -109,7 +109,8 @@ def load_documents(path: Path = DOCUMENTS) -> dict[str, Document]:
     """Load source documents without coercing malformed provenance fields."""
     documents: dict[str, Document] = {}
     required = {"source_id", "source_url", "retrieved_at", "source_license", "text"}
-    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    lines = path.read_text(encoding="utf-8").splitlines()
+    for line_number, line in enumerate(lines, start=1):
         if not line.strip():
             raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
         try:
@@ -132,9 +133,14 @@ def load_documents(path: Path = DOCUMENTS) -> dict[str, Document]:
         declared = raw.get("text_sha256")
         if declared is not None:
             if not isinstance(declared, str) or re.fullmatch(r"[0-9a-f]{64}", declared) is None:
-                raise ValueError(f"{path}:{line_number}: text_sha256 must be 64 lowercase hex characters")
+                raise ValueError(
+                    f"{path}:{line_number}: "
+                    "text_sha256 must be 64 lowercase hex characters"
+                )
             if hashlib.sha256(text.encode()).hexdigest() != declared:
-                raise ValueError(f"{path}:{line_number}: text_sha256 mismatch for {source_id!r}")
+                raise ValueError(
+                    f"{path}:{line_number}: text_sha256 mismatch for {source_id!r}"
+                )
         if source_id in documents:
             raise ValueError(f"{path}:{line_number}: duplicate document {source_id!r}")
         documents[source_id] = Document(
