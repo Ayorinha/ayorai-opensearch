@@ -1260,3 +1260,77 @@ def test_load_labels_rejects_blank_lines(tmp_path: Path) -> None:
     path.write_text('{"case_id":"x","verdict":"SUPPORTED"}\n\n', encoding="utf-8")
     with pytest.raises(ValueError, match="blank lines are not allowed"):
         RUNNER["load_labels"](path, "judge2")
+
+
+def _source_record(**overrides: Any) -> dict[str, Any]:
+    record: dict[str, Any] = {
+        "source_id": "synthetic-source",
+        "source_url": "https://example.test/source",
+        "retrieved_at": "2026-10-22T00:00:00Z",
+        "source_license": "synthetic",
+        "text": "Synthetic source text.",
+    }
+    record.update(overrides)
+    return record
+
+
+@pytest.mark.parametrize(
+    ("record", "message"),
+    [
+        (_source_record(source_id=123), "source_id must be a non-empty string"),
+        (_source_record(source_url=" "), "source_url must be a non-empty string"),
+        (_source_record(retrieved_at=None), "retrieved_at must be a non-empty string"),
+        (_source_record(source_license=["synthetic"]), "source_license must be a non-empty string"),
+        (_source_record(text=42), "text must be a non-empty string"),
+        ({key: value for key, value in _source_record().items() if key != "text"}, "expected an object"),
+        (_source_record(text_sha256="not-a-hash"), "text_sha256 must be 64 lowercase hex characters"),
+        (_source_record(text_sha256="0" * 64), "text_sha256 mismatch"),
+    ],
+)
+def test_load_documents_rejects_malformed_source_records(
+    tmp_path: Path, record: dict[str, Any], message: str
+) -> None:
+    path = tmp_path / "documents.jsonl"
+    path.write_text(json.dumps(record) + "\\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        RUNNER["load_documents"](path)
+
+
+def test_load_documents_accepts_additional_provenance_metadata(tmp_path: Path) -> None:
+    path = tmp_path / "documents.jsonl"
+    record = _source_record(
+        title="Synthetic source",
+        extraction="synthetic extraction method",
+        page_source_ids=["synthetic-page-1"],
+    )
+    path.write_text(json.dumps(record) + "\\n", encoding="utf-8")
+    documents = RUNNER["load_documents"](path)
+    assert documents["synthetic-source"].text == "Synthetic source text."
+
+
+@pytest.mark.parametrize(
+    ("contents", "message"),
+    [
+        ('{"source_id":', "invalid JSON"),
+        ('{"source_id":"x"}\\n', "expected an object"),
+        ('{"source_id":"x"}\\n\\n', "blank lines are not allowed"),
+    ],
+)
+def test_load_documents_rejects_invalid_jsonl_layout(
+    tmp_path: Path, contents: str, message: str
+) -> None:
+    path = tmp_path / "documents.jsonl"
+    path.write_text(contents, encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        RUNNER["load_documents"](path)
+
+
+def test_load_documents_rejects_duplicate_source_ids(tmp_path: Path) -> None:
+    path = tmp_path / "documents.jsonl"
+    record = _source_record()
+    path.write_text(
+        json.dumps(record) + "\\n" + json.dumps(record) + "\\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="duplicate document"):
+        RUNNER["load_documents"](path)
