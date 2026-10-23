@@ -1291,7 +1291,7 @@ def test_load_documents_rejects_malformed_source_records(
     tmp_path: Path, record: dict[str, Any], message: str
 ) -> None:
     path = tmp_path / "documents.jsonl"
-    path.write_text(json.dumps(record) + "\\n", encoding="utf-8")
+    path.write_text(json.dumps(record) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match=message):
         RUNNER["load_documents"](path)
 
@@ -1303,7 +1303,7 @@ def test_load_documents_accepts_additional_provenance_metadata(tmp_path: Path) -
         extraction="synthetic extraction method",
         page_source_ids=["synthetic-page-1"],
     )
-    path.write_text(json.dumps(record) + "\\n", encoding="utf-8")
+    path.write_text(json.dumps(record) + "\n", encoding="utf-8")
     documents = RUNNER["load_documents"](path)
     assert documents["synthetic-source"].text == "Synthetic source text."
 
@@ -1312,8 +1312,8 @@ def test_load_documents_accepts_additional_provenance_metadata(tmp_path: Path) -
     ("contents", "message"),
     [
         ('{"source_id":', "invalid JSON"),
-        ('{"source_id":"x"}\\n', "expected an object"),
-        ('{"source_id":"x"}\\n\\n', "blank lines are not allowed"),
+        ('{"source_id":"x"}\n', "expected an object"),
+        ('{"source_id":"x"}\n\n', "blank lines are not allowed"),
     ],
 )
 def test_load_documents_rejects_invalid_jsonl_layout(
@@ -1329,7 +1329,7 @@ def test_load_documents_rejects_duplicate_source_ids(tmp_path: Path) -> None:
     path = tmp_path / "documents.jsonl"
     record = _source_record()
     path.write_text(
-        json.dumps(record) + "\\n" + json.dumps(record) + "\\n",
+        json.dumps(record) + "\n" + json.dumps(record) + "\n",
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="duplicate document"):
