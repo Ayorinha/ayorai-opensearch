@@ -2,7 +2,7 @@
 
 **Data da auditoria:** 2026-10-23  
 **Base examinada:** árvore da PR #400 antes desta atualização, SHA `3aeaebbfecae8f1277b4737b074e42d1d95acefa`; inventário reconciliado com a árvore atual da mesma PR.  
-**Cobertura:** todos os arquivos Markdown sob `docs/` (119 arquivos `.md`). A classificação é por estado documental, não por qualidade técnica nem aprovação científica.
+**Cobertura:** os 119 arquivos Markdown sob `docs/` existentes antes desta auditoria, mais este próprio inventário recém-criado; total atual de 120 arquivos `.md`. A classificação é por estado documental, não por qualidade técnica nem aprovação científica.
 
 **Definições:** **VIGENTE** = referência ativa ou artefato normativo/proposto ainda relevante (não significa aprovado/congelado); **HISTÓRICO** = registro de uma versão, auditoria, experimento ou snapshot anterior, preservado sem reescrever o passado; **DESATUALIZADO** = afirmação demonstravelmente superada e ainda não corrigida. Nenhum arquivo foi classificado DESATUALIZADO apenas por existir conteúdo sobre duplicatas: a rejeição de `source_id` duplicado já existia antes da PR #399, e a redação da PR foi corrigida. O DOI de conceito `10.5281/zenodo.23125082` é **VIGENTE**; não é um DOI histórico. A v0.5.0 continua sendo a última release publicada, enquanto a v0.6.0 é apenas um rascunho.
 
@@ -25,6 +25,7 @@
 | VIGENTE | `docs/PROGRESS.md` | Documento de referência ativo ou artefato normativo/proposto preservado; conferir o estado explícito no próprio documento e docs/STATUS.md antes de tratar como aprovação ou evidência empírica. |
 | VIGENTE | `docs/PROVENANCE-MODEL.md` | Documento de referência ativo ou artefato normativo/proposto preservado; conferir o estado explícito no próprio documento e docs/STATUS.md antes de tratar como aprovação ou evidência empírica. |
 | VIGENTE | `docs/SPONSOR_CANDIDATES.md` | Documento de referência ativo ou artefato normativo/proposto preservado; conferir o estado explícito no próprio documento e docs/STATUS.md antes de tratar como aprovação ou evidência empírica. |
+| VIGENTE | `docs/audit/DOC-CLASSIFICATION-v0.6.0.md` | Este próprio inventário é o registro vigente da classificação documental. |
 | VIGENTE | `docs/STATUS.md` | Documento de referência ativo ou artefato normativo/proposto preservado; conferir o estado explícito no próprio documento e docs/STATUS.md antes de tratar como aprovação ou evidência empírica. |
 | VIGENTE | `docs/STYLE-GUIDE.md` | Documento de referência ativo ou artefato normativo/proposto preservado; conferir o estado explícito no próprio documento e docs/STATUS.md antes de tratar como aprovação ou evidência empírica. |
 | VIGENTE | `docs/THREAT-MODEL.md` | Documento de referência ativo ou artefato normativo/proposto preservado; conferir o estado explícito no próprio documento e docs/STATUS.md antes de tratar como aprovação ou evidência empírica. |
@@ -132,4 +133,4 @@
 
 ## Resultado de cobertura
 
-Inventário gerado a partir da árvore Git recursiva; arquivos listados uma única vez: **119**. Nenhum arquivo fora de `docs/` faz parte deste inventário. A classificação deve ser atualizada quando novos arquivos Markdown forem adicionados ou quando uma decisão do mantenedor tornar um artefato vigente, histórico ou comprovadamente desatualizado.
+Inventário gerado a partir da árvore Git recursiva: 119 arquivos preexistentes mais este próprio documento, totalizando **120 arquivos** listados uma única vez. Nenhum arquivo fora de `docs/` faz parte deste inventário. A classificação deve ser atualizada quando novos arquivos Markdown forem adicionados ou quando uma decisão do mantenedor tornar um artefato vigente, histórico ou comprovadamente desatualizado.
