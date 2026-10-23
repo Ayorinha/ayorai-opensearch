@@ -1285,12 +1285,23 @@ def _source_record(**overrides: Any) -> dict[str, Any]:
             "source_license must be a non-empty string",
         ),
         (_source_record(text=42), "text must be a non-empty string"),
-        (
-            {key: value for key, value in _source_record().items() if key != "text"},
-            "expected an object",
-        ),
+        *[
+            (
+                {key: value for key, value in _source_record().items() if key != missing},
+                "expected an object",
+            )
+            for missing in ("source_id", "source_url", "retrieved_at", "source_license", "text")
+        ],
+        *[
+            (_source_record(**{field: ""}), f"{field} must be a non-empty string")
+            for field in ("source_id", "source_url", "retrieved_at", "source_license", "text")
+        ],
         (
             _source_record(text_sha256="not-a-hash"),
+            "text_sha256 must be 64 lowercase hex characters",
+        ),
+        (
+            _source_record(text_sha256="A" * 64),
             "text_sha256 must be 64 lowercase hex characters",
         ),
         (_source_record(text_sha256="0" * 64), "text_sha256 mismatch"),
