@@ -1,5 +1,8 @@
 # F1 Results — Golden v0
 
+> **Aviso histórico — 2026-10-23:** este documento registra uma versão, auditoria, avaliação ou rascunho anterior; preserve-o como evidência histórica e não o trate como estado atual nem como resultado de benchmark vigente. Consulte docs/STATUS.md and the active evaluation preregistration.
+
+
 Evaluation commit: c4b73f4af75ddad4d74dc8887897e0d394249422
 CI: https://github.com/Ayorinha/ayorai-opensearch/actions/runs/37146515354
 Golden SHA-256: 2613aefccf232989833b80c0d23257e6e9f312e0f6b720801a0658407b2f1c75
