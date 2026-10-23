@@ -1322,7 +1322,7 @@ def test_load_documents_accepts_additional_provenance_metadata(tmp_path: Path) -
     [
         ('{"source_id":', "invalid JSON"),
         ('{"source_id":"x"}\n', "expected an object"),
-        ('{"source_id":"x"}\n\n', "blank lines are not allowed"),
+        (json.dumps(_source_record()) + "\n\n", "blank lines are not allowed"),
     ],
 )
 def test_load_documents_rejects_invalid_jsonl_layout(
