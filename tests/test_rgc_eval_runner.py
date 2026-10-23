@@ -1304,6 +1304,10 @@ def _source_record(**overrides: Any) -> dict[str, Any]:
             _source_record(text_sha256="A" * 64),
             "text_sha256 must be 64 lowercase hex characters",
         ),
+        (
+            _source_record(text_sha256=None),
+            "text_sha256 must be 64 lowercase hex characters",
+        ),
         (_source_record(text_sha256="0" * 64), "text_sha256 mismatch"),
     ],
 )
