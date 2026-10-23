@@ -1,27 +1,30 @@
-# Release provenance plan
+# Proveniência de artefatos de release
 
-This document records the release-hardening requirements for F6. It does not claim that the release controls are already implemented.
+Este documento distingue os controles configurados no repositório das evidências que só existirão depois de uma execução de CI e de uma publicação autorizada. A preparação da v0.6.0 não constitui uma release publicada.
 
-## Required release evidence
+## Build de distribuição no CI
 
-1. **SLSA provenance**
-   - Use the reusable workflow from `slsa-framework/slsa-github-generator`.
-   - Use `generator_generic_slsa3.yml` at the job level.
-   - Publish the SHA-256 hashes of release artifacts as the SLSA subjects.
+A workflow de CI inclui um job de empacotamento que constrói o source distribution (sdist) e o wheel a partir do checkout testado, calcula SHA-256 para cada artefato e publica os arquivos e o manifesto de hashes como artefatos da execução de CI. Os hashes demonstram a integridade dos arquivos daquele build; por si só, não constituem assinatura, atestado de proveniência ou prova de publicação.
 
-2. **OpenTimestamps**
-   - Generate an `.ots` file for the SHA-256 digest of the release artifact set.
-   - Attach the timestamp proof to the GitHub release.
+Para cada execução, a evidência esperada é:
 
-3. **SBOM**
-   - Generate and attach an SBOM for each release artifact set.
+- SHA do commit testado e URL da execução de CI;
+- arquivo sdist e arquivo wheel gerados pelo comando python -m build;
+- SHA256SUMS.txt com os hashes SHA-256 dos dois artefatos;
+- artefatos retidos na execução de CI, identificados pelo SHA do commit.
 
-4. **Release signatures**
-   - Sign the release artifacts and publish verification metadata.
+Nenhum hash de artefato é declarado neste documento antes de o job executar. O build do CI não cria tag, GitHub Release, publicação em índice de pacotes ou registro DOI.
 
-5. **Replayability**
-   - Record the release commit, artifact hashes, SBOM, provenance and timestamp proof together so a release can be independently replayed and checked.
+## Controles adicionais de endurecimento de release
 
-## Current status
+Os itens seguintes continuam sendo requisitos futuros e não são declarados como implementados por esta PR:
 
-These are F6 release requirements. No F6 release-provenance implementation is claimed by this document.
+1. SLSA provenance: integrar workflow geradora apropriada e publicar os hashes dos artefatos como subjects do atestado.
+2. OpenTimestamps: gerar prova .ots do conjunto de artefatos e anexá-la à release autorizada.
+3. SBOM: gerar e anexar SBOM para cada conjunto de artefatos.
+4. Assinaturas: assinar os artefatos e publicar metadados de verificação.
+5. Replayabilidade: manter commit de origem, hashes, SBOM, proveniência e provas temporais juntos para verificação independente.
+
+## Estado atual
+
+A PR prepara os metadados da versão 0.6.0 e adiciona o build sdist/wheel com SHA-256 ao CI. A data de release continua pendente. A publicação, a criação de tag, a alteração do DOI em CITATION.cff e a criação da release exigem decisão e autorização separadas do mantenedor.
