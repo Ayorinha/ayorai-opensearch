@@ -55,7 +55,7 @@ from ayorai_attractor.verification.stance import RuleStanceDetector
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.6.0"
+RUNNER_VERSION = "rgc-eval/0.7.0"
 SEED = 20261003
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
@@ -106,23 +106,43 @@ class Passage:
 
 
 def load_documents(path: Path = DOCUMENTS) -> dict[str, Document]:
+    """Load source documents without coercing malformed provenance fields."""
     documents: dict[str, Document] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
+    required = {"source_id", "source_url", "retrieved_at", "source_license", "text"}
+    lines = path.read_text(encoding="utf-8").splitlines()
+    for line_number, line in enumerate(lines, start=1):
         if not line.strip():
-            continue
-        raw = json.loads(line)
-        text = str(raw["text"])
+            raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
+        try:
+            raw = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        if not isinstance(raw, dict) or not required.issubset(raw):
+            raise ValueError(
+                f"{path}:{line_number}: expected an object containing "
+                + ", ".join(sorted(required))
+            )
+        for field in required:
+            value = raw[field]
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{path}:{line_number}: {field} must be a non-empty string")
+        source_id = raw["source_id"]
+        text = raw["text"]
         declared = raw.get("text_sha256")
-        if declared is not None and hashlib.sha256(text.encode()).hexdigest() != declared:
-            raise ValueError(f"{raw['source_id']}: text_sha256 mismatch")
-        if raw["source_id"] in documents:
-            raise ValueError(f"duplicate document: {raw['source_id']}")
-        documents[raw["source_id"]] = Document(
-            source_id=str(raw["source_id"]),
-            source_url=str(raw["source_url"]),
-            retrieved_at=str(raw["retrieved_at"]),
+        if "text_sha256" in raw:
+            if not isinstance(declared, str) or re.fullmatch(r"[0-9a-f]{64}", declared) is None:
+                message = f"{path}:{line_number}: text_sha256 must be 64 lowercase hex characters"
+                raise ValueError(message)
+            if hashlib.sha256(text.encode()).hexdigest() != declared:
+                raise ValueError(f"{path}:{line_number}: text_sha256 mismatch for {source_id!r}")
+        if source_id in documents:
+            raise ValueError(f"{path}:{line_number}: duplicate document {source_id!r}")
+        documents[source_id] = Document(
+            source_id=source_id,
+            source_url=raw["source_url"],
+            retrieved_at=raw["retrieved_at"],
             text=text,
-            source_license=str(raw["source_license"]),
+            source_license=raw["source_license"],
         )
     return documents
 

@@ -1,10 +1,21 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-10-22
+Updated: 2026-10-23
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
+
+## Consolidated process and RGC runner update — 2026-10-23
+
+- **Reference `main` SHA for this batch:** `641591973da25ede8234958b0a36b62423476630`.
+- **Origin of commit `6415919`: merged via PR #398, not a direct push.** PR: [#398 — strict validation of gold-label JSONL](https://github.com/Ayorinha/ayorai-opensearch/pull/398). Reviewed head SHA: `d2cf29aa4fbb9b519955b22e3b036a9a18f3c9b6`; merge commit: `641591973da25ede8234958b0a36b62423476630`. This was not a process deviation.
+- **PR #398 head checks (all completed successfully on that exact head SHA):** [CI](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814878), [CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814819), [Security](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814840), [Dependency Review](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814854), [API Contract Guard](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814873), [Schemathesis Full API Contract](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814957), [Golden r2 Migration](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814783), and [RGC Design Simulation](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814921). These results apply to the PR #398 head SHA, not to a different commit.
+- **Runner version:** the strict gold-label JSONL contract is a material input-contract change; `RUNNER_VERSION` and the synthetic report assertion are advanced to `rgc-eval/0.7.0`. Labels that relied on type coercion or blank-line tolerance may now be rejected.
+- **Extraction history (2026-10-22):** evidence end offset uses `start_offset + len(content)` when absent; NLI payloads are validated strictly; missing confidence defaults to `0.0` (“sem nota”), not a verdict. See [PR #391](https://github.com/Ayorinha/ayorai-opensearch/pull/391) and [PR #393](https://github.com/Ayorinha/ayorai-opensearch/pull/393).
+- **Current batch:** [PR #399](https://github.com/Ayorinha/ayorai-opensearch/pull/399) consolidates strict source-document validation, runner-version alignment, the runner specification, changelog, and this single STATUS update. Its head checks must be evaluated separately; PR #398 checks do not validate PR #399.
+- **Scientific boundary:** no real RGC case has been evaluated and no benchmark metric has been produced. The protocol remains `[PROPOSTO]`, not frozen. Pilot 02, a second independent human annotation and independent human review F-01 remain pending. No Judge, Golden v0/v0.1, frozen thresholds, preregistration, benchmark cases or release metadata are changed by this batch. No tag or release is authorized.
+
 
 ## Execution snapshot recorded on 2026-10-22
 
