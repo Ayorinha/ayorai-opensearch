@@ -5,6 +5,9 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 ## [Unreleased]
 
 ### Evaluation tooling
+- **2026-10-23 — executor RGC `rgc-eval/0.7.0` (PR #398):** a validação dos rótulos-ouro JSONL agora rejeita linha em branco, JSON inválido, campos extras ou ausentes, `case_id` vazio ou não textual, veredito não textual/fora do vocabulário e IDs duplicados; não há coerção silenciosa de tipos. Entradas que antes eram aceitas por coerção ou tolerância a linhas vazias podem agora ser rejeitadas. A versão do executor foi incrementada para refletir a mudança material do contrato.
+- **2026-10-22 — extração e payload NLI (PRs #391 e #393):** quando ausente, o offset final da evidência passa a ser `start_offset + len(content)`; o payload do adaptador NLI é validado em modo estrito. Confiança ausente permanece `0.0`, isto é, “sem nota”/valor padrão não pontuado — não é um veredito nem autoriza o Judge.
+- **Limite científico:** nenhum caso RGC real foi avaliado e nenhuma métrica de benchmark foi produzida; o protocolo RGC permanece [PROPOSTO], não congelado.
 - **2026-10-21 — executor RGC `rgc-eval/0.6.0`:** incrementa a versão do executor após a inclusão dos gates de congelamento do protocolo, integridade do runner, proveniência das fontes e aprovação humana das anotações (PRs #378–#382). A versão e o hash do código continuam sendo vinculados separadamente pelo manifesto de congelamento. Somente testes e simulações sintéticas foram executados; nenhum caso real RGC foi avaliado e nenhuma métrica de benchmark foi produzida.
 - **2026-10-21 — executor RGC `rgc-eval/0.5.0`:** incrementa `RUNNER_VERSION` porque `--partition` é obrigatório e o relatório passa a identificar o intervalo primário por cluster de artigo (DEC-019/Emenda 9), com bootstrap por caso como sensibilidade. O relatório sintético testa explicitamente `runner_version`; não houve execução sobre casos RGC nem produção de métricas RGC.
 
