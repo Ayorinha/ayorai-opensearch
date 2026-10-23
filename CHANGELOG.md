@@ -2,7 +2,7 @@
 
 All notable changes to AYORAI ATTRACTOR are documented here.
 
-## [Unreleased]
+## [0.6.0] — DATA PENDENTE
 
 ### Mudanças incompatíveis previstas para a versão global 0.6.0
 
