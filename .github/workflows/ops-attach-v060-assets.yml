@@ -1,0 +1,40 @@
+name: ops — attach v0.6.0 release assets (one-off)
+on:
+  push:
+    branches: [ops/attach-v0.6.0-assets]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  attach:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Download exact CI artifact from main run 40022675628 (commit 6fcdb7d)
+        run: |
+          set -euo pipefail
+          gh run download 40022675628 -R "$REPO" \
+            -n distributions-6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a -D files
+          ls -la files
+      - name: Verify checksums and expected published hashes
+        run: |
+          set -euo pipefail
+          cd files
+          test "$(ls | wc -l)" -eq 3
+          cat SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt
+          echo "040c4021b13656a14f0ef3bf71d82be2ad48c8f5045c0dafbbe40f6d9fac4fd3  ayorai_opensearch-0.6.0.tar.gz" > expected.txt
+          echo "6486c8d5a1277a50896b987f9603d83584d6d926e2eb47f12f7f47f3c1cc6415  ayorai_opensearch-0.6.0-py3-none-any.whl" >> expected.txt
+          sha256sum -c expected.txt
+          rm expected.txt
+      - name: Attach to release v0.6.0 (no overwrite)
+        run: |
+          set -euo pipefail
+          gh release upload v0.6.0 -R "$REPO" \
+            files/ayorai_opensearch-0.6.0.tar.gz \
+            files/ayorai_opensearch-0.6.0-py3-none-any.whl \
+            files/SHA256SUMS.txt
+          gh release view v0.6.0 -R "$REPO" --json assets --jq '.assets[] | "\(.name) \(.size)"'
