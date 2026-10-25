@@ -230,7 +230,7 @@ def test_llm_extractor_rejects_malformed_json() -> None:
 
 def test_retrieved_document_preserves_supplied_provenance_fields() -> None:
     content = "Trecho de origem."
-    supplied_hash = hashlib.sha256("conteúdo normalizado".encode("utf-8")).hexdigest()
+    supplied_hash = hashlib.sha256("conteúdo normalizado".encode()).hexdigest()
     document = RetrievedDocument(
         id="doc-provenance",
         content=content,
