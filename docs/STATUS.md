@@ -1,10 +1,22 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-10-23
+Updated: 2026-10-24
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
+
+## Snapshot confirmado — 2026-10-24 (rechecagem)
+
+- **`main` observado:** `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a`; não houve commit mais novo desde a verificação anterior.
+- **Checks pós-merge da `main`:** status combinado sem registros e consulta de workflows sem runs para esse SHA. O CI pós-merge permanece não confirmado.
+- **PR #269:** fechada sem merge; head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`; 3 comentários de conversa, 0 submissões de revisão e 0 threads inline. Os 7 workflows consultados no head terminaram com sucesso. A revisão foi sucedida por PRs documentais posteriores, incluindo a #273 mesclada.
+- **PR #403 antes desta atualização:** aberta em Draft, head `e03df9f2c293d62fcdea1b1afe3ac4e273ad8ca1`; 3? não — o diff tinha 2 arquivos, e não havia comentários, submissões de revisão ou threads inline. Os 7 workflows consultados para esse head terminaram com sucesso: [CI](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166732), [Security](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166743), [CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166738), [Dependency Review](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166791), [API Contract Guard](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166773), [Schemathesis](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166745) e [Golden r2 Migration](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166742). **Esses checks pertencem somente ao head anterior**; o novo registro documental exige checks no novo head.
+- **Atualização em andamento:** foi acrescentado `docs/audit/RGC-METHODOLOGY-CONTINUITY-2026-10-24.md` para registrar a rechecagem e os portões metodológicos. Esta mudança permanece na branch da PR #403; não foi mesclada nem aprovada.
+- **Revisão RGC:** DEC-014 e DEC-017–DEC-020 permanecem preservadas. B é a baseline primária de desenvolvimento; A é descritiva; H1 usa apenas a partição oculta; bootstrap por cluster de artigo é primário; concordância humana continua exigida. O protocolo segue **[PROPOSTO]**, não congelado.
+- **Pendências humanas:** piloto 02 manual sem IA/sem execução do sistema, segunda anotação independente e adjudicação, comprovação da independência, proveniência/vigência/retificações por caso, isolamento da partição oculta e revisão independente F-01.
+- **Release v0.6.0:** a contradição documental sobre data/autorização/DOI continua sem resolução; nenhuma tag ou publicação foi criada por esta atualização.
+- **Limites:** nenhum caso foi criado/rotulado por IA; nenhuma execução RGC ou métrica foi produzida; não há alegação de validação externa.
 
 ## Snapshot confirmado — 2026-10-23 (após PR #402)
 
@@ -17,7 +29,7 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 - **Inconsistência de release pendente:** `CITATION.cff` e `CHANGELOG.md` indicam versão/data `0.6.0` / `2026-10-23`; `docs/release/v0.6.0.md` afirma que a publicação está autorizada, mas também lista a autorização/data como pendência; o corpo da PR #402 igualmente trata data e publicação como decisões separadas. Não resolver essa contradição por inferência. Mantenedor deve confirmar a intenção antes de qualquer tag ou publicação.
 - **Limite científico:** RGC permanece `[PROPOSTO]`, não congelado. Piloto 02 manual, segunda anotação humana independente, revisão independente F-01, verificação do isolamento oculto e decisão formal de congelamento continuam pendentes. Não há métricas RGC nem validação externa declarada.
 
-Registro detalhado desta verificação: [docs/audit/RGC-METHODOLOGY-CONTINUITY-2026-10-23.md](audit/RGC-METHODOLOGY-CONTINUITY-2026-10-23.md).
+Registros detalhados: [snapshot de 2026-10-23](audit/RGC-METHODOLOGY-CONTINUITY-2026-10-23.md) e [rechecagem de 2026-10-24](audit/RGC-METHODOLOGY-CONTINUITY-2026-10-24.md).
 
 ## Documentação e referências — classificação de estado
 
