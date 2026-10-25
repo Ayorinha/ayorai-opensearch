@@ -76,3 +76,56 @@ def test_audit_evidence_handles_missing_evidence_and_failures() -> None:
     assert by_code["NO_EVIDENCE"].severity is AuditSeverity.ERROR
     assert by_code["NO_VERIFIED_EVIDENCE"].severity is AuditSeverity.WARNING
     assert by_code["FAILURE_RATE_LIMIT"].severity is AuditSeverity.WARNING
+
+
+def test_audit_reports_weak_independence_and_no_verified_evidence() -> None:
+    evidence = [
+        Evidence(
+            id="e1",
+            claim="claim",
+            source="source-a",
+            excerpt="excerpt",
+            independent=True,
+            verified=False,
+        ),
+        Evidence(
+            id="e2",
+            claim="claim",
+            source="source-b",
+            excerpt="excerpt",
+            independent=False,
+            verified=False,
+        ),
+    ]
+
+    report = AuditReport.from_response(response(evidence))
+    findings = {finding.code: finding for finding in report.findings}
+
+    assert report.evidence_count == 2
+    assert report.independent_evidence_count == 1
+    assert report.verified_evidence_count == 0
+    assert findings["WEAK_INDEPENDENCE"].severity is AuditSeverity.WARNING
+    assert findings["NO_VERIFIED_EVIDENCE"].severity is AuditSeverity.WARNING
+
+
+def test_audit_evidence_with_verified_independent_sources_has_no_findings() -> None:
+    evidence = [
+        Evidence(
+            id="e1",
+            claim="claim",
+            source="source-a",
+            excerpt="excerpt",
+            independent=True,
+            verified=True,
+        ),
+        Evidence(
+            id="e2",
+            claim="claim",
+            source="source-b",
+            excerpt="excerpt",
+            independent=True,
+            verified=True,
+        ),
+    ]
+
+    assert audit_evidence(evidence) == ()
