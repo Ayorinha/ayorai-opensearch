@@ -27,4 +27,6 @@ Os itens seguintes continuam sendo requisitos futuros e não são declarados com
 
 ## Estado atual
 
-A PR prepara os metadados da versão 0.6.0 e adiciona o build sdist/wheel com SHA-256 ao CI. A data de release continua pendente. A publicação, a criação de tag, a alteração do DOI em CITATION.cff e a criação da release exigem decisão e autorização separadas do mantenedor.
+Estado em 2026-10-25: o mantenedor escolheu a data oficial `2026-10-25`, autorizou preparar e publicar após verificar os artefatos e confirmou preservar o DOI de conceito `10.5281/zenodo.23125082`. `CITATION.cff`, `CHANGELOG.md` e as notas de release estão sendo alinhados nesta branch; essa alteração ainda não está na `main`.
+
+A publicação continua bloqueada até que uma execução de CI associada ao commit candidato final produza sdist, wheel e `SHA256SUMS.txt`, e os arquivos sejam baixados e verificados. O artefato consultado na execução 39760225707 pertence ao SHA antigo `33393f84da6c2ade4c40f628c683dd793a5dfa02` e não comprova um build da versão candidata `0.6.0` no commit de merge `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a`. Não foi confirmada nesta etapa a existência de tag `v0.6.0` ou GitHub Release; nenhum hash de distribuição é declarado como verificado.
