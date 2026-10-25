@@ -205,9 +205,7 @@ def test_orchestrator_marks_terminal_failure_and_uses_fallback_answer(
 
     result = Attractor().run(SearchRequest(query="terminal failure"))
 
-    assert result.answer == (
-        "Analysis completed for 'terminal failure'. No agent produced output."
-    )
+    assert result.answer == ("Analysis completed for 'terminal failure'. No agent produced output.")
     assert result.operation_status == "failed"
     assert result.failures[0].recoverable is False
     assert result.agents_used == ["silent_failure"]
