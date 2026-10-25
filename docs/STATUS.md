@@ -8,7 +8,7 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 
 ## Estado atual — 2026-10-25
 
-- **`main` de referência para este snapshot:** `4755f94cd36f349f07c18aa7eabff4c128df3b6d` (merge da PR #408). No SHA exato, os runs pós-merge [CI 40212484490](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40212484490), [Security 40212484495](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40212484495) e [CodeQL 40212484497](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40212484497) concluíram com sucesso. O merge desta atualização documental produzirá outro SHA de `main`.
+- **`main` de referência para este snapshot:** `4f3c0cea4e40df5141521c4a12010bc3da5ac365` (merge da PR #410, testes de cobertura). No SHA exato, os runs pós-merge [CI 40213557463](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557463), [Security 40213557486](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557486) e [CodeQL 40213557412](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557412) concluíram com sucesso. O CI executou a matriz Python 3.11–3.13: `1201 passed, 1 skipped in 39.65s`; cobertura global 95%. O merge desta atualização documental produzirá outro SHA de `main`.
 - **v0.6.0 publicada:** data oficial da versão 2026-10-23; tag `v0.6.0` em `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a`; GitHub Release publicada em 2026-10-24T00:41Z; Version DOI `10.5281/zenodo.23607357`; Concept DOI `10.5281/zenodo.23125082`.
 - **Comandos e jobs observados no CI do SHA `4755f94`:** testes Python 3.11, 3.12 e 3.13 passaram; `pytest -q` no job `namespace-compatibility` passou; `ruff check .` e `ruff format --check .` passaram nos jobs de teste; `mypy --strict` e os gates de regressão Judge/Golden passaram; o build de sdist/wheel e a verificação SHA-256 passaram. Estes são resultados do CI, não execução local.
 - **CI da release:** os 10 workflows da PR #402 passaram no head `d4d8cb0a83bb855b8b07ab108e94905798bd5d85`. Os 8 workflows da PR #405 e os 7 workflows da PR #406 também passaram nos respectivos heads antes dos merges. Esses resultados são específicos dos heads citados e não devem ser descritos como execução local nem como CI pós-merge do SHA atual de `main`.
@@ -132,7 +132,7 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 ## Deferred work
 
 - Manual chapters 01–04 have `Estado: Atual`; chapters 05–10 are linked in `docs/manual/README.md`.
-- Coverage is 94% overall. The next useful targets include `verification/extraction.py`, `audit.py`, and `orchestrator.py`; the registry and OpenAI-compatible provider now have 100% line coverage.
+- Coverage is 95% overall. PR #410 added tests only (no production behavior changes); `verification/extraction.py` (101 statements), `audit.py` (42 statements), and `orchestrator.py` (40 statements) now each have 100% line coverage. The registry and OpenAI-compatible provider also retain 100% line coverage.
 - Strict mypy now covers both RGC evaluation modules. Keep the scope evidence-driven and extend it only where the gate passes.
 - Security CI is clean: pip-audit found no known vulnerabilities; Bandit found no issues after comment-parser warning cleanup.
 - **Snapshot histórico de 2026-10-23:** as notas v0.6.0 ainda eram tratadas como rascunho naquele momento; a publicação posterior foi confirmada e está registrada no estado atual.
