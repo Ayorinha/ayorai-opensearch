@@ -36,9 +36,18 @@ A leitura conjunta do pré-registro, protocolo, especificação do executor e de
 - **Incerteza (DEC-019 / Emenda 9):** bootstrap percentil por cluster de artigo como intervalo primário; bootstrap por caso como sensibilidade. Preservar parâmetros aprovados e regra de agrupamento multiartigo.
 - **Concordância (DEC-020 / Emenda 10):** Cohen's kappa não ponderado, gate na estimativa pontual `κ ≥ 0,6`, com IC95%, concordância observada, matriz de confusão e marginais por classe; exclusões `RULE_GAP` devem ser contabilizadas separadamente segundo a regra aprovada.
 
-### Ambiguidade editorial a acompanhar — sem alterar decisões
+### Ambiguidades editoriais a acompanhar — sem alterar decisões
 
-Em `docs/DECISIONS-PENDING.md`, os quadros iniciais registram DEC-017 a DEC-020 como aprovadas, enquanto o texto explicativo histórico de algumas opções ainda usa formulações como “pendente de aprovação” e “se aprovada”. As aprovações datadas ao final das entradas e as Emendas 7–10 do pré-registro/protocolo esclarecem o estado vigente. Isto é um risco de leitura/editorial, não evidência de que as decisões foram revogadas. Não reescrever o histórico nesta atualização; uma limpeza futura deve preservar literalmente a trilha de decisão e distinguir proposta histórica de decisão vigente.
+A revisão cruzada encontrou formulações históricas que podem ser confundidas com o estado vigente:
+
+- Em `docs/eval/PREREGISTRATION-RGC-v1.md`, uma nota intitulada **“Nota corretiva vigente (2026-10-21) — DEC-018 permanece pendente”** afirma que a Emenda 8 seria não normativa. Mais adiante, a própria página registra que essa leitura foi superada e apresenta a **Emenda 8 aprovada**, com H1 apenas na partição oculta.
+- Em `docs/eval/STATISTICS.md`, a seção “Proposta de escopo confirmatório de H1 — DEC-018 (PENDENTE)” conserva texto dizendo que DEC-018 permanece pendente, embora a nota acima e abaixo a marque como superada e uma seção posterior registre o escopo aprovado.
+- Em `docs/eval/PROTOCOL-GOLDEN-V1.md`, a proposta antiga de Emenda 8 conserva texto que descreve DEC-018 como pendente; a seção posterior “Emenda 8 ... opção A aprovada” contém a regra vigente.
+- Em `docs/DECISIONS-PENDING.md`, algumas descrições históricas das opções ainda dizem “pendente” ou “se aprovada”, apesar de os cabeçalhos de estado vigente e os registros de aprovação ao final marcarem DEC-017–DEC-020 como aprovadas.
+
+**Interpretação conservadora:** isso é uma inconsistência editorial/trilha histórica ambígua, não evidência de revogação. O estado vigente deve seguir as aprovações explícitas datadas e as emendas aprovadas (DEC-017–DEC-020; Emendas 7–10), sem inferir que o protocolo esteja congelado.
+
+**Ação segura nesta etapa:** não alterar os documentos normativos nem reescrever o histórico. Recomenda-se uma futura PR exclusivamente documental que acrescente, junto a cada trecho antigo, um aviso inequívoco de “histórico/superado”, preservando integralmente o texto original e os registros de aprovação. Essa limpeza não pode mudar o conteúdo científico aprovado nem substituir a decisão do mantenedor sobre congelamento.
 
 ## 5. Portões humanos ainda abertos
 
