@@ -1,21 +1,59 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-10-23
+Updated: 2026-10-25
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
+## Estado atual — 2026-10-25
+
+- **`main` observado antes desta PR:** `21330a00cecd46b8a617abb14b5e2c0ae2c12e64` (após a PR #406); esta atualização documental produzirá um novo SHA de `main`.
+- **v0.6.0 publicada:** data oficial da versão 2026-10-23; tag `v0.6.0` em `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a`; GitHub Release publicada em 2026-10-24T00:41Z; Version DOI `10.5281/zenodo.23607357`; Concept DOI `10.5281/zenodo.23125082`.
+- **CI da release:** os 10 workflows da PR #402 passaram no head `d4d8cb0a83bb855b8b07ab108e94905798bd5d85`. Os 8 workflows da PR #405 e os 7 workflows da PR #406 também passaram nos respectivos heads antes dos merges. Esses resultados são específicos dos heads citados e não devem ser descritos como execução local nem como CI pós-merge do SHA atual de `main`.
+- **Proveniência de distribuição:** o artefato do run [40022675628](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40022675628) foi baixado; `sha256sum -c SHA256SUMS.txt` retornou `OK` para sdist e wheel. A comparação do MD5 do ZIP Zenodo com o zipball da tag é registrada como conferência automatizada, não independente; consulte [RELEASE-PROVENANCE.md](release/RELEASE-PROVENANCE.md).
+- **RGC:** o protocolo permanece **[PROPOSTO]**, não congelado. `docs/eval/PROTOCOL-FREEZE.json` não existe; o executor bloqueia a execução sem esse manifesto e sem aprovação humana da anotação. Nenhum caso RGC foi criado/completado/rotulado e o ATTRACTOR não foi executado em casos RGC.
+- **Pendências humanas:** piloto 02 manual sem IA e sem execução do sistema, segunda anotação por outra pessoa, revisão humana independente F-01 e decisão separada do mantenedor sobre congelamento. A revisão automatizada não é independente.
+
+> As seções seguintes preservam snapshots e referências históricas; statements sobre a publicação ainda pendente refletem o estado registrado na data original e foram superados pela publicação de 2026-10-23.
+
+## Snapshot confirmado — 2026-10-24 (rechecagem)
+
+- **`main` observado:** `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a`; não houve commit mais novo desde a verificação anterior.
+- **Checks pós-merge da `main`:** status combinado sem registros e consulta de workflows sem runs para esse SHA. O CI pós-merge permanece não confirmado.
+- **PR #269:** fechada sem merge; head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`; 3 comentários de conversa, 0 submissões de revisão e 0 threads inline. Os 7 workflows consultados no head terminaram com sucesso. A revisão foi sucedida por PRs documentais posteriores, incluindo a #273 mesclada.
+- **PR #403 antes desta atualização:** aberta em Draft, head `e03df9f2c293d62fcdea1b1afe3ac4e273ad8ca1`; o diff tinha 2 arquivos e não havia comentários, submissões de revisão ou threads inline. Os 7 workflows consultados para esse head terminaram com sucesso: [CI](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166732), [Security](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166743), [CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166738), [Dependency Review](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166791), [API Contract Guard](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166773), [Schemathesis](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166745) e [Golden r2 Migration](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40051166742). **Esses checks pertencem somente ao head anterior**; o novo registro documental exige checks no novo head.
+- **Atualização documental:** `docs/audit/RGC-METHODOLOGY-CONTINUITY-2026-10-24.md` consolida a rechecagem e os portões metodológicos; esta atualização está sendo rebaseada na `main` atual e precisa de checks no novo head.
+- **Revisão RGC:** DEC-014 e DEC-017–DEC-020 permanecem preservadas. B é a baseline primária de desenvolvimento; A é descritiva; H1 usa apenas a partição oculta; bootstrap por cluster de artigo é primário; concordância humana continua exigida. A rechecagem identificou linguagem histórica contraditória sobre DEC-018 em `PREREGISTRATION-RGC-v1.md`, `STATISTICS.md`, `PROTOCOL-GOLDEN-V1.md` e `DECISIONS-PENDING.md`; o estado aprovado está registrado nas emendas posteriores. Os arquivos normativos não foram alterados; recomenda-se apenas rotular melhor os trechos históricos numa PR documental separada. O protocolo segue **[PROPOSTO]**, não congelado.
+- **Pendências humanas:** piloto 02 manual sem IA/sem execução do sistema, segunda anotação independente e adjudicação, comprovação da independência, proveniência/vigência/retificações por caso, isolamento da partição oculta e revisão independente F-01.
+- **Release v0.6.0:** publicada em 2026-10-23; a inconsistência documental foi resolvida nas PRs #405 e #406, sem alterar a tag, a release ou os DOIs.
+- **Limites:** nenhum caso foi criado/rotulado por IA; nenhuma execução RGC ou métrica foi produzida; não há alegação de validação externa.
+
+## Snapshot confirmado — 2026-10-23 (após PR #402)
+
+- **Registro histórico de `main` em 2026-10-23:** `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a`, merge da PR [#402](https://github.com/Ayorinha/ayorai-opensearch/pull/402), que preparou a v0.6.0. A publicação foi confirmada posteriormente e está registrada no estado atual acima.
+- **Checks da PR #402:** 10/10 workflow runs concluídos com sucesso no head `d4d8cb0a83bb855b8b07ab108e94905798bd5d85`: [CI](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40020388194), [Security](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40020388149), [CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40020388355), [Dependency Review](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40020388016), [API Contract Guard](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40020388174), [Schemathesis](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40020388359), [Golden r2 Migration](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40020388072), [Docker smoke](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40020388217), [NLI Optional Dependency Smoke](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40020388326) e [Null body compatibility reproduction](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40020388090). Estes resultados pertencem ao head da PR, não ao SHA de merge.
+- **Checks pós-merge da `main`:** a consulta de status combinado para `6fcdb7d` não retornou registros, e a consulta de workflows associada ao SHA não forneceu runs pós-merge. Portanto, o CI pós-merge da `main` não está confirmado neste snapshot.
+- **PR #398:** mesclada em `641591973da25ede8234958b0a36b62423476630`; o head `d2cf29aa4fbb9b519955b22e3b036a9a18f3c9b6` teve oito workflows retornados, todos com sucesso: [CI](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814878), [CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814819), [Security](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814840), [Dependency Review](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814854), [API Contract Guard](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814873), [Schemathesis](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814957), [Golden r2 Migration](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814783) e [RGC Design Simulation](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39761814921). A mudança é validação estrita do JSONL de rótulos e testes sintéticos; não criou nem alterou casos.
+- **PR #269 e linhagem documental:** #269 está fechada sem merge, em Draft, head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`; há três comentários de conversa, nenhuma submissão de review e nenhum thread inline. Os sete workflows do head terminaram com sucesso ([CI](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39241516692), [CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39241516946), [Security](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39241516787), [Dependency Review](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39241516590), [API Contract Guard](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39241516739), [Schemathesis](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39241517114) e [Golden r2 Migration](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39241516646)). A #269 foi substituída pela #272; a #272 foi substituída pela [#273](https://github.com/Ayorinha/ayorai-opensearch/pull/273), que foi mesclada em `5719db48fc82c726671af7c9c7f7ef386d161edb` e alterou apenas `docs/eval/METHODOLOGY-REVIEW-RGC-PTBR-2026-10-18.md`. Os sete workflows da #273 também passaram. A [PR #275](https://github.com/Ayorinha/ayorai-opensearch/pull/275) foi mesclada alterando apenas a ficha do piloto 02; isso não representa criação ou execução de casos.
+- **Mudanças recentes:** [#399](https://github.com/Ayorinha/ayorai-opensearch/pull/399) alinhou a validação de documentos-fonte e o executor `rgc-eval/0.7.0`; [#400](https://github.com/Ayorinha/ayorai-opensearch/pull/400) e [#401](https://github.com/Ayorinha/ayorai-opensearch/pull/401) consolidaram documentação; [#402](https://github.com/Ayorinha/ayorai-opensearch/pull/402) preparou a v0.6.0. A publicação foi confirmada em 2026-10-25 e registrada nas PRs #405 e #406.
+- **Histórico — inconsistência de release identificada em 2026-10-24, resolvida em 2026-10-25:** `CITATION.cff`, `CHANGELOG.md` e `docs/release/v0.6.0.md` foram alinhados com a publicação já existente; veja as PRs #405 e #406. Nenhuma tag, release ou DOI foi criada ou alterada para resolver a inconsistência.
+- **Limite científico:** RGC permanece `[PROPOSTO]`, não congelado. Piloto 02 manual, segunda anotação humana independente, revisão independente F-01, verificação do isolamento oculto e decisão formal de congelamento continuam pendentes. Não há métricas RGC nem validação externa declarada.
+
+Registros detalhados: [verificação de continuidade de 2026-10-24](audit/RGC-METHODOLOGY-CONTINUITY-2026-10-24.md), que consolida a minuta de 2026-10-23.
+
 ## Documentação e referências — classificação de estado
 
 | Estado | Item | Interpretação atual |
 |---|---|---|
-| **VIGENTE** | `main` após a PR #399 | Linha de desenvolvimento; a versão global `0.6.0` está em preparação e ainda não deve ser tratada como release publicada. |
+| **HISTÓRICO** | `main` após a PR #402 — `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a` | A preparação global v0.6.0 foi mesclada em 2026-10-23. Naquele registro, a tag/release ainda não havia sido confirmada; a publicação posterior está registrada no estado atual acima. |
 | **VIGENTE** | Autenticação da API | `api_key` é o modo padrão; a aplicação falha fechada quando falta material obrigatório. Consulte `docs/api/CHANGELOG-API.md` para migração. |
-| **HISTÓRICO** | Release global `0.5.0` | Última versão publicada identificada neste registro. DOI específico da versão: [`10.5281/zenodo.23344005`](https://doi.org/10.5281/zenodo.23344005). |
-| **VIGENTE** | DOI de conceito no `CITATION.cff` | `10.5281/zenodo.23125082` é o DOI de conceito Zenodo para todas as versões; o DOI específico da v0.5.0 é `10.5281/zenodo.23344005`. O `CITATION.cff` ainda declara `version: 0.5.0` e `date-released: 2026-10-13`; qualquer atualização permanece pendente de aprovação explícita do mantenedor. |
+| **HISTÓRICO** | Release global `0.5.0` | Versão publicada anterior. DOI específico da versão: [`10.5281/zenodo.23344005`](https://doi.org/10.5281/zenodo.23344005). |
+| **VIGENTE** | DOI no `CITATION.cff` | O campo `doi` mantém o DOI de conceito `10.5281/zenodo.23125082`; `identifiers` registra o DOI específico da v0.6.0 `10.5281/zenodo.23607357`. A versão é `0.6.0` e a data oficial é `2026-10-23`. |
 
-**Decisão pendente sobre DOI:** não alterar `CITATION.cff` nem substituir o DOI até aprovação explícita do mantenedor. Antes da preparação da release global `0.6.0`, decidir se o campo `doi` deve continuar apontando para o DOI de conceito ou passar ao DOI específico da versão; registrar a decisão e conferir a versão/data em conjunto. O DOI do conceito e o DOI de uma versão têm funções diferentes e não devem ser tratados como intercambiáveis.
+**Registro de decisão de DOI — resolvido em 2026-10-25:** o campo `doi` permanece no DOI de conceito e `identifiers` contém o DOI específico da versão v0.6.0. Os dois identificadores têm funções distintas.
+
+> **Aviso histórico — 2026-10-23:** a seção abaixo descreve a referência `641591973da25ede8234958b0a36b62423476630` e o estado anterior às PRs #399–#402. Para o estado atual, use o snapshot confirmado acima; não trate as referências antigas como estado corrente.
 
 ## Consolidated process and RGC runner update — 2026-10-23
 
@@ -25,7 +63,7 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 - **Runner version:** the strict gold-label JSONL contract is a material input-contract change; `RUNNER_VERSION` and the synthetic report assertion are advanced to `rgc-eval/0.7.0`. Labels that relied on type coercion or blank-line tolerance may now be rejected.
 - **Extraction history (2026-10-22):** evidence end offset uses `start_offset + len(content)` when absent; NLI payloads are validated strictly; missing confidence defaults to `0.0` (“sem nota”), not a verdict. See [PR #391](https://github.com/Ayorinha/ayorai-opensearch/pull/391) and [PR #393](https://github.com/Ayorinha/ayorai-opensearch/pull/393).
 - **Current batch:** [PR #399](https://github.com/Ayorinha/ayorai-opensearch/pull/399) consolidates strict source-document validation, runner-version alignment, the runner specification, changelog, and this single STATUS update. Its head checks must be evaluated separately; PR #398 checks do not validate PR #399.
-- **Scientific boundary:** no real RGC case has been evaluated and no benchmark metric has been produced. The protocol remains `[PROPOSTO]`, not frozen. Pilot 02, a second independent human annotation and independent human review F-01 remain pending. No Judge, Golden v0/v0.1, frozen thresholds, preregistration, benchmark cases or release metadata are changed by this batch. No tag or release is authorized.
+- **Historical scientific boundary at the 2026-10-23 snapshot:** no real RGC case had been evaluated and no benchmark metric had been produced. The protocol remains `[PROPOSTO]`, not frozen. Pilot 02, a second independent human annotation and independent human review F-01 remain pending. No Judge, Golden v0/v0.1, frozen thresholds, preregistration or benchmark cases were changed by that batch. The statement that no tag or release was authorized is historical and was superseded by the software publication; publication does not authorize RGC execution or protocol freeze.
 
 
 ## Execution snapshot recorded on 2026-10-22
@@ -37,7 +75,7 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 - **PR #394 merged:** [docs(status): record extraction fixes and current PR state](https://github.com/Ayorinha/ayorai-opensearch/pull/394), squash SHA `f94e86db89eb000c4764c49b949a30d65e63e421`. This documentation follow-up clarifies that the snapshot above records the state at preparation time, not the current HEAD after this follow-up merge.
 - **PR #395 merged:** [docs(status): clarify snapshot timestamp and follow-up merge](https://github.com/Ayorinha/ayorai-opensearch/pull/395), squash SHA `bd99f4b3e25a785cdcc08172d860a317532e6d90`. The current `main` reference after this documentation-only merge is `bd99f4b3e25a785cdcc08172d860a317532e6d90`; the historical CI statements above refer to their explicitly named commit/PR heads, not to post-merge checks for this SHA. The combined-status query returned no status records, so main CI is not confirmed by that query.
 - **PR #396 merged:** [docs(status): record PR #395 merge and main reference](https://github.com/Ayorinha/ayorai-opensearch/pull/396), squash SHA `f7277d3e00a0efb8c47d8a5366bc9eba0db38778`. All seven PR workflows passed for reviewed head `da3ad5f9cc0145154e38cb1f62fbee137cd8fdfd`, including CI on Python 3.11, 3.12 and 3.13, Security, CodeQL, Dependency Review, API Contract Guard, Schemathesis and Golden r2 Migration. These are PR-head results; they are not a claim that post-merge main checks were separately queried.
-- **Release state:** v0.5.0 remains the latest published release; v0.6.0 remains a draft. No tag or release was created by this work.
+- **Historical release state at the 2026-10-23 snapshot:** v0.5.0 was the latest published release at that time. The later v0.6.0 publication is documented in the current-status section above.
 - **Scientific boundary unchanged:** RGC PT-BR remains `[PROPOSTO]`, not frozen. Pilot 02, a second independent human annotation and independent human review F-01 remain pending. No RGC cases were created/labeled by AI, no ATTRACTOR execution over pilot/benchmark cases occurred, and no RGC metrics or external-validation claims were produced.
 - **Scope boundary:** Judge, Golden manifests/hashes, preregistration, benchmark cases and release metadata were not changed by PRs #391 or #393.
 
@@ -65,8 +103,8 @@ The frozen contract remains HTTP 422 with error type `missing` and location `["b
 
 ## Release and system boundaries
 
-- Latest published release remains **v0.5.0** (Zenodo DOI [10.5281/zenodo.23344005](https://doi.org/10.5281/zenodo.23344005)); all-versions DOI: [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082).
-- As notas da v0.6.0 em preparação estão em `docs/release/v0.6.0.md`; a publicação permanece pendente. Nenhuma tag ou release foi criada ou publicada neste ciclo.
+- A release publicada mais recente é **v0.6.0** (Zenodo DOI [10.5281/zenodo.23607357](https://doi.org/10.5281/zenodo.23607357)); o DOI de todas as versões é [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082).
+- As notas da v0.6.0 estão em `docs/release/v0.6.0.md`; publicação confirmada. Nenhuma tag ou release foi criada ou alterada por esta atualização documental.
 - The RGC protocol remains `[PROPOSTO]`; approved decision options define rules but do not freeze the protocol or authorize a benchmark run.
 - No claims of certification, institutional validation, independent review or production readiness are supported by the current evidence.
 
@@ -96,7 +134,7 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 - Coverage is 94% overall. The next useful targets include `verification/extraction.py`, `audit.py`, and `orchestrator.py`; the registry and OpenAI-compatible provider now have 100% line coverage.
 - Strict mypy now covers both RGC evaluation modules. Keep the scope evidence-driven and extend it only where the gate passes.
 - Security CI is clean: pip-audit found no known vulnerabilities; Bandit found no issues after comment-parser warning cleanup.
-- v0.6.0 notes remain a draft; do not create a tag or publish a release.
+- **Snapshot histórico de 2026-10-23:** as notas v0.6.0 ainda eram tratadas como rascunho naquele momento; a publicação posterior foi confirmada e está registrada no estado atual.
 - Remote branch deletion remains blocked by missing connector capability. The audit records candidates but does not claim deletion.
 
 ## Engineering gates
@@ -116,7 +154,7 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 - **PR #379** — `fix(eval): bind RGC freeze to runner integrity`: the freeze manifest binds the exact protocol, preregistration, runner specification, runner code and runner version.
 - **PR #380** — `fix(eval): require declared source provenance in pilot checker`: each filled pilot case must identify a captured source, and the excerpt must be found literally in that declared source. Synthetic regression tests cover missing, unknown and mismatched source identifiers. PR #380 CI completed with 19 successful checks and one conditionally skipped design-simulation job; no checks failed.
 
-**Scientific status is unchanged:** the RGC PT-BR protocol remains `[PROPOSTO]`; no real pilot or benchmark cases were created or labeled by this engineering work, the ATTRACTOR was not run on RGC cases, and no RGC metrics were produced. No real freeze manifest, tag or release was created. The automated checks are not an independent human review, and F-01 remains open.
+**Scientific status is unchanged:** the RGC PT-BR protocol remains `[PROPOSTO]`; no real pilot or benchmark cases were created or labeled by this engineering work, the ATTRACTOR was not run on RGC cases, and no RGC metrics were produced. No real protocol-freeze manifest was created; the published software tag/release does not freeze the RGC protocol. The automated checks are not an independent human review, and F-01 remains open.
 
 **Next blocking dependency:** a human must conduct pilot 02 privately, without AI assistance and without running the ATTRACTOR, then record only methodological findings. A second annotator and independent human review remain necessary before a maintainer freeze decision and any definitive dataset work.
 
@@ -130,7 +168,7 @@ Issue [#250](https://github.com/Ayorinha/ayorai-opensearch/issues/250) was close
 - **PR #384** — `test(rgc): cover synthetic design simulation invariants`, SHA `5ad402ab9f73e6b592d5fb75168d54030ae2a196`. Added deterministic tests for agreement coefficients, baseline tie-breaking and synthetic prediction accuracy. All checks, including the RGC design simulation, passed for this PR.
 - **PR #385** — `fix(eval): advance RGC runner version to 0.6.0`, SHA `970af6ddc7d912552e18fbc01bed534242f9b56a`. The executor version now matches the material changes to protocol-freeze, runner-integrity, source-provenance and annotation-approval gates. PR CI and post-merge CI, security and CodeQL all passed; the dedicated synthetic design-simulation workflow also completed successfully ([run 39649859657](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/39649859657)).
 
-**Scientific status is unchanged:** the RGC PT-BR protocol remains `[PROPOSTO]`, not frozen. No real pilot or definitive benchmark cases were created, reviewed or labeled by this engineering work. The ATTRACTOR was not run on RGC cases and no RGC metrics were produced. No real freeze manifest, tag or release was created. F-01 remains open and automated review is not independent human review.
+**Scientific status is unchanged:** the RGC PT-BR protocol remains `[PROPOSTO]`, not frozen. No real pilot or definitive benchmark cases were created, reviewed or labeled by this engineering work. The ATTRACTOR was not run on RGC cases and no RGC metrics were produced. No real protocol-freeze manifest was created; the published software tag/release does not freeze the RGC protocol. F-01 remains open and automated review is not independent human review.
 
 **Blocking human work:** conduct pilot 02 privately without AI assistance or ATTRACTOR execution; obtain a second independent annotation; complete human review F-01; then make separate maintainer decisions about protocol freeze and the hidden partition's provenance/isolation gates.
 
@@ -152,4 +190,4 @@ This limitation does not authorize pilot case creation, system execution, protoc
 - **PR #388:** merged by squash after all seven associated workflow runs completed successfully: CI, Security, CodeQL, Dependency Review, API Contract Guard, Schemathesis Full API Contract, and Golden r2 Migration. The latest run results showed success for all seven workflows.
 - **Manual index:** `docs/manual/README.md` now links all ten existing chapters and explains that `Atual` is a documentation status, not proof of automatic revalidation against HEAD.
 - **Open PRs:** none were returned by the repository open-PR search immediately after the merge.
-- **Scientific and release boundaries unchanged:** RGC remains `[PROPOSTO]`, not frozen; no real pilot/benchmark cases or RGC metrics were created by this engineering work; F-01 and the independent human annotation/review gates remain open. v0.6.0 remains a draft and no release/tag is authorized by this update.
+- **Scientific and release boundaries unchanged:** RGC remains `[PROPOSTO]`, not frozen; no real pilot/benchmark cases or RGC metrics were created by this engineering work; F-01 and the independent human annotation/review gates remain open. v0.6.0 is published, but the software release does not freeze the RGC protocol or authorize RGC execution.
