@@ -7,9 +7,9 @@ import ayorai_attractor.orchestrator as orchestrator
 from ayorai_attractor.agents.core import AgentContext, ResearchAgent
 from ayorai_attractor.api.app import app
 from ayorai_attractor.models import AgentResult, FailureType, SearchRequest
-from ayorai_attractor.tenant import TenantContext
 from ayorai_attractor.orchestrator import Attractor
 from ayorai_attractor.providers.base import Provider, ProviderResponse
+from ayorai_attractor.tenant import TenantContext
 
 
 def test_orchestrator_is_unverified_without_external_sources() -> None:
