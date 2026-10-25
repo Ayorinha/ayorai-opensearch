@@ -2,6 +2,8 @@
 
 All notable changes to AYORAI ATTRACTOR are documented here.
 
+## [Unreleased]
+
 ## [0.6.0] — 2026-10-23
 
 ### Mudanças incompatíveis previstas para a versão global 0.6.0

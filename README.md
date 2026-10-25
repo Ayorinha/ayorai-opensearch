@@ -13,7 +13,7 @@
 [![CodeQL](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ayorinha/ayorai-opensearch/actions/workflows/codeql.yml)
 [![Licença Apache-2.0](https://img.shields.io/badge/licença-Apache--2.0-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23344005.svg)](https://doi.org/10.5281/zenodo.23344005)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23125082.svg)](https://doi.org/10.5281/zenodo.23125082)
 
 [Entenda o projeto](#o-que-é) · [Como funciona](#como-funciona) · [Estado e limites](#o-que-está-comprovado-hoje) · [Documentação](docs/INDEX.md) · [Instalação](#começar)
 

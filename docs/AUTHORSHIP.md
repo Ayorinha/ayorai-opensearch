@@ -28,4 +28,4 @@ The verifiable record of authorship and prior intellectual property (first commi
 
 ## Citation
 
-For research or software reuse, cite the repository using [CITATION.cff](../CITATION.cff). Cite all versions with DOI 10.5281/zenodo.23125082; cite a specific release with its version DOI (v0.5.0: 10.5281/zenodo.23344005; v0.4.0: 10.5281/zenodo.23300849).
+For research or software reuse, cite the repository using [CITATION.cff](../CITATION.cff). Cite all versions with DOI 10.5281/zenodo.23125082; cite a specific release with its version DOI (v0.6.0: 10.5281/zenodo.23607357; v0.5.0: 10.5281/zenodo.23344005; v0.4.0: 10.5281/zenodo.23300849).

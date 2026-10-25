@@ -22,6 +22,7 @@ Cada item abaixo pode ser conferido de forma independente, sem depender deste do
 | Referência histórica baseline-legacy-v0 | tag em 2026-10-09; depósito Zenodo em 2026-10-11 | tag `baseline-legacy-v0` (`3be512b`) · DOI 10.5281/zenodo.23290188 |
 | Release v0.4.0 | 2026-10-11 | tag `v0.4.0` (`d4d1c16`) · DOI 10.5281/zenodo.23300849 |
 | Release v0.5.0 | 2026-10-13 | tag `v0.5.0` (`e9eccb5`) · DOI 10.5281/zenodo.23344005 |
+| Release v0.6.0 | 2026-10-23 | tag `v0.6.0` (`6fcdb7d`) · DOI 10.5281/zenodo.23607357 |
 | DOI de conceito (todas as versões) | — | 10.5281/zenodo.23125082 |
 
 Os registros no Zenodo (CERN) são depósitos com data e conteúdo arquivados por terceiro independente; os hashes de commit do Git ligam cada versão ao seu conteúdo exato.
