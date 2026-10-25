@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from ayorai_attractor.providers.base import ProviderResponse
 from ayorai_attractor.verification.extraction import (
+    ComponentProvenance,
     LLMClaimExtractor,
     NLIClaimExtractor,
     RetrievedDocument,
@@ -168,3 +169,86 @@ def test_retrieved_document_end_offset_fallback_includes_source_start() -> None:
     assert evidence.end_offset == 7 + len(content)
     assert str(evidence.canonical_url) == "https://example.test/source"
     assert evidence.origin_id is None
+
+
+def test_component_provenance_serializes_all_audit_fields() -> None:
+    provenance = ComponentProvenance(
+        component="claim_extractor.test",
+        model="fixture-model",
+        version="2",
+        input_sha256="input-digest",
+        output_sha256="output-digest",
+    )
+
+    assert provenance.as_dict() == {
+        "component": "claim_extractor.test",
+        "model": "fixture-model",
+        "version": "2",
+        "input_sha256": "input-digest",
+        "output_sha256": "output-digest",
+    }
+
+
+def test_nli_extractor_preserves_explicit_confidence_and_output_hash() -> None:
+    response = "Resposta original."
+    claim = {"text": "Afirmação.", "confidence": 0.75}
+    result = NLIClaimExtractor(
+        StubNLIBackend([claim]),
+        model="local-nli",
+        version="1.2",
+    ).extract(response)
+
+    serialized = json.dumps(claim, ensure_ascii=False, sort_keys=True)
+
+    assert result.claims[0].confidence == 0.75
+    assert (
+        result.claims[0].provenance.output_sha256
+        == hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+    )
+
+
+def test_nli_extractor_returns_empty_result_for_empty_backend_output() -> None:
+    result = NLIClaimExtractor(
+        StubNLIBackend([]),
+        model="local-nli",
+        version="1.2",
+    ).extract("Resposta sem afirmações extraídas.")
+
+    assert result.claims == ()
+
+
+def test_llm_extractor_rejects_malformed_json() -> None:
+    extractor = LLMClaimExtractor(
+        StubProvider("{not valid json"),
+        model="fixture-llm",
+        version="test",
+    )
+
+    with pytest.raises(json.JSONDecodeError):
+        extractor.extract("A resposta original.")
+
+
+def test_retrieved_document_preserves_supplied_provenance_fields() -> None:
+    content = "Trecho de origem."
+    supplied_hash = hashlib.sha256(b"conteúdo normalizado").hexdigest()
+    document = RetrievedDocument(
+        id="doc-provenance",
+        content=content,
+        source_id="source-provenance",
+        source_location="fixture://provenance",
+        retrieved_at=datetime(2026, 10, 25, tzinfo=UTC),
+        start_offset=3,
+        end_offset=3 + len(content),
+        origin_id="origin-1",
+        normalized_content_hash=supplied_hash,
+        cited_origin_id="cited-origin-1",
+        provenance_complete=False,
+    )
+
+    evidence = document.to_evidence("claim-provenance")
+
+    assert evidence.id == "doc-provenance"
+    assert evidence.origin_id == "origin-1"
+    assert evidence.normalized_content_hash == supplied_hash
+    assert evidence.cited_origin_id == "cited-origin-1"
+    assert evidence.provenance_complete is False
