@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import ayorai_attractor.orchestrator as orchestrator
-from ayorai_attractor.agents.core import ResearchAgent
+from ayorai_attractor.agents.core import AgentContext, ResearchAgent
 from ayorai_attractor.api.app import app
 from ayorai_attractor.models import AgentResult, FailureType, SearchRequest
 from ayorai_attractor.tenant import TenantContext
@@ -108,12 +108,12 @@ def test_orchestrator_filters_unknown_roles_and_propagates_tenant_context(
         def execute(self, prompt: str) -> ProviderResponse:
             return ProviderResponse(text="unused")
 
-    captured_contexts = []
+    captured_contexts: list[AgentContext] = []
 
     class CapturingAgent:
         name = "capturing"
 
-        def run(self, context):  # type: ignore[no-untyped-def]
+        def run(self, context: AgentContext) -> AgentResult:
             captured_contexts.append(context)
             return AgentResult(agent=self.name, output="Captured tenant context.")
 
@@ -182,7 +182,7 @@ def test_orchestrator_marks_terminal_failure_and_uses_fallback_answer(
     class SilentFailingAgent:
         name = "silent_failure"
 
-        def run(self, context):  # type: ignore[no-untyped-def]
+        def run(self, context: AgentContext) -> AgentResult:
             context.failures.record(
                 FailureType.API_ERROR,
                 "terminal agent failure",
