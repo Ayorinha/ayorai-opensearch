@@ -29,6 +29,8 @@ For reproducibility, both systems in a paired comparison must use the same order
 
 ## Proposta de escopo confirmatório de H1 — DEC-018 (PENDENTE)
 
+> **Aviso editorial (2026-10-25) — bloco histórico/superado:** o texto abaixo preserva a proposta anterior à aprovação de DEC-018. Qualquer frase que diga que DEC-018 “permanece pendente” não representa o estado vigente. A regra aprovada está na seção “Escopo confirmatório de H1 — DEC-018 (aprovada em 2026-10-21)”, abaixo. O protocolo continua **[PROPOSTO]**, não congelado; este aviso não autoriza execução.
+
 **Nota (2026-10-21):** superada pela Emenda 8 aprovada (DEC-018); mantida apenas como histórico.
 
 A Opção A recomenda testar H1 somente sobre a partição oculta (~90 casos) e usar os casos públicos (~210) apenas para desenvolvimento e descrição. Esta é uma recomendação, não uma decisão aprovada; não altera o pré-registro nem autoriza execução. DEC-018 permanece pendente de decisão explícita do mantenedor. A declaração de partição e o isolamento real também exigem evidência humana e não devem ser tratados como resolvidos por documentação.
