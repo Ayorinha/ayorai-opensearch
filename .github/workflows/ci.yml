@@ -312,13 +312,41 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Build source distribution and wheel
+      - name: Set reproducible build timestamp
+        run: |
+          set -euo pipefail
+          epoch="$(git log -1 --format=%ct)"
+          echo "SOURCE_DATE_EPOCH=$epoch" >> "$GITHUB_ENV"
+          echo "SOURCE_DATE_EPOCH=$epoch"
+      - name: Build source distribution and wheel twice and compare
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip build
-          python -m build --sdist --wheel --outdir dist
-          test "$(find dist -maxdepth 1 -name '*.tar.gz' | wc -l)" -eq 1
-          test "$(find dist -maxdepth 1 -name '*.whl' | wc -l)" -eq 1
+          rm -rf build-a build-b dist
+          for side in a b; do
+            python -m build --sdist --wheel --outdir "build-$side/raw"
+            test "$(find "build-$side/raw" -maxdepth 1 -name '*.tar.gz' | wc -l)" -eq 1
+            test "$(find "build-$side/raw" -maxdepth 1 -name '*.whl' | wc -l)" -eq 1
+            sdist="$(find "build-$side/raw" -maxdepth 1 -name '*.tar.gz')"
+            wheel="$(find "build-$side/raw" -maxdepth 1 -name '*.whl')"
+            mkdir -p "build-$side/out"
+            python scripts/normalize_sdist.py "$sdist" "build-$side/out/$(basename "$sdist")"
+            cp "$wheel" "build-$side/out/"
+            rm -rf build ./*.egg-info src/*.egg-info
+          done
+          sha256sum build-a/out/* build-b/out/*
+          for file in build-a/out/*; do
+            cmp "$file" "build-b/out/$(basename "$file")"
+          done
+          mkdir dist
+          cp build-a/out/* dist/
+      - name: Install normalized sdist in a clean environment
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/sdist-check
+          /tmp/sdist-check/bin/python -m pip install --no-deps dist/*.tar.gz
+          cd /tmp
+          /tmp/sdist-check/bin/python -c "import ayorai_attractor; print(ayorai_attractor.__file__)"
       - name: Calculate SHA-256 for distribution artifacts
         run: |
           set -euo pipefail
@@ -332,7 +360,7 @@ jobs:
       - name: Upload distribution artifacts and checksum manifest
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: distributions-${{ github.sha }}
+          name: distributions-${{ github.sha }}-attempt-${{ github.run_attempt }}
           path: |
             dist/*.tar.gz
             dist/*.whl
