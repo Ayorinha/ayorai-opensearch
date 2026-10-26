@@ -13,7 +13,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: cleanup-merged-branches
+  group: cleanup-merged-branches-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
