@@ -1,0 +1,71 @@
+name: Cleanup merged branches
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Somente listar (true) ou apagar de verdade (false)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: cleanup-merged-branches-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - name: Delete branches whose PR is closed and whose head is unchanged
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$REPO/pulls?state=all&per_page=100" \
+            --jq '.[] | select(.head.repo.full_name == env.REPO) | [.head.ref, .head.sha, .state] | @tsv' > prs.tsv
+          gh api --paginate "repos/$REPO/branches?per_page=100" \
+            --jq '.[] | [.name, .commit.sha] | @tsv' > branches.tsv
+          deleted=0; kept=0; failed=0
+          : > report.txt
+          while IFS=$'\t' read -r name sha; do
+            reason=""
+            case "$name" in
+              main|eval/rgc-pilot|release/*) reason="protegida" ;;
+            esac
+            if [ -z "$reason" ]; then
+              prs=$(awk -F'\t' -v b="$name" '$1==b' prs.tsv)
+              if [ -z "$prs" ]; then reason="sem PR"
+              elif printf '%s\n' "$prs" | awk -F'\t' '$3=="open"' | grep -q .; then reason="PR aberta"
+              elif ! printf '%s\n' "$prs" | awk -F'\t' -v s="$sha" '$2==s' | grep -q .; then reason="commits depois da PR"
+              fi
+            fi
+            if [ -n "$reason" ]; then
+              echo "MANTIDA ($reason): $name" >> report.txt; kept=$((kept+1)); continue
+            fi
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "APAGARIA: $name" >> report.txt; deleted=$((deleted+1))
+            elif gh api -X DELETE "repos/$REPO/git/refs/heads/$name" >/dev/null 2>&1; then
+              echo "APAGADA: $name" >> report.txt; deleted=$((deleted+1))
+            else
+              echo "FALHOU: $name" >> report.txt; failed=$((failed+1))
+            fi
+          done < branches.tsv
+          sort report.txt
+          {
+            echo "## Limpeza de branches (dry_run=$DRY_RUN)"
+            echo ""
+            echo "- Apagadas (ou que seriam apagadas): $deleted"
+            echo "- Mantidas: $kept"
+            echo "- Falhas: $failed"
+            echo ""
+            echo '```'
+            sort report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
