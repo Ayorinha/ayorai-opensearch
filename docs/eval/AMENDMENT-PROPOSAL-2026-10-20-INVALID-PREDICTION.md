@@ -1,5 +1,7 @@
 # Proposed dated amendment — RGC invalid-prediction handling (20/10/2026)
 
+> **Aviso editorial (2026-10-25) — proposta histórica/superada:** este arquivo preserva a minuta e a trilha de deliberação anterior. A decisão normativa vigente é a DEC-017, Opção A, aprovada em 2026-10-21 e formalizada pela Emenda 7; consulte o pré-registro e o protocolo para a regra ativa. Notas intermediárias e checkboxes preservados neste arquivo não substituem esse registro. O protocolo permanece **[PROPOSTO]**, não congelado, e esta nota não autoriza avaliação confirmatória.
+
 **Current status (2026-10-21):** Option A approved explicitly by the maintainer in Prompt Master 2 on 2026-10-21.  
 **Immediate effect:** none. This proposal does not alter the active pre-registration, freeze the protocol, authorize definitive annotation, or authorize a confirmatory execution.
 
