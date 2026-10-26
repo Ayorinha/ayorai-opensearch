@@ -1,4 +1,4 @@
-Estado: Atual · Referência: main @ 2dc089f · Atualizado: 2026-10-25
+Estado: Atual · Base documental: main @ 2dc089f · Atualizado: 2026-10-25
 Fontes de verdade: `scripts/reproduce.py`, `src/ayorai_attractor/evaluation/report_manifest.py`, `tests/test_evaluation_report_manifest.py`, `tests/test_golden_digest.py`, `tests/test_golden_git_sha.py`, `evals/ptbr/rgc_eval.py`, `docs/eval/RUNNER-RGC-v1.md`, `docs/eval/STATISTICS.md`, `docs/eval/PREREGISTRATION-RGC-v1.md`, `docs/eval/PROTOCOL-GOLDEN-V1.md` e `docs/DECISIONS-PENDING.md`.
 
 # 07 — Reprodutibilidade e proveniência de avaliação
