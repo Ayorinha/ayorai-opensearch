@@ -4,68 +4,158 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Somente listar (true) ou apagar de verdade (false)"
+        description: "Somente listar (true) ou excluir (false)"
         type: boolean
+        required: true
         default: true
 
 permissions:
-  contents: write
-  pull-requests: read
-
-concurrency:
-  group: cleanup-merged-branches-${{ github.ref }}
-  cancel-in-progress: false
+  contents: read
 
 jobs:
   cleanup:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: read
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
       DRY_RUN: ${{ inputs.dry_run }}
     steps:
-      - name: Delete branches whose PR is closed and whose head is unchanged
+      - name: Checkout default-branch workflow definitions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Collect push branch filters from every workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -ryaml -rjson -e '
+            paths = Dir.glob(".github/workflows/*.{yml,yaml}").sort
+            abort "Nenhum workflow encontrado; falha fechada." if paths.empty?
+            patterns = []
+            paths.each do |path|
+              doc = YAML.safe_load_file(path, aliases: true)
+              abort "Workflow inválido: #{path}" unless doc.is_a?(Hash)
+              events = doc["on"] || doc[true]
+              next unless events.is_a?(Hash)
+              push = events["push"]
+              next unless push.is_a?(Hash) && push.key?("branches")
+              branches = push["branches"]
+              branches = [branches] if branches.is_a?(String)
+              abort "push.branches inválido em #{path}; falha fechada." unless branches.is_a?(Array)
+              branches.each do |pattern|
+                abort "Padrão de branch inválido em #{path}; falha fechada." unless pattern.is_a?(String) && !pattern.empty?
+                patterns << pattern unless pattern.start_with?("!")
+              end
+            end
+            File.write("push-branch-patterns.json", JSON.generate(patterns.uniq))
+          '
+          gh api --paginate "repos/$REPO/branches?per_page=100" \
+            --jq '.[] | [.name, .commit.sha, (.protected | tostring)] | @tsv' > branches.tsv
+          ruby -rjson -e '
+            patterns = JSON.parse(File.read("push-branch-patterns.json"))
+            File.readlines("branches.tsv", chomp: true).each do |row|
+              name = row.split("\t", 2).first
+              puts name if patterns.any? { |pattern| File.fnmatch?(pattern, name) }
+            end
+          ' > push-trigger-branches.txt
+
+      - name: Classify merged pull request branches
+        shell: bash
         run: |
           set -euo pipefail
           gh api --paginate "repos/$REPO/pulls?state=all&per_page=100" \
-            --jq '.[] | select(.head.repo.full_name == env.REPO) | [.head.ref, .head.sha, .state] | @tsv' > prs.tsv
-          gh api --paginate "repos/$REPO/branches?per_page=100" \
-            --jq '.[] | [.name, .commit.sha] | @tsv' > branches.tsv
-          deleted=0; kept=0; failed=0
+            --jq '.[] | select(.head.repo.full_name == env.REPO) | [.head.ref, .head.sha, .state, (.merged_at // "")] | @tsv' > prs.tsv
+
+          deleted=0
+          kept=0
+          failed=0
           : > report.txt
-          while IFS=$'\t' read -r name sha; do
+
+          while IFS=$'\t' read -r name sha protected; do
             reason=""
             case "$name" in
-              main|eval/rgc-pilot|release/*) reason="protegida" ;;
+              main|eval/*|release/*)
+                reason="protegida por padrão de nome"
+                ;;
             esac
+
+            if [ -z "$reason" ] && grep -Fxq -- "$name" push-trigger-branches.txt; then
+              reason="referenciada em push.branches de workflow"
+            fi
+
+            if [ -z "$reason" ] && [ "$protected" = "true" ]; then
+              reason="protegida pela configuração do GitHub"
+            fi
+
             if [ -z "$reason" ]; then
-              prs=$(awk -F'\t' -v b="$name" '$1==b' prs.tsv)
-              if [ -z "$prs" ]; then reason="sem PR"
-              elif printf '%s\n' "$prs" | awk -F'\t' '$3=="open"' | grep -q .; then reason="PR aberta"
-              elif ! printf '%s\n' "$prs" | awk -F'\t' -v s="$sha" '$2==s' | grep -q .; then reason="commits depois da PR"
+              encoded_name=$(jq -rn --arg value "$name" '$value | @uri')
+              if ! rules_json=$(gh api "repos/$REPO/rules/branches/$encoded_name" 2>/dev/null); then
+                reason="não foi possível verificar rulesets; falha fechada"
+              elif [ "$(printf '%s' "$rules_json" | jq 'length')" -gt 0 ]; then
+                reason="coberta por ruleset"
               fi
             fi
-            if [ -n "$reason" ]; then
-              echo "MANTIDA ($reason): $name" >> report.txt; kept=$((kept+1)); continue
+
+            prs_for_branch=$(awk -F'\t' -v b="$name" '$1 == b { print }' prs.tsv)
+            if [ -z "$reason" ] && [ -n "$prs_for_branch" ] \
+              && printf '%s\n' "$prs_for_branch" | awk -F'\t' '$3 == "open" { found=1 } END { exit !found }'; then
+              reason="possui PR aberta"
             fi
+
+            # Fail closed: the live branch SHA must exactly equal the head SHA
+            # recorded on a merged PR for this same branch. A closed-but-unmerged
+            # PR, a moved branch, or a missing/ambiguous proof is not eligible.
+            merged_same_head_count=0
+            if [ -n "$prs_for_branch" ]; then
+              merged_same_head_count=$(printf '%s\n' "$prs_for_branch" \
+                | awk -F'\t' -v s="$sha" '$2 == s && $3 == "closed" && $4 != "" { count++ } END { print count+0 }')
+            fi
+
+            if [ -z "$reason" ] && [ "$merged_same_head_count" -ne 1 ]; then
+              reason="não foi possível provar um único head integrado idêntico ao SHA atual"
+            fi
+
+            if [ -n "$reason" ]; then
+              printf 'MANTIDA\t%s\tmotivo=%s\n' "$name" "$reason" >> report.txt
+              kept=$((kept + 1))
+              continue
+            fi
+
+            eligibility="SHA atual idêntico ao head de uma PR mesclada; sem PR aberta; sem filtro push.branches; sem proteção ou ruleset"
             if [ "$DRY_RUN" = "true" ]; then
-              echo "APAGARIA: $name" >> report.txt; deleted=$((deleted+1))
+              printf 'APAGARIA\t%s\tmotivo=%s; dry_run=true\n' "$name" "$eligibility" >> report.txt
+              deleted=$((deleted + 1))
             elif gh api -X DELETE "repos/$REPO/git/refs/heads/$name" >/dev/null 2>&1; then
-              echo "APAGADA: $name" >> report.txt; deleted=$((deleted+1))
+              printf 'APAGADA\t%s\tmotivo=%s; exclusão explicitamente autorizada\n' "$name" "$eligibility" >> report.txt
+              deleted=$((deleted + 1))
             else
-              echo "FALHOU: $name" >> report.txt; failed=$((failed+1))
+              printf 'FALHOU\t%s\tmotivo=API de exclusão retornou erro\n' "$name" >> report.txt
+              failed=$((failed + 1))
             fi
           done < branches.tsv
-          sort report.txt
+
+          sort -o report.txt report.txt
+          cat report.txt
           {
             echo "## Limpeza de branches (dry_run=$DRY_RUN)"
-            echo ""
-            echo "- Apagadas (ou que seriam apagadas): $deleted"
+            echo
+            echo "- Excluídas ou candidatas à exclusão: $deleted"
             echo "- Mantidas: $kept"
-            echo "- Falhas: $failed"
-            echo ""
-            echo '```'
-            sort report.txt
-            echo '```'
+            echo "- Falhas de exclusão: $failed"
+            echo
+            echo "Relatório completo anexado como artefato report.txt."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve cleanup report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cleanup-report-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: report.txt
+          if-no-files-found: ignore
+          retention-days: 30
