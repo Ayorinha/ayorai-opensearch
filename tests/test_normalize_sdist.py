@@ -150,7 +150,7 @@ def _link(name: str, target: str, *, symbolic: bool = True) -> tarfile.TarInfo:
 @pytest.mark.parametrize(
     ("files", "extra"),
     [
-        ([( "../evil.py", b"x", 0o644)], None),
+        ([("../evil.py", b"x", 0o644)], None),
         ([("/abs/evil.py", b"x", 0o644)], None),
         ([("C:/Windows/evil.py", b"x", 0o644)], None),
         ([("pkg-1.0/C:/Windows/evil.py", b"x", 0o644)], None),
@@ -191,7 +191,11 @@ def test_internal_symlink_allowed() -> None:
 
 def test_internal_hardlink_allowed() -> None:
     normalized = ns.normalize_bytes(
-        _make_tar(FILES, mtime=1, extra=[_link("pkg-1.0/hard-alias", "pkg-1.0/PKG-INFO", symbolic=False)]),
+        _make_tar(
+            FILES,
+            mtime=1,
+            extra=[_link("pkg-1.0/hard-alias", "pkg-1.0/PKG-INFO", symbolic=False)],
+        ),
         EPOCH,
     )
     with tarfile.open(fileobj=io.BytesIO(normalized), mode="r:gz") as archive:
