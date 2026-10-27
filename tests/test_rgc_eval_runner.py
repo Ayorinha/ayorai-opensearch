@@ -1397,4 +1397,3 @@ def test_manifest_templates_match_runner_required_keys() -> None:
         payload = json.loads(path.read_text(encoding="utf-8"))
         assert isinstance(payload, dict)
         assert set(payload) == _required_manifest_keys(validator_name)
-
