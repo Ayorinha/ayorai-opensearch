@@ -15,23 +15,62 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: write
       pull-requests: read
+      administration: read
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
       DRY_RUN: ${{ inputs.dry_run }}
     steps:
+      - name: Checkout default-branch workflow definitions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Collect push branch filters from every workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -ryaml -rjson -e '
+            paths = Dir.glob(".github/workflows/*.{yml,yaml}").sort
+            abort "Nenhum workflow encontrado; falha fechada." if paths.empty?
+            patterns = []
+            paths.each do |path|
+              doc = YAML.safe_load_file(path, aliases: true)
+              abort "Workflow inválido: #{path}" unless doc.is_a?(Hash)
+              events = doc["on"] || doc[true]
+              next unless events.is_a?(Hash)
+              push = events["push"]
+              next unless push.is_a?(Hash) && push.key?("branches")
+              branches = push["branches"]
+              branches = [branches] if branches.is_a?(String)
+              abort "push.branches inválido em #{path}; falha fechada." unless branches.is_a?(Array)
+              branches.each do |pattern|
+                abort "Padrão de branch inválido em #{path}; falha fechada." unless pattern.is_a?(String) && !pattern.empty?
+                patterns << pattern unless pattern.start_with?("!")
+              end
+            end
+            File.write("push-branch-patterns.json", JSON.generate(patterns.uniq))
+          '
+          gh api --paginate "repos/$REPO/branches?per_page=100" \
+            --jq '.[] | [.name, .commit.sha, (.protected | tostring)] | @tsv' > branches.tsv
+          ruby -rjson -e '
+            patterns = JSON.parse(File.read("push-branch-patterns.json"))
+            File.readlines("branches.tsv", chomp: true).each do |row|
+              name = row.split("\t", 2).first
+              puts name if patterns.any? { |pattern| File.fnmatch?(pattern, name) }
+            end
+          ' > push-trigger-branches.txt
+
       - name: Classify merged pull request branches
         shell: bash
         run: |
           set -euo pipefail
           gh api --paginate "repos/$REPO/pulls?state=all&per_page=100" \
             --jq '.[] | select(.head.repo.full_name == env.REPO) | [.head.ref, .head.sha, .state, (.merged_at // "")] | @tsv' > prs.tsv
-          gh api --paginate "repos/$REPO/branches?per_page=100" \
-            --jq '.[] | [.name, .commit.sha, (.protected | tostring)] | @tsv' > branches.tsv
 
           deleted=0
           kept=0
@@ -45,8 +84,22 @@ jobs:
                 reason="protegida por padrão de nome"
                 ;;
             esac
+
+            if [ -z "$reason" ] && grep -Fxq -- "$name" push-trigger-branches.txt; then
+              reason="referenciada em push.branches de workflow"
+            fi
+
             if [ -z "$reason" ] && [ "$protected" = "true" ]; then
               reason="protegida pela configuração do GitHub"
+            fi
+
+            if [ -z "$reason" ]; then
+              encoded_name=$(jq -rn --arg value "$name" '$value | @uri')
+              if ! rules_json=$(gh api "repos/$REPO/rules/branches/$encoded_name" 2>/dev/null); then
+                reason="não foi possível verificar rulesets; falha fechada"
+              elif [ "$(printf '%s' "$rules_json" | jq 'length')" -gt 0 ]; then
+                reason="coberta por ruleset"
+              fi
             fi
 
             prs_for_branch=$(awk -F'\t' -v b="$name" '$1 == b { print }' prs.tsv)
@@ -55,14 +108,17 @@ jobs:
               reason="possui PR aberta"
             fi
 
-            merged_same_head=false
-            if [ -n "$prs_for_branch" ] && printf '%s\n' "$prs_for_branch" \
-              | awk -F'\t' -v s="$sha" '$2 == s && $4 != "" { found=1 } END { exit !found }'; then
-              merged_same_head=true
+            # Fail closed: the live branch SHA must exactly equal the head SHA
+            # recorded on a merged PR for this same branch. A closed-but-unmerged
+            # PR, a moved branch, or a missing/ambiguous proof is not eligible.
+            merged_same_head_count=0
+            if [ -n "$prs_for_branch" ]; then
+              merged_same_head_count=$(printf '%s\n' "$prs_for_branch" \
+                | awk -F'\t' -v s="$sha" '$2 == s && $3 == "closed" && $4 != "" { count++ } END { print count+0 }')
             fi
 
-            if [ -z "$reason" ] && [ "$merged_same_head" != "true" ]; then
-              reason="não há PR mesclada com o mesmo SHA da branch"
+            if [ -z "$reason" ] && [ "$merged_same_head_count" -ne 1 ]; then
+              reason="não foi possível provar um único head integrado idêntico ao SHA atual"
             fi
 
             if [ -n "$reason" ]; then
@@ -71,7 +127,7 @@ jobs:
               continue
             fi
 
-            eligibility="PR mesclada, SHA inalterado, sem PR aberta e branch não protegida"
+            eligibility="SHA atual idêntico ao head de uma PR mesclada; sem PR aberta; sem filtro push.branches; sem proteção ou ruleset"
             if [ "$DRY_RUN" = "true" ]; then
               printf 'APAGARIA\t%s\tmotivo=%s; dry_run=true\n' "$name" "$eligibility" >> report.txt
               deleted=$((deleted + 1))
