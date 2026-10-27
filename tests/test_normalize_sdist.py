@@ -130,10 +130,13 @@ def _link(name: str, target: str, *, symbolic: bool = True) -> tarfile.TarInfo:
     [
         ([("../evil.py", b"x", 0o644)], None),
         ([("/abs/evil.py", b"x", 0o644)], None),
+        ([("C:/Windows/evil.py", b"x", 0o644)], None),
+        ([("pkg-1.0/C:/Windows/evil.py", b"x", 0o644)], None),
         ([("pkg-1.0/a/../../evil.py", b"x", 0o644)], None),
         ([("pkg-1.0/dup.py", b"1", 0o644), ("pkg-1.0/dup.py", b"2", 0o644)], None),
         ([], [_link("pkg-1.0/escape", "../../etc/passwd")]),
         ([], [_link("pkg-1.0/abs", "/etc/passwd")]),
+        ([], [_link("pkg-1.0/windows", "C:/Windows/system.ini")]),
         ([], [_link("pkg-1.0/windows", "C:/Windows/system.ini")]),
         ([], [_link("pkg-1.0/hard", "../outside", symbolic=False)]),
     ],
