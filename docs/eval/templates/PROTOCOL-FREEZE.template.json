@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "status": "FROZEN",
+  "approved_by": "<PREENCHER: responsável humano autorizado>",
+  "approved_at": "<PREENCHER: data/hora ISO 8601>",
+  "protocol_sha256": "<PREENCHER: SHA-256 real de docs/eval/PROTOCOL-GOLDEN-V1.md>",
+  "preregistration_sha256": "<PREENCHER: SHA-256 real de docs/eval/PREREGISTRATION-RGC-v1.md>",
+  "runner_spec_sha256": "<PREENCHER: SHA-256 real de docs/eval/RUNNER-RGC-v1.md>",
+  "runner_code_sha256": "<PREENCHER: SHA-256 real de evals/ptbr/rgc_eval.py>",
+  "runner_version": "<PREENCHER: versão exata declarada pelo runner>"
+}
