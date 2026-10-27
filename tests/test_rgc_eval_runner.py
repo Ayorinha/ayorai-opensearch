@@ -1372,8 +1372,7 @@ def _required_manifest_keys(function_name: str) -> set[str]:
     )
     for node in ast.walk(function):
         if isinstance(node, ast.Assign) and any(
-            isinstance(target, ast.Name) and target.id == "required"
-            for target in node.targets
+            isinstance(target, ast.Name) and target.id == "required" for target in node.targets
         ):
             value = ast.literal_eval(node.value)
             if isinstance(value, set) and all(isinstance(key, str) for key in value):
