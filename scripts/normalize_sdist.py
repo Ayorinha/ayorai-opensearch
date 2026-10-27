@@ -123,7 +123,7 @@ def _normalize_stream(source: BinaryIO, target: BinaryIO, epoch: int) -> None:
         entries.sort(key=lambda item: item[0].name.rstrip("/"))
         with gzip.GzipFile(fileobj=target, filename="", mode="wb", mtime=epoch) as gz:
             with tarfile.open(fileobj=gz, mode="w|", format=tarfile.PAX_FORMAT) as out:
-                for member, payload_path in entries:
+                for member, stored_payload_path in entries:
                     info = tarfile.TarInfo(member.name.rstrip("/"))
                     info.type = member.type
                     info.mode = _normalized_mode(member)
@@ -134,9 +134,9 @@ def _normalize_stream(source: BinaryIO, target: BinaryIO, epoch: int) -> None:
                     info.uname = ""
                     info.gname = ""
                     info.pax_headers = {}
-                    if payload_path is not None:
+                    if stored_payload_path is not None:
                         info.size = member.size
-                        with open(payload_path, "rb") as payload_file:
+                        with open(stored_payload_path, "rb") as payload_file:
                             out.addfile(info, payload_file)
                     else:
                         info.size = 0
