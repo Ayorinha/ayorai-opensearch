@@ -137,7 +137,6 @@ def _link(name: str, target: str, *, symbolic: bool = True) -> tarfile.TarInfo:
         ([], [_link("pkg-1.0/escape", "../../etc/passwd")]),
         ([], [_link("pkg-1.0/abs", "/etc/passwd")]),
         ([], [_link("pkg-1.0/windows", "C:/Windows/system.ini")]),
-        ([], [_link("pkg-1.0/windows", "C:/Windows/system.ini")]),
         ([], [_link("pkg-1.0/hard", "../outside", symbolic=False)]),
     ],
 )
