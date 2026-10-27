@@ -1360,6 +1360,7 @@ def test_load_documents_rejects_duplicate_source_ids(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="duplicate document"):
         RUNNER["load_documents"](path)
 
+
 def _required_manifest_keys(function_name: str) -> set[str]:
     """Read the validator's literal required-key set without loading any data files."""
     runner_path = ROOT / "evals" / "ptbr" / "rgc_eval.py"
