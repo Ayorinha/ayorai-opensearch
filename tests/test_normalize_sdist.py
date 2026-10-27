@@ -98,9 +98,7 @@ def _members(data: bytes) -> dict[str, tuple[int, int, int, int, str, str, bytes
 
 def test_same_content_different_metadata_gives_identical_bytes() -> None:
     first = _make_tar(FILES, mtime=1_790_000_000, owner="alice")
-    second = _make_tar(
-        FILES, mtime=1_790_000_555, owner="bob", gz_mtime=1, reverse=True
-    )
+    second = _make_tar(FILES, mtime=1_790_000_555, owner="bob", gz_mtime=1, reverse=True)
     assert first != second
     assert ns.normalize_bytes(first, EPOCH) == ns.normalize_bytes(second, EPOCH)
 
