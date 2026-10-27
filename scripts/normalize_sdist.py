@@ -48,10 +48,7 @@ def _check_name(name: str) -> list[str]:
     if not name or name.startswith("/") or "\\" in name:
         raise NormalizationError(f"unsafe entry name: {name!r}")
     parts = name.rstrip("/").split("/")
-    if any(
-        part in ("", ".", "..") or re.match(r"^[A-Za-z]:", part)
-        for part in parts
-    ):
+    if any(part in ("", ".", "..") or re.match(r"^[A-Za-z]:", part) for part in parts):
         raise NormalizationError(f"unsafe entry name: {name!r}")
     return parts
 
@@ -65,9 +62,7 @@ def _check_link(member: tarfile.TarInfo, root: str) -> None:
         # Tar hard-link names are archive-root-relative.
         resolved = posixpath.normpath(target)
     if resolved != root and not resolved.startswith(root + "/"):
-        raise NormalizationError(
-            f"link leaves the sdist root: {member.name!r} -> {target!r}"
-        )
+        raise NormalizationError(f"link leaves the sdist root: {member.name!r} -> {target!r}")
     if not target_parts or target.startswith("/"):
         raise NormalizationError(f"unsafe link target in {member.name!r}: {target!r}")
 
@@ -107,9 +102,7 @@ def _normalize_stream(source: BinaryIO, target: BinaryIO, epoch: int) -> None:
                     if member.isfile():
                         handle = archive.extractfile(member)
                         if handle is None:
-                            raise NormalizationError(
-                                f"unreadable file entry: {member.name!r}"
-                            )
+                            raise NormalizationError(f"unreadable file entry: {member.name!r}")
                         payload_path = os.path.join(temp_dir, f"payload-{len(entries)}")
                         with open(payload_path, "wb") as payload_file:
                             shutil.copyfileobj(handle, payload_file, length=1024 * 1024)
@@ -120,9 +113,7 @@ def _normalize_stream(source: BinaryIO, target: BinaryIO, epoch: int) -> None:
                         _check_link(member, root)
                         entries.append((member, None))
                     else:
-                        raise NormalizationError(
-                            f"unsupported entry type: {member.name!r}"
-                        )
+                        raise NormalizationError(f"unsupported entry type: {member.name!r}")
         except (tarfile.TarError, OSError, EOFError) as exc:
             raise NormalizationError(f"cannot read archive: {exc}") from exc
 
