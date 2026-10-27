@@ -1381,7 +1381,6 @@ def _required_manifest_keys(function_name: str) -> set[str]:
     raise AssertionError(f"required-key set not found in {function_name}")
 
 
-
 def test_manifest_templates_match_runner_required_keys() -> None:
     """Keep blank JSON templates synchronized with the runner's exact schemas."""
     templates = (
