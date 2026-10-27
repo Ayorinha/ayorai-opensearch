@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "status": "APPROVED",
+  "approved_by": "<PREENCHER: responsável humano autorizado>",
+  "approved_at": "<PREENCHER: data/hora ISO 8601>",
+  "cases_sha256": "<PREENCHER: SHA-256 real do conjunto definitivo>",
+  "labels_sha256": "<PREENCHER: SHA-256 real dos rótulos definitivos adjudicados>",
+  "development_cases_sha256": "<PREENCHER: SHA-256 real da partição de desenvolvimento>",
+  "development_labels_sha256": "<PREENCHER: SHA-256 real dos rótulos de desenvolvimento>",
+  "agreement_report_sha256": "<PREENCHER: SHA-256 real do relatório de concordância>",
+  "adjudication_record_sha256": "<PREENCHER: SHA-256 real do registro de adjudicação>",
+  "annotation_a_sha256": "<PREENCHER: SHA-256 real da anotação independente A>",
+  "annotation_b_sha256": "<PREENCHER: SHA-256 real da anotação independente B>",
+  "cohen_kappa": 0.0
+}

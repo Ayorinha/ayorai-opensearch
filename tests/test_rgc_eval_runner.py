@@ -6,6 +6,7 @@ document corpus, to check segmentation offsets and the strict corpus export.
 
 from __future__ import annotations
 
+import ast
 import json
 import runpy
 from pathlib import Path
@@ -1358,3 +1359,40 @@ def test_load_documents_rejects_duplicate_source_ids(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="duplicate document"):
         RUNNER["load_documents"](path)
+
+
+def _required_manifest_keys(function_name: str) -> set[str]:
+    """Read the validator's literal required-key set without loading any data files."""
+    runner_path = ROOT / "evals" / "ptbr" / "rgc_eval.py"
+    tree = ast.parse(runner_path.read_text(encoding="utf-8"))
+    function = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == function_name
+    )
+    for node in ast.walk(function):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "required" for target in node.targets
+        ):
+            value = ast.literal_eval(node.value)
+            if isinstance(value, set) and all(isinstance(key, str) for key in value):
+                return value
+    raise AssertionError(f"required-key set not found in {function_name}")
+
+
+def test_manifest_templates_match_runner_required_keys() -> None:
+    """Keep blank JSON templates synchronized with the runner's exact schemas."""
+    templates = (
+        (
+            ROOT / "docs" / "eval" / "templates" / "PROTOCOL-FREEZE.template.json",
+            "validate_protocol_freeze",
+        ),
+        (
+            ROOT / "docs" / "eval" / "templates" / "ANNOTATION-APPROVAL.template.json",
+            "validate_annotation_approval",
+        ),
+    )
+    for path, validator_name in templates:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        assert isinstance(payload, dict)
+        assert set(payload) == _required_manifest_keys(validator_name)
