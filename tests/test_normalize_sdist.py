@@ -218,7 +218,8 @@ def test_cli_streams_source_without_path_read_bytes(
 ) -> None:
     source = tmp_path / "pkg-1.0.tar.gz"
     source.write_bytes(_make_tar(FILES, mtime=1_790_000_000))
-    expected = ns.normalize_bytes(source.open("rb").read(), EPOCH)
+    with source.open("rb") as source_file:
+        expected = ns.normalize_bytes(source_file.read(), EPOCH)
     target = tmp_path / "out.tar.gz"
     monkeypatch.setenv("SOURCE_DATE_EPOCH", str(EPOCH))
 
