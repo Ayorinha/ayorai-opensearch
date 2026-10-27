@@ -19,7 +19,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
-      administration: read
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
