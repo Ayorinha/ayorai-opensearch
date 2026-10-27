@@ -43,7 +43,12 @@ def source_date_epoch(environ: dict[str, str] | None = None) -> int:
 
 
 def _check_name(name: str) -> None:
-    if not name or name.startswith("/") or "\\" in name or re.match(r"^[A-Za-z]:", name):
+    if (
+        not name
+        or name.startswith("/")
+        or "\\" in name
+        or re.match(r"^[A-Za-z]:", name)
+    ):
         raise NormalizationError(f"unsafe entry name: {name!r}")
     parts = name.rstrip("/").split("/")
     if any(part in ("", ".", "..") for part in parts):
@@ -52,7 +57,11 @@ def _check_name(name: str) -> None:
 
 def _check_link(member: tarfile.TarInfo) -> None:
     target = member.linkname
-    if not target or target.startswith("/") or re.match(r"^[A-Za-z]:", target):
+    if (
+        not target
+        or target.startswith("/")
+        or re.match(r"^[A-Za-z]:", target)
+    ):
         raise NormalizationError(f"unsafe link target in {member.name!r}: {target!r}")
     if member.issym():
         resolved = posixpath.normpath(posixpath.join(posixpath.dirname(member.name), target))
