@@ -4,68 +4,103 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Somente listar (true) ou apagar de verdade (false)"
+        description: "Somente listar (true) ou excluir (false)"
         type: boolean
+        required: true
         default: true
 
 permissions:
-  contents: write
-  pull-requests: read
-
-concurrency:
-  group: cleanup-merged-branches-${{ github.ref }}
-  cancel-in-progress: false
+  contents: read
 
 jobs:
   cleanup:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: read
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
       DRY_RUN: ${{ inputs.dry_run }}
     steps:
-      - name: Delete branches whose PR is closed and whose head is unchanged
+      - name: Classify merged pull request branches
+        shell: bash
         run: |
           set -euo pipefail
           gh api --paginate "repos/$REPO/pulls?state=all&per_page=100" \
-            --jq '.[] | select(.head.repo.full_name == env.REPO) | [.head.ref, .head.sha, .state] | @tsv' > prs.tsv
+            --jq '.[] | select(.head.repo.full_name == env.REPO) | [.head.ref, .head.sha, .state, (.merged_at // "")] | @tsv' > prs.tsv
           gh api --paginate "repos/$REPO/branches?per_page=100" \
-            --jq '.[] | [.name, .commit.sha] | @tsv' > branches.tsv
-          deleted=0; kept=0; failed=0
+            --jq '.[] | [.name, .commit.sha, (.protected | tostring)] | @tsv' > branches.tsv
+
+          deleted=0
+          kept=0
+          failed=0
           : > report.txt
-          while IFS=$'\t' read -r name sha; do
+
+          while IFS=$'\t' read -r name sha protected; do
             reason=""
             case "$name" in
-              main|eval/rgc-pilot|release/*) reason="protegida" ;;
+              main|eval/*|release/*)
+                reason="protegida por padrão de nome"
+                ;;
             esac
-            if [ -z "$reason" ]; then
-              prs=$(awk -F'\t' -v b="$name" '$1==b' prs.tsv)
-              if [ -z "$prs" ]; then reason="sem PR"
-              elif printf '%s\n' "$prs" | awk -F'\t' '$3=="open"' | grep -q .; then reason="PR aberta"
-              elif ! printf '%s\n' "$prs" | awk -F'\t' -v s="$sha" '$2==s' | grep -q .; then reason="commits depois da PR"
-              fi
+            if [ -z "$reason" ] && [ "$protected" = "true" ]; then
+              reason="protegida pela configuração do GitHub"
             fi
+
+            prs_for_branch=$(awk -F'\t' -v b="$name" '$1 == b { print }' prs.tsv)
+            if [ -z "$reason" ] && [ -n "$prs_for_branch" ] \
+              && printf '%s\n' "$prs_for_branch" | awk -F'\t' '$3 == "open" { found=1 } END { exit !found }'; then
+              reason="possui PR aberta"
+            fi
+
+            merged_same_head=false
+            if [ -n "$prs_for_branch" ] && printf '%s\n' "$prs_for_branch" \
+              | awk -F'\t' -v s="$sha" '$2 == s && $4 != "" { found=1 } END { exit !found }'; then
+              merged_same_head=true
+            fi
+
+            if [ -z "$reason" ] && [ "$merged_same_head" != "true" ]; then
+              reason="não há PR mesclada com o mesmo SHA da branch"
+            fi
+
             if [ -n "$reason" ]; then
-              echo "MANTIDA ($reason): $name" >> report.txt; kept=$((kept+1)); continue
+              printf 'MANTIDA\t%s\tmotivo=%s\n' "$name" "$reason" >> report.txt
+              kept=$((kept + 1))
+              continue
             fi
+
+            eligibility="PR mesclada, SHA inalterado, sem PR aberta e branch não protegida"
             if [ "$DRY_RUN" = "true" ]; then
-              echo "APAGARIA: $name" >> report.txt; deleted=$((deleted+1))
+              printf 'APAGARIA\t%s\tmotivo=%s; dry_run=true\n' "$name" "$eligibility" >> report.txt
+              deleted=$((deleted + 1))
             elif gh api -X DELETE "repos/$REPO/git/refs/heads/$name" >/dev/null 2>&1; then
-              echo "APAGADA: $name" >> report.txt; deleted=$((deleted+1))
+              printf 'APAGADA\t%s\tmotivo=%s; exclusão explicitamente autorizada\n' "$name" "$eligibility" >> report.txt
+              deleted=$((deleted + 1))
             else
-              echo "FALHOU: $name" >> report.txt; failed=$((failed+1))
+              printf 'FALHOU\t%s\tmotivo=API de exclusão retornou erro\n' "$name" >> report.txt
+              failed=$((failed + 1))
             fi
           done < branches.tsv
-          sort report.txt
+
+          sort -o report.txt report.txt
+          cat report.txt
           {
             echo "## Limpeza de branches (dry_run=$DRY_RUN)"
-            echo ""
-            echo "- Apagadas (ou que seriam apagadas): $deleted"
+            echo
+            echo "- Excluídas ou candidatas à exclusão: $deleted"
             echo "- Mantidas: $kept"
-            echo "- Falhas: $failed"
-            echo ""
-            echo '```'
-            sort report.txt
-            echo '```'
+            echo "- Falhas de exclusão: $failed"
+            echo
+            echo "Relatório completo anexado como artefato report.txt."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve cleanup report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cleanup-report-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: report.txt
+          if-no-files-found: ignore
+          retention-days: 30
