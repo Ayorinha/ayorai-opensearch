@@ -144,12 +144,29 @@ jobs:
             if [ "$DRY_RUN" = "true" ]; then
               printf 'APAGARIA\t%s\tmotivo=%s; dry_run=true\n' "$name" "$eligibility" >> report.txt
               deleted=$((deleted + 1))
-            elif gh api -X DELETE "repos/$REPO/git/refs/heads/$name" >/dev/null 2>&1; then
-              printf 'APAGADA\t%s\tmotivo=%s; exclusão explicitamente autorizada\n' "$name" "$eligibility" >> report.txt
-              deleted=$((deleted + 1))
             else
-              printf 'FALHOU\t%s\tmotivo=API de exclusão retornou erro\n' "$name" >> report.txt
-              failed=$((failed + 1))
+              # Re-read SHA immediately before deletion. GitHub's refs API does
+              # not provide atomic compare-and-delete; this narrows but cannot
+              # eliminate the race window. Concurrency serializes this workflow.
+              if ! live_ref=$(gh api "repos/$REPO/git/ref/heads/$encoded_name" 2>/dev/null); then
+                printf 'FALHOU\t%s\tmotivo=SHA não pôde ser revalidado\n' "$name" >> report.txt
+                failed=$((failed + 1))
+                continue
+              fi
+              live_sha=$(printf '%s' "$live_ref" | jq -r '.object.sha // empty')
+              if [ "$live_sha" != "$sha" ]; then
+                printf 'MANTIDA\t%s\tmotivo=SHA alterado após inventário; exclusão abortada\n' "$name" >> report.txt
+                kept=$((kept + 1))
+                continue
+              fi
+              encoded_ref=$(jq -rn --arg value "heads/$name" '$value | @uri')
+              if gh api -X DELETE "repos/$REPO/git/refs/$encoded_ref" >/dev/null 2>&1; then
+                printf 'APAGADA\t%s\tmotivo=%s; exclusão explicitamente autorizada\n' "$name" "$eligibility" >> report.txt
+                deleted=$((deleted + 1))
+              else
+                printf 'FALHOU\t%s\tmotivo=API de exclusão retornou erro\n' "$name" >> report.txt
+                failed=$((failed + 1))
+              fi
             fi
           done < branches.tsv
 
