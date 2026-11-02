@@ -9,6 +9,10 @@ on:
         required: true
         default: true
 
+concurrency:
+  group: cleanup-merged-branches-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -37,6 +41,7 @@ jobs:
             paths = Dir.glob(".github/workflows/*.{yml,yaml}").sort
             abort "Nenhum workflow encontrado; falha fechada." if paths.empty?
             patterns = []
+            protect_all = false
             paths.each do |path|
               doc = YAML.safe_load_file(path, aliases: true)
               abort "Workflow inválido: #{path}" unless doc.is_a?(Hash)
@@ -49,18 +54,24 @@ jobs:
               abort "push.branches inválido em #{path}; falha fechada." unless branches.is_a?(Array)
               branches.each do |pattern|
                 abort "Padrão de branch inválido em #{path}; falha fechada." unless pattern.is_a?(String) && !pattern.empty?
-                patterns << pattern unless pattern.start_with?("!")
+                if pattern.start_with?("!")
+                  protect_all = true
+                else
+                  patterns << pattern
+                end
               end
             end
             File.write("push-branch-patterns.json", JSON.generate(patterns.uniq))
+            File.write("protect-all-push-branches.txt", protect_all ? "true" : "false")
           '
           gh api --paginate "repos/$REPO/branches?per_page=100" \
             --jq '.[] | [.name, .commit.sha, (.protected | tostring)] | @tsv' > branches.tsv
           ruby -rjson -e '
             patterns = JSON.parse(File.read("push-branch-patterns.json"))
+            protect_all = File.read("protect-all-push-branches.txt").strip == "true"
             File.readlines("branches.tsv", chomp: true).each do |row|
               name = row.split("\t", 2).first
-              puts name if patterns.any? { |pattern| File.fnmatch?(pattern, name) }
+              puts name if protect_all || patterns.any? { |pattern| File.fnmatch?(pattern, name) }
             end
           ' > push-trigger-branches.txt
 
@@ -69,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           gh api --paginate "repos/$REPO/pulls?state=all&per_page=100" \
-            --jq '.[] | select(.head.repo.full_name == env.REPO) | [.head.ref, .head.sha, .state, (.merged_at // "")] | @tsv' > prs.tsv
+            --jq '.[] | select(.head.repo.full_name == env.REPO) | [.head.ref, .head.sha, .state, (.merged_at // ""), .base.ref] | @tsv' > prs.tsv
 
           deleted=0
           kept=0
