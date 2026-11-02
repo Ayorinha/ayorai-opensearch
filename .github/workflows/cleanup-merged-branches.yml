@@ -80,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           gh api --paginate "repos/$REPO/pulls?state=all&per_page=100" \
-            --jq '.[] | select(.head.repo.full_name == env.REPO) | [.head.ref, .head.sha, .state, (.merged_at // ""), .base.ref] | @tsv' > prs.tsv
+            --jq '.[] | select((.head.repo.full_name == env.REPO) or (.base.repo.full_name == env.REPO)) | [.head.ref, .head.sha, .state, (.merged_at // ""), .base.ref, .base.repo.full_name, .head.repo.full_name] | @tsv' > prs.tsv
 
           deleted=0
           kept=0
@@ -113,7 +113,7 @@ jobs:
             fi
 
             prs_for_branch=$(awk -F'\t' -v b="$name" '$1 == b { print }' prs.tsv)
-            if [ -z "$reason" ] && awk -F'\t' -v b="$name" '$3 == "open" && $5 == b { found=1 } END { exit !found }' prs.tsv; then
+            if [ -z "$reason" ] && awk -F'\t' -v b="$name" -v repo="$REPO" '$3 == "open" && $5 == b && $6 == repo { found=1 } END { exit !found }' prs.tsv; then
               reason="branch base de PR aberta"
             fi
             if [ -z "$reason" ] && [ -n "$prs_for_branch" ] \
