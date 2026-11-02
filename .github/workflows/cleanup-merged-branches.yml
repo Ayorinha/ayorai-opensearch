@@ -113,6 +113,9 @@ jobs:
             fi
 
             prs_for_branch=$(awk -F'\t' -v b="$name" '$1 == b { print }' prs.tsv)
+            if [ -z "$reason" ] && awk -F'\t' -v b="$name" '$3 == "open" && $5 == b { found=1 } END { exit !found }' prs.tsv; then
+              reason="branch base de PR aberta"
+            fi
             if [ -z "$reason" ] && [ -n "$prs_for_branch" ] \
               && printf '%s\n' "$prs_for_branch" | awk -F'\t' '$3 == "open" { found=1 } END { exit !found }'; then
               reason="possui PR aberta"
