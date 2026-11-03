@@ -230,12 +230,36 @@ def _text(passage: Passage, documents: Mapping[str, Document]) -> str:
 
 
 def oracle_passages(case: Mapping[str, Any], documents: Mapping[str, Document]) -> list[Passage]:
+    """Validate oracle evidence strictly; do not coerce offsets or malformed fields."""
+    case_id = str(case["case_id"])
+    raw_evidence = case.get("evidence")
+    if not isinstance(raw_evidence, list) or not raw_evidence:
+        raise ValueError(f"{case_id}: evidence must be a non-empty list")
     passages = []
-    for item in case["evidence"]:
-        doc = documents[item["document_id"]]
-        start, end = int(item["start_offset"]), int(item["end_offset"])
-        if doc.text[start:end] != item["excerpt"]:
-            raise ValueError(f"{case['case_id']}: excerpt does not match document offsets")
+    for item in raw_evidence:
+        if not isinstance(item, Mapping):
+            raise ValueError(f"{case_id}: each evidence item must be an object")
+        document_id = item.get("document_id")
+        if not isinstance(document_id, str) or not document_id.strip():
+            raise ValueError(f"{case_id}: evidence document_id must be a non-empty string")
+        if document_id not in documents:
+            raise ValueError(f"{case_id}: unknown evidence document_id {document_id!r}")
+        start, end = item.get("start_offset"), item.get("end_offset")
+        if (
+            not isinstance(start, int)
+            or isinstance(start, bool)
+            or not isinstance(end, int)
+            or isinstance(end, bool)
+        ):
+            raise ValueError(f"{case_id}: evidence offsets must be integers")
+        doc = documents[document_id]
+        if not 0 <= start < end <= len(doc.text):
+            raise ValueError(f"{case_id}: evidence offsets {start}-{end} outside document")
+        excerpt = item.get("excerpt")
+        if not isinstance(excerpt, str) or not excerpt.strip():
+            raise ValueError(f"{case_id}: evidence excerpt must be a non-empty string")
+        if doc.text[start:end] != excerpt:
+            raise ValueError(f"{case_id}: excerpt does not match document offsets")
         passages.append(Passage(doc.source_id, start, end))
     return passages
 
