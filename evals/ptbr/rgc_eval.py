@@ -714,6 +714,36 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
     }
 
 
+def _strict_jsonl_case_ids(path: Path, *, annotation: bool = False) -> set[str]:
+    """Read unique case IDs from cases or human annotations without skipping malformed lines."""
+    ids: set[str] = set()
+    allowed_annotation_labels = set(VOCABULARIES["judge2"]) | EXCLUSION_LABELS
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        if not isinstance(row, dict):
+            raise ValueError(f"{path}:{line_number}: expected a JSON object")
+        if annotation and set(row) != {"case_id", "label"}:
+            raise ValueError(f"{path}:{line_number}: expected exactly case_id and label")
+        case_id = row.get("case_id")
+        if not isinstance(case_id, str) or not case_id.strip():
+            raise ValueError(f"{path}:{line_number}: case_id must be a non-empty string")
+        if case_id in ids:
+            raise ValueError(f"{path}:{line_number}: duplicate case_id {case_id!r}")
+        if annotation:
+            label = row.get("label")
+            if not isinstance(label, str) or label not in allowed_annotation_labels:
+                raise ValueError(f"{path}:{line_number}: invalid annotation label {label!r}")
+        ids.add(case_id)
+    if not ids:
+        raise ValueError(f"{path}: file is empty")
+    return ids
+
+
 def validate_annotation_approval(
     cases_path: Path,
     labels_path: Path,
@@ -789,6 +819,20 @@ def validate_annotation_approval(
             raise ValueError(f"RGC evaluation blocked: {field} differs from agreement report")
     if manifest["cohen_kappa"] != kappa:
         raise ValueError("RGC evaluation blocked: approved kappa differs from agreement report")
+
+    try:
+        approved_case_ids = _strict_jsonl_case_ids(cases_path)
+        annotation_a_ids = _strict_jsonl_case_ids(annotation_a_path, annotation=True)
+        annotation_b_ids = _strict_jsonl_case_ids(annotation_b_path, annotation=True)
+    except OSError as exc:
+        raise ValueError("RGC evaluation blocked: an approved annotation artifact is missing") from exc
+    if annotation_a_ids != approved_case_ids or annotation_b_ids != approved_case_ids:
+        raise ValueError(
+            "RGC evaluation blocked: annotation case IDs must exactly match approved cases "
+            f"(only in cases={sorted(approved_case_ids - annotation_a_ids)}, "
+            f"only in annotation A={sorted(annotation_a_ids - approved_case_ids)}, "
+            f"only in annotation B={sorted(annotation_b_ids - approved_case_ids)})"
+        )
 
     try:
         expected_hashes = {
@@ -913,6 +957,10 @@ def evaluate(
             unlabeled.append(case_id)
             continue
         if gold in EXCLUSION_LABELS:
+            if partition == "hidden":
+                raise ValueError(
+                    f"{case_id}: RULE_GAP is prohibited in the definitive hidden partition"
+                )
             excluded.append({"case_id": case_id, "label": gold})
             continue
         cluster_id = case.get("bootstrap_cluster_id")
