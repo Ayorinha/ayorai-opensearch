@@ -148,6 +148,36 @@ def test_oracle_rejects_excerpt_that_does_not_match_offsets() -> None:
         RUNNER["oracle_passages"](case, DOCS)
 
 
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda item: item.update(start_offset="1"), "offsets must be integers"),
+        (lambda item: item.update(end_offset=True), "offsets must be integers"),
+        (lambda item: item.update(document_id="missing-doc"), "unknown evidence document_id"),
+        (lambda item: item.update(excerpt=" "), "excerpt must be a non-empty string"),
+    ],
+)
+def test_oracle_rejects_malformed_evidence_metadata(mutate: Callable[[dict[str, Any]], None], message: str) -> None:
+    case = _case("bad-evidence", "x", "II - por meio eletrônico.")
+    mutate(case["evidence"][0])
+    with pytest.raises(ValueError, match=message):
+        RUNNER["oracle_passages"](case, DOCS)
+
+
+def test_oracle_rejects_non_object_evidence_item() -> None:
+    case = _case("bad-evidence-item", "x", "II - por meio eletrônico.")
+    case["evidence"] = [None]
+    with pytest.raises(ValueError, match="each evidence item must be an object"):
+        RUNNER["oracle_passages"](case, DOCS)
+
+
+def test_oracle_rejects_empty_evidence_list() -> None:
+    case = _case("empty-evidence", "x", "II - por meio eletrônico.")
+    case["evidence"] = []
+    with pytest.raises(ValueError, match="evidence must be a non-empty list"):
+        RUNNER["oracle_passages"](case, DOCS)
+
+
 def test_retrieval_failure_abstains_as_unverified() -> None:
     prediction = RUNNER["predict"]("Marte é vermelho.", [], DOCS, retrieval_succeeded=False)
     assert prediction["decision_state"] == "ABSTAINED"
