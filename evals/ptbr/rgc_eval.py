@@ -820,12 +820,13 @@ def validate_annotation_approval(
     if manifest["cohen_kappa"] != kappa:
         raise ValueError("RGC evaluation blocked: approved kappa differs from agreement report")
 
-    try:
-        approved_case_ids = _strict_jsonl_case_ids(cases_path)
-        annotation_a_ids = _strict_jsonl_case_ids(annotation_a_path, annotation=True)
-        annotation_b_ids = _strict_jsonl_case_ids(annotation_b_path, annotation=True)
-    except OSError as exc:
-        raise ValueError("RGC evaluation blocked: an approved annotation artifact is missing") from exc
+def _validate_annotation_case_ids(
+    cases_path: Path, annotation_a_path: Path, annotation_b_path: Path
+) -> None:
+    """Require both independent annotation files to cover exactly the approved cases."""
+    approved_case_ids = _strict_jsonl_case_ids(cases_path)
+    annotation_a_ids = _strict_jsonl_case_ids(annotation_a_path, annotation=True)
+    annotation_b_ids = _strict_jsonl_case_ids(annotation_b_path, annotation=True)
     if annotation_a_ids != approved_case_ids or annotation_b_ids != approved_case_ids:
         raise ValueError(
             "RGC evaluation blocked: annotation case IDs must exactly match approved cases "
@@ -833,6 +834,12 @@ def validate_annotation_approval(
             f"only in annotation A={sorted(annotation_a_ids - approved_case_ids)}, "
             f"only in annotation B={sorted(annotation_b_ids - approved_case_ids)})"
         )
+
+
+    try:
+        _validate_annotation_case_ids(cases_path, annotation_a_path, annotation_b_path)
+    except OSError as exc:
+        raise ValueError("RGC evaluation blocked: an approved annotation artifact is missing") from exc
 
     try:
         expected_hashes = {
