@@ -647,9 +647,26 @@ def stratum_metrics(
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [
-        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
-    ]
+    """Read case JSONL strictly; malformed or blank records must not disappear."""
+    records: list[dict[str, Any]] = []
+    seen_case_ids: set[str] = set()
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        if not isinstance(record, dict):
+            raise ValueError(f"{path}:{line_number}: expected an object")
+        case_id = record.get("case_id")
+        if not isinstance(case_id, str) or not case_id.strip():
+            raise ValueError(f"{path}:{line_number}: case_id must be a non-empty string")
+        if case_id in seen_case_ids:
+            raise ValueError(f"{path}:{line_number}: duplicate case_id {case_id!r}")
+        seen_case_ids.add(case_id)
+        records.append(record)
+    return records
 
 
 def _sha256(path: Path) -> str:
