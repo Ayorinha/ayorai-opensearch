@@ -727,7 +727,8 @@ def _strict_jsonl_case_ids(path: Path, *, annotation: bool = False) -> set[str]:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
         if not isinstance(row, dict):
             raise ValueError(f"{path}:{line_number}: expected a JSON object")
-        if annotation and set(row) != {"case_id", "label"}:
+        expected_keys = {"case_id", "label"} if annotation else None
+        if annotation and set(row) != expected_keys:
             raise ValueError(f"{path}:{line_number}: expected exactly case_id and label")
         case_id = row.get("case_id")
         if not isinstance(case_id, str) or not case_id.strip():
@@ -742,6 +743,22 @@ def _strict_jsonl_case_ids(path: Path, *, annotation: bool = False) -> set[str]:
     if not ids:
         raise ValueError(f"{path}: file is empty")
     return ids
+
+
+def _validate_annotation_case_ids(
+    cases_path: Path, annotation_a_path: Path, annotation_b_path: Path
+) -> None:
+    """Require both independent annotation files to cover exactly the approved cases."""
+    approved_case_ids = _strict_jsonl_case_ids(cases_path)
+    annotation_a_ids = _strict_jsonl_case_ids(annotation_a_path, annotation=True)
+    annotation_b_ids = _strict_jsonl_case_ids(annotation_b_path, annotation=True)
+    if annotation_a_ids != approved_case_ids or annotation_b_ids != approved_case_ids:
+        raise ValueError(
+            "RGC evaluation blocked: annotation case IDs must exactly match approved cases "
+            f"(only in cases={sorted(approved_case_ids - annotation_a_ids)}, "
+            f"only in annotation A={sorted(annotation_a_ids - approved_case_ids)}, "
+            f"only in annotation B={sorted(annotation_b_ids - approved_case_ids)})"
+        )
 
 
 def validate_annotation_approval(
@@ -820,27 +837,6 @@ def validate_annotation_approval(
     if manifest["cohen_kappa"] != kappa:
         raise ValueError("RGC evaluation blocked: approved kappa differs from agreement report")
 
-def _validate_annotation_case_ids(
-    cases_path: Path, annotation_a_path: Path, annotation_b_path: Path
-) -> None:
-    """Require both independent annotation files to cover exactly the approved cases."""
-    approved_case_ids = _strict_jsonl_case_ids(cases_path)
-    annotation_a_ids = _strict_jsonl_case_ids(annotation_a_path, annotation=True)
-    annotation_b_ids = _strict_jsonl_case_ids(annotation_b_path, annotation=True)
-    if annotation_a_ids != approved_case_ids or annotation_b_ids != approved_case_ids:
-        raise ValueError(
-            "RGC evaluation blocked: annotation case IDs must exactly match approved cases "
-            f"(only in cases={sorted(approved_case_ids - annotation_a_ids)}, "
-            f"only in annotation A={sorted(annotation_a_ids - approved_case_ids)}, "
-            f"only in annotation B={sorted(annotation_b_ids - approved_case_ids)})"
-        )
-
-
-    try:
-        _validate_annotation_case_ids(cases_path, annotation_a_path, annotation_b_path)
-    except OSError as exc:
-        raise ValueError("RGC evaluation blocked: an approved annotation artifact is missing") from exc
-
     try:
         expected_hashes = {
             "cases_sha256": _sha256(cases_path),
@@ -859,6 +855,13 @@ def _validate_annotation_case_ids(
     for field, actual_hash in expected_hashes.items():
         if manifest[field] != actual_hash:
             raise ValueError(f"RGC evaluation blocked: {field} differs from approval manifest")
+
+    try:
+        _validate_annotation_case_ids(cases_path, annotation_a_path, annotation_b_path)
+    except OSError as exc:
+        raise ValueError(
+            "RGC evaluation blocked: an approved annotation artifact is missing"
+        ) from exc
 
     return {
         "manifest_sha256": _sha256(approval_manifest_path),
