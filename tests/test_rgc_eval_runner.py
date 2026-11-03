@@ -1427,3 +1427,31 @@ def test_hidden_partition_rejects_rule_gap_labels() -> None:
             iterations=10,
             partition="hidden",
         )
+
+
+def test_evaluate_preflights_all_cases_before_predicting(monkeypatch: pytest.MonkeyPatch) -> None:
+    cases = [
+        _case("preflight-1", "O prazo é de cinco dias úteis.", "no prazo máximo de 5 (cinco) dias úteis"),
+        _case("preflight-2", "O cancelamento ocorre em dois dias.", "O cancelamento será efetivado em até 2 (dois) dias"),
+        _case("preflight-3", "A devolução é em dobro.", "A cobrança indevida será devolvida em dobro"),
+    ]
+    cases[1]["rectified"] = "invalid"
+    calls: list[str] = []
+
+    def predictor(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(str(args[0]))
+        raise AssertionError("predict must not run when preflight fails")
+
+    monkeypatch.setitem(RUNNER, "predict", predictor)
+    with pytest.raises(ValueError, match="rectified must be true or false"):
+        RUNNER["evaluate"](
+            cases,
+            {case["case_id"]: "SUPPORTED" for case in cases},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+    assert calls == []
