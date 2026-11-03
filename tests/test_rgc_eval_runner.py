@@ -157,7 +157,9 @@ def test_oracle_rejects_excerpt_that_does_not_match_offsets() -> None:
         (lambda item: item.update(excerpt=" "), "excerpt must be a non-empty string"),
     ],
 )
-def test_oracle_rejects_malformed_evidence_metadata(mutate: Callable[[dict[str, Any]], None], message: str) -> None:
+def test_oracle_rejects_malformed_evidence_metadata(
+    mutate: Callable[[dict[str, Any]], None], message: str
+) -> None:
     case = _case("bad-evidence", "x", "II - por meio eletrônico.")
     mutate(case["evidence"][0])
     with pytest.raises(ValueError, match=message):
@@ -1562,9 +1564,9 @@ def _preflight_cases() -> list[dict[str, Any]]:
         ),
         (
             lambda case: case["evidence"][0].update(document_id="documento-inexistente"),
-            "malformed oracle evidence",
+            "unknown evidence document_id",
         ),
-        (lambda case: case.pop("evidence"), "malformed oracle evidence"),
+        (lambda case: case.pop("evidence"), "evidence must be a non-empty list"),
         (lambda case: case.update(claim="   "), "claim must be a non-empty string"),
     ],
 )
