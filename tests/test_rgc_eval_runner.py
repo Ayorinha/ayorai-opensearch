@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import runpy
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -1463,7 +1464,7 @@ def test_evaluate_preflights_all_cases_before_predicting(monkeypatch: pytest.Mon
         calls.append(str(args[0]))
         raise AssertionError("predict must not run when preflight fails")
 
-    monkeypatch.setitem(RUNNER, "predict", predictor)
+    monkeypatch.setitem(RUNNER["evaluate"].__globals__, "predict", predictor)
     with pytest.raises(ValueError, match="rectified must be true or false"):
         RUNNER["evaluate"](
             cases,
@@ -1492,7 +1493,7 @@ def test_evaluate_preflights_invalid_gold_label_before_predicting(
         calls.append(str(args[0]))
         raise AssertionError("predict must not run when the gold label is invalid")
 
-    monkeypatch.setitem(RUNNER, "predict", predictor)
+    monkeypatch.setitem(RUNNER["evaluate"].__globals__, "predict", predictor)
     with pytest.raises(ValueError, match="invalid gold label"):
         RUNNER["evaluate"](
             [case],
@@ -1505,3 +1506,81 @@ def test_evaluate_preflights_invalid_gold_label_before_predicting(
             iterations=10,
         )
     assert calls == []
+
+
+def _preflight_cases() -> list[dict[str, Any]]:
+    return [
+        _case(
+            "oracle-preflight-1",
+            "O prazo é de cinco dias úteis.",
+            "no prazo máximo de 5 (cinco) dias úteis",
+        ),
+        _case(
+            "oracle-preflight-2",
+            "O cancelamento ocorre em dois dias.",
+            "O cancelamento será efetivado em até 2 (dois) dias",
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("corrupt", "message"),
+    [
+        (
+            lambda case: case["evidence"][0].update(excerpt="trecho divergente"),
+            "excerpt does not match document offsets",
+        ),
+        (
+            lambda case: case["evidence"][0].update(document_id="documento-inexistente"),
+            "malformed oracle evidence",
+        ),
+        (lambda case: case.pop("evidence"), "malformed oracle evidence"),
+        (lambda case: case.update(claim="   "), "claim must be a non-empty string"),
+    ],
+)
+def test_evaluate_preflights_oracle_evidence_before_predicting(
+    monkeypatch: pytest.MonkeyPatch,
+    corrupt: Callable[[dict[str, Any]], object],
+    message: str,
+) -> None:
+    cases = _preflight_cases()
+    corrupt(cases[-1])
+    calls: list[str] = []
+
+    def predictor(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(str(args[0]))
+        raise AssertionError("predict must not run when oracle evidence is invalid")
+
+    monkeypatch.setitem(RUNNER["evaluate"].__globals__, "predict", predictor)
+    with pytest.raises(ValueError, match=message):
+        RUNNER["evaluate"](
+            cases,
+            {case["case_id"]: "SUPPORTED" for case in cases},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+    assert calls == []
+
+
+def test_evaluate_rejects_unknown_mode_before_predicting(monkeypatch: pytest.MonkeyPatch) -> None:
+    cases = _preflight_cases()
+
+    def predictor(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("predict must not run for an unknown mode")
+
+    monkeypatch.setitem(RUNNER["evaluate"].__globals__, "predict", predictor)
+    with pytest.raises(ValueError, match="mode must be oracle or retrieval"):
+        RUNNER["evaluate"](
+            cases,
+            {case["case_id"]: "SUPPORTED" for case in cases},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="orcale",
+            vocabulary="judge2",
+            iterations=10,
+        )
