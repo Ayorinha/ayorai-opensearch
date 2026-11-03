@@ -1431,9 +1431,21 @@ def test_hidden_partition_rejects_rule_gap_labels() -> None:
 
 def test_evaluate_preflights_all_cases_before_predicting(monkeypatch: pytest.MonkeyPatch) -> None:
     cases = [
-        _case("preflight-1", "O prazo é de cinco dias úteis.", "no prazo máximo de 5 (cinco) dias úteis"),
-        _case("preflight-2", "O cancelamento ocorre em dois dias.", "O cancelamento será efetivado em até 2 (dois) dias"),
-        _case("preflight-3", "A devolução é em dobro.", "A cobrança indevida será devolvida em dobro"),
+        _case(
+            "preflight-1",
+            "O prazo é de cinco dias úteis.",
+            "no prazo máximo de 5 (cinco) dias úteis",
+        ),
+        _case(
+            "preflight-2",
+            "O cancelamento ocorre em dois dias.",
+            "O cancelamento será efetivado em até 2 (dois) dias",
+        ),
+        _case(
+            "preflight-3",
+            "A devolução é em dobro.",
+            "A cobrança indevida será devolvida em dobro",
+        ),
     ]
     cases[1]["rectified"] = "invalid"
     calls: list[str] = []
