@@ -1622,7 +1622,7 @@ def test_evaluate_rejects_unknown_mode_before_predicting(monkeypatch: pytest.Mon
     ("contents", "message"),
     [
         ('{"case_id":', "invalid JSON"),
-        ('[]', "expected an object"),
+        ("[]", "expected an object"),
         ('{"case_id":123}', "case_id must be a non-empty string"),
         ('{"case_id":" "}', "case_id must be a non-empty string"),
         ('{"case_id":"case-1"}\\n\\n', "blank lines are not allowed"),
