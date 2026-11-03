@@ -1616,3 +1616,32 @@ def test_evaluate_rejects_unknown_mode_before_predicting(monkeypatch: pytest.Mon
             vocabulary="judge2",
             iterations=10,
         )
+
+
+@pytest.mark.parametrize(
+    ("contents", "message"),
+    [
+        ('{"case_id":', "invalid JSON"),
+        ('[]', "expected an object"),
+        ('{"case_id":123}', "case_id must be a non-empty string"),
+        ('{"case_id":" "}', "case_id must be a non-empty string"),
+        ('{"case_id":"case-1"}\\n\\n', "blank lines are not allowed"),
+        (
+            '{"case_id":"case-1"}\\n{"case_id":"case-1"}\\n',
+            "duplicate case_id",
+        ),
+    ],
+)
+def test_read_jsonl_rejects_malformed_case_records(
+    tmp_path: Path, contents: str, message: str
+) -> None:
+    path = tmp_path / "cases.jsonl"
+    path.write_text(contents, encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        RUNNER["_read_jsonl"](path)
+
+
+def test_read_jsonl_accepts_valid_case_records(tmp_path: Path) -> None:
+    path = tmp_path / "cases.jsonl"
+    path.write_text('{"case_id":"case-1","claim":"A"}\\n', encoding="utf-8")
+    assert RUNNER["_read_jsonl"](path) == [{"case_id": "case-1", "claim": "A"}]
