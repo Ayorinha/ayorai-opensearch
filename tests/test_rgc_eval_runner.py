@@ -1467,3 +1467,29 @@ def test_evaluate_preflights_all_cases_before_predicting(monkeypatch: pytest.Mon
             iterations=10,
         )
     assert calls == []
+
+
+
+def test_evaluate_preflights_invalid_gold_label_before_predicting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _case("invalid-gold-label", "O prazo é de cinco dias úteis.", "no prazo máximo de 5 dias")
+    calls: list[str] = []
+
+    def predictor(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(str(args[0]))
+        raise AssertionError("predict must not run when the gold label is invalid")
+
+    monkeypatch.setitem(RUNNER, "predict", predictor)
+    with pytest.raises(ValueError, match="invalid gold label"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-gold-label": "UNRECOGNIZED_LABEL"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+    assert calls == []
