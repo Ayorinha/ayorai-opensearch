@@ -869,7 +869,7 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     annotation_a.write_text(
         json.dumps({"case_id": "case-1", "label": "REFUTED"}) + "\n", encoding="utf-8"
     )
-    with pytest.raises(ValueError, match="annotation_a_sha256 differs from agreement report"):
+    with pytest.raises(ValueError, match="annotation_a_sha256 differs from approval manifest"):
         RUNNER["validate_annotation_approval"](
             cases,
             labels,
@@ -1381,9 +1381,7 @@ def test_annotation_approval_requires_exact_case_id_coverage(tmp_path: Path) -> 
     cases = tmp_path / "cases.jsonl"
     annotation_a = tmp_path / "annotation-a.jsonl"
     annotation_b = tmp_path / "annotation-b.jsonl"
-    cases.write_text(
-        '{"case_id":"case-1"}\n{"case_id":"case-2"}\n', encoding="utf-8"
-    )
+    cases.write_text('{"case_id":"case-1"}\n{"case_id":"case-2"}\n', encoding="utf-8")
     annotation_a.write_text(
         '{"case_id":"case-1","label":"SUPPORTED"}\n{"case_id":"case-2","label":"REFUTED"}\n',
         encoding="utf-8",
@@ -1394,9 +1392,7 @@ def test_annotation_approval_requires_exact_case_id_coverage(tmp_path: Path) -> 
     )
     RUNNER["_validate_annotation_case_ids"](cases, annotation_a, annotation_b)
 
-    annotation_b.write_text(
-        '{"case_id":"case-1","label":"SUPPORTED"}\n', encoding="utf-8"
-    )
+    annotation_b.write_text('{"case_id":"case-1","label":"SUPPORTED"}\n', encoding="utf-8")
     with pytest.raises(ValueError, match="annotation case IDs must exactly match"):
         RUNNER["_validate_annotation_case_ids"](cases, annotation_a, annotation_b)
 
@@ -1404,8 +1400,7 @@ def test_annotation_approval_requires_exact_case_id_coverage(tmp_path: Path) -> 
 def test_annotation_case_id_reader_rejects_duplicate_and_blank_records(tmp_path: Path) -> None:
     path = tmp_path / "annotation.jsonl"
     path.write_text(
-        '{"case_id":"case-1","label":"SUPPORTED"}\n'
-        '{"case_id":"case-1","label":"REFUTED"}\n',
+        '{"case_id":"case-1","label":"SUPPORTED"}\n{"case_id":"case-1","label":"REFUTED"}\n',
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="duplicate case_id"):
