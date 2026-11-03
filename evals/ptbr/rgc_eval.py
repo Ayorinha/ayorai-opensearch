@@ -946,32 +946,25 @@ def evaluate(
     if overlap:
         raise ValueError(f"development/evaluation partition overlap: {overlap}")
 
-    index: BM25Index | None = None
-    if mode == "retrieval":
-        passages = [p for doc in documents.values() for p in segment(doc, granularity)]
-        index = BM25Index(passages, documents)
-    rows: list[dict[str, Any]] = []
-    excluded: list[dict[str, str]] = []
-    unlabeled: list[str] = []
+    # Preflight the complete evaluation set before invoking the predictor.
+    # This prevents partial prediction side effects when a later case is invalid.
     seen: set[str] = set()
+    unlabeled: list[str] = []
     for case in cases:
         case_id = str(case["case_id"])
         if case_id in seen:
             raise ValueError(f"{case_id}: duplicate case")
         seen.add(case_id)
-        # Validate schema-level metadata even for excluded or unlabeled cases;
-        # malformed annotations must never be silently skipped.
-        rectified = case_rectified(case)
+        case_rectified(case)
         gold = labels.get(case_id)
         if gold is None:
             unlabeled.append(case_id)
             continue
+        if gold in EXCLUSION_LABELS and partition == "hidden":
+            raise ValueError(
+                f"{case_id}: RULE_GAP is prohibited in the definitive hidden partition"
+            )
         if gold in EXCLUSION_LABELS:
-            if partition == "hidden":
-                raise ValueError(
-                    f"{case_id}: RULE_GAP is prohibited in the definitive hidden partition"
-                )
-            excluded.append({"case_id": case_id, "label": gold})
             continue
         cluster_id = case.get("bootstrap_cluster_id")
         if partition == "hidden" and (not isinstance(cluster_id, str) or not cluster_id.strip()):
@@ -993,6 +986,27 @@ def evaluate(
                     f"{case_id}: bundle bootstrap_cluster_id must contain at least two "
                     "unique, sorted IDs"
                 )
+        case_atoms(case)
+    if unlabeled:
+        raise ValueError(f"cases without a label (labels must be complete): {unlabeled}")
+    extra = sorted(set(labels) - seen)
+    if extra:
+        raise ValueError(f"labels for unknown cases (files do not match): {extra}")
+
+    index: BM25Index | None = None
+    if mode == "retrieval":
+        passages = [p for doc in documents.values() for p in segment(doc, granularity)]
+        index = BM25Index(passages, documents)
+    rows: list[dict[str, Any]] = []
+    excluded: list[dict[str, str]] = []
+    for case in cases:
+        case_id = str(case["case_id"])
+        rectified = case_rectified(case)
+        gold = labels[case_id]
+        if gold in EXCLUSION_LABELS:
+            excluded.append({"case_id": case_id, "label": gold})
+            continue
+        cluster_id = case.get("bootstrap_cluster_id")
         atoms = case_atoms(case)
         if index is None:
             prediction = predict(
@@ -1019,11 +1033,6 @@ def evaluate(
                 **prediction,
             }
         )
-    if unlabeled:
-        raise ValueError(f"cases without a label (labels must be complete): {unlabeled}")
-    extra = sorted(set(labels) - seen)
-    if extra:
-        raise ValueError(f"labels for unknown cases (files do not match): {extra}")
     if not rows:
         raise ValueError("no evaluable cases")
     gold_labels = [str(r["gold"]) for r in rows]
