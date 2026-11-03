@@ -1473,7 +1473,11 @@ def test_evaluate_preflights_all_cases_before_predicting(monkeypatch: pytest.Mon
 def test_evaluate_preflights_invalid_gold_label_before_predicting(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    case = _case("invalid-gold-label", "O prazo é de cinco dias úteis.", "no prazo máximo de 5 dias")
+    case = _case(
+        "invalid-gold-label",
+        "O prazo é de cinco dias úteis.",
+        "no prazo máximo de 5 dias",
+    )
     calls: list[str] = []
 
     def predictor(*args: Any, **kwargs: Any) -> dict[str, Any]:
