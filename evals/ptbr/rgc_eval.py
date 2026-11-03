@@ -963,9 +963,7 @@ def evaluate(
         if not isinstance(gold, str) or (
             gold not in VOCABULARIES[vocabulary] and gold not in EXCLUSION_LABELS
         ):
-            raise ValueError(
-                f"{case_id}: invalid gold label {gold!r} for vocabulary {vocabulary}"
-            )
+            raise ValueError(f"{case_id}: invalid gold label {gold!r} for vocabulary {vocabulary}")
         if gold in EXCLUSION_LABELS and partition == "hidden":
             raise ValueError(
                 f"{case_id}: RULE_GAP is prohibited in the definitive hidden partition"
