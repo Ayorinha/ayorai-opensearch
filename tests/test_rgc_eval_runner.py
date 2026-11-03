@@ -1358,3 +1358,61 @@ def test_load_documents_rejects_duplicate_source_ids(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="duplicate document"):
         RUNNER["load_documents"](path)
+
+
+# --- approval integrity / definitive partition guards -------------------------
+
+
+def test_annotation_approval_requires_exact_case_id_coverage(tmp_path: Path) -> None:
+    cases = tmp_path / "cases.jsonl"
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    cases.write_text(
+        '{"case_id":"case-1"}\\n{"case_id":"case-2"}\\n', encoding="utf-8"
+    )
+    annotation_a.write_text(
+        '{"case_id":"case-1","label":"SUPPORTED"}\\n{"case_id":"case-2","label":"REFUTED"}\\n',
+        encoding="utf-8",
+    )
+    annotation_b.write_text(
+        '{"case_id":"case-1","label":"SUPPORTED"}\\n{"case_id":"case-2","label":"REFUTED"}\\n',
+        encoding="utf-8",
+    )
+    RUNNER["_validate_annotation_case_ids"](cases, annotation_a, annotation_b)
+
+    annotation_b.write_text(
+        '{"case_id":"case-1","label":"SUPPORTED"}\\n', encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="annotation case IDs must exactly match"):
+        RUNNER["_validate_annotation_case_ids"](cases, annotation_a, annotation_b)
+
+
+def test_annotation_case_id_reader_rejects_duplicate_and_blank_records(tmp_path: Path) -> None:
+    path = tmp_path / "annotation.jsonl"
+    path.write_text(
+        '{"case_id":"case-1","label":"SUPPORTED"}\\n'
+        '{"case_id":"case-1","label":"REFUTED"}\\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="duplicate case_id"):
+        RUNNER["_strict_jsonl_case_ids"](path, annotation=True)
+
+    path.write_text('{"case_id":"case-1","label":"SUPPORTED"}\\n\\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="blank lines are not allowed"):
+        RUNNER["_strict_jsonl_case_ids"](path, annotation=True)
+
+
+def test_hidden_partition_rejects_rule_gap_labels() -> None:
+    case = _case("hidden-rule-gap", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    with pytest.raises(ValueError, match="RULE_GAP is prohibited in the definitive hidden partition"):
+        RUNNER["evaluate"](
+            [case],
+            {"hidden-rule-gap": "RULE_GAP"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+            partition="hidden",
+        )
