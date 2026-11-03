@@ -805,8 +805,12 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     adjudication = tmp_path / "adjudication.md"
     cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
     labels.write_text("{}\n", encoding="utf-8")
-    annotation_a.write_text("synthetic A\n", encoding="utf-8")
-    annotation_b.write_text("synthetic B\n", encoding="utf-8")
+    annotation_a.write_text(
+        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+    )
+    annotation_b.write_text(
+        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+    )
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
     development_cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
