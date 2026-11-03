@@ -933,6 +933,8 @@ def evaluate(
 ) -> dict[str, Any]:
     if partition not in {"hidden", "development"}:
         raise ValueError("partition must be hidden or development")
+    if mode not in {"oracle", "retrieval"}:
+        raise ValueError("mode must be oracle or retrieval")
     cases = list(cases)
     development_cases = list(development_cases)
     development_case_ids = [str(case["case_id"]) for case in development_cases]
@@ -957,6 +959,7 @@ def evaluate(
     # This prevents partial prediction side effects when a later case is invalid.
     seen: set[str] = set()
     unlabeled: list[str] = []
+    oracle_evidence: dict[str, list[Passage]] = {}
     for case in cases:
         case_id = str(case["case_id"])
         if case_id in seen:
@@ -997,7 +1000,17 @@ def evaluate(
                     f"{case_id}: bundle bootstrap_cluster_id must contain at least two "
                     "unique, sorted IDs"
                 )
+        claim = case.get("claim")
+        if not isinstance(claim, str) or not claim.strip():
+            raise ValueError(f"{case_id}: claim must be a non-empty string")
         case_atoms(case)
+        if mode == "oracle":
+            # Resolve oracle evidence up front: a missing document or a
+            # mismatched excerpt must stop the run before any prediction.
+            try:
+                oracle_evidence[case_id] = oracle_passages(case, documents)
+            except (KeyError, TypeError) as exc:
+                raise ValueError(f"{case_id}: malformed oracle evidence ({exc!r})") from exc
     if unlabeled:
         raise ValueError(f"cases without a label (labels must be complete): {unlabeled}")
     extra = sorted(set(labels) - seen)
@@ -1020,9 +1033,7 @@ def evaluate(
         cluster_id = case.get("bootstrap_cluster_id")
         atoms = case_atoms(case)
         if index is None:
-            prediction = predict(
-                case["claim"], oracle_passages(case, documents), documents, atoms=atoms
-            )
+            prediction = predict(case["claim"], oracle_evidence[case_id], documents, atoms=atoms)
         else:
             hits = index.search(case["claim"], top_k)
             prediction = predict(
