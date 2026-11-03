@@ -256,8 +256,15 @@ def case_atoms(case: Mapping[str, Any]) -> list[tuple[int, int]] | None:
         raise ValueError(f"{case_id}: atoms must list two or more spans")
     spans: list[tuple[int, int]] = []
     for item in raw:
+        if not isinstance(item, Mapping):
+            raise ValueError(f"{case_id}: each atom must be an object")
         start, end = item.get("start_offset"), item.get("end_offset")
-        if not (isinstance(start, int) and isinstance(end, int)) or isinstance(start, bool):
+        if (
+            not isinstance(start, int)
+            or isinstance(start, bool)
+            or not isinstance(end, int)
+            or isinstance(end, bool)
+        ):
             raise ValueError(f"{case_id}: atom offsets must be integers")
         if not 0 <= start < end <= len(claim):
             raise ValueError(f"{case_id}: atom span {start}-{end} outside the claim")
