@@ -1100,9 +1100,18 @@ def test_case_without_atoms_keeps_single_atom_behaviour() -> None:
             [{"start_offset": "0", "end_offset": 5}, {"start_offset": 6, "end_offset": 10}],
             "integers",
         ),
+        (
+            [{"start_offset": True, "end_offset": 5}, {"start_offset": 6, "end_offset": 10}],
+            "integers",
+        ),
+        (
+            [{"start_offset": 0, "end_offset": True}, {"start_offset": 6, "end_offset": 10}],
+            "integers",
+        ),
+        ([None, {"start_offset": 6, "end_offset": 10}], "each atom must be an object"),
     ],
 )
-def test_invalid_atom_annotation_stops_the_run(atoms: list[dict[str, Any]], message: str) -> None:
+def test_invalid_atom_annotation_stops_the_run(atoms: list[Any], message: str) -> None:
     case = _case("bad", "Texto A e texto B.", CANCEL)
     case["atoms"] = atoms
     with pytest.raises(ValueError, match=message):
