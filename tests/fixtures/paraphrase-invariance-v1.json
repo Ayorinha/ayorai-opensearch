@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "dataset_id": "paraphrase-invariance-synthetic-v1",
+  "purpose": "Synthetic regression only; not RGC, pilot, benchmark, or external validation.",
+  "groups": [
+    {
+      "group_id": "atlasgrid-revenue-2025",
+      "expected_verdict": "verified",
+      "claims": [
+        "AtlasGrid revenue in 2025 was USD 120 million.",
+        "AtlasGrid reported USD 120 million in revenue for 2025.",
+        "The 2025 revenue of AtlasGrid amounted to USD 120 million."
+      ],
+      "documents": [
+        {
+          "id": "atlasgrid-source-a",
+          "origin": "atlasgrid-origin-a",
+          "text": "AtlasGrid revenue in 2025 was USD 120 million."
+        },
+        {
+          "id": "atlasgrid-source-b",
+          "origin": "atlasgrid-origin-b",
+          "text": "The AtlasGrid annual filing reports USD 120 million of 2025 revenue."
+        }
+      ]
+    },
+    {
+      "group_id": "vectorlabs-deployment-control",
+      "expected_verdict": "verified",
+      "claims": [
+        "VectorLabs blocks unsigned model artifacts before deployment.",
+        "VectorLabs prevents the deployment of unsigned model artifacts.",
+        "At VectorLabs, unsigned model artifacts are stopped before deployment."
+      ],
+      "documents": [
+        {
+          "id": "vectorlabs-source-a",
+          "origin": "vectorlabs-origin-a",
+          "text": "VectorLabs blocks unsigned model artifacts before deployment."
+        },
+        {
+          "id": "vectorlabs-source-b",
+          "origin": "vectorlabs-origin-b",
+          "text": "VectorLabs prevents deployment of unsigned model artifacts."
+        }
+      ]
+    }
+  ]
+}
