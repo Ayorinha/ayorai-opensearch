@@ -283,6 +283,52 @@ def case_rectified(case: Mapping[str, Any]) -> bool:
     return value
 
 
+
+
+def validate_cluster_citations(
+    case: Mapping[str, Any], cluster_id: str, case_id: str
+) -> None:
+    """Check that a declared bootstrap cluster is supported by cited article IDs.
+
+    DEC-019 requires cited_article_ids to preserve the complete citation list.
+    A bundle represents the subset jointly necessary when no single principal
+    article exists; it therefore must be contained in, not equal to, that list.
+    This check validates consistency only and cannot determine legal relevance
+    or whether a principal article was correctly selected.
+    """
+    if "cited_article_ids" not in case:
+        return
+    cited = case["cited_article_ids"]
+    if (
+        not isinstance(cited, list)
+        or not cited
+        or any(
+            not isinstance(article_id, str)
+            or not article_id
+            or article_id != article_id.strip()
+            for article_id in cited
+        )
+        or len(cited) != len(set(cited))
+    ):
+        raise ValueError(
+            f"{case_id}: cited_article_ids must be a non-empty list of unique, "
+            "canonical, non-empty strings"
+        )
+    cited_ids = set(cited)
+    if cluster_id.startswith("bundle:"):
+        members = cluster_id.removeprefix("bundle:").split("+")
+        missing = sorted(set(members) - cited_ids)
+        if missing:
+            raise ValueError(
+                f"{case_id}: bundle bootstrap_cluster_id contains IDs absent "
+                f"from cited_article_ids: {missing}"
+            )
+    elif cluster_id not in cited_ids:
+        raise ValueError(
+            f"{case_id}: bootstrap_cluster_id must be present in cited_article_ids"
+        )
+
+
 def predict(
     claim_text: str,
     passages: Sequence[Passage],
@@ -935,6 +981,8 @@ def evaluate(
                     f"{case_id}: bundle bootstrap_cluster_id must contain at least two "
                     "unique, sorted IDs"
                 )
+        if partition == "hidden" and isinstance(cluster_id, str):
+            validate_cluster_citations(case, cluster_id, case_id)
         atoms = case_atoms(case)
         if index is None:
             prediction = predict(
