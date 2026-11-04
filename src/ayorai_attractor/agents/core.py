@@ -57,7 +57,7 @@ class ResearchAgent(Agent):
                     FailureType.API_ERROR,
                     f"External search failed: {exc}",
                     recoverable=True,
-                    stage=FailureStage.RECOVERY,
+                    stage=FailureStage.RETRIEVAL,
                 )
         try:
             response = context.provider.execute(context.query)

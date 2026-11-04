@@ -204,11 +204,8 @@ def audit(request: SearchRequest) -> AuditResponse:
             AuditFindingResponse(
                 code=item.code,
                 severity=item.severity.value,
-                message=(
-                    f"[stage:{item.stage.value}] {item.message}"
-                    if item.stage is not None
-                    else item.message
-                ),
+                message=item.message,
+                stage=item.stage,
             )
             for item in report.findings
         ],

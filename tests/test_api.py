@@ -9,6 +9,7 @@ from ayorai_attractor.api.app import RequestBodyLimitMiddleware
 from ayorai_attractor.models import (
     Evidence,
     Failure,
+    FailureStage,
     FailureType,
     QualityMode,
     SearchResponse,
@@ -81,14 +82,13 @@ class RecoveryFailureEngine(FakeEngine):
                 type=FailureType.API_ERROR,
                 message="External search failed: synthetic provider error",
                 recoverable=True,
+                stage=FailureStage.RETRIEVAL,
             )
         )
         return response
 
 
-def test_audit_endpoint_exposes_failure_stage(
-    monkeypatch, tmp_path, request
-) -> None:  # type: ignore[no-untyped-def]
+def test_audit_endpoint_exposes_failure_stage(monkeypatch, tmp_path, request) -> None:  # type: ignore[no-untyped-def]
     from ayorai_attractor.audit_store import AuditTraceStore
 
     monkeypatch.setattr(api, "engine", RecoveryFailureEngine())
@@ -106,7 +106,8 @@ def test_audit_endpoint_exposes_failure_stage(
         {
             "code": "FAILURE_API_ERROR",
             "severity": "warning",
-            "message": "[stage:recovery] External search failed: synthetic provider error",
+            "message": "External search failed: synthetic provider error",
+            "stage": "retrieval",
         }
     ]
 

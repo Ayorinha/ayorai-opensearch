@@ -13,12 +13,11 @@ class FailureEngine:
         *,
         stage: FailureStage | None = None,
     ) -> Failure:
-        if stage is not None:
-            message = f"[stage:{stage.value}] {message}"
         failure = Failure(
             type=failure_type,
             message=message,
             recoverable=recoverable,
+            stage=stage,
         )
         self.failures.append(failure)
         return failure

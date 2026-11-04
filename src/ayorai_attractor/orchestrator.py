@@ -58,7 +58,7 @@ class Attractor:
                 failure_type=FailureType.API_ERROR,
                 message=str(exc),
                 recoverable=False,
-                stage=FailureStage.RECOVERY,
+                stage=FailureStage.RETRIEVAL,
             )
             trace.event("request.failed", failure_type=FailureType.API_ERROR.value)
             return SearchResponse(

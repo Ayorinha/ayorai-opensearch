@@ -89,19 +89,11 @@ class AuditReport:
 
 def _failure_finding(failure: Failure) -> AuditFinding:
     severity = AuditSeverity.ERROR if not failure.recoverable else AuditSeverity.WARNING
-    stage = None
-    message = failure.message
-    for candidate in FailureStage:
-        prefix = f"[stage:{candidate.value}] "
-        if message.startswith(prefix):
-            stage = candidate
-            message = message.removeprefix(prefix)
-            break
     return AuditFinding(
         code=f"FAILURE_{failure.type.value.upper()}",
         severity=severity,
-        message=message,
-        stage=stage,
+        message=failure.message,
+        stage=failure.stage,
     )
 
 

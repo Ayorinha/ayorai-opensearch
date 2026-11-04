@@ -27,7 +27,7 @@ class FailureType(StrEnum):
 
 
 class FailureStage(StrEnum):
-    RECOVERY = "recovery"
+    RETRIEVAL = "retrieval"
     EXTRACTION = "extraction"
     NLI = "nli"
     JUDGE = "judge"
@@ -74,6 +74,7 @@ class Failure(BaseModel):
     type: FailureType
     message: str
     recoverable: bool = True
+    stage: FailureStage | None = None
 
 
 class AgentResult(BaseModel):
@@ -106,6 +107,7 @@ class AuditFindingResponse(BaseModel):
     code: str
     severity: str
     message: str
+    stage: FailureStage | None = None
 
 
 class AuditResponse(BaseModel):

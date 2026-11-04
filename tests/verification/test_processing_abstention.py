@@ -82,4 +82,3 @@ def test_judge_failure_reports_judge_stage(monkeypatch: pytest.MonkeyPatch) -> N
     assert result.status is ResponsePolicy.ABSTAIN_PROCESSING_ERROR
     assert result.failure_stage is FailureStage.JUDGE
     assert len(result.stances) == 1
-
