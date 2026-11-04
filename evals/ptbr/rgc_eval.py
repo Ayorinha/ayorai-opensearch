@@ -800,12 +800,24 @@ def _validate_annotation_case_ids(
     approved_case_ids = _strict_jsonl_case_ids(cases_path)
     annotation_a_ids = _strict_jsonl_case_ids(annotation_a_path, annotation=True)
     annotation_b_ids = _strict_jsonl_case_ids(annotation_b_path, annotation=True)
-    if annotation_a_ids != approved_case_ids or annotation_b_ids != approved_case_ids:
+    cases_minus_a = sorted(approved_case_ids - annotation_a_ids)
+    cases_minus_b = sorted(approved_case_ids - annotation_b_ids)
+    a_minus_cases = sorted(annotation_a_ids - approved_case_ids)
+    b_minus_cases = sorted(annotation_b_ids - approved_case_ids)
+    if cases_minus_a or cases_minus_b or a_minus_cases or b_minus_cases:
         raise ValueError(
             "RGC evaluation blocked: annotation case IDs must exactly match approved cases "
-            f"(only in cases={sorted(approved_case_ids - annotation_a_ids)}, "
-            f"only in annotation A={sorted(annotation_a_ids - approved_case_ids)}, "
-            f"only in annotation B={sorted(annotation_b_ids - approved_case_ids)})"
+            f"(cases-A={cases_minus_a}, cases-B={cases_minus_b}, "
+            f"A-cases={a_minus_cases}, B-cases={b_minus_cases})"
+        )
+
+
+def _validate_rule_gap_policy(label: str, *, pilot_mode: bool, partition: str) -> None:
+    """Allow RULE_GAP only in an explicitly selected, non-hidden pilot run."""
+    if label in EXCLUSION_LABELS and (not pilot_mode or partition != "development"):
+        raise ValueError(
+            "RULE_GAP is prohibited in every definitive partition; "
+            "it is accepted only in explicit pilot mode"
         )
 
 
@@ -971,6 +983,7 @@ def evaluate(
     granularity: str = "dispositivo",
     iterations: int = BOOTSTRAP_ITERATIONS,
     partition: str = "development",
+    pilot_mode: bool = False,
 ) -> dict[str, Any]:
     if partition not in {"hidden", "development"}:
         raise ValueError("partition must be hidden or development")
@@ -1015,10 +1028,7 @@ def evaluate(
             gold not in VOCABULARIES[vocabulary] and gold not in EXCLUSION_LABELS
         ):
             raise ValueError(f"{case_id}: invalid gold label {gold!r} for vocabulary {vocabulary}")
-        if gold in EXCLUSION_LABELS and partition == "hidden":
-            raise ValueError(
-                f"{case_id}: RULE_GAP is prohibited in the definitive hidden partition"
-            )
+        _validate_rule_gap_policy(gold, pilot_mode=pilot_mode, partition=partition)
         if gold in EXCLUSION_LABELS:
             continue
         cluster_id = case.get("bootstrap_cluster_id")

@@ -484,7 +484,7 @@ def test_majority_tie_breaks_by_vocabulary_order() -> None:
     assert RUNNER["majority_label"](["REFUTED", "SUPPORTED"], "judge2") == "SUPPORTED"
 
 
-def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
+def test_evaluate_requires_complete_labels_without_rule_gap() -> None:
     cases = [
         _case(
             "s1",
@@ -496,9 +496,8 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             "O cancelamento será efetivado em até 9 dias.",
             "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
         ),
-        _case("s3", "Algo ambíguo.", "II - por meio eletrônico."),
     ]
-    labels = {"s1": "SUPPORTED", "s2": "REFUTED", "s3": "RULE_GAP"}
+    labels = {"s1": "SUPPORTED", "s2": "REFUTED"}
     for mode in ("oracle", "retrieval"):
         result = RUNNER["evaluate"](
             cases,
@@ -510,7 +509,7 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             vocabulary="judge2",
             iterations=100,
         )
-        assert result["excluded"] == [{"case_id": "s3", "label": "RULE_GAP"}]
+        assert result["excluded"] == []
         assert [row["predicted"] for row in result["cases"]] == ["SUPPORTED", "REFUTED"]
         assert result["decision_states"] == {"DECIDED": 2}
     with pytest.raises(ValueError, match="unknown cases"):
@@ -546,6 +545,35 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             vocabulary="judge2",
             iterations=10,
         )
+
+
+@pytest.mark.parametrize("partition", ["development", "hidden"])
+def test_evaluate_rejects_rule_gap_in_every_definitive_partition(partition: str) -> None:
+    case = _case("definitive-rule-gap", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    with pytest.raises(ValueError, match="RULE_GAP is prohibited in every definitive partition"):
+        RUNNER["evaluate"](
+            [case],
+            {"definitive-rule-gap": "RULE_GAP"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+            partition=partition,
+        )
+
+
+def test_rule_gap_policy_requires_explicit_pilot_mode() -> None:
+    validate = RUNNER["_validate_rule_gap_policy"]
+    validate("RULE_GAP", pilot_mode=True, partition="development")
+    for pilot_mode, partition in (
+        (False, "development"),
+        (False, "hidden"),
+        (True, "hidden"),
+    ):
+        with pytest.raises(ValueError, match="only in explicit pilot mode"):
+            validate("RULE_GAP", pilot_mode=pilot_mode, partition=partition)
 
 
 def test_evaluate_reports_abstentions_mapped_to_unverified() -> None:
@@ -1434,9 +1462,21 @@ def test_annotation_approval_requires_exact_case_id_coverage(tmp_path: Path) -> 
     )
     RUNNER["_validate_annotation_case_ids"](cases, annotation_a, annotation_b)
 
-    annotation_b.write_text('{"case_id":"case-1","label":"SUPPORTED"}\n', encoding="utf-8")
-    with pytest.raises(ValueError, match="annotation case IDs must exactly match"):
+    annotation_a.write_text(
+        '{"case_id":"case-1","label":"SUPPORTED"}\n{"case_id":"extra-a","label":"REFUTED"}\n',
+        encoding="utf-8",
+    )
+    annotation_b.write_text(
+        '{"case_id":"case-2","label":"REFUTED"}\n{"case_id":"extra-b","label":"SUPPORTED"}\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError) as exc_info:
         RUNNER["_validate_annotation_case_ids"](cases, annotation_a, annotation_b)
+    message = str(exc_info.value)
+    assert "cases-A=['case-2']" in message
+    assert "cases-B=['case-1']" in message
+    assert "A-cases=['extra-a']" in message
+    assert "B-cases=['extra-b']" in message
 
 
 def test_annotation_case_id_reader_rejects_duplicate_and_blank_records(tmp_path: Path) -> None:
@@ -1451,24 +1491,6 @@ def test_annotation_case_id_reader_rejects_duplicate_and_blank_records(tmp_path:
     path.write_text('{"case_id":"case-1","label":"SUPPORTED"}\n\n', encoding="utf-8")
     with pytest.raises(ValueError, match="blank lines are not allowed"):
         RUNNER["_strict_jsonl_case_ids"](path, annotation=True)
-
-
-def test_hidden_partition_rejects_rule_gap_labels() -> None:
-    case = _case("hidden-rule-gap", "O cancelamento será efetivado em até 2 dias.", CANCEL)
-    with pytest.raises(
-        ValueError, match="RULE_GAP is prohibited in the definitive hidden partition"
-    ):
-        RUNNER["evaluate"](
-            [case],
-            {"hidden-rule-gap": "RULE_GAP"},
-            DOCS,
-            development_cases=DEV_CASES,
-            development_labels=DEV_LABELS,
-            mode="oracle",
-            vocabulary="judge2",
-            iterations=10,
-            partition="hidden",
-        )
 
 
 def test_evaluate_preflights_all_cases_before_predicting(monkeypatch: pytest.MonkeyPatch) -> None:
