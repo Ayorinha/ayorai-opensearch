@@ -37,6 +37,8 @@ def test_synthetic_paraphrases_preserve_the_expected_verdict() -> None:
     assert payload["schema_version"] == 1
     assert payload["dataset_id"] == "paraphrase-invariance-synthetic-v1"
     assert len(payload["groups"]) >= 2
+    verdicts = {group["expected_verdict"] for group in payload["groups"]}
+    assert {"verified", "refuted"} <= verdicts, "fixture must cover supported and refuted claims"
 
     verifier = _pipeline()
     for group in payload["groups"]:
