@@ -61,6 +61,7 @@ def test_research_agent_continues_after_search_provider_failure() -> None:
     failure = context.failures.failures[0]
     assert failure.type is FailureType.API_ERROR
     assert failure.recoverable is True
+    assert failure.message.startswith("[stage:recovery] ")
     assert "External search failed" in failure.message
 
 

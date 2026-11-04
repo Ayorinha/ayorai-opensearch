@@ -10,6 +10,7 @@ from enum import StrEnum
 from ayorai_attractor.models import (
     Evidence,
     Failure,
+    FailureStage,
     QualityMode,
     SearchResponse,
 )
@@ -26,6 +27,7 @@ class AuditFinding:
     code: str
     severity: AuditSeverity
     message: str
+    stage: FailureStage | None = None
 
 
 @dataclass(frozen=True)
@@ -87,10 +89,19 @@ class AuditReport:
 
 def _failure_finding(failure: Failure) -> AuditFinding:
     severity = AuditSeverity.ERROR if not failure.recoverable else AuditSeverity.WARNING
+    stage = None
+    message = failure.message
+    for candidate in FailureStage:
+        prefix = f"[stage:{candidate.value}] "
+        if message.startswith(prefix):
+            stage = candidate
+            message = message.removeprefix(prefix)
+            break
     return AuditFinding(
         code=f"FAILURE_{failure.type.value.upper()}",
         severity=severity,
-        message=failure.message,
+        message=message,
+        stage=stage,
     )
 
 

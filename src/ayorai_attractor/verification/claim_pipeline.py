@@ -8,6 +8,8 @@ from typing import Protocol
 
 from pydantic import ValidationError
 
+from ayorai_attractor.models import FailureStage
+
 from .excerpt import revalidate_evidence
 from .extraction import (
     ClaimExtractor,
@@ -47,6 +49,7 @@ class ClaimVerificationResult:
     rationale: str
     abstention_reason: str | None = None
     audit_reasons: tuple[str, ...] = ()
+    failure_stage: FailureStage | None = None
 
 
 class ClaimVerificationPipeline:
@@ -134,12 +137,6 @@ class ClaimVerificationPipeline:
             evidence = tuple(evidence_items)
         try:
             stance_result = self.stance_detector.detect(extracted, evidence)
-            stances = tuple(item.edge for item in stance_result.edges)
-            judgments, verdict = judge(
-                [item.claim for item in extracted],
-                list(evidence),
-                list(stances),
-            )
         except (ValidationError, ValueError) as exc:
             return ClaimVerificationResult(
                 query=response,
@@ -153,6 +150,29 @@ class ClaimVerificationPipeline:
                 rationale=f"{type(exc).__name__}: {exc}",
                 abstention_reason=type(exc).__name__,
                 audit_reasons=tuple(audit_reasons),
+                failure_stage=FailureStage.NLI,
+            )
+        stances = tuple(item.edge for item in stance_result.edges)
+        try:
+            judgments, verdict = judge(
+                [item.claim for item in extracted],
+                list(evidence),
+                list(stances),
+            )
+        except (ValidationError, ValueError) as exc:
+            return ClaimVerificationResult(
+                query=response,
+                claims=extracted,
+                evidence=evidence,
+                stances=stances,
+                judgments=(),
+                verdict=None,
+                status=ResponsePolicy.ABSTAIN_PROCESSING_ERROR,
+                confidence=1.0,
+                rationale=f"{type(exc).__name__}: {exc}",
+                abstention_reason=type(exc).__name__,
+                audit_reasons=tuple(audit_reasons),
+                failure_stage=FailureStage.JUDGE,
             )
         confidence = min(
             (item.confidence for item in extracted),
@@ -188,7 +208,22 @@ class ClaimVerificationPipeline:
         """Decompose a model response, then verify the resulting claims."""
         if self.claim_extractor is None:
             raise ValueError("claim_extractor is required for verify_response")
-        extraction = self.claim_extractor.extract(response)
+        try:
+            extraction = self.claim_extractor.extract(response)
+        except (ValidationError, ValueError) as exc:
+            return ClaimVerificationResult(
+                query=response,
+                claims=(),
+                evidence=(),
+                stances=(),
+                judgments=(),
+                verdict=None,
+                status=ResponsePolicy.ABSTAIN_PROCESSING_ERROR,
+                confidence=1.0,
+                rationale=f"{type(exc).__name__}: {exc}",
+                abstention_reason=type(exc).__name__,
+                failure_stage=FailureStage.EXTRACTION,
+            )
         if not extraction.claims:
             return ClaimVerificationResult(
                 query=response,

@@ -1,5 +1,10 @@
 from ayorai_attractor.audit import AuditReport, AuditSeverity, audit_evidence
-from ayorai_attractor.models import Evidence, Failure, FailureType, SearchResponse
+from ayorai_attractor.models import (
+    Evidence,
+    Failure,
+    FailureType,
+    SearchResponse,
+)
 
 
 def response(evidence: list[Evidence]) -> SearchResponse:
@@ -57,13 +62,18 @@ def test_audit_keeps_verdict_authority_explicitly_unadjudicated() -> None:
 def test_audit_classifies_recoverable_and_terminal_failures() -> None:
     result = response([])
     result.failures = [
-        Failure(type=FailureType.TIMEOUT, message="temporary timeout", recoverable=True),
+        Failure(
+            type=FailureType.TIMEOUT,
+            message="temporary timeout",
+            recoverable=True,
+        ),
         Failure(type=FailureType.API_ERROR, message="provider unavailable", recoverable=False),
     ]
     report = AuditReport.from_response(result)
     findings = {finding.code: finding for finding in report.findings}
     assert report.failure_count == 2
     assert findings["FAILURE_TIMEOUT"].severity is AuditSeverity.WARNING
+    assert findings["FAILURE_TIMEOUT"].stage is None
     assert findings["FAILURE_API_ERROR"].severity is AuditSeverity.ERROR
 
 

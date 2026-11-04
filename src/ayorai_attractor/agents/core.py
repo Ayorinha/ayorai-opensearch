@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from ayorai_attractor.evidence.core import EvidenceStore
 from ayorai_attractor.failure_engine.core import FailureEngine
-from ayorai_attractor.models import AgentResult, FailureType
+from ayorai_attractor.models import AgentResult, FailureStage, FailureType
 from ayorai_attractor.providers.base import Provider
 from ayorai_attractor.tenant import TenantContext
 
@@ -57,6 +57,7 @@ class ResearchAgent(Agent):
                     FailureType.API_ERROR,
                     f"External search failed: {exc}",
                     recoverable=True,
+                    stage=FailureStage.RECOVERY,
                 )
         try:
             response = context.provider.execute(context.query)

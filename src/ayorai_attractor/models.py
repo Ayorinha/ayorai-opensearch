@@ -26,6 +26,13 @@ class FailureType(StrEnum):
     UNSUPPORTED_CLAIM = "unsupported_claim"
 
 
+class FailureStage(StrEnum):
+    RECOVERY = "recovery"
+    EXTRACTION = "extraction"
+    NLI = "nli"
+    JUDGE = "judge"
+
+
 class SearchRequest(BaseModel):
     query: str = Field(min_length=3, max_length=10000)
     mode: QualityMode = QualityMode.BALANCED
