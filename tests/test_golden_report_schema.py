@@ -24,7 +24,7 @@ def test_golden_report_conforms_to_versioned_json_schema() -> None:
 
 
 def test_golden_report_schema_rejects_missing_digest_fields() -> None:
-    root = Path(__file__).resolve().parents[2]
+    root = Path(__file__).resolve().parents[1]
     schema_path = root / "docs" / "schemas" / "golden-evaluation-report-v1.schema.json"
     schema: dict[str, Any] = json.loads(schema_path.read_text(encoding="utf-8"))
     validator = Draft202012Validator(schema)
