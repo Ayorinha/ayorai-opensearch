@@ -1,18 +1,18 @@
 # AYORAI ATTRACTOR — Progress
 
-Updated: 2026-10-17
+Updated: 2026-11-04
 
 > **Current status source:** use [docs/STATUS.md](STATUS.md). This page preserves the historical progress narrative and references; it is not an independent source of current status.
 
 ## Canonical progress record
 
-The [TRACEABILITY MASTER](TRACEABILITY-MASTER.md) is the single source of truth for requirements, implementation mapping, tests, evidence labels, known limitations, and items not implemented or not independently verified.
+The current status source is [docs/STATUS.md](STATUS.md). This progress narrative is historical context, not a live status dashboard. The former [TRACEABILITY MASTER](TRACEABILITY-MASTER.md) is a historical matrix from the Judge 1.x/early project phase; it is not the current source of truth. For Judge 2.0.0 rule mapping, use [docs/judge2/TRACEABILITY.md](judge2/TRACEABILITY.md), generated and checked by `scripts/gen_judge2_traceability.py --check`.
 
 This page intentionally does not maintain a second feature-by-feature status table or duplicate mutable benchmark, test-count, coverage, or baseline numbers. Those details must be recorded once in the canonical matrix with a precise source, SHA, test, or workflow reference.
 
 ## Release and evidence references
 
-- **Published release:** v0.5.0 — [Zenodo DOI 10.5281/zenodo.23344005](https://doi.org/10.5281/zenodo.23344005).
+- **Current published release:** v0.6.0 — [Zenodo DOI 10.5281/zenodo.23607357](https://doi.org/10.5281/zenodo.23607357); official version date 2026-10-23. The v0.5.0 release ([DOI 10.5281/zenodo.23344005](https://doi.org/10.5281/zenodo.23344005)) is historical.
 - **DEC-010 approved:** option A, targeting approximately one-third compound claims. [PR #204](https://github.com/Ayorinha/ayorai-opensearch/pull/204) records the decision; [PR #203](https://github.com/Ayorinha/ayorai-opensearch/pull/203) adds executor `rgc-eval/0.2.0` and the `atoms` field; [PR #205](https://github.com/Ayorinha/ayorai-opensearch/pull/205) records Protocol Amendment 3.
 - **Exploratory pilot completed:** Anderson annotated 20 cases on 2026-10-16. Distribution: 9 SUPPORTED, 11 REFUTED, 0 UNVERIFIED, 0 PARTIALLY_SUPPORTED, 0 CONFLICTING, 0 RULE_GAP. The pilot contained no cases designed for PARTIALLY_SUPPORTED or CONFLICTING. The results are discarded, labels are not in the repository, and the system was not run on the cases. This is not a system evaluation.
 - **Pilot findings / DEC-011 approved (2026-10-17):** [PR #206](https://github.com/Ayorinha/ayorai-opensearch/pull/206) records three annotation-guide findings: (1) not confirmed is not the same as contradicted (pilot-18); (2) rectification (pilot-19), option A in [PR #207](https://github.com/Ayorinha/ayorai-opensearch/pull/207); and (3) values, quantifiers and modality (pilot-04, pilot-12), with claims that turn "preferencialmente" into an obligation excluded from v1. Anderson approved all three parts; Protocol Amendment 4 was merged in [PR #227](https://github.com/Ayorinha/ayorai-opensearch/pull/227).

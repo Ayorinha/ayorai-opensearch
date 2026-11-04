@@ -1,12 +1,12 @@
 # AYORAI ATTRACTOR — Milestones
 
-Updated: 2026-10-17
+Updated: 2026-11-04
 
 > **Current status source:** use [docs/STATUS.md](STATUS.md). This page preserves historical milestone context and references; it is not an independent source of current status.
 
 ## Canonical status
 
-The [TRACEABILITY MASTER](TRACEABILITY-MASTER.md) is the single source of truth for the project's requirements, implementation state, evidence, limitations, and remaining work. This page is only a milestone index and must not repeat mutable test counts, coverage percentages, benchmark scores, or claims of completion.
+[docs/STATUS.md](STATUS.md) is the single source of current project status. The [TRACEABILITY MASTER](TRACEABILITY-MASTER.md) is a historical matrix from an earlier project phase and is not the current source of truth; Judge 2.0.0 rule mapping is maintained in [docs/judge2/TRACEABILITY.md](judge2/TRACEABILITY.md). This page is only a milestone index and must not repeat mutable test counts, coverage percentages, benchmark scores, or claims of completion.
 
 ## Release and RGC evidence
 
