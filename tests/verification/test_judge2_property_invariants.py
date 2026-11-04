@@ -68,9 +68,7 @@ def test_judge2_without_admitted_evidence_never_returns_supported(mode: str) -> 
     else:
         evidence = [_evidence("e1", excerpt="fabricated")]
         source_texts = {"source-e1": "claim"}
-        stances = [
-            {"id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"}
-        ]
+        stances = [{"id": "st1", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"}]
 
     result = adjudicate(
         {
