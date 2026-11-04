@@ -6,6 +6,7 @@ document corpus, to check segmentation offsets and the strict corpus export.
 
 from __future__ import annotations
 
+import ast
 import json
 import runpy
 from collections.abc import Callable
@@ -1667,3 +1668,88 @@ def test_read_jsonl_accepts_valid_case_records(tmp_path: Path) -> None:
     path = tmp_path / "cases.jsonl"
     path.write_text('{"case_id":"case-1","claim":"A"}\n', encoding="utf-8")
     assert RUNNER["_read_jsonl"](path) == [{"case_id": "case-1", "claim": "A"}]
+
+
+def _required_manifest_keys(function_name: str) -> set[str]:
+    """Read the validator's literal required-key set without loading any data files."""
+    runner_path = ROOT / "evals" / "ptbr" / "rgc_eval.py"
+    tree = ast.parse(runner_path.read_text(encoding="utf-8"))
+    function = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == function_name
+    )
+    for node in ast.walk(function):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "required" for target in node.targets
+        ):
+            value = ast.literal_eval(node.value)
+            if isinstance(value, set) and all(isinstance(key, str) for key in value):
+                return value
+    raise AssertionError(f"required-key set not found in {function_name}")
+
+
+def test_manifest_templates_match_runner_required_keys() -> None:
+    """Keep blank JSON templates synchronized with the runner's exact schemas."""
+    templates = (
+        (
+            ROOT / "docs" / "eval" / "templates" / "PROTOCOL-FREEZE.template.json",
+            "validate_protocol_freeze",
+        ),
+        (
+            ROOT / "docs" / "eval" / "templates" / "ANNOTATION-APPROVAL.template.json",
+            "validate_annotation_approval",
+        ),
+    )
+    for path, validator_name in templates:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        assert isinstance(payload, dict)
+        assert set(payload) == _required_manifest_keys(validator_name)
+        # A blank template must never look like an already granted human gate.
+        assert payload["status"] == "DRAFT"
+        if validator_name == "validate_annotation_approval":
+            assert payload["cohen_kappa"] is None
+
+
+def test_blank_annotation_template_is_rejected_by_operational_validator(
+    tmp_path: Path,
+) -> None:
+    """An unfilled template must fail the runner's approval gate."""
+    template = ROOT / "docs" / "eval" / "templates" / "ANNOTATION-APPROVAL.template.json"
+    manifest_path = tmp_path / "annotation-approval.json"
+    manifest_path.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+    agreement_path = tmp_path / "agreement.json"
+    agreement_path.write_text(json.dumps({"method": "cohen_kappa_unweighted"}), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="status must be APPROVED"):
+        RUNNER["validate_annotation_approval"](
+            cases_path=tmp_path / "cases.jsonl",
+            labels_path=tmp_path / "labels.jsonl",
+            development_cases_path=tmp_path / "development-cases.jsonl",
+            development_labels_path=tmp_path / "development-labels.jsonl",
+            annotation_a_path=tmp_path / "annotation-a.jsonl",
+            annotation_b_path=tmp_path / "annotation-b.jsonl",
+            agreement_report_path=agreement_path,
+            approval_manifest_path=manifest_path,
+            adjudication_record_path=tmp_path / "adjudication.json",
+        )
+
+
+def test_blank_protocol_freeze_template_is_rejected_by_validator(tmp_path: Path) -> None:
+    """A DRAFT freeze template must not pass the operational freeze gate."""
+    protocol_dir = tmp_path / "docs" / "eval"
+    protocol_dir.mkdir(parents=True)
+    (protocol_dir / "PROTOCOL-GOLDEN-V1.md").write_text("Status: CONGELADO\n", encoding="utf-8")
+    (protocol_dir / "PREREGISTRATION-RGC-v1.md").write_text(
+        "**Estado:** [CONGELADO]\n", encoding="utf-8"
+    )
+    (protocol_dir / "RUNNER-RGC-v1.md").write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
+    runner_dir = tmp_path / "evals" / "ptbr"
+    runner_dir.mkdir(parents=True)
+    (runner_dir / "rgc_eval.py").write_text("# synthetic validator fixture\n", encoding="utf-8")
+    manifest_path = protocol_dir / "PROTOCOL-FREEZE.json"
+    template_path = ROOT / "docs" / "eval" / "templates" / "PROTOCOL-FREEZE.template.json"
+    manifest_path.write_text(template_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="freeze manifest status must be FROZEN"):
+        RUNNER["validate_protocol_freeze"](root=tmp_path)
