@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alucinação de IA: como detectar e verificar respostas do ChatGPT e de outras IAs | AYORAI ATTRACTOR</title>
+<meta name="description" content="O que é alucinação de inteligência artificial, por que a IA erra, sinais de alerta e um método passo a passo para verificar se a resposta do ChatGPT ou de outra IA está correta. Guia em português do projeto open source AYORAI ATTRACTOR.">
+<meta name="author" content="Anderson Leon Ayora">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="AYORAI ATTRACTOR">
+<meta property="og:title" content="Alucinação de IA: como detectar e verificar respostas do ChatGPT e de outras IAs">
+<meta property="og:description" content="Por que a IA erra, sinais de alerta e um método passo a passo para conferir respostas com evidências.">
+<meta property="og:url" content="https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/">
+<meta property="og:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": "Alucinação de IA: como detectar e verificar respostas do ChatGPT e de outras IAs",
+      "description": "O que é alucinação de inteligência artificial, por que acontece, sinais de alerta e um método passo a passo para verificar respostas de IA com evidências.",
+      "inLanguage": "pt-BR",
+      "datePublished": "2026-11-05",
+      "dateModified": "2026-11-05",
+      "image": "https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png",
+      "author": { "@type": "Person", "name": "Anderson Leon Ayora", "url": "https://github.com/Ayorinha" },
+      "publisher": { "@type": "Person", "name": "Anderson Leon Ayora", "url": "https://github.com/Ayorinha" },
+      "mainEntityOfPage": "https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/",
+      "about": ["Alucinação de IA", "Verificação de respostas de IA", "Checagem de fatos com IA"],
+      "mentions": { "@type": "SoftwareSourceCode", "name": "AYORAI ATTRACTOR", "url": "https://ayorinha.github.io/ayorai-opensearch/", "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch" }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "AYORAI ATTRACTOR", "item": "https://ayorinha.github.io/ayorai-opensearch/" },
+        { "@type": "ListItem", "position": 2, "name": "Alucinação de IA", "item": "https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/" }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "O que é alucinação de IA?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Alucinação de IA é quando um modelo de inteligência artificial gera uma informação que parece plausível, mas é falsa ou não tem apoio nas fontes — por exemplo, um número inventado, um fato incorreto ou uma citação a uma fonte que não diz aquilo." } },
+        { "@type": "Question", "name": "O ChatGPT erra?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Sim. O ChatGPT e outros modelos de linguagem podem errar, inclusive com muita segurança no tom. Por isso informações importantes devem ser conferidas nas fontes antes de serem usadas." } },
+        { "@type": "Question", "name": "Como saber se a resposta da IA está correta?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Separe a resposta em afirmações, peça e abra as fontes, encontre o trecho que deveria sustentar cada afirmação e verifique se ele diz exatamente aquilo. Classifique cada afirmação como sustentada, parcialmente sustentada, não verificada, contraditada ou em conflito, e não trate a falta de evidência como confirmação." } },
+        { "@type": "Question", "name": "Existe ferramenta para detectar alucinação de IA?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Existem abordagens e ferramentas que ajudam. O AYORAI ATTRACTOR é um projeto brasileiro open source que verifica respostas de IA afirmação por afirmação contra as evidências e emite o veredito com regras determinísticas versionadas. Nenhuma ferramenta garante detectar toda alucinação." } },
+        { "@type": "Question", "name": "Como evitar alucinações da IA?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Dar à IA fontes confiáveis, pedir que cite os trechos usados e fazer perguntas claras reduz o problema, mas não o elimina. A verificação das afirmações contra as evidências continua necessária quando a resposta importa." } }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../">AYORAI ATTRACTOR</a>
+    <nav class="nav" aria-label="Principal">
+      <a class="hide-sm" href="../#como-funciona">Como funciona</a>
+      <a class="hide-sm" href="./" aria-current="page">Alucinação de IA</a>
+      <a href="../auditoria-de-inteligencia-artificial/"><span class="lg">Guia de auditoria</span><span class="sm">Guia</span></a>
+      <a class="gh" href="https://github.com/Ayorinha/ayorai-opensearch">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap narrow article">
+  <nav class="crumb" aria-label="Trilha"><a href="../">AYORAI ATTRACTOR</a> / Alucinação de IA</nav>
+  <h1>Alucinação de IA: como detectar e verificar respostas do ChatGPT e de outras IAs</h1>
+  <p class="byline">Por Anderson Leon Ayora, autor do AYORAI ATTRACTOR · Atualizado em 5 de novembro de 2026</p>
+
+  <div class="callout"><strong>Em resumo:</strong> a IA pode errar com total confiança. A forma segura de saber se uma resposta está correta não é confiar no tom, e sim conferir cada afirmação contra a evidência que deveria sustentá-la. É exatamente isso que o <a href="../">AYORAI ATTRACTOR</a>, projeto brasileiro open source, faz de forma estruturada e auditável.</div>
+
+  <div class="toc">
+    <strong>Neste guia</strong>
+    <ol>
+      <li><a href="#o-que-e">O que é alucinação de IA</a></li>
+      <li><a href="#por-que">Por que a IA erra</a></li>
+      <li><a href="#sinais">Sinais de alerta</a></li>
+      <li><a href="#verificar">Como verificar uma resposta, passo a passo</a></li>
+      <li><a href="#empresas">Verificação em empresas e instituições</a></li>
+      <li><a href="#limites">O que nenhuma ferramenta garante</a></li>
+      <li><a href="#faq">Perguntas frequentes</a></li>
+    </ol>
+  </div>
+
+  <h2 id="o-que-e">O que é alucinação de IA</h2>
+  <p>Chama-se <strong>alucinação de IA</strong> quando um modelo de inteligência artificial — como o ChatGPT, o Gemini, o Claude ou outros — produz uma informação que soa plausível, mas é falsa ou não tem apoio nas fontes. Pode ser um número inventado, uma data errada, uma lei que não diz o que foi afirmado ou uma referência bibliográfica que não existe.</p>
+  <p>Há um tipo de erro mais difícil de perceber: a resposta <strong>cita uma fonte real, mas a fonte não sustenta o que foi dito</strong>. A citação passa uma sensação de confiabilidade que a resposta não merece. É por isso que "a IA citou a fonte" não é o mesmo que "a informação está comprovada".</p>
+
+  <h2 id="por-que">Por que a IA erra</h2>
+  <p>Modelos de linguagem são treinados para produzir o texto mais provável a partir do que receberam, e não para consultar fatos a cada frase. Quando faltam dados, quando a pergunta é ambígua ou quando o assunto é muito específico, o modelo ainda assim tende a responder de forma fluente. Mesmo sistemas que buscam documentos antes de responder podem resumir errado, misturar fontes ou atribuir a um documento algo que ele não diz.</p>
+
+  <h2 id="sinais">Sinais de alerta</h2>
+  <ul>
+    <li>Números, datas ou percentuais muito precisos sem a fonte correspondente.</li>
+    <li>Citações, artigos de lei ou referências que você não consegue localizar.</li>
+    <li>Links que não abrem ou que levam a páginas sobre outro assunto.</li>
+    <li>Respostas muito seguras sobre temas de nicho, recentes ou locais.</li>
+    <li>Contradições dentro da própria resposta ou entre duas respostas à mesma pergunta.</li>
+  </ul>
+
+  <h2 id="verificar">Como verificar se a resposta da IA está correta, passo a passo</h2>
+  <h3>1. Separe a resposta em afirmações</h3>
+  <p>Uma resposta costuma reunir várias afirmações. Liste cada uma separadamente: é muito mais fácil checar "a lei X entrou em vigor em tal data" do que um parágrafo inteiro.</p>
+  <h3>2. Peça e abra as fontes</h3>
+  <p>Peça à IA as fontes de cada afirmação e abra cada uma. Prefira fontes primárias: o texto da lei, o documento oficial, o artigo científico, o relatório da empresa.</p>
+  <h3>3. Encontre o trecho exato</h3>
+  <p>Localize na fonte o trecho que deveria sustentar a afirmação. Se não encontrar, a afirmação não está verificada — mesmo que a fonte exista.</p>
+  <h3>4. Compare com rigor</h3>
+  <p>O trecho diz exatamente aquilo? Apenas parte? Diz o contrário? Duas fontes dizem coisas diferentes?</p>
+  <h3>5. Classifique e registre</h3>
+  <p>Use categorias claras e anote a fonte e o trecho usados. O AYORAI ATTRACTOR usa cinco vereditos:</p>
+  <div class="verdicts"><span class="chip ok">SUPPORTED</span><span class="chip mid">PARTIALLY_SUPPORTED</span><span class="chip mid">UNVERIFIED</span><span class="chip mid">CONFLICTING</span><span class="chip no">REFUTED</span></div>
+  <p>Equivalem a: sustentada, parcialmente sustentada, não verificada, em conflito e contraditada. A regra de ouro: <strong>falta de evidência não é confirmação</strong>.</p>
+
+  <h2 id="empresas">Verificação em empresas e instituições</h2>
+  <p>Conferir manualmente funciona para uma resposta. Para organizações que usam IA em escala — atendimento, jurídico, financeiro, setor público — a verificação precisa ser <strong>sistemática, rastreável e reproduzível</strong>. É o campo da <a href="../auditoria-de-inteligencia-artificial/">auditoria de inteligência artificial</a>.</p>
+  <p>O <a href="../">AYORAI ATTRACTOR</a> é um projeto brasileiro open source (licença Apache-2.0), de autoria de Anderson Leon Ayora, que automatiza esse método: delimita cada afirmação, relaciona as evidências e sua proveniência, analisa se apoiam ou contradizem a afirmação e deixa a decisão final a um <strong>Judge determinístico</strong> com regras versionadas. Modelos de linguagem podem auxiliar a análise, mas não são a autoridade do veredito — o princípio do projeto é <em>Inteligência ≠ Autorização ≠ Execução</em>.</p>
+  <p><a href="https://github.com/Ayorinha/ayorai-opensearch">Código no GitHub</a> · <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf">Documento técnico (PDF)</a></p>
+
+  <h2 id="limites">O que nenhuma ferramenta garante</h2>
+  <p>Nenhuma ferramenta detecta toda alucinação, e nenhuma prova que uma fonte externa é verdadeira — apenas se ela sustenta ou não a afirmação. O AYORAI ATTRACTOR não é apresentado como certificado e ainda não tem resultado de benchmark em português; o estado atual está no <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Status técnico</a>. Em decisões importantes, a revisão humana continua indispensável.</p>
+
+  <h2 id="faq">Perguntas frequentes</h2>
+  <details open><summary>O que é alucinação de IA?</summary><p>É quando a IA gera uma informação plausível, mas falsa ou sem apoio nas fontes — incluindo citar uma fonte que não diz aquilo.</p></details>
+  <details><summary>O ChatGPT erra?</summary><p>Sim. O ChatGPT e outros modelos de linguagem podem errar, inclusive com muita segurança. Informações importantes devem ser conferidas nas fontes.</p></details>
+  <details><summary>Como saber se a resposta da IA está correta?</summary><p>Separe as afirmações, abra as fontes, encontre o trecho exato e verifique se ele sustenta cada afirmação. Sem trecho que sustente, a afirmação não está verificada.</p></details>
+  <details><summary>Existe ferramenta para detectar alucinação de IA?</summary><p>Há abordagens que ajudam, como o AYORAI ATTRACTOR, projeto brasileiro open source de verificação de respostas de IA baseada em evidências. Nenhuma garante detectar toda alucinação.</p></details>
+  <details><summary>Como evitar alucinações?</summary><p>Fornecer fontes confiáveis, pedir os trechos citados e fazer perguntas claras reduz o problema, mas não o elimina. Quando a resposta importa, verifique.</p></details>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <p class="fbrand">AYORAI ATTRACTOR</p>
+        <p class="fmotto">Evidência antes de conclusão.</p>
+        <p>Projeto open source de auditoria técnica de respostas de inteligência artificial. Autor e mantenedor: Anderson Leon Ayora.</p>
+      </div>
+      <div>
+        <h4>Guias</h4>
+        <ul>
+          <li><a href="../auditoria-de-inteligencia-artificial/">Auditoria de inteligência artificial</a></li>
+          <li><a href="./">Alucinação de IA</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf">Documento técnico (PDF)</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Código</h4>
+        <ul>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch">Repositório no GitHub</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/releases">Versões</a></li>
+          <li><a href="https://doi.org/10.5281/zenodo.23125082">DOI · Zenodo</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="legal">Distribuído sob a licença Apache-2.0. Não é apresentado como certificado e não substitui revisão humana, controles internos ou avaliação jurídica.</p>
+  </div>
+</footer>
+</body>
+</html>

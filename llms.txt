@@ -16,6 +16,7 @@ Status and limits: research and engineering project. Not presented as certified;
 
 - [Official website](https://ayorinha.github.io/ayorai-opensearch/): project overview (Portuguese)
 - [Guia de auditoria de inteligência artificial (PT)](https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/): what AI auditing is, what to audit, step-by-step verification of AI answers, open-source tools
+- [Alucinação de IA: como detectar e verificar respostas (PT)](https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/): what AI hallucination is, warning signs, step-by-step verification of ChatGPT and other AI answers
 - [Official GitHub repository](https://github.com/Ayorinha/ayorai-opensearch): source code, documentation, ADRs, evaluation
 - [Technical status](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md): current deliveries, checks and limitations
 - [Public technical document v1.1 (PDF, PT)](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf)

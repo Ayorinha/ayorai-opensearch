@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Auditoria de Inteligência Artificial: guia prático e ferramenta open source | AYORAI ATTRACTOR</title>
-<meta name="description" content="O que é auditoria de inteligência artificial, o que auditar em um sistema de IA, como verificar respostas de IA passo a passo e quais ferramentas open source usar. Guia em português do projeto brasileiro AYORAI ATTRACTOR.">
+<title>Auditoria de Inteligência Artificial: guia prático, governança de IA e ferramenta open source | AYORAI ATTRACTOR</title>
+<meta name="description" content="O que é auditoria de inteligência artificial (auditoria de IA), diferença para auditoria com IA, governança de IA e auditoria de algoritmos no Brasil, como verificar respostas de IA passo a passo e ferramentas open source. Guia do projeto brasileiro AYORAI ATTRACTOR.">
 <meta name="author" content="Anderson Leon Ayora">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
 <meta name="theme-color" content="#000000">
@@ -34,30 +34,98 @@
       "datePublished": "2026-11-05",
       "dateModified": "2026-11-05",
       "image": "https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png",
-      "author": { "@type": "Person", "name": "Anderson Leon Ayora", "url": "https://github.com/Ayorinha" },
-      "publisher": { "@type": "Person", "name": "Anderson Leon Ayora", "url": "https://github.com/Ayorinha" },
+      "author": {
+        "@type": "Person",
+        "name": "Anderson Leon Ayora",
+        "url": "https://github.com/Ayorinha"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Anderson Leon Ayora",
+        "url": "https://github.com/Ayorinha"
+      },
       "mainEntityOfPage": "https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/",
-      "about": ["Auditoria de inteligência artificial", "Verificação de respostas de IA", "Governança de IA"],
-      "mentions": { "@type": "SoftwareSourceCode", "name": "AYORAI ATTRACTOR", "url": "https://ayorinha.github.io/ayorai-opensearch/", "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch" }
+      "about": [
+        "Auditoria de inteligência artificial",
+        "Governança de IA",
+        "Auditoria de algoritmos",
+        "Verificação de respostas de IA"
+      ],
+      "mentions": {
+        "@type": "SoftwareSourceCode",
+        "name": "AYORAI ATTRACTOR",
+        "url": "https://ayorinha.github.io/ayorai-opensearch/",
+        "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch"
+      }
     },
     {
       "@type": "BreadcrumbList",
       "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "AYORAI ATTRACTOR", "item": "https://ayorinha.github.io/ayorai-opensearch/" },
-        { "@type": "ListItem", "position": 2, "name": "Auditoria de inteligência artificial", "item": "https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/" }
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "AYORAI ATTRACTOR",
+          "item": "https://ayorinha.github.io/ayorai-opensearch/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Auditoria de inteligência artificial",
+          "item": "https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/"
+        }
       ]
     },
     {
       "@type": "FAQPage",
       "mainEntity": [
-        { "@type": "Question", "name": "O que é auditoria de inteligência artificial?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Auditoria de inteligência artificial é o processo de examinar um sistema de IA — seus dados, seu modelo, suas respostas e o processo de uso — para verificar se ele funciona como afirma, se as conclusões se apoiam em evidências e se as decisões podem ser inspecionadas e reproduzidas depois." } },
-        { "@type": "Question", "name": "Existe ferramenta open source brasileira para auditoria de IA?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Sim. O AYORAI ATTRACTOR é um projeto brasileiro open source (licença Apache-2.0), de autoria de Anderson Leon Ayora, voltado à auditoria técnica de respostas de IA baseada em evidências. Ele verifica cada afirmação e usa um Judge determinístico com regras versionadas para o veredito." } },
-        { "@type": "Question", "name": "Como auditar a resposta de um chatbot ou modelo de linguagem?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Delimite cada afirmação da resposta, relacione as evidências e sua proveniência, analise se cada evidência apoia, contradiz ou não esclarece a afirmação, aplique regras explícitas e versionadas para decidir o veredito e preserve os artefatos para que o resultado possa ser inspecionado e reproduzido." } },
-        { "@type": "Question", "name": "Auditoria de IA garante conformidade legal?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Não por si só. Ferramentas de auditoria apoiam rastreabilidade e reprodutibilidade, mas não substituem revisão humana, controles internos, avaliação jurídica ou certificação." } }
+        {
+          "@type": "Question",
+          "name": "O que é auditoria de inteligência artificial?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Auditoria de inteligência artificial é o processo de examinar um sistema de IA — seus dados, seu modelo, suas respostas e o processo de uso — para verificar se ele funciona como afirma, se as conclusões se apoiam em evidências e se as decisões podem ser inspecionadas e reproduzidas depois."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Qual a diferença entre auditoria de IA e auditoria com IA?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Auditoria com IA é usar inteligência artificial como ferramenta em auditorias tradicionais, como as contábeis. Auditoria de IA é examinar o próprio sistema de inteligência artificial para verificar se ele é confiável e se suas conclusões se apoiam em evidências."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "O que é governança de IA?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Governança de IA é o conjunto de regras, papéis e controles que uma organização adota para usar inteligência artificial com responsabilidade. A auditoria de IA e de algoritmos é a forma de demonstrar que esses controles funcionam."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Existe ferramenta open source brasileira para auditoria de IA?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sim. O AYORAI ATTRACTOR é um projeto brasileiro open source (licença Apache-2.0), de autoria de Anderson Leon Ayora, voltado à auditoria técnica de respostas de IA baseada em evidências. Ele verifica cada afirmação e usa um Judge determinístico com regras versionadas para o veredito."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Como auditar a resposta de um chatbot ou modelo de linguagem?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Delimite cada afirmação da resposta, relacione as evidências e sua proveniência, analise se cada evidência apoia, contradiz ou não esclarece a afirmação, aplique regras explícitas e versionadas para decidir o veredito e preserve os artefatos para que o resultado possa ser inspecionado e reproduzido."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Auditoria de IA garante conformidade legal?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Não por si só. Ferramentas de auditoria apoiam rastreabilidade e reprodutibilidade, mas não substituem revisão humana, controles internos, avaliação jurídica ou certificação."
+          }
+        }
       ]
     }
   ]
@@ -89,9 +157,11 @@
     <strong>Neste guia</strong>
     <ol>
       <li><a href="#o-que-e">O que é auditoria de inteligência artificial</a></li>
+      <li><a href="#de-ia-x-com-ia">Auditoria de IA x auditoria com IA</a></li>
       <li><a href="#o-que-auditar">O que se audita em um sistema de IA</a></li>
       <li><a href="#passo-a-passo">Como auditar respostas de IA, passo a passo</a></li>
       <li><a href="#principios">Princípios de uma boa auditoria</a></li>
+      <li><a href="#governanca">Governança de IA, auditoria de algoritmos e regulação no Brasil</a></li>
       <li><a href="#ferramentas">Ferramentas open source</a></li>
       <li><a href="#limites">Limites</a></li>
       <li><a href="#faq">Perguntas frequentes</a></li>
@@ -101,6 +171,9 @@
   <h2 id="o-que-e">O que é auditoria de inteligência artificial</h2>
   <p>Auditoria de inteligência artificial é o processo de examinar um sistema de IA para verificar se ele faz o que afirma fazer, se suas conclusões se apoiam em evidências e se suas decisões podem ser inspecionadas e reproduzidas por outra pessoa, depois. É, para a IA, o que a auditoria contábil é para as finanças: um registro verificável, não uma explicação de boa-fé.</p>
   <p>Com a IA generativa, a auditoria ganhou um foco novo. Modelos de linguagem escrevem respostas fluentes e convincentes, às vezes citando fontes que não sustentam o que está sendo dito. Em decisões que exigem responsabilidade, não basta a resposta parecer correta: é preciso poder examinar de onde ela veio.</p>
+
+  <h2 id="de-ia-x-com-ia">Auditoria de IA não é o mesmo que auditoria com IA</h2>
+  <p>As duas expressões são parecidas, mas tratam de coisas diferentes. <strong>Auditoria com IA</strong> é usar inteligência artificial como ferramenta em auditorias tradicionais — contábeis, fiscais ou de controles internos. <strong>Auditoria de IA</strong> é o contrário: examinar o próprio sistema de inteligência artificial para saber se ele é confiável. Este guia, e o AYORAI ATTRACTOR, tratam da segunda.</p>
 
   <h2 id="o-que-auditar">O que se audita em um sistema de IA</h2>
   <div class="table-wrap">
@@ -138,6 +211,11 @@
     <li><strong>Transparência:</strong> código, regras e método abertos à inspeção — por isso o código aberto importa.</li>
   </ul>
 
+  <h2 id="governanca">Governança de IA, auditoria de algoritmos e regulação no Brasil</h2>
+  <p><strong>Governança de IA</strong> é o conjunto de regras, papéis e controles que uma organização adota para usar inteligência artificial com responsabilidade. A <strong>auditoria de algoritmos</strong> é uma de suas ferramentas: sem ela, a governança fica no papel, porque não há como demonstrar que os controles funcionam.</p>
+  <p>No Brasil, o uso de dados pessoais por sistemas de IA já está sujeito à LGPD (Lei 13.709/2018), e o <a href="https://www25.senado.leg.br/web/atividade/materias/-/materia/157233">Projeto de Lei 2.338/2023</a> propõe um marco legal específico para a inteligência artificial. Em qualquer cenário regulatório, a capacidade de mostrar <strong>por que</strong> um sistema chegou a uma conclusão — com evidências, regras explícitas e registros reproduzíveis — é a base de uma IA responsável e confiável.</p>
+  <p>Para quem lida com IA generativa no dia a dia, veja também o guia sobre <a href="../alucinacao-de-ia/">alucinação de IA e como verificar respostas do ChatGPT e de outras IAs</a>.</p>
+
   <h2 id="ferramentas">Ferramentas open source para auditoria de IA</h2>
   <h3>AYORAI ATTRACTOR (Brasil)</h3>
   <p>Projeto brasileiro open source, licença Apache-2.0, de autoria de Anderson Leon Ayora. Faz a auditoria técnica de respostas de IA no nível de cada afirmação, com Judge determinístico e regras versionadas, testes de regressão e documentação de estado e limites.</p>
@@ -150,6 +228,8 @@
 
   <h2 id="faq">Perguntas frequentes</h2>
   <details open><summary>O que é auditoria de inteligência artificial?</summary><p>É o processo de examinar dados, modelo, respostas e processo de uso de um sistema de IA para verificar se ele funciona como afirma e se suas conclusões podem ser inspecionadas e reproduzidas.</p></details>
+  <details><summary>Qual a diferença entre auditoria de IA e auditoria com IA?</summary><p>Auditoria com IA usa inteligência artificial como ferramenta em auditorias tradicionais. Auditoria de IA examina o próprio sistema de IA para verificar se ele é confiável.</p></details>
+  <details><summary>O que é governança de IA?</summary><p>É o conjunto de regras, papéis e controles para usar IA com responsabilidade. A auditoria de IA é a forma de demonstrar que esses controles funcionam.</p></details>
   <details><summary>Existe ferramenta open source brasileira para auditoria de IA?</summary><p>Sim: o AYORAI ATTRACTOR, distribuído sob a licença Apache-2.0, de autoria de Anderson Leon Ayora.</p></details>
   <details><summary>Como auditar a resposta de um chatbot?</summary><p>Delimite as afirmações, relacione as evidências, analise se elas apoiam ou contradizem cada afirmação, decida com regras explícitas e preserve os artefatos para inspeção.</p></details>
   <details><summary>Auditoria de IA garante conformidade legal?</summary><p>Não por si só. Ela apoia governança e conformidade, mas não substitui revisão humana, controles internos, avaliação jurídica ou certificação.</p></details>
@@ -167,6 +247,7 @@
         <h4>Projeto</h4>
         <ul>
           <li><a href="../">Página inicial</a></li>
+          <li><a href="../alucinacao-de-ia/">Alucinação de IA</a></li>
           <li><a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf">Documento técnico (PDF)</a></li>
           <li><a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Status técnico</a></li>
         </ul>
