@@ -20,6 +20,7 @@ Status and limits: research and engineering project. Not presented as certified;
 - [Technical status](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md): current deliveries, checks and limitations
 - [Public technical document v1.1 (PDF, PT)](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf)
 - [Judge 2.0 contract and traceability](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/judge2/TRACEABILITY.md)
+- [Video presentation by the author (LinkedIn, 2026-11-05)](https://www.linkedin.com/feed/update/urn:li:activity:7524061945113493504/)
 - [Zenodo DOI 10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082): citable archive
 
 ## Author
