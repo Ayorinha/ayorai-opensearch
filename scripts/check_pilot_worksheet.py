@@ -150,8 +150,14 @@ def load_documents(path: Path) -> dict[str, str]:
         if not line.strip():
             continue
         row = json.loads(line)
-        if not isinstance(row.get("source_id"), str) or not isinstance(row.get("text"), str):
-            raise ValueError(f"{path}:{number}: source_id and text are required")
+        if not isinstance(row, dict):
+            raise ValueError(f"{path}:{number}: each JSONL record must be an object")
+        if not isinstance(row.get("source_id"), str) or not row["source_id"]:
+            raise ValueError(f"{path}:{number}: source_id must be a non-empty string")
+        if not isinstance(row.get("text"), str):
+            raise ValueError(f"{path}:{number}: text must be a string")
+        if row["source_id"] in documents:
+            raise ValueError(f"{path}:{number}: duplicate source_id {row['source_id']!r}")
         documents[row["source_id"]] = row["text"]
     return documents
 
