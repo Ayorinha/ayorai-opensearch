@@ -170,7 +170,7 @@ def test_duplicate_case_id_does_not_hide_earlier_findings() -> None:
 def test_duplicate_source_ids_are_rejected(tmp_path: Path) -> None:
     documents = tmp_path / "duplicate-docs.jsonl"
     row = json.dumps({"source_id": "sint-1", "text": DOC_TEXT})
-    documents.write_text(row + "\\n" + row + "\\n", encoding="utf-8")
+    documents.write_text(row + "\n" + row + "\n", encoding="utf-8")
     try:
         CHECKER["load_documents"](documents)
     except ValueError as error:
