@@ -159,6 +159,26 @@ def test_duplicate_identifiers_are_reported() -> None:
     assert report["p2-01"] == ["identificador repetido"]
 
 
+def test_duplicate_case_id_does_not_hide_earlier_findings() -> None:
+    invalid_first = _case("01", **{"Trecho literal exato": "Trecho inexistente."})
+    valid_second = _case("02", Identificador="p2-01")
+    report = _check(invalid_first, valid_second)
+    assert any("não aparece literalmente" in problem for problem in report["p2-01"])
+    assert "identificador repetido" in report["p2-01"]
+
+
+def test_duplicate_source_ids_are_rejected(tmp_path: Path) -> None:
+    documents = tmp_path / "duplicate-docs.jsonl"
+    row = json.dumps({"source_id": "sint-1", "text": DOC_TEXT})
+    documents.write_text(row + "\\n" + row + "\\n", encoding="utf-8")
+    try:
+        CHECKER["load_documents"](documents)
+    except ValueError as error:
+        assert "duplicate source_id" in str(error)
+    else:
+        raise AssertionError("duplicate source_id must be rejected")
+
+
 def test_output_never_contains_case_content(tmp_path: Path, capsys: object) -> None:
     documents = tmp_path / "docs.jsonl"
     documents.write_text(json.dumps({"source_id": "sint-1", "text": DOC_TEXT}) + "\n")
