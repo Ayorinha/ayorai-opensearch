@@ -283,11 +283,7 @@ def case_rectified(case: Mapping[str, Any]) -> bool:
     return value
 
 
-
-
-def validate_cluster_citations(
-    case: Mapping[str, Any], cluster_id: str, case_id: str
-) -> None:
+def validate_cluster_citations(case: Mapping[str, Any], cluster_id: str, case_id: str) -> None:
     """Check that a declared bootstrap cluster is supported by cited article IDs.
 
     DEC-019 requires cited_article_ids to preserve the complete citation list.
@@ -303,9 +299,7 @@ def validate_cluster_citations(
         not isinstance(cited, list)
         or not cited
         or any(
-            not isinstance(article_id, str)
-            or not article_id
-            or article_id != article_id.strip()
+            not isinstance(article_id, str) or not article_id or article_id != article_id.strip()
             for article_id in cited
         )
         or len(cited) != len(set(cited))
@@ -324,9 +318,7 @@ def validate_cluster_citations(
                 f"from cited_article_ids: {missing}"
             )
     elif cluster_id not in cited_ids:
-        raise ValueError(
-            f"{case_id}: bootstrap_cluster_id must be present in cited_article_ids"
-        )
+        raise ValueError(f"{case_id}: bootstrap_cluster_id must be present in cited_article_ids")
 
 
 def predict(
