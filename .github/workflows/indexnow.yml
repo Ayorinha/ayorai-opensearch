@@ -1,0 +1,28 @@
+name: Avisar buscadores (IndexNow)
+
+on:
+  push:
+    branches: [gh-pages]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  indexnow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Aguardar a publicação do site
+        run: sleep 90
+      - name: Enviar as URLs do sitemap ao IndexNow
+        env:
+          INDEXNOW_KEY: 54a69ada3a1a81881f119a2cf17d90b3
+          SITE: https://ayorinha.github.io/ayorai-opensearch
+        run: |
+          urls=$(grep -o '<loc>[^<]*</loc>' sitemap.xml | sed -e 's/<loc>//' -e 's/<\/loc>//' | jq -R . | jq -s -c .)
+          echo "URLs: $urls"
+          body=$(jq -n -c --arg key "$INDEXNOW_KEY" --arg loc "$SITE/$INDEXNOW_KEY.txt" --argjson urls "$urls"             '{host:"ayorinha.github.io",key:$key,keyLocation:$loc,urlList:$urls}')
+          code=$(curl -s -o resp.txt -w '%{http_code}' -X POST https://api.indexnow.org/indexnow             -H 'Content-Type: application/json; charset=utf-8' -d "$body")
+          echo "IndexNow HTTP $code"; cat resp.txt || true
+          case "$code" in 200|202) ;; *) exit 1 ;; esac
