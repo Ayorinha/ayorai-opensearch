@@ -1,5 +1,21 @@
 # AYORAI ATTRACTOR — Engineering Status
 
+Updated: 2026-11-05
+
+## Snapshot atual verificado — 2026-11-05
+
+- **SHA observado de `main`:** `e4471b87560cdd3518ea087791a747c5870793e`, commit de atualização de `actions/setup-python` (#419), em 2026-11-04.
+- **Checks associados a esse SHA:** 13 check-runs consultados concluíram com sucesso: workflow-lint, build-distributions, golden-lint, golden-smoke, testes Python 3.11/3.12/3.13, judge-regression, typecheck-strict (não bloqueante), namespace-compatibility, golden-regression, analyze e security. Isso confirma os checks listados nesse SHA, não uma execução local nem validação científica.
+- **PR #432:** Draft aberta; CI do head `6477f57a9e477188263fb24f364addc5749863af` consultado em 2026-11-05. Os workflows CI, Security, API Contract Guard, Schemathesis Full API Contract, CodeQL, Dependency Review e Golden r2 Migration concluíram com sucesso; **RGC Design Simulation ainda estava em andamento** no momento da consulta. A PR não foi mesclada.
+- **PR #430:** Draft aberta; os sete workflows consultados no head `c84203ac3a91ab462e4071d78cfa09a2357aedd7` concluíram com sucesso. A PR não foi mesclada.
+- **RGC:** continua **[PROPOSTO]**, não congelado. A aprovação do protocolo, anotação humana independente, adjudicação e revisão F-01 continuam gates humanos. CI e simulações sintéticas não satisfazem esses gates.
+- **Prontidão de produção:** não declarar produção multi-tenant antes de autorização por tenant/scopes e testes de isolamento; issue #434 continua aberto. A trilha append-only/tamper-evident do issue #433 também permanece em desenho.
+- **Limites desta atualização:** somente documentação de status. Nenhuma regra do Judge, Golden, threshold, protocolo, preregistro, caso RGC, rótulo ou artefato científico foi alterado. Não houve merge, release, tag ou DOI.
+
+Historical status snapshots below remain preserved and refer to their original dates/SHAs.
+
+---
+
 Updated: 2026-10-25
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
