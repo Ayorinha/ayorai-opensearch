@@ -81,7 +81,7 @@ Para saber o estado mais recente, consulte o [Status técnico](docs/STATUS.md). 
 
 **O que existe:** pipeline de verificação por afirmação, contrato determinístico do Judge 2.0.0, rastreabilidade de regras, API, regressões automatizadas e relatórios Golden versionados.
 
-**O que foi medido:** o snapshot documentado em [docs/STATUS.md](docs/STATUS.md) registra **1.201 testes aprovados**, **95% de cobertura**, matriz Python **3.11–3.13** e verificações mypy estritas em **91 arquivos-fonte**. São resultados de CI vinculados aos commits e workflows indicados naquele documento; não são métricas de benchmark em português nem evidência de produção.
+**Snapshot histórico (2026-10-25; SHA de referência `4f3c0cea4e40df5141521c4a12010bc3da5ac365`):** [docs/STATUS.md](docs/STATUS.md) registra **1.201 testes aprovados**, **95% de cobertura**, matriz Python **3.11–3.13** e mypy estrito em **91 arquivos-fonte**. Esses números pertencem ao SHA e aos workflows daquele snapshot; não descrevem o HEAD atual, não são métricas de benchmark em português e não constituem evidência de produção.
 
 **O que falta:** o protocolo RGC PT-BR continua **[PROPOSTO]**, não congelado; não há benchmark português executado. Permanecem pendentes o piloto humano 02 sem IA, a segunda anotação independente, a revisão humana F-01 e uma decisão explícita do mantenedor sobre congelamento. Nenhum resultado sintético substitui essas etapas.
 
