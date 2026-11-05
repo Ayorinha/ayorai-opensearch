@@ -170,6 +170,32 @@ def test_output_never_contains_case_content(tmp_path: Path, capsys: object) -> N
     assert "secreto" not in out and "Afirmação sintética" not in out
 
 
+def test_duplicate_source_ids_are_rejected(tmp_path: Path) -> None:
+    documents = tmp_path / "documents.jsonl"
+    row = {"source_id": "sint-1", "text": DOC_TEXT}
+    documents.write_text(
+        json.dumps(row) + "\\n" + json.dumps(row) + "\\n",
+        encoding="utf-8",
+    )
+    try:
+        CHECKER["load_documents"](documents)
+    except ValueError as error:
+        assert "duplicate source_id" in str(error)
+    else:
+        raise AssertionError("duplicate source_id must be rejected")
+
+
+def test_non_object_source_records_are_rejected(tmp_path: Path) -> None:
+    documents = tmp_path / "documents.jsonl"
+    documents.write_text(json.dumps(["sint-1", DOC_TEXT]) + "\\n", encoding="utf-8")
+    try:
+        CHECKER["load_documents"](documents)
+    except ValueError as error:
+        assert "must be an object" in str(error)
+    else:
+        raise AssertionError("non-object JSONL records must be rejected")
+
+
 def test_checker_never_imports_the_system() -> None:
     source = SCRIPT.read_text(encoding="utf-8")
     assert "ayorai_attractor" not in source.replace("AYORAI ATTRACTOR", "")
