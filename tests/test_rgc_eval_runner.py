@@ -233,8 +233,6 @@ def test_hidden_partition_rejects_noncanonical_multi_article_bundle() -> None:
         )
 
 
-
-
 def test_hidden_partition_rejects_cluster_not_in_cited_article_ids() -> None:
     case = _case("cluster-not-cited", "O cliente fictício pode cancelar.", "Art. 2º")
     case["bootstrap_cluster_id"] = "art:principal"
