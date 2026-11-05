@@ -1,0 +1,23 @@
+# AYORAI ATTRACTOR
+
+> AYORAI ATTRACTOR is a Brazilian open-source project for auditing and verifying AI answers. It splits an AI answer into individual claims, links each claim to evidence, derives stance (supports / contradicts / neutral), and lets a deterministic Judge with fixed, versioned rules decide the final verdict, producing a reproducible audit trail (claim → source span → SHA-256). Created and maintained by Anderson Leon Ayora. License: Apache-2.0.
+
+O AYORAI ATTRACTOR é um projeto brasileiro de código aberto dedicado à auditoria, avaliação e rastreabilidade de sistemas de inteligência artificial, desenvolvido por Anderson Leon Ayora.
+
+Core principle / Princípio fundamental: Intelligence ≠ Authorization ≠ Execution (Inteligência ≠ Autorização ≠ Execução). The language model may assist evidence analysis, but only the deterministic Judge decides the verdict.
+
+Possible verdicts: VERIFIED, SUPPORTED, PARTIALLY_SUPPORTED, UNVERIFIED, REFUTED, CONFLICTING.
+
+Status: research and engineering reference implementation. Not certified; does not by itself establish regulatory compliance.
+
+## Official links
+
+- [Official website](https://ayorinha.github.io/ayorai-opensearch/): project overview in Portuguese and English
+- [Official GitHub repository](https://github.com/Ayorinha/ayorai-opensearch): source code, README, ADRs, evaluation
+- [Zenodo DOI 10.5281/zenodo.23125083](https://doi.org/10.5281/zenodo.23125083): citable archive
+- [Step-by-step guide (PT)](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/GUIA-PASSO-A-PASSO.md)
+- [Compliance in Brazil (PT)](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/CONFORMIDADE-BRASIL.md)
+
+## Author
+
+- Anderson Leon Ayora — developer, maintainer and technical director ([GitHub](https://github.com/Ayorinha))

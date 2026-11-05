@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AYORAI ATTRACTOR — Auditoria de Inteligência Artificial Open Source</title>
+<meta name="description" content="AYORAI ATTRACTOR é um projeto brasileiro de código aberto para auditoria e verificação de respostas de inteligência artificial: cada afirmação checada contra sua evidência, com veredito determinístico e reproduzível. Criado por Anderson Leon Ayora.">
+<meta name="keywords" content="AYORAI, AYORAI ATTRACTOR, Ayorai Attractor, auditoria de inteligência artificial, auditoria de IA, verificação de IA, IA open source, IA confiável, trustworthy AI, AI verification, AI audit, Anderson Leon Ayora">
+<meta name="author" content="Anderson Leon Ayora">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<link rel="canonical" href="https://ayorinha.github.io/ayorai-opensearch/">
+<link rel="alternate" hreflang="pt-BR" href="https://ayorinha.github.io/ayorai-opensearch/">
+<link rel="alternate" hreflang="en" href="https://ayorinha.github.io/ayorai-opensearch/#english">
+<link rel="alternate" type="text/plain" title="LLM summary" href="https://ayorinha.github.io/ayorai-opensearch/llms.txt">
+
+<!-- Open Graph / redes sociais -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AYORAI ATTRACTOR">
+<meta property="og:title" content="AYORAI ATTRACTOR — Auditoria de Inteligência Artificial Open Source">
+<meta property="og:description" content="Projeto brasileiro de código aberto para verificar afirmações de sistemas de IA contra evidências, com veredito determinístico e trilha de auditoria.">
+<meta property="og:url" content="https://ayorinha.github.io/ayorai-opensearch/">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="AYORAI ATTRACTOR — Auditoria de IA Open Source">
+<meta name="twitter:description" content="Cada afirmação checada contra sua fonte. Cada veredito reproduzível.">
+
+<!-- Dados estruturados: ajudam Google e buscadores de IA a entender quem é quem -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareSourceCode",
+      "@id": "https://ayorinha.github.io/ayorai-opensearch/#software",
+      "name": "AYORAI ATTRACTOR",
+      "alternateName": ["Ayorai Attractor", "ATTRACTOR", "AYORAI"],
+      "description": "Projeto brasileiro de código aberto dedicado à auditoria, avaliação e rastreabilidade de sistemas de inteligência artificial. Separa respostas de IA em afirmações, liga cada afirmação a evidências e usa um Judge determinístico para o veredito final.",
+      "url": "https://ayorinha.github.io/ayorai-opensearch/",
+      "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch",
+      "programmingLanguage": "Python",
+      "license": "https://www.apache.org/licenses/LICENSE-2.0",
+      "identifier": "https://doi.org/10.5281/zenodo.23125083",
+      "keywords": "auditoria de IA, verificação de IA, IA confiável, AI safety, trustworthy AI, LLM, RAG, evidence verification",
+      "inLanguage": ["pt-BR", "en"],
+      "countryOfOrigin": "BR",
+      "author": { "@id": "https://ayorinha.github.io/ayorai-opensearch/#author" },
+      "maintainer": { "@id": "https://ayorinha.github.io/ayorai-opensearch/#author" },
+      "sameAs": [
+        "https://github.com/Ayorinha/ayorai-opensearch",
+        "https://doi.org/10.5281/zenodo.23125083"
+      ]
+    },
+    {
+      "@type": "Person",
+      "@id": "https://ayorinha.github.io/ayorai-opensearch/#author",
+      "name": "Anderson Leon Ayora",
+      "jobTitle": "Desenvolvedor e mantenedor do AYORAI ATTRACTOR",
+      "nationality": "BR",
+      "url": "https://github.com/Ayorinha",
+      "sameAs": ["https://github.com/Ayorinha"]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://ayorinha.github.io/ayorai-opensearch/#website",
+      "name": "AYORAI ATTRACTOR",
+      "url": "https://ayorinha.github.io/ayorai-opensearch/",
+      "inLanguage": "pt-BR",
+      "publisher": { "@id": "https://ayorinha.github.io/ayorai-opensearch/#author" }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "O que é o AYORAI ATTRACTOR?",
+          "acceptedAnswer": { "@type": "Answer", "text": "O AYORAI ATTRACTOR é um projeto brasileiro de código aberto para auditoria e verificação de respostas de inteligência artificial. Ele separa uma resposta de IA em afirmações, liga cada afirmação a evidências e usa um Judge determinístico, com regras fixas e versionadas, para decidir o veredito final." }
+        },
+        {
+          "@type": "Question",
+          "name": "Quem criou o AYORAI ATTRACTOR?",
+          "acceptedAnswer": { "@type": "Answer", "text": "O AYORAI ATTRACTOR foi criado e é mantido pelo desenvolvedor brasileiro Anderson Leon Ayora." }
+        },
+        {
+          "@type": "Question",
+          "name": "O AYORAI ATTRACTOR é gratuito?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Sim. É código aberto sob a licença Apache-2.0, disponível no GitHub em github.com/Ayorinha/ayorai-opensearch." }
+        },
+        {
+          "@type": "Question",
+          "name": "O que significa Inteligência ≠ Autorização ≠ Execução?",
+          "acceptedAnswer": { "@type": "Answer", "text": "É o princípio central do projeto: o modelo de IA pode ajudar a analisar evidências (inteligência), mas só o Judge determinístico decide o veredito (autorização), e a aplicação que consome o resultado age sobre ele (execução). Nenhuma camada acumula as três funções." }
+        },
+        {
+          "@type": "Question",
+          "name": "Quais vereditos o AYORAI ATTRACTOR pode retornar?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Seis: VERIFIED, SUPPORTED, PARTIALLY_SUPPORTED, UNVERIFIED, REFUTED e CONFLICTING. Quando as evidências se contradizem, ele retorna CONFLICTING em vez de escolher uma fonte; quando são insuficientes, retorna UNVERIFIED em vez de adivinhar." }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
+<style>
+:root{--bg:#fbfaf7;--fg:#16181d;--muted:#5b6170;--line:#e4e1d8;--accent:#0f6e5a;--accent-soft:#e3f1ec;--code:#f1efe8}
+@media (prefers-color-scheme:dark){:root{--bg:#111316;--fg:#ecebe6;--muted:#a1a6b2;--line:#2a2d33;--accent:#4cc3a3;--accent-soft:#16302a;--code:#1b1e23}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:56px 16px 80px}
+header .kicker{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-size:clamp(34px,7vw,52px);line-height:1.05;margin:.3em 0 .25em;letter-spacing:-.02em}
+h1 small{display:block;font-size:.42em;font-weight:500;color:var(--muted);letter-spacing:0;margin-top:.5em}
+h2{font-size:24px;margin:2.2em 0 .5em;letter-spacing:-.01em}
+p{margin:.7em 0}
+a{color:var(--accent)}
+.principle{margin:28px 0;padding:22px 24px;border-left:4px solid var(--accent);background:var(--accent-soft);font-size:clamp(20px,4.4vw,26px);font-weight:650}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}
+.cta a{padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid var(--accent)}
+.cta a.primary{background:var(--accent);color:var(--bg)}
+ol.flow{padding-left:1.2em}
+ol.flow li{margin:.35em 0}
+table{width:100%;border-collapse:collapse;font-size:15px;margin:12px 0}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-size:.9em}
+pre{background:var(--code);padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:14px}
+details{border-bottom:1px solid var(--line);padding:12px 0}
+summary{cursor:pointer;font-weight:600}
+.note{color:var(--muted);font-size:15px}
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <div class="kicker">Projeto brasileiro · Código aberto · Apache-2.0</div>
+  <h1>AYORAI ATTRACTOR<small>Auditoria de Inteligência Artificial Open Source</small></h1>
+  <p>O <strong>AYORAI ATTRACTOR</strong> é um projeto brasileiro de código aberto dedicado à <strong>auditoria, avaliação e rastreabilidade de sistemas de inteligência artificial</strong>. Ele verifica as afirmações produzidas por sistemas de IA, avalia as evidências que as sustentam e documenta cada decisão de forma técnica, transparente e reproduzível.</p>
+  <p>Desenvolvido e mantido por <strong>Anderson Leon Ayora</strong>.</p>
+  <div class="cta">
+    <a class="primary" href="https://github.com/Ayorinha/ayorai-opensearch">Ver no GitHub</a>
+    <a href="https://doi.org/10.5281/zenodo.23125083">Citar (DOI Zenodo)</a>
+  </div>
+</header>
+
+<div class="principle">Inteligência ≠ Autorização ≠ Execução</div>
+<p>O modelo de IA pode ler, classificar e ajudar a analisar evidências. Mas quem decide o veredito final é um <strong>Judge determinístico</strong>, com regras fixas e versionadas. E quem age sobre o resultado é a aplicação. Nenhuma camada acumula as três funções.</p>
+
+<h2>O problema</h2>
+<p>A IA generativa produz respostas fluentes, muitas vezes com citações que não sustentam de fato o que está sendo afirmado. Para empresas, órgãos públicos e pesquisadores que precisam de rastreabilidade, isso cria uma lacuna de auditoria: quando alguém pergunta por que um sistema chegou a uma conclusão, uma explicação narrativa não basta.</p>
+
+<h2>Como o AYORAI ATTRACTOR funciona</h2>
+<ol class="flow">
+  <li><strong>Extração de afirmações:</strong> a resposta da IA é dividida em afirmações individuais.</li>
+  <li><strong>Evidências:</strong> cada afirmação é ligada às fontes, com trechos e proveniência.</li>
+  <li><strong>Posicionamento:</strong> cada evidência apoia, contradiz ou é neutra em relação à afirmação.</li>
+  <li><strong>Judge determinístico:</strong> regras fixas decidem o veredito final.</li>
+  <li><strong>Trilha de prova:</strong> afirmação → trecho da fonte → hash SHA-256.</li>
+</ol>
+
+<h2>Seis vereditos possíveis</h2>
+<p><code>VERIFIED</code> · <code>SUPPORTED</code> · <code>PARTIALLY_SUPPORTED</code> · <code>UNVERIFIED</code> · <code>REFUTED</code> · <code>CONFLICTING</code></p>
+<p>Quando as evidências se contradizem, o sistema retorna <code>CONFLICTING</code> em vez de escolher uma fonte em silêncio. Quando são insuficientes, retorna <code>UNVERIFIED</code> em vez de adivinhar.</p>
+
+<h2>Onde se aplica</h2>
+<table>
+  <tr><th>Setor</th><th>Exemplo de uso</th></tr>
+  <tr><td>Serviços financeiros</td><td>Verificar se a explicação de uma IA bate com evidências e políticas aprovadas</td></tr>
+  <tr><td>Mercado de capitais</td><td>Conferir se resumos gerados por IA preservam fatos e números reportados</td></tr>
+  <tr><td>Seguros</td><td>Validar respostas contra o texto da apólice</td></tr>
+  <tr><td>Jurídico e compliance</td><td>Detectar citações que não sustentam o argumento</td></tr>
+  <tr><td>Setor público</td><td>Preservar a trilha de evidências de respostas de IA a cidadãos</td></tr>
+  <tr><td>Auditoria interna</td><td>Manter registro reproduzível de conclusões assistidas por IA</td></tr>
+</table>
+
+<h2>Começar a usar</h2>
+<pre>git clone https://github.com/Ayorinha/ayorai-opensearch.git
+cd ayorai-opensearch
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev,nli]"
+pytest</pre>
+
+<h2>Missão</h2>
+<p>Contribuir para o desenvolvimento de uma infraestrutura aberta de auditoria de inteligência artificial, acessível à comunidade científica, a desenvolvedores, empresas e instituições brasileiras.</p>
+
+<h2>Perguntas frequentes</h2>
+<details open><summary>O que é o AYORAI ATTRACTOR?</summary><p>Um projeto brasileiro de código aberto para auditoria e verificação de respostas de inteligência artificial, que liga cada afirmação a evidências e usa um Judge determinístico para o veredito final.</p></details>
+<details><summary>Quem criou o AYORAI ATTRACTOR?</summary><p>O desenvolvedor brasileiro Anderson Leon Ayora, que também é o mantenedor do projeto.</p></details>
+<details><summary>É gratuito?</summary><p>Sim. É código aberto sob a licença Apache-2.0.</p></details>
+<details><summary>Ele certifica conformidade regulatória?</summary><p>Não. O projeto é uma implementação de referência para pesquisa e engenharia. Ele apoia rastreabilidade e auditoria, mas não constitui certificação nem aconselhamento jurídico.</p></details>
+
+<section id="english" lang="en">
+<h2>In English</h2>
+<p><strong>AYORAI ATTRACTOR</strong> is an open-source, evidence-first, claim-level verification engine for AI answers, created in Brazil by Anderson Leon Ayora. It splits an AI answer into claims, links each claim to evidence, derives stance, and lets a deterministic Judge decide the final verdict, producing a reproducible audit trail. Core principle: <em>Intelligence ≠ Authorization ≠ Execution</em>. License: Apache-2.0.</p>
+</section>
+
+<footer>
+  <p><strong>AYORAI ATTRACTOR</strong> · Desenvolvedor e mantenedor: Anderson Leon Ayora · Licença Apache-2.0<br>
+  Repositório oficial: <a href="https://github.com/Ayorinha/ayorai-opensearch">github.com/Ayorinha/ayorai-opensearch</a> · DOI: <a href="https://doi.org/10.5281/zenodo.23125083">10.5281/zenodo.23125083</a></p>
+  <p class="note">Status: implementação de referência para pesquisa e engenharia. Não certificado.</p>
+</footer>
+
+</main>
+</body>
+</html>
