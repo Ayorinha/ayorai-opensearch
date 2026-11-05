@@ -1,23 +1,27 @@
 # AYORAI ATTRACTOR
 
-> AYORAI ATTRACTOR is a Brazilian open-source project for auditing and verifying AI answers. It splits an AI answer into individual claims, links each claim to evidence, derives stance (supports / contradicts / neutral), and lets a deterministic Judge with fixed, versioned rules decide the final verdict, producing a reproducible audit trail (claim → source span → SHA-256). Created and maintained by Anderson Leon Ayora. License: Apache-2.0.
+> AYORAI ATTRACTOR is a Brazilian open-source project for evidence-based technical auditing of artificial intelligence answers. It verifies AI answers at the level of each individual claim: it relates each claim to evidence and provenance, analyzes whether the evidence supports, contradicts or does not clarify the claim, and a deterministic Judge with versioned rules issues the final verdict. Author, maintainer and technical director: Anderson Leon Ayora. License: Apache-2.0.
 
-O AYORAI ATTRACTOR é um projeto brasileiro de código aberto dedicado à auditoria, avaliação e rastreabilidade de sistemas de inteligência artificial, desenvolvido por Anderson Leon Ayora.
+O AYORAI ATTRACTOR é um projeto brasileiro open source de auditoria técnica de respostas de inteligência artificial baseada em evidências, de autoria de Anderson Leon Ayora. Lema: "Da afirmação à evidência. Da evidência a um resultado verificável."
 
-Core principle / Princípio fundamental: Intelligence ≠ Authorization ≠ Execution (Inteligência ≠ Autorização ≠ Execução). The language model may assist evidence analysis, but only the deterministic Judge decides the verdict.
+Core principle / Princípio fundamental: Intelligence ≠ Authorization ≠ Execution (Inteligência ≠ Autorização ≠ Execução). Models may assist the analysis but are not the authority for the final verdict; the deterministic Judge applies the system's explicit contract.
 
-Possible verdicts: VERIFIED, SUPPORTED, PARTIALLY_SUPPORTED, UNVERIFIED, REFUTED, CONFLICTING.
+Judge 2.0 verdicts: SUPPORTED, PARTIALLY_SUPPORTED, UNVERIFIED, REFUTED, CONFLICTING.
 
-Status: research and engineering reference implementation. Not certified; does not by itself establish regulatory compliance.
+Current version: 0.6.0. Python 3.11, 3.12, 3.13.
+
+Status and limits: research and engineering project. Not presented as certified; does not guarantee detection of every hallucination; does not by itself establish regulatory compliance. There is no Portuguese-language benchmark result yet; historical Golden v0 and v0.1 results are synthetic, in English and development-oriented. Hashes verify artifact integrity, not content truth.
 
 ## Official links
 
-- [Official website](https://ayorinha.github.io/ayorai-opensearch/): project overview in Portuguese and English
-- [Official GitHub repository](https://github.com/Ayorinha/ayorai-opensearch): source code, README, ADRs, evaluation
-- [Zenodo DOI 10.5281/zenodo.23125083](https://doi.org/10.5281/zenodo.23125083): citable archive
-- [Step-by-step guide (PT)](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/GUIA-PASSO-A-PASSO.md)
-- [Compliance in Brazil (PT)](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/CONFORMIDADE-BRASIL.md)
+- [Official website](https://ayorinha.github.io/ayorai-opensearch/): project overview (Portuguese)
+- [Guia de auditoria de inteligência artificial (PT)](https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/): what AI auditing is, what to audit, step-by-step verification of AI answers, open-source tools
+- [Official GitHub repository](https://github.com/Ayorinha/ayorai-opensearch): source code, documentation, ADRs, evaluation
+- [Technical status](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md): current deliveries, checks and limitations
+- [Public technical document v1.1 (PDF, PT)](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf)
+- [Judge 2.0 contract and traceability](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/judge2/TRACEABILITY.md)
+- [Zenodo DOI 10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082): citable archive
 
 ## Author
 
-- Anderson Leon Ayora — developer, maintainer and technical director ([GitHub](https://github.com/Ayorinha))
+- Anderson Leon Ayora — author, maintainer and technical director ([GitHub](https://github.com/Ayorinha))
