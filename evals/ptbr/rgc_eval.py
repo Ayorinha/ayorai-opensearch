@@ -293,7 +293,9 @@ def validate_cluster_citations(case: Mapping[str, Any], cluster_id: str, case_id
     or whether a principal article was correctly selected.
     """
     if "cited_article_ids" not in case:
-        return
+        raise ValueError(
+            f"{case_id}: cited_article_ids is required for hidden partition cases"
+        )
     cited = case["cited_article_ids"]
     if (
         not isinstance(cited, list)
