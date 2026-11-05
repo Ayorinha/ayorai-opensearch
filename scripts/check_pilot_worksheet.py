@@ -150,9 +150,14 @@ def load_documents(path: Path) -> dict[str, str]:
         if not line.strip():
             continue
         row = json.loads(line)
-        if not isinstance(row.get("source_id"), str) or not isinstance(row.get("text"), str):
-            raise ValueError(f"{path}:{number}: source_id and text are required")
-        documents[row["source_id"]] = row["text"]
+        if not isinstance(row.get("source_id"), str) or not row["source_id"].strip():
+            raise ValueError(f"{path}:{number}: source_id must be a non-empty string")
+        if not isinstance(row.get("text"), str):
+            raise ValueError(f"{path}:{number}: text must be a string")
+        source_id = row["source_id"]
+        if source_id in documents:
+            raise ValueError(f"{path}:{number}: duplicate source_id: {source_id}")
+        documents[source_id] = row["text"]
     return documents
 
 
@@ -244,9 +249,13 @@ def check_worksheet(text: str, documents: Mapping[str, str]) -> dict[str, list[s
             continue
         problems = check_case(case, documents)
         if case.name in seen:
-            problems.append("identificador repetido")
+            # Keep findings from every occurrence; replacing the prior entry
+            # would silently discard validation failures from the first case.
+            report[case.name].append("identificador repetido")
+            report[case.name].extend(problems)
+        else:
+            report[case.name] = problems
         seen.add(case.name)
-        report[case.name] = problems
     return report
 
 
