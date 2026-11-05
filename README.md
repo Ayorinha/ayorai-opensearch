@@ -15,6 +15,8 @@
 ![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23125082.svg)](https://doi.org/10.5281/zenodo.23125082)
 
+**Site oficial:** [ayorinha.github.io/ayorai-opensearch](https://ayorinha.github.io/ayorai-opensearch/) · [Guia de auditoria de inteligência artificial](https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/)
+
 [Entenda o projeto](#o-que-é) · [Como funciona](#como-funciona) · [Estado e limites](#o-que-está-comprovado-hoje) · [Documentação](docs/INDEX.md) · [Instalação](#começar)
 
 </div>
