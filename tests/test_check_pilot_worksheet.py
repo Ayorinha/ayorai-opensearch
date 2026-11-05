@@ -71,7 +71,7 @@ def test_excerpt_must_match_the_declared_source() -> None:
 def test_excerpt_from_another_source_is_rejected() -> None:
     documents = {
         "sint-1": DOC_TEXT,
-        "sint-2": "Art. 9º Texto diferente e sintético.\\n",
+        "sint-2": "Art. 9º Texto diferente e sintético.\n",
     }
     worksheet = _case(**{"Identificador da fonte / caminho do artefato capturado": "sint-2"})
     report = CHECKER["check_worksheet"](worksheet, documents)
@@ -174,7 +174,7 @@ def test_duplicate_source_ids_are_rejected(tmp_path: Path) -> None:
     documents = tmp_path / "documents.jsonl"
     row = {"source_id": "sint-1", "text": DOC_TEXT}
     documents.write_text(
-        json.dumps(row) + "\\n" + json.dumps(row) + "\\n",
+        json.dumps(row) + "\n" + json.dumps(row) + "\n",
         encoding="utf-8",
     )
     try:
@@ -187,7 +187,7 @@ def test_duplicate_source_ids_are_rejected(tmp_path: Path) -> None:
 
 def test_non_object_source_records_are_rejected(tmp_path: Path) -> None:
     documents = tmp_path / "documents.jsonl"
-    documents.write_text(json.dumps(["sint-1", DOC_TEXT]) + "\\n", encoding="utf-8")
+    documents.write_text(json.dumps(["sint-1", DOC_TEXT]) + "\n", encoding="utf-8")
     try:
         CHECKER["load_documents"](documents)
     except ValueError as error:
