@@ -143,3 +143,42 @@ O protocolo permanece **[PROPOSTO]**, não congelado. A ausência de um manifest
 - [STATISTICS.md](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/eval/STATISTICS.md)
 - [RUNNER-RGC-v1.md](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/eval/RUNNER-RGC-v1.md)
 - [ANNOTATOR-AGREEMENT.md](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/eval/ANNOTATOR-AGREEMENT.md)
+
+
+## 9. Rechecagem de continuidade — 2026-11-04 (São Paulo)
+
+Esta seção complementa o checkpoint anterior; não reabre tarefas concluídas nem substitui os registros históricos.
+
+### Main e mudanças recentes
+
+- **Main:** `e4471b87560cdd3518ea087791a747c5870793e1`, commit de atualização `actions/setup-python` para 7.1.0 via PR [#419](https://github.com/Ayorinha/ayorai-opensearch/pull/419), em 2026-11-04T20:45:21Z.
+- A atualização anterior [#418](https://github.com/Ayorinha/ayorai-opensearch/pull/418) elevou `github/codeql-action` para 4.39.1; seu merge commit é `c1605e750dfa67d7b29e8a9d3da3bc017c9c7a29`.
+- No SHA exato da main `e4471b8`, os **13 check runs** retornados estão concluídos com sucesso: CI (13 jobs), Security e CodeQL. [CI run 41909610488](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/41909610488), [Security 41909610613](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/41909610613), [CodeQL 41909610476](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/41909610476). Isso é evidência de engenharia no SHA, não validação científica RGC.
+
+### PR #269 e linhagem já concluída
+
+- [PR #269](https://github.com/Ayorinha/ayorai-opensearch/pull/269) permanece **fechada sem merge** (head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`). Na consulta atual: 3 comentários de conversa, 0 reviews submetidos e 0 threads inline. O head tinha 20 check runs concluídos: 19 success e `rgc-design-simulation` skipped por condição de workflow.
+- Comentários da #269 registram sua substituição pela #272; a #272 também fechou sem merge. A revisão documental efetiva está incorporada pela [#273](https://github.com/Ayorinha/ayorai-opensearch/pull/273) (merge `5719db48fc82c726671af7c9c7f7ef386d161edb`), e a correção de baseline B pela [#274](https://github.com/Ayorinha/ayorai-opensearch/pull/274) (merge `c639d0fda7a6fb8ab29bb438611ee536b1f3ddc2`). Não reiniciar a #269.
+
+### PR #421 — checkpoint anterior
+
+- O head anterior `da37f248b6f227ed4e64cb0104075613b6b69a24` teve **20/20 checks success**. Esta atualização documental é um novo commit no mesmo Draft; seus checks próprios devem ser lidos no SHA novo, não herdados do head anterior.
+- [PR #421](https://github.com/Ayorinha/ayorai-opensearch/pull/421) continua Draft, sem merge.
+
+### PR #432 — consistência cluster↔citações
+
+- Head inicial `9e9bc0d4732729edf3f10204651ce951680b4660`: CI falhou exclusivamente em `ruff format --check .` nos dois arquivos modificados; `ruff check .` passou. Python 3.11/3.12 foram cancelados após a falha no job 3.13. Os outros workflows, incluindo RGC Design Simulation, passaram.
+- Correção estritamente de formatação enviada na mesma branch: `ecdd3c5865fadc380e5534eb2337028a213b9838` (`evals/ptbr/rgc_eval.py`) e `06a43b13daf0723d7b5666cbf5fb1a690332cb07` (`tests/test_rgc_eval_runner.py`). A autoria/committer dos quatro commits da PR foi confirmada como `ANDERSON AYORA <ayora.anderson@gmail.com>`. O diff segue limitado aos dois arquivos do executor/testes.
+- No head `06a43b13daf0723d7b5666cbf5fb1a690332cb07`, a consulta mais recente retornou 20 check runs: 4 success e 16 in progress. **CI completo ainda pendente**; não declarar verde até terminar. A PR continua Draft e a API reporta estado `behind` em relação à main atual.
+- [PR #432](https://github.com/Ayorinha/ayorai-opensearch/pull/432) recebeu comentário metodológico complementar. A validação é condicional: `validate_cluster_citations()` retorna sem checar quando `cited_article_ids` está ausente. DEC-019 diz que a lista completa de citações é preservada “quando aplicável”; permanece **decisão humana pendente** esclarecer se a lista deve ser obrigatória para todos os casos ocultos com artigo citado, especialmente bundles. Se a ausência for permitida, o relatório deve explicitar que a checagem de citações foi parcial. A função não verifica relevância jurídica nem se todos os artigos do bundle são substantivamente necessários.
+
+### PR #431 — resumo do README
+
+- O README foi corrigido para rotular os números de 1.201 testes, 95% de cobertura e mypy em 91 arquivos como **snapshot histórico de 2026-10-25**, vinculado ao SHA `4f3c0cea4e40df5141521c4a12010bc3da5ac365`; não é o HEAD atual.
+- Commit `561665c93d785895d2771ac5fb4855123b0b5a64`, somente `README.md`; autoria e committer verificados. Os **20/20 checks** do novo head passaram. [PR #431](https://github.com/Ayorinha/ayorai-opensearch/pull/431) continua Draft e sem merge. `docs/STATUS.md` não foi alterado.
+
+### Limites e pendências preservados
+
+- Nenhuma alteração em Judge, Golden, regras, manifests, hashes, pré-registro ou protocolo normativo; nenhum caso de piloto/benchmark foi criado ou rotulado por IA; nenhum caso foi executado; nenhuma métrica RGC foi produzida.
+- O protocolo continua **[PROPOSTO]**, não congelado. Piloto 02 humano sem IA e sem execução, segunda anotação independente, adjudicação/proveniência, revisão F-01 e decisão explícita do mantenedor continuam pendentes.
+- CI verde é específico do SHA e não substitui revisão humana independente nem validação externa.
