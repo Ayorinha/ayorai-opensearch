@@ -144,15 +144,37 @@ def parse_worksheet(text: str) -> list[Case]:
     return cases
 
 
+def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """Reject duplicate JSON keys instead of silently accepting the last value."""
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
 def load_documents(path: Path) -> dict[str, str]:
     documents: dict[str, str] = {}
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if not line.strip():
             continue
-        row = json.loads(line)
-        if not isinstance(row.get("source_id"), str) or not isinstance(row.get("text"), str):
-            raise ValueError(f"{path}:{number}: source_id and text are required")
-        documents[row["source_id"]] = row["text"]
+        try:
+            row = json.loads(line, object_pairs_hook=_unique_json_object)
+        except ValueError as error:
+            raise ValueError(f"{path}:{number}: {error}") from error
+        if not isinstance(row, Mapping):
+            raise ValueError(f"{path}:{number}: each JSONL record must be an object")
+        if not isinstance(row.get("source_id"), str) or not row["source_id"].strip():
+            raise ValueError(f"{path}:{number}: source_id must be a non-empty string")
+        source_id = row["source_id"]
+        if source_id != source_id.strip():
+            raise ValueError(f"{path}:{number}: source_id must not contain surrounding whitespace")
+        if not isinstance(row.get("text"), str):
+            raise ValueError(f"{path}:{number}: text must be a string")
+        if source_id in documents:
+            raise ValueError(f"{path}:{number}: duplicate source_id: {source_id}")
+        documents[source_id] = row["text"]
     return documents
 
 
@@ -244,9 +266,13 @@ def check_worksheet(text: str, documents: Mapping[str, str]) -> dict[str, list[s
             continue
         problems = check_case(case, documents)
         if case.name in seen:
-            problems.append("identificador repetido")
+            # Keep findings from every occurrence; replacing the prior entry
+            # would silently discard validation failures from the first case.
+            report[case.name].append("identificador repetido")
+            report[case.name].extend(problems)
+        else:
+            report[case.name] = problems
         seen.add(case.name)
-        report[case.name] = problems
     return report
 
 
