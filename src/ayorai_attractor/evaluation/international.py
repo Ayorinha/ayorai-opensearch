@@ -9,7 +9,7 @@ import random
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict, cast
 
 from ayorai_attractor.evaluation.stats import bootstrap_accuracy
 from ayorai_attractor.verification.extraction import (
@@ -29,6 +29,14 @@ RAGTRUTH_COHORTS = {"ragtruth", "rag-truth"}
 
 class DatasetError(ValueError):
     """Invalid dataset schema or mapping."""
+
+
+class EvaluatedRow(TypedDict):
+    record_index: int
+    dataset: str
+    gold: str
+    prediction: str
+    stance: str
 
 
 def sha256_file(path: Path) -> str:
@@ -69,13 +77,13 @@ def read_records(path: Path) -> list[dict[str, Any]]:
             return list(reader)
     if suffix in {".parquet", ".pq"}:
         try:
-            import pyarrow.parquet as parquet
+            import pyarrow.parquet as parquet  # type: ignore[import-untyped]
         except ImportError as exc:
             raise DatasetError("Parquet input requires pyarrow") from exc
         table = parquet.read_table(path)
         if not required.issubset(table.column_names):
             raise DatasetError("Parquet schema must contain doc, claim, label, dataset")
-        return table.to_pylist()
+        return cast(list[dict[str, Any]], table.to_pylist())
     raise DatasetError("supported formats: JSONL, CSV, Parquet")
 
 
@@ -85,6 +93,8 @@ def load_mapping(path: Path) -> dict[str, Any]:
         mapping = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise DatasetError("invalid mapping JSON") from exc
+    if not isinstance(mapping, dict):
+        raise DatasetError("mapping JSON must contain an object")
     if mapping.get("schema_version") != SCHEMA_VERSION:
         raise DatasetError("unsupported mapping schema version")
     if mapping.get("mapping_id") != "llm-aggrefact-label-map-v1":
@@ -234,7 +244,7 @@ def evaluate(
     mapping = load_mapping(mapping_path)
     rows = adapt_records(read_records(dataset), mapping)
     detector = RuleStanceDetector()
-    evaluated = []
+    evaluated: list[EvaluatedRow] = []
     failures: Counter[str] = Counter()
     failure_indices: dict[str, list[int]] = {}
     for row in rows:
