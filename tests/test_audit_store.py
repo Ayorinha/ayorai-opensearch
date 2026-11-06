@@ -234,3 +234,62 @@ def test_record_rejects_duplicate_trace_id_and_preserves_original(tmp_path) -> N
         assert saved == original
         assert saved.replay_digest == original_digest
         assert saved.operation_status == "completed"
+
+
+def test_shared_connection_serializes_concurrent_records_and_reads(tmp_path) -> None:
+    from concurrent.futures import ThreadPoolExecutor
+
+    path = tmp_path / "concurrent.sqlite3"
+    with AuditTraceStore(str(path)) as store:
+
+        def persist(index: int) -> str:
+            trace_id = f"tr_concurrent_{index}"
+            response = SearchResponse(
+                query=f"query {index}",
+                mode="balanced",
+                answer="test",
+                operation_status="completed",
+                trace_id=trace_id,
+            )
+            report = AuditReport.from_response(response)
+            digest = store.record(response, report)
+            saved = store.get(trace_id)
+            assert saved is not None
+            assert saved.replay_digest == digest
+            assert store.verify(trace_id) == "valid"
+            return digest
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            digests = list(executor.map(persist, range(48)))
+
+        assert len(digests) == 48
+        assert all(len(digest) == 64 for digest in digests)
+
+
+def test_concurrent_duplicate_records_have_exactly_one_winner(tmp_path) -> None:
+    from concurrent.futures import ThreadPoolExecutor
+
+    response = SearchResponse(
+        query="duplicate query",
+        mode="balanced",
+        answer="test",
+        operation_status="completed",
+        trace_id="tr_concurrent_duplicate",
+    )
+    report = AuditReport.from_response(response)
+
+    with AuditTraceStore(str(tmp_path / "concurrent-duplicate.sqlite3")) as store:
+
+        def persist(_: int) -> str | None:
+            try:
+                return store.record(response, report)
+            except DuplicateAuditTraceError:
+                return None
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            results = list(executor.map(persist, range(32)))
+
+        winners = [digest for digest in results if digest is not None]
+        assert len(winners) == 1
+        assert store.verify(response.trace_id) == "valid"
+
