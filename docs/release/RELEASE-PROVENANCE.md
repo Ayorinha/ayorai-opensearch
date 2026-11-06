@@ -10,10 +10,18 @@ Este documento distingue controles configurados de evidências observadas. A v0.
 - **Source distribution:** `ayorai_opensearch-0.6.0.tar.gz` — SHA-256 `bc375060cdefcfcdba0a21c9255b1896d20c837d02502fb0f3073e4070fc1614`.
 - **Wheel:** `ayorai_opensearch-0.6.0-py3-none-any.whl` — SHA-256 `e9b453765c77103273b3d41465025476e29bbee1458d2addd28ef1c728b9466c`.
 - **ZIP do Zenodo:** MD5 `84d6957c27c827db2740ca53eae2a03f`; a revisão automatizada registrada em 2026-10-25 informa correspondência com o zipball da tag `v0.6.0`. Essa conferência é automatizada e não independente.
-- **GitHub Release:** publicada em 2026-10-24T00:41Z (data oficial da versão: 2026-10-23); não possui arquivos anexados. Nenhum arquivo foi anexado por este trabalho.
+- **GitHub Release:** publicada em 2026-10-24T00:41:49Z (data oficial da versão: 2026-10-23); atualmente contém três anexos da tentativa 2 do run CI #2109 (ver atualização de 2026-10-26 abaixo).
 - **Retenção do artefato de CI:** expiração informada em 2027-01-22 UTC.
 
 A frase histórica de que o artefato consultado pertencia a um SHA antigo não se aplica a este registro: o artefato identificado acima foi gerado no run indicado para o SHA exato da tag `v0.6.0`. Os hashes do sdist e do wheel foram recalculados contra o manifesto baixado. A conferência do MD5 do ZIP do Zenodo permanece atribuída à revisão automatizada indicada, não a uma auditoria independente.
+
+### Atualização de 2026-10-26
+
+- **Tentativas do CI:** o run #2109 ([`40022675628`](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40022675628)) teve a tentativa 1 iniciada em 2026-10-23T20:53:23Z e a tentativa 2 iniciada em 2026-10-24T00:52:50Z, após a publicação da release. O artefato `distributions-6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a` listado atualmente foi criado em 2026-10-24T00:53:04Z, na tentativa 2; o digest do ZIP desse artefato de CI é `sha256:5cffef81ec559f7f6c523dc9af7dd46b5907029cc6ca2a29f6426056179f697a` (identifica o ZIP, não o sdist nem o wheel individualmente). Os hashes descritos no bloco anterior correspondem a essa tentativa.
+- **Hashes da descrição original:** a primeira versão da descrição da release registrava `040c4021…` (sdist) e `6486c8d5…` (wheel), correspondentes a uma compilação anterior. Não há evidência suficiente neste registro para afirmar por que o artefato da tentativa 1 deixou de estar listado.
+- **Anexos da release:** em 2026-10-26 o mantenedor anexou à GitHub Release o sdist, o wheel e o `SHA256SUMS.txt` da tentativa 2 e atualizou o bloco de hashes da descrição, com nota explicativa. O SHA-256 do manifesto anexado é `4a7b285083710adef9aab2f34666ca0874b7e6f8baba2a16b82aaa6736ee31d5`.
+- **Verificação dos anexos publicados:** em 2026-10-26 os três anexos foram baixados da release e `sha256sum -c SHA256SUMS.txt` retornou `OK` para `ayorai_opensearch-0.6.0.tar.gz` e `ayorai_opensearch-0.6.0-py3-none-any.whl`.
+- **Reprodutibilidade:** experimento local do mantenedor confirmou que dois builds do mesmo commit sem `SOURCE_DATE_EPOCH` produzem hashes diferentes. Com `SOURCE_DATE_EPOCH` derivado do timestamp do commit, o wheel ficou idêntico; o sdist gerado pelo setuptools continuou variando porque os mtimes dos arquivos do checkout e o cabeçalho gzip afetam os bytes, sem diferença de conteúdo. Um repack com entradas ordenadas, timestamps normalizados, uid/gid zerados e gzip com `mtime` fixo produziu sdist idêntico em dois builds, instalável. A correção correspondente no CI permanece trabalho futuro: este registro não afirma que o CI atual produz builds reprodutíveis.
 
 ## Build de distribuição no CI
 
