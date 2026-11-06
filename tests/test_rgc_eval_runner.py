@@ -6,8 +6,10 @@ document corpus, to check segmentation offsets and the strict corpus export.
 
 from __future__ import annotations
 
+import ast
 import json
 import runpy
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -144,6 +146,38 @@ def test_oracle_rejects_excerpt_that_does_not_match_offsets() -> None:
     case = _case("s1", "x", "II - por meio eletrônico.")
     case["evidence"][0]["start_offset"] += 1
     with pytest.raises(ValueError, match="excerpt does not match"):
+        RUNNER["oracle_passages"](case, DOCS)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda item: item.update(start_offset="1"), "offsets must be integers"),
+        (lambda item: item.update(end_offset=True), "offsets must be integers"),
+        (lambda item: item.update(document_id="missing-doc"), "unknown evidence document_id"),
+        (lambda item: item.update(excerpt=" "), "excerpt must be a non-empty string"),
+    ],
+)
+def test_oracle_rejects_malformed_evidence_metadata(
+    mutate: Callable[[dict[str, Any]], None], message: str
+) -> None:
+    case = _case("bad-evidence", "x", "II - por meio eletrônico.")
+    mutate(case["evidence"][0])
+    with pytest.raises(ValueError, match=message):
+        RUNNER["oracle_passages"](case, DOCS)
+
+
+def test_oracle_rejects_non_object_evidence_item() -> None:
+    case = _case("bad-evidence-item", "x", "II - por meio eletrônico.")
+    case["evidence"] = [None]
+    with pytest.raises(ValueError, match="each evidence item must be an object"):
+        RUNNER["oracle_passages"](case, DOCS)
+
+
+def test_oracle_rejects_empty_evidence_list() -> None:
+    case = _case("empty-evidence", "x", "II - por meio eletrônico.")
+    case["evidence"] = []
+    with pytest.raises(ValueError, match="evidence must be a non-empty list"):
         RUNNER["oracle_passages"](case, DOCS)
 
 
@@ -451,7 +485,7 @@ def test_majority_tie_breaks_by_vocabulary_order() -> None:
     assert RUNNER["majority_label"](["REFUTED", "SUPPORTED"], "judge2") == "SUPPORTED"
 
 
-def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
+def test_evaluate_requires_complete_labels_without_rule_gap() -> None:
     cases = [
         _case(
             "s1",
@@ -463,9 +497,8 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             "O cancelamento será efetivado em até 9 dias.",
             "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
         ),
-        _case("s3", "Algo ambíguo.", "II - por meio eletrônico."),
     ]
-    labels = {"s1": "SUPPORTED", "s2": "REFUTED", "s3": "RULE_GAP"}
+    labels = {"s1": "SUPPORTED", "s2": "REFUTED"}
     for mode in ("oracle", "retrieval"):
         result = RUNNER["evaluate"](
             cases,
@@ -477,7 +510,7 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             vocabulary="judge2",
             iterations=100,
         )
-        assert result["excluded"] == [{"case_id": "s3", "label": "RULE_GAP"}]
+        assert result["excluded"] == []
         assert [row["predicted"] for row in result["cases"]] == ["SUPPORTED", "REFUTED"]
         assert result["decision_states"] == {"DECIDED": 2}
     with pytest.raises(ValueError, match="unknown cases"):
@@ -513,6 +546,35 @@ def test_evaluate_excludes_rule_gap_and_requires_complete_labels() -> None:
             vocabulary="judge2",
             iterations=10,
         )
+
+
+@pytest.mark.parametrize("partition", ["development", "hidden"])
+def test_evaluate_rejects_rule_gap_in_every_definitive_partition(partition: str) -> None:
+    case = _case("definitive-rule-gap", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    with pytest.raises(ValueError, match="RULE_GAP is prohibited in every definitive partition"):
+        RUNNER["evaluate"](
+            [case],
+            {"definitive-rule-gap": "RULE_GAP"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+            partition=partition,
+        )
+
+
+def test_rule_gap_policy_requires_explicit_pilot_mode() -> None:
+    validate = RUNNER["_validate_rule_gap_policy"]
+    validate("RULE_GAP", pilot_mode=True, partition="development")
+    for pilot_mode, partition in (
+        (False, "development"),
+        (False, "hidden"),
+        (True, "hidden"),
+    ):
+        with pytest.raises(ValueError, match="only in explicit pilot mode"):
+            validate("RULE_GAP", pilot_mode=pilot_mode, partition=partition)
 
 
 def test_evaluate_reports_abstentions_mapped_to_unverified() -> None:
@@ -614,8 +676,12 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     labels.write_text(json.dumps({"case_id": "s1", "verdict": "SUPPORTED"}) + "\n")
     annotation_a = tmp_path / "annotation-a.jsonl"
     annotation_b = tmp_path / "annotation-b.jsonl"
-    annotation_a.write_text("synthetic annotation A\\n", encoding="utf-8")
-    annotation_b.write_text("synthetic annotation B\\n", encoding="utf-8")
+    annotation_a.write_text(
+        json.dumps({"case_id": "s1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+    )
+    annotation_b.write_text(
+        json.dumps({"case_id": "s1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+    )
     agreement_report = tmp_path / "agreement.json"
     agreement_report.write_text(
         json.dumps(
@@ -632,7 +698,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         encoding="utf-8",
     )
     adjudication_record = tmp_path / "adjudication.md"
-    adjudication_record.write_text("Synthetic test only; no real annotations.\\n", encoding="utf-8")
+    adjudication_record.write_text("Synthetic test only; no real annotations.\n", encoding="utf-8")
     annotation_approval = tmp_path / "annotation-approval.json"
     annotation_approval.write_text(
         json.dumps(
@@ -730,15 +796,19 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
     agreement = tmp_path / "agreement.json"
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
-    cases.write_text("{}\\n", encoding="utf-8")
-    labels.write_text("{}\\n", encoding="utf-8")
-    annotation_a.write_text("synthetic A\\n", encoding="utf-8")
-    annotation_b.write_text("synthetic B\\n", encoding="utf-8")
+    cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
+    labels.write_text("{}\n", encoding="utf-8")
+    annotation_a.write_text(
+        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+    )
+    annotation_b.write_text(
+        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+    )
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
-    development_cases.write_text("{}\\n", encoding="utf-8")
-    development_labels.write_text("{}\\n", encoding="utf-8")
-    adjudication.write_text("synthetic only\\n", encoding="utf-8")
+    development_cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
+    development_labels.write_text("{}\n", encoding="utf-8")
+    adjudication.write_text("synthetic only\n", encoding="utf-8")
     agreement.write_text(
         json.dumps(
             {
@@ -795,15 +865,19 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     agreement = tmp_path / "agreement.json"
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
-    cases.write_text("{}\\n", encoding="utf-8")
-    labels.write_text("{}\\n", encoding="utf-8")
-    annotation_a.write_text("synthetic A\\n", encoding="utf-8")
-    annotation_b.write_text("synthetic B\\n", encoding="utf-8")
+    cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
+    labels.write_text("{}\n", encoding="utf-8")
+    annotation_a.write_text(
+        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+    )
+    annotation_b.write_text(
+        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+    )
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
-    development_cases.write_text("{}\\n", encoding="utf-8")
-    development_labels.write_text("{}\\n", encoding="utf-8")
-    adjudication.write_text("synthetic only\\n", encoding="utf-8")
+    development_cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
+    development_labels.write_text("{}\n", encoding="utf-8")
+    adjudication.write_text("synthetic only\n", encoding="utf-8")
     agreement.write_text(
         json.dumps(
             {
@@ -854,7 +928,9 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     manifest = json.loads(approval.read_text(encoding="utf-8"))
     manifest["labels_sha256"] = RUNNER["_sha256"](labels)
     approval.write_text(json.dumps(manifest), encoding="utf-8")
-    annotation_a.write_text("changed annotation A\\n", encoding="utf-8")
+    annotation_a.write_text(
+        json.dumps({"case_id": "case-1", "label": "REFUTED"}) + "\n", encoding="utf-8"
+    )
     with pytest.raises(ValueError, match="annotation_a_sha256 differs from approval manifest"):
         RUNNER["validate_annotation_approval"](
             cases,
@@ -1086,9 +1162,18 @@ def test_case_without_atoms_keeps_single_atom_behaviour() -> None:
             [{"start_offset": "0", "end_offset": 5}, {"start_offset": 6, "end_offset": 10}],
             "integers",
         ),
+        (
+            [{"start_offset": True, "end_offset": 5}, {"start_offset": 6, "end_offset": 10}],
+            "integers",
+        ),
+        (
+            [{"start_offset": 0, "end_offset": True}, {"start_offset": 6, "end_offset": 10}],
+            "integers",
+        ),
+        ([None, {"start_offset": 6, "end_offset": 10}], "each atom must be an object"),
     ],
 )
-def test_invalid_atom_annotation_stops_the_run(atoms: list[dict[str, Any]], message: str) -> None:
+def test_invalid_atom_annotation_stops_the_run(atoms: list[Any], message: str) -> None:
     case = _case("bad", "Texto A e texto B.", CANCEL)
     case["atoms"] = atoms
     with pytest.raises(ValueError, match=message):
@@ -1358,3 +1443,313 @@ def test_load_documents_rejects_duplicate_source_ids(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="duplicate document"):
         RUNNER["load_documents"](path)
+
+
+# --- approval integrity / definitive partition guards -------------------------
+
+
+def test_annotation_approval_requires_exact_case_id_coverage(tmp_path: Path) -> None:
+    cases = tmp_path / "cases.jsonl"
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    cases.write_text('{"case_id":"case-1"}\n{"case_id":"case-2"}\n', encoding="utf-8")
+    annotation_a.write_text(
+        '{"case_id":"case-1","label":"SUPPORTED"}\n{"case_id":"case-2","label":"REFUTED"}\n',
+        encoding="utf-8",
+    )
+    annotation_b.write_text(
+        '{"case_id":"case-1","label":"SUPPORTED"}\n{"case_id":"case-2","label":"REFUTED"}\n',
+        encoding="utf-8",
+    )
+    RUNNER["_validate_annotation_case_ids"](cases, annotation_a, annotation_b)
+
+    annotation_a.write_text(
+        '{"case_id":"case-1","label":"SUPPORTED"}\n{"case_id":"extra-a","label":"REFUTED"}\n',
+        encoding="utf-8",
+    )
+    annotation_b.write_text(
+        '{"case_id":"case-2","label":"REFUTED"}\n{"case_id":"extra-b","label":"SUPPORTED"}\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError) as exc_info:
+        RUNNER["_validate_annotation_case_ids"](cases, annotation_a, annotation_b)
+    message = str(exc_info.value)
+    assert "cases-A=['case-2']" in message
+    assert "cases-B=['case-1']" in message
+    assert "A-cases=['extra-a']" in message
+    assert "B-cases=['extra-b']" in message
+
+
+def test_annotation_case_id_reader_rejects_duplicate_and_blank_records(tmp_path: Path) -> None:
+    path = tmp_path / "annotation.jsonl"
+    path.write_text(
+        '{"case_id":"case-1","label":"SUPPORTED"}\n{"case_id":"case-1","label":"REFUTED"}\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="duplicate case_id"):
+        RUNNER["_strict_jsonl_case_ids"](path, annotation=True)
+
+    path.write_text('{"case_id":"case-1","label":"SUPPORTED"}\n\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="blank lines are not allowed"):
+        RUNNER["_strict_jsonl_case_ids"](path, annotation=True)
+
+
+def test_evaluate_preflights_all_cases_before_predicting(monkeypatch: pytest.MonkeyPatch) -> None:
+    cases = [
+        _case(
+            "preflight-1",
+            "O prazo é de cinco dias úteis.",
+            "no prazo máximo de 5 (cinco) dias úteis",
+        ),
+        _case(
+            "preflight-2",
+            "O cancelamento ocorre em dois dias.",
+            "O cancelamento será efetivado em até 2 (dois) dias",
+        ),
+        _case(
+            "preflight-3",
+            "A devolução é em dobro.",
+            "A cobrança indevida será devolvida em dobro",
+        ),
+    ]
+    cases[1]["rectified"] = "invalid"
+    calls: list[str] = []
+
+    def predictor(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(str(args[0]))
+        raise AssertionError("predict must not run when preflight fails")
+
+    monkeypatch.setitem(RUNNER["evaluate"].__globals__, "predict", predictor)
+    with pytest.raises(ValueError, match="rectified must be true or false"):
+        RUNNER["evaluate"](
+            cases,
+            {case["case_id"]: "SUPPORTED" for case in cases},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+    assert calls == []
+
+
+def test_evaluate_preflights_invalid_gold_label_before_predicting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _case(
+        "invalid-gold-label",
+        "O prazo é de cinco dias úteis.",
+        "no prazo máximo de 5 (cinco) dias úteis",
+    )
+    calls: list[str] = []
+
+    def predictor(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(str(args[0]))
+        raise AssertionError("predict must not run when the gold label is invalid")
+
+    monkeypatch.setitem(RUNNER["evaluate"].__globals__, "predict", predictor)
+    with pytest.raises(ValueError, match="invalid gold label"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-gold-label": "UNRECOGNIZED_LABEL"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+    assert calls == []
+
+
+def _preflight_cases() -> list[dict[str, Any]]:
+    return [
+        _case(
+            "oracle-preflight-1",
+            "O prazo é de cinco dias úteis.",
+            "no prazo máximo de 5 (cinco) dias úteis",
+        ),
+        _case(
+            "oracle-preflight-2",
+            "O cancelamento ocorre em dois dias.",
+            "O cancelamento será efetivado em até 2 (dois) dias",
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("corrupt", "message"),
+    [
+        (
+            lambda case: case["evidence"][0].update(excerpt="trecho divergente"),
+            "excerpt does not match document offsets",
+        ),
+        (
+            lambda case: case["evidence"][0].update(document_id="documento-inexistente"),
+            "unknown evidence document_id",
+        ),
+        (lambda case: case.pop("evidence"), "evidence must be a non-empty list"),
+        (lambda case: case.update(claim="   "), "claim must be a non-empty string"),
+    ],
+)
+def test_evaluate_preflights_oracle_evidence_before_predicting(
+    monkeypatch: pytest.MonkeyPatch,
+    corrupt: Callable[[dict[str, Any]], object],
+    message: str,
+) -> None:
+    cases = _preflight_cases()
+    corrupt(cases[-1])
+    calls: list[str] = []
+
+    def predictor(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        calls.append(str(args[0]))
+        raise AssertionError("predict must not run when oracle evidence is invalid")
+
+    monkeypatch.setitem(RUNNER["evaluate"].__globals__, "predict", predictor)
+    with pytest.raises(ValueError, match=message):
+        RUNNER["evaluate"](
+            cases,
+            {case["case_id"]: "SUPPORTED" for case in cases},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+    assert calls == []
+
+
+def test_evaluate_rejects_unknown_mode_before_predicting(monkeypatch: pytest.MonkeyPatch) -> None:
+    cases = _preflight_cases()
+
+    def predictor(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("predict must not run for an unknown mode")
+
+    monkeypatch.setitem(RUNNER["evaluate"].__globals__, "predict", predictor)
+    with pytest.raises(ValueError, match="mode must be oracle or retrieval"):
+        RUNNER["evaluate"](
+            cases,
+            {case["case_id"]: "SUPPORTED" for case in cases},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="orcale",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+@pytest.mark.parametrize(
+    ("contents", "message"),
+    [
+        ('{"case_id":', "invalid JSON"),
+        ("[]", "expected an object"),
+        ('{"case_id":123}', "case_id must be a non-empty string"),
+        ('{"case_id":" "}', "case_id must be a non-empty string"),
+        ('{"case_id":"case-1"}\n\n', "blank lines are not allowed"),
+        (
+            '{"case_id":"case-1"}\n{"case_id":"case-1"}\n',
+            "duplicate case_id",
+        ),
+    ],
+)
+def test_read_jsonl_rejects_malformed_case_records(
+    tmp_path: Path, contents: str, message: str
+) -> None:
+    path = tmp_path / "cases.jsonl"
+    path.write_text(contents, encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        RUNNER["_read_jsonl"](path)
+
+
+def test_read_jsonl_accepts_valid_case_records(tmp_path: Path) -> None:
+    path = tmp_path / "cases.jsonl"
+    path.write_text('{"case_id":"case-1","claim":"A"}\n', encoding="utf-8")
+    assert RUNNER["_read_jsonl"](path) == [{"case_id": "case-1", "claim": "A"}]
+
+
+def _required_manifest_keys(function_name: str) -> set[str]:
+    """Read the validator's literal required-key set without loading any data files."""
+    runner_path = ROOT / "evals" / "ptbr" / "rgc_eval.py"
+    tree = ast.parse(runner_path.read_text(encoding="utf-8"))
+    function = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == function_name
+    )
+    for node in ast.walk(function):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "required" for target in node.targets
+        ):
+            value = ast.literal_eval(node.value)
+            if isinstance(value, set) and all(isinstance(key, str) for key in value):
+                return value
+    raise AssertionError(f"required-key set not found in {function_name}")
+
+
+def test_manifest_templates_match_runner_required_keys() -> None:
+    """Keep blank JSON templates synchronized with the runner's exact schemas."""
+    templates = (
+        (
+            ROOT / "docs" / "eval" / "templates" / "PROTOCOL-FREEZE.template.json",
+            "validate_protocol_freeze",
+        ),
+        (
+            ROOT / "docs" / "eval" / "templates" / "ANNOTATION-APPROVAL.template.json",
+            "validate_annotation_approval",
+        ),
+    )
+    for path, validator_name in templates:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        assert isinstance(payload, dict)
+        assert set(payload) == _required_manifest_keys(validator_name)
+        # A blank template must never look like an already granted human gate.
+        assert payload["status"] == "DRAFT"
+        if validator_name == "validate_annotation_approval":
+            assert payload["cohen_kappa"] is None
+
+
+def test_blank_annotation_template_is_rejected_by_operational_validator(
+    tmp_path: Path,
+) -> None:
+    """An unfilled template must fail the runner's approval gate."""
+    template = ROOT / "docs" / "eval" / "templates" / "ANNOTATION-APPROVAL.template.json"
+    manifest_path = tmp_path / "annotation-approval.json"
+    manifest_path.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+    agreement_path = tmp_path / "agreement.json"
+    agreement_path.write_text(json.dumps({"method": "cohen_kappa_unweighted"}), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="status must be APPROVED"):
+        RUNNER["validate_annotation_approval"](
+            cases_path=tmp_path / "cases.jsonl",
+            labels_path=tmp_path / "labels.jsonl",
+            development_cases_path=tmp_path / "development-cases.jsonl",
+            development_labels_path=tmp_path / "development-labels.jsonl",
+            annotation_a_path=tmp_path / "annotation-a.jsonl",
+            annotation_b_path=tmp_path / "annotation-b.jsonl",
+            agreement_report_path=agreement_path,
+            approval_manifest_path=manifest_path,
+            adjudication_record_path=tmp_path / "adjudication.json",
+        )
+
+
+def test_blank_protocol_freeze_template_is_rejected_by_validator(tmp_path: Path) -> None:
+    """A DRAFT freeze template must not pass the operational freeze gate."""
+    protocol_dir = tmp_path / "docs" / "eval"
+    protocol_dir.mkdir(parents=True)
+    (protocol_dir / "PROTOCOL-GOLDEN-V1.md").write_text("Status: CONGELADO\n", encoding="utf-8")
+    (protocol_dir / "PREREGISTRATION-RGC-v1.md").write_text(
+        "**Estado:** [CONGELADO]\n", encoding="utf-8"
+    )
+    (protocol_dir / "RUNNER-RGC-v1.md").write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
+    runner_dir = tmp_path / "evals" / "ptbr"
+    runner_dir.mkdir(parents=True)
+    (runner_dir / "rgc_eval.py").write_text("# synthetic validator fixture\n", encoding="utf-8")
+    manifest_path = protocol_dir / "PROTOCOL-FREEZE.json"
+    template_path = ROOT / "docs" / "eval" / "templates" / "PROTOCOL-FREEZE.template.json"
+    manifest_path.write_text(template_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="freeze manifest status must be FROZEN"):
+        RUNNER["validate_protocol_freeze"](root=tmp_path)
