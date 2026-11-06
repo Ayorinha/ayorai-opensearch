@@ -27,8 +27,7 @@ def test_protected_routes_document_rate_limit_response() -> None:
         retry_after = response["headers"]["Retry-After"]
         assert retry_after["schema"]["type"] == "integer"
         assert retry_after["schema"]["minimum"] == 1
-        assert response["content"]["application/json"]["schema"]["properties"]["detail"][
-            "type"
-        ] == "string"
+        detail_schema = response["content"]["application/json"]["schema"]["properties"]["detail"]
+        assert detail_schema["type"] == "string"
 
     assert "429" not in schema["paths"]["/health"]["get"]["responses"]
