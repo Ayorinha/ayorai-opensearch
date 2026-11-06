@@ -5,12 +5,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 from pathlib import Path
 from typing import Any
 
-from common import DEV_PIN_PATH, LABEL_MAP_PATH, MODELS, load_records, sha256_file, stable_record_id
+from common import DEV_PIN_PATH, MODELS, load_records, sha256_file, stable_record_id
 
 
 def select_shard(manifest: dict[str, Any], rows: list[dict[str, Any]], shard_id: str) -> list[tuple[str, dict[str, Any]]]:
