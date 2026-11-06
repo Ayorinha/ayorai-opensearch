@@ -9,8 +9,12 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from common import canonical_json, sha256_bytes
-from encrypt_artifact import decode_key, decrypt_bytes
+try:
+    from .common import canonical_json, sha256_bytes
+    from .encrypt_artifact import decode_key, decrypt_bytes
+except ImportError:  # direct script execution
+    from common import canonical_json, sha256_bytes
+    from encrypt_artifact import decode_key, decrypt_bytes
 
 
 def aggregate_packages(
