@@ -3,6 +3,7 @@
 
 No predictions, examples, document text, or claims are written to artifacts.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,7 +39,7 @@ MODELS = [
         "prefix": "2f2d01a",
     },
 ]
-SENTENCE_SPLIT = re.compile(r"(?<=[.!?。！？])" + chr(92) + "s+")
+SENTENCE_SPLIT = re.compile(r"(?<=[.!?。！？])\s+")
 
 
 def resolve_unique_commit(api: HfApi, repo: str, prefix: str) -> str:
@@ -299,11 +300,9 @@ def main() -> None:
                 "examples_per_second": (
                     round(len(sample) / inference_seconds, 5) if inference_seconds else None
                 ),
-                "blocks_per_second": (
-                    round(processed_blocks / inference_seconds, 5)
-                    if inference_seconds
-                    else None
-                ),
+                "blocks_per_second": round(processed_blocks / inference_seconds, 5)
+                if inference_seconds
+                else None,
                 "block_count": len(block_texts),
                 "mean_blocks_per_example": round(
                     sum(blocks_per_example) / len(blocks_per_example), 3
@@ -338,7 +337,7 @@ def main() -> None:
     output_path = Path(args.out)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
-        json.dumps(report, indent=2, ensure_ascii=False) + chr(10),
+        json.dumps(report, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     print(f"Aggregate pilot report written: {output_path}; no row-level content emitted.")
