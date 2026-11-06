@@ -56,9 +56,7 @@ def read_records(path: Path) -> list[dict[str, Any]]:
     required = {"doc", "claim", "label", "dataset"}
     if suffix in {".jsonl", ".ndjson"}:
         records = []
-        for line_number, line in enumerate(
-            path.read_text(encoding="utf-8").splitlines(), 1
-        ):
+        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if not line.strip():
                 continue
             try:
@@ -105,9 +103,7 @@ def load_mapping(path: Path) -> dict[str, Any]:
     return mapping
 
 
-def adapt_records(
-    records: list[dict[str, Any]], mapping: dict[str, Any]
-) -> list[dict[str, str]]:
+def adapt_records(records: list[dict[str, Any]], mapping: dict[str, Any]) -> list[dict[str, str]]:
     """Validate file schema and adapt the native binary labels."""
     required = {"doc", "claim", "label", "dataset"}
     if not records:
@@ -124,9 +120,7 @@ def adapt_records(
         if not isinstance(claim, str) or not claim.strip():
             raise DatasetError(f"record {index}: claim must be nonempty string")
         if not isinstance(cohort, str) or not cohort.strip():
-            raise DatasetError(
-                f"record {index}: dataset cohort must be nonempty string"
-            )
+            raise DatasetError(f"record {index}: dataset cohort must be nonempty string")
         label = labels.get(str(record["label"]))
         if label not in {"SUPPORTED", "NOT_SUPPORTED"}:
             raise DatasetError(f"record {index}: unknown label")
@@ -187,11 +181,7 @@ def metrics(gold: list[str], predicted: list[str]) -> dict[str, Any]:
         support = tp + fn
         precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / support if support else 0.0
-        f1 = (
-            2 * precision * recall / (precision + recall)
-            if precision + recall
-            else 0.0
-        )
+        f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
         per_class[label] = {
             "support": support,
             "precision": precision,
@@ -267,20 +257,15 @@ def evaluate(
     n_failures = sum(failures.values())
     if n_failures / n_total > MAX_FAILURE_RATE:
         raise RuntimeError(
-            f"record failure rate {n_failures}/{n_total} exceeds 1%; "
-            f"types={dict(failures)}"
+            f"record failure rate {n_failures}/{n_total} exceeds 1%; types={dict(failures)}"
         )
     if not evaluated:
         raise RuntimeError("no records evaluated successfully")
     gold = [item["gold"] for item in evaluated]
     predicted = [item["prediction"] for item in evaluated]
     overall = metrics(gold, predicted)
-    balanced_ci = bootstrap_balanced_accuracy(
-        gold, predicted, iterations=ITERATIONS, seed=SEED
-    )
-    accuracy_ci = bootstrap_accuracy(
-        gold, predicted, iterations=ITERATIONS, seed=SEED + 1
-    )
+    balanced_ci = bootstrap_balanced_accuracy(gold, predicted, iterations=ITERATIONS, seed=SEED)
+    accuracy_ci = bootstrap_accuracy(gold, predicted, iterations=ITERATIONS, seed=SEED + 1)
     cohorts = {}
     for cohort in sorted({item["dataset"] for item in evaluated}):
         group = [item for item in evaluated if item["dataset"] == cohort]
@@ -289,9 +274,7 @@ def evaluate(
             [item["prediction"] for item in group],
         )
     rag_names = {name.casefold() for name in RAGTRUTH_COHORTS}
-    without_ragtruth = [
-        item for item in evaluated if item["dataset"].casefold() not in rag_names
-    ]
+    without_ragtruth = [item for item in evaluated if item["dataset"].casefold() not in rag_names]
     if not without_ragtruth:
         raise DatasetError("RAGTruth-excluded cohort is empty")
     no_rag_metrics = metrics(
@@ -314,9 +297,7 @@ def evaluate(
             "seed": SEED,
             "unit": "claim-document row sampled with replacement",
             "clustered": False,
-            "limitation": (
-                "row-level CI may be optimistic due to source/document dependence"
-            ),
+            "limitation": ("row-level CI may be optimistic due to source/document dependence"),
         },
         "bootstrap_ci95_accuracy": {
             "lower": accuracy_ci[0],
@@ -339,9 +320,7 @@ def evaluate(
         "response_policy_abstentions": {
             "value": None,
             "status": "not_applicable_to_component_path",
-            "explanation": (
-                "ResponsePolicy is not run; null means not measured, not zero."
-            ),
+            "explanation": ("ResponsePolicy is not run; null means not measured, not zero."),
         },
         "unverified_verdict_count": {
             "value": None,
@@ -355,9 +334,7 @@ def evaluate(
             "failure_types": dict(sorted(failures.items())),
             "failure_indices_by_type": failure_indices,
             "failure_rate": n_failures / n_total,
-            "policy": (
-                "record-level failures excluded; abort above 1%; no record text in report"
-            ),
+            "policy": ("record-level failures excluded; abort above 1%; no record text in report"),
         },
         "source_file_sha256": sha256_file(dataset),
         "mapping_file_sha256": sha256_file(mapping_path),
@@ -372,9 +349,7 @@ def evaluate(
     }
     out_json.parent.mkdir(parents=True, exist_ok=True)
     out_md.parent.mkdir(parents=True, exist_ok=True)
-    out_json.write_text(
-        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    out_json.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     out_md.write_text(
         "# Detector de stance do ATTRACTOR (componente) — não é o pipeline completo\n\n"
         f"n_total={n_total}; n_avaliado={len(evaluated)}; n_falhas={n_failures}\n\n"
