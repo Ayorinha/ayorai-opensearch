@@ -1,0 +1,7 @@
+{
+  "dataset": "lytang/LLM-AggreFact",
+  "revision": "PENDING_MAINTAINER_PIN",
+  "file": "data/test-00000-of-00001.parquet",
+  "sha256": "PENDING_MAINTAINER_SHA256",
+  "status": "blocked_until_maintainer_authorizes_download_and_freezes_revision_and_file_hash"
+}
