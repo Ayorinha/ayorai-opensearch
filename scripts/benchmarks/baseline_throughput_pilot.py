@@ -48,9 +48,7 @@ def resolve_unique_commit(api: HfApi, repo: str, prefix: str) -> str:
         if commit.commit_id.startswith(prefix)
     ]
     if len(matches) != 1:
-        raise RuntimeError(
-            f"{repo}: prefix {prefix} resolved to {len(matches)} commits"
-        )
+        raise RuntimeError(f"{repo}: prefix {prefix} resolved to {len(matches)} commits")
     return matches[0]
 
 
@@ -87,17 +85,12 @@ def sha256_inventory(root: Path, kind: str) -> dict[str, str]:
             and any(key in path.name.lower() for key in keys)
             and not path.name.endswith((".safetensors", ".bin", ".pt"))
         ]
-    return {
-        str(path.relative_to(root)): sha256_file(path)
-        for path in sorted(selected)
-    }
+    return {str(path.relative_to(root)): sha256_file(path) for path in sorted(selected)}
 
 
 def sentence_chunks(text: str, tokenizer) -> tuple[list[str], int]:
     sentences = [
-        sentence.strip()
-        for sentence in SENTENCE_SPLIT.split(str(text))
-        if sentence.strip()
+        sentence.strip() for sentence in SENTENCE_SPLIT.split(str(text)) if sentence.strip()
     ]
     chunks: list[str] = []
     current: list[int] = []
@@ -115,7 +108,7 @@ def sentence_chunks(text: str, tokenizer) -> tuple[list[str], int]:
                 emit(current)
                 current = current[-OVERLAP_TOKENS:]
             for start in range(0, len(ids), MAX_CHUNK_TOKENS - OVERLAP_TOKENS):
-                part = ids[start:start + MAX_CHUNK_TOKENS]
+                part = ids[start : start + MAX_CHUNK_TOKENS]
                 if part:
                     emit(part)
             current = []
@@ -134,9 +127,7 @@ def stratified_sample(frame: pd.DataFrame, size: int, seed: int) -> pd.DataFrame
         raise ValueError("Expected LLM-AggreFact coorte column 'dataset'")
     if len(frame) < size:
         raise ValueError(f"DEV has only {len(frame)} rows; need {size}")
-    groups = {
-        str(key): group for key, group in frame.groupby("dataset", sort=True)
-    }
+    groups = {str(key): group for key, group in frame.groupby("dataset", sort=True)}
     exact = {key: size * len(group) / len(frame) for key, group in groups.items()}
     counts = {key: int(math.floor(value)) for key, value in exact.items()}
     remaining = size - sum(counts.values())
@@ -151,11 +142,7 @@ def stratified_sample(frame: pd.DataFrame, size: int, seed: int) -> pd.DataFrame
         count = counts[key]
         if count:
             pieces.append(groups[key].sample(n=count, random_state=seed + index))
-    sample = (
-        pd.concat(pieces)
-        .sample(frac=1, random_state=seed)
-        .reset_index(drop=True)
-    )
+    sample = pd.concat(pieces).sample(frac=1, random_state=seed).reset_index(drop=True)
     if len(sample) != size:
         raise AssertionError("Stratified sampler did not produce exact requested size")
     return sample
@@ -204,8 +191,7 @@ def main() -> None:
         },
         "dev_total_rows": int(len(df)),
         "dev_cohort_total_counts": {
-            str(key): int(value)
-            for key, value in df["dataset"].value_counts().sort_index().items()
+            str(key): int(value) for key, value in df["dataset"].value_counts().sort_index().items()
         },
         "chunk_policy": {
             "max_tokens": MAX_CHUNK_TOKENS,
@@ -234,9 +220,7 @@ def main() -> None:
                 local_files_only=False,
             )
         )
-        tokenizer = AutoTokenizer.from_pretrained(
-            str(model_dir), local_files_only=True
-        )
+        tokenizer = AutoTokenizer.from_pretrained(str(model_dir), local_files_only=True)
         model = AutoModelForSequenceClassification.from_pretrained(
             str(model_dir),
             local_files_only=True,
@@ -255,9 +239,7 @@ def main() -> None:
             chunks, doc_tokens = sentence_chunks(str(row["doc"]), tokenizer)
             claim = str(row["claim"])
             token_doc_counts.append(doc_tokens)
-            token_claim_counts.append(
-                len(tokenizer.encode(claim, add_special_tokens=False))
-            )
+            token_claim_counts.append(len(tokenizer.encode(claim, add_special_tokens=False)))
             blocks_per_example.append(len(chunks))
             block_texts.extend(chunks)
             claims.extend([claim] * len(chunks))
@@ -281,8 +263,8 @@ def main() -> None:
         inference_start = time.perf_counter()
         processed_blocks = 0
         for start in range(0, len(block_texts), BATCH_SIZE):
-            docs = block_texts[start:start + BATCH_SIZE]
-            claims_batch = claims[start:start + BATCH_SIZE]
+            docs = block_texts[start : start + BATCH_SIZE]
+            claims_batch = claims[start : start + BATCH_SIZE]
             batch = tokenizer(
                 docs,
                 claims_batch,
@@ -301,9 +283,7 @@ def main() -> None:
         for cohort, total_count in report["dev_cohort_total_counts"].items():
             sampled_count = report["cohort_sample_counts"].get(cohort, 0)
             if sampled_count:
-                cohort_estimates[cohort] = round(
-                    seconds_per_example * total_count, 2
-                )
+                cohort_estimates[cohort] = round(seconds_per_example * total_count, 2)
 
         report["models"].append(
             {
@@ -317,9 +297,7 @@ def main() -> None:
                 "inference_seconds": round(inference_seconds, 3),
                 "seconds_per_example": round(seconds_per_example, 4),
                 "examples_per_second": (
-                    round(len(sample) / inference_seconds, 5)
-                    if inference_seconds
-                    else None
+                    round(len(sample) / inference_seconds, 5) if inference_seconds else None
                 ),
                 "blocks_per_second": (
                     round(processed_blocks / inference_seconds, 5)
@@ -333,15 +311,11 @@ def main() -> None:
                 "blocks_per_example_p50": percentile(blocks_per_example, 0.5),
                 "blocks_per_example_p95": percentile(blocks_per_example, 0.95),
                 "blocks_per_example_max": max(blocks_per_example),
-                "document_tokens_mean": round(
-                    sum(token_doc_counts) / len(token_doc_counts), 2
-                ),
+                "document_tokens_mean": round(sum(token_doc_counts) / len(token_doc_counts), 2),
                 "document_tokens_p50": percentile(token_doc_counts, 0.5),
                 "document_tokens_p95": percentile(token_doc_counts, 0.95),
                 "document_tokens_max": max(token_doc_counts),
-                "claim_tokens_mean": round(
-                    sum(token_claim_counts) / len(token_claim_counts), 2
-                ),
+                "claim_tokens_mean": round(sum(token_claim_counts) / len(token_claim_counts), 2),
                 "claim_tokens_p95": percentile(token_claim_counts, 0.95),
                 "ram_peak_bytes": int(peak_ram),
                 "estimated_full_dev_seconds_by_cohort": cohort_estimates,
@@ -367,10 +341,7 @@ def main() -> None:
         json.dumps(report, indent=2, ensure_ascii=False) + chr(10),
         encoding="utf-8",
     )
-    print(
-        f"Aggregate pilot report written: {output_path}; "
-        "no row-level content emitted."
-    )
+    print(f"Aggregate pilot report written: {output_path}; no row-level content emitted.")
 
 
 if __name__ == "__main__":
