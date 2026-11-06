@@ -3,7 +3,7 @@ import pytest
 from ayorai_attractor.agents.core import Agent, AgentContext, ResearchAgent
 from ayorai_attractor.evidence.core import EvidenceStore
 from ayorai_attractor.failure_engine.core import FailureEngine
-from ayorai_attractor.models import FailureType
+from ayorai_attractor.models import FailureStage, FailureType
 from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 
@@ -61,6 +61,8 @@ def test_research_agent_continues_after_search_provider_failure() -> None:
     failure = context.failures.failures[0]
     assert failure.type is FailureType.API_ERROR
     assert failure.recoverable is True
+    assert failure.stage is FailureStage.RETRIEVAL
+    assert failure.message.startswith("External search failed")
     assert "External search failed" in failure.message
 
 

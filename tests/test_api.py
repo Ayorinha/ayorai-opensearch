@@ -8,6 +8,9 @@ from ayorai_attractor.api import app as api
 from ayorai_attractor.api.app import RequestBodyLimitMiddleware
 from ayorai_attractor.models import (
     Evidence,
+    Failure,
+    FailureStage,
+    FailureType,
     QualityMode,
     SearchResponse,
 )
@@ -69,6 +72,44 @@ def test_audit_endpoint_returns_deterministic_report(monkeypatch, tmp_path, requ
         "failure_count": 0,
         "findings": [],
     }
+
+
+class RecoveryFailureEngine(FakeEngine):
+    def run(self, request):  # type: ignore[no-untyped-def]
+        response = super().run(request)
+        response.failures.append(
+            Failure(
+                type=FailureType.API_ERROR,
+                message="External search failed: synthetic provider error",
+                recoverable=True,
+                stage=FailureStage.RETRIEVAL,
+            )
+        )
+        return response
+
+
+def test_audit_endpoint_exposes_failure_stage(monkeypatch, tmp_path, request) -> None:  # type: ignore[no-untyped-def]
+    from ayorai_attractor.audit_store import AuditTraceStore
+
+    monkeypatch.setattr(api, "engine", RecoveryFailureEngine())
+    store = AuditTraceStore(str(tmp_path / "audit-stage.sqlite3"))
+    request.addfinalizer(store.close)
+    monkeypatch.setattr(api, "audit_store", store)
+    client = TestClient(api.app)
+
+    response = client.post("/v1/audit", json={"query": "test query"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["failure_count"] == 1
+    assert body["findings"] == [
+        {
+            "code": "FAILURE_API_ERROR",
+            "severity": "warning",
+            "message": "External search failed: synthetic provider error",
+            "stage": "retrieval",
+        }
+    ]
 
 
 def test_audit_endpoint_rejects_short_query() -> None:

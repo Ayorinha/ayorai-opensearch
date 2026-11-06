@@ -1,15 +1,23 @@
-from ayorai_attractor.models import Failure, FailureType
+from ayorai_attractor.models import Failure, FailureStage, FailureType
 
 
 class FailureEngine:
     def __init__(self) -> None:
         self.failures: list[Failure] = []
 
-    def record(self, failure_type: FailureType, message: str, recoverable: bool = True) -> Failure:
+    def record(
+        self,
+        failure_type: FailureType,
+        message: str,
+        recoverable: bool = True,
+        *,
+        stage: FailureStage | None = None,
+    ) -> Failure:
         failure = Failure(
             type=failure_type,
             message=message,
             recoverable=recoverable,
+            stage=stage,
         )
         self.failures.append(failure)
         return failure
