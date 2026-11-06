@@ -142,7 +142,11 @@ def test_report_has_no_per_instance_output() -> None:
     private = {
         "split": "dev", "shard_id": "dev-0000", "model_id": "synthetic-model",
         "records": [
-            {"record_id": stable_record_id(row), "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED", "score": 0.9 if row["label"] else 0.1}
+            {
+                "record_id": stable_record_id(row),
+                "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED",
+                "score": 0.9 if row["label"] else 0.1,
+            }
             for row in rows
         ],
     }
