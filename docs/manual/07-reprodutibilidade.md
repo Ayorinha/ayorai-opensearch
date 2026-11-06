@@ -1,4 +1,4 @@
-Estado: Atual · Referência: main @ 0747cd6 · Atualizado: 2026-10-21
+Estado: Atual · Base documental: main @ 2dc089f · Atualizado: 2026-10-25
 Fontes de verdade: `scripts/reproduce.py`, `src/ayorai_attractor/evaluation/report_manifest.py`, `tests/test_evaluation_report_manifest.py`, `tests/test_golden_digest.py`, `tests/test_golden_git_sha.py`, `evals/ptbr/rgc_eval.py`, `docs/eval/RUNNER-RGC-v1.md`, `docs/eval/STATISTICS.md`, `docs/eval/PREREGISTRATION-RGC-v1.md`, `docs/eval/PROTOCOL-GOLDEN-V1.md` e `docs/DECISIONS-PENDING.md`.
 
 # 07 — Reprodutibilidade e proveniência de avaliação
@@ -43,16 +43,18 @@ O desenho proposto usa seed `20261003` e 10.000 reamostragens de bootstrap. A Em
 
 **Limite de execução:** esta documentação não autoriza rodar o executor RGC. Não execute o ATTRACTOR sobre casos de piloto, desenvolvimento ou avaliação confirmatória; não crie, complete ou rotule esses casos; não produza números de benchmark RGC PT-BR. Os testes do runner devem usar somente dados sintéticos claramente identificados dentro de `tests/`. O protocolo permanece **[PROPOSTO]** até a revisão do piloto humano 02 e uma decisão explícita separada de congelamento.
 
-### Decisões metodológicas pendentes
+### Registro histórico: decisões metodológicas antes das aprovações de 2026-10-21
 
-As seguintes decisões continuam abertas e não podem ser resolvidas implicitamente pelo executor ou por um relatório:
+> **Atualização editorial (2026-10-25):** o título e o bloco abaixo preservam o estado anterior à aprovação e são históricos. DEC-017–DEC-020 foram aprovadas pelo mantenedor em 2026-10-21 e formalizadas nas Emendas 7–10. As opções listadas abaixo não são decisões pendentes; o protocolo continua **[PROPOSTO]**, não congelado, e os portões humanos continuam abertos. Consulte `docs/eval/STATISTICS.md`, `docs/eval/RUNNER-RGC-v1.md` e `docs/STATUS.md` para o estado vigente.
+
+**Texto histórico (estado anterior às aprovações de 2026-10-21):** as decisões abaixo eram descritas como abertas naquele momento. A lista é preservada para rastreabilidade e não representa o estado vigente; o executor e os relatórios não podem alterar decisões aprovadas implicitamente.
 
 - **DEC-017:** registro ausente versus `INVALID_PREDICTION`;
 - **DEC-018:** escopo confirmatório de H1 (~90 casos ocultos versus outro escopo);
 - **DEC-019:** bootstrap por caso versus bootstrap agrupado por artigo;
 - **DEC-020:** operacionalização do limiar de concordância entre anotadores.
 
-Cada item contém opções, prós/contras e recomendação, mas permanece pendente de decisão explícita do mantenedor. Se uma decisão alterar o pré-registro ou protocolo, deve ser incorporada por nota/emenda datada antes de qualquer avaliação confirmatória.
+O bloco histórico abaixo preserva opções, prós/contras e recomendações da fase anterior. DEC-017–DEC-020 foram aprovadas pelo mantenedor em 2026-10-21 e formalizadas pelas Emendas 7–10. Qualquer alteração posterior do pré-registro ou protocolo exige nota/emenda datada antes de eventual avaliação confirmatória.
 
 ## Contratos e parâmetros
 
@@ -72,7 +74,8 @@ Cada item contém opções, prós/contras e recomendação, mas permanece penden
 - Um hash identifica os bytes verificados; não demonstra que a fonte seja verdadeira, que a anotação seja correta ou que o artefato seja imune a adulteração em todos os ambientes.
 - Um commit e uma seed fixos não bastam se dependências, entradas, parâmetros, fonte capturada ou versão da suíte forem diferentes.
 - A reprodução de Golden v0/v0.1 não é avaliação confirmatória do RGC PT-BR.
-- O runner RGC está proposto; as decisões DEC-017 a DEC-020 e o gate humano de piloto 02 permanecem pendentes.
+- **Atualização editorial (2026-10-25):** a frase seguinte é um registro histórico anterior às aprovações DEC-017–DEC-020; essas decisões estão aprovadas, enquanto os gates humanos continuam pendentes.
+- Estado vigente: o runner RGC continua **[PROPOSTO]**; DEC-017–DEC-020 estão aprovadas, enquanto o gate humano do piloto 02 e a decisão explícita de congelamento do protocolo continuam pendentes.
 - Não existe resultado de benchmark RGC PT-BR nesta etapa. Nenhuma métrica pode ser inferida deste capítulo.
 - A ausência de um SHA de CI deve ser explícita no manifesto; não atribua a uma execução local a identidade de um commit não verificado.
 
