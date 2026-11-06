@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import pytest
+from cryptography.exceptions import InvalidTag
 
 from scripts.benchmarks.phase1b.aggregate_dev import aggregate_packages
 from scripts.benchmarks.phase1b.build_manifest import build_manifest
@@ -82,7 +83,7 @@ def test_encryption_roundtrip_and_wrong_aad_fails() -> None:
     envelope = encrypt_bytes(plaintext, key=key, metadata=metadata, nonce=b"n" * 12)
     assert decrypt_bytes(envelope, key=key) == plaintext
     wrong = dict(metadata, shard_id="dev-9999")
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidTag):
         decrypt_bytes(envelope, key=key, aad_metadata=wrong)
 
 
@@ -114,6 +115,10 @@ def test_aggregator_marks_missing_shard_as_incomplete() -> None:
         "split": "dev",
         "shard_id": "dev-0000",
         "model_id": "synthetic-model",
+        "model_revision": "model-rev",
+        "dataset_revision": "synthetic",
+        "dataset_sha256": "b" * 64,
+        "code_sha": "synthetic",
         "records": [
             {
                 "record_id": stable_record_id(row),
@@ -149,7 +154,13 @@ def test_report_has_no_per_instance_output() -> None:
         "code_sha": "synthetic-code-sha",
     }
     private = {
-        "split": "dev", "shard_id": "dev-0000", "model_id": "synthetic-model",
+        "split": "dev",
+        "shard_id": "dev-0000",
+        "model_id": "synthetic-model",
+        "model_revision": "model-rev",
+        "dataset_revision": "synthetic-revision",
+        "dataset_sha256": "a" * 64,
+        "code_sha": "synthetic-code-sha",
         "records": [
             {
                 "record_id": stable_record_id(row),
