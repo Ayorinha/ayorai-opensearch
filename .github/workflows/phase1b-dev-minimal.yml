@@ -28,9 +28,14 @@ jobs:
           cache: pip
       - name: Install pinned benchmark dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-benchmark-pilot.txt cryptography==46.0.3
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          set -euo pipefail
+          python -m pip install "pip==25.2"
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
+          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3
+          python - <<'PY'
+          import torch
+          assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
+          PY
       - name: Validate required secret without printing it
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
@@ -47,15 +52,32 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           python - <<'PY'
-          import json, os
+          import hashlib
+          import json
+          import os
+          import re
           from pathlib import Path
           from huggingface_hub import hf_hub_download
+
           pin = json.loads(Path("configs/benchmarks/llm-aggrefact-dev-pin.json").read_text())
+          if pin["file"] != "data/dev-00000-of-00001.parquet":
+              raise SystemExit("DEV shard integrity check failed")
+          if not isinstance(pin["revision"], str) or not re.fullmatch(r"[a-fA-F0-9]{40}", pin["revision"]):
+              raise SystemExit("DEV shard integrity check failed")
           path = hf_hub_download(
               repo_id=pin["dataset"], filename=pin["file"],
               repo_type="dataset", revision=pin["revision"], token=os.environ.get("HF_TOKEN") or None,
           )
-          Path("/tmp/phase1b-dev.parquet").write_bytes(Path(path).read_bytes())
+          downloaded = Path(path)
+          if downloaded.stat().st_size != pin["size_bytes"]:
+              raise SystemExit("DEV shard integrity check failed")
+          digest = hashlib.sha256()
+          with downloaded.open("rb") as stream:
+              for block in iter(lambda: stream.read(1024 * 1024), b""):
+                  digest.update(block)
+          if digest.hexdigest() != pin["sha256"]:
+              raise SystemExit("DEV shard integrity check failed")
+          Path("/tmp/phase1b-dev.parquet").write_bytes(downloaded.read_bytes())
           PY
       - name: Build exactly one shard of ten DEV examples
         run: |
