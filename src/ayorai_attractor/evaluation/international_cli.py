@@ -10,9 +10,7 @@ from ayorai_attractor.evaluation.international import evaluate
 
 def main() -> None:
     """Parse arguments and run the component evaluation."""
-    parser = argparse.ArgumentParser(
-        description="Evaluate a local LLM-AggreFact file"
-    )
+    parser = argparse.ArgumentParser(description="Evaluate a local LLM-AggreFact file")
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--mapping", type=Path, required=True)
     parser.add_argument("--out-json", type=Path, required=True)
