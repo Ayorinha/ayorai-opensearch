@@ -73,7 +73,7 @@ def test_dockerfile_command_forces_lifespan_on() -> None:
     ]
     assert commands, "Dockerfile must start the API with uvicorn"
     assert all(_cmd_has_lifespan_on(line) for line in commands)
-    assert all(re.search(r"\\bexec\\s+uvicorn\\b", line) for line in commands)
+    assert all(re.search(r"\bexec\s+uvicorn\b", line) for line in commands)
     assert all("--proxy-headers" in line for line in commands)
     assert all("--forwarded-allow-ips" in line for line in commands)
     assert all("FORWARDED_ALLOW_IPS" in line for line in commands)
