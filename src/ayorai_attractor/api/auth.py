@@ -77,7 +77,7 @@ def _api_key_digest(presented_key: str, pepper: bytes) -> str:
 
 
 def validate_auth_configuration() -> None:
-    """Validate auth environment settings during application startup."""
+    """Validate auth and rate-limit environment settings during application startup."""
     _load_configuration()
     _positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS)
     _positive_int_env("ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS)
