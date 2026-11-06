@@ -15,7 +15,7 @@ from ayorai_attractor.providers.base import Provider
 from ayorai_attractor.providers.factory import build_default_provider, build_search_provider
 from ayorai_attractor.providers.registry import ProviderRegistry
 
-from .models import FailureType, SearchRequest, SearchResponse
+from .models import FailureStage, FailureType, SearchRequest, SearchResponse
 from .router import AdaptiveRouter
 from .tenant import TenantContext
 
@@ -58,6 +58,7 @@ class Attractor:
                 failure_type=FailureType.API_ERROR,
                 message=str(exc),
                 recoverable=False,
+                stage=FailureStage.RETRIEVAL,
             )
             trace.event("request.failed", failure_type=FailureType.API_ERROR.value)
             return SearchResponse(
