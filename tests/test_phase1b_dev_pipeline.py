@@ -3,14 +3,21 @@
 from __future__ import annotations
 
 import json
+import sys
+from pathlib import Path
 
 import pytest
 
-from scripts.benchmarks.phase1b.aggregate_dev import aggregate_packages
-from scripts.benchmarks.phase1b.build_manifest import build_manifest
-from scripts.benchmarks.phase1b.common import stable_record_id
-from scripts.benchmarks.phase1b.encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
-from scripts.benchmarks.phase1b.run_shard import select_shard
+sys.path.insert(
+    0,
+    str(Path(__file__).resolve().parents[1] / "scripts" / "benchmarks" / "phase1b"),
+)
+
+from aggregate_dev import aggregate_packages
+from build_manifest import build_manifest
+from common import stable_record_id
+from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
+from run_shard import select_shard
 
 
 def synthetic_rows(count: int = 10) -> list[dict]:
@@ -45,9 +52,7 @@ def test_manifest_is_deterministic_and_contains_no_instance_text() -> None:
     assert "SYNTHETIC document" not in serialized
     assert "SYNTHETIC claim" not in serialized
     assert all(
-        len(record_id) == 64
-        for shard in first["shards"]
-        for record_id in shard["record_ids"]
+        len(record_id) == 64 for shard in first["shards"] for record_id in shard["record_ids"]
     )
 
 
@@ -97,17 +102,25 @@ def test_missing_key_fails_before_payload_read(monkeypatch: pytest.MonkeyPatch) 
 def test_aggregator_marks_missing_shard_as_incomplete() -> None:
     rows = synthetic_rows(20)
     manifest = build_manifest(
-        rows, dataset_sha256="b" * 64, dataset_revision="synthetic",
-        code_sha="synthetic", shard_size=10,
+        rows,
+        dataset_sha256="b" * 64,
+        dataset_revision="synthetic",
+        code_sha="synthetic",
+        shard_size=10,
     )
     key = bytes(range(32))
     metadata = {
-        "run_id": "run-1", "split": "dev", "model_revision": "model-rev",
-        "shard_id": "dev-0000", "dataset_revision": "synthetic",
+        "run_id": "run-1",
+        "split": "dev",
+        "model_revision": "model-rev",
+        "shard_id": "dev-0000",
+        "dataset_revision": "synthetic",
         "code_sha": "synthetic",
     }
     private = {
-        "split": "dev", "shard_id": "dev-0000", "model_id": "synthetic-model",
+        "split": "dev",
+        "shard_id": "dev-0000",
+        "model_id": "synthetic-model",
         "records": [
             {
                 "record_id": stable_record_id(row),
@@ -135,8 +148,11 @@ def test_report_has_no_per_instance_output() -> None:
     manifest = manifest_for(rows)
     key = bytes(range(32))
     metadata = {
-        "run_id": "run-2", "split": "dev", "model_revision": "model-rev",
-        "shard_id": "dev-0000", "dataset_revision": "synthetic-revision",
+        "run_id": "run-2",
+        "split": "dev",
+        "model_revision": "model-rev",
+        "shard_id": "dev-0000",
+        "dataset_revision": "synthetic-revision",
         "code_sha": "synthetic-code-sha",
     }
     private = {
