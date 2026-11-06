@@ -47,6 +47,12 @@ jobs:
             --output /tmp/test-manifest.json
           python scripts/benchmarks/phase1b/emit_matrix.py \\
             --manifest /tmp/test-manifest.json --github-output "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-test-manifest
+          path: /tmp/test-manifest.json
+          if-no-files-found: error
+          retention-days: 1
 
   evaluate-test-shards:
     needs: validate-frozen-inputs
@@ -64,6 +70,10 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v7.0.1
+        with:
+          name: phase1b-test-manifest
+          path: /tmp
       - name: Install exact benchmark dependencies
         run: python -m pip install -r requirements-benchmark-phase1b.txt
       - name: Verify pins and run frozen-threshold FP32 TEST shard
@@ -93,6 +103,7 @@ jobs:
           retention-days: 1
 
   aggregate-test:
+    if: ${{ always() && needs.validate-frozen-inputs.result == 'success' }}
     needs: [validate-frozen-inputs, evaluate-test-shards]
     runs-on: ubuntu-24.04
     timeout-minutes: 60
