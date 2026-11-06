@@ -88,6 +88,25 @@ _HTTP_404_RESPONSE: dict[str, Any] = {
     },
 }
 
+_HTTP_429_RESPONSE: dict[str, Any] = {
+    "description": "The request rate limit was exceeded.",
+    "headers": {
+        "Retry-After": {
+            "description": "Seconds to wait before retrying the request.",
+            "schema": {"type": "integer", "minimum": 1},
+        }
+    },
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {"detail": {"type": "string"}},
+                "required": ["detail"],
+            }
+        }
+    },
+}
+
 
 _DEFAULT_MAX_BODY_BYTES = 2 * 1024 * 1024
 
@@ -174,7 +193,7 @@ def health() -> dict[str, str]:
 @app.post(
     "/v1/opensearch",
     response_model=SearchResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE},
+    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
 )
 def opensearch(request: SearchRequest) -> SearchResponse:
     return engine.run(request)
@@ -183,7 +202,7 @@ def opensearch(request: SearchRequest) -> SearchResponse:
 @app.post(
     "/v1/audit",
     response_model=AuditResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE},
+    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
 )
 def audit(request: SearchRequest) -> AuditResponse:
     """Run the engine and expose a deterministic audit of its evidence."""
@@ -248,6 +267,7 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
         },
         400: _HTTP_400_RESPONSE,
         422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
     },
 )
 def verify(payload: Annotated[Any, Body()]) -> Any:
@@ -389,7 +409,7 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
 @app.get(
     "/v1/audit/{trace_id}",
     response_model=AuditTraceResponse,
-    responses={404: _HTTP_404_RESPONSE, 422: _HTTP_422_RESPONSE},
+    responses={404: _HTTP_404_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
 )
 def audit_trace(trace_id: str) -> AuditTraceResponse:
     """Return persisted audit metadata without exposing raw evidence or prompts."""
