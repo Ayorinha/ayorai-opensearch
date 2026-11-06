@@ -414,7 +414,8 @@ def main() -> None:
                     "error_type": type(exc).__name__,
                     "reason": (
                         "Model processing failed; exception details omitted to prevent "
-                        "dataset-content leakage. See private workflow logs."
+                        "dataset-content leakage. Only failure_stage and error_type are recorded; "
+                        "the repository and its workflow logs are public."
                     ),
                 }
             )
