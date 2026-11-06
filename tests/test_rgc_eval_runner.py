@@ -48,6 +48,7 @@ def _case(case_id: str, claim: str, excerpt: str) -> dict[str, Any]:
         "case_id": case_id,
         "claim": claim,
         "bootstrap_cluster_id": f"synthetic:{case_id}",
+        "cited_article_ids": [f"synthetic:{case_id}"],
         "evidence": [
             {
                 "document_id": "sint-1",
@@ -266,11 +267,114 @@ def test_hidden_partition_rejects_noncanonical_multi_article_bundle() -> None:
         )
 
 
+def test_hidden_partition_rejects_missing_cited_article_ids() -> None:
+    case = _case("missing-citations", "O cliente fictício pode cancelar.", "Art. 2º")
+    case.pop("cited_article_ids")
+    with pytest.raises(ValueError, match="cited_article_ids is required"):
+        RUNNER["evaluate"](
+            [case],
+            {"missing-citations": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_hidden_partition_rejects_cluster_not_in_cited_article_ids() -> None:
+    case = _case("cluster-not-cited", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "art:principal"
+    case["cited_article_ids"] = ["art:other"]
+    with pytest.raises(ValueError, match="must be present in cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"cluster-not-cited": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_hidden_partition_rejects_bundle_member_not_cited() -> None:
+    case = _case("bundle-not-cited", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "bundle:art-1+art-2"
+    case["cited_article_ids"] = ["art-1", "art-3"]
+    with pytest.raises(ValueError, match="absent from cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"bundle-not-cited": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_hidden_partition_allows_bundle_subset_of_complete_citation_list() -> None:
+    case = _case("bundle-citation-subset", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "bundle:art-1+art-2"
+    case["cited_article_ids"] = ["art-1", "art-2", "art-3"]
+    result = RUNNER["evaluate"](
+        [case],
+        {"bundle-citation-subset": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+        partition="hidden",
+    )
+    assert result["metrics"]["bootstrap_provenance"]["cluster_count"] == 1
+
+
+@pytest.mark.parametrize(
+    "cited_article_ids",
+    [
+        "art-1",
+        [],
+        ["art-1", "art-1"],
+        ["art-1", ""],
+        ["art-1", 2],
+    ],
+)
+def test_hidden_partition_rejects_malformed_cited_article_ids(
+    cited_article_ids: Any,
+) -> None:
+    case = _case("malformed-citations", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "art-1"
+    case["cited_article_ids"] = cited_article_ids
+    with pytest.raises(ValueError, match="cited_article_ids must be"):
+        RUNNER["evaluate"](
+            [case],
+            {"malformed-citations": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
 def test_hidden_partition_reports_cluster_primary_and_case_sensitivity_ci() -> None:
     first = _case("cluster-case-1", "A Operadora Fictícia deverá responder.", "Art. 1º")
     second = _case("cluster-case-2", "O cliente fictício pode cancelar.", "Art. 2º")
     first["bootstrap_cluster_id"] = "art:regra-1"
     second["bootstrap_cluster_id"] = "art:regra-1"
+    first["cited_article_ids"] = ["art:regra-1"]
+    second["cited_article_ids"] = ["art:regra-1"]
     result = RUNNER["evaluate"](
         [first, second],
         {"cluster-case-1": "SUPPORTED", "cluster-case-2": "SUPPORTED"},
