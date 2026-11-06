@@ -118,9 +118,9 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          python scripts/benchmarks/phase1b/build_manifest.py \\
-            --split dev --sample-size 200 --max-shards 1 \\
-            --shard-size 200 --order-by-id --seed 20261106 \\
+          python scripts/benchmarks/phase1b/build_manifest.py \
+            --split dev --sample-size 200 --max-shards 1 \
+            --shard-size 200 --order-by-id --seed 20261106 \
             --output /tmp/ordering-ab-manifest.json
       - name: Run one-model ordering A/B and verify equivalence
         env:
@@ -128,18 +128,18 @@ jobs:
           MODEL_ID: mdeberta
           SHARD_ID: ordering-ab-000
         run: |
-          python scripts/benchmarks/phase1b/run_ordering_ab.py \\
-            --split dev --manifest /tmp/ordering-ab-manifest.json \\
-            --shard-id "$SHARD_ID" --model-id "$MODEL_ID" \\
-            --dtype float32 --no-quantization --no-autocast \\
-            --output /tmp/private-ordering-ab.bin \\
+          python scripts/benchmarks/phase1b/run_ordering_ab.py \
+            --split dev --manifest /tmp/ordering-ab-manifest.json \
+            --shard-id "$SHARD_ID" --model-id "$MODEL_ID" \
+            --dtype float32 --no-quantization --no-autocast \
+            --output /tmp/private-ordering-ab.bin \
             --aggregate-output /tmp/ordering-ab-aggregate.json
       - name: Encrypt private A/B output before upload
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
         run: |
-          python scripts/benchmarks/phase1b/encrypt_artifact.py \\
-            --input /tmp/private-ordering-ab.bin \\
+          python scripts/benchmarks/phase1b/encrypt_artifact.py \
+            --input /tmp/private-ordering-ab.bin \
             --output /tmp/ordering-ab.aesgcm --aad-from-github-context
           rm -f /tmp/private-ordering-ab.bin
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
