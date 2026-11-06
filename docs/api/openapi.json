@@ -14,6 +14,16 @@
           "severity": {
             "title": "Severity",
             "type": "string"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FailureStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -414,6 +424,16 @@
             "title": "Recoverable",
             "type": "boolean"
           },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FailureStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "$ref": "#/components/schemas/FailureType"
           }
@@ -424,6 +444,16 @@
         ],
         "title": "Failure",
         "type": "object"
+      },
+      "FailureStage": {
+        "enum": [
+          "retrieval",
+          "extraction",
+          "nli",
+          "judge"
+        ],
+        "title": "FailureStage",
+        "type": "string"
       },
       "FailureType": {
         "enum": [
