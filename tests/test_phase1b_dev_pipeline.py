@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-
 import pytest
 
 from scripts.benchmarks.phase1b.build_manifest import build_manifest
-from scripts.benchmarks.phase1b.emit_matrix import emit_matrix
 from scripts.benchmarks.phase1b.run_shard import select_shard
 from scripts.benchmarks.phase1b.encrypt_artifact import decrypt_bytes, encrypt_bytes, decode_key
 from scripts.benchmarks.phase1b.aggregate_dev import aggregate_packages
