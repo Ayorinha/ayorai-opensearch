@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 
-import pytest
 from cryptography.exceptions import InvalidTag
+import pytest
 
 from scripts.benchmarks.phase1b.aggregate_dev import aggregate_packages
 from scripts.benchmarks.phase1b.build_manifest import build_manifest
