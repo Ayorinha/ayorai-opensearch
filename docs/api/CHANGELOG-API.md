@@ -2,6 +2,13 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## 2026-11-04 — Failure stage diagnostics (additive)
+
+- Added the optional, nullable `stage` field to `Failure` (in `SearchResponse.failures`) and to `AuditFindingResponse` (in `POST /v1/audit` findings). Allowed values: `retrieval`, `extraction`, `nli`, `judge` (schema `FailureStage`).
+- `stage` is `null` when the failing step is not identified. `message` is unchanged: the stage is never embedded in the message text.
+- Additive response change only: no request schema, status code, Judge rule, Golden artifact or threshold changes. Clients that ignore unknown fields are unaffected.
+- Scope: retrieval failures are tagged in the orchestrator and research agent; `ClaimVerificationResult.failure_stage` (library, not HTTP) tags extraction, NLI and Judge processing errors that already resolve to `ABSTAIN_PROCESSING_ERROR`.
+
 ## 2026-10-23 — Preparação da versão global 0.6.0: autenticação obrigatória por padrão (mudança incompatível)
 
 - **Comportamento padrão:** a aplicação inicia com `ATTRACTOR_AUTH_MODE=api_key`; se o material de chave exigido estiver ausente ou malformado, a inicialização falha fechada. Implantações que antes dependiam do modo sem autenticação devem configurar uma chave antes de atualizar.
