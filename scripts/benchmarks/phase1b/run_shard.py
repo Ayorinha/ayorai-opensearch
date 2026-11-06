@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import resource
+import time
 from pathlib import Path
 from typing import Any
 
@@ -84,7 +86,7 @@ def run_inference(
     model_id: str,
     sort_by_length: bool = True,
     batch_size: int = 4,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if model_id not in MODELS:
         raise ValueError("unknown model id")
     import torch
@@ -102,6 +104,7 @@ def run_inference(
         raise RuntimeError("model weights are not FP32")
     support_id = _support_label_id(model.config)
 
+    started = time.perf_counter()
     expanded: list[tuple[str, str, str, str]] = []
     for rid, row in selected:
         claim = str(row["claim"])
@@ -118,6 +121,10 @@ def run_inference(
     else:
         expanded.sort(key=lambda item: (item[0], item[3]))
 
+    token_total = sum(len(tokenizer.encode(item[2], add_special_tokens=False)) for item in expanded)
+    tokenization_seconds = time.perf_counter() - started
+    truncation_count = 0
+    inference_started = time.perf_counter()
     scores: dict[str, float] = {}
     with torch.inference_mode():
         for offset in range(0, len(expanded), batch_size):
@@ -131,13 +138,20 @@ def run_inference(
                 truncation="only_first",
                 max_length=512,
                 return_tensors="pt",
+                return_overflowing_tokens=False,
+            )
+            truncation_count += sum(
+                1
+                for doc, claim in zip(docs, claims, strict=True)
+                if len(tokenizer(doc, claim, add_special_tokens=True)["input_ids"]) > 512
             )
             logits = model(**inputs).logits
             probabilities = torch.softmax(logits.float(), dim=-1)[:, support_id].tolist()
             for item, score in zip(batch_rows, probabilities, strict=True):
                 scores[item[0]] = max(scores.get(item[0], 0.0), float(score))
 
-    return [
+    inference_seconds = time.perf_counter() - inference_started
+    records = [
         {
             "record_id": rid,
             "gold": "SUPPORTED" if str(row["label"]) == "1" else "NOT_SUPPORTED",
@@ -145,6 +159,19 @@ def run_inference(
         }
         for rid, row in sorted(selected, key=lambda pair: pair[0])
     ]
+    operational = {
+        "document_count": len(selected),
+        "block_count": len(expanded),
+        "token_count_by_unit": {f"{model_id}_tokenizer_tokens": token_total},
+        "tokenization_seconds": tokenization_seconds,
+        "inference_seconds": inference_seconds,
+        "total_seconds": time.perf_counter() - started,
+        # ru_maxrss is reported in KiB on Linux runners.
+        "peak_ram_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
+        "truncation_count": truncation_count,
+        "failure_count": 0,
+    }
+    return records, operational
 
 
 def main() -> None:
@@ -165,7 +192,7 @@ def main() -> None:
     ):
         raise ValueError("DEV dataset does not match the immutable pin")
     selected = select_shard(manifest, load_records(args.dataset_path), args.shard_id)
-    result = run_inference(
+    result, operational = run_inference(
         selected,
         model_id=args.model_id,
         sort_by_length=args.order_by_length,
@@ -180,6 +207,7 @@ def main() -> None:
         "dataset_revision": manifest["dataset_revision"],
         "dataset_sha256": manifest["dataset_sha256"],
         "code_sha": manifest["code_sha"],
+        **operational,
         "records": result,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

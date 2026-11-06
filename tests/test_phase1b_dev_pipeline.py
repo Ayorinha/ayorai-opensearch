@@ -121,6 +121,9 @@ def test_aggregator_marks_missing_shard_as_incomplete() -> None:
         "dataset_revision": "synthetic",
         "dataset_sha256": "b" * 64,
         "code_sha": "synthetic",
+        "document_count": len(first_shard_ids),
+        "block_count": len(first_shard_ids),
+        "token_count_by_unit": {"synthetic_tokens": 0},
         "records": [
             {
                 "record_id": record_id,
@@ -163,6 +166,9 @@ def test_report_has_no_per_instance_output() -> None:
         "dataset_revision": "synthetic-revision",
         "dataset_sha256": "a" * 64,
         "code_sha": "synthetic-code-sha",
+        "document_count": len(rows),
+        "block_count": len(rows),
+        "token_count_by_unit": {"synthetic_tokens": 0},
         "records": [
             {
                 "record_id": stable_record_id(row),

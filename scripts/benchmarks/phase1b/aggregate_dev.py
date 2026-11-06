@@ -139,7 +139,6 @@ def aggregate_packages(
                     if not isinstance(value, (int, float)) or value < 0:
                         raise ValueError(f"{field} must be nonnegative")
                     aggregate[field] += value
-            aggregate["document_count"] += package["document_count"]
         aggregate["token_count_by_unit"] = dict(sorted(aggregate["token_count_by_unit"].items()))
         summaries[model] = aggregate
 
