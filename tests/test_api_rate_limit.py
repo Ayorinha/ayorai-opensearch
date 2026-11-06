@@ -162,21 +162,14 @@ def test_ip_identity_churn_cannot_exhaust_authenticated_key_limiter(
     def private() -> dict[str, str]:
         return {"access": "granted"}
 
-    with TestClient(app) as client:
-        for index in range(1, 8):
-            response = client.get(
-                "/private",
-                headers={"X-API-Key": "invalid"},
-                # Distinct client IPs simulate identity churn, not TCP ports.
-                extensions={"client": (f"192.0.2.{index}", 1000)},
-            )
+    for index in range(1, 8):
+        # Separate TestClient instances provide distinct ASGI client IPs.
+        with TestClient(app, client=(f"192.0.2.{index}", 1000)) as client:
+            response = client.get("/private", headers={"X-API-Key": "invalid"})
             assert response.status_code == 401
 
-        # A new IP still gets through, and its valid key has its own table.
-        response = client.get(
-            "/private",
-            headers={"X-API-Key": key},
-            extensions={"client": ("198.51.100.10", 1000)},
-        )
+    # A new IP still gets through, and its valid key has its own table.
+    with TestClient(app, client=("198.51.100.10", 1000)) as client:
+        response = client.get("/private", headers={"X-API-Key": key})
 
     assert response.status_code == 200
