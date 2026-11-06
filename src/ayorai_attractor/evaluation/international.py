@@ -6,14 +6,17 @@ import csv
 import hashlib
 import json
 import random
-import subprocess
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from ayorai_attractor.evaluation.stats import bootstrap_accuracy
-from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim, RetrievedDocument
+from ayorai_attractor.verification.extraction import (
+    ComponentProvenance,
+    ExtractedClaim,
+    RetrievedDocument,
+)
 from ayorai_attractor.verification.models import Claim, Stance
 from ayorai_attractor.verification.stance import RuleStanceDetector
 
@@ -28,18 +31,8 @@ class DatasetError(ValueError):
     """Invalid dataset schema or mapping."""
 
 
-def code_sha() -> str:
-    """Return Git SHA without importing private helpers."""
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True, timeout=5
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise RuntimeError("cannot determine code SHA") from exc
-    return result.stdout.strip()
-
-
 def sha256_file(path: Path) -> str:
+    """Compute SHA-256 incrementally for a local file."""
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
@@ -55,7 +48,9 @@ def read_records(path: Path) -> list[dict[str, Any]]:
     required = {"doc", "claim", "label", "dataset"}
     if suffix in {".jsonl", ".ndjson"}:
         records = []
-        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), 1
+        ):
             if not line.strip():
                 continue
             try:
@@ -85,21 +80,25 @@ def read_records(path: Path) -> list[dict[str, Any]]:
 
 
 def load_mapping(path: Path) -> dict[str, Any]:
+    """Load and validate the versioned native binary label mapping."""
     try:
         mapping = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise DatasetError("invalid mapping JSON") from exc
-    if mapping.get("schema_version") != "1.0.0":
+    if mapping.get("schema_version") != SCHEMA_VERSION:
         raise DatasetError("unsupported mapping schema version")
     if mapping.get("mapping_id") != "llm-aggrefact-label-map-v1":
         raise DatasetError("unsupported mapping ID")
-    if mapping.get("native_binary_labels") != {"1": "SUPPORTED", "0": "NOT_SUPPORTED"}:
+    expected = {"1": "SUPPORTED", "0": "NOT_SUPPORTED"}
+    if mapping.get("native_binary_labels") != expected:
         raise DatasetError("label mapping differs from documented mapping")
     return mapping
 
 
-def adapt_records(records: list[dict[str, Any]], mapping: dict[str, Any]) -> list[dict[str, str]]:
-    """Validate file-wide schema and adapt records; malformed schema aborts."""
+def adapt_records(
+    records: list[dict[str, Any]], mapping: dict[str, Any]
+) -> list[dict[str, str]]:
+    """Validate file schema and adapt the native binary labels."""
     required = {"doc", "claim", "label", "dataset"}
     if not records:
         raise DatasetError("dataset is empty")
@@ -120,8 +119,13 @@ def adapt_records(records: list[dict[str, Any]], mapping: dict[str, Any]) -> lis
         if label not in {"SUPPORTED", "NOT_SUPPORTED"}:
             raise DatasetError(f"record {index}: unknown label")
         adapted.append(
-            {"doc": doc, "claim": claim, "label": label, "dataset": cohort.strip(),
-             "record_id": str(index)}
+            {
+                "doc": doc,
+                "claim": claim,
+                "label": label,
+                "dataset": cohort.strip(),
+                "record_id": str(index),
+            }
         )
     return adapted
 
@@ -142,7 +146,7 @@ def predict(row: dict[str, str], detector: RuleStanceDetector) -> tuple[str, str
         content=row["doc"],
         source_id="local-dataset",
         source_location="local-record:" + row["record_id"],
-        retrieved_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        retrieved_at=datetime(2026, 1, 1, tzinfo=UTC),
         origin_id="local-dataset",
         end_offset=len(row["doc"]),
     )
@@ -172,7 +176,12 @@ def metrics(gold: list[str], predicted: list[str]) -> dict[str, Any]:
         precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / support if support else 0.0
         f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
-        per_class[label] = {"support": support, "precision": precision, "recall": recall, "f1": f1}
+        per_class[label] = {
+            "support": support,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+        }
         if support:
             recalls.append(recall)
     accuracy = sum(a == b for a, b in zip(gold, predicted, strict=True)) / len(gold)
@@ -191,7 +200,7 @@ def metrics(gold: list[str], predicted: list[str]) -> dict[str, Any]:
 def bootstrap_balanced_accuracy(
     gold: list[str], predicted: list[str], *, iterations: int, seed: int
 ) -> tuple[float, float]:
-    """Percentile bootstrap over claim-document rows sampled with replacement."""
+    """Bootstrap claim-document rows; source/document dependence may narrow CI."""
     rng = random.Random(seed)  # nosec B311 - seeded statistical resampling
     values = []
     for _ in range(iterations):
@@ -200,29 +209,50 @@ def bootstrap_balanced_accuracy(
         sample_pred = [predicted[index] for index in indices]
         values.append(metrics(sample_gold, sample_pred)["balanced_accuracy"])
     values.sort()
-    return values[int(0.025 * (iterations - 1))], values[int(0.975 * (iterations - 1))]
+    lower = values[int(0.025 * (iterations - 1))]
+    upper = values[int(0.975 * (iterations - 1))]
+    return lower, upper
 
 
-def evaluate(dataset: Path, mapping_path: Path, out_json: Path, out_md: Path) -> dict[str, Any]:
+def evaluate(
+    dataset: Path,
+    mapping_path: Path,
+    out_json: Path,
+    out_md: Path,
+    *,
+    code_sha: str,
+) -> dict[str, Any]:
+    """Evaluate a local file and write aggregate-only reports."""
+    if not code_sha.strip():
+        raise ValueError("--code-sha must be a nonempty value")
     mapping = load_mapping(mapping_path)
     rows = adapt_records(read_records(dataset), mapping)
     detector = RuleStanceDetector()
     evaluated = []
     failures: Counter[str] = Counter()
+    failure_indices: dict[str, list[int]] = {}
     for row in rows:
         try:
             prediction, stance = predict(row, detector)
             evaluated.append(
-                {"record_index": int(row["record_id"]), "dataset": row["dataset"],
-                 "gold": row["label"], "prediction": prediction, "stance": stance}
+                {
+                    "record_index": int(row["record_id"]),
+                    "dataset": row["dataset"],
+                    "gold": row["label"],
+                    "prediction": prediction,
+                    "stance": stance,
+                }
             )
         except Exception as exc:
-            failures[type(exc).__name__] += 1
+            error_type = type(exc).__name__
+            failures[error_type] += 1
+            failure_indices.setdefault(error_type, []).append(int(row["record_id"]))
     n_total = len(rows)
     n_failures = sum(failures.values())
     if n_failures / n_total > MAX_FAILURE_RATE:
         raise RuntimeError(
-            f"record failure rate {n_failures}/{n_total} exceeds 1%; types={dict(failures)}"
+            f"record failure rate {n_failures}/{n_total} exceeds 1%; "
+            f"types={dict(failures)}"
         )
     if not evaluated:
         raise RuntimeError("no records evaluated successfully")
@@ -232,12 +262,15 @@ def evaluate(dataset: Path, mapping_path: Path, out_json: Path, out_md: Path) ->
     balanced_ci = bootstrap_balanced_accuracy(
         gold, predicted, iterations=ITERATIONS, seed=SEED
     )
-    accuracy_ci = bootstrap_accuracy(gold, predicted, iterations=ITERATIONS, seed=SEED + 1)
+    accuracy_ci = bootstrap_accuracy(
+        gold, predicted, iterations=ITERATIONS, seed=SEED + 1
+    )
     cohorts = {}
     for cohort in sorted({item["dataset"] for item in evaluated}):
         group = [item for item in evaluated if item["dataset"] == cohort]
         cohorts[cohort] = metrics(
-            [item["gold"] for item in group], [item["prediction"] for item in group]
+            [item["gold"] for item in group],
+            [item["prediction"] for item in group],
         )
     rag_names = {name.casefold() for name in RAGTRUTH_COHORTS}
     without_ragtruth = [
@@ -259,15 +292,19 @@ def evaluate(dataset: Path, mapping_path: Path, out_json: Path, out_md: Path) ->
         "primary_metric": "balanced_accuracy",
         "metrics": overall,
         "bootstrap_ci95_balanced_accuracy": {
-            "lower": balanced_ci[0], "upper": balanced_ci[1],
-            "iterations": ITERATIONS, "seed": SEED,
+            "lower": balanced_ci[0],
+            "upper": balanced_ci[1],
+            "iterations": ITERATIONS,
+            "seed": SEED,
             "unit": "claim-document row sampled with replacement",
             "clustered": False,
             "limitation": "row-level CI may be optimistic due to source/document dependence",
         },
         "bootstrap_ci95_accuracy": {
-            "lower": accuracy_ci[0], "upper": accuracy_ci[1],
-            "iterations": ITERATIONS, "seed": SEED + 1,
+            "lower": accuracy_ci[0],
+            "upper": accuracy_ci[1],
+            "iterations": ITERATIONS,
+            "seed": SEED + 1,
             "unit": "claim-document row sampled with replacement",
             "clustered": False,
             "limitation": "row-level CI may be optimistic due to source/document dependence",
@@ -276,45 +313,60 @@ def evaluate(dataset: Path, mapping_path: Path, out_json: Path, out_md: Path) ->
         "llm_aggrefact_total_including_ragtruth": overall,
         "llm_aggrefact_without_ragtruth_cohort": no_rag_metrics,
         "ragtruth_exclusion": {
-            "field": "dataset", "excluded_cohort_names": sorted(RAGTRUTH_COHORTS),
-            "n_total_before_filter": len(evaluated), "n_after_filter": len(without_ragtruth),
+            "field": "dataset",
+            "excluded_cohort_names": sorted(RAGTRUTH_COHORTS),
+            "n_total_before_filter": len(evaluated),
+            "n_after_filter": len(without_ragtruth),
         },
         "response_policy_abstentions": {
-            "value": None, "status": "not_applicable_to_component_path",
+            "value": None,
+            "status": "not_applicable_to_component_path",
             "explanation": "ResponsePolicy is not run; null means not measured, not zero.",
         },
         "unverified_verdict_count": {
-            "value": None, "status": "not_applicable_to_component_path",
+            "value": None,
+            "status": "not_applicable_to_component_path",
             "explanation": "Judge 2.0 is not run; UNVERIFIED count is not measured.",
         },
         "record_failures": {
-            "n_total": n_total, "n_evaluated": len(evaluated), "n_failures": n_failures,
-            "failure_types": dict(sorted(failures.items())), "failure_rate": n_failures / n_total,
+            "n_total": n_total,
+            "n_evaluated": len(evaluated),
+            "n_failures": n_failures,
+            "failure_types": dict(sorted(failures.items())),
+            "failure_indices_by_type": failure_indices,
+            "failure_rate": n_failures / n_total,
             "policy": "record-level failures excluded; abort above 1%; no record text in report",
         },
         "source_file_sha256": sha256_file(dataset),
         "mapping_file_sha256": sha256_file(mapping_path),
-        "code_sha": code_sha(),
+        "code_sha": code_sha,
+        "code_sha_source": "cli_argument",
         "engine": {
-            "class": "RuleStanceDetector", "version": RuleStanceDetector.version,
+            "class": "RuleStanceDetector",
+            "version": RuleStanceDetector.version,
             "weights_or_thresholds_adjusted": False,
         },
         "instance_level_predictions_in_public_artifact": False,
     }
     out_json.parent.mkdir(parents=True, exist_ok=True)
     out_md.parent.mkdir(parents=True, exist_ok=True)
-    out_json.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    out_json.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     out_md.write_text(
         "# Detector de stance do ATTRACTOR (componente) — não é o pipeline completo\n\n"
         f"n_total={n_total}; n_avaliado={len(evaluated)}; n_falhas={n_failures}\n\n"
         f"Balanced accuracy (principal): {overall['balanced_accuracy']:.6f}\n\n"
-        f"IC95% bootstrap balanced accuracy: [{balanced_ci[0]:.6f}, {balanced_ci[1]:.6f}]\n\n"
+        f"IC95% bootstrap balanced accuracy: [{balanced_ci[0]:.6f}, "
+        f"{balanced_ci[1]:.6f}]\n\n"
         f"Accuracy: {overall['accuracy']:.6f}\n\n"
-        f"IC95% bootstrap accuracy: [{accuracy_ci[0]:.6f}, {accuracy_ci[1]:.6f}]\n\n"
+        f"IC95% bootstrap accuracy: [{accuracy_ci[0]:.6f}, "
+        f"{accuracy_ci[1]:.6f}]\n\n"
         f"Dataset SHA-256: {report['source_file_sha256']}\n\n"
         f"Mapping SHA-256: {report['mapping_file_sha256']}\n\n"
-        f"Code SHA: {report['code_sha']}\n\n"
-        "Mede somente RuleStanceDetector, sem Judge 2.0; não representa acurácia do ATTRACTOR. "
+        f"Code SHA: {code_sha} (source: cli_argument)\n\n"
+        "Mede somente RuleStanceDetector, sem Judge 2.0; "
+        "não representa acurácia do ATTRACTOR. "
         "Nenhum texto, claim ou previsão por instância incluído.\n",
         encoding="utf-8",
     )
