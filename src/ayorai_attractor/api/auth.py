@@ -171,7 +171,11 @@ class APIKeyAuthMiddleware:
 
     @staticmethod
     async def _reject(
-        scope: Scope, receive: Receive, send: Send, status_code: int, detail: str,
+        scope: Scope,
+        receive: Receive,
+        send: Send,
+        status_code: int,
+        detail: str,
         retry_after: int | None = None,
     ) -> None:
         headers = {"Retry-After": str(retry_after)} if retry_after is not None else None
@@ -189,9 +193,7 @@ class APIKeyAuthMiddleware:
 
         allowed, retry_after = self.rate_limiter.allow(self._client_identity(scope))
         if not allowed:
-            await self._reject(
-                scope, receive, send, 429, "Rate limit exceeded", retry_after
-            )
+            await self._reject(scope, receive, send, 429, "Rate limit exceeded", retry_after)
             return
 
         if self.mode == "off":
