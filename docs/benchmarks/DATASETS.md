@@ -62,6 +62,32 @@ A ficha oficial informa que os exemplos foram reunidos a partir de **FinanceBenc
 
 HaluBench possui apenas o split `test` na ficha consultada. Não há split de desenvolvimento documentado ali. Portanto, não selecionar modelos, limiares, prompts ou variantes com base em resultados repetidos desse conjunto. Usá-lo somente após congelar a configuração, como avaliação externa isolada; se for reutilizado para comparar variantes, classificar os resultados como **EXPLORATÓRIOS**, nunca como confirmação independente.
 
+## Registro de versões e hashes — estado pré-download
+
+Este quadro é parte do gate. **Nenhum arquivo de dados foi baixado nesta PR**, conforme o escopo. Por isso, SHA-256 de conteúdo ainda não existe e não pode ser declarado sem calcular o hash dos bytes efetivamente obtidos. Não substituir esse valor por hash do commit, hash Git de blob, ETag ou checksum publicado de outro arquivo: são identificadores diferentes.
+
+| Conjunto / arquivo que poderá ser usado | Fonte/revisão identificada em 2026-11-06 | Estado da versão para uso | SHA-256 do arquivo |
+|---|---|---|---|
+| LLM-AggreFact — arquivos de dados dos splits `dev` e `test` (Parquet; nomes exatos a confirmar na listagem da revisão aprovada) | [Repositório oficial gated](https://huggingface.co/datasets/lytang/LLM-AggreFact); ficha consultada informa atualização em 20/12/2024. A revisão completa do Hub não foi confirmada nesta etapa. | **PENDENTE**: solicitar/aceitar acesso, obter o SHA completo da revisão aprovada e registrar os caminhos exatos dos shards antes de baixar. Não usar `main` como pin. | **PENDENTE — não calculado; download proibido nesta PR.** |
+| RAGTruth — `dataset/response.jsonl` | [ParticleMedia/RAGTruth](https://github.com/ParticleMedia/RAGTruth), commit `c103204b9ce28d6bbad859304bf30de72b8ed8fe` (02/12/2024), usado como revisão documental candidata. | **CANDIDATA, não congelada**: confirmar que os arquivos e a licença correspondem à revisão selecionada; revisar fontes subjacentes e termos antes de obter dados. | **PENDENTE — não calculado; download proibido nesta PR.** |
+| RAGTruth — `dataset/source_info.jsonl` | Mesma revisão candidata do repositório RAGTruth: `c103204b9ce28d6bbad859304bf30de72b8ed8fe`. | **CANDIDATA, não congelada**. | **PENDENTE — não calculado; download proibido nesta PR.** |
+| HaluBench — arquivos do split `test` (Parquet; nomes exatos a confirmar na revisão aprovada) | [PatronusAI/HaluBench](https://huggingface.co/datasets/PatronusAI/HaluBench); histórico público consultado mostra o commit mais recente `5966a87` (11/07/2024), abreviado pela interface. | **PENDENTE**: resolver e registrar o SHA completo do commit antes de qualquer obtenção; confirmar arquivos e licença vigente. Uso isolado e não comercial. | **PENDENTE — não calculado; download proibido nesta PR.** |
+
+### Revisões das fontes subjacentes de HaluBench
+
+Os commits abaixo identificam repositórios públicos consultados para verificar proveniência/licenças; **não provam** que HaluBench incorporou exatamente esses commits. O mapeamento de versão entre HaluBench e cada fonte continua pendente de confirmação pelo mantenedor ou por metadados de origem.
+
+| Fonte | Revisão documental consultada | Limite |
+|---|---|---|
+| FinanceBench | [PatronusAI/financebench](https://huggingface.co/datasets/PatronusAI/financebench); ficha atualizada em 17/11/2024. | Revisão completa e associação exata com os registros de HaluBench não confirmadas. |
+| PubMedQA | [pubmedqa/pubmedqa](https://github.com/pubmedqa/pubmedqa), commit `1cbae8e92f72f20c8d3747cbb3bf5bc53554d997` (18/04/2023). | Revisão documental do repositório; artigos/abstracts mantêm direitos próprios. |
+| COVID-QA | [deepset-ai/COVID-QA](https://github.com/deepset-ai/COVID-QA), commit `fb2eb5e249618457e5359806601086c635c8eb8f` (22/06/2020). | Não confirmado como a versão incorporada pelo HaluBench. |
+| HaluEval | [RUCAIBox/HaluEval](https://github.com/RUCAIBox/HaluEval), commit `b7253db3cdaa0ab2c382f92b26b390109174f77e` (12/02/2024). | Não confirmado como a versão incorporada pelo HaluBench. |
+| DROP | Página de licença e ficha pública consultadas; revisão completa dos dados não fixada nesta etapa. | Resolver divergência de licença e versão antes de qualquer uso. |
+| RAGTruth | [ParticleMedia/RAGTruth](https://github.com/ParticleMedia/RAGTruth), commit documental candidato `c103204b9ce28d6bbad859304bf30de72b8ed8fe`. | Não confirmado como a versão incorporada pelo HaluBench. |
+
+**Critério para fechar este quadro:** após autorização separada para obtenção dos dados, resolver o SHA completo de cada repositório, baixar somente os arquivos selecionados, calcular SHA-256 localmente sobre cada arquivo sem transformação, registrar tamanho em bytes e então congelar o manifesto. Qualquer alteração de arquivo ou revisão exige novo hash e novo registro. Até lá, os três conjuntos permanecem **não executados** e os hashes ficam explicitamente pendentes, sem valores inventados.
+
 ## Sobreposição entre conjuntos
 
 A sobreposição é conhecida no nível de proveniência:
