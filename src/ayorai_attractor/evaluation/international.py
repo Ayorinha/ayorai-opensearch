@@ -114,7 +114,9 @@ def adapt_records(
         if not isinstance(claim, str) or not claim.strip():
             raise DatasetError(f"record {index}: claim must be nonempty string")
         if not isinstance(cohort, str) or not cohort.strip():
-            raise DatasetError(\n                f"record {index}: dataset cohort must be nonempty string"\n            )
+            raise DatasetError(
+                f"record {index}: dataset cohort must be nonempty string"
+            )
         label = labels.get(str(record["label"]))
         if label not in {"SUPPORTED", "NOT_SUPPORTED"}:
             raise DatasetError(f"record {index}: unknown label")
@@ -175,7 +177,11 @@ def metrics(gold: list[str], predicted: list[str]) -> dict[str, Any]:
         support = tp + fn
         precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / support if support else 0.0
-        f1 = (\n            2 * precision * recall / (precision + recall)\n            if precision + recall\n            else 0.0\n        )
+        f1 = (
+            2 * precision * recall / (precision + recall)
+            if precision + recall
+            else 0.0
+        )
         per_class[label] = {
             "support": support,
             "precision": precision,
@@ -298,7 +304,9 @@ def evaluate(
             "seed": SEED,
             "unit": "claim-document row sampled with replacement",
             "clustered": False,
-            "limitation": (\n                "row-level CI may be optimistic due to source/document dependence"\n            ),
+            "limitation": (
+                "row-level CI may be optimistic due to source/document dependence"
+            ),
         },
         "bootstrap_ci95_accuracy": {
             "lower": accuracy_ci[0],
@@ -321,7 +329,8 @@ def evaluate(
         "response_policy_abstentions": {
             "value": None,
             "status": "not_applicable_to_component_path",
-            "explanation": (\n                "ResponsePolicy is not run; null means not measured, not zero."\n            ),
+            "explanation": (\n                "ResponsePolicy is not run; null means not measured, not zero."
+            ),
         },
         "unverified_verdict_count": {
             "value": None,
@@ -335,7 +344,8 @@ def evaluate(
             "failure_types": dict(sorted(failures.items())),
             "failure_indices_by_type": failure_indices,
             "failure_rate": n_failures / n_total,
-            "policy": (\n                "record-level failures excluded; abort above 1%; no record text in report"\n            ),
+            "policy": (\n                "record-level failures excluded; abort above 1%; no record text in report"
+            ),
         },
         "source_file_sha256": sha256_file(dataset),
         "mapping_file_sha256": sha256_file(mapping_path),
