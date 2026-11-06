@@ -75,7 +75,7 @@ def read_records(path: Path) -> list[dict[str, Any]]:
             return list(reader)
     if suffix in {".parquet", ".pq"}:
         try:
-            import pyarrow.parquet as parquet  # type: ignore[import-untyped]
+            import pyarrow.parquet as parquet  # type: ignore[import-not-found, import-untyped, unused-ignore]
         except ImportError as exc:
             raise DatasetError("Parquet input requires pyarrow") from exc
         table = parquet.read_table(path)
