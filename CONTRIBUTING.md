@@ -40,6 +40,20 @@ O projeto utiliza ferramentas automatizadas de apoio à escrita de código, docu
 
 Ferramentas automatizadas podem auxiliar o trabalho, mas o projeto mantém identidade própria. As regras completas para agentes automatizados estão em [AGENTS.md](AGENTS.md). As seções 2, 3, 4 e 7 também orientam colaboradores humanos: nenhuma assinatura, link ou crédito promocional de ferramenta em materiais públicos; autoria e proveniência sempre verificáveis; respeito aos artefatos protegidos; escopo autorizado; e diretriz de soberania tecnológica. A autoridade exclusiva do mantenedor sobre merges, releases, publicações e decisões metodológicas permanece preservada. As restrições operacionais dirigidas a agentes automatizados não proíbem o mantenedor ou anotadores humanos autorizados de executar suas responsabilidades no benchmark RGC, que continuam sujeitas ao protocolo e às decisões aprovadas.
 
+
+## Política de alegações públicas
+
+### 1.1 Política de alegações (README, site, documentos, PRs e paper)
+- PROIBIDO afirmar ou sugerir: aprovação, certificação, homologação, reconhecimento, parceria ou endosso da Anatel; "conformidade com a PGIA"; "100% brasileiro"; "conformidade LGPD"; superioridade sobre outros sistemas sem benchmark publicado e autorizado.
+- PERMITIDO: "alinhado aos princípios da PGIA" somente quando cada princípio citado estiver demonstrado tecnicamente, com referência ao código ou ao teste correspondente.
+- Toda afirmação pública é classificada em uma de três categorias, nunca misturadas:
+  (A) Arquitetura: propriedade do código existente (ex.: "o modelo de linguagem não tem autoridade sobre o veredito final").
+  (B) Conformidade: o motor respeita contratos e invariantes, demonstrado pela Conformance Suite.
+  (C) Desempenho: resultado medido em benchmark, com baseline e IC95%.
+- Toda afirmação declara seu estado: IMPLEMENTADO (com evidência), PREVISTO ou EM VERIFICAÇÃO.
+- Ao relacionar o projeto à PGIA, apresentar cada aspecto com o estado real:
+  Judge determinístico = arquitetura existente; supervisão humana = fluxo ainda a demonstrar; rastreabilidade = distinguir implementado de planejado; dados nacionais = RGC em desenvolvimento; tecnologia nacional = projeto brasileiro com dependências internacionais.
+
 ## DCO
 
 External contributions must use the Developer Certificate of Origin (DCO). Every commit submitted in an external PR must contain a `Signed-off-by: Full Name <email>` trailer asserting the contributor's right to submit the work.
