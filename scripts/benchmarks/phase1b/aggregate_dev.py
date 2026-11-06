@@ -34,9 +34,15 @@ def aggregate_packages(
         private = json.loads(decrypt_bytes(envelope, key=key))
         shard_id = private["shard_id"]
         model_id = private["model_id"]
-        if metadata.get("shard_id") != shard_id or metadata.get("model_revision") != private.get("model_revision"):
+        if (
+            metadata.get("shard_id") != shard_id
+            or metadata.get("model_revision") != private.get("model_revision")
+        ):
             raise ValueError("encrypted artifact metadata does not match private package")
-        if metadata.get("dataset_revision") != private.get("dataset_revision") or metadata.get("code_sha") != private.get("code_sha"):
+        if (
+            metadata.get("dataset_revision") != private.get("dataset_revision")
+            or metadata.get("code_sha") != private.get("code_sha")
+        ):
             raise ValueError("encrypted artifact provenance mismatch")
         if private.get("dataset_sha256") != manifest.get("dataset_sha256"):
             raise ValueError("encrypted artifact dataset pin mismatch")
@@ -73,7 +79,11 @@ def aggregate_packages(
         fp = counts[("NOT_SUPPORTED", "SUPPORTED")]
         recall_pos = tp / (tp + fn) if tp + fn else None
         recall_neg = tn / (tn + fp) if tn + fp else None
-        ba = (recall_pos + recall_neg) / 2 if recall_pos is not None and recall_neg is not None else None
+        ba = (
+            (recall_pos + recall_neg) / 2
+            if recall_pos is not None and recall_neg is not None
+            else None
+        )
         summaries[model] = {
             "example_count": total,
             "balanced_accuracy_at_0_5": ba,
