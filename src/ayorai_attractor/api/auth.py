@@ -1,4 +1,4 @@
-"""API-key authentication and bounded per-client request throttling."""
+"""API-key authentication and bounded request throttling for the HTTP API."""
 
 from __future__ import annotations
 
@@ -13,7 +13,13 @@ from math import ceil
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-# API keys are machine-generated bearer tokens, not human passwords.
+# API keys are machine-generated bearer tokens, not human passwords. A key
+# shorter than this is rejected before any digest is computed, so every key
+# that can ever authenticate carries at least ~190 bits of entropy when
+# generated as documented (secrets.token_urlsafe(32) yields 43 characters).
+# This is what makes a fast keyed digest (HMAC-SHA-256) appropriate here;
+# slow password-hashing functions are designed for low-entropy secrets and
+# would add per-request CPU cost an attacker could exploit.
 MIN_API_KEY_LENGTH = 32
 _DEFAULT_RATE_LIMIT_REQUESTS = 120
 _DEFAULT_RATE_LIMIT_WINDOW_SECONDS = 60
@@ -32,6 +38,7 @@ def _positive_int_env(name: str, default: int) -> int:
 
 
 def _load_configuration() -> tuple[str, tuple[str, ...], bytes | None]:
+    # Fail closed: an unconfigured deployment must not silently expose the API.
     mode = os.getenv("ATTRACTOR_AUTH_MODE", "api_key").strip().lower()
     if mode not in {"off", "api_key"}:
         raise ValueError("ATTRACTOR_AUTH_MODE must be 'off' or 'api_key'")
@@ -65,11 +72,12 @@ def _is_sha256_hex(value: str) -> bool:
 
 
 def _api_key_digest(presented_key: str, pepper: bytes) -> str:
+    """Return a keyed digest so a leaked digest list alone cannot verify guesses."""
     return hmac.new(pepper, presented_key.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def validate_auth_configuration() -> None:
-    """Validate auth and throttling environment settings during startup."""
+    """Validate auth and throttling environment settings during application startup."""
     _load_configuration()
     _positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS)
     _positive_int_env("ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS)
@@ -77,7 +85,7 @@ def validate_auth_configuration() -> None:
 
 
 class _FixedWindowRateLimiter:
-    """Bounded in-process fixed-window limiter; identities never contain raw credentials."""
+    """Bounded in-process fixed-window limiter with an explicit LRU overflow policy."""
 
     def __init__(self, limit: int, window_seconds: int, max_clients: int) -> None:
         self.limit = limit
@@ -88,25 +96,34 @@ class _FixedWindowRateLimiter:
 
     def allow(self, identity: str, now: float | None = None) -> tuple[bool, int]:
         current = time.monotonic() if now is None else now
-        window = self._windows.get(identity)
-        if window is None or current - window[0] >= self.window_seconds:
-            self._windows.pop(identity, None)
-            if len(self._windows) >= self.max_clients:
-                self._prune(current)
-            if len(self._windows) >= self.max_clients:
-                return False, self.window_seconds
-            self._windows[identity] = (current, 1)
-            return True, 0
-
-        started, count = window
-        if count >= self.limit:
-            return False, max(1, ceil(self.window_seconds - (current - started)))
-        self._windows[identity] = (started, count + 1)
-        self._windows.move_to_end(identity)
         self._calls += 1
+        window = self._windows.get(identity)
+
+        if window is None or current - window[0] >= self.window_seconds:
+            if identity in self._windows:
+                del self._windows[identity]
+            if len(self._windows) >= self.max_clients:
+                # Bounded LRU eviction avoids fail-closed denial of every new
+                # client when a flood fills the IP table. IP and key limiters
+                # are separate, so IP churn cannot evict authenticated keys.
+                self._windows.popitem(last=False)
+            self._windows[identity] = (current, 1)
+            allowed = True
+            retry_after = 0
+        else:
+            started, count = window
+            self._windows.move_to_end(identity)
+            if count >= self.limit:
+                allowed = False
+                retry_after = max(1, ceil(self.window_seconds - (current - started)))
+            else:
+                self._windows[identity] = (started, count + 1)
+                allowed = True
+                retry_after = 0
+
         if self._calls % 256 == 0:
             self._prune(current)
-        return True, 0
+        return allowed, retry_after
 
     def _prune(self, now: float) -> None:
         expired = [
@@ -119,24 +136,43 @@ class _FixedWindowRateLimiter:
 
 
 class APIKeyAuthMiddleware:
-    """Authenticate API keys and apply bounded IP/key request limits.
+    """Authenticate API keys and apply independent bounded IP/key request limits.
 
-    Rate limiting is process-local. Multi-worker or multi-replica deployments
-    must enforce an additional shared edge/API-gateway limit.
+    Authentication is enabled by default. For local development only, set
+    ATTRACTOR_AUTH_MODE=off explicitly. Rate limiting remains enabled in both
+    modes. In api_key mode, configure HMAC-SHA-256 digests and a separately
+    managed pepper. Raw API keys are never used as limiter identities.
+    The limiters are process-local; multi-worker or multi-replica deployments
+    must also enforce shared limits at a trusted gateway.
     """
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
         self.mode, self.key_hashes, self.pepper = _load_configuration()
-        self.rate_limiter = _FixedWindowRateLimiter(
-            limit=_positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS),
-            window_seconds=_positive_int_env(
-                "ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS
-            ),
-            max_clients=_positive_int_env(
-                "ATTRACTOR_RATE_LIMIT_MAX_CLIENTS", _DEFAULT_RATE_LIMIT_MAX_CLIENTS
-            ),
+        limit = _positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS)
+        window_seconds = _positive_int_env(
+            "ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS
         )
+        max_clients = _positive_int_env(
+            "ATTRACTOR_RATE_LIMIT_MAX_CLIENTS", _DEFAULT_RATE_LIMIT_MAX_CLIENTS
+        )
+        # Separate tables are a security boundary: IP churn cannot consume
+        # the capacity reserved for configured, successfully authenticated keys.
+        self.ip_rate_limiter = _FixedWindowRateLimiter(
+            limit=limit, window_seconds=window_seconds, max_clients=max_clients
+        )
+        self.key_rate_limiter = _FixedWindowRateLimiter(
+            limit=limit,
+            window_seconds=window_seconds,
+            max_clients=max(1, len(set(self.key_hashes))),
+        )
+
+    @staticmethod
+    def _client_identity(scope: Scope) -> str:
+        client = scope.get("client")
+        if isinstance(client, (tuple, list)) and client:
+            return f"ip:{client[0]}"
+        return "ip:unknown"
 
     @staticmethod
     def _extract_key(headers: Iterable[tuple[bytes, bytes]]) -> str | None:
@@ -144,8 +180,12 @@ class APIKeyAuthMiddleware:
         for name, header_value in headers:
             header_name = name.lower()
             if header_name in {b"authorization", b"x-api-key"} and header_name in normalized:
+                # Reject ambiguous duplicate credential headers rather than
+                # depending on which duplicate a proxy/server chooses.
                 return None
             normalized[header_name] = header_value
+        # Reject simultaneous credential mechanisms as well as duplicate
+        # instances: different intermediaries may prefer different headers.
         if b"authorization" in normalized and b"x-api-key" in normalized:
             return None
 
@@ -161,13 +201,6 @@ class APIKeyAuthMiddleware:
             if value:
                 return value
         return None
-
-    @staticmethod
-    def _client_identity(scope: Scope) -> str:
-        client = scope.get("client")
-        if isinstance(client, (tuple, list)) and client:
-            return f"ip:{client[0]}"
-        return "ip:unknown"
 
     @staticmethod
     async def _reject(
@@ -191,8 +224,8 @@ class APIKeyAuthMiddleware:
             await self.app(scope, receive, send)
             return
 
-        allowed, retry_after = self.rate_limiter.allow(self._client_identity(scope))
-        if not allowed:
+        ip_allowed, retry_after = self.ip_rate_limiter.allow(self._client_identity(scope))
+        if not ip_allowed:
             await self._reject(scope, receive, send, 429, "Rate limit exceeded", retry_after)
             return
 
@@ -205,10 +238,14 @@ class APIKeyAuthMiddleware:
             await self._reject(scope, receive, send, 401, "Unauthorized")
             return
 
+        # API keys must be high-entropy bearer tokens, not human passwords.
+        # A separate pepper means a leaked digest list alone cannot verify guesses.
         if self.pepper is None:
             await self._reject(scope, receive, send, 401, "Unauthorized")
             return
         presented_digest = _api_key_digest(presented_key, self.pepper)
+        # Compare every configured digest so the matching key's position
+        # in a rotation list does not short-circuit the loop.
         matched = False
         for configured_digest in self.key_hashes:
             matched |= hmac.compare_digest(presented_digest, configured_digest)
@@ -216,8 +253,8 @@ class APIKeyAuthMiddleware:
             await self._reject(scope, receive, send, 401, "Unauthorized")
             return
 
-        allowed, retry_after = self.rate_limiter.allow(f"key:{presented_digest}")
-        if not allowed:
+        key_allowed, retry_after = self.key_rate_limiter.allow(presented_digest)
+        if not key_allowed:
             await self._reject(scope, receive, send, 429, "Rate limit exceeded", retry_after)
             return
 
