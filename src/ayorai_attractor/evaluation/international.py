@@ -339,7 +339,8 @@ def evaluate(
         "response_policy_abstentions": {
             "value": None,
             "status": "not_applicable_to_component_path",
-            "explanation": (\n                "ResponsePolicy is not run; null means not measured, not zero."
+            "explanation": (
+                "ResponsePolicy is not run; null means not measured, not zero."
             ),
         },
         "unverified_verdict_count": {
@@ -354,7 +355,8 @@ def evaluate(
             "failure_types": dict(sorted(failures.items())),
             "failure_indices_by_type": failure_indices,
             "failure_rate": n_failures / n_total,
-            "policy": (\n                "record-level failures excluded; abort above 1%; no record text in report"
+            "policy": (
+                "record-level failures excluded; abort above 1%; no record text in report"
             ),
         },
         "source_file_sha256": sha256_file(dataset),
