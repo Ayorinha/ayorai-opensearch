@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import re
 import time
 from collections import Counter
@@ -146,6 +147,10 @@ def main() -> None:
         "schema_version": "1.0",
         "pilot": "baseline-throughput-dev",
         "split": "dev",
+        "dataset_id": "lytang/LLM-AggreFact",
+        "dataset_revision": os.environ.get("DEV_REVISION"),
+        "dataset_file_sha256": os.environ.get("DEV_SHA256"),
+        "code_sha": os.environ.get("GITHUB_SHA"),
         "seed": args.seed,
         "sample_size": len(sample),
         "cohort_field": "dataset",
