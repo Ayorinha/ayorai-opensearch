@@ -1,0 +1,96 @@
+name: International benchmark (manual, maintainer-gated)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dataset_revision:
+        description: Immutable HF revision SHA; must match the maintainer pin
+        required: true
+        type: string
+      dataset_sha256:
+        description: Expected SHA-256 of the approved Parquet shard
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: international-benchmark-maintainer-approval
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install harness dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" pyarrow huggingface_hub
+      - name: Validate maintainer pin before dataset access
+        env:
+          INPUT_REVISION: ${{ inputs.dataset_revision }}
+          INPUT_SHA256: ${{ inputs.dataset_sha256 }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          pin=json.loads(Path("configs/benchmarks/llm-aggrefact-pin.json").read_text())
+          rev=os.environ["INPUT_REVISION"]
+          sha=os.environ["INPUT_SHA256"].lower()
+          if pin["revision"].startswith("PENDING") or pin["sha256"].startswith("PENDING"):
+              raise SystemExit("Maintainer must freeze an approved revision and SHA-256 before workflow use.")
+          if rev != pin["revision"] or sha != pin["sha256"]:
+              raise SystemExit("workflow inputs differ from committed maintainer pin")
+          if not re.fullmatch(r"[a-f0-9]{64}", sha): raise SystemExit("invalid SHA-256")
+          PY
+      - name: Download only the pinned file using HF_TOKEN
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          DATASET_REVISION: ${{ inputs.dataset_revision }}
+        run: |
+          set -euo pipefail
+          test -n "${HF_TOKEN:-}" || { echo "HF_TOKEN secret is missing"; exit 1; }
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from huggingface_hub import hf_hub_download
+          pin=json.loads(Path("configs/benchmarks/llm-aggrefact-pin.json").read_text())
+          downloaded=hf_hub_download(repo_id=pin["dataset"], repo_type="dataset",
+              filename=pin["file"], revision=os.environ["DATASET_REVISION"],
+              token=os.environ["HF_TOKEN"])
+          Path("/tmp/dataset_path").write_text(downloaded)
+          print("Pinned dataset file downloaded; no content or examples are logged.")
+          PY
+      - name: Verify content SHA-256 before evaluation
+        env:
+          EXPECTED_SHA256: ${{ inputs.dataset_sha256 }}
+        run: |
+          set -euo pipefail
+          file="$(cat /tmp/dataset_path)"
+          actual="$(sha256sum "$file" | cut -d' ' -f1)"
+          test "$actual" = "$EXPECTED_SHA256"
+          echo "Dataset checksum verified."
+      - name: Evaluate current RuleStanceDetector without tuning
+        run: |
+          set -euo pipefail
+          python -m ayorai_attractor.evaluation.international_cli             --dataset "$(cat /tmp/dataset_path)"             --mapping configs/benchmarks/llm-aggrefact-label-map-v1.json             --out-json reports/aggregate.json --out-md reports/aggregate.md
+      - name: Assert aggregate-only report
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("reports/aggregate.json").read_text())
+          assert r["instance_level_predictions_in_public_artifact"] is False
+          assert not any(k in r for k in ("results","examples","claims","predictions"))
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: international-benchmark-aggregate-only
+          path: reports/aggregate.*
+          if-no-files-found: error
+          retention-days: 14
