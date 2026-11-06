@@ -34,10 +34,17 @@ def build_aad(metadata: dict[str, Any]) -> bytes:
         raise ValueError("AAD metadata is incomplete")
     if metadata["split"] != "dev":
         raise ValueError("only DEV artifacts may be encrypted by this workflow")
-    return json.dumps({key: metadata[key] for key in AAD_FIELDS}, sort_keys=True, separators=(",", ":")).encode()
+    aad_value = {key: metadata[key] for key in AAD_FIELDS}
+    return json.dumps(aad_value, sort_keys=True, separators=(",", ":")).encode()
 
 
-def encrypt_bytes(plaintext: bytes, *, key: bytes, metadata: dict[str, Any], nonce: bytes | None = None) -> dict[str, Any]:
+def encrypt_bytes(
+    plaintext: bytes,
+    *,
+    key: bytes,
+    metadata: dict[str, Any],
+    nonce: bytes | None = None,
+) -> dict[str, Any]:
     if len(key) != 32:
         raise ValueError("AES-256 key must contain 32 bytes")
     nonce_value = nonce if nonce is not None else secrets.token_bytes(12)
@@ -52,7 +59,12 @@ def encrypt_bytes(plaintext: bytes, *, key: bytes, metadata: dict[str, Any], non
     }
 
 
-def decrypt_bytes(envelope: dict[str, Any], *, key: bytes, aad_metadata: dict[str, Any] | None = None) -> bytes:
+def decrypt_bytes(
+    envelope: dict[str, Any],
+    *,
+    key: bytes,
+    aad_metadata: dict[str, Any] | None = None,
+) -> bytes:
     metadata = aad_metadata if aad_metadata is not None else envelope["metadata"]
     aad = build_aad(metadata)
     if metadata != envelope["metadata"]:
@@ -84,10 +96,13 @@ def main() -> None:
         "code_sha": args.code_sha,
     }
     if package.get("split") != "dev" or package.get("shard_id") != args.shard_id:
-        raise ValueError("private package metadata does not match requested encryption context")
+        raise ValueError(
+            "private package metadata does not match requested encryption context"
+        )
     envelope = encrypt_bytes(args.input.read_bytes(), key=key, metadata=metadata)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(envelope, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+    serialized = json.dumps(envelope, sort_keys=True, separators=(",", ":"))
+    args.output.write_text(serialized, encoding="utf-8")
     print(json.dumps({"status": "encrypted", "split": "dev", "shard_id": args.shard_id}))
 
 
