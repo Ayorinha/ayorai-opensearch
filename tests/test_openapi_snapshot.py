@@ -11,7 +11,6 @@ def test_openapi_snapshot_matches_generated_contract() -> None:
     assert actual == expected
 
 
-
 def test_protected_routes_document_rate_limit_response() -> None:
     schema = app.openapi()
     protected_operations = (
