@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "dataset_id": "paraphrase-invariance-synthetic-v1",
+  "purpose": "Synthetic regression only; not RGC, pilot, benchmark, or external validation.",
+  "groups": [
+    {
+      "group_id": "atlasgrid-revenue-2025",
+      "expected_verdict": "verified",
+      "claims": [
+        "AtlasGrid revenue in 2025 was USD 120 million.",
+        "AtlasGrid reported USD 120 million in revenue for 2025.",
+        "The 2025 revenue of AtlasGrid amounted to USD 120 million."
+      ],
+      "documents": [
+        {
+          "id": "atlasgrid-source-a",
+          "origin": "atlasgrid-origin-a",
+          "text": "AtlasGrid revenue in 2025 was USD 120 million."
+        },
+        {
+          "id": "atlasgrid-source-b",
+          "origin": "atlasgrid-origin-b",
+          "text": "The AtlasGrid annual filing reports USD 120 million of 2025 revenue."
+        }
+      ]
+    },
+    {
+      "group_id": "vectorlabs-deployment-control",
+      "expected_verdict": "verified",
+      "claims": [
+        "VectorLabs blocks unsigned model artifacts before deployment.",
+        "VectorLabs prevents the deployment of unsigned model artifacts.",
+        "At VectorLabs, unsigned model artifacts are stopped before deployment."
+      ],
+      "documents": [
+        {
+          "id": "vectorlabs-source-a",
+          "origin": "vectorlabs-origin-a",
+          "text": "VectorLabs blocks unsigned model artifacts before deployment."
+        },
+        {
+          "id": "vectorlabs-source-b",
+          "origin": "vectorlabs-origin-b",
+          "text": "VectorLabs prevents deployment of unsigned model artifacts."
+        }
+      ]
+    },
+    {
+      "group_id": "atlasgrid-revenue-2025-refuted",
+      "expected_verdict": "refuted",
+      "claims": [
+        "AtlasGrid revenue in 2025 was USD 150 million.",
+        "AtlasGrid reported USD 150 million in revenue for 2025.",
+        "The 2025 revenue of AtlasGrid amounted to USD 150 million."
+      ],
+      "documents": [
+        {
+          "id": "atlasgrid-refuted-source-a",
+          "origin": "atlasgrid-refuted-origin-a",
+          "text": "AtlasGrid revenue in 2025 was USD 120 million."
+        },
+        {
+          "id": "atlasgrid-refuted-source-b",
+          "origin": "atlasgrid-refuted-origin-b",
+          "text": "The AtlasGrid annual filing reports USD 120 million of 2025 revenue."
+        }
+      ]
+    },
+    {
+      "group_id": "atlasgrid-receita-2025-ptbr",
+      "expected_verdict": "verified",
+      "claims": [
+        "A receita da AtlasGrid em 2025 foi de 120 milhões de dólares.",
+        "Em 2025, a AtlasGrid teve receita de 120 milhões de dólares.",
+        "A AtlasGrid registrou receita de 120 milhões de dólares em 2025."
+      ],
+      "documents": [
+        {
+          "id": "atlasgrid-ptbr-source-a",
+          "origin": "atlasgrid-ptbr-origin-a",
+          "text": "A receita da AtlasGrid em 2025 foi de 120 milhões de dólares."
+        },
+        {
+          "id": "atlasgrid-ptbr-source-b",
+          "origin": "atlasgrid-ptbr-origin-b",
+          "text": "O relatório anual da AtlasGrid informa receita de 120 milhões de dólares em 2025."
+        }
+      ]
+    },
+    {
+      "group_id": "atlasgrid-receita-2025-ptbr-refuted",
+      "expected_verdict": "refuted",
+      "claims": [
+        "A receita da AtlasGrid em 2025 foi de 150 milhões de dólares.",
+        "Em 2025, a AtlasGrid teve receita de 150 milhões de dólares.",
+        "A AtlasGrid registrou receita de 150 milhões de dólares em 2025."
+      ],
+      "documents": [
+        {
+          "id": "atlasgrid-ptbr-source-a",
+          "origin": "atlasgrid-ptbr-origin-a",
+          "text": "A receita da AtlasGrid em 2025 foi de 120 milhões de dólares."
+        },
+        {
+          "id": "atlasgrid-ptbr-source-b",
+          "origin": "atlasgrid-ptbr-origin-b",
+          "text": "O relatório anual da AtlasGrid informa receita de 120 milhões de dólares em 2025."
+        }
+      ]
+    }
+  ]
+}
