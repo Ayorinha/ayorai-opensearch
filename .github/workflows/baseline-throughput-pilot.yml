@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       dev_revision:
-        description: Immutable LLM-AggreFact dev revision SHA
+        description: Must match the immutable DEV revision in the repository pin
         required: true
         type: string
       dev_sha256:
-        description: SHA-256 of approved dev Parquet shard
+        description: Must match the maintainer-approved DEV shard SHA-256 in the repository pin
         required: true
         type: string
 
@@ -26,11 +26,22 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install pilot dependencies
+      - name: Install pinned CPU pilot dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install transformers huggingface_hub pyarrow pandas psutil accelerate safetensors
-      - name: Validate maintainer inputs and download DEV shard only
+          set -euo pipefail
+          python -m pip install "pip==25.2"
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
+          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt
+          python - <<'PY'
+          import platform
+          import torch
+          import transformers
+          print(f"Python: {platform.python_version()}")
+          print(f"torch: {torch.__version__}")
+          print(f"transformers: {transformers.__version__}")
+          assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
+          PY
+      - name: Validate maintainer inputs against DEV pin and download DEV shard only
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           DEV_REVISION: ${{ inputs.dev_revision }}
@@ -38,24 +49,56 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import hashlib, os, re
+          import hashlib
+          import json
+          import os
+          import re
           from pathlib import Path
+
           from huggingface_hub import hf_hub_download
-          token=os.environ.get("HF_TOKEN","")
-          revision=os.environ["DEV_REVISION"]
-          expected=os.environ["DEV_SHA256"].lower()
-          if not token: raise SystemExit("HF_TOKEN missing from approval environment")
-          if not re.fullmatch(r"[a-f0-9]{40}", revision):
-              raise SystemExit("dev_revision must be a full 40-character commit SHA")
-          if not re.fullmatch(r"[a-f0-9]{64}", expected):
-              raise SystemExit("dev_sha256 must be a 64-character SHA-256")
-          # Dataset file name is fixed to the DEV shard; never request test.
-          path=hf_hub_download(repo_id="lytang/LLM-AggreFact", repo_type="dataset",
-              filename="default/dev/0000.parquet", revision=revision, token=token)
-          digest=hashlib.sha256(Path(path).read_bytes()).hexdigest()
-          if digest != expected: raise SystemExit("DEV shard SHA-256 mismatch")
-          Path("/tmp/dev_shard_path").write_text(path)
-          print("DEV shard verified; no dataset content logged.")
+
+          pin_path = Path("configs/benchmarks/llm-aggrefact-dev-pin.json")
+          pin = json.loads(pin_path.read_text(encoding="utf-8"))
+          token = os.environ.get("HF_TOKEN", "")
+          revision = os.environ["DEV_REVISION"].lower()
+          expected = os.environ["DEV_SHA256"].lower()
+
+          if not token:
+              raise SystemExit("HF_TOKEN missing from approval environment")
+          if revision != pin["revision"]:
+              raise SystemExit("DEV revision input does not match the repository pin")
+          if expected != pin["sha256"]:
+              raise SystemExit("DEV SHA-256 input does not match the repository pin")
+          if not re.fullmatch(r"[a-f0-9]{40}", pin["revision"]):
+              raise SystemExit("Pinned DEV revision must be a full 40-character commit SHA")
+          if not re.fullmatch(r"[a-f0-9]{64}", pin["sha256"]):
+              raise SystemExit("DEV pin SHA-256 is still a placeholder or is malformed")
+          if pin["dataset"] != "lytang/LLM-AggreFact":
+              raise SystemExit("Unexpected dataset in DEV pin")
+          if pin["file"] != "data/dev-00000-of-00001.parquet":
+              raise SystemExit("Unexpected file in DEV pin")
+          if pin["size_bytes"] != 35453136:
+              raise SystemExit("Unexpected DEV shard size in repository pin")
+          if pin["access_terms"] != (
+              "benchmark evaluation only; pretraining and fine-tuning prohibited"
+          ):
+              raise SystemExit("DEV access terms do not match the accepted test-pin terms")
+
+          path = hf_hub_download(
+              repo_id=pin["dataset"],
+              repo_type="dataset",
+              filename=pin["file"],
+              revision=pin["revision"],
+              token=token,
+          )
+          actual_size = Path(path).stat().st_size
+          if actual_size != pin["size_bytes"]:
+              raise SystemExit("DEV shard size does not match the repository pin")
+          digest = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+          if digest != pin["sha256"]:
+              raise SystemExit("DEV shard SHA-256 does not match the repository pin")
+          Path("/tmp/dev_shard_path").write_text(path, encoding="utf-8")
+          print("Pinned DEV shard verified; no dataset content logged.")
           PY
       - name: Run 200-example throughput pilot (DEV only)
         env:
@@ -75,11 +118,21 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          report=json.loads(Path("reports/benchmarks/baseline-throughput-pilot-aggregate.json").read_text())
+
+          report = json.loads(
+              Path("reports/benchmarks/baseline-throughput-pilot-aggregate.json").read_text()
+          )
           assert report["split"] == "dev"
           assert report["sample_size"] == 200
           assert report["instance_level_predictions_in_public_artifact"] is False
           assert "examples" not in report and "predictions" not in report
+          assert all(
+              "seconds_per_example" in model
+              and "load_seconds" in model
+              and "warmup_seconds" in model
+              and "inference_seconds" in model
+              for model in report["models"]
+          )
           PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

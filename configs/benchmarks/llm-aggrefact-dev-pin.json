@@ -1,0 +1,10 @@
+{
+  "dataset": "lytang/LLM-AggreFact",
+  "revision": "981dfd0bd8e58e7238a9ab92b2e6ea44bce918e4",
+  "file": "data/dev-00000-of-00001.parquet",
+  "size_bytes": 35453136,
+  "sha256": "COLE_AQUI_O_SHA256",
+  "access_terms_accepted_at": "2026-11-06",
+  "access_terms": "benchmark evaluation only; pretraining and fine-tuning prohibited",
+  "status": "pending_maintainer_sha256"
+}
