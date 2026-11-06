@@ -178,6 +178,7 @@ def test_duplicate_source_ids_are_rejected(tmp_path: Path) -> None:
     else:
         raise AssertionError("duplicate source_id must be rejected")
 
+
 def test_non_object_jsonl_records_are_rejected(tmp_path: Path) -> None:
     documents = tmp_path / "non-object-docs.jsonl"
     documents.write_text("null\n[]\n42\n", encoding="utf-8")
