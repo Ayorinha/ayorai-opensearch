@@ -13,8 +13,22 @@ from typing import Any
 
 try:
     from .common import DEV_PIN_PATH, MODELS, load_records, sha256_file, stable_record_id
+    from .protocols import (
+        assert_all_fp32,
+        chunk_factcg,
+        chunk_minicheck,
+        format_single_texts,
+        get_protocol,
+    )
 except ImportError:  # direct script execution
     from common import DEV_PIN_PATH, MODELS, load_records, sha256_file, stable_record_id
+    from protocols import (
+        assert_all_fp32,
+        chunk_factcg,
+        chunk_minicheck,
+        format_single_texts,
+        get_protocol,
+    )
 
 
 def select_shard(
@@ -67,17 +81,83 @@ def _sentence_chunks(
     return chunks or [""]
 
 
-def _support_label_id(config: Any) -> int:
-    labels = {int(index): str(label).casefold() for index, label in config.id2label.items()}
-    support_terms = ("entail", "support", "positive")
-    matches = [
-        index for index, label in labels.items() if any(term in label for term in support_terms)
-    ]
-    if len(matches) != 1:
-        raise ValueError(
-            "model config does not expose one unambiguous support label; explicit mapping required"
+def _document_chunks(
+    doc: str, protocol: dict[str, Any], tokenizer: Any
+) -> tuple[list[str], dict[str, int]]:
+    """Chunk one document exactly as its protocol prescribes; return chunks and unit counts."""
+    if protocol["splitter"] == "regex_sentence":
+        chunks = _sentence_chunks(
+            doc, tokenizer, max_tokens=protocol["chunk_size"], overlap=protocol["overlap"]
         )
-    return matches[0]
+        units = sum(len(tokenizer.encode(chunk, add_special_tokens=False)) for chunk in chunks)
+        return chunks, {protocol["count_unit"]: units}
+    from nltk.tokenize import sent_tokenize, word_tokenize
+
+    if protocol["splitter"] == "nltk_sent_tokenize_with_newlines":
+
+        def count_tokens(sentence: str) -> int:
+            return len(
+                tokenizer(
+                    sentence,
+                    padding=False,
+                    add_special_tokens=False,
+                    max_length=protocol["max_length"],
+                    truncation=True,
+                )["input_ids"]
+            )
+
+        chunks = chunk_minicheck(
+            doc,
+            sent_tokenize=sent_tokenize,
+            count_tokens=count_tokens,
+            chunk_size=protocol["chunk_size"],
+        )
+        units = sum(count_tokens(chunk) for chunk in chunks)
+    elif protocol["splitter"] == "nltk_sent_tokenize":
+
+        def count_words(sentence: str) -> int:
+            return len(word_tokenize(sentence))
+
+        chunks = chunk_factcg(
+            doc,
+            sent_tokenize=sent_tokenize,
+            count_words=count_words,
+            max_chunk_size=protocol["chunk_size"],
+        )
+        units = sum(count_words(chunk) for chunk in chunks)
+    else:
+        raise ValueError("unsupported splitter in protocol")
+    return chunks, {protocol["count_unit"]: units}
+
+
+def _encode(tokenizer: Any, protocol: dict[str, Any], docs: list[str], claims: list[str]) -> Any:
+    if protocol["input_format"] == "pair_doc_claim":
+        return tokenizer(
+            docs,
+            claims,
+            padding=True,
+            truncation=protocol["truncation"],
+            max_length=protocol["max_length"],
+            return_tensors="pt",
+        )
+    texts = [
+        format_single_texts(protocol, [doc], claim, tokenizer.eos_token)[0]
+        for doc, claim in zip(docs, claims, strict=True)
+    ]
+    return tokenizer(
+        texts,
+        padding=True,
+        truncation=protocol["truncation"],
+        max_length=protocol["max_length"],
+        return_tensors="pt",
+    )
+
+
+def _untruncated_length(tokenizer: Any, protocol: dict[str, Any], doc: str, claim: str) -> int:
+    if protocol["input_format"] == "pair_doc_claim":
+        return len(tokenizer(doc, claim, add_special_tokens=True)["input_ids"])
+    text = format_single_texts(protocol, [doc], claim, tokenizer.eos_token)[0]
+    return len(tokenizer(text, add_special_tokens=True)["input_ids"])
 
 
 def run_inference(
@@ -89,26 +169,42 @@ def run_inference(
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if model_id not in MODELS:
         raise ValueError("unknown model id")
+    protocol = get_protocol(model_id)
     import torch
     from huggingface_hub import snapshot_download
-    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+    from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
 
     spec = MODELS[model_id]
     model_dir = Path(snapshot_download(repo_id=spec["repo"], revision=spec["revision"]))
     tokenizer = AutoTokenizer.from_pretrained(str(model_dir), local_files_only=True)
+    if protocol["input_format"] == "factcg_instruction_template":
+        # Official FactCG sets pad_token = eos_token (factcg/inference.py:195).
+        tokenizer.pad_token = tokenizer.eos_token
+    config = AutoConfig.from_pretrained(
+        str(model_dir), local_files_only=True, num_labels=protocol["num_labels"]
+    )
+    if config.num_labels != protocol["num_labels"]:
+        raise RuntimeError("model label count does not match the explicit protocol")
     model = AutoModelForSequenceClassification.from_pretrained(
-        str(model_dir), local_files_only=True, trust_remote_code=False
+        str(model_dir),
+        config=config,
+        local_files_only=True,
+        trust_remote_code=False,
+        torch_dtype=torch.float32,
     )
     model.eval()
-    if any(parameter.dtype != torch.float32 for parameter in model.parameters()):
-        raise RuntimeError("model weights are not FP32")
-    support_id = _support_label_id(model.config)
+    assert_all_fp32((parameter.dtype for parameter in model.parameters()), torch.float32)
+    support_id = protocol["support_index"]
 
     started = time.perf_counter()
+    token_count_by_unit: dict[str, int] = {}
     expanded: list[tuple[str, str, str, str]] = []
     for rid, row in selected:
         claim = str(row["claim"])
-        for chunk_index, chunk in enumerate(_sentence_chunks(str(row["doc"]), tokenizer)):
+        chunks, units = _document_chunks(str(row["doc"]), protocol, tokenizer)
+        for unit, count in units.items():
+            token_count_by_unit[unit] = token_count_by_unit.get(unit, 0) + count
+        for chunk_index, chunk in enumerate(chunks or [""]):
             expanded.append((rid, claim, chunk, f"{rid}:{chunk_index:06d}"))
     if sort_by_length:
         expanded.sort(
@@ -121,7 +217,6 @@ def run_inference(
     else:
         expanded.sort(key=lambda item: (item[0], item[3]))
 
-    token_total = sum(len(tokenizer.encode(item[2], add_special_tokens=False)) for item in expanded)
     tokenization_seconds = time.perf_counter() - started
     truncation_count = 0
     inference_started = time.perf_counter()
@@ -131,19 +226,11 @@ def run_inference(
             batch_rows = expanded[offset : offset + batch_size]
             docs = [item[2] for item in batch_rows]
             claims = [item[1] for item in batch_rows]
-            inputs = tokenizer(
-                docs,
-                claims,
-                padding=True,
-                truncation="only_first",
-                max_length=512,
-                return_tensors="pt",
-                return_overflowing_tokens=False,
-            )
+            inputs = _encode(tokenizer, protocol, docs, claims)
             truncation_count += sum(
                 1
                 for doc, claim in zip(docs, claims, strict=True)
-                if len(tokenizer(doc, claim, add_special_tokens=True)["input_ids"]) > 512
+                if _untruncated_length(tokenizer, protocol, doc, claim) > protocol["max_length"]
             )
             logits = model(**inputs).logits
             probabilities = torch.softmax(logits.float(), dim=-1)[:, support_id].tolist()
@@ -162,7 +249,7 @@ def run_inference(
     operational = {
         "document_count": len(selected),
         "block_count": len(expanded),
-        "token_count_by_unit": {f"{model_id}_tokenizer_tokens": token_total},
+        "token_count_by_unit": token_count_by_unit,
         "tokenization_seconds": tokenization_seconds,
         "inference_seconds": inference_seconds,
         "total_seconds": time.perf_counter() - started,
@@ -170,6 +257,23 @@ def run_inference(
         "peak_ram_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
         "truncation_count": truncation_count,
         "failure_count": 0,
+        "protocol": {
+            key: protocol[key]
+            for key in (
+                "protocol_name",
+                "protocol_version",
+                "role",
+                "max_length",
+                "chunk_size",
+                "overlap",
+                "count_unit",
+                "splitter",
+                "input_format",
+                "truncation",
+                "aggregation",
+                "support_index",
+            )
+        },
     }
     return records, operational
 

@@ -119,6 +119,11 @@ def aggregate_packages(
             "encryption_seconds": 0.0,
             "decryption_seconds": 0.0,
         }
+        protocols_seen = {
+            canonical_json(packages[(model, shard_id)].get("protocol")) for shard_id in expected
+        }
+        if len(protocols_seen) != 1:
+            raise ValueError("shards of one model were produced with different protocols")
         for shard_id in sorted(expected):
             package = packages[(model, shard_id)]
             for field in OPERATIONAL_FIELDS:
@@ -140,6 +145,7 @@ def aggregate_packages(
                         raise ValueError(f"{field} must be nonnegative")
                     aggregate[field] += value
         aggregate["token_count_by_unit"] = dict(sorted(aggregate["token_count_by_unit"].items()))
+        aggregate["protocol"] = packages[(model, sorted(expected)[0])].get("protocol")
         summaries[model] = aggregate
 
     report = {
