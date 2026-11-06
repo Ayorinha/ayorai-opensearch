@@ -64,9 +64,7 @@ def test_invalid_synthetic_rows_fail_not_silently_drop(record: dict) -> None:
         adapt_records([record], MAPPING)
 
 
-def test_report_records_cli_sha_provenance(
-    tmp_path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_report_records_cli_sha_provenance(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     import ayorai_attractor.evaluation.international as harness
 
     data = [
