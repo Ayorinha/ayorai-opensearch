@@ -109,3 +109,16 @@ def test_fp32_guard_rejects_any_non_fp32_parameter() -> None:
         assert_all_fp32(["fp32", "fp16"], "fp32")
     with pytest.raises(RuntimeError):
         assert_all_fp32([], "fp32")
+
+
+def test_minimal_matrix_is_two_shards_of_five_mdeberta_only() -> None:
+    from scripts.benchmarks.phase1b.emit_matrix import emit_matrix
+
+    shards = [{"shard_id": f"dev-000{i}", "count": 5} for i in range(2)]
+    matrix = emit_matrix({"split": "dev", "shards": shards}, minimal=True)
+    assert matrix["shard_ids"] == ["dev-0000", "dev-0001"]
+    assert matrix["model_ids"] == ["mdeberta"]
+    with pytest.raises(ValueError):
+        emit_matrix({"split": "dev", "shards": shards[:1]}, minimal=True)
+    with pytest.raises(ValueError):
+        emit_matrix({"split": "test", "shards": shards}, minimal=True)

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import resource
 import time
@@ -13,6 +14,8 @@ from typing import Any
 
 try:
     from .common import DEV_PIN_PATH, MODELS, load_records, sha256_file, stable_record_id
+    from .nltk_resources import load_pin as load_nltk_pin
+    from .nltk_resources import prepare_runtime as prepare_nltk_runtime
     from .protocols import (
         assert_all_fp32,
         chunk_factcg,
@@ -22,6 +25,8 @@ try:
     )
 except ImportError:  # direct script execution
     from common import DEV_PIN_PATH, MODELS, load_records, sha256_file, stable_record_id
+    from nltk_resources import load_pin as load_nltk_pin
+    from nltk_resources import prepare_runtime as prepare_nltk_runtime
     from protocols import (
         assert_all_fp32,
         chunk_factcg,
@@ -195,6 +200,12 @@ def run_inference(
     model.eval()
     assert_all_fp32((parameter.dtype for parameter in model.parameters()), torch.float32)
     support_id = protocol["support_index"]
+    nltk_metadata: dict[str, Any] | None = None
+    if str(protocol["splitter"]).startswith("nltk_"):
+        data_dir = os.environ.get("PHASE1B_NLTK_DATA")
+        if not data_dir:
+            raise RuntimeError("PHASE1B_NLTK_DATA must point to the verified punkt_tab directory")
+        nltk_metadata = prepare_nltk_runtime(load_nltk_pin(), Path(data_dir))
 
     started = time.perf_counter()
     token_count_by_unit: dict[str, int] = {}
@@ -273,7 +284,8 @@ def run_inference(
                 "aggregation",
                 "support_index",
             )
-        },
+        }
+        | {"nltk": nltk_metadata},
     }
     return records, operational
 

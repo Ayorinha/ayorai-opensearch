@@ -1,5 +1,10 @@
 name: Phase 1b DEV — minimal protected validation
 
+# Operational validation only: 2 DEV shards x 5 examples, mDeBERTa, encrypted intermediates.
+# No quality metrics, no threshold calibration, no TEST data. Manual dispatch by the maintainer.
+# Each job declares the protected environment on purpose: the run shows whether the
+# environment asks for approval once per run or once per job (the question this test answers).
+
 on:
   workflow_dispatch:
     inputs:
@@ -14,11 +19,147 @@ on:
 permissions:
   contents: read
 
+env:
+  DEV_PARQUET: /tmp/phase1b-dev.parquet
+  NLTK_DATA_DIR: /tmp/phase1b-nltk-data
+
 jobs:
-  minimal-dev:
+  plan:
     if: ${{ inputs.mode == 'minimal' }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: international-benchmark-maintainer-approval
+    outputs:
+      shard_ids: ${{ steps.matrix.outputs.shard_ids }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install "pip==25.2"
+          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3
+      - name: Validate required secret without printing it
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+        run: |
+          python - <<'PY'
+          from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
+          assert len(decode_key()) == 32
+          print("ENCRYPTION_SECRET: VALID (value not displayed)")
+          PY
+      - name: Download and verify immutable DEV parquet
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/benchmarks/phase1b/fetch_dev.py --output "$DEV_PARQUET"
+      - name: Build manifest (2 shards x 5 DEV examples)
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/build_manifest.py \
+            --dataset-path "$DEV_PARQUET" --split dev \
+            --sample-size 10 --shard-size 5 --max-shards 2 \
+            --seed 20261106 --output /tmp/phase1b-manifest.json
+          rm -f "$DEV_PARQUET"
+      - id: matrix
+        name: Emit minimal matrix
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/emit_matrix.py \
+            --manifest /tmp/phase1b-manifest.json --minimal --output /tmp/phase1b-matrix.json
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          matrix = json.loads(Path("/tmp/phase1b-matrix.json").read_text())
+          assert matrix["split"] == "dev" and matrix["model_ids"] == ["mdeberta"]
+          assert len(matrix["shard_ids"]) == 2
+          print("shard_ids=" + json.dumps(matrix["shard_ids"]))
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-minimal-manifest
+          path: /tmp/phase1b-manifest.json
+          if-no-files-found: error
+          retention-days: 1
+
+  shard:
+    needs: plan
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
+    environment: international-benchmark-maintainer-approval
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard_id: ${{ fromJSON(needs.plan.outputs.shard_ids) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install pinned CPU dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install "pip==25.2"
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
+          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3 nltk==3.9.4
+          python - <<'PY'
+          import torch
+          assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
+          PY
+      - name: Install and verify pinned NLTK punkt_tab (no runtime downloads)
+        run: python scripts/benchmarks/phase1b/nltk_resources.py --data-dir "$NLTK_DATA_DIR"
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: phase1b-dev-minimal-manifest
+          path: /tmp/phase1b-manifest
+      - name: Download and verify immutable DEV parquet
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/benchmarks/phase1b/fetch_dev.py --output "$DEV_PARQUET"
+      - name: Run pinned mDeBERTa on this shard (private local output)
+        env:
+          SHARD_ID: ${{ matrix.shard_id }}
+          PHASE1B_NLTK_DATA: /tmp/phase1b-nltk-data
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/run_shard.py \
+            --dataset-path "$DEV_PARQUET" \
+            --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
+            --shard-id "$SHARD_ID" --model-id mdeberta \
+            --order-by-length --output /tmp/phase1b-private.json
+          rm -f "$DEV_PARQUET"
+      - name: Encrypt private output before artifact handling
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          SHARD_ID: ${{ matrix.shard_id }}
+          RUN_ID: ${{ github.run_id }}
+          CODE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/phase1b-encrypted
+          python scripts/benchmarks/phase1b/encrypt_artifact.py \
+            --input /tmp/phase1b-private.json \
+            --output "/tmp/phase1b-encrypted/${SHARD_ID}.json" \
+            --run-id "$RUN_ID" --model-revision "b5113eb38ab63efdd7f280f8c144ea8b13f978ce" \
+            --shard-id "$SHARD_ID" --dataset-revision "981dfd0bd8e58e7238a9ab92b2e6ea44bce918e4" \
+            --code-sha "$CODE_SHA"
+          rm -f /tmp/phase1b-private.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-minimal-encrypted-${{ matrix.shard_id }}
+          path: /tmp/phase1b-encrypted/${{ matrix.shard_id }}.json
+          if-no-files-found: error
+          retention-days: 1
+
+  aggregate:
+    needs: [plan, shard]
+    if: ${{ always() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     environment: international-benchmark-maintainer-approval
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,111 +167,39 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install pinned benchmark dependencies
+      - name: Install pinned dependencies
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
-          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3
-          python - <<'PY'
-          import torch
-          assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
-          PY
-      - name: Validate required secret without printing it
+          python -m pip install --index-url https://pypi.org/simple cryptography==46.0.3
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: phase1b-dev-minimal-manifest
+          path: /tmp/phase1b-manifest
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: phase1b-dev-minimal-encrypted-*
+          path: /tmp/phase1b-encrypted
+          merge-multiple: true
+      - name: Decrypt in protected job and publish operational aggregate only
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
         run: |
-          python - <<'PY'
-          import os
-          from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
-          key = decode_key()
-          assert len(key) == 32
-          print("ENCRYPTION_SECRET: VALID (value not displayed)")
-          PY
-      - name: Download immutable DEV parquet
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          python - <<'PY'
-          import hashlib
-          import json
-          import os
-          import re
-          from pathlib import Path
-          from huggingface_hub import hf_hub_download
-
-          pin = json.loads(Path("configs/benchmarks/llm-aggrefact-dev-pin.json").read_text())
-          if pin["file"] != "data/dev-00000-of-00001.parquet":
-              raise SystemExit("DEV shard integrity check failed")
-          if not isinstance(pin["revision"], str) or not re.fullmatch(r"[a-fA-F0-9]{40}", pin["revision"]):
-              raise SystemExit("DEV shard integrity check failed")
-          path = hf_hub_download(
-              repo_id=pin["dataset"], filename=pin["file"],
-              repo_type="dataset", revision=pin["revision"], token=os.environ.get("HF_TOKEN") or None,
-          )
-          downloaded = Path(path)
-          if downloaded.stat().st_size != pin["size_bytes"]:
-              raise SystemExit("DEV shard integrity check failed")
-          digest = hashlib.sha256()
-          with downloaded.open("rb") as stream:
-              for block in iter(lambda: stream.read(1024 * 1024), b""):
-                  digest.update(block)
-          if digest.hexdigest() != pin["sha256"]:
-              raise SystemExit("DEV shard integrity check failed")
-          Path("/tmp/phase1b-dev.parquet").write_bytes(downloaded.read_bytes())
-          PY
-      - name: Build exactly one shard of ten DEV examples
-        run: |
-          python scripts/benchmarks/phase1b/build_manifest.py \
-            --dataset-path /tmp/phase1b-dev.parquet --split dev \
-            --sample-size 10 --shard-size 10 --max-shards 1 \
-            --seed 20261106 --output /tmp/phase1b-manifest.json
-          python scripts/benchmarks/phase1b/emit_matrix.py \
-            --manifest /tmp/phase1b-manifest.json --minimal \
-            --output /tmp/phase1b-matrix.json
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          manifest = json.loads(Path("/tmp/phase1b-manifest.json").read_text())
-          matrix = json.loads(Path("/tmp/phase1b-matrix.json").read_text())
-          assert manifest["split"] == "dev"
-          assert manifest["sample_count"] == 10
-          assert len(manifest["shards"]) == 1
-          assert manifest["shards"][0]["count"] == 10
-          assert matrix["matrix_enabled"] is False
-          print("MINIMAL_PLAN: PASS (1 shard, 10 DEV examples; matrix disabled)")
-          PY
-      - name: Run pinned mDeBERTa DEV shard
-        run: |
-          python scripts/benchmarks/phase1b/run_shard.py \
-            --dataset-path /tmp/phase1b-dev.parquet \
-            --manifest /tmp/phase1b-manifest.json \
-            --shard-id dev-0000 --model-id mdeberta \
-            --order-by-length --output /tmp/phase1b-private.json
-      - name: Encrypt private output before artifact handling
-        env:
-          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_SHA: ${{ github.sha }}
-        run: |
-          python scripts/benchmarks/phase1b/encrypt_artifact.py \
-            --input /tmp/phase1b-private.json --output /tmp/phase1b-encrypted.json \
-            --run-id "$GITHUB_RUN_ID" --model-revision "b5113eb38ab63efdd7f280f8c144ea8b13f978ce" \
-            --shard-id dev-0000 --dataset-revision "981dfd0bd8e58e7238a9ab92b2e6ea44bce918e4" \
-            --code-sha "$GITHUB_SHA"
-          rm -f /tmp/phase1b-private.json
-      - name: Aggregate and publish only aggregate output
-        env:
-          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
-        run: |
-          mkdir -p /tmp/phase1b-encrypted
-          cp /tmp/phase1b-encrypted.json /tmp/phase1b-encrypted/shard.json
+          set -euo pipefail
           python scripts/benchmarks/phase1b/aggregate_dev.py \
-            --manifest /tmp/phase1b-manifest.json \
+            --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
             --encrypted-dir /tmp/phase1b-encrypted \
             --output /tmp/phase1b-aggregate.json
-          cat /tmp/phase1b-aggregate.json
-          rm -rf /tmp/phase1b-encrypted /tmp/phase1b-encrypted.json /tmp/phase1b-dev.parquet
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("/tmp/phase1b-aggregate.json").read_text())
+          assert report["split"] == "dev"
+          assert report["quality_metrics"] == "not_computed_minimal_run"
+          assert report["instance_level_output_published"] is False
+          assert "records" not in json.dumps(report)
+          PY
+          rm -rf /tmp/phase1b-encrypted
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: phase1b-dev-minimal-aggregate
@@ -138,6 +207,4 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-# Deliberately no strategy.matrix and no TEST split/job.
-# Full matrix remains disabled pending explicit maintainer approval.
-# This workflow has not been dispatched.
+# Deliberately no TEST split/job and no full matrix. Not dispatched by tooling; maintainer only.

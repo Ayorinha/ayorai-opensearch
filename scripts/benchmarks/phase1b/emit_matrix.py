@@ -15,8 +15,8 @@ def emit_matrix(manifest: dict, *, minimal: bool = False) -> dict:
     if not isinstance(shards, list) or not shards:
         raise ValueError("manifest has no shards")
     if minimal:
-        if len(shards) != 1 or shards[0].get("count") != 10:
-            raise ValueError("minimal mode requires exactly one shard of ten examples")
+        if len(shards) != 2 or any(item.get("count") != 5 for item in shards):
+            raise ValueError("minimal mode requires exactly two shards of five examples")
     return {
         "split": "dev",
         "shard_ids": [item["shard_id"] for item in shards],
