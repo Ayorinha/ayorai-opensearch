@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 from collections import Counter
 from pathlib import Path
@@ -97,7 +98,7 @@ def build_manifest(
         for cohort in sorted(groups):
             ids = groups[cohort][:]
             rng.shuffle(ids)
-            chosen.extend(ids[:counts[cohort]])
+            chosen.extend(ids[: counts[cohort]])
         selected = sorted(chosen)
 
     shards = []
@@ -147,7 +148,6 @@ def main() -> None:
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     pin = _validate_dev_pin(args.dataset_path, args.pin)
-    import os
     code_sha = args.code_sha or os.environ.get("GITHUB_SHA", "local-uncommitted")
     manifest = build_manifest(
         load_records(args.dataset_path),
@@ -163,13 +163,18 @@ def main() -> None:
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(canonical_json(manifest) + b"\n")
-    print(json.dumps({
-        "status": "manifest_created",
-        "split": "dev",
-        "sample_count": manifest["sample_count"],
-        "shard_count": len(manifest["shards"]),
-        "manifest_sha256": manifest["manifest_sha256"],
-    }, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "status": "manifest_created",
+                "split": "dev",
+                "sample_count": manifest["sample_count"],
+                "shard_count": len(manifest["shards"]),
+                "manifest_sha256": manifest["manifest_sha256"],
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":
