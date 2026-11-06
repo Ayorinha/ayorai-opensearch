@@ -29,9 +29,9 @@ MODELS: dict[str, dict[str, str]] = {
 
 
 def canonical_json(value: Any) -> bytes:
-    return json.dumps(
-        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
 
 
 def sha256_bytes(value: bytes) -> str:
