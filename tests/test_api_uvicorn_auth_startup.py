@@ -68,9 +68,15 @@ def _cmd_has_lifespan_on(command: str) -> bool:
 
 def test_dockerfile_command_forces_lifespan_on() -> None:
     dockerfile = (REPO_ROOT / "docker" / "Dockerfile").read_text(encoding="utf-8")
-    commands = [line for line in dockerfile.splitlines() if line.startswith('CMD ["uvicorn"')]
+    commands = [
+        line for line in dockerfile.splitlines() if line.startswith("CMD ") and "uvicorn" in line
+    ]
     assert commands, "Dockerfile must start the API with uvicorn"
     assert all(_cmd_has_lifespan_on(line) for line in commands)
+    assert all(re.search(r"\bexec\s+uvicorn\b", line) for line in commands)
+    assert all("--proxy-headers" in line for line in commands)
+    assert all("--forwarded-allow-ips" in line for line in commands)
+    assert all("FORWARDED_ALLOW_IPS" in line for line in commands)
 
 
 def test_makefile_run_target_forces_lifespan_on() -> None:
