@@ -51,7 +51,7 @@ jobs:
               raise SystemExit("dev_sha256 must be a 64-character SHA-256")
           # Dataset file name is fixed to the DEV shard; never request test.
           path=hf_hub_download(repo_id="lytang/LLM-AggreFact", repo_type="dataset",
-              filename="data/dev-00000-of-00001.parquet", revision=revision, token=token)
+              filename="default/dev/0000.parquet", revision=revision, token=token)
           digest=hashlib.sha256(Path(path).read_bytes()).hexdigest()
           if digest != expected: raise SystemExit("DEV shard SHA-256 mismatch")
           Path("/tmp/dev_shard_path").write_text(path)
@@ -66,7 +66,10 @@ jobs:
           PILOT_SIZE: "200"
         run: |
           set -euo pipefail
-          python scripts/benchmarks/baseline_throughput_pilot.py             --dataset-path "$(cat /tmp/dev_shard_path)"             --seed "$PILOT_SEED" --sample-size "$PILOT_SIZE"             --out reports/benchmarks/baseline-throughput-pilot-aggregate.json
+          python scripts/benchmarks/baseline_throughput_pilot.py \
+            --dataset-path "$(cat /tmp/dev_shard_path)" \
+            --seed "$PILOT_SEED" --sample-size "$PILOT_SIZE" \
+            --out reports/benchmarks/baseline-throughput-pilot-aggregate.json
       - name: Assert aggregate-only report
         run: |
           python - <<'PY'
