@@ -1273,7 +1273,7 @@
               "Retry-After": {
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
-                  "minimum": 1.0,
+                  "minimum": 1,
                   "type": "integer"
                 }
               }
@@ -1369,7 +1369,7 @@
               "Retry-After": {
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
-                  "minimum": 1.0,
+                  "minimum": 1,
                   "type": "integer"
                 }
               }
@@ -1463,7 +1463,7 @@
               "Retry-After": {
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
-                  "minimum": 1.0,
+                  "minimum": 1,
                   "type": "integer"
                 }
               }
@@ -1573,7 +1573,7 @@
               "Retry-After": {
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
-                  "minimum": 1.0,
+                  "minimum": 1,
                   "type": "integer"
                 }
               }
