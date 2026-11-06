@@ -1,4 +1,4 @@
-"""Regression tests for the API authentication request limiter."""
+""""Regression tests for the API authentication request limiter."""
 
 import hashlib
 import hmac
@@ -125,9 +125,11 @@ def test_authenticated_key_has_its_own_rate_limit(
         return {"access": "granted"}
 
     headers = {"X-API-Key": key}
-    with TestClient(app) as client:
-        assert client.get("/private", headers=headers).status_code == 200
-        assert client.get("/private", headers=headers).status_code == 200
+    for port in (1001, 1002):
+        with TestClient(app, client=("127.0.0.1", port)) as client:
+            assert client.get("/private", headers=headers).status_code == 200
+    with TestClient(app, client=("127.0.0.1", 1003)) as client:
         blocked = client.get("/private", headers=headers)
 
     assert blocked.status_code == 429
+"
