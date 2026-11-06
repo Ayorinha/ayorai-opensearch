@@ -101,6 +101,8 @@ jobs:
           print("Pinned DEV shard verified; no dataset content logged.")
           PY
       - name: Run 200-example throughput pilot (DEV only)
+        id: pilot
+        continue-on-error: true
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           DEV_REVISION: ${{ inputs.dev_revision }}
@@ -126,12 +128,17 @@ jobs:
           assert report["sample_size"] == 200
           assert report["instance_level_predictions_in_public_artifact"] is False
           assert "examples" not in report and "predictions" not in report
+          assert report["pilot_status"] in {"SUCCESS", "FAILED"}
+          assert all(model["status"] in {"SUCCESS", "FAILED", "SKIPPED"} for model in report["models"])
           assert all(
-              "seconds_per_example" in model
-              and "load_seconds" in model
-              and "warmup_seconds" in model
-              and "inference_seconds" in model
+              {"seconds_per_example", "load_seconds", "warmup_seconds", "inference_seconds"}
+              <= model.keys()
               for model in report["models"]
+              if model["status"] == "SUCCESS"
+          )
+          assert any(model["model_id"] == "HHEM-2.1-Open" and model["status"] == "SKIPPED" for model in report["models"])
+          assert report["failed_model_count"] == sum(
+              model["status"] == "FAILED" for model in report["models"]
           )
           PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -140,3 +147,8 @@ jobs:
           path: reports/benchmarks/baseline-throughput-pilot-aggregate.json
           if-no-files-found: error
           retention-days: 14
+      - name: Fail job if any model failed
+        if: steps.pilot.outcome == 'failure'
+        run: |
+          echo "At least one model failed; aggregate report has been uploaded."
+          exit 1

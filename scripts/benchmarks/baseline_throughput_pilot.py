@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import inspect
 import json
 import math
 import os
@@ -32,16 +33,19 @@ MODELS = [
         "key": "mdeberta_nli",
         "repo": "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7",
         "prefix": "b5113eb",
+        "weights": "safetensors",
     },
     {
         "key": "minicheck_deberta_large",
         "repo": "lytang/MiniCheck-DeBERTa-v3-Large",
         "prefix": "2f2d01a",
+        "weights": "bin",
     },
     {
         "key": "factcg_deberta_large",
         "repo": "yaxili96/FactCG-DeBERTa-v3-Large",
         "prefix": "0430e3509dbd28d2dff7a117c0eae25359ff3e80",
+        "weights": "safetensors",
     },
 ]
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?。！？])\s+")
@@ -56,6 +60,24 @@ def resolve_unique_commit(api: HfApi, repo: str, prefix: str) -> str:
     if len(matches) != 1:
         raise RuntimeError(f"{repo}: prefix {prefix} resolved to {len(matches)} commits")
     return matches[0]
+
+
+def enforce_weights_only_loading() -> None:
+    if "weights_only" not in inspect.signature(torch.load).parameters:
+        raise RuntimeError(
+            "This PyTorch build cannot enforce torch.load(weights_only=True) for .bin weights"
+        )
+    if getattr(torch.load, "_ayorai_weights_only", False):
+        return
+    original_torch_load = torch.load
+
+    def weights_only_load(*args, **kwargs):
+        kwargs["weights_only"] = True
+        return original_torch_load(*args, **kwargs)
+
+    weights_only_load._ayorai_weights_only = True
+    torch.load = weights_only_load
+    os.environ["TORCH_FORCE_WEIGHTS_ONLY_LOAD"] = "1"
 
 
 def sha256_file(path: Path) -> str:
@@ -215,100 +237,133 @@ def main() -> None:
 
     process = psutil.Process()
     global_peak_ram = process.memory_info().rss
+    report["models"].append(
+        {
+            "model_id": "HHEM-2.1-Open",
+            "weights_format": None,
+            "status": "SKIPPED",
+            "reason": "Gated access and custom-code review are not approved for this pilot.",
+        }
+    )
     for spec in MODELS:
-        revision = resolve_unique_commit(api, spec["repo"], spec["prefix"])
-        load_start = time.perf_counter()
-        model_dir = Path(
-            snapshot_download(
-                repo_id=spec["repo"],
-                revision=revision,
-                token=None,
-                local_files_only=False,
-                allow_patterns=[
-                    "*.json",
-                    "*.safetensors",
-                    "*.model",
-                    "tokenizer*",
-                    "vocab*",
-                    "merges*",
-                ],
+        revision = None
+        model = None
+        tokenizer = None
+        stage = "revision_resolution"
+        try:
+            if spec["weights"] not in {"safetensors", "bin"}:
+                raise RuntimeError("Unsupported declared weights format")
+            revision = resolve_unique_commit(api, spec["repo"], spec["prefix"])
+            common_patterns = [
+                "*.json",
+                "*.model",
+                "tokenizer*",
+                "vocab*",
+                "merges*",
+            ]
+            weight_pattern = (
+                "*.safetensors" if spec["weights"] == "safetensors" else "pytorch_model.bin"
             )
-        )
-        if not any(model_dir.rglob("*.safetensors")):
-            raise RuntimeError(
-                f"{spec['repo']}@{revision}: no .safetensors weights found "
-                "in the pinned snapshot; refusing fallback to .bin/.pt"
+            stage = "snapshot_download"
+            model_dir = Path(
+                snapshot_download(
+                    repo_id=spec["repo"],
+                    revision=revision,
+                    token=None,
+                    local_files_only=False,
+                    allow_patterns=[*common_patterns, weight_pattern],
+                )
             )
-        tokenizer = AutoTokenizer.from_pretrained(str(model_dir), local_files_only=True)
-        model = AutoModelForSequenceClassification.from_pretrained(
-            str(model_dir),
-            local_files_only=True,
-            trust_remote_code=False,
-        )
-        model.eval()
-        load_seconds = time.perf_counter() - load_start
-        peak_ram = process.memory_info().rss
+            stage = "weights_validation"
+            if spec["weights"] == "safetensors":
+                weight_files = sorted(model_dir.rglob("*.safetensors"))
+            else:
+                weight_files = sorted(model_dir.rglob("pytorch_model.bin"))
+            if not weight_files:
+                raise RuntimeError(
+                    f"Declared {spec['weights']} weight file is missing from the pinned snapshot"
+                )
 
-        block_texts: list[str] = []
-        claims: list[str] = []
-        token_doc_counts: list[int] = []
-        token_claim_counts: list[int] = []
-        blocks_per_example: list[int] = []
-        for _, row in sample.iterrows():
-            chunks, doc_tokens = sentence_chunks(str(row["doc"]), tokenizer)
-            claim = str(row["claim"])
-            token_doc_counts.append(doc_tokens)
-            token_claim_counts.append(len(tokenizer.encode(claim, add_special_tokens=False)))
-            blocks_per_example.append(len(chunks))
-            block_texts.extend(chunks)
-            claims.extend([claim] * len(chunks))
+            stage = "tokenizer_load"
+            tokenizer = AutoTokenizer.from_pretrained(str(model_dir), local_files_only=True)
+            if spec["weights"] == "bin":
+                stage = "weights_only_policy"
+                enforce_weights_only_loading()
+            stage = "model_load"
+            load_start = time.perf_counter()
+            model = AutoModelForSequenceClassification.from_pretrained(
+                str(model_dir),
+                local_files_only=True,
+                trust_remote_code=False,
+            )
+            model.eval()
+            load_seconds = time.perf_counter() - load_start
+            # Start the measured inference preparation after model initialization.
+            peak_ram = process.memory_info().rss
 
-        warmup_docs = block_texts[:BATCH_SIZE]
-        warmup_claims = claims[:BATCH_SIZE]
-        warmup_start = time.perf_counter()
-        warmup_batch = tokenizer(
-            warmup_docs,
-            warmup_claims,
-            padding=True,
-            truncation="only_first",
-            max_length=512,
-            return_tensors="pt",
-        )
-        with torch.inference_mode():
-            _ = model(**warmup_batch)
-        warmup_seconds = time.perf_counter() - warmup_start
-        peak_ram = max(peak_ram, process.memory_info().rss)
+            stage = "tokenization"
+            block_texts: list[str] = []
+            claims: list[str] = []
+            token_doc_counts: list[int] = []
+            token_claim_counts: list[int] = []
+            blocks_per_example: list[int] = []
+            for _, row in sample.iterrows():
+                chunks, doc_tokens = sentence_chunks(str(row["doc"]), tokenizer)
+                claim = str(row["claim"])
+                token_doc_counts.append(doc_tokens)
+                token_claim_counts.append(len(tokenizer.encode(claim, add_special_tokens=False)))
+                blocks_per_example.append(len(chunks))
+                block_texts.extend(chunks)
+                claims.extend([claim] * len(chunks))
 
-        inference_start = time.perf_counter()
-        processed_blocks = 0
-        for start in range(0, len(block_texts), BATCH_SIZE):
-            docs = block_texts[start : start + BATCH_SIZE]
-            claims_batch = claims[start : start + BATCH_SIZE]
-            batch = tokenizer(
-                docs,
-                claims_batch,
+            warmup_docs = block_texts[:BATCH_SIZE]
+            warmup_claims = claims[:BATCH_SIZE]
+            warmup_start = time.perf_counter()
+            warmup_batch = tokenizer(
+                warmup_docs,
+                warmup_claims,
                 padding=True,
                 truncation="only_first",
                 max_length=512,
                 return_tensors="pt",
             )
+            stage = "warmup_inference"
             with torch.inference_mode():
-                _ = model(**batch)
-            processed_blocks += len(docs)
+                _ = model(**warmup_batch)
+            warmup_seconds = time.perf_counter() - warmup_start
             peak_ram = max(peak_ram, process.memory_info().rss)
-        inference_seconds = time.perf_counter() - inference_start
-        seconds_per_example = inference_seconds / len(sample)
-        cohort_estimates = {}
-        for cohort, total_count in report["dev_cohort_total_counts"].items():
-            sampled_count = report["cohort_sample_counts"].get(cohort, 0)
-            if sampled_count:
-                cohort_estimates[cohort] = round(seconds_per_example * total_count, 2)
 
-        report["models"].append(
-            {
+            inference_start = time.perf_counter()
+            processed_blocks = 0
+            stage = "inference"
+            for start in range(0, len(block_texts), BATCH_SIZE):
+                docs = block_texts[start : start + BATCH_SIZE]
+                claims_batch = claims[start : start + BATCH_SIZE]
+                batch = tokenizer(
+                    docs,
+                    claims_batch,
+                    padding=True,
+                    truncation="only_first",
+                    max_length=512,
+                    return_tensors="pt",
+                )
+                with torch.inference_mode():
+                    _ = model(**batch)
+                processed_blocks += len(docs)
+                peak_ram = max(peak_ram, process.memory_info().rss)
+            inference_seconds = time.perf_counter() - inference_start
+            seconds_per_example = inference_seconds / len(sample)
+            cohort_estimates = {}
+            for cohort, total_count in report["dev_cohort_total_counts"].items():
+                sampled_count = report["cohort_sample_counts"].get(cohort, 0)
+                if sampled_count:
+                    cohort_estimates[cohort] = round(seconds_per_example * total_count, 2)
+
+            model_result = {
                 "model_id": spec["repo"],
                 "requested_revision_prefix": spec["prefix"],
                 "resolved_revision": revision,
+                "weights_format": spec["weights"],
                 "weights_sha256": sha256_inventory(model_dir, "weights"),
                 "tokenizer_sha256": sha256_inventory(model_dir, "tokenizer"),
                 "load_seconds": round(load_seconds, 3),
@@ -336,16 +391,44 @@ def main() -> None:
                 "claim_tokens_p95": percentile(token_claim_counts, 0.95),
                 "ram_peak_bytes": int(peak_ram),
                 "estimated_full_dev_seconds_by_cohort": cohort_estimates,
+                "status": "SUCCESS",
                 "note": (
                     "Forward-pass throughput only; no quality metrics or predictions recorded."
                 ),
             }
-        )
-        global_peak_ram = max(global_peak_ram, peak_ram)
-        del model, tokenizer
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+            if spec["weights"] == "bin":
+                model_result["bin_loading_policy"] = (
+                    "torch.load is wrapped to force weights_only=True; "
+                    "TORCH_FORCE_WEIGHTS_ONLY_LOAD=1"
+                )
+            report["models"].append(model_result)
+            global_peak_ram = max(global_peak_ram, peak_ram)
+        except Exception as exc:
+            report["models"].append(
+                {
+                    "model_id": spec["repo"],
+                    "revision": revision,
+                    "weights_format": spec["weights"],
+                    "status": "FAILED",
+                    "failure_stage": stage,
+                    "error_type": type(exc).__name__,
+                    "reason": (
+                        "Model processing failed; exception details omitted to prevent "
+                        "dataset-content leakage. See private workflow logs."
+                    ),
+                }
+            )
+        finally:
+            if model is not None:
+                del model
+            if tokenizer is not None:
+                del tokenizer
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
+    failed_models = [model for model in report["models"] if model["status"] == "FAILED"]
+    report["pilot_status"] = "FAILED" if failed_models else "SUCCESS"
+    report["failed_model_count"] = len(failed_models)
     report["ram_peak_bytes_process"] = int(global_peak_ram)
     report["estimate_note"] = (
         "Extrapolation uses sampled average inference seconds per example and full DEV "
@@ -359,6 +442,8 @@ def main() -> None:
         encoding="utf-8",
     )
     print(f"Aggregate pilot report written: {output_path}; no row-level content emitted.")
+    if failed_models:
+        raise SystemExit(f"{len(failed_models)} model(s) failed; see aggregate status report.")
 
 
 if __name__ == "__main__":
