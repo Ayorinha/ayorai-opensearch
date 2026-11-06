@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -35,10 +36,15 @@ def aggregate_packages(
         raise ValueError("manifest digest verification failed")
     expected = {shard["shard_id"]: shard for shard in manifest["shards"]}
     packages: dict[tuple[str, str], dict[str, Any]] = {}
+    run_ids: set[str] = set()
     for envelope in encrypted_packages:
         metadata = envelope.get("metadata", {})
         if metadata.get("split") != "dev":
             raise ValueError("non-DEV encrypted artifact rejected")
+        run_id = metadata.get("run_id")
+        if not isinstance(run_id, str) or not run_id:
+            raise ValueError("encrypted artifact run identity is missing")
+        run_ids.add(run_id)
         private = json.loads(decrypt_bytes(envelope, key=key))
         shard_id = private["shard_id"]
         model_id = private["model_id"]
@@ -52,8 +58,12 @@ def aggregate_packages(
             or metadata.get("code_sha") != private.get("code_sha")
         ):
             raise ValueError("encrypted artifact provenance mismatch")
-        if private.get("dataset_sha256") != manifest.get("dataset_sha256"):
-            raise ValueError("encrypted artifact dataset pin mismatch")
+        if (
+            private.get("dataset_sha256") != manifest.get("dataset_sha256")
+            or private.get("dataset_revision") != manifest.get("dataset_revision")
+            or private.get("code_sha") != manifest.get("code_sha")
+        ):
+            raise ValueError("encrypted artifact manifest provenance mismatch")
         if shard_id not in expected:
             raise ValueError("unexpected shard artifact")
         records = private.get("records", [])
@@ -69,8 +79,19 @@ def aggregate_packages(
         key_tuple = (model_id, shard_id)
         if key_tuple in packages:
             raise ValueError("duplicate model/shard artifact")
+        for record in records:
+            score = record.get("score")
+            if (
+                record.get("gold") not in {"SUPPORTED", "NOT_SUPPORTED"}
+                or not isinstance(score, (int, float))
+                or not math.isfinite(score)
+                or not 0.0 <= score <= 1.0
+            ):
+                raise ValueError("private shard contains an invalid score or label")
         packages[key_tuple] = private
 
+    if len(run_ids) > 1:
+        raise ValueError("encrypted artifacts belong to different workflow runs")
     models = sorted({model for model, _ in packages})
     summaries = {}
     incomplete = []
