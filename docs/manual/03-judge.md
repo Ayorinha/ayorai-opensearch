@@ -145,3 +145,11 @@ A saída canônica usa JSON UTF-8, chaves ordenadas, separadores compactos, `ens
 - [Tabela de verdade do Judge 2](../judge2/TRUTH-TABLE.md)
 - [Rastreabilidade do Judge 2](../judge2/TRACEABILITY.md)
 - [ADR-009 — contrato de adjudicação determinística](../adr/ADR-009-deterministic-adjudication-contract.md)
+
+### Offsets de trechos: texto original e normalização NFC
+
+Na revalidação de trechos feita por `locate_excerpt` e `revalidate_evidence`, os offsets persistidos devem apontar para o **texto original da fonte**, não para a representação normalizada. O intervalo segue a convenção `[start_offset, end_offset)`: início inclusivo e fim exclusivo, medidos como índices de pontos de código Unicode de `str` em Python. Não são posições em bytes UTF-8 nem unidades UTF-16.
+
+A normalização NFC é usada somente para localizar e comparar o trecho. Como a normalização pode alterar a quantidade de pontos de código — por exemplo, ao combinar uma letra e um sinal diacrítico —, os limites encontrados no texto normalizado precisam ser convertidos de volta por um mapa de índices para os limites correspondentes no texto original. Assim, a fatia `source_text[start_offset:end_offset]` continua referindo-se ao conteúdo original, inclusive quando a fonte está em NFD e o trecho recebido está em NFC. A normalização não substitui nem regrava a fonte.
+
+Essa regra descreve a revalidação de trechos do pipeline de verificação; não altera o contrato de offsets dos átomos do Judge 2.0, suas regras, schemas ou implementação. Os testes sintéticos cobrem a correspondência de um trecho NFC em fonte NFD e a preservação dos offsets originais quando há um caractere fora do BMP antes do trecho.
