@@ -124,13 +124,18 @@ def main() -> None:
     report = aggregate_packages(manifest, envelopes, key=key)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(canonical_json(report) + b"\n")
-    print(json.dumps({
-        "status": "complete" if report["complete"] else "incomplete",
-        "split": "dev",
-        "model_count": len(report["models"]),
-        "incomplete_model_count": len(report["incomplete_models"]),
-        "instance_level_output_published": False,
-    }, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "status": "complete" if report["complete"] else "incomplete",
+                "split": "dev",
+                "model_count": len(report["models"]),
+                "incomplete_model_count": len(report["incomplete_models"]),
+                "instance_level_output_published": False,
+            },
+            sort_keys=True,
+        )
+    )
     if not report["complete"]:
         raise SystemExit(2)
 
