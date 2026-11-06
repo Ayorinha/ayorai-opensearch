@@ -5,7 +5,8 @@ Replay digests can detect changes to the fields covered by replay verification,
 but this SQLite store is not tamper-proof against direct database edits or an
 administrator with write access. It does not persist raw prompts, evidence
 excerpts, credentials, or model outputs. SQLite schema changes are versioned
-with PRAGMA user_version.
+with PRAGMA user_version. Access to the shared connection is serialized within this
+process; this does not make the store a multi-process or multi-replica database.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from __future__ import annotations
 import os
 import sqlite3
 from pathlib import Path
+from threading import RLock
 from typing import Any, Final, Literal
 
 from ayorai_attractor.audit import AuditReport
@@ -38,6 +40,7 @@ class AuditTraceStore:
             else os.getenv("ATTRACTOR_AUDIT_DB", ".attractor/audit.sqlite3")
         )
         self.path = configured
+        self._lock = RLock()
         if configured != ":memory:":
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(self.path, check_same_thread=False)
@@ -50,7 +53,8 @@ class AuditTraceStore:
         self.close()
 
     def close(self) -> None:
-        self._connection.close()
+        with self._lock:
+            self._connection.close()
 
     def _create_schema_v2(self, connection: sqlite3.Connection) -> None:
         self._create_schema_v2_named(connection, "audit_traces")
@@ -78,6 +82,10 @@ class AuditTraceStore:
         )
 
     def _migrate(self) -> None:
+        with self._lock:
+            self._migrate_locked()
+
+    def _migrate_locked(self) -> None:
         connection = self._connection
         exists = connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'audit_traces'"
@@ -183,6 +191,10 @@ class AuditTraceStore:
         return _R2_V1
 
     def record(self, response: SearchResponse, report: AuditReport) -> str:
+        with self._lock:
+            return self._record_locked(response, report)
+
+    def _record_locked(self, response: SearchResponse, report: AuditReport) -> str:
         events = [
             {
                 "event": "audit.completed",
@@ -225,6 +237,10 @@ class AuditTraceStore:
         return replay.digest
 
     def verify(self, trace_id: str) -> ReplayIntegrity:
+        with self._lock:
+            return self._verify_locked(trace_id)
+
+    def _verify_locked(self, trace_id: str) -> ReplayIntegrity:
         row = self._connection.execute(
             """
             SELECT legacy_verification, evidence_count, failure_count,
@@ -257,6 +273,10 @@ class AuditTraceStore:
         return "valid" if rebuilt.digest == stored_digest else "invalid"
 
     def get(self, trace_id: str) -> AuditTraceResponse | None:
+        with self._lock:
+            return self._get_locked(trace_id)
+
+    def _get_locked(self, trace_id: str) -> AuditTraceResponse | None:
         row = self._connection.execute(
             """
             SELECT trace_id, operation_status, evidence_count,
