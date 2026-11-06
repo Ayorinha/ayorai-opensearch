@@ -15,7 +15,11 @@ except ImportError:  # direct script execution
     from common import DEV_PIN_PATH, MODELS, load_records, sha256_file, stable_record_id
 
 
-def select_shard(manifest: dict[str, Any], rows: list[dict[str, Any]], shard_id: str) -> list[tuple[str, dict[str, Any]]]:
+def select_shard(
+    manifest: dict[str, Any],
+    rows: list[dict[str, Any]],
+    shard_id: str,
+) -> list[tuple[str, dict[str, Any]]]:
     if manifest.get("split") != "dev":
         raise ValueError("TEST execution is forbidden in the Phase 1b DEV runner")
     indexed = {stable_record_id(row): row for row in rows}
@@ -32,7 +36,12 @@ def select_shard(manifest: dict[str, Any], rows: list[dict[str, Any]], shard_id:
     return selected
 
 
-def _sentence_chunks(text: str, tokenizer, max_tokens: int = 384, overlap: int = 64) -> list[str]:
+def _sentence_chunks(
+    text: str,
+    tokenizer: Any,
+    max_tokens: int = 384,
+    overlap: int = 64,
+) -> list[str]:
     sentences = [part.strip() for part in re.split(r"(?<=[.!?。！？])\s+", text) if part.strip()]
     chunks: list[str] = []
     current: list[int] = []
@@ -43,7 +52,8 @@ def _sentence_chunks(text: str, tokenizer, max_tokens: int = 384, overlap: int =
                 chunks.append(tokenizer.decode(current, skip_special_tokens=True))
                 current = current[-overlap:]
             for start in range(0, len(token_ids), max_tokens - overlap):
-                chunks.append(tokenizer.decode(token_ids[start : start + max_tokens], skip_special_tokens=True))
+                chunk = token_ids[start : start + max_tokens]
+                chunks.append(tokenizer.decode(chunk, skip_special_tokens=True))
             current = []
             continue
         if current and len(current) + len(token_ids) > max_tokens:
@@ -57,9 +67,17 @@ def _sentence_chunks(text: str, tokenizer, max_tokens: int = 384, overlap: int =
 
 def _support_label_id(config: Any) -> int:
     labels = {int(index): str(label).casefold() for index, label in config.id2label.items()}
-    matches = [index for index, label in labels.items() if any(term in label for term in ("entail", "support", "positive"))]
+    support_terms = ("entail", "support", "positive")
+    matches = [
+        index
+        for index, label in labels.items()
+        if any(term in label for term in support_terms)
+    ]
     if len(matches) != 1:
-        raise ValueError("model config does not expose one unambiguous support label; explicit mapping required")
+        raise ValueError(
+            "model config does not expose one unambiguous support label; "
+            "explicit mapping required"
+        )
     return matches[0]
 
 
@@ -93,7 +111,13 @@ def run_inference(
         for chunk_index, chunk in enumerate(_sentence_chunks(str(row["doc"]), tokenizer)):
             expanded.append((rid, claim, chunk, f"{rid}:{chunk_index:06d}"))
     if sort_by_length:
-        expanded.sort(key=lambda item: (len(tokenizer.encode(item[2], add_special_tokens=False)), item[0], item[3]))
+        expanded.sort(
+            key=lambda item: (
+                len(tokenizer.encode(item[2], add_special_tokens=False)),
+                item[0],
+                item[3],
+            )
+        )
     else:
         expanded.sort(key=lambda item: (item[0], item[3]))
 
@@ -134,10 +158,18 @@ def main() -> None:
     args = parser.parse_args()
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     pin = json.loads(DEV_PIN_PATH.read_text(encoding="utf-8"))
-    if sha256_file(args.dataset_path) != pin["sha256"] or manifest["dataset_sha256"] != pin["sha256"]:
+    if (
+        sha256_file(args.dataset_path) != pin["sha256"]
+        or manifest["dataset_sha256"] != pin["sha256"]
+    ):
         raise ValueError("DEV dataset does not match the immutable pin")
     selected = select_shard(manifest, load_records(args.dataset_path), args.shard_id)
-    result = run_inference(selected, model_id=args.model_id, sort_by_length=args.order_by_length, batch_size=args.batch_size)
+    result = run_inference(
+        selected,
+        model_id=args.model_id,
+        sort_by_length=args.order_by_length,
+        batch_size=args.batch_size,
+    )
     package = {
         "schema_version": "phase1b-private-shard-v1",
         "split": "dev",
@@ -150,8 +182,19 @@ def main() -> None:
         "records": result,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(package, sort_keys=True, separators=(",", ":")), encoding="utf-8")
-    print(json.dumps({"status": "shard_complete", "split": "dev", "shard_id": args.shard_id, "model_id": args.model_id, "record_count": len(result)}))
+    serialized = json.dumps(package, sort_keys=True, separators=(",", ":"))
+    args.output.write_text(serialized, encoding="utf-8")
+    print(
+        json.dumps(
+            {
+                "status": "shard_complete",
+                "split": "dev",
+                "shard_id": args.shard_id,
+                "model_id": args.model_id,
+                "record_count": len(result),
+            }
+        )
+    )
 
 
 if __name__ == "__main__":
