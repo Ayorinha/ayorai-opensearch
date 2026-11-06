@@ -1,7 +1,10 @@
 {
   "dataset": "lytang/LLM-AggreFact",
-  "revision": "PENDING_MAINTAINER_PIN",
+  "revision": "981dfd0bd8e58e7238a9ab92b2e6ea44bce918e4",
   "file": "data/test-00000-of-00001.parquet",
-  "sha256": "PENDING_MAINTAINER_SHA256",
-  "status": "blocked_until_maintainer_authorizes_download_and_freezes_revision_and_file_hash"
+  "sha256": "ba6976c3da990a9d7b11670efaf4e3c93c1bd0530061ec742afd6b2d5bce698c",
+  "size_bytes": 17298205,
+  "access_terms_accepted_at": "2026-11-06",
+  "access_terms": "benchmark evaluation only; pretraining and fine-tuning prohibited",
+  "status": "pinned_by_maintainer_2026-11-06"
 }
