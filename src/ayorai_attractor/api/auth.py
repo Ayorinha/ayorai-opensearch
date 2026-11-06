@@ -1,27 +1,37 @@
-"""API-key authentication for the HTTP API; enabled by default."""
+"""API-key authentication and bounded per-client request throttling."""
 
 from __future__ import annotations
 
 import hashlib
 import hmac
 import os
+import time
+from collections import OrderedDict
 from collections.abc import Iterable
+from math import ceil
 
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-# API keys are machine-generated bearer tokens, not human passwords. A key
-# shorter than this is rejected before any digest is computed, so every key
-# that can ever authenticate carries at least ~190 bits of entropy when
-# generated as documented (secrets.token_urlsafe(32) yields 43 characters).
-# This is what makes a fast keyed digest (HMAC-SHA-256) appropriate here;
-# slow password-hashing functions are designed for low-entropy secrets and
-# would add per-request CPU cost an attacker could exploit.
+# API keys are machine-generated bearer tokens, not human passwords.
 MIN_API_KEY_LENGTH = 32
+_DEFAULT_RATE_LIMIT_REQUESTS = 120
+_DEFAULT_RATE_LIMIT_WINDOW_SECONDS = 60
+_DEFAULT_RATE_LIMIT_MAX_CLIENTS = 10_000
+
+
+def _positive_int_env(name: str, default: int) -> int:
+    raw = os.getenv(name, str(default)).strip()
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a positive integer") from exc
+    if value <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return value
 
 
 def _load_configuration() -> tuple[str, tuple[str, ...], bytes | None]:
-    # Fail closed: an unconfigured deployment must not silently expose the API.
     mode = os.getenv("ATTRACTOR_AUTH_MODE", "api_key").strip().lower()
     if mode not in {"off", "api_key"}:
         raise ValueError("ATTRACTOR_AUTH_MODE must be 'off' or 'api_key'")
@@ -55,28 +65,78 @@ def _is_sha256_hex(value: str) -> bool:
 
 
 def _api_key_digest(presented_key: str, pepper: bytes) -> str:
-    """Return a keyed digest so a leaked digest list alone cannot verify guesses."""
     return hmac.new(pepper, presented_key.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def validate_auth_configuration() -> None:
-    """Validate auth environment settings during application startup."""
+    """Validate auth and throttling environment settings during startup."""
     _load_configuration()
+    _positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS)
+    _positive_int_env("ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS)
+    _positive_int_env("ATTRACTOR_RATE_LIMIT_MAX_CLIENTS", _DEFAULT_RATE_LIMIT_MAX_CLIENTS)
+
+
+class _FixedWindowRateLimiter:
+    """Bounded in-process fixed-window limiter; identities never contain raw credentials."""
+
+    def __init__(self, limit: int, window_seconds: int, max_clients: int) -> None:
+        self.limit = limit
+        self.window_seconds = window_seconds
+        self.max_clients = max_clients
+        self._windows: OrderedDict[str, tuple[float, int]] = OrderedDict()
+        self._calls = 0
+
+    def allow(self, identity: str, now: float | None = None) -> tuple[bool, int]:
+        current = time.monotonic() if now is None else now
+        window = self._windows.get(identity)
+        if window is None or current - window[0] >= self.window_seconds:
+            self._windows.pop(identity, None)
+            if len(self._windows) >= self.max_clients:
+                self._prune(current)
+            if len(self._windows) >= self.max_clients:
+                return False, self.window_seconds
+            self._windows[identity] = (current, 1)
+            return True, 0
+
+        started, count = window
+        if count >= self.limit:
+            return False, max(1, ceil(self.window_seconds - (current - started)))
+        self._windows[identity] = (started, count + 1)
+        self._windows.move_to_end(identity)
+        self._calls += 1
+        if self._calls % 256 == 0:
+            self._prune(current)
+        return True, 0
+
+    def _prune(self, now: float) -> None:
+        expired = [
+            identity
+            for identity, (started, _) in self._windows.items()
+            if now - started >= self.window_seconds
+        ]
+        for identity in expired:
+            self._windows.pop(identity, None)
 
 
 class APIKeyAuthMiddleware:
-    """Authenticate HTTP requests with keyed HMAC-SHA-256 digests of API keys.
+    """Authenticate API keys and apply bounded IP/key request limits.
 
-    Authentication is enabled by default. For local development only, set
-    ATTRACTOR_AUTH_MODE=off explicitly. In api_key mode, configure
-    ATTRACTOR_API_KEYS_HMAC_SHA256 with comma-separated HMAC-SHA-256 hex digests
-    and ATTRACTOR_API_KEY_PEPPER with a separately managed 32-byte secret.
-    Raw API keys are never read from configuration or written to logs.
+    Rate limiting is process-local. Multi-worker or multi-replica deployments
+    must enforce an additional shared edge/API-gateway limit.
     """
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
         self.mode, self.key_hashes, self.pepper = _load_configuration()
+        self.rate_limiter = _FixedWindowRateLimiter(
+            limit=_positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS),
+            window_seconds=_positive_int_env(
+                "ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS
+            ),
+            max_clients=_positive_int_env(
+                "ATTRACTOR_RATE_LIMIT_MAX_CLIENTS", _DEFAULT_RATE_LIMIT_MAX_CLIENTS
+            ),
+        )
 
     @staticmethod
     def _extract_key(headers: Iterable[tuple[bytes, bytes]]) -> str | None:
@@ -84,12 +144,8 @@ class APIKeyAuthMiddleware:
         for name, header_value in headers:
             header_name = name.lower()
             if header_name in {b"authorization", b"x-api-key"} and header_name in normalized:
-                # Reject ambiguous duplicate credential headers rather than
-                # depending on which duplicate a proxy/server chooses.
                 return None
             normalized[header_name] = header_value
-        # Reject simultaneous credential mechanisms as well as duplicate
-        # instances: different intermediaries may prefer different headers.
         if b"authorization" in normalized and b"x-api-key" in normalized:
             return None
 
@@ -106,34 +162,63 @@ class APIKeyAuthMiddleware:
                 return value
         return None
 
+    @staticmethod
+    def _client_identity(scope: Scope) -> str:
+        client = scope.get("client")
+        if isinstance(client, (tuple, list)) and client:
+            return f"ip:{client[0]}"
+        return "ip:unknown"
+
+    @staticmethod
+    async def _reject(
+        scope: Scope, receive: Receive, send: Send, status_code: int, detail: str,
+        retry_after: int | None = None,
+    ) -> None:
+        headers = {"Retry-After": str(retry_after)} if retry_after is not None else None
+        response = JSONResponse(
+            status_code=status_code,
+            content={"detail": detail},
+            headers=headers,
+        )
+        await response(scope, receive, send)
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or self.mode == "off" or scope.get("path") == "/health":
+        if scope["type"] != "http" or scope.get("path") == "/health":
+            await self.app(scope, receive, send)
+            return
+
+        allowed, retry_after = self.rate_limiter.allow(self._client_identity(scope))
+        if not allowed:
+            await self._reject(
+                scope, receive, send, 429, "Rate limit exceeded", retry_after
+            )
+            return
+
+        if self.mode == "off":
             await self.app(scope, receive, send)
             return
 
         presented_key = self._extract_key(scope.get("headers", []))
         if presented_key is None or len(presented_key) < MIN_API_KEY_LENGTH:
-            await self._unauthorized(scope, receive, send)
+            await self._reject(scope, receive, send, 401, "Unauthorized")
             return
 
-        # API keys must be high-entropy bearer tokens, not human passwords.
-        # A separate pepper means a leaked digest list alone cannot verify guesses.
         if self.pepper is None:
-            await self._unauthorized(scope, receive, send)
+            await self._reject(scope, receive, send, 401, "Unauthorized")
             return
         presented_digest = _api_key_digest(presented_key, self.pepper)
-        # Compare every configured digest so the matching key's position
-        # in a rotation list does not short-circuit the loop.
         matched = False
         for configured_digest in self.key_hashes:
             matched |= hmac.compare_digest(presented_digest, configured_digest)
         if not matched:
-            await self._unauthorized(scope, receive, send)
+            await self._reject(scope, receive, send, 401, "Unauthorized")
+            return
+
+        allowed, retry_after = self.rate_limiter.allow(f"key:{presented_digest}")
+        if not allowed:
+            await self._reject(
+                scope, receive, send, 429, "Rate limit exceeded", retry_after
+            )
             return
 
         await self.app(scope, receive, send)
-
-    @staticmethod
-    async def _unauthorized(scope: Scope, receive: Receive, send: Send) -> None:
-        response = JSONResponse(status_code=401, content={"detail": "Unauthorized"})
-        await response(scope, receive, send)
