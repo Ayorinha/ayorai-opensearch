@@ -218,9 +218,7 @@ class APIKeyAuthMiddleware:
 
         allowed, retry_after = self.rate_limiter.allow(f"key:{presented_digest}")
         if not allowed:
-            await self._reject(
-                scope, receive, send, 429, "Rate limit exceeded", retry_after
-            )
+            await self._reject(scope, receive, send, 429, "Rate limit exceeded", retry_after)
             return
 
         await self.app(scope, receive, send)
