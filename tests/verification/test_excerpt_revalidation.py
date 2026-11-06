@@ -105,5 +105,5 @@ def test_nfc_excerpt_maps_to_original_nfd_offsets_after_non_bmp_prefix() -> None
     located = locate_excerpt(source, "Café")
 
     assert located == (2, 7)
-    assert source[located[0] : located[1]] == "Cafe\\u0301"
+    assert source[located[0] : located[1]] == "Cafe\u0301"
     assert source[: located[0]] == "🧪 "
