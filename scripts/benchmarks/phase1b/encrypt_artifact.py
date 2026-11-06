@@ -96,9 +96,7 @@ def main() -> None:
         "code_sha": args.code_sha,
     }
     if package.get("split") != "dev" or package.get("shard_id") != args.shard_id:
-        raise ValueError(
-            "private package metadata does not match requested encryption context"
-        )
+        raise ValueError("private package metadata does not match requested encryption context")
     envelope = encrypt_bytes(args.input.read_bytes(), key=key, metadata=metadata)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps(envelope, sort_keys=True, separators=(",", ":"))
