@@ -25,7 +25,15 @@ def aggregate_packages(
 ) -> dict[str, Any]:
     if manifest.get("split") != "dev":
         raise ValueError("aggregator accepts DEV manifests only")
-    expected = {shard["shard_id"]: shard["count"] for shard in manifest["shards"]}
+    manifest_body = {
+        key_name: value
+        for key_name, value in manifest.items()
+        if key_name != "manifest_sha256"
+    }
+    expected_manifest_sha = sha256_bytes(canonical_json(manifest_body))
+    if manifest.get("manifest_sha256") != expected_manifest_sha:
+        raise ValueError("manifest digest verification failed")
+    expected = {shard["shard_id"]: shard for shard in manifest["shards"]}
     packages: dict[tuple[str, str], dict[str, Any]] = {}
     for envelope in encrypted_packages:
         metadata = envelope.get("metadata", {})
@@ -49,8 +57,15 @@ def aggregate_packages(
         if shard_id not in expected:
             raise ValueError("unexpected shard artifact")
         records = private.get("records", [])
-        if len(records) != expected[shard_id]:
-            raise ValueError("shard artifact count mismatch")
+        expected_shard = expected[shard_id]
+        expected_ids = set(expected_shard["record_ids"])
+        actual_ids = [record.get("record_id") for record in records]
+        if (
+            len(records) != expected_shard["count"]
+            or len(actual_ids) != len(set(actual_ids))
+            or set(actual_ids) != expected_ids
+        ):
+            raise ValueError("shard artifact record identity/count mismatch")
         key_tuple = (model_id, shard_id)
         if key_tuple in packages:
             raise ValueError("duplicate model/shard artifact")
