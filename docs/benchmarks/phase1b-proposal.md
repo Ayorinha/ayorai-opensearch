@@ -29,7 +29,7 @@ O relatório é DEV, 200 exemplos, 30.420 linhas. Nele, RAGTruth tem 15.340 linh
 
 ## 3. Modelos e comparabilidade
 
-- Usar os mesmos commits imutáveis e os mesmos arquivos de pesos/tokenizer já aprovados para todos os shards e splits. O pin de dataset também deve ser imutável e específico para cada split.
+- Fixar em manifesto versionado os commits completos já medidos: mDeBERTa `b5113eb38ab63efdd7f280f8c144ea8b13f978ce`; MiniCheck `2f2d01a54fa022a7ffadb76260e1ea8bc88c82bb`; FactCG `0430e3509dbd28d2dff7a117c0eae25359ff3e80`. Todos os shards e splits usam exatamente esses commits e os mesmos hashes de pesos/tokenizer. Qualquer atualização exige novo manifesto e nova comparação; nunca resolver `main` durante a execução. O pin de dataset também deve ser imutável e específico para cada split.
 - Carregar os pesos originais em **FP32** (\`torch.float32\`), sem quantização, sem autocast e sem conversão para FP16/BF16. Validar dtype dos parâmetros antes da inferência e registrar versão de PyTorch/Transformers, hardware, threads e hashes.
 - Manter \`eval()\` e \`inference_mode()\`. Não alterar chunking, agregação por exemplo, pré-processamento ou semântica de score durante a otimização de throughput.
 - O pin de test ainda não existe em \`main\`. Portanto, esta proposta não autoriza nem habilita download/execução de test. Criar e revisar o pin de test em mudança separada antes de habilitar a etapa de avaliação final.
