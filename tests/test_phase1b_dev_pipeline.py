@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import json
+
 import pytest
 
-from scripts.benchmarks.phase1b.build_manifest import build_manifest
-from scripts.benchmarks.phase1b.run_shard import select_shard
-from scripts.benchmarks.phase1b.encrypt_artifact import decrypt_bytes, encrypt_bytes, decode_key
 from scripts.benchmarks.phase1b.aggregate_dev import aggregate_packages
+from scripts.benchmarks.phase1b.build_manifest import build_manifest
 from scripts.benchmarks.phase1b.common import stable_record_id
+from scripts.benchmarks.phase1b.encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
+from scripts.benchmarks.phase1b.run_shard import select_shard
 
 
 def synthetic_rows(count: int = 10) -> list[dict]:
@@ -43,7 +44,11 @@ def test_manifest_is_deterministic_and_contains_no_instance_text() -> None:
     serialized = json.dumps(first)
     assert "SYNTHETIC document" not in serialized
     assert "SYNTHETIC claim" not in serialized
-    assert all(len(record_id) == 64 for shard in first["shards"] for record_id in shard["record_ids"])
+    assert all(
+        len(record_id) == 64
+        for shard in first["shards"]
+        for record_id in shard["record_ids"]
+    )
 
 
 def test_shards_are_exact_disjoint_and_complete() -> None:
@@ -79,7 +84,7 @@ def test_encryption_roundtrip_and_wrong_aad_fails() -> None:
     envelope = encrypt_bytes(plaintext, key=key, metadata=metadata, nonce=b"n" * 12)
     assert decrypt_bytes(envelope, key=key) == plaintext
     wrong = dict(metadata, shard_id="dev-9999")
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         decrypt_bytes(envelope, key=key, aad_metadata=wrong)
 
 
@@ -104,14 +109,25 @@ def test_aggregator_marks_missing_shard_as_incomplete() -> None:
     private = {
         "split": "dev", "shard_id": "dev-0000", "model_id": "synthetic-model",
         "records": [
-            {"record_id": stable_record_id(row), "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED", "score": 0.9 if row["label"] else 0.1}
+            {
+                "record_id": stable_record_id(row),
+                "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED",
+                "score": 0.9 if row["label"] else 0.1,
+            }
             for row in rows[:10]
         ],
     }
-    envelope = encrypt_bytes(json.dumps(private).encode(), key=key, metadata=metadata, nonce=b"z" * 12)
+    envelope = encrypt_bytes(
+        json.dumps(private).encode(),
+        key=key,
+        metadata=metadata,
+        nonce=b"z" * 12,
+    )
     report = aggregate_packages(manifest, [envelope], key=key)
     assert report["complete"] is False
-    assert report["incomplete_models"] == [{"model_id": "synthetic-model", "missing_shard_count": 1}]
+    assert report["incomplete_models"] == [
+        {"model_id": "synthetic-model", "missing_shard_count": 1}
+    ]
 
 
 def test_report_has_no_per_instance_output() -> None:
@@ -130,7 +146,12 @@ def test_report_has_no_per_instance_output() -> None:
             for row in rows
         ],
     }
-    envelope = encrypt_bytes(json.dumps(private).encode(), key=key, metadata=metadata, nonce=b"q" * 12)
+    envelope = encrypt_bytes(
+        json.dumps(private).encode(),
+        key=key,
+        metadata=metadata,
+        nonce=b"q" * 12,
+    )
     report = aggregate_packages(manifest, [envelope], key=key)
     public_json = json.dumps(report)
     assert report["complete"] is True
