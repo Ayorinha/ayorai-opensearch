@@ -104,13 +104,15 @@ def build_manifest(
     shards = []
     for offset in range(0, len(selected), shard_size):
         shard_ids = selected[offset : offset + shard_size]
-        shards.append({
-            "shard_id": f"dev-{offset // shard_size:04d}",
-            "start": offset,
-            "count": len(shard_ids),
-            "record_ids": shard_ids,
-            "record_ids_sha256": sha256_bytes(canonical_json(shard_ids)),
-        })
+        shards.append(
+            {
+                "shard_id": f"dev-{offset // shard_size:04d}",
+                "start": offset,
+                "count": len(shard_ids),
+                "record_ids": shard_ids,
+                "record_ids_sha256": sha256_bytes(canonical_json(shard_ids)),
+            }
+        )
     if max_shards is not None:
         if max_shards < 1:
             raise ValueError("max_shards must be positive")
