@@ -1,0 +1,86 @@
+name: Baseline throughput pilot (manual, maintainer-gated)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dev_revision:
+        description: Immutable LLM-AggreFact dev revision SHA
+        required: true
+        type: string
+      dev_sha256:
+        description: SHA-256 of approved dev Parquet shard
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  throughput:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    environment: international-benchmark-maintainer-approval
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install pilot dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install transformers huggingface_hub pyarrow pandas psutil accelerate safetensors
+      - name: Validate maintainer inputs and download DEV shard only
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          DEV_REVISION: ${{ inputs.dev_revision }}
+          DEV_SHA256: ${{ inputs.dev_sha256 }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, os, re
+          from pathlib import Path
+          from huggingface_hub import hf_hub_download
+          token=os.environ.get("HF_TOKEN","")
+          revision=os.environ["DEV_REVISION"]
+          expected=os.environ["DEV_SHA256"].lower()
+          if not token: raise SystemExit("HF_TOKEN missing from approval environment")
+          if not re.fullmatch(r"[a-f0-9]{40}", revision):
+              raise SystemExit("dev_revision must be a full 40-character commit SHA")
+          if not re.fullmatch(r"[a-f0-9]{64}", expected):
+              raise SystemExit("dev_sha256 must be a 64-character SHA-256")
+          # Dataset file name is fixed to the DEV shard; never request test.
+          path=hf_hub_download(repo_id="lytang/LLM-AggreFact", repo_type="dataset",
+              filename="data/dev-00000-of-00001.parquet", revision=revision, token=token)
+          digest=hashlib.sha256(Path(path).read_bytes()).hexdigest()
+          if digest != expected: raise SystemExit("DEV shard SHA-256 mismatch")
+          Path("/tmp/dev_shard_path").write_text(path)
+          print("DEV shard verified; no dataset content logged.")
+          PY
+      - name: Run 200-example throughput pilot (DEV only)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          DEV_REVISION: ${{ inputs.dev_revision }}
+          DEV_SHA256: ${{ inputs.dev_sha256 }}
+          PILOT_SEED: "20261106"
+          PILOT_SIZE: "200"
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/baseline_throughput_pilot.py             --dataset-path "$(cat /tmp/dev_shard_path)"             --seed "$PILOT_SEED" --sample-size "$PILOT_SIZE"             --out reports/benchmarks/baseline-throughput-pilot-aggregate.json
+      - name: Assert aggregate-only report
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("reports/benchmarks/baseline-throughput-pilot-aggregate.json").read_text())
+          assert report["split"] == "dev"
+          assert report["sample_size"] == 200
+          assert report["instance_level_predictions_in_public_artifact"] is False
+          assert "examples" not in report and "predictions" not in report
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: baseline-throughput-pilot-aggregate-only
+          path: reports/benchmarks/baseline-throughput-pilot-aggregate.json
+          if-no-files-found: error
+          retention-days: 14
