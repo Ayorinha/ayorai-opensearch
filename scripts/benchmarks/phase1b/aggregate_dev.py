@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Decrypt DEV shard artifacts and publish aggregate-only metrics."""
+"""Decrypt DEV shard artifacts and publish operational-only aggregate metadata."""
 
 from __future__ import annotations
 
 import argparse
 import json
-import math
-from collections import Counter
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -18,12 +17,28 @@ except ImportError:  # direct script execution
     from encrypt_artifact import decode_key, decrypt_bytes
 
 
+OPERATIONAL_FIELDS = (
+    "document_count",
+    "block_count",
+    "token_count_by_unit",
+    "tokenization_seconds",
+    "inference_seconds",
+    "total_seconds",
+    "peak_ram_bytes",
+    "truncation_count",
+    "failure_count",
+    "encryption_seconds",
+    "decryption_seconds",
+)
+
+
 def aggregate_packages(
     manifest: dict[str, Any],
     encrypted_packages: list[dict[str, Any]],
     *,
     key: bytes,
 ) -> dict[str, Any]:
+    """Validate encrypted shard provenance and aggregate operational metadata only."""
     if manifest.get("split") != "dev":
         raise ValueError("aggregator accepts DEV manifests only")
     manifest_body = {
@@ -34,9 +49,11 @@ def aggregate_packages(
     expected_manifest_sha = sha256_bytes(canonical_json(manifest_body))
     if manifest.get("manifest_sha256") != expected_manifest_sha:
         raise ValueError("manifest digest verification failed")
+
     expected = {shard["shard_id"]: shard for shard in manifest["shards"]}
     packages: dict[tuple[str, str], dict[str, Any]] = {}
     run_ids: set[str] = set()
+
     for envelope in encrypted_packages:
         metadata = envelope.get("metadata", {})
         if metadata.get("split") != "dev":
@@ -45,9 +62,10 @@ def aggregate_packages(
         if not isinstance(run_id, str) or not run_id:
             raise ValueError("encrypted artifact run identity is missing")
         run_ids.add(run_id)
+
         private = json.loads(decrypt_bytes(envelope, key=key))
-        shard_id = private["shard_id"]
-        model_id = private["model_id"]
+        shard_id = private.get("shard_id")
+        model_id = private.get("model_id")
         if (
             metadata.get("shard_id") != shard_id
             or metadata.get("model_revision") != private.get("model_revision")
@@ -66,78 +84,78 @@ def aggregate_packages(
             raise ValueError("encrypted artifact manifest provenance mismatch")
         if shard_id not in expected:
             raise ValueError("unexpected shard artifact")
-        records = private.get("records", [])
-        expected_shard = expected[shard_id]
-        expected_ids = set(expected_shard["record_ids"])
-        actual_ids = [record.get("record_id") for record in records]
-        if (
-            len(records) != expected_shard["count"]
-            or len(actual_ids) != len(set(actual_ids))
-            or set(actual_ids) != expected_ids
-        ):
-            raise ValueError("shard artifact record identity/count mismatch")
-        key_tuple = (model_id, shard_id)
-        if key_tuple in packages:
+
+        expected_count = expected[shard_id]["count"]
+        if private.get("document_count") != expected_count:
+            raise ValueError("operational document count does not match shard manifest")
+        if private.get("split") != "dev":
+            raise ValueError("private package is not DEV-only")
+
+        package_key = (str(model_id), str(shard_id))
+        if package_key in packages:
             raise ValueError("duplicate model/shard artifact")
-        for record in records:
-            score = record.get("score")
-            if (
-                record.get("gold") not in {"SUPPORTED", "NOT_SUPPORTED"}
-                or not isinstance(score, (int, float))
-                or not math.isfinite(score)
-                or not 0.0 <= score <= 1.0
-            ):
-                raise ValueError("private shard contains an invalid score or label")
-        packages[key_tuple] = private
+        packages[package_key] = private
 
     if len(run_ids) > 1:
         raise ValueError("encrypted artifacts belong to different workflow runs")
+
     models = sorted({model for model, _ in packages})
-    summaries = {}
-    incomplete = []
+    summaries: dict[str, dict[str, Any]] = {}
+    incomplete: list[dict[str, Any]] = []
+
     for model in models:
         present = {shard for candidate, shard in packages if candidate == model}
         missing = sorted(set(expected) - present)
         if missing:
             incomplete.append({"model_id": model, "missing_shard_count": len(missing)})
             continue
-        counts: Counter[tuple[str, str]] = Counter()
-        total = 0
-        for shard_id in sorted(expected):
-            for record in packages[(model, shard_id)]["records"]:
-                gold = record["gold"]
-                predicted = "SUPPORTED" if float(record["score"]) >= 0.5 else "NOT_SUPPORTED"
-                counts[(gold, predicted)] += 1
-                total += 1
-        tp = counts[("SUPPORTED", "SUPPORTED")]
-        fn = counts[("SUPPORTED", "NOT_SUPPORTED")]
-        tn = counts[("NOT_SUPPORTED", "NOT_SUPPORTED")]
-        fp = counts[("NOT_SUPPORTED", "SUPPORTED")]
-        recall_pos = tp / (tp + fn) if tp + fn else None
-        recall_neg = tn / (tn + fp) if tn + fp else None
-        ba = (
-            (recall_pos + recall_neg) / 2
-            if recall_pos is not None and recall_neg is not None
-            else None
-        )
-        summaries[model] = {
-            "example_count": total,
-            "balanced_accuracy_at_0_5": ba,
-            "confusion_matrix": {
-                "gold_supported_pred_supported": tp,
-                "gold_supported_pred_not_supported": fn,
-                "gold_not_supported_pred_supported": fp,
-                "gold_not_supported_pred_not_supported": tn,
-            },
+
+        aggregate: dict[str, Any] = {
+            "document_count": 0,
+            "block_count": 0,
+            "token_count_by_unit": defaultdict(int),
+            "tokenization_seconds": 0.0,
+            "inference_seconds": 0.0,
+            "total_seconds": 0.0,
+            "peak_ram_bytes": 0,
+            "truncation_count": 0,
+            "failure_count": 0,
+            "encryption_seconds": 0.0,
+            "decryption_seconds": 0.0,
         }
+        for shard_id in sorted(expected):
+            package = packages[(model, shard_id)]
+            for field in OPERATIONAL_FIELDS:
+                value = package.get(field)
+                if field == "token_count_by_unit":
+                    if not isinstance(value, dict):
+                        raise ValueError("token_count_by_unit must be an object")
+                    for unit, count in value.items():
+                        if not isinstance(count, int) or count < 0:
+                            raise ValueError("token counts must be nonnegative integers")
+                        aggregate[field][unit] += count
+                elif field == "peak_ram_bytes":
+                    if value is not None:
+                        if not isinstance(value, int) or value < 0:
+                            raise ValueError("peak RAM must be a nonnegative integer")
+                        aggregate[field] = max(aggregate[field], value)
+                elif value is not None:
+                    if not isinstance(value, (int, float)) or value < 0:
+                        raise ValueError(f"{field} must be nonnegative")
+                    aggregate[field] += value
+            aggregate["document_count"] += package["document_count"]
+        aggregate["token_count_by_unit"] = dict(sorted(aggregate["token_count_by_unit"].items()))
+        summaries[model] = aggregate
+
     report = {
-        "schema_version": "phase1b-dev-aggregate-v1",
+        "schema_version": "phase1b-dev-operational-aggregate-v1",
         "split": "dev",
         "manifest_sha256": manifest.get("manifest_sha256"),
         "expected_shard_count": len(expected),
         "models": summaries,
         "incomplete_models": incomplete,
         "complete": not incomplete and bool(summaries),
+        "quality_metrics": "not_computed_minimal_run",
         "instance_level_output_published": False,
     }
     report["report_sha256"] = sha256_bytes(canonical_json(report))
@@ -150,7 +168,8 @@ def main() -> None:
     parser.add_argument("--encrypted-dir", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    # Fail closed before opening any encrypted artifact if the secret is absent/invalid.
+
+    # Fail closed before opening encrypted artifacts if the secret is absent/invalid.
     key = decode_key()
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     envelopes = [
@@ -167,6 +186,7 @@ def main() -> None:
                 "split": "dev",
                 "model_count": len(report["models"]),
                 "incomplete_model_count": len(report["incomplete_models"]),
+                "quality_metrics": report["quality_metrics"],
                 "instance_level_output_published": False,
             },
             sort_keys=True,
