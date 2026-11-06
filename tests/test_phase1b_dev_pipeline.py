@@ -124,11 +124,7 @@ def test_aggregator_marks_missing_shard_as_incomplete() -> None:
         "records": [
             {
                 "record_id": record_id,
-                "gold": (
-                    "SUPPORTED"
-                    if rows_by_id[record_id]["label"]
-                    else "NOT_SUPPORTED"
-                ),
+                "gold": ("SUPPORTED" if rows_by_id[record_id]["label"] else "NOT_SUPPORTED"),
                 "score": 0.9 if rows_by_id[record_id]["label"] else 0.1,
             }
             for record_id in first_shard_ids
