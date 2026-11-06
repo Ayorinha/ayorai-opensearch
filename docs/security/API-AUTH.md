@@ -46,13 +46,27 @@ curl -H "X-API-Key: $ATTRACTOR_API_KEY" http://127.0.0.1:8000/v1/audit
 
 Keep the raw key in a secret manager or environment supplied by the deployment platform. Do not commit it, place it in source code, or print it in logs. The application compares a keyed HMAC-SHA-256 digest of the presented key against configured digests using constant-time comparisons. The separate pepper protects the digest list against offline guessing if that list is leaked without the pepper. Failed authentication returns a generic HTTP 401 response without revealing which part of the credential check failed. The `/health` endpoint remains public for health checks.
 
+## Application-level request throttling
+
+The API middleware applies a fixed-window request limit to the connecting client IP before authentication, and a second limit to the HMAC digest of an authenticated API key. Raw API keys are never used as limiter identities. Requests over the limit receive HTTP `429` with a `Retry-After` header. `/health` is exempt so infrastructure health checks continue to work.
+
+The defaults are 120 requests per 60 seconds, with at most 10,000 active limiter identities in memory. Configure these values with:
+
+~~~bash
+export ATTRACTOR_RATE_LIMIT_REQUESTS=120
+export ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS=60
+export ATTRACTOR_RATE_LIMIT_MAX_CLIENTS=10000
+~~~
+
+All three values must be positive integers. The limiter is deliberately bounded and process-local: it protects a single application process from bursts and basic credential guessing, but its counters are not shared across workers or replicas and reset on restart. A multi-worker or multi-replica deployment MUST also enforce a shared rate limit at its trusted API gateway or edge. Configure trusted proxy handling at the deployment boundary; do not trust arbitrary client-supplied forwarding headers as the source IP.
+
 ## Operational considerations
 
 - Use HTTPS whenever requests cross an untrusted network.
 - Use high-entropy, unique keys and rotate them by replacing the configured digest list.
 - Protect and rotate the pepper separately; changing the pepper requires regenerating every configured digest.
 - Restrict access to environment configuration and deployment logs.
-- Authentication is not a substitute for network controls, rate limiting, authorization scopes, or secret rotation procedures.
+- Application-level throttling does not replace shared gateway limits, authorization scopes, tenant isolation, or secret rotation procedures.
 - The default mode is `api_key` and the application refuses to start without valid key material. Set `ATTRACTOR_AUTH_MODE=off` explicitly only for isolated local development; never use it for a network-facing deployment.
 
 ## Why HMAC-SHA-256 and not a password-hashing function
