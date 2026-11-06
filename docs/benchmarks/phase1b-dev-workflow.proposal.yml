@@ -1,0 +1,127 @@
+# PROPOSTA — não mover para .github/workflows antes de implementação e aprovação.
+name: Phase 1b DEV calibration (proposal)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dev_revision:
+        description: Must equal the immutable DEV dataset pin
+        required: true
+        type: string
+      dev_sha256:
+        description: Must equal the immutable DEV parquet SHA-256
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: international-benchmark-maintainer-approval
+    outputs:
+      shard_matrix: \${{ steps.plan.outputs.shard_matrix }}
+      manifest_sha256: \${{ steps.plan.outputs.manifest_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - id: plan
+        name: Build deterministic DEV-only manifest
+        run: |
+          python scripts/benchmarks/phase1b/build_manifest.py \\
+            --split dev --shard-size 1000 --order-by-id \\
+            --seed 20261106 --output /tmp/manifest.json
+          python scripts/benchmarks/phase1b/emit_matrix.py \\
+            --manifest /tmp/manifest.json --github-output "$GITHUB_OUTPUT"
+
+  evaluate-shards:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    environment: international-benchmark-maintainer-approval
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard_id: \${{ fromJSON(needs.plan.outputs.shard_matrix) }}
+        model_id: [mdeberta, minicheck, factcg]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install exact benchmark dependencies
+        run: python -m pip install -r requirements-benchmark-phase1b.txt
+      - name: Verify dataset/model pins and run FP32 shard
+        env:
+          HF_TOKEN: \${{ secrets.HF_TOKEN }}
+          DEV_REVISION: \${{ inputs.dev_revision }}
+          DEV_SHA256: \${{ inputs.dev_sha256 }}
+        run: |
+          python scripts/benchmarks/phase1b/run_shard.py \\
+            --split dev --manifest /tmp/manifest.json \\
+            --shard-id "\${{ matrix.shard_id }}" \\
+            --model-id "\${{ matrix.model_id }}" \\
+            --dtype float32 --no-quantization --no-autocast \\
+            --sort-by-length-within-shard \\
+            --output /tmp/private-shard-output.bin
+      - name: Encrypt private shard output (AES-256-GCM)
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: \${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+        run: |
+          python scripts/benchmarks/phase1b/encrypt_artifact.py \\
+            --input /tmp/private-shard-output.bin \\
+            --output /tmp/shard-output.aesgcm \\
+            --aad-from-github-context
+          rm -f /tmp/private-shard-output.bin
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-encrypted-\${{ matrix.model_id }}-\${{ matrix.shard_id }}
+          path: /tmp/shard-output.aesgcm
+          if-no-files-found: error
+          retention-days: 1
+
+  aggregate-dev:
+    needs: [plan, evaluate-shards]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: international-benchmark-maintainer-approval
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v7.0.1
+        with:
+          pattern: phase1b-dev-encrypted-*
+          path: /tmp/encrypted
+          merge-multiple: true
+      - name: Decrypt in protected job and publish aggregates only
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: \${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+        run: |
+          python scripts/benchmarks/phase1b/aggregate_dev.py \\
+            --encrypted-dir /tmp/encrypted \\
+            --manifest-sha256 "\${{ needs.plan.outputs.manifest_sha256 }}" \\
+            --bootstrap-replicates 10000 --bootstrap-seed 20261106 \\
+            --publish-aggregate-only reports/benchmarks/phase1b-dev-aggregate.json \\
+            --write-threshold-candidate /tmp/phase1b-threshold-candidate.json
+          rm -rf /tmp/encrypted
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-aggregate-only
+          path: reports/benchmarks/phase1b-dev-aggregate.json
+          if-no-files-found: error
+          retention-days: 14
+
+# Threshold candidate is reviewed and committed in a separate PR.
+# There is deliberately no TEST job in this workflow.
+# Every scripts/benchmarks/phase1b/* command above is a proposed interface,
+# not an implemented executable in this proposal-only PR.
