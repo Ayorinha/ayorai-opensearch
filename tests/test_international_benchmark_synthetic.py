@@ -82,9 +82,7 @@ def test_report_records_cli_sha_provenance(tmp_path, monkeypatch: pytest.MonkeyP
         },
     ]
     dataset_path = tmp_path / "fixture.jsonl"
-    dataset_path.write_text(
-        "\n".join(json.dumps(row) for row in data) + "\n", encoding="utf-8"
-    )
+    dataset_path.write_text("\n".join(json.dumps(row) for row in data) + "\n", encoding="utf-8")
     mapping_path = tmp_path / "mapping.json"
     mapping_path.write_text(json.dumps(MAPPING), encoding="utf-8")
 
