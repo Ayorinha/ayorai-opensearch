@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "mapping_id": "llm-aggrefact-label-map-v1",
+  "source_dataset": "lytang/LLM-AggreFact",
+  "source_revision": "PENDING_MAINTAINER_PIN",
+  "source_label_field": "label",
+  "source_cohort_field": "dataset",
+  "native_binary_labels": {"1": "SUPPORTED", "0": "NOT_SUPPORTED"},
+  "notes": {
+    "1": "Direct binary equivalence to supported, limited to claim-document support.",
+    "0": "Keep native not-supported class; do not map to REFUTED, UNVERIFIED, PARTIALLY_SUPPORTED or CONFLICTING.",
+    "five_verdicts_unchanged": ["SUPPORTED", "PARTIALLY_SUPPORTED", "UNVERIFIED", "REFUTED", "CONFLICTING"],
+    "prediction": "RuleStanceDetector supports => SUPPORTED; contradicts/neutral => NOT_SUPPORTED for this binary task only."
+  }
+}
