@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 10
     environment: international-benchmark-maintainer-approval
     outputs:
-      shard_matrix: \${{ steps.plan.outputs.shard_matrix }}
+      shard_matrix: ${{ steps.plan.outputs.shard_matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -34,18 +34,18 @@ jobs:
           python-version: "3.12"
       - name: Fail closed unless TEST pin and DEV thresholds are immutable and approved
         run: |
-          python scripts/benchmarks/phase1b/validate_test_gate.py \\
-            --test-revision "\${{ inputs.test_revision }}" \\
-            --test-sha256 "\${{ inputs.test_sha256 }}" \\
-            --thresholds configs/benchmarks/phase1b-thresholds.json \\
-            --expected-thresholds-sha256 "\${{ inputs.thresholds_sha256 }}" \\
+          python scripts/benchmarks/phase1b/validate_test_gate.py \
+            --test-revision "${{ inputs.test_revision }}" \
+            --test-sha256 "${{ inputs.test_sha256 }}" \
+            --thresholds configs/benchmarks/phase1b-thresholds.json \
+            --expected-thresholds-sha256 "${{ inputs.thresholds_sha256 }}" \
             --require-dev-only-provenance
       - id: plan
         run: |
-          python scripts/benchmarks/phase1b/build_manifest.py \\
-            --split test --shard-size 1000 --order-by-id \\
+          python scripts/benchmarks/phase1b/build_manifest.py \
+            --split test --shard-size 1000 --order-by-id \
             --output /tmp/test-manifest.json
-          python scripts/benchmarks/phase1b/emit_matrix.py \\
+          python scripts/benchmarks/phase1b/emit_matrix.py \
             --manifest /tmp/test-manifest.json --github-output "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -63,7 +63,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        shard_id: \${{ fromJSON(needs.validate-frozen-inputs.outputs.shard_matrix) }}
+        shard_id: ${{ fromJSON(needs.validate-frozen-inputs.outputs.shard_matrix) }}
         model_id: [mdeberta, minicheck, factcg]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -78,26 +78,26 @@ jobs:
         run: python -m pip install -r requirements-benchmark-phase1b.txt
       - name: Verify pins and run frozen-threshold FP32 TEST shard
         env:
-          HF_TOKEN: \${{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          python scripts/benchmarks/phase1b/run_shard.py \\
-            --split test --shard-id "\${{ matrix.shard_id }}" \\
-            --model-id "\${{ matrix.model_id }}" \\
-            --thresholds configs/benchmarks/phase1b-thresholds.json \\
-            --dtype float32 --no-quantization --no-autocast \\
-            --sort-by-length-within-shard \\
+          python scripts/benchmarks/phase1b/run_shard.py \
+            --split test --shard-id "${{ matrix.shard_id }}" \
+            --model-id "${{ matrix.model_id }}" \
+            --thresholds configs/benchmarks/phase1b-thresholds.json \
+            --dtype float32 --no-quantization --no-autocast \
+            --sort-by-length-within-shard \
             --output /tmp/private-test-shard.bin
       - name: Encrypt before any artifact upload
         env:
-          PHASE1B_ARTIFACT_ENCRYPTION_KEY: \${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
         run: |
-          python scripts/benchmarks/phase1b/encrypt_artifact.py \\
-            --input /tmp/private-test-shard.bin \\
+          python scripts/benchmarks/phase1b/encrypt_artifact.py \
+            --input /tmp/private-test-shard.bin \
             --output /tmp/test-shard.aesgcm --aad-from-github-context
           rm -f /tmp/private-test-shard.bin
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: phase1b-test-encrypted-\${{ matrix.model_id }}-\${{ matrix.shard_id }}
+          name: phase1b-test-encrypted-${{ matrix.model_id }}-${{ matrix.shard_id }}
           path: /tmp/test-shard.aesgcm
           if-no-files-found: error
           retention-days: 1
@@ -123,12 +123,12 @@ jobs:
           merge-multiple: true
       - name: Decrypt and publish aggregate metrics only
         env:
-          PHASE1B_ARTIFACT_ENCRYPTION_KEY: \${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
         run: |
-          python scripts/benchmarks/phase1b/aggregate_test.py \\
-            --encrypted-dir /tmp/encrypted \\
-            --thresholds configs/benchmarks/phase1b-thresholds.json \\
-            --bootstrap-replicates 10000 --bootstrap-seed 20261106 \\
+          python scripts/benchmarks/phase1b/aggregate_test.py \
+            --encrypted-dir /tmp/encrypted \
+            --thresholds configs/benchmarks/phase1b-thresholds.json \
+            --bootstrap-replicates 10000 --bootstrap-seed 20261106 \
             --publish-aggregate-only reports/benchmarks/phase1b-test-aggregate.json
           rm -rf /tmp/encrypted
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
