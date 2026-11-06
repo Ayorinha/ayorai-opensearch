@@ -26,6 +26,13 @@ class FailureType(StrEnum):
     UNSUPPORTED_CLAIM = "unsupported_claim"
 
 
+class FailureStage(StrEnum):
+    RETRIEVAL = "retrieval"
+    EXTRACTION = "extraction"
+    NLI = "nli"
+    JUDGE = "judge"
+
+
 class SearchRequest(BaseModel):
     query: str = Field(min_length=3, max_length=10000)
     mode: QualityMode = QualityMode.BALANCED
@@ -67,6 +74,7 @@ class Failure(BaseModel):
     type: FailureType
     message: str
     recoverable: bool = True
+    stage: FailureStage | None = None
 
 
 class AgentResult(BaseModel):
@@ -99,6 +107,7 @@ class AuditFindingResponse(BaseModel):
     code: str
     severity: str
     message: str
+    stage: FailureStage | None = None
 
 
 class AuditResponse(BaseModel):

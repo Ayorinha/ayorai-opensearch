@@ -224,6 +224,7 @@ def audit(request: SearchRequest) -> AuditResponse:
                 code=item.code,
                 severity=item.severity.value,
                 message=item.message,
+                stage=item.stage,
             )
             for item in report.findings
         ],
