@@ -78,7 +78,7 @@ jobs:
       - name: Evaluate current RuleStanceDetector without tuning
         run: |
           set -euo pipefail
-          python -m ayorai_attractor.evaluation.international_cli             --dataset "$(cat /tmp/dataset_path)"             --mapping configs/benchmarks/llm-aggrefact-label-map-v1.json             --out-json reports/aggregate.json --out-md reports/aggregate.md
+          python -m ayorai_attractor.evaluation.international_cli             --dataset "$(cat /tmp/dataset_path)"             --mapping configs/benchmarks/llm-aggrefact-label-map-v1.json             --out-json reports/aggregate.json --out-md reports/aggregate.md --code-sha '${{ github.sha }}'
       - name: Assert aggregate-only report
         run: |
           python - <<'PY'
