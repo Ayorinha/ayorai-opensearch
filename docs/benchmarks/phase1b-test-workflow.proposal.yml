@@ -1,4 +1,4 @@
-# PROPOSTA — workflow separado; não habilitar sem pin TEST e thresholds versionados.
+# PROPOSTA — workflow separado; não habilitar sem validação do pin TEST e thresholds DEV versionados.
 name: Phase 1b TEST evaluation (proposal)
 
 on:
@@ -153,5 +153,5 @@ jobs:
           retention-days: 14
 
 # This TEST workflow is a separate future approval gate.
-# It cannot be enabled until the TEST dataset pin and frozen DEV threshold file
-# are committed and reviewed. No TEST data is accessed by the DEV workflow.
+# It cannot be enabled until the TEST pin above, frozen DEV thresholds, and the
+# mandatory environment-approval test are reviewed. No TEST data is accessed by DEV.
