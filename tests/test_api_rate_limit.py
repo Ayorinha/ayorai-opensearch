@@ -1,4 +1,4 @@
-""""Regression tests for the API authentication request limiter."""
+"""Regression tests for the API authentication request limiter."""
 
 import hashlib
 import hmac
@@ -132,4 +132,3 @@ def test_authenticated_key_has_its_own_rate_limit(
         blocked = client.get("/private", headers=headers)
 
     assert blocked.status_code == 429
-"
