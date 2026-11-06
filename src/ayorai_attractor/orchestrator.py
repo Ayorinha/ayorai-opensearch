@@ -15,7 +15,7 @@ from ayorai_attractor.providers.base import Provider
 from ayorai_attractor.providers.factory import build_default_provider, build_search_provider
 from ayorai_attractor.providers.registry import ProviderRegistry
 
-from .models import FailureStage, FailureType, SearchRequest, SearchResponse
+from .models import FailureType, SearchRequest, SearchResponse
 from .router import AdaptiveRouter
 from .tenant import TenantContext
 
