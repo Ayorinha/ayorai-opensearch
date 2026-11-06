@@ -285,12 +285,12 @@ def main() -> None:
                 )
 
             stage = "tokenizer_load"
+            load_start = time.perf_counter()
             tokenizer = AutoTokenizer.from_pretrained(str(model_dir), local_files_only=True)
             if spec["weights"] == "bin":
                 stage = "weights_only_policy"
                 enforce_weights_only_loading()
             stage = "model_load"
-            load_start = time.perf_counter()
             model = AutoModelForSequenceClassification.from_pretrained(
                 str(model_dir),
                 local_files_only=True,
