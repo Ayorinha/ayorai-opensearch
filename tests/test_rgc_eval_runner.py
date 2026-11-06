@@ -7,7 +7,6 @@ document corpus, to check segmentation offsets and the strict corpus export.
 from __future__ import annotations
 
 import ast
-
 import json
 import runpy
 from collections.abc import Callable
