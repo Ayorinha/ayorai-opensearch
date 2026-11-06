@@ -94,6 +94,115 @@ pytest
 
 No Windows, ative o ambiente virtual pelo mecanismo equivalente. Para avaliações opcionais que usam backends NLI, consulte o [guia de execução](docs/GUIA-PASSO-A-PASSO.md).
 
+## Demonstração Docker: veredito e trilha de prova
+
+O exemplo abaixo sobe a API localmente com o provedor determinístico
+`mock` e autenticação por chave. O caso é **inteiramente sintético**:
+a evidência é um fixture fornecido na própria requisição, não uma fonte
+externa nem uma checagem de fato do mundo real.
+
+Requer Docker, Python e `jq`.
+
+```bash
+# Gere uma chave de demonstração e um pepper independentes.
+export ATTRACTOR_DEMO_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export ATTRACTOR_DEMO_PEPPER="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+
+# A API armazena somente o HMAC-SHA-256 da chave, nunca a chave em claro.
+export ATTRACTOR_DEMO_KEY_DIGEST="$(
+  ATTRACTOR_DEMO_KEY="$ATTRACTOR_DEMO_KEY" \
+  ATTRACTOR_DEMO_PEPPER="$ATTRACTOR_DEMO_PEPPER" \
+  python -c '
+import hashlib, hmac, os
+pepper = bytes.fromhex(os.environ["ATTRACTOR_DEMO_PEPPER"])
+key = os.environ["ATTRACTOR_DEMO_KEY"].encode()
+print(hmac.new(pepper, key, hashlib.sha256).hexdigest())
+'
+)"
+
+# Construa a imagem e inicie o serviço apenas em loopback.
+docker build -f docker/Dockerfile -t ayorai-attractor:local .
+docker run -d --rm --name ayorai-attractor-demo \
+  -p 127.0.0.1:8000:8000 \
+  -e ATTRACTOR_PROVIDER=mock \
+  -e ATTRACTOR_AUTH_MODE=api_key \
+  -e ATTRACTOR_API_KEY_PEPPER="$ATTRACTOR_DEMO_PEPPER" \
+  -e ATTRACTOR_API_KEYS_HMAC_SHA256="$ATTRACTOR_DEMO_KEY_DIGEST" \
+  ayorai-attractor:local
+
+# /health é público; os endpoints de operação exigem a chave.
+curl -fsS http://127.0.0.1:8000/health | jq .
+
+# Judge 2.0 recebe uma alegação e uma evidência sintéticas coincidentes.
+# Os offsets são intervalos [início, fim) em pontos de código Unicode.
+curl -fsS -X POST http://127.0.0.1:8000/v1/verify \
+  -H "Authorization: Bearer $ATTRACTOR_DEMO_KEY" \
+  -H "Content-Type: application/json" \
+  --data-binary @- <<'JSON' | jq '.result | {
+    decision_state,
+    verdict,
+    judge_rules_version,
+    rule_trace,
+    atoms,
+    output_sha256
+  }'
+{
+  "schema_version": "r2-a",
+  "protocol_version": "r2-a",
+  "claim_id": "demo-claim-001",
+  "claim_text": "Fictional Atlas demo service launched in 2026.",
+  "atoms": [
+    {
+      "id": "a1",
+      "text": "Fictional Atlas demo service launched in 2026.",
+      "start_offset": 0,
+      "end_offset": 46
+    }
+  ],
+  "evidence": [
+    {
+      "id": "e1",
+      "claim_id": "demo-claim-001",
+      "source_id": "source-demo-1",
+      "source_location": "fixture://atlas-demo",
+      "retrieved_at": "2026-11-04T12:00:00Z",
+      "start_offset": 0,
+      "end_offset": 46,
+      "excerpt": "Fictional Atlas demo service launched in 2026.",
+      "origin_id": "origin-demo-1"
+    }
+  ],
+  "stances": [
+    {
+      "id": "s1",
+      "atom_id": "a1",
+      "evidence_id": "e1",
+      "stance": "SUPPORTS"
+    }
+  ],
+  "source_texts": {
+    "source-demo-1": "Fictional Atlas demo service launched in 2026."
+  }
+}
+JSON
+
+# Encerre e remova o container de demonstração.
+docker stop ayorai-attractor-demo
+unset ATTRACTOR_DEMO_KEY ATTRACTOR_DEMO_PEPPER ATTRACTOR_DEMO_KEY_DIGEST
+```
+
+O resultado esperado para esse fixture é `DECIDED` com veredito
+`SUPPORTED`. A resposta inclui a versão das regras, a trilha de regras
+(`rule_trace`), os átomos com as evidências admitidas e o hash da saída
+(`output_sha256`). O hash permite conferir a integridade do resultado;
+não prova a veracidade da alegação nem a independência da evidência.
+
+A rota `/v1/verify` aplica o Judge determinístico. Já `/v1/audit`
+registra a trilha operacional do pipeline e declara explicitamente
+`verdict_authority: not_adjudicated`; ela não substitui a verificação
+formal. Para uso fora deste exemplo local, mantenha a autenticação
+habilitada e gerencie chave e pepper como segredos distintos.
+
 ## Navegue pela documentação
 
 A documentação foi organizada por finalidade para que cada leitor encontre o nível de detalhe adequado, sem transformar a página inicial em um inventário técnico.
