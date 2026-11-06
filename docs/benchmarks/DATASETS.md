@@ -104,6 +104,15 @@ A documentação pública consultada não demonstra uma chave de origem comum pr
 - manter os resultados por dataset e por coorte, excluindo duplicatas da comparação independente quando a correspondência for comprovada;
 - se a sobreposição exata não puder ser quantificada, declarar a dependência e não apresentar o conjunto como replicação independente.
 
+### Relato de coorte RAGTruth no LLM-AggreFact
+
+Como o LLM-AggreFact incorpora dados originários do RAGTruth e a coorte RAGTruth está sujeita a restrições não comerciais das fontes subjacentes, qualquer relatório da avaliação deve apresentar **ambos** os resultados:
+
+- **LLM-AggreFact total**, incluindo a coorte RAGTruth, apenas como resultado agregado descritivo do conjunto tal como fornecido;
+- **LLM-AggreFact sem a coorte RAGTruth**, filtrando instâncias pelo campo nativo `dataset` (não por heurística textual do documento/claim). Este resultado é o relatório principal para evitar incorporar a coorte de origem com restrições adicionais.
+
+Preservar os valores originais do campo `dataset`, registrar os nomes de coorte excluídos e o número de linhas antes/depois do filtro. Se a coorte RAGTruth não puder ser identificada de forma inequívoca pelo campo `dataset`, interromper a execução e pedir revisão do mantenedor; não usar exclusão silenciosa ou aproximação baseada no texto. O total não deve ser interpretado como uma amostra independente de RAGTruth.
+
 ## Mapeamento prévio dos rótulos para os cinco vereditos
 
 Os vereditos do ATTRACTOR permanecem **SUPPORTED, PARTIALLY_SUPPORTED, UNVERIFIED, REFUTED e CONFLICTING**. O mapeamento abaixo não altera o Judge nem cria rótulos sintéticos.
