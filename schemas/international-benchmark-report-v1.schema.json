@@ -1,25 +1,261 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "$id":"https://ayorai.org/schemas/international-benchmark-report-v1.json",
-  "title":"ATTRACTOR International Benchmark Aggregate Report",
-  "type":"object",
-  "required":["schema_version","dataset","mapping_id","task","primary_metric","evaluated_component","end_to_end_attractor","metrics","bootstrap_ci95_balanced_accuracy","bootstrap_ci95_accuracy","cohorts","response_policy_abstentions","unverified_verdict_count","record_failures","llm_aggrefact_total_including_ragtruth","llm_aggrefact_without_ragtruth_cohort","source_file_sha256","mapping_file_sha256","code_sha","engine"],
-  "properties":{
-    "schema_version":{"const":"1.0.0"},
-    "dataset":{"const":"LLM-AggreFact"},
-    "mapping_id":{"const":"llm-aggrefact-label-map-v1"},
-    "task":{"const":"binary_claim_document_support"},
-    "primary_metric":{"const":"balanced_accuracy"},\n    "evaluated_component":{"const":"RuleStanceDetector (stance only, sem Judge 2.0)"},\n    "end_to_end_attractor":{"const":false},\n    "response_policy_abstentions":{"type":"object","required":["value","status","explanation"],"properties":{"value":{"type":["null","integer"]},"status":{"const":"not_applicable_to_component_path"},"explanation":{"type":"string"}}},\n    "unverified_verdict_count":{"type":"object","required":["value","status","explanation"],"properties":{"value":{"type":["null","integer"]},"status":{"const":"not_applicable_to_component_path"},"explanation":{"type":"string"}}},\n    "record_failures":{"type":"object","required":["n_total","n_evaluated","n_failures","failure_types","failure_indices_by_type","failure_rate","policy"]},
-    "source_file_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
-    "mapping_file_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
-    "code_sha":{"type":"string"},
-    "instance_level_predictions_in_public_artifact":{"const":false},
-    "metrics":{"$ref":"#/$defs/metrics"},
-    "llm_aggrefact_total_including_ragtruth":{"$ref":"#/$defs/metrics"},
-    "llm_aggrefact_without_ragtruth_cohort":{"$ref":"#/$defs/metrics"},
-    "cohorts":{"type":"object","additionalProperties":{"$ref":"#/$defs/metrics"}},
-    "bootstrap_ci95_balanced_accuracy":{"type":"object","required":["lower","upper","iterations","seed","unit","clustered"],"properties":{"lower":{"type":"number"},"upper":{"type":"number"},"iterations":{"const":10000},"seed":{"const":20261003},"unit":{"type":"string"},"clustered":{"type":"boolean"}}},\n    "bootstrap_ci95_accuracy":{"type":"object","required":["lower","upper","iterations","seed","unit","clustered"],"properties":{"lower":{"type":"number"},"upper":{"type":"number"},"iterations":{"const":10000},"seed":{"const":20261003},"unit":{"type":"string"},"clustered":{"type":"boolean"}}},
-    "engine":{"type":"object","required":["class","version","weights_or_thresholds_adjusted"],"properties":{"class":{"const":"RuleStanceDetector"},"version":{"type":"string"},"weights_or_thresholds_adjusted":{"const":false}}}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ayorai.org/schemas/international-benchmark-report-v1.json",
+  "title": "ATTRACTOR International Benchmark Aggregate Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "dataset",
+    "mapping_id",
+    "task",
+    "primary_metric",
+    "evaluated_component",
+    "end_to_end_attractor",
+    "metrics",
+    "bootstrap_ci95_balanced_accuracy",
+    "bootstrap_ci95_accuracy",
+    "cohorts",
+    "response_policy_abstentions",
+    "unverified_verdict_count",
+    "record_failures",
+    "llm_aggrefact_total_including_ragtruth",
+    "llm_aggrefact_without_ragtruth_cohort",
+    "source_file_sha256",
+    "mapping_file_sha256",
+    "code_sha",
+    "code_sha_source",
+    "engine"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "dataset": {
+      "const": "LLM-AggreFact"
+    },
+    "mapping_id": {
+      "const": "llm-aggrefact-label-map-v1"
+    },
+    "task": {
+      "const": "binary_claim_document_support"
+    },
+    "primary_metric": {
+      "const": "balanced_accuracy"
+    },
+    "evaluated_component": {
+      "const": "RuleStanceDetector (stance only, sem Judge 2.0)"
+    },
+    "end_to_end_attractor": {
+      "const": false
+    },
+    "response_policy_abstentions": {
+      "type": "object",
+      "required": [
+        "value",
+        "status",
+        "explanation"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "status": {
+          "const": "not_applicable_to_component_path"
+        },
+        "explanation": {
+          "type": "string"
+        }
+      }
+    },
+    "unverified_verdict_count": {
+      "type": "object",
+      "required": [
+        "value",
+        "status",
+        "explanation"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "status": {
+          "const": "not_applicable_to_component_path"
+        },
+        "explanation": {
+          "type": "string"
+        }
+      }
+    },
+    "record_failures": {
+      "type": "object",
+      "required": [
+        "n_total",
+        "n_evaluated",
+        "n_failures",
+        "failure_types",
+        "failure_indices_by_type",
+        "failure_rate",
+        "policy"
+      ],
+      "properties": {
+        "n_total": {
+          "type": "integer"
+        },
+        "n_evaluated": {
+          "type": "integer"
+        },
+        "n_failures": {
+          "type": "integer"
+        },
+        "failure_types": {
+          "type": "object"
+        },
+        "failure_indices_by_type": {
+          "type": "object"
+        },
+        "failure_rate": {
+          "type": "number"
+        },
+        "policy": {
+          "type": "string"
+        }
+      }
+    },
+    "source_file_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "mapping_file_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "code_sha": {
+      "type": "string",
+      "minLength": 1
+    },
+    "code_sha_source": {
+      "const": "cli_argument"
+    },
+    "instance_level_predictions_in_public_artifact": {
+      "const": false
+    },
+    "metrics": {
+      "$ref": "#/$defs/metrics"
+    },
+    "llm_aggrefact_total_including_ragtruth": {
+      "$ref": "#/$defs/metrics"
+    },
+    "llm_aggrefact_without_ragtruth_cohort": {
+      "$ref": "#/$defs/metrics"
+    },
+    "cohorts": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/metrics"
+      }
+    },
+    "bootstrap_ci95_balanced_accuracy": {
+      "$ref": "#/$defs/bootstrap"
+    },
+    "bootstrap_ci95_accuracy": {
+      "$ref": "#/$defs/bootstrap"
+    },
+    "ragtruth_exclusion": {
+      "type": "object"
+    },
+    "engine": {
+      "type": "object",
+      "required": [
+        "class",
+        "version",
+        "weights_or_thresholds_adjusted"
+      ],
+      "properties": {
+        "class": {
+          "const": "RuleStanceDetector"
+        },
+        "version": {
+          "type": "string"
+        },
+        "weights_or_thresholds_adjusted": {
+          "const": false
+        }
+      }
+    }
   },
-  "$defs":{"metrics":{"type":"object","required":["n","balanced_accuracy","accuracy","per_class","confusion_matrix","majority_baseline"],"properties":{"n":{"type":"integer","minimum":1},"balanced_accuracy":{"type":"number"},"accuracy":{"type":"number"},"per_class":{"type":"object"},"confusion_matrix":{"type":"object"},"majority_baseline":{"type":"object"}}}}
+  "$defs": {
+    "bootstrap": {
+      "type": "object",
+      "required": [
+        "lower",
+        "upper",
+        "iterations",
+        "seed",
+        "unit",
+        "clustered",
+        "limitation"
+      ],
+      "properties": {
+        "lower": {
+          "type": "number"
+        },
+        "upper": {
+          "type": "number"
+        },
+        "iterations": {
+          "const": 10000
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "clustered": {
+          "type": "boolean"
+        },
+        "limitation": {
+          "type": "string"
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "n",
+        "balanced_accuracy",
+        "accuracy",
+        "per_class",
+        "confusion_matrix",
+        "majority_baseline"
+      ],
+      "properties": {
+        "n": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "balanced_accuracy": {
+          "type": "number"
+        },
+        "accuracy": {
+          "type": "number"
+        },
+        "per_class": {
+          "type": "object"
+        },
+        "confusion_matrix": {
+          "type": "object"
+        },
+        "majority_baseline": {
+          "type": "object"
+        }
+      }
+    }
+  }
 }
