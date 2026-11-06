@@ -16,6 +16,11 @@ import pytest
 # Unit tests explicitly opt into unauthenticated mode. Production defaults to
 # api_key and fails startup when key material has not been configured.
 os.environ["ATTRACTOR_AUTH_MODE"] = "off"
+# The shared API app serves the entire suite from one client IP; keep the
+# production default from throttling unrelated test cases in this process.
+os.environ["ATTRACTOR_RATE_LIMIT_REQUESTS"] = "100000"
+os.environ["ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS"] = "60"
+os.environ["ATTRACTOR_RATE_LIMIT_MAX_CLIENTS"] = "10000"
 # The global API app is shared across many tests; dedicated limiter tests set lower limits.
 os.environ["ATTRACTOR_RATE_LIMIT_REQUESTS"] = "100000"
 os.environ["ATTRACTOR_RATE_LIMIT_MAX_CLIENTS"] = "100000"
