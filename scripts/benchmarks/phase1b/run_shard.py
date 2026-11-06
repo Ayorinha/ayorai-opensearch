@@ -69,14 +69,11 @@ def _support_label_id(config: Any) -> int:
     labels = {int(index): str(label).casefold() for index, label in config.id2label.items()}
     support_terms = ("entail", "support", "positive")
     matches = [
-        index
-        for index, label in labels.items()
-        if any(term in label for term in support_terms)
+        index for index, label in labels.items() if any(term in label for term in support_terms)
     ]
     if len(matches) != 1:
         raise ValueError(
-            "model config does not expose one unambiguous support label; "
-            "explicit mapping required"
+            "model config does not expose one unambiguous support label; explicit mapping required"
         )
     return matches[0]
 
@@ -128,8 +125,12 @@ def run_inference(
             docs = [item[2] for item in batch_rows]
             claims = [item[1] for item in batch_rows]
             inputs = tokenizer(
-                docs, claims, padding=True, truncation="only_first",
-                max_length=512, return_tensors="pt",
+                docs,
+                claims,
+                padding=True,
+                truncation="only_first",
+                max_length=512,
+                return_tensors="pt",
             )
             logits = model(**inputs).logits
             probabilities = torch.softmax(logits.float(), dim=-1)[:, support_id].tolist()
