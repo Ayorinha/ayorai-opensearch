@@ -26,14 +26,23 @@ def test_fixed_window_limiter_blocks_at_limit_and_resets() -> None:
     assert limiter.allow("ip:127.0.0.1", now=110) == (True, 0)
 
 
-def test_fixed_window_limiter_bounds_identity_storage() -> None:
-    limiter = _FixedWindowRateLimiter(limit=1, window_seconds=10, max_clients=2)
+def test_fixed_window_limiter_evicts_least_recently_used_identity() -> None:
+    limiter = _FixedWindowRateLimiter(limit=2, window_seconds=10, max_clients=2)
 
     assert limiter.allow("ip:a", now=100) == (True, 0)
     assert limiter.allow("ip:b", now=100) == (True, 0)
-    assert limiter.allow("ip:c", now=100) == (False, 10)
-    assert limiter.allow("ip:c", now=111) == (True, 0)
-    assert len(limiter._windows) <= 2
+    assert limiter.allow("ip:a", now=101) == (True, 0)  # a becomes most recently used
+    assert limiter.allow("ip:c", now=102) == (True, 0)  # b is evicted
+    assert list(limiter._windows) == ["ip:a", "ip:c"]
+    assert len(limiter._windows) == 2
+    assert limiter._calls == 4
+
+
+def test_first_request_is_included_in_call_counter() -> None:
+    limiter = _FixedWindowRateLimiter(limit=2, window_seconds=10, max_clients=2)
+
+    assert limiter.allow("ip:first", now=100) == (True, 0)
+    assert limiter._calls == 1
 
 
 def test_api_returns_429_and_retry_after_when_ip_limit_is_exceeded(
@@ -132,3 +141,35 @@ def test_authenticated_key_has_its_own_rate_limit(
         blocked = client.get("/private", headers=headers)
 
     assert blocked.status_code == 429
+
+
+def test_ip_identity_churn_cannot_exhaust_authenticated_key_limiter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    key = secrets.token_urlsafe(32)
+    pepper = secrets.token_hex(32)
+    monkeypatch.setenv("ATTRACTOR_AUTH_MODE", "api_key")
+    monkeypatch.setenv("ATTRACTOR_API_KEY_PEPPER", pepper)
+    monkeypatch.setenv("ATTRACTOR_API_KEYS_HMAC_SHA256", _digest(key, pepper))
+    monkeypatch.setenv("ATTRACTOR_RATE_LIMIT_REQUESTS", "10")
+    monkeypatch.setenv("ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", "60")
+    monkeypatch.setenv("ATTRACTOR_RATE_LIMIT_MAX_CLIENTS", "1")
+
+    app = FastAPI()
+    app.add_middleware(APIKeyAuthMiddleware)
+
+    @app.get("/private")
+    def private() -> dict[str, str]:
+        return {"access": "granted"}
+
+    for index in range(1, 8):
+        # Separate TestClient instances provide distinct ASGI client IPs.
+        with TestClient(app, client=(f"192.0.2.{index}", 1000)) as client:
+            response = client.get("/private", headers={"X-API-Key": "invalid"})
+            assert response.status_code == 401
+
+    # A new IP still gets through, and its valid key has its own table.
+    with TestClient(app, client=("198.51.100.10", 1000)) as client:
+        response = client.get("/private", headers={"X-API-Key": key})
+
+    assert response.status_code == 200

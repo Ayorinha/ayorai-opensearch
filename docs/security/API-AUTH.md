@@ -48,9 +48,13 @@ Keep the raw key in a secret manager or environment supplied by the deployment p
 
 ## Application-level request throttling
 
-The API middleware applies a fixed-window request limit to the connecting client IP before authentication, and a second limit to the HMAC digest of an authenticated API key. Raw API keys are never used as limiter identities. Requests over the limit receive HTTP `429` with a `Retry-After` header. `/health` is exempt so infrastructure health checks continue to work.
+The API middleware applies a fixed-window request limit to the connecting client IP before authentication, and a second limit to the HMAC digest of an authenticated API key. These are independent limiters with independent bounded tables: IP identities cannot consume or evict authenticated-key entries. Raw API keys are never used as limiter identities. Requests over the limit receive HTTP `429` with a `Retry-After` header containing the remaining seconds in that identity's window. `/health` is exempt so infrastructure health checks continue to work.
 
-The defaults are 120 requests per 60 seconds, with at most 10,000 active limiter identities in memory. Configure these values with:
+Because this is a fixed-window limiter, requests near a window boundary can use nearly the full limit immediately before the boundary and nearly the full limit immediately after it. Thus, over a short boundary-spanning interval, the observed burst can approach **2× the configured limit** (for example, nearly 240 requests around the boundary with a limit of 120 per 60 seconds). This is an inherent fixed-window trade-off, not a rolling-window guarantee.
+
+The IP limiter uses an LRU eviction policy when its table reaches capacity: the least recently used IP entry is evicted and the new identity is admitted. This deliberately avoids rejecting every new client when a flood fills the table. Under sustained high-cardinality IP churn, an evicted IP can receive a fresh window if it returns; this bounded in-process control is not a substitute for edge-level abuse protection. The authenticated-key limiter has capacity equal to the number of distinct configured key digests, so arbitrary IP identities cannot consume its slots.
+
+The defaults are 120 requests per 60 seconds, with at most 10,000 active IP identities in memory. Configure these values with:
 
 ~~~bash
 export ATTRACTOR_RATE_LIMIT_REQUESTS=120
@@ -58,7 +62,24 @@ export ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS=60
 export ATTRACTOR_RATE_LIMIT_MAX_CLIENTS=10000
 ~~~
 
-All three values must be positive integers. The limiter is deliberately bounded and process-local: it protects a single application process from bursts and basic credential guessing, but its counters are not shared across workers or replicas and reset on restart. A multi-worker or multi-replica deployment MUST also enforce a shared rate limit at its trusted API gateway or edge. Configure trusted proxy handling at the deployment boundary; do not trust arbitrary client-supplied forwarding headers as the source IP.
+All three values must be positive integers. With `ATTRACTOR_AUTH_MODE=off`, authentication is disabled but the IP rate limit remains active; `off` does not disable request throttling. The limiters are deliberately bounded and process-local: they protect a single application process from bursts and basic credential guessing, but counters are not shared across workers or replicas and reset on restart. A multi-worker or multi-replica deployment MUST also enforce a shared rate limit at its trusted API gateway or edge.
+
+## Trusted reverse proxies and client IPs
+
+When the API is behind Nginx, a load balancer, Cloudflare, or another reverse proxy, Uvicorn must accept forwarded client addresses only from the exact proxy IP addresses or narrowly scoped CIDRs that you control. The Docker image enables proxy-header support and passes the `FORWARDED_ALLOW_IPS` environment variable to Uvicorn. Docker Compose defaults this allowlist to `127.0.0.1`; replace it in the deployment `.env` with the proxy's actual source address or a narrow, controlled proxy subnet:
+
+~~~bash
+FORWARDED_ALLOW_IPS=172.30.0.10
+~~~
+
+For a direct Uvicorn deployment, configure the equivalent explicitly:
+
+~~~bash
+export FORWARDED_ALLOW_IPS='172.30.0.10'
+uvicorn ayorai_attractor.api.app:app --host 0.0.0.0 --port 8000 --lifespan on --proxy-headers --forwarded-allow-ips "$FORWARDED_ALLOW_IPS"
+~~~
+
+Do not use `--forwarded-allow-ips '*'` on a network where untrusted clients can connect directly. Never trust `X-Forwarded-For` merely because a client supplied it: the header is authoritative only when Uvicorn receives the request from a proxy in this explicit trusted allowlist and that proxy overwrites/sanitizes incoming forwarding headers. Keep the proxy-to-application network restricted to those trusted proxies.
 
 ## Operational considerations
 

@@ -49,6 +49,16 @@ The second command should receive HTTP 401 when API-key authentication is enable
 - The HMAC pepper should be protected separately from stored digest values. Rotating it requires regenerating all configured API-key digests.
 - The health check only confirms process/API responsiveness; it does not prove dependency health or application correctness.
 
+## Reverse proxy and forwarded client addresses
+
+The image starts Uvicorn with `--proxy-headers`, but trusts forwarded headers only from the addresses listed in `FORWARDED_ALLOW_IPS`. Docker Compose defaults this variable to `127.0.0.1`, which does not automatically trust another container acting as a reverse proxy. Set it in the deployment `.env` to the exact proxy container address or a narrow CIDR on a network reserved for trusted proxies:
+
+~~~bash
+FORWARDED_ALLOW_IPS=172.30.0.10
+~~~
+
+Use only proxy addresses/networks controlled by the deployment. Do not set the value to `*` on an interface reachable by untrusted clients. The reverse proxy must overwrite or sanitize incoming `X-Forwarded-For` and `X-Forwarded-Proto` headers before forwarding requests. Do not treat client-supplied forwarding headers as trustworthy. If no reverse proxy is used, keep the default allowlist and do not rely on forwarded headers.
+
 ## Runtime access logging
 
 The API emits one structured JSON access record per HTTP request through the application logger. Records include the request ID, method, route template, response status and duration; request bodies, claims, evidence excerpts, credentials and query strings are excluded. `ATTRACTOR_LOG_LEVEL` accepts `DEBUG`, `INFO` (default), `WARNING`, `ERROR` or `CRITICAL`. An unrecognized value prevents startup. The Docker command disables Uvicorn's default access logger so that the structured record is the single access-log line and query strings are not emitted by the server logger.
