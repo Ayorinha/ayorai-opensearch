@@ -98,3 +98,12 @@ def test_forged_only_evidence_cannot_support_claim() -> None:
     assert checked is None
     judgment = judge_claim(claim, [], [])
     assert judgment.verdict.value not in {"verified", "supported"}
+
+
+def test_nfc_excerpt_maps_to_original_nfd_offsets_after_non_bmp_prefix() -> None:
+    source = "🧪 Cafe\\u0301 relatório"
+    located = locate_excerpt(source, "Café")
+
+    assert located == (2, 7)
+    assert source[located[0] : located[1]] == "Cafe\\u0301"
+    assert source[: located[0]] == "🧪 "
