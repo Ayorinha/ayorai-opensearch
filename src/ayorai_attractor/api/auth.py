@@ -77,7 +77,7 @@ def _api_key_digest(presented_key: str, pepper: bytes) -> str:
 
 
 def validate_auth_configuration() -> None:
-    """Validate auth and throttling environment settings during application startup."""
+    """Validate auth environment settings during application startup."""
     _load_configuration()
     _positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS)
     _positive_int_env("ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS)
@@ -136,12 +136,16 @@ class _FixedWindowRateLimiter:
 
 
 class APIKeyAuthMiddleware:
-    """Authenticate API keys and apply independent bounded IP/key request limits.
+    """Authenticate HTTP requests with keyed HMAC-SHA-256 digests of API keys.
 
     Authentication is enabled by default. For local development only, set
-    ATTRACTOR_AUTH_MODE=off explicitly. Rate limiting remains enabled in both
-    modes. In api_key mode, configure HMAC-SHA-256 digests and a separately
-    managed pepper. Raw API keys are never used as limiter identities.
+    ATTRACTOR_AUTH_MODE=off explicitly. In api_key mode, configure
+    ATTRACTOR_API_KEYS_HMAC_SHA256 with comma-separated HMAC-SHA-256 hex digests
+    and ATTRACTOR_API_KEY_PEPPER with a separately managed 32-byte secret.
+    Raw API keys are never read from configuration or written to logs.
+
+    Independent bounded IP and authenticated-key rate limits apply in both
+    authentication modes. Raw API keys are never used as limiter identities.
     The limiters are process-local; multi-worker or multi-replica deployments
     must also enforce shared limits at a trusted gateway.
     """
