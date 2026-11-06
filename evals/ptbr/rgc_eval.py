@@ -230,12 +230,36 @@ def _text(passage: Passage, documents: Mapping[str, Document]) -> str:
 
 
 def oracle_passages(case: Mapping[str, Any], documents: Mapping[str, Document]) -> list[Passage]:
+    """Validate oracle evidence strictly; do not coerce offsets or malformed fields."""
+    case_id = str(case["case_id"])
+    raw_evidence = case.get("evidence")
+    if not isinstance(raw_evidence, list) or not raw_evidence:
+        raise ValueError(f"{case_id}: evidence must be a non-empty list")
     passages = []
-    for item in case["evidence"]:
-        doc = documents[item["document_id"]]
-        start, end = int(item["start_offset"]), int(item["end_offset"])
-        if doc.text[start:end] != item["excerpt"]:
-            raise ValueError(f"{case['case_id']}: excerpt does not match document offsets")
+    for item in raw_evidence:
+        if not isinstance(item, Mapping):
+            raise ValueError(f"{case_id}: each evidence item must be an object")
+        document_id = item.get("document_id")
+        if not isinstance(document_id, str) or not document_id.strip():
+            raise ValueError(f"{case_id}: evidence document_id must be a non-empty string")
+        if document_id not in documents:
+            raise ValueError(f"{case_id}: unknown evidence document_id {document_id!r}")
+        start, end = item.get("start_offset"), item.get("end_offset")
+        if (
+            not isinstance(start, int)
+            or isinstance(start, bool)
+            or not isinstance(end, int)
+            or isinstance(end, bool)
+        ):
+            raise ValueError(f"{case_id}: evidence offsets must be integers")
+        doc = documents[document_id]
+        if not 0 <= start < end <= len(doc.text):
+            raise ValueError(f"{case_id}: evidence offsets {start}-{end} outside document")
+        excerpt = item.get("excerpt")
+        if not isinstance(excerpt, str) or not excerpt.strip():
+            raise ValueError(f"{case_id}: evidence excerpt must be a non-empty string")
+        if doc.text[start:end] != excerpt:
+            raise ValueError(f"{case_id}: excerpt does not match document offsets")
         passages.append(Passage(doc.source_id, start, end))
     return passages
 
@@ -256,8 +280,15 @@ def case_atoms(case: Mapping[str, Any]) -> list[tuple[int, int]] | None:
         raise ValueError(f"{case_id}: atoms must list two or more spans")
     spans: list[tuple[int, int]] = []
     for item in raw:
+        if not isinstance(item, Mapping):
+            raise ValueError(f"{case_id}: each atom must be an object")
         start, end = item.get("start_offset"), item.get("end_offset")
-        if not (isinstance(start, int) and isinstance(end, int)) or isinstance(start, bool):
+        if (
+            not isinstance(start, int)
+            or isinstance(start, bool)
+            or not isinstance(end, int)
+            or isinstance(end, bool)
+        ):
             raise ValueError(f"{case_id}: atom offsets must be integers")
         if not 0 <= start < end <= len(claim):
             raise ValueError(f"{case_id}: atom span {start}-{end} outside the claim")
@@ -616,9 +647,26 @@ def stratum_metrics(
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [
-        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
-    ]
+    """Read case JSONL strictly; malformed or blank records must not disappear."""
+    records: list[dict[str, Any]] = []
+    seen_case_ids: set[str] = set()
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        if not isinstance(record, dict):
+            raise ValueError(f"{path}:{line_number}: expected an object")
+        case_id = record.get("case_id")
+        if not isinstance(case_id, str) or not case_id.strip():
+            raise ValueError(f"{path}:{line_number}: case_id must be a non-empty string")
+        if case_id in seen_case_ids:
+            raise ValueError(f"{path}:{line_number}: duplicate case_id {case_id!r}")
+        seen_case_ids.add(case_id)
+        records.append(record)
+    return records
 
 
 def _sha256(path: Path) -> str:
@@ -712,6 +760,65 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
         "approved_by": manifest["approved_by"],
         "approved_at": manifest["approved_at"],
     }
+
+
+def _strict_jsonl_case_ids(path: Path, *, annotation: bool = False) -> set[str]:
+    """Read unique case IDs from cases or human annotations without skipping malformed lines."""
+    ids: set[str] = set()
+    allowed_annotation_labels = set(VOCABULARIES["judge2"]) | EXCLUSION_LABELS
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        if not isinstance(row, dict):
+            raise ValueError(f"{path}:{line_number}: expected a JSON object")
+        expected_keys = {"case_id", "label"} if annotation else None
+        if annotation and set(row) != expected_keys:
+            raise ValueError(f"{path}:{line_number}: expected exactly case_id and label")
+        case_id = row.get("case_id")
+        if not isinstance(case_id, str) or not case_id.strip():
+            raise ValueError(f"{path}:{line_number}: case_id must be a non-empty string")
+        if case_id in ids:
+            raise ValueError(f"{path}:{line_number}: duplicate case_id {case_id!r}")
+        if annotation:
+            label = row.get("label")
+            if not isinstance(label, str) or label not in allowed_annotation_labels:
+                raise ValueError(f"{path}:{line_number}: invalid annotation label {label!r}")
+        ids.add(case_id)
+    if not ids:
+        raise ValueError(f"{path}: file is empty")
+    return ids
+
+
+def _validate_annotation_case_ids(
+    cases_path: Path, annotation_a_path: Path, annotation_b_path: Path
+) -> None:
+    """Require both independent annotation files to cover exactly the approved cases."""
+    approved_case_ids = _strict_jsonl_case_ids(cases_path)
+    annotation_a_ids = _strict_jsonl_case_ids(annotation_a_path, annotation=True)
+    annotation_b_ids = _strict_jsonl_case_ids(annotation_b_path, annotation=True)
+    cases_minus_a = sorted(approved_case_ids - annotation_a_ids)
+    cases_minus_b = sorted(approved_case_ids - annotation_b_ids)
+    a_minus_cases = sorted(annotation_a_ids - approved_case_ids)
+    b_minus_cases = sorted(annotation_b_ids - approved_case_ids)
+    if cases_minus_a or cases_minus_b or a_minus_cases or b_minus_cases:
+        raise ValueError(
+            "RGC evaluation blocked: annotation case IDs must exactly match approved cases "
+            f"(cases-A={cases_minus_a}, cases-B={cases_minus_b}, "
+            f"A-cases={a_minus_cases}, B-cases={b_minus_cases})"
+        )
+
+
+def _validate_rule_gap_policy(label: str, *, pilot_mode: bool, partition: str) -> None:
+    """Allow RULE_GAP only in an explicitly selected, non-hidden pilot run."""
+    if label in EXCLUSION_LABELS and (not pilot_mode or partition != "development"):
+        raise ValueError(
+            "RULE_GAP is prohibited in every definitive partition; "
+            "it is accepted only in explicit pilot mode"
+        )
 
 
 def validate_annotation_approval(
@@ -809,6 +916,13 @@ def validate_annotation_approval(
         if manifest[field] != actual_hash:
             raise ValueError(f"RGC evaluation blocked: {field} differs from approval manifest")
 
+    try:
+        _validate_annotation_case_ids(cases_path, annotation_a_path, annotation_b_path)
+    except OSError as exc:
+        raise ValueError(
+            "RGC evaluation blocked: an approved annotation artifact is missing"
+        ) from exc
+
     return {
         "manifest_sha256": _sha256(approval_manifest_path),
         **expected_hashes,
@@ -869,9 +983,12 @@ def evaluate(
     granularity: str = "dispositivo",
     iterations: int = BOOTSTRAP_ITERATIONS,
     partition: str = "development",
+    pilot_mode: bool = False,
 ) -> dict[str, Any]:
     if partition not in {"hidden", "development"}:
         raise ValueError("partition must be hidden or development")
+    if mode not in {"oracle", "retrieval"}:
+        raise ValueError("mode must be oracle or retrieval")
     cases = list(cases)
     development_cases = list(development_cases)
     development_case_ids = [str(case["case_id"]) for case in development_cases]
@@ -892,28 +1009,27 @@ def evaluate(
     if overlap:
         raise ValueError(f"development/evaluation partition overlap: {overlap}")
 
-    index: BM25Index | None = None
-    if mode == "retrieval":
-        passages = [p for doc in documents.values() for p in segment(doc, granularity)]
-        index = BM25Index(passages, documents)
-    rows: list[dict[str, Any]] = []
-    excluded: list[dict[str, str]] = []
-    unlabeled: list[str] = []
+    # Preflight the complete evaluation set before invoking the predictor.
+    # This prevents partial prediction side effects when a later case is invalid.
     seen: set[str] = set()
+    unlabeled: list[str] = []
+    oracle_evidence: dict[str, list[Passage]] = {}
     for case in cases:
         case_id = str(case["case_id"])
         if case_id in seen:
             raise ValueError(f"{case_id}: duplicate case")
         seen.add(case_id)
-        # Validate schema-level metadata even for excluded or unlabeled cases;
-        # malformed annotations must never be silently skipped.
-        rectified = case_rectified(case)
+        case_rectified(case)
         gold = labels.get(case_id)
         if gold is None:
             unlabeled.append(case_id)
             continue
+        if not isinstance(gold, str) or (
+            gold not in VOCABULARIES[vocabulary] and gold not in EXCLUSION_LABELS
+        ):
+            raise ValueError(f"{case_id}: invalid gold label {gold!r} for vocabulary {vocabulary}")
+        _validate_rule_gap_policy(gold, pilot_mode=pilot_mode, partition=partition)
         if gold in EXCLUSION_LABELS:
-            excluded.append({"case_id": case_id, "label": gold})
             continue
         cluster_id = case.get("bootstrap_cluster_id")
         if partition == "hidden" and (not isinstance(cluster_id, str) or not cluster_id.strip()):
@@ -935,11 +1051,40 @@ def evaluate(
                     f"{case_id}: bundle bootstrap_cluster_id must contain at least two "
                     "unique, sorted IDs"
                 )
+        claim = case.get("claim")
+        if not isinstance(claim, str) or not claim.strip():
+            raise ValueError(f"{case_id}: claim must be a non-empty string")
+        case_atoms(case)
+        if mode == "oracle":
+            # Resolve oracle evidence up front: a missing document or a
+            # mismatched excerpt must stop the run before any prediction.
+            try:
+                oracle_evidence[case_id] = oracle_passages(case, documents)
+            except (KeyError, TypeError) as exc:
+                raise ValueError(f"{case_id}: malformed oracle evidence ({exc!r})") from exc
+    if unlabeled:
+        raise ValueError(f"cases without a label (labels must be complete): {unlabeled}")
+    extra = sorted(set(labels) - seen)
+    if extra:
+        raise ValueError(f"labels for unknown cases (files do not match): {extra}")
+
+    index: BM25Index | None = None
+    if mode == "retrieval":
+        passages = [p for doc in documents.values() for p in segment(doc, granularity)]
+        index = BM25Index(passages, documents)
+    rows: list[dict[str, Any]] = []
+    excluded: list[dict[str, str]] = []
+    for case in cases:
+        case_id = str(case["case_id"])
+        rectified = case_rectified(case)
+        gold = labels[case_id]
+        if gold in EXCLUSION_LABELS:
+            excluded.append({"case_id": case_id, "label": gold})
+            continue
+        cluster_id = case.get("bootstrap_cluster_id")
         atoms = case_atoms(case)
         if index is None:
-            prediction = predict(
-                case["claim"], oracle_passages(case, documents), documents, atoms=atoms
-            )
+            prediction = predict(case["claim"], oracle_evidence[case_id], documents, atoms=atoms)
         else:
             hits = index.search(case["claim"], top_k)
             prediction = predict(
@@ -961,11 +1106,6 @@ def evaluate(
                 **prediction,
             }
         )
-    if unlabeled:
-        raise ValueError(f"cases without a label (labels must be complete): {unlabeled}")
-    extra = sorted(set(labels) - seen)
-    if extra:
-        raise ValueError(f"labels for unknown cases (files do not match): {extra}")
     if not rows:
         raise ValueError("no evaluable cases")
     gold_labels = [str(r["gold"]) for r in rows]
