@@ -1,9 +1,11 @@
 # Proposed dated amendment — RGC invalid-prediction handling (20/10/2026)
 
+> **Aviso editorial (2026-10-25) — proposta histórica/superada:** este arquivo preserva a minuta e a trilha de deliberação anterior. A decisão normativa vigente é a DEC-017, Opção A, aprovada em 2026-10-21 e formalizada pela Emenda 7; consulte o pré-registro e o protocolo para a regra ativa. Notas intermediárias e checkboxes preservados neste arquivo não substituem esse registro. O protocolo permanece **[PROPOSTO]**, não congelado, e esta nota não autoriza avaliação confirmatória.
+
 **Current status (2026-10-21):** Option A approved explicitly by the maintainer in Prompt Master 2 on 2026-10-21.  
 **Immediate effect:** none. This proposal does not alter the active pre-registration, freeze the protocol, authorize definitive annotation, or authorize a confirmatory execution.
 
-**Corrective note (2026-10-21):** PR #323 marked Option A as approved. The current Master Prompt requires DEC-017 to remain pending until the maintainer explicitly decides the scientific question. The previous status is preserved in Git history and summarized in the historical note below; it is not the current normative state.
+**Corrective note (2026-10-21):** PR #323 marked Option A as approved. Historical note (superseded): an intermediate Master Prompt required DEC-017 to remain pending until an explicit maintainer decision. The maintainer subsequently approved Option A on 2026-10-21 and formalized it in Amendment 7; that approval is the operative decision.
 
 **Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
 
@@ -39,7 +41,7 @@ The current text should not be silently reinterpreted. This proposal records a p
 
 ## Historical status note (2026-10-21)
 
-PR #323 recorded the following prior state: “Status: approved by maintainer on 2026-10-21; Option A,” checked “Approved explicitly by Anderson Leon Ayora — Option A,” and assigned decision date 2026-10-21. This historical entry is retained for traceability. Under the current Master Prompt, DEC-017 remains pending and the recorded approval is not treated as a current decision.
+PR #323 recorded the following prior state: “Status: approved by maintainer on 2026-10-21; Option A,” checked “Approved explicitly by Anderson Leon Ayora — Option A,” and assigned decision date 2026-10-21. This historical entry is retained for traceability. At that stage, the Master Prompt treated DEC-017 as pending. That historical state was superseded by the maintainer's explicit approval of Option A on 2026-10-21, formalized in Amendment 7.
 
 **Nota (2026-10-21):** superada pela Emenda 7 aprovada (DEC-017); mantida apenas como histórico.
 
