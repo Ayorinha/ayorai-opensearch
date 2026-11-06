@@ -178,6 +178,44 @@ def test_duplicate_source_ids_are_rejected(tmp_path: Path) -> None:
     else:
         raise AssertionError("duplicate source_id must be rejected")
 
+def test_non_object_jsonl_records_are_rejected(tmp_path: Path) -> None:
+    documents = tmp_path / "non-object-docs.jsonl"
+    documents.write_text("null\n[]\n42\n", encoding="utf-8")
+    try:
+        CHECKER["load_documents"](documents)
+    except ValueError as error:
+        assert "each JSONL record must be an object" in str(error)
+    else:
+        raise AssertionError("non-object JSONL records must be rejected")
+
+
+def test_source_id_surrounding_whitespace_is_rejected(tmp_path: Path) -> None:
+    documents = tmp_path / "whitespace-source-id.jsonl"
+    documents.write_text(
+        json.dumps({"source_id": " sint-1 ", "text": DOC_TEXT}) + "\n",
+        encoding="utf-8",
+    )
+    try:
+        CHECKER["load_documents"](documents)
+    except ValueError as error:
+        assert "surrounding whitespace" in str(error)
+    else:
+        raise AssertionError("non-canonical source_id must be rejected")
+
+
+def test_duplicate_json_keys_are_rejected(tmp_path: Path) -> None:
+    documents = tmp_path / "duplicate-json-key.jsonl"
+    documents.write_text(
+        '{"source_id":"sint-1","source_id":"sint-2","text":"synthetic"}\n',
+        encoding="utf-8",
+    )
+    try:
+        CHECKER["load_documents"](documents)
+    except ValueError as error:
+        assert "duplicate JSON key: source_id" in str(error)
+    else:
+        raise AssertionError("duplicate JSON keys must be rejected")
+
 
 def test_output_never_contains_case_content(tmp_path: Path, capsys: object) -> None:
     documents = tmp_path / "docs.jsonl"
