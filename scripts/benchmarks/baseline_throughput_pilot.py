@@ -38,6 +38,11 @@ MODELS = [
         "repo": "lytang/MiniCheck-DeBERTa-v3-Large",
         "prefix": "2f2d01a",
     },
+    {
+        "key": "factcg_deberta_large",
+        "repo": "yaxili96/FactCG-DeBERTa-v3-Large",
+        "prefix": "0430e3509dbd28d2dff7a117c0eae25359ff3e80",
+    },
 ]
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?。！？])\s+")
 
@@ -219,8 +224,21 @@ def main() -> None:
                 revision=revision,
                 token=None,
                 local_files_only=False,
+                allow_patterns=[
+                    "*.json",
+                    "*.safetensors",
+                    "*.model",
+                    "tokenizer*",
+                    "vocab*",
+                    "merges*",
+                ],
             )
         )
+        if not any(model_dir.rglob("*.safetensors")):
+            raise RuntimeError(
+                f"{spec['repo']}@{revision}: no .safetensors weights found "
+                "in the pinned snapshot; refusing fallback to .bin/.pt"
+            )
         tokenizer = AutoTokenizer.from_pretrained(str(model_dir), local_files_only=True)
         model = AutoModelForSequenceClassification.from_pretrained(
             str(model_dir),

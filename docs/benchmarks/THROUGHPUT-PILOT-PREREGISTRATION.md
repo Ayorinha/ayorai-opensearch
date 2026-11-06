@@ -7,9 +7,11 @@
 
 - Coorte: campo `dataset` do LLM-AggreFact.
 - Amostra: 200 exemplos, estratificados por coorte, seed fixa `20261106`; seleção determinística dentro de cada coorte.
-- Modelos desta rodada: HHEM-2.1-Open (condicional ao acesso gated e revisão de `configuration_hhem_v2.py` e `modeling_hhem_v2.py`), mDeBERTa-v3-base NLI multilíngue e MiniCheck-DeBERTa-v3-Large. LettuceDetect e LLM-as-judge estão excluídos.
-- SHA completo dos modelos: no piloto, resolver os prefixos `de9a5e6`, `b5113eb` e `2f2d01a` pela API do Hub; aceitar somente correspondência única. Registrar SHA completo e SHA-256 de cada arquivo de pesos e tokenizer. O congelamento oficial ocorrerá em PR próprio antes de qualquer uso do split `test`.
+- Modelos desta rodada: HHEM-2.1-Open (condicional ao acesso gated e revisão de `configuration_hhem_v2.py` e `modeling_hhem_v2.py`), mDeBERTa-v3-base NLI multilíngue, MiniCheck-DeBERTa-v3-Large e FactCG-DeBERTa-v3-Large (candidato experimental, somente DEV). LettuceDetect e LLM-as-judge estão excluídos.
+- FactCG é candidato experimental: os dados de treino (CG2C; arXiv `2501.17144`) e possível contaminação precisam ser verificados antes de qualquer uso no split `test`; até essa verificação, seu uso fica restrito ao `dev`.
+- SHA completo dos modelos: no piloto, resolver os prefixos `de9a5e6`, `b5113eb` e `2f2d01a` pela API do Hub; aceitar somente correspondência única. FactCG usa o SHA completo fixado `0430e3509dbd28d2dff7a117c0eae25359ff3e80` (revisão mais recente informada pelo mantenedor, de 21/02/2025), sem resolução por `main`. Registrar SHA completo e SHA-256 de cada arquivo de pesos e tokenizer. O congelamento oficial ocorrerá em PR próprio antes de qualquer uso do split `test`.
 - HHEM: não executar até que o mantenedor confirme acesso gated e a revisão dos dois arquivos de custom code esteja registrada. Se indisponível, executar somente mDeBERTa e MiniCheck e marcar HHEM como SKIPPED, não como falha nem como resultado.
+- Download de modelos: `snapshot_download` usa allowlist comum (`*.json`, `*.safetensors`, `*.model`, `tokenizer*`, `vocab*`, `merges*`); o harness falha explicitamente se o snapshot não contiver pesos `.safetensors`, sem fallback silencioso para `.bin`/`.pt`.
 - Split: somente `dev`; nenhum dado do split `test` será baixado, consultado ou usado.
 - Limiar: sem seleção de modelo e sem métrica de qualidade nesta fase. Qualquer limiar de qualidade será pré-registrado e calibrado exclusivamente no `dev`, em etapa posterior autorizada.
 
