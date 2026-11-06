@@ -92,6 +92,23 @@ def metrics(gold: list[str], pred: list[str]) -> dict[str, Any]:
     counts = Counter(gold); majority, nmajor = sorted(counts.items(), key=lambda x: (-x[1], x[0]))[0]
     return {"n": len(gold), "balanced_accuracy": sum(recalls) / len(recalls), "accuracy": sum(a == b for a,b in zip(gold,pred,strict=True))/len(gold), "per_class": per_class, "confusion_matrix": cm, "majority_baseline": {"label": majority, "accuracy": nmajor/len(gold)}}
 
+def _bootstrap_balanced_accuracy(
+    gold: list[str], predicted: list[str], *, iterations: int, seed: int
+) -> tuple[float, float]:
+    """Percentile bootstrap of balanced accuracy over claim-document rows."""
+    import random
+
+    rng = random.Random(seed)  # nosec B311 - seeded statistical resampling
+    values = []
+    for _ in range(iterations):
+        indices = [rng.randrange(len(gold)) for _ in gold]
+        sample_gold = [gold[index] for index in indices]
+        sample_pred = [predicted[index] for index in indices]
+        values.append(_metrics(sample_gold, sample_pred)["balanced_accuracy"])
+    values.sort()
+    return values[int(0.025 * (iterations - 1))], values[int(0.975 * (iterations - 1))]
+
+
 def evaluate(dataset: Path, mapping_path: Path, out_json: Path, out_md: Path) -> dict[str, Any]:
     mapping = load_mapping(mapping_path)
     rows = adapt_records(read_records(dataset), mapping)
