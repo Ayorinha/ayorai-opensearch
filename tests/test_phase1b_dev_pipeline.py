@@ -111,6 +111,8 @@ def test_aggregator_marks_missing_shard_as_incomplete() -> None:
         "dataset_revision": "synthetic",
         "code_sha": "synthetic",
     }
+    rows_by_id = {stable_record_id(row): row for row in rows}
+    first_shard_ids = manifest["shards"][0]["record_ids"]
     private = {
         "split": "dev",
         "shard_id": "dev-0000",
@@ -121,11 +123,15 @@ def test_aggregator_marks_missing_shard_as_incomplete() -> None:
         "code_sha": "synthetic",
         "records": [
             {
-                "record_id": stable_record_id(row),
-                "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED",
-                "score": 0.9 if row["label"] else 0.1,
+                "record_id": record_id,
+                "gold": (
+                    "SUPPORTED"
+                    if rows_by_id[record_id]["label"]
+                    else "NOT_SUPPORTED"
+                ),
+                "score": 0.9 if rows_by_id[record_id]["label"] else 0.1,
             }
-            for row in rows[:10]
+            for record_id in first_shard_ids
         ],
     }
     envelope = encrypt_bytes(
