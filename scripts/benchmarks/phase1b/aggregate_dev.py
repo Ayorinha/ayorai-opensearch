@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -31,6 +30,12 @@ def aggregate_packages(
         private = json.loads(decrypt_bytes(envelope, key=key))
         shard_id = private["shard_id"]
         model_id = private["model_id"]
+        if metadata.get("shard_id") != shard_id or metadata.get("model_revision") != private.get("model_revision"):
+            raise ValueError("encrypted artifact metadata does not match private package")
+        if metadata.get("dataset_revision") != private.get("dataset_revision") or metadata.get("code_sha") != private.get("code_sha"):
+            raise ValueError("encrypted artifact provenance mismatch")
+        if private.get("dataset_sha256") != manifest.get("dataset_sha256"):
+            raise ValueError("encrypted artifact dataset pin mismatch")
         if shard_id not in expected:
             raise ValueError("unexpected shard artifact")
         records = private.get("records", [])
