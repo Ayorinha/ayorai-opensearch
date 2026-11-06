@@ -292,4 +292,3 @@ def test_concurrent_duplicate_records_have_exactly_one_winner(tmp_path) -> None:
         winners = [digest for digest in results if digest is not None]
         assert len(winners) == 1
         assert store.verify(response.trace_id) == "valid"
-
