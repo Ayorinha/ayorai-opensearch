@@ -67,8 +67,6 @@ def decrypt_bytes(
 ) -> bytes:
     metadata = aad_metadata if aad_metadata is not None else envelope["metadata"]
     aad = build_aad(metadata)
-    if metadata != envelope["metadata"]:
-        raise ValueError("AAD metadata mismatch")
     nonce = base64.b64decode(envelope["nonce_b64"], validate=True)
     ciphertext = base64.b64decode(envelope["ciphertext_b64"], validate=True)
     return AESGCM(key).decrypt(nonce, ciphertext, aad)
