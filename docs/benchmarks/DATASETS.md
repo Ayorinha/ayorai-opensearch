@@ -123,6 +123,6 @@ A primeira medição deve usar o **RuleStanceDetector atual, sem ajuste**. Dev/t
 - [PubMedQA — repositório oficial](https://github.com/pubmedqa/pubmedqa)
 - [COVID-QA — repositório deepset](https://github.com/deepset-ai/COVID-QA)
 - [HaluEval — repositório oficial](https://github.com/RUCAIBox/HaluEval)
-- [DROP — página de dados da Ai2](https://allenai.org/open-data) e [AWS Open Data Registry](https://registry.opendata.aws/allenai-drop/)
+- [DROP — página original do dataset com CC-BY-SA-4.0](https://github.com/allenai/allennlp-website/blob/master/drop.html) e [AWS Open Data Registry](https://registry.opendata.aws/allenai-drop/)
 
 **Estado final deste registro:** proveniência e restrições documentadas para planejamento; revisão de versões imutáveis, hashes e sobreposição por instância permanece pendente antes de qualquer execução. Nenhum dataset foi executado nesta etapa.
