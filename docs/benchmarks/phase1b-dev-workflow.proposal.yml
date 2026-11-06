@@ -37,6 +37,12 @@ jobs:
             --seed 20261106 --output /tmp/manifest.json
           python scripts/benchmarks/phase1b/emit_matrix.py \\
             --manifest /tmp/manifest.json --github-output "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-manifest
+          path: /tmp/manifest.json
+          if-no-files-found: error
+          retention-days: 1
 
   evaluate-shards:
     needs: plan
@@ -54,6 +60,10 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v7.0.1
+        with:
+          name: phase1b-dev-manifest
+          path: /tmp
       - name: Install exact benchmark dependencies
         run: python -m pip install -r requirements-benchmark-phase1b.txt
       - name: Verify dataset/model pins and run FP32 shard
@@ -67,6 +77,7 @@ jobs:
             --shard-id "\${{ matrix.shard_id }}" \\
             --model-id "\${{ matrix.model_id }}" \\
             --dtype float32 --no-quantization --no-autocast \\
+            --measure-ordering-ab --verify-output-equivalence \\
             --sort-by-length-within-shard \\
             --output /tmp/private-shard-output.bin
       - name: Encrypt private shard output (AES-256-GCM)
@@ -86,6 +97,7 @@ jobs:
           retention-days: 1
 
   aggregate-dev:
+    if: ${{ always() && needs.plan.result == 'success' }}
     needs: [plan, evaluate-shards]
     runs-on: ubuntu-24.04
     timeout-minutes: 60
