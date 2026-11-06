@@ -3,21 +3,14 @@
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
 
 import pytest
 
-sys.path.insert(
-    0,
-    str(Path(__file__).resolve().parents[1] / "scripts" / "benchmarks" / "phase1b"),
-)
-
-from aggregate_dev import aggregate_packages
-from build_manifest import build_manifest
-from common import stable_record_id
-from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
-from run_shard import select_shard
+from scripts.benchmarks.phase1b.aggregate_dev import aggregate_packages
+from scripts.benchmarks.phase1b.build_manifest import build_manifest
+from scripts.benchmarks.phase1b.common import stable_record_id
+from scripts.benchmarks.phase1b.encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
+from scripts.benchmarks.phase1b.run_shard import select_shard
 
 
 def synthetic_rows(count: int = 10) -> list[dict]:
