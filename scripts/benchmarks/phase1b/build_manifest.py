@@ -10,7 +10,10 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from common import DEV_PIN_PATH, canonical_json, load_records, sha256_bytes, sha256_file, stable_record_id
+try:
+    from .common import DEV_PIN_PATH, canonical_json, load_records, sha256_bytes, sha256_file, stable_record_id
+except ImportError:  # direct script execution
+    from common import DEV_PIN_PATH, canonical_json, load_records, sha256_bytes, sha256_file, stable_record_id
 
 
 def _validate_dev_pin(dataset_path: Path, pin_path: Path) -> dict[str, Any]:
