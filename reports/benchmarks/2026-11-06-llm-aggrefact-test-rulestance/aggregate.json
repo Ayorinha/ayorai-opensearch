@@ -1,0 +1,529 @@
+{
+  "bootstrap_ci95_accuracy": {
+    "clustered": false,
+    "iterations": 10000,
+    "limitation": "row-level CI may be optimistic due to source/document dependence",
+    "lower": 0.3806275579809004,
+    "seed": 20261004,
+    "unit": "claim-document row sampled with replacement",
+    "upper": 0.3916780354706685
+  },
+  "bootstrap_ci95_balanced_accuracy": {
+    "clustered": false,
+    "iterations": 10000,
+    "limitation": "row-level CI may be optimistic due to source/document dependence",
+    "lower": 0.48538410827682704,
+    "seed": 20261003,
+    "unit": "claim-document row sampled with replacement",
+    "upper": 0.4982088239243581
+  },
+  "code_sha": "5f79290c5cdc32fb1d5be38a73dbc75167d246e3",
+  "code_sha_source": "cli_argument",
+  "cohorts": {
+    "AggreFact-CNN": {
+      "accuracy": 0.4050179211469534,
+      "balanced_accuracy": 0.5909234163252443,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 47,
+          "SUPPORTED": 10
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 322,
+          "SUPPORTED": 179
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.8978494623655914,
+        "label": "SUPPORTED"
+      },
+      "n": 558,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.22065727699530516,
+          "precision": 0.12737127371273713,
+          "recall": 0.8245614035087719,
+          "support": 57
+        },
+        "SUPPORTED": {
+          "f1": 0.518840579710145,
+          "precision": 0.9470899470899471,
+          "recall": 0.35728542914171657,
+          "support": 501
+        }
+      }
+    },
+    "AggreFact-XSum": {
+      "accuracy": 0.5,
+      "balanced_accuracy": 0.5055909003277423,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 209,
+          "SUPPORTED": 64
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 215,
+          "SUPPORTED": 70
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.510752688172043,
+        "label": "SUPPORTED"
+      },
+      "n": 558,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.5997130559540889,
+          "precision": 0.49292452830188677,
+          "recall": 0.7655677655677655,
+          "support": 273
+        },
+        "SUPPORTED": {
+          "f1": 0.33412887828162285,
+          "precision": 0.5223880597014925,
+          "recall": 0.24561403508771928,
+          "support": 285
+        }
+      }
+    },
+    "ClaimVerify": {
+      "accuracy": 0.3446691176470588,
+      "balanced_accuracy": 0.4962358686114679,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 249,
+          "SUPPORTED": 50
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 663,
+          "SUPPORTED": 126
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.7251838235294118,
+        "label": "SUPPORTED"
+      },
+      "n": 1088,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.41123038810900087,
+          "precision": 0.2730263157894737,
+          "recall": 0.8327759197324415,
+          "support": 299
+        },
+        "SUPPORTED": {
+          "f1": 0.261139896373057,
+          "precision": 0.7159090909090909,
+          "recall": 0.1596958174904943,
+          "support": 789
+        }
+      }
+    },
+    "ExpertQA": {
+      "accuracy": 0.4891950297136683,
+      "balanced_accuracy": 0.5126070482516585,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 403,
+          "SUPPORTED": 328
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 1563,
+          "SUPPORTED": 1408
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.802539168017288,
+        "label": "SUPPORTED"
+      },
+      "n": 3702,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.29885057471264365,
+          "precision": 0.20498474059003052,
+          "recall": 0.5512995896032832,
+          "support": 731
+        },
+        "SUPPORTED": {
+          "f1": 0.5982579137454855,
+          "precision": 0.8110599078341014,
+          "recall": 0.47391450690003367,
+          "support": 2971
+        }
+      }
+    },
+    "FactCheck-GPT": {
+      "accuracy": 0.5759897828863346,
+      "balanced_accuracy": 0.5954809583407832,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 664,
+          "SUPPORTED": 526
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 138,
+          "SUPPORTED": 238
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.7598978288633461,
+        "label": "NOT_SUPPORTED"
+      },
+      "n": 1566,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.6666666666666667,
+          "precision": 0.827930174563591,
+          "recall": 0.5579831932773109,
+          "support": 1190
+        },
+        "SUPPORTED": {
+          "f1": 0.41754385964912283,
+          "precision": 0.31151832460732987,
+          "recall": 0.6329787234042553,
+          "support": 376
+        }
+      }
+    },
+    "Lfqa": {
+      "accuracy": 0.4903192046049189,
+      "balanced_accuracy": 0.5223969331180343,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 559,
+          "SUPPORTED": 231
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 743,
+          "SUPPORTED": 378
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.586603872318158,
+        "label": "SUPPORTED"
+      },
+      "n": 1911,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.5344168260038241,
+          "precision": 0.4293394777265745,
+          "recall": 0.7075949367088608,
+          "support": 790
+        },
+        "SUPPORTED": {
+          "f1": 0.43699421965317925,
+          "precision": 0.6206896551724138,
+          "recall": 0.33719892952720787,
+          "support": 1121
+        }
+      }
+    },
+    "RAGTruth": {
+      "accuracy": 0.3053570337792438,
+      "balanced_accuracy": 0.5264107144702078,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 1000,
+          "SUPPORTED": 269
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 11103,
+          "SUPPORTED": 3999
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.9224848818031886,
+        "label": "SUPPORTED"
+      },
+      "n": 16371,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.14956625785222855,
+          "precision": 0.08262414277451871,
+          "recall": 0.7880220646178093,
+          "support": 1269
+        },
+        "SUPPORTED": {
+          "f1": 0.41290655653071756,
+          "precision": 0.9369728209934396,
+          "recall": 0.26479936432260626,
+          "support": 15102
+        }
+      }
+    },
+    "Reveal": {
+      "accuracy": 0.6421052631578947,
+      "balanced_accuracy": 0.690868320610687,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 785,
+          "SUPPORTED": 525
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 87,
+          "SUPPORTED": 313
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.7660818713450293,
+        "label": "NOT_SUPPORTED"
+      },
+      "n": 1710,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.7195233730522457,
+          "precision": 0.9002293577981652,
+          "recall": 0.5992366412213741,
+          "support": 1310
+        },
+        "SUPPORTED": {
+          "f1": 0.505654281098546,
+          "precision": 0.373508353221957,
+          "recall": 0.7825,
+          "support": 400
+        }
+      }
+    },
+    "TofuEval-MediaS": {
+      "accuracy": 0.3236914600550964,
+      "balanced_accuracy": 0.5267924607505667,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 157,
+          "SUPPORTED": 15
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 476,
+          "SUPPORTED": 78
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.7630853994490359,
+        "label": "SUPPORTED"
+      },
+      "n": 726,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.3900621118012422,
+          "precision": 0.2480252764612954,
+          "recall": 0.9127906976744186,
+          "support": 172
+        },
+        "SUPPORTED": {
+          "f1": 0.241112828438949,
+          "precision": 0.8387096774193549,
+          "recall": 0.1407942238267148,
+          "support": 554
+        }
+      }
+    },
+    "TofuEval-MeetB": {
+      "accuracy": 0.27202072538860106,
+      "balanced_accuracy": 0.477406216505895,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 122,
+          "SUPPORTED": 28
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 534,
+          "SUPPORTED": 88
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.805699481865285,
+        "label": "SUPPORTED"
+      },
+      "n": 772,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.3027295285359802,
+          "precision": 0.18597560975609756,
+          "recall": 0.8133333333333334,
+          "support": 150
+        },
+        "SUPPORTED": {
+          "f1": 0.23848238482384823,
+          "precision": 0.7586206896551724,
+          "recall": 0.1414790996784566,
+          "support": 622
+        }
+      }
+    },
+    "Wice": {
+      "accuracy": 0.7039106145251397,
+      "balanced_accuracy": 0.577087208666156,
+      "confusion_matrix": {
+        "NOT_SUPPORTED": {
+          "NOT_SUPPORTED": 225,
+          "SUPPORTED": 22
+        },
+        "SUPPORTED": {
+          "NOT_SUPPORTED": 84,
+          "SUPPORTED": 27
+        }
+      },
+      "majority_baseline": {
+        "accuracy": 0.6899441340782123,
+        "label": "NOT_SUPPORTED"
+      },
+      "n": 358,
+      "per_class": {
+        "NOT_SUPPORTED": {
+          "f1": 0.8093525179856115,
+          "precision": 0.7281553398058253,
+          "recall": 0.9109311740890689,
+          "support": 247
+        },
+        "SUPPORTED": {
+          "f1": 0.3375,
+          "precision": 0.5510204081632653,
+          "recall": 0.24324324324324326,
+          "support": 111
+        }
+      }
+    }
+  },
+  "dataset": "LLM-AggreFact",
+  "end_to_end_attractor": false,
+  "engine": {
+    "class": "RuleStanceDetector",
+    "version": "6",
+    "weights_or_thresholds_adjusted": false
+  },
+  "evaluated_component": "RuleStanceDetector (stance only, sem Judge 2.0)",
+  "instance_level_predictions_in_public_artifact": false,
+  "llm_aggrefact_total_including_ragtruth": {
+    "accuracy": 0.3862210095497954,
+    "balanced_accuracy": 0.49182016370905657,
+    "confusion_matrix": {
+      "NOT_SUPPORTED": {
+        "NOT_SUPPORTED": 4420,
+        "SUPPORTED": 2068
+      },
+      "SUPPORTED": {
+        "NOT_SUPPORTED": 15928,
+        "SUPPORTED": 6904
+      }
+    },
+    "majority_baseline": {
+      "accuracy": 0.7787175989085948,
+      "label": "SUPPORTED"
+    },
+    "n": 29320,
+    "per_class": {
+      "NOT_SUPPORTED": {
+        "f1": 0.3294082575644657,
+        "precision": 0.21722036563790054,
+        "recall": 0.6812577065351418,
+        "support": 6488
+      },
+      "SUPPORTED": {
+        "f1": 0.4341592252546849,
+        "precision": 0.7695051270619706,
+        "recall": 0.30238262088297124,
+        "support": 22832
+      }
+    }
+  },
+  "llm_aggrefact_without_ragtruth_cohort": {
+    "accuracy": 0.48845470692717585,
+    "balanced_accuracy": 0.5155532439809067,
+    "confusion_matrix": {
+      "NOT_SUPPORTED": {
+        "NOT_SUPPORTED": 3420,
+        "SUPPORTED": 1799
+      },
+      "SUPPORTED": {
+        "NOT_SUPPORTED": 4825,
+        "SUPPORTED": 2905
+      }
+    },
+    "majority_baseline": {
+      "accuracy": 0.5969572939995367,
+      "label": "SUPPORTED"
+    },
+    "n": 12949,
+    "per_class": {
+      "NOT_SUPPORTED": {
+        "f1": 0.5080213903743316,
+        "precision": 0.41479684657368104,
+        "recall": 0.6552979497988121,
+        "support": 5219
+      },
+      "SUPPORTED": {
+        "f1": 0.4672671706610906,
+        "precision": 0.6175595238095238,
+        "recall": 0.3758085381630013,
+        "support": 7730
+      }
+    }
+  },
+  "mapping_file_sha256": "b75a8f7ff65a4fad1aa10f99ac3abf0f45898f152a2b92ebabfbd73dec67c873",
+  "mapping_id": "llm-aggrefact-label-map-v1",
+  "metrics": {
+    "accuracy": 0.3862210095497954,
+    "balanced_accuracy": 0.49182016370905657,
+    "confusion_matrix": {
+      "NOT_SUPPORTED": {
+        "NOT_SUPPORTED": 4420,
+        "SUPPORTED": 2068
+      },
+      "SUPPORTED": {
+        "NOT_SUPPORTED": 15928,
+        "SUPPORTED": 6904
+      }
+    },
+    "majority_baseline": {
+      "accuracy": 0.7787175989085948,
+      "label": "SUPPORTED"
+    },
+    "n": 29320,
+    "per_class": {
+      "NOT_SUPPORTED": {
+        "f1": 0.3294082575644657,
+        "precision": 0.21722036563790054,
+        "recall": 0.6812577065351418,
+        "support": 6488
+      },
+      "SUPPORTED": {
+        "f1": 0.4341592252546849,
+        "precision": 0.7695051270619706,
+        "recall": 0.30238262088297124,
+        "support": 22832
+      }
+    }
+  },
+  "primary_metric": "balanced_accuracy",
+  "ragtruth_exclusion": {
+    "excluded_cohort_names": [
+      "rag-truth",
+      "ragtruth"
+    ],
+    "field": "dataset",
+    "n_after_filter": 12949,
+    "n_total_before_filter": 29320
+  },
+  "record_failures": {
+    "failure_indices_by_type": {},
+    "failure_rate": 0.0,
+    "failure_types": {},
+    "n_evaluated": 29320,
+    "n_failures": 0,
+    "n_total": 29320,
+    "policy": "record-level failures excluded; abort above 1%; no record text in report"
+  },
+  "response_policy_abstentions": {
+    "explanation": "ResponsePolicy is not run; null means not measured, not zero.",
+    "status": "not_applicable_to_component_path",
+    "value": null
+  },
+  "schema_version": "1.0.0",
+  "source_file_sha256": "ba6976c3da990a9d7b11670efaf4e3c93c1bd0530061ec742afd6b2d5bce698c",
+  "task": "binary_claim_document_support",
+  "unverified_verdict_count": {
+    "explanation": "Judge 2.0 is not run; UNVERIFIED count is not measured.",
+    "status": "not_applicable_to_component_path",
+    "value": null
+  }
+}
