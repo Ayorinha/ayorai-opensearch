@@ -4,6 +4,32 @@
 **Autoria:** ANDERSON AYORA  
 **Escopo:** documentação exclusivamente. Nenhum código, execução de benchmark, inferência, alteração de dados ou avaliação TEST.
 
+## Esclarecimento de implementação (2026-11-07)
+
+Este esclarecimento é registrado antes de qualquer execução e não altera as decisões
+metodológicas do pré-registro.
+
+1. **Serialização do mapeamento DEV-A/DEV-B:** o objeto de atribuição será serializado
+   pela função `canonical_json` já existente em
+   `scripts/benchmarks/phase1b/common.py` (JSON UTF-8, chaves ordenadas,
+   separadores compactos e `ensure_ascii=False`). O SHA-256 será calculado sobre
+   esses bytes. O objeto hasheado conterá somente o mapeamento determinístico de
+   `record_id` para `DEV-A` ou `DEV-B`, sem valores float. Essa serialização é
+   denominada **canonical_json do projeto**; não é uma declaração de conformidade
+   com RFC 8785.
+
+2. **Ordenação determinística independente da versão do NumPy:** não será usado
+   `numpy.random.Generator` para partições ou folds. Para DEV-A/DEV-B, dentro de
+   cada coorte, a chave de ordenação será o SHA-256 hexadecimal de
+   `20261106|<coorte>|<record_id>` em UTF-8; ordenar pela chave e desempatar por
+   `record_id`. Os primeiros `ceil(n/2)` registros serão atribuídos a DEV-A e
+   os restantes a DEV-B. Para cross-fitting, dentro de cada estrato
+   `(coorte, classe)`, a chave será o SHA-256 hexadecimal de
+   `20261107|<coorte>|<classe>|<record_id>` em UTF-8; ordenar pela chave,
+   desempatar por `record_id` e atribuir `fold = posição % 5`. Estratos com
+   menos de cinco casos serão reportados como limitação; o número de folds não
+   será reduzido silenciosamente.
+
 ## 1. Objetivo e princípios
 
 Este documento fixa, antes de qualquer execução, o protocolo de calibração v2 em três camadas: seleção de limiar, calibração probabilística e abstenção seletiva com controle estatístico de risco.
