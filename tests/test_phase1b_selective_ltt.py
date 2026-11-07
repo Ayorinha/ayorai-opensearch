@@ -192,3 +192,23 @@ def test_aurc_uses_trapezoids_over_observed_positive_coverages() -> None:
     assert result["curve"][0]["coverage"] == pytest.approx(0.5)
     assert result["curve"][THRESHOLDS.index(0.60)]["coverage"] == pytest.approx(1.0)
     assert result["aurc"] == pytest.approx(0.125)
+
+
+
+def test_sequence_preserves_last_rejected_threshold_before_stopping() -> None:
+    probabilities = [1.0] * 100 + [0.98] * 25
+    labels = [1] * 100 + [0] * 25
+    result = learn_then_test(
+        probabilities,
+        labels,
+        ["cohort"] * 125,
+        partition="dev_b",
+        split="dev",
+        calibration_fit="dev_a_full",
+    )["results"]["cohort"]
+
+    assert result["tested_thresholds"] == [0.99, 0.98]
+    assert result["curve"][0]["decision"] == "rejected"
+    assert result["curve"][1]["decision"] == "not_rejected"
+    assert result["certified_threshold"] == 0.99
+    assert all(point["decision"] == "descriptive" for point in result["curve"][2:])
