@@ -39,9 +39,7 @@ def _digest_key(seed: str, *parts: str) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def split_dev_a_b(
-    record_ids: Sequence[str], cohorts: Sequence[str]
-) -> tuple[dict[str, str], str]:
+def split_dev_a_b(record_ids: Sequence[str], cohorts: Sequence[str]) -> tuple[dict[str, str], str]:
     """Assign DEV-A/DEV-B by seeded SHA-256 ordering; return mapping and its SHA-256."""
     _validate_inputs(record_ids, cohorts)
     grouped: dict[str, list[str]] = defaultdict(list)

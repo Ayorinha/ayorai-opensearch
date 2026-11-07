@@ -22,9 +22,7 @@ def test_dev_split_is_deterministic_balanced_and_cohort_stratified() -> None:
     assert first_hash == second_hash
     for cohort in ("A", "B"):
         members = [
-            record_id
-            for record_id, value in zip(ids, cohorts, strict=True)
-            if value == cohort
+            record_id for record_id, value in zip(ids, cohorts, strict=True) if value == cohort
         ]
         assigned = [first[record_id] for record_id in members]
         assert assigned.count("DEV-A") == math.ceil(len(members) / 2)
@@ -54,9 +52,7 @@ def test_crossfit_folds_are_deterministic_and_stratified() -> None:
         for label in (0, 1):
             folds = [
                 first[record_id]
-                for record_id, row_cohort, row_label in zip(
-                    ids, cohorts, labels, strict=True
-                )
+                for record_id, row_cohort, row_label in zip(ids, cohorts, labels, strict=True)
                 if row_cohort == cohort and row_label == label
             ]
             assert sorted(folds) == sorted(position % 5 for position in range(len(folds)))
@@ -65,9 +61,7 @@ def test_crossfit_folds_are_deterministic_and_stratified() -> None:
 def test_crossfit_reports_strata_smaller_than_five_without_changing_fold_count() -> None:
     folds, limitations = crossfit_folds(["a", "b", "c", "d"], ["A"] * 4, [0] * 4)
     assert set(folds.values()) == {0, 1, 2, 3}
-    assert limitations == [
-        {"cohort": "A", "label": "0", "n": 4, "required_folds": 5}
-    ]
+    assert limitations == [{"cohort": "A", "label": "0", "n": 4, "required_folds": 5}]
 
 
 def test_auroc_matches_naive_pairwise_mann_whitney_with_ties() -> None:
@@ -110,15 +104,21 @@ def test_brier_log_loss_and_prevalence_match_naive_calculation() -> None:
     probabilities = [0.1, 0.8, 0.6, 0.4]
     labels = [0, 1, 0, 1]
     result = probabilistic_metrics(probabilities, labels)
-    expected_brier = sum(
-        (probability - label) ** 2
-        for probability, label in zip(probabilities, labels, strict=True)
-    ) / 4
-    expected_log = -sum(
-        label * math.log(max(1e-15, probability))
-        + (1 - label) * math.log(max(1e-15, 1 - probability))
-        for probability, label in zip(probabilities, labels, strict=True)
-    ) / 4
+    expected_brier = (
+        sum(
+            (probability - label) ** 2
+            for probability, label in zip(probabilities, labels, strict=True)
+        )
+        / 4
+    )
+    expected_log = (
+        -sum(
+            label * math.log(max(1e-15, probability))
+            + (1 - label) * math.log(max(1e-15, 1 - probability))
+            for probability, label in zip(probabilities, labels, strict=True)
+        )
+        / 4
+    )
     assert result["brier_score"] == pytest.approx(expected_brier)
     assert result["log_loss"] == pytest.approx(expected_log)
     assert result["prevalence"] == 0.5

@@ -96,9 +96,7 @@ def _adaptive_ece(
     total = len(probabilities)
     for probability in sorted(grouped):
         group = grouped[probability]
-        bin_index = min(
-            n_bins - 1, ((2 * cumulative + len(group)) * n_bins) // (2 * total)
-        )
+        bin_index = min(n_bins - 1, ((2 * cumulative + len(group)) * n_bins) // (2 * total))
         bins[bin_index].extend((probability, label) for label in group)
         cumulative += len(group)
 
@@ -135,8 +133,7 @@ def probabilistic_metrics(
         (probability - label) ** 2 for probability, label in zip(probs, ys, strict=True)
     ) / len(ys)
     log_loss = -sum(
-        label * math.log(_clip(probability))
-        + (1 - label) * math.log(_clip(1.0 - probability))
+        label * math.log(_clip(probability)) + (1 - label) * math.log(_clip(1.0 - probability))
         for probability, label in zip(probs, ys, strict=True)
     ) / len(ys)
     ece, empty_bins, reliability = _adaptive_ece(probs, ys, n_bins)
