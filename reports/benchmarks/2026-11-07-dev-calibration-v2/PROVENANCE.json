@@ -1,0 +1,9 @@
+{
+  "aggregate_code_sha": "c3946aec35eeb32551c92f97472308ccdd20a744",
+  "aggregate_run_id": "42418593837",
+  "manifest_sha256": "deb3ef389553a03bb840e03a1e314e3f4d02dac50f4aa3d1c713c88a9dd55a74",
+  "report_sha256": "d411741824a86ac7cfba0471a8fa71cd89919f13a4e50243e11d0cf1e65e37f2",
+  "schema_version": "phase1b-dev-reaggregate-provenance-v1",
+  "source_head_sha": "34b7ccd654896890ab0197bffd6c607fbc3f729e",
+  "source_run_id": "42389121599"
+}

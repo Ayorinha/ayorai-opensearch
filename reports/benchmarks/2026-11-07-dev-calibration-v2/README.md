@@ -96,14 +96,25 @@ A curva descreve somente DEV-B e não deve ser apresentada como desempenho confi
 
 ## Arquivos agregados
 
-Os arquivos `phase1b-aggregate.json` e `PROVENANCE.json` **serão adicionados pelo mantenedor** após conferência direta do artefato protegido. Não foram reconstruídos neste relatório.
+Os arquivos originais do artefato `phase1b-dev-full-aggregate` estão nesta pasta, sem modificação: [`phase1b-aggregate.json`](phase1b-aggregate.json) e [`PROVENANCE.json`](PROVENANCE.json). A conferência dos hashes está registrada em [PROVENANCE.md](PROVENANCE.md).
 
-Hashes fornecidos para conferência:
+Hashes:
 - SHA-256 do arquivo agregado: `106448dcee6dba1b9ae7075125d08a128cc7af19b7a490e0becdfb26bc1680fa`
 - Campo `report_sha256`: `d411741824a86ac7cfba0471a8fa71cd89919f13a4e50243e11d0cf1e65e37f2`
 - `manifest_sha256`: `deb3ef389553a03bb840e03a1e314e3f4d02dac50f4aa3d1c713c88a9dd55a74`
 
 O artefato `phase1b-dev-full-aggregate` tem retenção de 30 dias. Este repositório não contém dados por instância.
+
+## Componentes de terceiros
+
+Os modelos e o dataset abaixo não foram criados por este projeto. Foram usados sem modificação dos pesos, nas revisões fixadas em [PROVENANCE.md](PROVENANCE.md). O código de avaliação, a calibração, o pré-registro e a infraestrutura deste relatório são do AYORAI ATTRACTOR.
+
+| Componente | Autoria / origem | Licença declarada no Hugging Face |
+|---|---|---|
+| [FactCG-DeBERTa-v3-Large](https://huggingface.co/yaxili96/FactCG-DeBERTa-v3-Large) | autores do FactCG ([arXiv:2501.17144](https://arxiv.org/abs/2501.17144)); base `microsoft/deberta-v3-large` | MIT |
+| [MiniCheck-DeBERTa-v3-Large](https://huggingface.co/lytang/MiniCheck-DeBERTa-v3-Large) | autores do MiniCheck ([arXiv:2404.10774](https://arxiv.org/abs/2404.10774)) | MIT |
+| [mDeBERTa-v3-base-xnli-multilingual-nli-2mil7](https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7) | Moritz Laurer | MIT |
+| [LLM-AggreFact](https://huggingface.co/datasets/lytang/LLM-AggreFact) | autores do MiniCheck / LLM-AggreFact ([arXiv:2404.10774](https://arxiv.org/abs/2404.10774)) | termos de acesso aceitos em 2026-11-06: somente avaliação de benchmark; pré-treino e fine-tuning proibidos |
 
 ## Referências
 
