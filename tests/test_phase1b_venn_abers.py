@@ -5,7 +5,16 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from scripts.benchmarks.phase1b.calibration_v2.splits import crossfit_folds
+
 from scripts.benchmarks.phase1b.calibration_v2.venn_abers import venn_abers_reference
+
+
+def _v2_folds(cohorts: list[str], labels: np.ndarray) -> np.ndarray:
+    record_ids = [f"synthetic-{index:04d}" for index in range(len(labels))]
+    assignment, limitations = crossfit_folds(record_ids, cohorts, labels.tolist())
+    assert limitations == []
+    return np.asarray([assignment[record_id] for record_id in record_ids], dtype=np.int64)
 
 
 def test_reference_adds_both_hypothetical_labels() -> None:
@@ -64,7 +73,7 @@ def test_crossfit_is_out_of_fold_and_does_not_use_held_out_label() -> None:
 
     scores = np.asarray([index % 7 for index in range(30)], dtype=np.float64)
     labels = np.asarray([index % 2 for index in range(30)], dtype=np.int8)
-    folds = np.asarray([index % 5 for index in range(30)], dtype=np.int64)
+    folds = _v2_folds(["cohort"] * 30, labels)
     target = 7
     original = ivap_crossfit(scores, labels, folds)
 
@@ -83,7 +92,7 @@ def test_crossfit_is_deterministic() -> None:
 
     scores = np.asarray([index % 9 for index in range(40)], dtype=np.float64)
     labels = np.asarray([index % 2 for index in range(40)], dtype=np.int8)
-    folds = np.asarray([index % 5 for index in range(40)], dtype=np.int64)
+    folds = _v2_folds(["cohort"] * 40, labels)
     first = ivap_crossfit(scores, labels, folds)
     second = ivap_crossfit(scores, labels, folds)
     for key in ("p0", "p1", "p"):
@@ -100,8 +109,8 @@ def test_mondrian_marks_small_cohort_unavailable_without_fallback() -> None:
     n = small_n + large_n
     scores = np.asarray([index % 11 for index in range(n)], dtype=np.float64)
     labels = np.asarray([index % 2 for index in range(n)], dtype=np.int8)
-    folds = np.asarray([index % 5 for index in range(n)], dtype=np.int64)
     cohorts = np.asarray(["small"] * small_n + ["large"] * large_n)
+    folds = _v2_folds(cohorts.tolist(), labels)
 
     result = ivap_crossfit_mondrian(scores, labels, folds, cohorts)
     small = cohorts == "small"
@@ -127,8 +136,8 @@ def test_mondrian_crossfit_is_deterministic() -> None:
     n = 210
     scores = np.asarray([index % 13 for index in range(n)], dtype=np.float64)
     labels = np.asarray([index % 2 for index in range(n)], dtype=np.int8)
-    folds = np.asarray([index % 5 for index in range(n)], dtype=np.int64)
     cohorts = np.asarray(["one_cohort"] * n)
+    folds = _v2_folds(cohorts.tolist(), labels)
     first = ivap_crossfit_mondrian(scores, labels, folds, cohorts)
     second = ivap_crossfit_mondrian(scores, labels, folds, cohorts)
     for key in ("p0", "p1", "p"):
