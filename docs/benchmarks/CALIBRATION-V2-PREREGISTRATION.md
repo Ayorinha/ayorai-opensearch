@@ -294,3 +294,48 @@ Qualquer mudança metodológica após observar resultados deverá ser documentad
 
 1. Angelopoulos, A. N.; Bates, S.; Candès, E. J.; Jordan, M. I.; Lei, L. **Learn then Test: Calibrating Predictive Algorithms to Achieve Risk Control.** arXiv:2110.01052. https://arxiv.org/abs/2110.01052
 2. Vovk et al. Método Venn-Abers indutivo (IVAP); a implementação e a referência bibliográfica completa deverão constar do manifesto técnico da execução, sem alterar a fórmula de combinação fixada neste pré-registro.
+
+
+---
+
+## Emenda pré-execução — seleção única do modelo para a Camada 3
+
+**Data:** 2026-11-07  
+**Autoria:** ANDERSON AYORA  
+**Estado:** proposta documental; exige aprovação do mantenedor antes de qualquer execução.  
+**Precedência:** esta emenda complementa e, nos pontos de conflito, prevalece sobre as disposições anteriores deste documento relativas à quantidade de modelos certificados na Camada 3. Não altera a família estatística de hipóteses nem os parâmetros do teste LTT.
+
+### A. Regra de seleção do modelo
+
+**Exatamente um único modelo** será selecionado para a certificação da Camada 3 em DEV-B. A seleção será realizada exclusivamente com informações de DEV-A, antes de acessar ou calcular qualquer resultado de DEV-B.
+
+1. Para cada modelo candidato (mDeBERTa, MiniCheck e FactCG), utilizar a **BA cross-fitted da Camada 1**, calculada em DEV-A conforme a seção 3.2.
+2. Para cada modelo, calcular a **média macro por dataset**: média aritmética simples das BAs cross-fitted dos datasets/coortes elegíveis, atribuindo o mesmo peso a cada dataset, independentemente de seu tamanho amostral. Não ponderar pelo número de exemplos.
+3. Selecionar o modelo com a maior média macro por dataset.
+4. Considerar empate quando a diferença absoluta entre a maior média e a média de outro candidato for **estritamente inferior a 0,005**. Se houver um ou mais candidatos nessa faixa, selecionar entre eles pelo menor custo por exemplo observado no piloto, usando a ordem fixa: **mDeBERTa < MiniCheck < FactCG**.
+5. Se um modelo não tiver BA cross-fitted válida para algum dataset, sua média macro será calculada somente se houver resultados válidos para todos os datasets da população pré-registrada; caso contrário, o candidato será inelegível para seleção. Não imputar valores nem alterar o conjunto de datasets após observar os resultados.
+6. Registrar em artefato privado e no relatório agregado: BAs cross-fitted por modelo e dataset, médias macro, diferença para o maior resultado, regra de empate aplicada, custo de piloto utilizado e modelo selecionado. O relatório público poderá divulgar apenas os valores agregados por modelo/dataset, sem resultados por exemplo.
+
+A seleção ocorre em DEV-A e, portanto, não consome DEV-B nem cria seleção adaptativa sobre a amostra de certificação. É proibido selecionar, substituir ou reordenar modelos com base em qualquer resultado de DEV-B.
+
+### B. Escopo dos modelos
+
+- **Modelo selecionado:** executa as Camadas 1 e 2 conforme o protocolo e é o único modelo cujas probabilidades calibradas são encaminhadas à Camada 3 (IVAP ajustado em todo DEV-A e certificação Learn then Test em DEV-B).
+- **Demais modelos:** executam somente as Camadas 1 e 2. Seus resultados permanecem descritivos; não recebem certificação LTT, não recebem alegação de garantia de risco e não podem ser apresentados como certificados.
+- O resultado da seleção deve ser congelado a partir de DEV-A antes da abertura de DEV-B para a etapa de certificação.
+
+### C. Justificativa e família de hipóteses
+
+Certificar os três modelos produziria até **33 hipóteses** (3 modelos × 11 coortes) e exigiria correção familiar correspondente. Para preservar a família pré-registrada de **11 hipóteses**, somente um modelo será certificado em DEV-B. A escolha feita exclusivamente em DEV-A mantém a independência da amostra de certificação em relação à seleção do modelo.
+
+A correção de Bonferroni permanece inalterada: **δ = 0,05/11** por coorte. Não aplicar Bonferroni em 33 hipóteses porque apenas um modelo, selecionado antes de consultar DEV-B, participa da certificação. A família continua sendo as 11 coortes desse único modelo.
+
+### D. Limites de implementação e execução
+
+As interfaces e comandos descritos nos arquivos YAML localizados em `docs/` são **propostas documentais**, não workflows executáveis nem interfaces implementadas. Não devem ser movidos ou tratados como workflows ativos.
+
+A integração efetiva da seleção do modelo, do IVAP e da certificação V2 ao agregador será objeto de **uma PR de código separada**, somente depois de o mantenedor aprovar e concluir o teste mínimo previsto no plano de execução. Esta emenda não autoriza criar secret, disparar workflow, executar inferência, benchmark ou teste mínimo.
+
+### E. Registro de decisão
+
+Esta emenda fixa previamente a seleção de um único modelo, o critério de média macro por dataset, a tolerância de empate e a regra determinística de custo. Nenhuma decisão de seleção poderá ser alterada após a consulta a DEV-B. Qualquer mudança futura exigirá nova emenda pré-execução, versionada antes de qualquer acesso aos resultados de certificação.
