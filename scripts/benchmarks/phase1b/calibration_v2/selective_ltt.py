@@ -154,6 +154,7 @@ def learn_then_test(
 ) -> dict[str, Any]:
     """Certify per-cohort selective predictions using the fixed LTT sequence.
 
+    Probabilities are P(SUPPORTED); labels use 1=SUPPORTED and 0=NOT_SUPPORTED.
     Input probabilities must be DEV-B predictions from an IVAP calibrator
     fitted on all DEV-A (calibration_fit="dev_a_full"). DEV-B is certification-only;
     DEV-A cross-fit predictions and TEST are rejected.
