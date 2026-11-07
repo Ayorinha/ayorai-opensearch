@@ -47,6 +47,15 @@ class RequestContextMiddleware:
             return
 
         request_id = _request_id()
+        # Replace the untrusted inbound header in the ASGI scope as well as
+        # the response, so downstream handlers see only the server-owned ID.
+        request_headers = [
+            (name, value)
+            for name, value in scope.get("headers", [])
+            if name.lower() != b"x-request-id"
+        ]
+        request_headers.append((b"x-request-id", request_id.encode("ascii")))
+        scope = {**scope, "headers": request_headers}
         method = str(scope.get("method", ""))
         started = time.perf_counter()
         status_code = 500
