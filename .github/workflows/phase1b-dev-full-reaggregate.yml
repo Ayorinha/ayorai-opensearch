@@ -1,0 +1,134 @@
+name: Phase 1b DEV — re-aggregate full Calibration V2
+
+# Maintainer-gated recovery path: re-runs ONLY the aggregate step of an already completed
+# full DEV run, reusing that run's encrypted shard artifacts (before they expire).
+# No inference, no TEST split, no automatic dispatch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Run ID of a phase1b-dev-full.yml run whose shards all succeeded
+        required: true
+        type: string
+      confirmation:
+        description: Confirm re-aggregation of an existing full DEV run
+        required: true
+        type: choice
+        options:
+          - reaggregate-full-dev-calibration-v2
+        default: reaggregate-full-dev-calibration-v2
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  aggregate:
+    if: ${{ inputs.confirmation == 'reaggregate-full-dev-calibration-v2' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    environment: international-benchmark-maintainer-approval
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install "pip==25.2"
+          python -m pip install --index-url https://pypi.org/simple \
+            cryptography==46.0.3 numpy==2.2.6
+      - name: Verify source run provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]] || { echo "source_run_id must be numeric"; exit 1; }
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}" > /tmp/source-run.json
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/jobs?per_page=100" \
+            --jq '.jobs[] | {name, conclusion}' > /tmp/source-jobs.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          run = json.loads(Path("/tmp/source-run.json").read_text())
+          jobs = [json.loads(line) for line in Path("/tmp/source-jobs.jsonl").read_text().splitlines()]
+          assert run["path"] == ".github/workflows/phase1b-dev-full.yml", run["path"]
+          assert run["event"] == "workflow_dispatch"
+          assert run["head_branch"] == "main"
+          assert run["status"] == "completed"
+          plan = [job for job in jobs if job["name"] == "plan"]
+          shards = [job for job in jobs if job["name"].startswith("shard")]
+          assert len(plan) == 1 and plan[0]["conclusion"] == "success"
+          assert len(shards) == 93, len(shards)
+          assert all(job["conclusion"] == "success" for job in shards)
+          print(f"SOURCE_RUN_VERIFIED head_sha={run['head_sha']} shards={len(shards)}")
+          PY
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: phase1b-dev-full-manifest
+          path: /tmp/phase1b-manifest
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: phase1b-dev-full-encrypted-*
+          path: /tmp/phase1b-encrypted
+          merge-multiple: true
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+      - name: Decrypt, compute Calibration V2, and validate aggregate-only report
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          trap 'rm -rf /tmp/phase1b-encrypted' EXIT
+          mkdir -p /tmp/phase1b-output
+          test "$(find /tmp/phase1b-encrypted -name '*.json' | wc -l)" -eq 93
+          python scripts/benchmarks/phase1b/aggregate_dev.py \
+            --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
+            --encrypted-dir /tmp/phase1b-encrypted \
+            --output /tmp/phase1b-output/phase1b-aggregate.json --calibration-v2
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = json.loads(Path("/tmp/phase1b-output/phase1b-aggregate.json").read_text())
+          source = json.loads(Path("/tmp/source-run.json").read_text())
+          serialized = json.dumps(report, sort_keys=True)
+          assert report["complete"] is True
+          assert report["quality_metrics"] == "calibration_v2_aggregate_only"
+          assert report["instance_level_output_published"] is False
+          assert report["calibration_v2"]["certification_model_count"] == 1
+          assert "record_id" not in serialized
+          assert "records" not in serialized
+          provenance = {
+              "schema_version": "phase1b-dev-reaggregate-provenance-v1",
+              "source_run_id": os.environ["SOURCE_RUN_ID"],
+              "source_head_sha": source["head_sha"],
+              "aggregate_run_id": os.environ["GITHUB_RUN_ID"],
+              "aggregate_code_sha": os.environ["GITHUB_SHA"],
+              "report_sha256": report["report_sha256"],
+              "manifest_sha256": report["manifest_sha256"],
+          }
+          Path("/tmp/phase1b-output/PROVENANCE.json").write_text(
+              json.dumps(provenance, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(provenance, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-full-aggregate
+          path: |
+            /tmp/phase1b-output/phase1b-aggregate.json
+            /tmp/phase1b-output/PROVENANCE.json
+          if-no-files-found: error
+          retention-days: 30
+
+# No inference, no TEST split/job, no dispatch from repository tooling, no automatic trigger.

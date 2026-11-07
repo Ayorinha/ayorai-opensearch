@@ -215,7 +215,8 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple cryptography==46.0.3
+          python -m pip install --index-url https://pypi.org/simple \
+            cryptography==46.0.3 numpy==2.2.6
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: phase1b-dev-full-manifest
