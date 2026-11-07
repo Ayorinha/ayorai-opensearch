@@ -70,7 +70,9 @@ def aggregate_packages(
         if metadata.get("shard_id") != shard_id or metadata.get(
             "model_revision"
         ) != private.get("model_revision"):
-            raise ValueError("encrypted artifact metadata does not match private package")
+            raise ValueError(
+                "encrypted artifact metadata does not match private package"
+            )
         if metadata.get("dataset_revision") != private.get(
             "dataset_revision"
         ) or metadata.get("code_sha") != private.get("code_sha"):
