@@ -1,12 +1,25 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-10-25
+Updated: 2026-11-07
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-10-25
+## Estado atual — 2026-11-07
+
+- **`main` de referência:** `b358b4de` (merge da PR #468). O CI pós-merge [run 42362947691](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42362947691) foi concluído com sucesso no SHA `b358b4de532022fd4b3009e6bd3462d345103a0b`.
+- **Baseline — RuleStance isolado, LLM-AggreFact TEST (n=29.320):** BA 49,2% (IC95% bootstrap 48,5–49,8%), média macro ≈54,7%, código `5f79290`, run [42276765499](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42276765499) do workflow `international-benchmark` (06/11, head `5f79290c`, conclusão `success`). O relatório agregado ainda **NÃO** está registrado no repositório; pendente: `reports/benchmarks/2026-11-06-llm-aggrefact-test-rulestance/`. TEST é baseline de avaliação, não calibração.
+- **Piloto de throughput Phase 1b:** run [42288837777](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42288837777), código `91977dc9494ae9507e8bdda3791ceba965b9fd6e`, DEV (200 exemplos), 3/3 modelos concluídos com `SUCCESS`; HHEM `SKIPPED`. Tempo por exemplo: mDeBERTa 1,89 s; MiniCheck 4,28 s; FactCG 4,30 s. Relatório: `reports/benchmarks/2026-11-06-throughput-pilot/`. Apenas throughput; sem métricas de qualidade ou predições.
+- **Pins de reprodutibilidade:** DEV em `configs/benchmarks/llm-aggrefact-dev-pin.json`, SHA-256 `ca9a5bda9561bbc6f7327ef81ab41727fa10e96f96e9dc74ef32ba3af3c1d8a8`; NLTK `3.9.4`, `punkt_tab` em `nltk/nltk_data@550b6625bcef1f2abff2ff770a5a0d272c9c6b2a`, registro `configs/benchmarks/nltk-punkt-tab-pin.json`.
+- **Phase 1b:** PRs #466 e #467 integradas; execução continua sujeita aos gates de aprovação e proteção de artefatos. Nenhum dispatch adicional foi realizado nesta atualização.
+- **DEC-021 a DEC-023:** registradas pela PR #468; emendas estatísticas documentais, sem congelar protocolo nem autorizar implementação.
+- **PR #469:** Draft documental para corrigir o pin de `actions/download-artifact` nos workflows propostos; não ativou workflows nem executou benchmark.
+- **RGC:** protocolo permanece **[PROPOSTO]**, não congelado. Piloto 02 manual, segunda anotação humana independente e revisão humana independente F-01 continuam pendentes.
+
+> As seções seguintes preservam snapshots e referências históricas; statements sobre a publicação ainda pendente refletem o estado registrado na data original e foram superados pela publicação de 2026-10-23.
+
+## Snapshot — 2026-10-25
 
 - **`main` de referência para este snapshot:** `4f3c0cea4e40df5141521c4a12010bc3da5ac365` (merge da PR #410, testes de cobertura). No SHA exato, os runs pós-merge [CI 40213557463](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557463), [Security 40213557486](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557486) e [CodeQL 40213557412](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557412) concluíram com sucesso. O CI executou a matriz Python 3.11–3.13: `1201 passed, 1 skipped in 39.65s`; cobertura global 95%. O merge desta atualização documental produzirá outro SHA de `main`.
 - **v0.6.0 publicada:** data oficial da versão 2026-10-23; tag `v0.6.0` em `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a`; GitHub Release publicada em 2026-10-24T00:41Z; Version DOI `10.5281/zenodo.23607357`; Concept DOI `10.5281/zenodo.23125082`.
