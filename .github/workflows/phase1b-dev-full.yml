@@ -1,0 +1,257 @@
+name: Phase 1b DEV — full Calibration V2
+
+# Maintainer-gated full DEV execution. No TEST split, no automatic dispatch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Confirm full DEV Calibration V2 execution
+        required: true
+        type: choice
+        options:
+          - full-dev-calibration-v2
+        default: full-dev-calibration-v2
+
+permissions:
+  contents: read
+
+env:
+  DEV_PARQUET: /tmp/phase1b-dev.parquet
+  NLTK_DATA_DIR: /tmp/phase1b-nltk-data
+
+jobs:
+  plan:
+    if: ${{ inputs.confirmation == 'full-dev-calibration-v2' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: international-benchmark-maintainer-approval
+    outputs:
+      shard_ids: ${{ steps.matrix.outputs.shard_ids }}
+      model_ids: ${{ steps.matrix.outputs.model_ids }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install "pip==25.2"
+          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3
+      - name: Validate required secret without printing it
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+        run: |
+          python - <<'PY'
+          from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
+          assert len(decode_key()) == 32
+          print("ENCRYPTION_SECRET: VALID (value not displayed)")
+          PY
+      - name: Download and verify immutable DEV parquet
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/benchmarks/phase1b/fetch_dev.py --output "$DEV_PARQUET"
+      - name: Build full DEV manifest (30,420 records; 1,000 per shard)
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/build_manifest.py \
+            --dataset-path "$DEV_PARQUET" --split dev \
+            --shard-size 1000 --seed 20261106 \
+            --output /tmp/phase1b-manifest.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path("/tmp/phase1b-manifest.json").read_text())
+          assert manifest["split"] == "dev"
+          assert manifest["sample_count"] == 30420
+          assert manifest["shard_size"] == 1000
+          assert len(manifest["shards"]) == 31
+          assert sum(shard["count"] for shard in manifest["shards"]) == 30420
+          assert [shard["count"] for shard in manifest["shards"]][-1] == 420
+          PY
+          rm -f "$DEV_PARQUET"
+      - id: matrix
+        name: Emit and validate full DEV matrix
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/emit_matrix.py \
+            --manifest /tmp/phase1b-manifest.json --output /tmp/phase1b-matrix.json
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          matrix = json.loads(Path("/tmp/phase1b-matrix.json").read_text())
+          manifest = json.loads(Path("/tmp/phase1b-manifest.json").read_text())
+          expected_models = ["mdeberta", "minicheck", "factcg"]
+          assert matrix["split"] == "dev"
+          assert matrix["model_ids"] == expected_models
+          assert len(matrix["shard_ids"]) == len(manifest["shards"]) == 31
+          assert manifest["sample_count"] == 30420
+          print("shard_ids=" + json.dumps(matrix["shard_ids"]))
+          print("model_ids=" + json.dumps(matrix["model_ids"]))
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-full-manifest
+          path: /tmp/phase1b-manifest.json
+          if-no-files-found: error
+          retention-days: 1
+
+  shard:
+    needs: plan
+    if: ${{ inputs.confirmation == 'full-dev-calibration-v2' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    environment: international-benchmark-maintainer-approval
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        model_id: ${{ fromJSON(needs.plan.outputs.model_ids) }}
+        shard_id: ${{ fromJSON(needs.plan.outputs.shard_ids) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install pinned CPU dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install "pip==25.2"
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
+          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3 nltk==3.9.4
+          python - <<'PY'
+          import torch
+          assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
+          PY
+      - name: Install and verify pinned NLTK punkt_tab (no runtime downloads)
+        run: python scripts/benchmarks/phase1b/nltk_resources.py --data-dir "$NLTK_DATA_DIR"
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: phase1b-dev-full-manifest
+          path: /tmp/phase1b-manifest
+      - name: Download and verify immutable DEV parquet
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/benchmarks/phase1b/fetch_dev.py --output "$DEV_PARQUET"
+      - name: Run pinned model on this DEV shard (private local output)
+        env:
+          MODEL_ID: ${{ matrix.model_id }}
+          SHARD_ID: ${{ matrix.shard_id }}
+          PHASE1B_NLTK_DATA: /tmp/phase1b-nltk-data
+        run: |
+          set -euo pipefail
+          trap 'rm -f "$DEV_PARQUET" /tmp/phase1b-private.json' EXIT
+          python scripts/benchmarks/phase1b/run_shard.py \
+            --dataset-path "$DEV_PARQUET" \
+            --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
+            --shard-id "$SHARD_ID" --model-id "$MODEL_ID" \
+            --order-by-length --output /tmp/phase1b-private.json
+      - name: Encrypt private output before artifact handling
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          MODEL_ID: ${{ matrix.model_id }}
+          SHARD_ID: ${{ matrix.shard_id }}
+          RUN_ID: ${{ github.run_id }}
+          CODE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          trap 'rm -f /tmp/phase1b-private.json "$DEV_PARQUET"' EXIT
+          mkdir -p /tmp/phase1b-encrypted
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
+          from pathlib import Path
+          from scripts.benchmarks.phase1b.common import MODELS
+
+          model_id = os.environ["MODEL_ID"]
+          shard_id = os.environ["SHARD_ID"]
+          manifest = json.loads(
+              Path("/tmp/phase1b-manifest/phase1b-manifest.json").read_text()
+          )
+          revision = MODELS[model_id]["revision"]
+          subprocess.run(
+              [
+                  sys.executable,
+                  "scripts/benchmarks/phase1b/encrypt_artifact.py",
+                  "--input", "/tmp/phase1b-private.json",
+                  "--output", f"/tmp/phase1b-encrypted/{model_id}-{shard_id}.json",
+                  "--run-id", os.environ["RUN_ID"],
+                  "--model-revision", revision,
+                  "--shard-id", shard_id,
+                  "--dataset-revision", manifest["dataset_revision"],
+                  "--code-sha", os.environ["CODE_SHA"],
+              ],
+              check=True,
+          )
+          PY
+          rm -f /tmp/phase1b-private.json "$DEV_PARQUET"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-full-encrypted-${{ matrix.model_id }}-${{ matrix.shard_id }}
+          path: /tmp/phase1b-encrypted/${{ matrix.model_id }}-${{ matrix.shard_id }}.json
+          if-no-files-found: error
+          retention-days: 1
+      - name: Remove local encrypted artifact after upload
+        run: rm -rf /tmp/phase1b-encrypted
+
+  aggregate:
+    needs: [plan, shard]
+    if: ${{ always() && needs.plan.result == 'success' && needs.shard.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: international-benchmark-maintainer-approval
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install "pip==25.2"
+          python -m pip install --index-url https://pypi.org/simple cryptography==46.0.3
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: phase1b-dev-full-manifest
+          path: /tmp/phase1b-manifest
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: phase1b-dev-full-encrypted-*
+          path: /tmp/phase1b-encrypted
+          merge-multiple: true
+      - name: Decrypt, compute Calibration V2, and validate aggregate-only report
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          trap 'rm -rf /tmp/phase1b-encrypted' EXIT
+          python scripts/benchmarks/phase1b/aggregate_dev.py \
+            --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
+            --encrypted-dir /tmp/phase1b-encrypted \
+            --output /tmp/phase1b-aggregate.json --calibration-v2
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("/tmp/phase1b-aggregate.json").read_text())
+          serialized = json.dumps(report, sort_keys=True)
+          assert report["complete"] is True
+          assert report["quality_metrics"] == "calibration_v2_aggregate_only"
+          assert report["instance_level_output_published"] is False
+          assert report["calibration_v2"]["certification_model_count"] == 1
+          assert "record_id" not in serialized
+          assert "records" not in serialized
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-full-aggregate
+          path: /tmp/phase1b-aggregate.json
+          if-no-files-found: error
+          retention-days: 30
+
+# No TEST split/job, no dispatch from repository tooling, and no automatic trigger.
