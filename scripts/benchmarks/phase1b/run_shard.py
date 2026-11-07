@@ -253,6 +253,7 @@ def run_inference(
         {
             "record_id": rid,
             "gold": "SUPPORTED" if str(row["label"]) == "1" else "NOT_SUPPORTED",
+            "cohort": str(row["dataset"]),
             "score": scores[rid],
         }
         for rid, row in sorted(selected, key=lambda pair: pair[0])

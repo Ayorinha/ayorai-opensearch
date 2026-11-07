@@ -37,6 +37,7 @@ def aggregate_packages(
     encrypted_packages: list[dict[str, Any]],
     *,
     key: bytes,
+    calibration_v2: bool = False,
 ) -> dict[str, Any]:
     """Validate encrypted shard provenance and aggregate operational metadata only."""
     if manifest.get("split") != "dev":
@@ -98,6 +99,7 @@ def aggregate_packages(
     models = sorted({model for model, _ in packages})
     summaries: dict[str, dict[str, Any]] = {}
     incomplete: list[dict[str, Any]] = []
+    calibration_rows: dict[str, list[dict[str, Any]]] = {}
 
     for model in models:
         present = {shard for candidate, shard in packages if candidate == model}
@@ -147,6 +149,12 @@ def aggregate_packages(
         aggregate["token_count_by_unit"] = dict(sorted(aggregate["token_count_by_unit"].items()))
         aggregate["protocol"] = packages[(model, sorted(expected)[0])].get("protocol")
         summaries[model] = aggregate
+        if calibration_v2:
+            calibration_rows[model] = [
+                record
+                for shard_id in sorted(expected)
+                for record in packages[(model, shard_id)].get("records", [])
+            ]
 
     report = {
         "schema_version": "phase1b-dev-operational-aggregate-v1",
@@ -159,6 +167,14 @@ def aggregate_packages(
         "quality_metrics": "not_computed_minimal_run",
         "instance_level_output_published": False,
     }
+    if calibration_v2:
+        if incomplete or not report["complete"]:
+            raise ValueError("Calibration V2 requires complete encrypted DEV shards for every model")
+        from scripts.benchmarks.phase1b.calibration_v2.aggregate import calibration_v2_report
+
+        report["calibration_v2"] = calibration_v2_report(calibration_rows)
+        report["quality_metrics"] = "calibration_v2_aggregate_only"
+
     report["report_sha256"] = sha256_bytes(canonical_json(report))
     return report
 
@@ -168,6 +184,11 @@ def main() -> None:
     parser.add_argument("--manifest", required=True, type=Path)
     parser.add_argument("--encrypted-dir", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument(
+        "--calibration-v2",
+        action="store_true",
+        help="Opt-in V2 aggregate calibration; does not change the protected minimal workflow",
+    )
     args = parser.parse_args()
 
     # Fail closed before opening encrypted artifacts if the secret is absent/invalid.
@@ -177,7 +198,9 @@ def main() -> None:
         json.loads(path.read_text(encoding="utf-8"))
         for path in sorted(args.encrypted_dir.glob("*.json"))
     ]
-    report = aggregate_packages(manifest, envelopes, key=key)
+    report = aggregate_packages(
+        manifest, envelopes, key=key, calibration_v2=args.calibration_v2
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(canonical_json(report) + b"\n")
     print(
