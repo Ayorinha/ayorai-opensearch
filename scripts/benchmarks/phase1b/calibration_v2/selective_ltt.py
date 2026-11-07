@@ -91,6 +91,9 @@ def _threshold_result(
 
     confidence = np.maximum(probabilities, 1.0 - probabilities)
     accepted = confidence >= threshold
+    # Preregistered neutral point at t=0.50 is an abstention, not a tie-break.
+    if threshold == 0.50:
+        accepted &= probabilities != 0.50
     supported = (probabilities >= threshold) & accepted
     predictions = supported.astype("int8")
     n_accepted = int(np.count_nonzero(accepted))
