@@ -59,7 +59,7 @@ def test_crossfit_folds_are_deterministic_and_stratified() -> None:
                 )
                 if row_cohort == cohort and row_label == label
             ]
-            assert sorted(folds) == [0, 1, 2, 3, 4]
+            assert sorted(folds) == sorted(position % 5 for position in range(len(folds)))
 
 
 def test_crossfit_reports_strata_smaller_than_five_without_changing_fold_count() -> None:

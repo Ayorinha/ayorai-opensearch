@@ -10,6 +10,10 @@ N_ECE_BINS = 15
 PROBABILITY_CLIP = 1e-15
 
 
+def _clip(probability: float) -> float:
+    return min(1.0 - PROBABILITY_CLIP, max(PROBABILITY_CLIP, probability))
+
+
 def _validate(
     probabilities: Sequence[float], labels: Sequence[int]
 ) -> tuple[list[float], list[int]]:
@@ -131,8 +135,8 @@ def probabilistic_metrics(
         (probability - label) ** 2 for probability, label in zip(probs, ys, strict=True)
     ) / len(ys)
     log_loss = -sum(
-        label * math.log(min(1.0, max(PROBABILITY_CLIP, probability)))
-        + (1 - label) * math.log(min(1.0, max(PROBABILITY_CLIP, 1.0 - probability)))
+        label * math.log(_clip(probability))
+        + (1 - label) * math.log(_clip(1.0 - probability))
         for probability, label in zip(probs, ys, strict=True)
     ) / len(ys)
     ece, empty_bins, reliability = _adaptive_ece(probs, ys, n_bins)
