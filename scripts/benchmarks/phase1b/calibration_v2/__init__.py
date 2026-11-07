@@ -2,10 +2,16 @@
 
 from scripts.benchmarks.phase1b.calibration_v2.prob_metrics import probabilistic_metrics
 from scripts.benchmarks.phase1b.calibration_v2.splits import crossfit_folds, split_dev_a_b
-from scripts.benchmarks.phase1b.calibration_v2.venn_abers import venn_abers_reference
+from scripts.benchmarks.phase1b.calibration_v2.venn_abers import (
+    ivap_crossfit,
+    ivap_crossfit_mondrian,
+    venn_abers_reference,
+)
 
 __all__ = [
     "crossfit_folds",
+    "ivap_crossfit",
+    "ivap_crossfit_mondrian",
     "probabilistic_metrics",
     "split_dev_a_b",
     "venn_abers_reference",
