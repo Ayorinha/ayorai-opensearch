@@ -43,9 +43,7 @@ def aggregate_packages(
     if manifest.get("split") != "dev":
         raise ValueError("aggregator accepts DEV manifests only")
     manifest_body = {
-        key_name: value
-        for key_name, value in manifest.items()
-        if key_name != "manifest_sha256"
+        key_name: value for key_name, value in manifest.items() if key_name != "manifest_sha256"
     }
     expected_manifest_sha = sha256_bytes(canonical_json(manifest_body))
     if manifest.get("manifest_sha256") != expected_manifest_sha:
@@ -67,15 +65,15 @@ def aggregate_packages(
         private = json.loads(decrypt_bytes(envelope, key=key))
         shard_id = private.get("shard_id")
         model_id = private.get("model_id")
-        if metadata.get("shard_id") != shard_id or metadata.get(
+        if metadata.get("shard_id") != shard_id or metadata.get("model_revision") != private.get(
             "model_revision"
-        ) != private.get("model_revision"):
+        ):
             raise ValueError(
                 "encrypted artifact metadata does not match private package"
             )
-        if metadata.get("dataset_revision") != private.get(
-            "dataset_revision"
-        ) or metadata.get("code_sha") != private.get("code_sha"):
+        if metadata.get("dataset_revision") != private.get("dataset_revision") or metadata.get(
+            "code_sha"
+        ) != private.get("code_sha"):
             raise ValueError("encrypted artifact provenance mismatch")
         if (
             private.get("dataset_sha256") != manifest.get("dataset_sha256")
@@ -126,8 +124,7 @@ def aggregate_packages(
             "decryption_seconds": 0.0,
         }
         protocols_seen = {
-            canonical_json(packages[(model, shard_id)].get("protocol"))
-            for shard_id in expected
+            canonical_json(packages[(model, shard_id)].get("protocol")) for shard_id in expected
         }
         if len(protocols_seen) != 1:
             raise ValueError(
