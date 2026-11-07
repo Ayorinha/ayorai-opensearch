@@ -158,15 +158,12 @@ def select_single_model(
         "tie_candidates": sorted(tied),
         "cost_seconds_per_example": {model: costs[model] for model in MODEL_IDS},
         "selection_rule": (
-            "DEV-A macro dataset BA; strict <0.005 tie; lower pilot cost; "
-            "fixed model priority"
+            "DEV-A macro dataset BA; strict <0.005 tie; lower pilot cost; fixed model priority"
         ),
     }
 
 
-def _macro_dataset_mean(
-    by_dataset: Mapping[str, Mapping[str, Any]], metric: str
-) -> float | None:
+def _macro_dataset_mean(by_dataset: Mapping[str, Mapping[str, Any]], metric: str) -> float | None:
     values = [item[metric] for item in by_dataset.values()]
     if not values or any(value is None for value in values):
         return None
@@ -213,9 +210,7 @@ def calibration_v2_report(
                 [float(calibrated_a["p"][i]) for i in indices],
                 [labels_a[i] for i in indices],
             )
-        all_metrics = probabilistic_metrics(
-            [float(value) for value in calibrated_a["p"]], labels_a
-        )
+        all_metrics = probabilistic_metrics([float(value) for value in calibrated_a["p"]], labels_a)
         model_details[model] = {
             "dev_a_crossfit_threshold_ba_by_dataset": ba_by_cohort,
             "dev_a_macro_dataset_crossfit_ba": macro_ba,

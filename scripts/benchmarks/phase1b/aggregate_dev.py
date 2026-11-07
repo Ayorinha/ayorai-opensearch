@@ -68,9 +68,7 @@ def aggregate_packages(
         if metadata.get("shard_id") != shard_id or metadata.get("model_revision") != private.get(
             "model_revision"
         ):
-            raise ValueError(
-                "encrypted artifact metadata does not match private package"
-            )
+            raise ValueError("encrypted artifact metadata does not match private package")
         if metadata.get("dataset_revision") != private.get("dataset_revision") or metadata.get(
             "code_sha"
         ) != private.get("code_sha"):
@@ -127,9 +125,7 @@ def aggregate_packages(
             canonical_json(packages[(model, shard_id)].get("protocol")) for shard_id in expected
         }
         if len(protocols_seen) != 1:
-            raise ValueError(
-                "shards of one model were produced with different protocols"
-            )
+            raise ValueError("shards of one model were produced with different protocols")
         for shard_id in sorted(expected):
             package = packages[(model, shard_id)]
             for field in OPERATIONAL_FIELDS:
@@ -139,9 +135,7 @@ def aggregate_packages(
                         raise ValueError("token_count_by_unit must be an object")
                     for unit, count in value.items():
                         if not isinstance(count, int) or count < 0:
-                            raise ValueError(
-                                "token counts must be nonnegative integers"
-                            )
+                            raise ValueError("token counts must be nonnegative integers")
                         aggregate[field][unit] += count
                 elif field == "peak_ram_bytes":
                     if value is not None:
@@ -152,9 +146,7 @@ def aggregate_packages(
                     if not isinstance(value, (int, float)) or value < 0:
                         raise ValueError(f"{field} must be nonnegative")
                     aggregate[field] += value
-        aggregate["token_count_by_unit"] = dict(
-            sorted(aggregate["token_count_by_unit"].items())
-        )
+        aggregate["token_count_by_unit"] = dict(sorted(aggregate["token_count_by_unit"].items()))
         aggregate["protocol"] = packages[(model, sorted(expected)[0])].get("protocol")
         summaries[model] = aggregate
         if calibration_v2:
@@ -199,10 +191,7 @@ def main() -> None:
     parser.add_argument(
         "--calibration-v2",
         action="store_true",
-        help=(
-            "Opt-in V2 aggregate calibration; does not change the protected "
-            "minimal workflow"
-        ),
+        help=("Opt-in V2 aggregate calibration; does not change the protected minimal workflow"),
     )
     args = parser.parse_args()
 
@@ -213,9 +202,7 @@ def main() -> None:
         json.loads(path.read_text(encoding="utf-8"))
         for path in sorted(args.encrypted_dir.glob("*.json"))
     ]
-    report = aggregate_packages(
-        manifest, envelopes, key=key, calibration_v2=args.calibration_v2
-    )
+    report = aggregate_packages(manifest, envelopes, key=key, calibration_v2=args.calibration_v2)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(canonical_json(report) + b"\n")
     print(
