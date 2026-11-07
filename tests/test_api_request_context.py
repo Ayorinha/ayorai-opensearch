@@ -4,7 +4,7 @@ import json
 import logging
 import re
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from ayorai_attractor.api.request_context import RequestContextMiddleware
@@ -17,6 +17,10 @@ def _client() -> TestClient:
     @app.get("/private")
     def private() -> dict[str, str]:
         return {"result": "ok"}
+
+    @app.get("/echo-request-id")
+    def echo_request_id(request: Request) -> dict[str, str | None]:
+        return {"request_id": request.headers.get("x-request-id")}
 
     @app.post("/submit")
     def submit(payload: dict[str, str]) -> dict[str, str]:
@@ -57,6 +61,18 @@ def test_client_supplied_request_id_is_replaced_and_logged(
     assert event["status"] == 200
     assert isinstance(event["duration_ms"], float | int)
     assert "req-ABC-123" not in caplog.text
+
+
+def test_downstream_handlers_receive_only_the_server_generated_id() -> None:
+    with _client() as client:
+        response = client.get(
+            "/echo-request-id",
+            headers={"X-Request-ID": "client-controlled-id"},
+        )
+
+    generated = response.headers["x-request-id"]
+    assert generated != "client-controlled-id"
+    assert response.json()["request_id"] == generated
 
 
 def test_reused_client_request_id_cannot_collide() -> None:
