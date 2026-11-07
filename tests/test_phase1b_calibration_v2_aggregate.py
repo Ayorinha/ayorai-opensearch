@@ -36,7 +36,6 @@ def test_calibration_v2_requires_exact_candidate_set() -> None:
         select_single_model({"mdeberta": 0.8, "minicheck": 0.7})
 
 
-
 def test_calibration_v2_report_end_to_end_aggregate_only() -> None:
     import json
 
@@ -74,11 +73,7 @@ def test_calibration_v2_report_end_to_end_aggregate_only() -> None:
 
     report = calibration_v2_report(model_rows)
     serialized = json.dumps(report, sort_keys=True)
-    expected_ids = {
-        row["record_id"]
-        for model_records in model_rows.values()
-        for row in model_records
-    }
+    expected_ids = {row["record_id"] for model_records in model_rows.values() for row in model_records}
 
     assert report["model_selection"]["selected_model"] == "mdeberta"
     assert report["certification_model_count"] == 1
