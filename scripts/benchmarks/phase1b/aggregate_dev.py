@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,11 @@ try:
     from .common import canonical_json, sha256_bytes
     from .encrypt_artifact import decode_key, decrypt_bytes
 except ImportError:  # direct script execution
+    # Workflows run this file by path, so the repository root is not on sys.path.
+    # Calibration V2 uses absolute ``scripts.benchmarks...`` imports and needs it.
+    _REPOSITORY_ROOT = str(Path(__file__).resolve().parents[3])
+    if _REPOSITORY_ROOT not in sys.path:
+        sys.path.insert(0, _REPOSITORY_ROOT)
     from common import canonical_json, sha256_bytes
     from encrypt_artifact import decode_key, decrypt_bytes
 
