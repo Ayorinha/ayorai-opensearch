@@ -167,9 +167,7 @@ def ivap_crossfit(
     """
     import numpy as np
 
-    score_array, label_array, fold_array = _validated_crossfit_inputs(
-        scores, labels, folds
-    )
+    score_array, label_array, fold_array = _validated_crossfit_inputs(scores, labels, folds)
     p0 = np.full(score_array.size, np.nan, dtype=np.float64)
     p1 = np.full(score_array.size, np.nan, dtype=np.float64)
     probabilities = np.full(score_array.size, np.nan, dtype=np.float64)
@@ -210,9 +208,7 @@ def ivap_crossfit_mondrian(
     """
     import numpy as np
 
-    score_array, label_array, fold_array = _validated_crossfit_inputs(
-        scores, labels, folds
-    )
+    score_array, label_array, fold_array = _validated_crossfit_inputs(scores, labels, folds)
     cohort_array = np.asarray(cohorts)
     if cohort_array.ndim != 1 or cohort_array.size != score_array.size:
         raise ValueError("cohorts must have the same length as scores")

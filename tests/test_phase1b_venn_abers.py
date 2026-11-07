@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from scripts.benchmarks.phase1b.calibration_v2.splits import crossfit_folds
-
 from scripts.benchmarks.phase1b.calibration_v2.venn_abers import venn_abers_reference
 
 
@@ -67,6 +66,7 @@ def test_reference_randomized_invariant_and_probability_formula() -> None:
 def test_reference_rejects_invalid_inputs(scores, labels, queries) -> None:
     with pytest.raises(ValueError):
         venn_abers_reference(scores, labels, queries)
+
 
 def test_crossfit_is_out_of_fold_and_does_not_use_held_out_label() -> None:
     from scripts.benchmarks.phase1b.calibration_v2.venn_abers import ivap_crossfit
