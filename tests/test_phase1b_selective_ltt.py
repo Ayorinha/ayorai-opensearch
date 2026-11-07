@@ -190,5 +190,5 @@ def test_aurc_uses_trapezoids_over_observed_positive_coverages() -> None:
     )["results"]["cohort"]
 
     assert result["curve"][0]["coverage"] == pytest.approx(0.5)
-    assert result["curve"][10]["coverage"] == pytest.approx(1.0)
+    assert result["curve"][THRESHOLDS.index(0.60)]["coverage"] == pytest.approx(1.0)
     assert result["aurc"] == pytest.approx(0.125)
