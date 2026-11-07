@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import math
-from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from scripts.benchmarks.phase1b.calibration import balanced_accuracy, calibrate_by_cohort
+from scripts.benchmarks.phase1b.calibration import (
+    balanced_accuracy,
+    calibrate_by_cohort,
+)
 from scripts.benchmarks.phase1b.calibration_v2 import (
     crossfit_folds,
     ivap_crossfit,
@@ -46,7 +48,9 @@ def _validated_model_rows(
     model_rows: Mapping[str, Sequence[Mapping[str, Any]]],
 ) -> tuple[list[str], list[str], list[int], dict[str, dict[str, float]]]:
     if set(model_rows) != set(MODEL_IDS):
-        raise ValueError("Calibration V2 requires all three preregistered model outputs")
+        raise ValueError(
+            "Calibration V2 requires all three preregistered model outputs"
+        )
     reference: dict[str, tuple[int, str]] = {}
     scores_by_model: dict[str, dict[str, float]] = {}
     for model in MODEL_IDS:
@@ -58,12 +62,16 @@ def _validated_model_rows(
             if not isinstance(record_id, str) or not record_id:
                 raise ValueError("private calibration record lacks record_id")
             if cohort not in COHORTS:
-                raise ValueError("private calibration record has an unknown dataset cohort")
+                raise ValueError(
+                    "private calibration record has an unknown dataset cohort"
+                )
             if isinstance(score, bool) or not isinstance(score, (int, float)):
                 raise ValueError("private calibration score must be numeric")
             value = float(score)
             if not math.isfinite(value) or not 0.0 <= value <= 1.0:
-                raise ValueError("private calibration score must be finite and in [0, 1]")
+                raise ValueError(
+                    "private calibration score must be finite and in [0, 1]"
+                )
             label = _label(row.get("gold"))
             if record_id in scores:
                 raise ValueError("duplicate record in model output")
@@ -75,7 +83,9 @@ def _validated_model_rows(
         scores_by_model[model] = scores
 
     expected_ids = set(reference)
-    if not expected_ids or any(set(scores) != expected_ids for scores in scores_by_model.values()):
+    if not expected_ids or any(
+        set(scores) != expected_ids for scores in scores_by_model.values()
+    ):
         raise ValueError("model outputs must contain the same complete DEV record set")
     record_ids = sorted(expected_ids)
     cohorts = [reference[record_id][1] for record_id in record_ids]
@@ -98,7 +108,9 @@ def _crossfit_threshold_ba(
     values = [scores[index] for index in dev_a_indices]
     folds, limitations = crossfit_folds(ids, ds, ys)
     if limitations:
-        raise ValueError("cross-fitting strata below five cases; candidate is ineligible")
+        raise ValueError(
+            "cross-fitting strata below five cases; candidate is ineligible"
+        )
     oof_predictions: dict[str, int] = {}
     for fold in sorted(set(folds.values())):
         train = [i for i, record_id in enumerate(ids) if folds[record_id] != fold]
@@ -117,7 +129,8 @@ def _crossfit_threshold_ba(
     result: dict[str, float] = {}
     for cohort in sorted(set(ds)):
         cohort_ids = [ids[i] for i, value in enumerate(ds) if value == cohort]
-        cohort_labels = [ys[ids.index(record_id)] for record_id in cohort_ids]
+        labels_by_record_id = dict(zip(ids, ys, strict=True))
+        cohort_labels = [labels_by_record_id[record_id] for record_id in cohort_ids]
         predictions = [oof_predictions[record_id] for record_id in cohort_ids]
         result[cohort] = balanced_accuracy(cohort_labels, predictions)
     return result
@@ -128,9 +141,11 @@ def select_single_model(
     *,
     costs: Mapping[str, float] = MODEL_COST_SECONDS,
 ) -> dict[str, Any]:
-    """Apply the preregistered eligibility, <0.005 tie band, cost, and fixed priority."""
+    """Apply eligibility, the strict <0.005 tie band, cost, and fixed priority."""
     if set(macro_ba_by_model) != set(MODEL_IDS):
-        raise ValueError("selection requires exactly the three preregistered candidates")
+        raise ValueError(
+            "selection requires exactly the three preregistered candidates"
+        )
     eligible: dict[str, float] = {}
     for model, value in macro_ba_by_model.items():
         if value is None:
@@ -154,11 +169,16 @@ def select_single_model(
         "tie_band_strictly_below": 0.005,
         "tie_candidates": sorted(tied),
         "cost_seconds_per_example": {model: costs[model] for model in MODEL_IDS},
-        "selection_rule": "DEV-A macro dataset BA; strict <0.005 tie; lower pilot cost; fixed model priority",
+        "selection_rule": (
+            "DEV-A macro dataset BA; strict <0.005 tie; lower pilot cost; "
+            "fixed model priority"
+        ),
     }
 
 
-def _macro_dataset_mean(by_dataset: Mapping[str, Mapping[str, Any]], metric: str) -> float | None:
+def _macro_dataset_mean(
+    by_dataset: Mapping[str, Mapping[str, Any]], metric: str
+) -> float | None:
     values = [item[metric] for item in by_dataset.values()]
     if not values or any(value is None for value in values):
         return None
@@ -171,8 +191,16 @@ def calibration_v2_report(
     """Compute V2 selection/calibration/certification and return aggregate-only data."""
     record_ids, cohorts, labels, score_maps = _validated_model_rows(model_rows)
     split_map, split_sha256 = split_dev_a_b(record_ids, cohorts)
-    dev_a = [index for index, record_id in enumerate(record_ids) if split_map[record_id] == "DEV-A"]
-    dev_b = [index for index, record_id in enumerate(record_ids) if split_map[record_id] == "DEV-B"]
+    dev_a = [
+        index
+        for index, record_id in enumerate(record_ids)
+        if split_map[record_id] == "DEV-A"
+    ]
+    dev_b = [
+        index
+        for index, record_id in enumerate(record_ids)
+        if split_map[record_id] == "DEV-B"
+    ]
     if not dev_a or not dev_b:
         raise ValueError("deterministic DEV-A/DEV-B split is empty")
 
@@ -181,7 +209,9 @@ def calibration_v2_report(
     for model in MODEL_IDS:
         scores = [score_maps[model][record_id] for record_id in record_ids]
         try:
-            ba_by_cohort = _crossfit_threshold_ba(record_ids, cohorts, labels, scores, dev_a)
+            ba_by_cohort = _crossfit_threshold_ba(
+                record_ids, cohorts, labels, scores, dev_a
+            )
             macro_ba = sum(ba_by_cohort.values()) / len(ba_by_cohort)
         except (ValueError, ZeroDivisionError):
             ba_by_cohort = {}
@@ -194,7 +224,9 @@ def calibration_v2_report(
         scores_a = [scores[index] for index in dev_a]
         folds_a, fold_limitations = crossfit_folds(ids_a, cohorts_a, labels_a)
         if fold_limitations:
-            raise ValueError("DEV-A has crossfit strata below five; IVAP crossfit is unavailable")
+            raise ValueError(
+                "DEV-A has crossfit strata below five; IVAP crossfit is unavailable"
+            )
         calibrated_a = ivap_crossfit(
             scores_a, labels_a, [folds_a[record_id] for record_id in ids_a]
         )
