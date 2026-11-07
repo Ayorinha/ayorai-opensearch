@@ -40,10 +40,10 @@ def test_calibrated_and_fixed_modes_are_distinct() -> None:
         thresholds={"a": threshold},
     )
     fixed = predict_scores(
-        [0.31], ["a"], mode="fixed_0.5", split="dev"
+        [0.4], ["a"], mode="fixed_0.5", split="dev"
     )
     calibrated = predict_scores(
-        [0.31], ["a"], mode="dev_calibrated_by_cohort", split="test",
+        [0.4], ["a"], mode="dev_calibrated_by_cohort", split="test",
         frozen_thresholds=artifact,
         model="synthetic-model",
         protocol=artifact["protocol"],
