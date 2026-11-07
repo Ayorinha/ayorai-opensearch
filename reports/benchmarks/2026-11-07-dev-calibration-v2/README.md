@@ -3,7 +3,7 @@
 **Data do registro:** 2026-11-07  
 **Estado:** relatório documental de resultados DEV; não é avaliação TEST nem resultado de ranking.  
 **Partição:** DEV do LLM-AggreFact, 30.420 casos, 11 coortes.  
-**Modelos:** FactCG, MiniCheck e mDeBERTa, com protocolos oficiais.  
+**Modelos:** FactCG e MiniCheck com os protocolos oficiais de referência (`official_reference`); mDeBERTa com protocolo próprio do AYORAI (`ayorai_own_protocol`, `ayorai-mdeberta-regex-sentence-384-64`: segmentação por sentença via regex, blocos de 384 tokens com sobreposição de 64, `max_length` 512), conforme o campo `protocol` de cada modelo em `phase1b-aggregate.json`.  
 **Execução:** CPU, fp32.  
 **Separação:** DEV-A (15.214 casos) para seleção e ajuste/cross-fitting; DEV-B (15.206 casos) para LTT e análise descritiva.
 
