@@ -4,26 +4,16 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 import time
 import uuid
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)
-_REQUEST_ID_PATTERN = re.compile(r"[A-Za-z0-9-]{1,64}\Z")
 
 
-def _request_id(scope: Scope) -> str:
-    for name, value in scope.get("headers", []):
-        if name.lower() == b"x-request-id":
-            try:
-                candidate = str(value.decode("ascii"))
-            except UnicodeDecodeError:
-                break
-            if _REQUEST_ID_PATTERN.fullmatch(candidate):
-                return candidate
-            break
+def _request_id() -> str:
+    """Generate a server-owned correlation ID; never trust a caller-supplied value."""
     return uuid.uuid4().hex
 
 
@@ -46,7 +36,7 @@ def _route_label(scope: Scope) -> str:
 
 
 class RequestContextMiddleware:
-    """Return an X-Request-ID and emit one JSON record without payload data."""
+    """Return a server-generated X-Request-ID and emit one JSON record without payload data."""
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
@@ -56,7 +46,16 @@ class RequestContextMiddleware:
             await self.app(scope, receive, send)
             return
 
-        request_id = _request_id(scope)
+        request_id = _request_id()
+        # Replace the untrusted inbound header in the ASGI scope as well as
+        # the response, so downstream handlers see only the server-owned ID.
+        request_headers = [
+            (name, value)
+            for name, value in scope.get("headers", [])
+            if name.lower() != b"x-request-id"
+        ]
+        request_headers.append((b"x-request-id", request_id.encode("ascii")))
+        scope = {**scope, "headers": request_headers}
         method = str(scope.get("method", ""))
         started = time.perf_counter()
         status_code = 500

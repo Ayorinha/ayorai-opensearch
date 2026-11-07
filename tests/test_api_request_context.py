@@ -4,7 +4,7 @@ import json
 import logging
 import re
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from ayorai_attractor.api.request_context import RequestContextMiddleware
@@ -17,6 +17,10 @@ def _client() -> TestClient:
     @app.get("/private")
     def private() -> dict[str, str]:
         return {"result": "ok"}
+
+    @app.get("/echo-request-id")
+    def echo_request_id(request: Request) -> dict[str, str | None]:
+        return {"request_id": request.headers.get("x-request-id")}
 
     @app.post("/submit")
     def submit(payload: dict[str, str]) -> dict[str, str]:
@@ -39,24 +43,47 @@ def _events(caplog) -> list[dict[str, object]]:  # type: ignore[no-untyped-def]
     ]
 
 
-def test_valid_request_id_is_preserved_and_logged(
+def test_client_supplied_request_id_is_replaced_and_logged(
     caplog,
 ) -> None:  # type: ignore[no-untyped-def]
     caplog.set_level(logging.INFO, logger="ayorai_attractor.api.request_context")
     with _client() as client:
         response = client.get("/private", headers={"X-Request-ID": "req-ABC-123"})
 
+    generated = response.headers["x-request-id"]
     assert response.status_code == 200
-    assert response.headers["x-request-id"] == "req-ABC-123"
+    assert generated != "req-ABC-123"
+    assert re.fullmatch(r"[0-9a-f]{32}", generated)
     event = _events(caplog)[-1]
-    assert event["request_id"] == "req-ABC-123"
+    assert event["request_id"] == generated
     assert event["method"] == "GET"
     assert event["route"] == "/private"
     assert event["status"] == 200
     assert isinstance(event["duration_ms"], float | int)
+    assert "req-ABC-123" not in caplog.text
 
 
-def test_invalid_request_id_is_replaced(
+def test_downstream_handlers_receive_only_the_server_generated_id() -> None:
+    with _client() as client:
+        response = client.get(
+            "/echo-request-id",
+            headers={"X-Request-ID": "client-controlled-id"},
+        )
+
+    generated = response.headers["x-request-id"]
+    assert generated != "client-controlled-id"
+    assert response.json()["request_id"] == generated
+
+
+def test_reused_client_request_id_cannot_collide() -> None:
+    with _client() as client:
+        first = client.get("/private", headers={"X-Request-ID": "same-client-id"})
+        second = client.get("/private", headers={"X-Request-ID": "same-client-id"})
+
+    assert first.headers["x-request-id"] != second.headers["x-request-id"]
+
+
+def test_invalid_request_id_is_not_reflected_or_logged(
     caplog,
 ) -> None:  # type: ignore[no-untyped-def]
     caplog.set_level(logging.INFO, logger="ayorai_attractor.api.request_context")
@@ -65,7 +92,7 @@ def test_invalid_request_id_is_replaced(
 
     generated = response.headers["x-request-id"]
     assert generated != "bad id/secret"
-    assert re.fullmatch(r"[A-Za-z0-9-]{1,64}", generated)
+    assert re.fullmatch(r"[0-9a-f]{32}", generated)
     assert _events(caplog)[-1]["request_id"] == generated
     assert "bad id/secret" not in caplog.text
 
@@ -74,7 +101,7 @@ def test_request_id_is_generated_when_missing() -> None:
     with _client() as client:
         response = client.get("/private")
 
-    assert re.fullmatch(r"[A-Za-z0-9-]{1,64}", response.headers["x-request-id"])
+    assert re.fullmatch(r"[0-9a-f]{32}", response.headers["x-request-id"])
 
 
 def test_log_excludes_query_and_request_body(
