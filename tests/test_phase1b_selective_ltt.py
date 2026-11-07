@@ -69,7 +69,7 @@ def test_n_below_25_makes_cohort_ineligible_and_stops_sequence() -> None:
     assert all(point["decision"] == "descriptive" for point in result["curve"][1:])
 
 
-def test_neutral_probability_is_supported_at_threshold_point_five() -> None:
+def test_neutral_probability_abstains_at_threshold_point_five() -> None:
     result = learn_then_test(
         [0.5] * 30,
         [1] * 30,
@@ -81,9 +81,10 @@ def test_neutral_probability_is_supported_at_threshold_point_five() -> None:
 
     final_point = result["curve"][-1]
     assert final_point["threshold"] == 0.50
-    assert final_point["n_accepted"] == 30
-    assert final_point["errors"] == 0
-    assert final_point["accuracy"] == 1.0
+    # Preregistration §5.1: p = 0.5 at t = 0.50 must abstain.
+    assert final_point["n_accepted"] == 0
+    assert final_point["coverage"] == 0.0
+    assert final_point["accuracy"] is None
 
 
 def test_successful_sequence_certifies_smallest_rejected_threshold() -> None:
