@@ -39,9 +39,7 @@ def _binomial_lower_tail_pvalue(errors: int, n: int) -> float:
         for k in range(errors + 1)
     ]
     maximum = max(log_terms)
-    log_total = maximum + math.log(
-        math.fsum(math.exp(term - maximum) for term in log_terms)
-    )
+    log_total = maximum + math.log(math.fsum(math.exp(term - maximum) for term in log_terms))
     return min(1.0, math.exp(log_total)) if log_total > math.log(5e-324) else 0.0
 
 
@@ -65,11 +63,7 @@ def _validated_inputs(
     probability_array = np.asarray(probabilities, dtype=np.float64)
     label_array = np.asarray(labels)
     cohort_array = np.asarray(cohorts)
-    if (
-        probability_array.ndim != 1
-        or label_array.ndim != 1
-        or cohort_array.ndim != 1
-    ):
+    if probability_array.ndim != 1 or label_array.ndim != 1 or cohort_array.ndim != 1:
         raise ValueError("probabilities, labels and cohorts must be one-dimensional")
     if (
         probability_array.size == 0
@@ -101,9 +95,7 @@ def _threshold_result(
     predictions = supported.astype("int8")
     n_accepted = int(np.count_nonzero(accepted))
     errors = int(np.count_nonzero(predictions[accepted] != labels[accepted]))
-    accuracy = (
-        float((n_accepted - errors) / n_accepted) if n_accepted else None
-    )
+    accuracy = float((n_accepted - errors) / n_accepted) if n_accepted else None
     return {
         "threshold": threshold,
         "n_total": total,
@@ -135,9 +127,7 @@ def _aurc(curve: Sequence[dict[str, Any]]) -> float | None:
         return 0.0 if points else None
     area = math.fsum(
         (right_x - left_x) * (left_y + right_y) / 2.0
-        for (left_x, left_y), (right_x, right_y) in zip(
-            points, points[1:], strict=False
-        )
+        for (left_x, left_y), (right_x, right_y) in zip(points, points[1:], strict=False)
     )
     return area
 
@@ -176,9 +166,7 @@ def learn_then_test(
         tested_thresholds: list[float] = []
 
         for threshold in THRESHOLDS:
-            point = _threshold_result(
-                cohort_probabilities, cohort_labels, threshold, total
-            )
+            point = _threshold_result(cohort_probabilities, cohort_labels, threshold, total)
             n_accepted = point["n_accepted"]
             point["p_value"] = None
             point["decision"] = "descriptive"
@@ -189,9 +177,7 @@ def learn_then_test(
                 else:
                     p_value = _binomial_lower_tail_pvalue(point["errors"], n_accepted)
                     point["p_value"] = p_value
-                    point["decision"] = (
-                        "rejected" if p_value <= COHORT_ALPHA else "not_rejected"
-                    )
+                    point["decision"] = "rejected" if p_value <= COHORT_ALPHA else "not_rejected"
                     tested_thresholds.append(threshold)
                     if point["decision"] == "rejected":
                         certified_threshold = threshold
@@ -212,8 +198,7 @@ def learn_then_test(
             "curve": curve,
             "aurc": _aurc(curve),
             "aurc_interpretation": (
-                "descriptive; unnormalised trapezoidal area over observed "
-                "positive coverages only"
+                "descriptive; unnormalised trapezoidal area over observed positive coverages only"
             ),
         }
     return {

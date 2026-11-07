@@ -18,9 +18,7 @@ from scripts.benchmarks.phase1b.calibration_v2.selective_ltt import (
 def _exact_binomial_cdf(errors: int, n: int) -> Fraction:
     return sum(
         (
-            Fraction(comb(n, k), 1)
-            * Fraction(1, 10) ** k
-            * Fraction(9, 10) ** (n - k)
+            Fraction(comb(n, k), 1) * Fraction(1, 10) ** k * Fraction(9, 10) ** (n - k)
             for k in range(errors + 1)
         ),
         Fraction(0, 1),
@@ -115,8 +113,7 @@ def test_no_cohort_is_certified_when_all_predictions_are_wrong() -> None:
         calibration_fit="dev_a_full",
     )
     assert all(
-        cohort_result["status"] == "not_certified"
-        for cohort_result in result["results"].values()
+        cohort_result["status"] == "not_certified" for cohort_result in result["results"].values()
     )
 
 
@@ -165,7 +162,6 @@ def test_cohort_alpha_is_bonferroni_adjusted_for_eleven_cohorts() -> None:
     assert COHORT_ALPHA == pytest.approx(0.05 / 11)
 
 
-
 def test_rejects_dev_a_crossfit_probabilities_as_certification_input() -> None:
     with pytest.raises(ValueError, match="fitted on all DEV-A"):
         learn_then_test(
@@ -176,7 +172,6 @@ def test_rejects_dev_a_crossfit_probabilities_as_certification_input() -> None:
             split="dev",
             calibration_fit="dev_a_crossfit",
         )
-
 
 
 def test_aurc_uses_trapezoids_over_observed_positive_coverages() -> None:
@@ -194,7 +189,6 @@ def test_aurc_uses_trapezoids_over_observed_positive_coverages() -> None:
     assert result["curve"][0]["coverage"] == pytest.approx(0.5)
     assert result["curve"][THRESHOLDS.index(0.60)]["coverage"] == pytest.approx(1.0)
     assert result["aurc"] == pytest.approx(0.125)
-
 
 
 def test_sequence_preserves_last_rejected_threshold_before_stopping() -> None:
