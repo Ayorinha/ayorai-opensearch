@@ -9,12 +9,12 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 Primeira medição completa em benchmark internacional (LLM-AggreFact, partição DEV) com calibração pré-registrada. O DOI desta versão registra o resultado **antes** da emenda ao pré-registro sobre limiares inelegíveis, que fica para a versão seguinte.
 
 ### Resultados registrados
-- **Calibration V2 — DEV completo (PRs #479–#482):** 30.420 casos, 11 coortes, três modelos de terceiros (FactCG, MiniCheck, mDeBERTa; licença MIT) com protocolos oficiais, em CPU fp32. FactCG selecionado em DEV-A pela regra pré-registrada (#477), com BA cross-fitted de **74,68%** (média macro por dataset); ECE 0,0054; AUROC 0,8650. Camada LTT em DEV-B: **0/11 coortes certificadas pela regra registrada** (a sequência parou no primeiro limiar inelegível). Resultado DEV, não TEST nem ranking. Relatório: `reports/benchmarks/2026-11-07-dev-calibration-v2/`.
+- **Calibration V2 — DEV completo (PRs #479–#482):** 30.420 casos, 11 coortes, três modelos de terceiros (FactCG, MiniCheck, mDeBERTa; licença MIT), FactCG e MiniCheck com protocolos oficiais de referência e mDeBERTa com protocolo próprio do AYORAI, em CPU fp32. FactCG selecionado em DEV-A pela regra pré-registrada (#477), com BA cross-fitted de **74,68%** (média macro por dataset); ECE 0,0054; AUROC 0,8650. Camada LTT em DEV-B: **0/11 coortes certificadas pela regra registrada** (a sequência parou no primeiro limiar inelegível). Resultado DEV, não TEST nem ranking. Relatório: `reports/benchmarks/2026-11-07-dev-calibration-v2/`.
 - **Linha de base RuleStance — LLM-AggreFact TEST (#471):** BA 49,2% (n=29.320).
 
 ### Benchmarks e calibração
 - Harness de avaliação internacional, pins do dataset e proveniência (#462–#464).
-- Piloto de throughput DEV e execução Phase 1b em shards com protocolos oficiais, artefatos cifrados (AES-GCM) e aprovação do mantenedor (#465–#467).
+- Piloto de throughput DEV e execução Phase 1b em shards com protocolos oficiais (FactCG, MiniCheck) e protocolo próprio (mDeBERTa), artefatos cifrados (AES-GCM) e aprovação do mantenedor (#465–#467).
 - Calibração DEV e métricas (#472); Calibration V2 pré-registrada (#473): splits determinísticos e métricas probabilísticas (#474), Venn-Abers/IVAP com cross-fitting e Mondrian (#475), certificação seletiva Learn then Test (#476), seleção pré-registrada de um único modelo (#477) e integração ao agregador (#479).
 - Workflow DEV completo protegido (#480) e caminho de re-agregação sem nova inferência (#481).
 
