@@ -174,3 +174,21 @@ def test_rejects_dev_a_crossfit_probabilities_as_certification_input() -> None:
             split="dev",
             calibration_fit="dev_a_crossfit",
         )
+
+
+
+def test_aurc_uses_trapezoids_over_observed_positive_coverages() -> None:
+    probabilities = [1.0] * 25 + [0.6] * 25
+    labels = [1] * 25 + [0] * 25
+    result = learn_then_test(
+        probabilities,
+        labels,
+        ["cohort"] * 50,
+        partition="dev_b",
+        split="dev",
+        calibration_fit="dev_a_full",
+    )["results"]["cohort"]
+
+    assert result["curve"][0]["coverage"] == pytest.approx(0.5)
+    assert result["curve"][10]["coverage"] == pytest.approx(1.0)
+    assert result["aurc"] == pytest.approx(0.125)
