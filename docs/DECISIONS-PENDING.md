@@ -6,7 +6,7 @@ Owner and final decision-maker: Anderson Leon Ayora
 Independent reviewer: revisor independente  
 Source: execution plan v5, work queue
 
-## Índice de decisões (atualizado em 2026-10-21)
+## Índice de decisões (atualizado em 2026-11-07)
 
 Este índice só localiza registros; o texto de cada decisão continua sendo a fonte. **Atenção:** os identificadores DEC-007 e DEC-008 foram usados duas vezes, com significados diferentes. Até decisão do mantenedor sobre renumeração, cite sempre o identificador com o qualificador desta tabela.
 
@@ -34,6 +34,9 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-018 | Escopo confirmatório de H1 no RGC | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
 | DEC-019 | Bootstrap agrupado por artigo do RGC | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
 | DEC-020 | Critério de concordância entre anotadores | Aprovada pelo mantenedor (2026-10-21); opção A | Este arquivo |
+| DEC-021 | Teste confirmatório de H1 por componentes do RGC | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
+| DEC-022 | IC95% de Cohen's kappa por componentes | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
+| DEC-023 | Componentes conectados por artigos citados | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -384,3 +387,115 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 
 
 - **Aprovação explícita do mantenedor (2026-10-21):** Opção A aprovada. Usar Cohen's kappa não ponderado; gate de concordância é a estimativa pontual `κ ≥ 0,6`. Reportar IC95% percentil bootstrap por caso, concordância observada, matriz de confusão e marginais por classe. `RULE_GAP` é excluído quando qualquer anotador o marcar, com contagem de exclusões separada. Anotações/case IDs ausentes ou divergentes interrompem o cálculo. A decisão não substitui a segunda anotação humana nem congela o protocolo.
+
+
+## DEC-021 — Teste confirmatório de H1 por componentes
+
+**Estado vigente:** Aprovada pelo mantenedor (2026-11-07), opção A.
+
+- **Data da decisão:** 07/11/2026
+- **Decisor:** Anderson Leon Ayora
+- **Opção aprovada:** A — teste de permutação sign-flip por componentes conectados definidos na DEC-023.
+- **Escopo:** especificação estatística documental. Não autoriza implementação, execução, congelamento do protocolo ou alteração do pré-registro.
+
+### Unidade e estatística
+
+- **Unidade de permutação:** componentes conectados da DEC-023.
+- Para cada componente $k$, definir:
+  - $a_k$: número de casos em que o sistema acerta e a Baseline B erra;
+  - $b_k$: número de casos em que a Baseline B acerta e o sistema erra;
+  - $d_k = a_k - b_k$.
+- A estatística observada é $T_{obs} = \sum_{k=1}^{K} d_k$.
+- Essa estatística equivale à diferença de acurácia entre o sistema e a Baseline B, com ponderação implícita pelo tamanho dos componentes.
+
+### Hipótese nula e validade
+
+- Sob H0, sistema e Baseline B são permutáveis dentro de cada componente.
+- A troca dos rótulos sistema/Baseline B dentro de um componente inverte o sinal de $d_k$, justificando o procedimento sign-flip.
+- A interpretação do teste depende dessa hipótese de permutabilidade sob H0; ela não deve ser apresentada como garantida apenas pela aplicação mecânica do algoritmo.
+
+### Permutação e p-valor
+
+- O p-valor é bilateral: proporção de permutações para as quais $|T^*| \ge |T_{obs}|$.
+- Se $K \le 20$, realizar enumeração completa das combinações de sinais.
+- Se $K > 20$, realizar 10.000 sorteios, com seed `20261003`, usando $p = (1 + número de permutações extremas)/(1 + 10.000)$.
+- Componentes com $d_k = 0$ permanecem na análise e não alteram $T$.
+- Reportar $K$, número de combinações consideradas e resolução mínima teórica $2/2^K$.
+- Se $K < 6$, registrar que atingir $p < 0,05$ é impossível com essa resolução. Essa limitação deve ser reportada, sem contorno metodológico.
+
+### Análises de sensibilidade
+
+- McNemar exato por caso e o teste de Obuchowski (1998) serão reportados exclusivamente como análises de sensibilidade descritivas, não como testes confirmatórios primários.
+- A decisão não altera a definição de H1, a Baseline B ou a partição confirmatória estabelecida na DEC-018.
+
+### Limites
+
+- Esta emenda não altera o executor, o pré-registro ou o protocolo.
+- Não autoriza execução do ATTRACTOR, cálculo de resultados do benchmark ou congelamento do protocolo.
+
+## DEC-022 — Intervalo de confiança de Cohen's kappa por componente
+
+**Estado vigente:** Aprovada pelo mantenedor (2026-11-07), opção A.
+
+- **Data da decisão:** 07/11/2026
+- **Decisor:** Anderson Leon Ayora
+- **Opção aprovada:** A — IC95% percentil de Cohen's kappa por bootstrap de componente, conforme DEC-023.
+
+### Método
+
+- Calcular o IC95% percentil de Cohen's kappa não ponderado por bootstrap de componente.
+- Utilizar 10.000 reamostragens, com seed `20261003`.
+- Reamostras nas quais kappa for indefinido serão contabilizadas e excluídas do cálculo do intervalo.
+- Reportar a quantidade e a proporção de reamostras com kappa indefinido.
+- Se essa proporção for superior a 5%, marcar o intervalo como **“instável”**.
+
+### Gate e itens preservados
+
+- O gate permanece baseado na estimativa pontual: $\kappa \ge 0{,}6$.
+- O IC95% não substitui nem modifica esse gate.
+- Permanecem inalterados os demais itens da DEC-020, incluindo concordância observada, matriz de confusão e marginais por classe.
+
+### Limites
+
+- Esta emenda não altera o executor, o pré-registro ou o protocolo.
+- Não autoriza anotação, cálculo de concordância do benchmark ou congelamento do protocolo.
+
+## DEC-023 — Componentes conectados por artigos citados
+
+**Estado vigente:** Aprovada pelo mantenedor (2026-11-07), opção A.
+
+- **Data da decisão:** 07/11/2026
+- **Decisor:** Anderson Leon Ayora
+- **Opção aprovada:** A — formar componentes por conexão transitiva entre casos que compartilhem qualquer artigo citado.
+
+### Construção do grafo
+
+- Cada caso é um vértice.
+- Dois casos são conectados quando compartilham qualquer artigo em `cited_article_ids`.
+- A conexão é transitiva: todos os casos pertencentes ao mesmo componente conectado integram uma única unidade de reamostragem ou permutação.
+- A construção dos componentes deve ocorrer antes de qualquer bootstrap ou permutação.
+
+### Identificação determinística
+
+- Para cada componente, reunir os IDs únicos dos artigos associados.
+- Ordenar os IDs lexicalmente e uni-los com `+`.
+- O identificador determinístico do componente será `component:` + IDs únicos ordenados lexicalmente e unidos por `+`.
+
+### Relatório obrigatório
+
+Reportar:
+- número de unidades antes da união: número de valores distintos de `bootstrap_cluster_id` conforme DEC-019;
+- número de componentes conectados após a união;
+- número de casos em cada componente;
+- número de casos no maior componente;
+- tamanhos dos componentes (número de casos por componente) e tamanho do maior componente (número de casos).
+
+### Limites
+
+- Esta emenda define somente a unidade de agrupamento para os métodos estatísticos documentados.
+- Não altera o executor, o pré-registro ou o protocolo.
+- Não autoriza execução, produção de métricas ou congelamento do protocolo.
+
+---
+
+**Registro de aprovação do mantenedor (2026-11-07):** DEC-021, DEC-022 e DEC-023 aprovadas na opção A, com as especificações acima. A aprovação autoriza somente a preparação de uma PR Draft documental. A implementação permanece não autorizada.
