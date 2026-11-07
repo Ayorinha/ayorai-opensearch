@@ -128,3 +128,151 @@ def venn_abers_reference(
     denominator = 1.0 - p0 + p1
     probabilities = p1 / denominator
     return {"p0": p0, "p1": p1, "p": probabilities}
+
+
+def _validated_crossfit_inputs(
+    scores: Sequence[float],
+    labels: Sequence[int],
+    folds: Sequence[int],
+) -> tuple[Any, Any, Any]:
+    import numpy as np
+
+    score_array = np.asarray(scores, dtype=np.float64)
+    label_array = np.asarray(labels)
+    fold_array = np.asarray(folds)
+    if score_array.ndim != 1 or label_array.ndim != 1 or fold_array.ndim != 1:
+        raise ValueError("scores, labels and folds must be one-dimensional")
+    if score_array.size == 0 or score_array.size != label_array.size:
+        raise ValueError("scores and labels must be non-empty and equally sized")
+    if score_array.size != fold_array.size:
+        raise ValueError("folds must have the same length as scores")
+    if not np.isfinite(score_array).all():
+        raise ValueError("scores must be finite")
+    if label_array.dtype.kind not in "iu" or not np.isin(label_array, (0, 1)).all():
+        raise ValueError("labels must contain binary integers 0 or 1")
+    if fold_array.dtype.kind not in "iu" or np.any(fold_array < 0):
+        raise ValueError("folds must contain non-negative integers")
+    if np.unique(fold_array).size < 2:
+        raise ValueError("cross-fitting requires at least two distinct folds")
+    return score_array, label_array.astype(np.int8), fold_array.astype(np.int64)
+
+
+def ivap_crossfit(
+    scores: Sequence[float],
+    labels: Sequence[int],
+    folds: Sequence[int],
+) -> dict[str, Any]:
+    """Return IVAP p0, p1 and p as out-of-fold predictions.
+
+    For each fold, the calibrator is fitted only on all other folds. The
+    held-out fold's scores are queries; its labels are never passed to the
+    calibrator. Fold identifiers are the deterministic assignments produced
+    by the V2-1 crossfit_folds function.
+    """
+    import numpy as np
+
+    score_array, label_array, fold_array = _validated_crossfit_inputs(
+        scores, labels, folds
+    )
+    p0 = np.full(score_array.size, np.nan, dtype=np.float64)
+    p1 = np.full(score_array.size, np.nan, dtype=np.float64)
+    probabilities = np.full(score_array.size, np.nan, dtype=np.float64)
+
+    for fold in np.unique(fold_array):
+        held_out = fold_array == fold
+        calibration = ~held_out
+        if not np.any(calibration):
+            raise ValueError(f"fold {int(fold)} has no calibration observations")
+        result = venn_abers_reference(
+            score_array[calibration],
+            label_array[calibration],
+            score_array[held_out],
+        )
+        p0[held_out] = result["p0"]
+        p1[held_out] = result["p1"]
+        probabilities[held_out] = result["p"]
+
+    if np.isnan(p0).any() or np.isnan(p1).any() or np.isnan(probabilities).any():
+        raise ArithmeticError("cross-fit did not produce predictions for every case")
+    return {"p0": p0, "p1": p1, "p": probabilities}
+
+
+def ivap_crossfit_mondrian(
+    scores: Sequence[float],
+    labels: Sequence[int],
+    folds: Sequence[int],
+    cohorts: Sequence[str],
+    min_calibration: int = 200,
+) -> dict[str, Any]:
+    """Return per-cohort Mondrian IVAP predictions with explicit eligibility.
+
+    Each fold is calibrated only with other-fold observations from the same
+    cohort. A cohort is eligible only if every fold has at least
+    min_calibration same-cohort calibration observations. Ineligible cohorts
+    receive NaN predictions and status mondrian_unavailable; there is
+    deliberately no pooled or global fallback.
+    """
+    import numpy as np
+
+    score_array, label_array, fold_array = _validated_crossfit_inputs(
+        scores, labels, folds
+    )
+    cohort_array = np.asarray(cohorts)
+    if cohort_array.ndim != 1 or cohort_array.size != score_array.size:
+        raise ValueError("cohorts must have the same length as scores")
+    if cohort_array.dtype.kind not in "US" or any(
+        not isinstance(value, str) or not value for value in cohorts
+    ):
+        raise ValueError("cohorts must contain non-empty strings")
+    if isinstance(min_calibration, bool) or not isinstance(min_calibration, int):
+        raise ValueError("min_calibration must be a positive integer")
+    if min_calibration < 1:
+        raise ValueError("min_calibration must be a positive integer")
+
+    p0 = np.full(score_array.size, np.nan, dtype=np.float64)
+    p1 = np.full(score_array.size, np.nan, dtype=np.float64)
+    probabilities = np.full(score_array.size, np.nan, dtype=np.float64)
+    row_status = np.full(score_array.size, "mondrian_unavailable", dtype=object)
+    cohort_status: dict[str, dict[str, Any]] = {}
+
+    for cohort in sorted(set(cohort_array.tolist())):
+        cohort_mask = cohort_array == cohort
+        cohort_folds = np.unique(fold_array[cohort_mask])
+        calibration_counts = {
+            int(fold): int(np.count_nonzero(cohort_mask & (fold_array != fold)))
+            for fold in cohort_folds
+        }
+        minimum_count = min(calibration_counts.values())
+        if minimum_count < min_calibration:
+            cohort_status[str(cohort)] = {
+                "status": "mondrian_unavailable",
+                "minimum_calibration_n": minimum_count,
+                "required_calibration_n": min_calibration,
+            }
+            continue
+
+        cohort_status[str(cohort)] = {
+            "status": "available",
+            "minimum_calibration_n": minimum_count,
+            "required_calibration_n": min_calibration,
+        }
+        for fold in cohort_folds:
+            held_out = cohort_mask & (fold_array == fold)
+            calibration = cohort_mask & (fold_array != fold)
+            result = venn_abers_reference(
+                score_array[calibration],
+                label_array[calibration],
+                score_array[held_out],
+            )
+            p0[held_out] = result["p0"]
+            p1[held_out] = result["p1"]
+            probabilities[held_out] = result["p"]
+            row_status[held_out] = "available"
+
+    return {
+        "p0": p0,
+        "p1": p1,
+        "p": probabilities,
+        "status": row_status,
+        "cohort_status": cohort_status,
+    }
