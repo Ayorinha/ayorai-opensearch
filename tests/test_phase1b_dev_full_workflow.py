@@ -23,7 +23,8 @@ def test_full_dev_workflow_is_manual_and_environment_gated() -> None:
     assert confirmation["options"] == ["full-dev-calibration-v2"]
     assert set(workflow["jobs"]) == {"plan", "shard", "aggregate"}
     assert all(
-        job["environment"] == APPROVAL_ENVIRONMENT for job in workflow["jobs"].values()
+        job["environment"] == APPROVAL_ENVIRONMENT
+        for job in workflow["jobs"].values()
     )
     shard = workflow["jobs"]["shard"]
     assert int(shard["timeout-minutes"]) >= 180
@@ -33,7 +34,6 @@ def test_full_dev_workflow_is_manual_and_environment_gated() -> None:
 
 def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
     workflow_text = WORKFLOW_PATH.read_text(encoding="utf-8")
-    workflow = yaml.load(workflow_text, Loader=yaml.BaseLoader)
 
     assert "--calibration-v2" in workflow_text
     assert "--shard-size 1000" in workflow_text
@@ -45,7 +45,10 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
     assert "--split test" not in workflow_text.lower()
     assert '["mdeberta", "minicheck", "factcg"]' in workflow_text
     assert 'assert manifest["sample_count"] == 30420' in workflow_text
-    assert 'assert report["calibration_v2"]["certification_model_count"] == 1' in workflow_text
+    assert (
+        'assert report["calibration_v2"]["certification_model_count"] == 1'
+        in workflow_text
+    )
     assert "phase1b-dev-full-encrypted-*" in workflow_text
     assert "retention-days: 30" in workflow_text
 
