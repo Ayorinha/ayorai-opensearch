@@ -143,7 +143,7 @@ jobs:
           PHASE1B_NLTK_DATA: /tmp/phase1b-nltk-data
         run: |
           set -euo pipefail
-          trap 'rm -f "$DEV_PARQUET" /tmp/phase1b-private.json' EXIT
+          trap 'rm -f "$DEV_PARQUET"' EXIT
           python scripts/benchmarks/phase1b/run_shard.py \
             --dataset-path "$DEV_PARQUET" \
             --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
