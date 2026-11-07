@@ -57,7 +57,7 @@ def macro_f1(labels: Sequence[int], predictions: Sequence[int]) -> float:
         fp = sum(y != class_label and p == class_label for y, p in zip(labels, predictions, strict=True))
         fn = sum(y == class_label and p != class_label for y, p in zip(labels, predictions, strict=True))
         denominator = 2 * tp + fp + fn
-        values.append((2 * tp / denominator) if denominator else 0.0
+        values.append((2 * tp / denominator) if denominator else 0.0)
     return sum(values) / 2.0
 
 
