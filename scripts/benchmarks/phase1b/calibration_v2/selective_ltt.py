@@ -42,7 +42,7 @@ def _binomial_lower_tail_pvalue(errors: int, n: int) -> float:
     log_total = maximum + math.log(
         math.fsum(math.exp(term - maximum) for term in log_terms)
     )
-    return math.exp(log_total) if log_total > math.log(5e-324) else 0.0
+    return min(1.0, math.exp(log_total)) if log_total > math.log(5e-324) else 0.0
 
 
 def _validated_inputs(
@@ -95,12 +95,11 @@ def _threshold_result(
 ) -> dict[str, Any]:
     import numpy as np
 
-    positive = probabilities >= threshold
-    negative = probabilities <= 1.0 - threshold
+    confidence = np.maximum(probabilities, 1.0 - probabilities)
     neutral_tie = (threshold == 0.50) & (probabilities == 0.50)
-    supported = positive & ~neutral_tie
-    not_supported = negative & ~neutral_tie
-    accepted = supported | not_supported
+    accepted = (confidence >= threshold) & ~neutral_tie
+    supported = (probabilities >= threshold) & accepted
+    not_supported = (probabilities <= 1.0 - threshold) & accepted
     predictions = supported.astype("int8")
     n_accepted = int(np.count_nonzero(accepted))
     errors = int(np.count_nonzero(predictions[accepted] != labels[accepted]))
