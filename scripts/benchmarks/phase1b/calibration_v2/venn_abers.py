@@ -9,11 +9,18 @@ Citation:
 V. Vovk, I. Petej, and V. Fedorova, "Large-scale probabilistic predictors
 with and without guarantees of validity," Advances in Neural Information
 Processing Systems 28 (NIPS 2015), pp. 892-900.
-https://doi.org/10.5555/2969239.2969339
+This transparent NumPy/PAVA reference is the official implementation for
+Calibration V2-2. No optimized/fast algorithm is implemented or implied:
+auditability and agreement with the reference definition take precedence over
+runtime optimization. Each query is evaluated independently from the same
+calibration sample; the query's hypothetical label is appended only inside
+its own fit.
 
-This deliberately favors a transparent per-query reference over the paper's
-optimized preprocessing algorithm; the paper points to a separate reference
-for the detailed construction of its precomputed F0/F1 vectors.
+Reference:
+V. Vovk, I. Petej, and V. Fedorova, "Large-scale probabilistic predictors
+with and without guarantees of validity," Advances in Neural Information
+Processing Systems 28 (NeurIPS 2015), pp. 892-900.
+https://proceedings.neurips.cc/paper/2015/hash/a9a1d5317a33ae8cef33961c34144f84-Abstract.html
 """
 
 from __future__ import annotations
