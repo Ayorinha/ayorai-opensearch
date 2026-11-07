@@ -44,6 +44,7 @@ def test_fixed_sequence_stops_at_first_non_rejection() -> None:
         ["cohort"] * 25,
         partition="dev_b",
         split="dev",
+        calibration_fit="dev_a_full",
     )["results"]["cohort"]
 
     assert result["status"] == "not_certified"
@@ -60,6 +61,7 @@ def test_n_below_25_makes_cohort_ineligible_and_stops_sequence() -> None:
         ["cohort"] * 24,
         partition="dev_b",
         split="dev",
+        calibration_fit="dev_a_full",
     )["results"]["cohort"]
 
     assert result["status"] == "not_certified"
@@ -76,6 +78,7 @@ def test_neutral_probability_abstains_even_at_threshold_point_five() -> None:
         ["cohort"] * 30,
         partition="dev_b",
         split="dev",
+        calibration_fit="dev_a_full",
     )["results"]["cohort"]
 
     assert result["status"] == "not_certified"
@@ -90,6 +93,7 @@ def test_successful_sequence_certifies_smallest_rejected_threshold() -> None:
         ["cohort"] * 100,
         partition="dev_b",
         split="dev",
+        calibration_fit="dev_a_full",
     )["results"]["cohort"]
 
     assert result["status"] == "certified"
@@ -106,6 +110,7 @@ def test_no_cohort_is_certified_when_all_predictions_are_wrong() -> None:
         ["cohort"] * 25,
         partition="dev_b",
         split="dev",
+        calibration_fit="dev_a_full",
     )
     assert all(
         cohort_result["status"] == "not_certified"
@@ -120,6 +125,7 @@ def test_curve_has_all_thresholds_and_descriptive_points_after_stop() -> None:
         ["cohort"] * 25,
         partition="dev_b",
         split="dev",
+        calibration_fit="dev_a_full",
     )["results"]["cohort"]
 
     assert [point["threshold"] for point in result["curve"]] == list(THRESHOLDS)
@@ -137,6 +143,7 @@ def test_rejects_any_partition_other_than_dev_b(partition: str) -> None:
             ["cohort"] * 25,
             partition=partition,
             split="dev",
+            calibration_fit="dev_a_full",
         )
 
 
@@ -148,8 +155,22 @@ def test_rejects_test_split() -> None:
             ["cohort"] * 25,
             partition="dev_b",
             split="test",
+            calibration_fit="dev_a_full",
         )
 
 
 def test_cohort_alpha_is_bonferroni_adjusted_for_eleven_cohorts() -> None:
     assert COHORT_ALPHA == pytest.approx(0.05 / 11)
+
+
+
+def test_rejects_dev_a_crossfit_probabilities_as_certification_input() -> None:
+    with pytest.raises(ValueError, match="fitted on all DEV-A"):
+        learn_then_test(
+            [0.9] * 25,
+            [1] * 25,
+            ["cohort"] * 25,
+            partition="dev_b",
+            split="dev",
+            calibration_fit="dev_a_crossfit",
+        )
