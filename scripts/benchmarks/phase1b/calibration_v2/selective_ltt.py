@@ -42,7 +42,7 @@ def _binomial_lower_tail_pvalue(errors: int, n: int) -> float:
     log_total = maximum + math.log(
         math.fsum(math.exp(term - maximum) for term in log_terms)
     )
-    return math.exp(log_total) if log_total > math.log(0.0 + 5e-324) else 0.0
+    return math.exp(log_total) if log_total > math.log(5e-324) else 0.0
 
 
 def _validated_inputs(
@@ -51,6 +51,7 @@ def _validated_inputs(
     cohorts: Sequence[str],
     partition: str,
     split: str,
+    calibration_fit: str,
 ) -> tuple[Any, Any, Any]:
     import numpy as np
 
@@ -58,6 +59,8 @@ def _validated_inputs(
         raise ValueError("LTT certification requires partition='dev_b'")
     if split != "dev":
         raise ValueError("LTT certification requires split='dev'; TEST is forbidden")
+    if calibration_fit != "dev_a_full":
+        raise ValueError("probabilities must use IVAP fitted on all DEV-A, not cross-fit")
 
     probability_array = np.asarray(probabilities, dtype=np.float64)
     label_array = np.asarray(labels)
@@ -149,17 +152,19 @@ def learn_then_test(
     *,
     partition: str,
     split: str,
+    calibration_fit: str,
 ) -> dict[str, Any]:
     """Certify per-cohort selective predictions using the fixed LTT sequence.
 
     Input probabilities must be DEV-B predictions from an IVAP calibrator
-    fitted on all DEV-A. DEV-B is certification-only and TEST is rejected.
+    fitted on all DEV-A (calibration_fit="dev_a_full"). DEV-B is certification-only;
+    DEV-A cross-fit predictions and TEST are rejected.
     The sequence is t=0.99,...,0.50; it stops at the first ineligible or
     non-rejected threshold. The certified threshold is the smallest rejected
     threshold reached before stopping. Later curve points are descriptive only.
     """
     probability_array, label_array, cohort_array = _validated_inputs(
-        probabilities, labels, cohorts, partition, split
+        probabilities, labels, cohorts, partition, split, calibration_fit
     )
     results: dict[str, Any] = {}
     for cohort in sorted(set(cohort_array.tolist())):
