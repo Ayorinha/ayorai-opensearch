@@ -5,10 +5,6 @@ for each query score, fit isotonic regression twice after appending (s, 0)
 and (s, 1). The log-minimax point probability follows Section 4:
 p = p1 / (1 - p0 + p1).
 
-Citation:
-V. Vovk, I. Petej, and V. Fedorova, "Large-scale probabilistic predictors
-with and without guarantees of validity," Advances in Neural Information
-Processing Systems 28 (NIPS 2015), pp. 892-900.
 This transparent NumPy/PAVA reference is the official implementation for
 Calibration V2-2. No optimized/fast algorithm is implemented or implied:
 auditability and agreement with the reference definition take precedence over
