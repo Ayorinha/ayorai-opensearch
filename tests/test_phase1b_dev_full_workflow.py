@@ -18,17 +18,17 @@ def test_full_dev_workflow_is_manual_and_environment_gated() -> None:
 
     assert set(workflow["on"]) == {"workflow_dispatch"}
     assert workflow["permissions"] == {"contents": "read"}
-    assert workflow["on"]["workflow_dispatch"]["inputs"]["confirmation"]["required"] == "true"
-    assert workflow["on"]["workflow_dispatch"]["inputs"]["confirmation"]["options"] == [
-        "full-dev-calibration-v2"
-    ]
+    confirmation = workflow["on"]["workflow_dispatch"]["inputs"]["confirmation"]
+    assert confirmation["required"] == "true"
+    assert confirmation["options"] == ["full-dev-calibration-v2"]
     assert set(workflow["jobs"]) == {"plan", "shard", "aggregate"}
     assert all(
         job["environment"] == APPROVAL_ENVIRONMENT for job in workflow["jobs"].values()
     )
-    assert all(job.get("timeout-minutes", 0) >= 180 for job in [workflow["jobs"]["shard"]])
-    assert workflow["jobs"]["shard"]["strategy"]["fail-fast"] == "false"
-    assert workflow["jobs"]["shard"]["strategy"]["max-parallel"] == "20"
+    shard = workflow["jobs"]["shard"]
+    assert int(shard["timeout-minutes"]) >= 180
+    assert shard["strategy"]["fail-fast"] == "false"
+    assert int(shard["strategy"]["max-parallel"]) == 20
 
 
 def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
@@ -43,9 +43,9 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
     assert "--minimal" not in workflow_text
     assert "split: test" not in workflow_text.lower()
     assert "--split test" not in workflow_text.lower()
-    assert "model_ids == [\"mdeberta\", \"minicheck\", \"factcg\"]" in workflow_text
-    assert "sample_count"] == 30420" not in workflow_text
-    assert "certification_model_count"] == 1" not in workflow_text
+    assert '["mdeberta", "minicheck", "factcg"]' in workflow_text
+    assert 'assert manifest["sample_count"] == 30420' in workflow_text
+    assert 'assert report["calibration_v2"]["certification_model_count"] == 1' in workflow_text
     assert "phase1b-dev-full-encrypted-*" in workflow_text
     assert "retention-days: 30" in workflow_text
 
@@ -75,8 +75,7 @@ def test_full_dev_workflow_reuses_exact_minimal_action_pins() -> None:
         assert full_pins == minimal_pins
 
 
-def test_full_dev_workflow_does_not_modify_minimal_workflow() -> None:
-    # This test is intentionally static: the full workflow must be a separate file.
+def test_full_dev_workflow_is_separate_from_minimal_workflow() -> None:
     assert WORKFLOW_PATH != MINIMAL_PATH
     assert WORKFLOW_PATH.is_file()
     assert MINIMAL_PATH.is_file()
