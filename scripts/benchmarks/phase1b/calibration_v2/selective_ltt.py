@@ -96,8 +96,7 @@ def _threshold_result(
     import numpy as np
 
     confidence = np.maximum(probabilities, 1.0 - probabilities)
-    neutral_tie = (threshold == 0.50) & (probabilities == 0.50)
-    accepted = (confidence >= threshold) & ~neutral_tie
+    accepted = confidence >= threshold
     supported = (probabilities >= threshold) & accepted
     predictions = supported.astype("int8")
     n_accepted = int(np.count_nonzero(accepted))

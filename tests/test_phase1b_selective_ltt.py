@@ -71,19 +71,21 @@ def test_n_below_25_makes_cohort_ineligible_and_stops_sequence() -> None:
     assert all(point["decision"] == "descriptive" for point in result["curve"][1:])
 
 
-def test_neutral_probability_abstains_even_at_threshold_point_five() -> None:
+def test_neutral_probability_is_supported_at_threshold_point_five() -> None:
     result = learn_then_test(
         [0.5] * 30,
-        [0, 1] * 15,
+        [1] * 30,
         ["cohort"] * 30,
         partition="dev_b",
         split="dev",
         calibration_fit="dev_a_full",
     )["results"]["cohort"]
 
-    assert result["status"] == "not_certified"
-    assert all(point["n_accepted"] == 0 for point in result["curve"])
-    assert result["curve"][-1]["threshold"] == 0.50
+    final_point = result["curve"][-1]
+    assert final_point["threshold"] == 0.50
+    assert final_point["n_accepted"] == 30
+    assert final_point["errors"] == 0
+    assert final_point["accuracy"] == 1.0
 
 
 def test_successful_sequence_certifies_smallest_rejected_threshold() -> None:
