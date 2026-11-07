@@ -7,7 +7,6 @@ it requires a frozen threshold artifact produced from DEV and matching provenanc
 from __future__ import annotations
 
 import math
-import random
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -39,7 +38,9 @@ def _validate_rows(
 
 def _recalls(labels: Sequence[int], predictions: Sequence[int]) -> dict[str, float]:
     counts = Counter(labels)
-    correct = Counter(label for label, pred in zip(labels, predictions, strict=True) if label == pred)
+    correct = Counter(
+        label for label, pred in zip(labels, predictions, strict=True) if label == pred
+    )
     if counts[0] == 0 or counts[1] == 0:
         raise ValueError("balanced accuracy requires both classes")
     return {"0": correct[0] / counts[0], "1": correct[1] / counts[1]}
@@ -53,9 +54,15 @@ def balanced_accuracy(labels: Sequence[int], predictions: Sequence[int]) -> floa
 def macro_f1(labels: Sequence[int], predictions: Sequence[int]) -> float:
     values: list[float] = []
     for class_label in (0, 1):
-        tp = sum(y == class_label and p == class_label for y, p in zip(labels, predictions, strict=True))
-        fp = sum(y != class_label and p == class_label for y, p in zip(labels, predictions, strict=True))
-        fn = sum(y == class_label and p != class_label for y, p in zip(labels, predictions, strict=True))
+        tp = sum(
+            y == class_label and p == class_label for y, p in zip(labels, predictions, strict=True)
+        )
+        fp = sum(
+            y != class_label and p == class_label for y, p in zip(labels, predictions, strict=True)
+        )
+        fn = sum(
+            y == class_label and p != class_label for y, p in zip(labels, predictions, strict=True)
+        )
         denominator = 2 * tp + fp + fn
         values.append((2 * tp / denominator) if denominator else 0.0)
     return sum(values) / 2.0
@@ -207,17 +214,71 @@ def predict_scores(
             raise ValueError("scores must be numeric")
         if not math.isfinite(float(score)) or not 0.0 <= float(score) <= 1.0:
             raise ValueError("scores must be finite and in [0, 1]")
-    return [int(float(score) > float(threshold_map[cohort])) for score, cohort in zip(scores, cohorts, strict=True)]
+    return [
+        int(float(score) > float(threshold_map[cohort]))
+        for score, cohort in zip(scores, cohorts, strict=True)
+    ]
 
 
-def _percentile(sorted_values: Sequence[float], fraction: float) -> float:
-    position = (len(sorted_values) - 1) * fraction
-    lower = math.floor(position)
-    upper = math.ceil(position)
-    if lower == upper:
-        return sorted_values[lower]
-    weight = position - lower
-    return sorted_values[lower] * (1.0 - weight) + sorted_values[upper] * weight
+def _ba_from_counts(tp: Any, fn: Any, tn: Any, fp: Any) -> Any:
+    """Vectorised balanced accuracy from 2x2 counts; NaN where a class is absent."""
+    import numpy as np
+
+    pos = tp + fn
+    neg = tn + fp
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.where((pos > 0) & (neg > 0), (tp / pos + tn / neg) / 2.0, np.nan)
+
+
+def _macro_f1_from_counts(tp: Any, fn: Any, tn: Any, fp: Any) -> Any:
+    import numpy as np
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        d1 = 2 * tp + fp + fn
+        d0 = 2 * tn + fn + fp
+        f1_pos = np.where(d1 > 0, 2 * tp / d1, 0.0)
+        f1_neg = np.where(d0 > 0, 2 * tn / d0, 0.0)
+    return (f1_pos + f1_neg) / 2.0
+
+
+def _cell_codes(labels: Sequence[int], predictions: Sequence[int]) -> Any:
+    """Encode each case as 0=TP, 1=FN, 2=TN, 3=FP."""
+    import numpy as np
+
+    y = np.asarray(labels, dtype=np.int8)
+    p = np.asarray(predictions, dtype=np.int8)
+    return np.where(y == 1, np.where(p == 1, 0, 1), np.where(p == 0, 2, 3))
+
+
+def _resampled_counts(codes: Any, replicates: int, rng: Any) -> tuple[Any, Any, Any, Any]:
+    """Case bootstrap without materialising an n x B index matrix (multinomial on cells)."""
+    import numpy as np
+
+    n = int(codes.shape[0])
+    probabilities = np.bincount(codes, minlength=4) / n
+    counts = rng.multinomial(n, probabilities, size=replicates).astype(np.float64)
+    return counts[:, 0], counts[:, 1], counts[:, 2], counts[:, 3]
+
+
+def _percentile_ci(values: Any, replicates: int) -> dict[str, Any]:
+    import numpy as np
+
+    finite = values[np.isfinite(values)]
+    undefined = int(replicates - finite.shape[0])
+    if finite.shape[0] == 0:
+        return {
+            "lower": None,
+            "upper": None,
+            "valid_replicates": 0,
+            "undefined_replicates": undefined,
+        }
+    lower, upper = np.percentile(finite, [2.5, 97.5])
+    return {
+        "lower": float(lower),
+        "upper": float(upper),
+        "valid_replicates": int(finite.shape[0]),
+        "undefined_replicates": undefined,
+    }
 
 
 def _bootstrap_ci(
@@ -228,31 +289,54 @@ def _bootstrap_ci(
     replicates: int = BOOTSTRAP_REPLICATES,
     seed: int = BOOTSTRAP_SEED,
 ) -> dict[str, Any]:
+    """Percentile CI for a case bootstrap, computed exactly via multinomial cell counts.
+
+    Resampling n cases with replacement is equivalent in distribution to drawing the
+    2x2 cell counts from Multinomial(n, observed cell proportions); this is O(B) instead
+    of O(n * B), so 10,000 replicates on ~30k cases take milliseconds.
+    """
+    import numpy as np
+
     if replicates < 1:
         raise ValueError("bootstrap replicates must be positive")
-    rng = random.Random(seed)
-    n = len(labels)
-    values: list[float] = []
-    undefined = 0
-    for _ in range(replicates):
-        indices = [rng.randrange(n) for _ in range(n)]
-        sample_y = [labels[i] for i in indices]
-        sample_p = [predictions[i] for i in indices]
-        try:
-            value = balanced_accuracy(sample_y, sample_p) if metric == "balanced_accuracy" else macro_f1(sample_y, sample_p)
-        except ValueError:
-            undefined += 1
-            continue
-        values.append(value)
-    if not values:
-        return {"lower": None, "upper": None, "valid_replicates": 0, "undefined_replicates": undefined}
-    values.sort()
-    return {
-        "lower": _percentile(values, 0.025),
-        "upper": _percentile(values, 0.975),
-        "valid_replicates": len(values),
-        "undefined_replicates": undefined,
-    }
+    if metric not in {"balanced_accuracy", "macro_f1"}:
+        raise ValueError("unsupported bootstrap metric")
+    rng = np.random.default_rng(seed)
+    tp, fn, tn, fp = _resampled_counts(_cell_codes(labels, predictions), replicates, rng)
+    values = (
+        _ba_from_counts(tp, fn, tn, fp)
+        if metric == "balanced_accuracy"
+        else _macro_f1_from_counts(tp, fn, tn, fp)
+    )
+    return _percentile_ci(values, replicates)
+
+
+def _bootstrap_macro_dataset_ba_ci(
+    labels: Sequence[int],
+    predictions: Sequence[int],
+    datasets: Sequence[str],
+    *,
+    replicates: int = BOOTSTRAP_REPLICATES,
+    seed: int = BOOTSTRAP_SEED,
+) -> dict[str, Any]:
+    """Stratified bootstrap of the leaderboard metric: resample within each dataset,
+    recompute each dataset BA, then average across datasets (dataset set held fixed)."""
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    groups: dict[str, list[int]] = defaultdict(list)
+    for index, dataset in enumerate(datasets):
+        groups[dataset].append(index)
+    per_dataset = []
+    for _dataset, idx in sorted(groups.items()):
+        codes = _cell_codes([labels[i] for i in idx], [predictions[i] for i in idx])
+        tp, fn, tn, fp = _resampled_counts(codes, replicates, rng)
+        per_dataset.append(_ba_from_counts(tp, fn, tn, fp))
+    stacked = np.vstack(per_dataset)
+    macro = np.where(np.isfinite(stacked).all(axis=0), stacked.mean(axis=0), np.nan)
+    result = _percentile_ci(macro, replicates)
+    result["method"] = "stratified_by_dataset_case_bootstrap"
+    return result
 
 
 def _summary(labels: Sequence[int], predictions: Sequence[int]) -> dict[str, Any]:
@@ -281,7 +365,12 @@ def evaluate_metrics(
     for row in rows:
         label = row.get("label")
         dataset = row.get("dataset")
-        if label not in (0, 1) or isinstance(label, bool) or not isinstance(dataset, str) or not dataset:
+        if (
+            label not in (0, 1)
+            or isinstance(label, bool)
+            or not isinstance(dataset, str)
+            or not dataset
+        ):
             raise ValueError("rows require binary integer labels and a non-empty dataset")
         labels.append(label)
         datasets.append(dataset)
@@ -296,7 +385,9 @@ def evaluate_metrics(
         dataset: _summary([labels[i] for i in idx], [predictions[i] for i in idx])
         for dataset, idx in sorted(groups.items())
     }
-    macro_dataset_ba = sum(item["balanced_accuracy"] for item in by_dataset.values()) / len(by_dataset)
+    macro_dataset_ba = sum(item["balanced_accuracy"] for item in by_dataset.values()) / len(
+        by_dataset
+    )
 
     ragtruth_mask = [str(dataset).lower() == "ragtruth" for dataset in datasets]
     subsets: dict[str, Any] = {}
@@ -310,19 +401,34 @@ def evaluate_metrics(
             subsets[name] = {"n": 0, "status": "not_available"}
             continue
         try:
-            subsets[name] = _summary([labels[i] for i in indices], [predictions[i] for i in indices])
+            subsets[name] = _summary(
+                [labels[i] for i in indices], [predictions[i] for i in indices]
+            )
         except ValueError:
             subsets[name] = {"n": len(indices), "status": "undefined_single_class"}
 
     # Bootstrap over individual cases for the overall metrics. Dataset macro BA is
     # reported separately as the leaderboard metric (mean of dataset BAs).
     overall["balanced_accuracy_ci95"] = _bootstrap_ci(
-        labels, predictions, metric="balanced_accuracy",
-        replicates=bootstrap_replicates, seed=bootstrap_seed,
+        labels,
+        predictions,
+        metric="balanced_accuracy",
+        replicates=bootstrap_replicates,
+        seed=bootstrap_seed,
     )
     overall["macro_f1_ci95"] = _bootstrap_ci(
-        labels, predictions, metric="macro_f1",
-        replicates=bootstrap_replicates, seed=bootstrap_seed,
+        labels,
+        predictions,
+        metric="macro_f1",
+        replicates=bootstrap_replicates,
+        seed=bootstrap_seed,
+    )
+    macro_dataset_ci = _bootstrap_macro_dataset_ba_ci(
+        labels,
+        predictions,
+        datasets,
+        replicates=bootstrap_replicates,
+        seed=bootstrap_seed,
     )
     return {
         "n": len(rows),
@@ -338,5 +444,7 @@ def evaluate_metrics(
             "seed": bootstrap_seed,
             "global_balanced_accuracy_ci95": overall["balanced_accuracy_ci95"],
             "global_macro_f1_ci95": overall["macro_f1_ci95"],
+            "macro_dataset_balanced_accuracy_ci95": macro_dataset_ci,
+            "generator": "numpy.random.default_rng (PCG64)",
         },
     }
