@@ -71,7 +71,7 @@ Esses princípios podem apoiar pesquisas e projetos que necessitam avaliar respo
 
 ## O que está comprovado hoje
 
-O repositório reúne implementação de verificação, contrato do Judge 2.0, testes de regressão e avaliações documentadas. Os resultados devem ser interpretados sempre dentro da partição, protocolo e revisão de código indicados no relatório correspondente.
+O repositório reúne implementação de verificação, contrato do Judge 2.0, testes de regressão e avaliações documentadas. Há resultados históricos documentados para Golden v0 e Golden v0.1, produzidos em inglês e voltados ao desenvolvimento do sistema. Os resultados devem ser interpretados sempre dentro da partição, protocolo e revisão de código indicados no relatório correspondente.
 
 ### Atualização de benchmark — Calibration V2 (DEV, 7 nov. 2026)
 
@@ -84,7 +84,11 @@ A primeira execução completa da avaliação Calibration V2 no conjunto **LLM-A
 | **Camada LTT em DEV-B** | **0/11 coortes certificadas** pela regra originalmente registrada. |
 | **Curva de cobertura** | Análise **descritiva, não certificada**. Não substitui o resultado da regra original. |
 
-**Como interpretar:** estes são resultados de **DEV**, não de TEST, produção ou ranking. A BA de 74,68% é uma métrica cross-fitted de desenvolvimento, não uma estimativa de desempenho externo. A regra LTT original interrompeu a sequência no primeiro limiar inelegível (n inferior a 25); essa limitação metodológica está explicitada no relatório. A curva descritiva não deve ser divulgada como certificação.
+FactCG, MiniCheck e mDeBERTa são modelos de terceiros (licença MIT), usados sem modificação dos pesos; o AYORAI contribui com o pipeline de avaliação, a calibração, o pré-registro e a infraestrutura. Créditos em [Componentes de terceiros](reports/benchmarks/2026-11-07-dev-calibration-v2/README.md#componentes-de-terceiros).
+
+**Como interpretar:** estes são resultados de **DEV**, não de TEST, produção ou ranking. A BA de 74,68% é uma métrica cross-fitted de desenvolvimento, não uma estimativa de desempenho externo. A regra LTT original interrompeu a sequência no primeiro limiar inelegível (n inferior a 25); essa limitação metodológica está explicitada no relatório. A curva descritiva não deve ser divulgada como certificação. Como referência (não comparação direta, por ser outra partição): a linha de base por regras registrou BA de 49,2% no TEST.
+
+Uma emenda ao pré-registro sobre limiares inelegíveis está em preparação; a certificação confirmatória só será feita em dados não vistos (TEST), com a regra e a configuração congeladas antes.
 
 - [Relatório completo Calibration V2 — resultados e limitações](reports/benchmarks/2026-11-07-dev-calibration-v2/README.md)
 - [Proveniência, execuções e hashes](reports/benchmarks/2026-11-07-dev-calibration-v2/PROVENANCE.md)
