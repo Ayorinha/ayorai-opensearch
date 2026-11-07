@@ -99,7 +99,6 @@ def _threshold_result(
     neutral_tie = (threshold == 0.50) & (probabilities == 0.50)
     accepted = (confidence >= threshold) & ~neutral_tie
     supported = (probabilities >= threshold) & accepted
-    not_supported = (probabilities <= 1.0 - threshold) & accepted
     predictions = supported.astype("int8")
     n_accepted = int(np.count_nonzero(accepted))
     errors = int(np.count_nonzero(predictions[accepted] != labels[accepted]))
