@@ -44,7 +44,7 @@
       "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch",
       "programmingLanguage": "Python",
       "runtimePlatform": "Python 3.11, 3.12, 3.13",
-      "softwareVersion": "0.6.0",
+      "softwareVersion": "0.7.0",
       "license": "https://www.apache.org/licenses/LICENSE-2.0",
       "identifier": "https://doi.org/10.5281/zenodo.23125082",
       "keywords": "auditoria de inteligência artificial, auditoria de IA, verificação de respostas de IA, IA confiável, verificação de afirmações, evidências, LLM, RAG, open source",
@@ -122,9 +122,9 @@
       <div class="ctas">
         <a class="btn primary" href="https://github.com/Ayorinha/ayorai-opensearch">Ver código no GitHub</a>
         <a class="btn" href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf">Documento técnico (PDF)</a>
-        <a class="btn" href="https://doi.org/10.5281/zenodo.23125082">Citar · DOI</a>
+        <a class="btn" href="https://doi.org/10.5281/zenodo.24045951">Citar versão 0.7.0 · DOI</a>
       </div>
-      <div class="facts"><span>Apache-2.0</span><span>Python 3.11 · 3.12 · 3.13</span><span>v0.6.0</span><span>Judge 2.0</span><span>Mantido por Anderson Leon Ayora</span></div>
+      <div class="facts"><span>Apache-2.0</span><span>Python 3.11 · 3.12 · 3.13</span><span>v0.7.0</span><span>Judge 2.0</span><span>Mantido por Anderson Leon Ayora</span></div>
     </div>
   </div>
 
@@ -202,7 +202,13 @@
     <div class="wrap narrow">
       <p class="kicker">Estado e limites</p>
       <h2>O que está comprovado hoje</h2>
-      <p>O repositório contém implementação de verificação, contrato do Judge 2.0, testes de regressão e conjuntos sintéticos de avaliação. Há resultados históricos documentados para Golden v0 e Golden v0.1, produzidos em inglês e voltados ao desenvolvimento do sistema.</p>
+      <p>O repositório contém implementação de verificação, contrato do Judge 2.0, testes de regressão e avaliações documentadas. Há resultados históricos para Golden v0 e v0.1, além de uma execução de desenvolvimento da Calibration V2 em LLM-AggreFact (em inglês). Cada resultado deve ser interpretado segundo sua partição, protocolo, commit e limitações documentadas.</p>
+      <div class="callout">
+        <strong>Calibration V2 — resultado DEV (7 nov. 2026)</strong>
+        <p>Na partição DEV-A, o FactCG foi selecionado pela regra registrada, com balanced accuracy cross-fitted de <strong>74,68%</strong>. Métricas probabilísticas: AUROC 0,8650 · AUPRC 0,9454 · Brier 0,1168 · ECE (15 bins) 0,0054.</p>
+        <p>Na análise LTT de DEV-B, <strong>0 de 11 coortes</strong> atenderam à regra de certificação originalmente registrada. A curva de cobertura adicional é descritiva e não substitui essa regra.</p>
+        <p><strong>Limite de interpretação:</strong> são resultados DEV, não TEST, produção, ranking ou evidência de generalização para português. FactCG, MiniCheck e mDeBERTa são modelos de terceiros; consulte os créditos e a metodologia no <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/reports/benchmarks/2026-11-07-dev-calibration-v2/README.md">relatório completo</a> e a <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/reports/benchmarks/2026-11-07-dev-calibration-v2/PROVENANCE.md">proveniência</a>.</p>
+      </div>
       <div class="limits">
         <strong style="color:var(--mid)">Limites declarados</strong>
         <ul>
@@ -254,7 +260,7 @@ pytest</code></pre>
       <details><summary>Quem criou o projeto?</summary><p>Anderson Leon Ayora, autor, mantenedor e diretor técnico do AYORAI ATTRACTOR.</p></details>
       <details><summary>É gratuito?</summary><p>Sim. É distribuído sob a licença Apache-2.0.</p></details>
       <details><summary>Ele substitui revisão humana ou avaliação jurídica?</summary><p>Não. O sistema apoia a análise; não substitui profissionais responsáveis, revisão humana, controles internos ou avaliação jurídica.</p></details>
-      <details><summary>Como citar o projeto?</summary><p>Use o DOI <a href="https://doi.org/10.5281/zenodo.23125082">10.5281/zenodo.23125082</a> ou os metadados do arquivo <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/CITATION.cff">CITATION.cff</a>.</p></details>
+      <details><summary>Como citar o projeto?</summary><p>Para citar a versão 0.7.0, use o DOI <a href="https://doi.org/10.5281/zenodo.24045951">10.5281/zenodo.24045951</a>. Para citar o projeto independentemente da versão, use o DOI de conceito <a href="https://doi.org/10.5281/zenodo.23125082">10.5281/zenodo.23125082</a>. Os metadados estão em <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/CITATION.cff">CITATION.cff</a>.</p></details>
     </div>
   </section>
 </main>
