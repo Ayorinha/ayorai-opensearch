@@ -2,7 +2,7 @@
   "path": "C",
   "detector": "RuleStanceDetector",
   "detector_version": "4",
-  "package_file": "/tmp/claude-0/-home-claude-ayorai-opensearch/8c353b8d-795a-58bb-8f93-08dc250ba31b/scratchpad/baseline-wt/src/ayorai_attractor/__init__.py",
+  "package_file": "src/ayorai_attractor/__init__.py",
   "source_commit": "d245e681bad2e5c149a252a2ecfa0f7fe65af3f8",
   "corpus_sha256": "ce2333ccfe4003ebfc90819400beaf6a245620754deb8572c7611bd8bbb7dea3",
   "seed": 20261003,
@@ -987,5 +987,5 @@
     ],
     "golden_sha256": "a7076512196c1ee9670478f036f7a3996fe89a483efad140ec7b985a54846fb9"
   },
-  "report_sha256": "a23b8b0bc570721d94df9484126b35b943d8e805976037a849080a9e54806afc"
+  "report_sha256": "29a65c6ec0f7d1fbfad0e9f03c1b57b6820f567ac1dc78a74e9e7b36b2c3eead"
 }
