@@ -51,3 +51,68 @@ O intervalo de confiança primário para H1 usa reamostragem de clusters de arti
 ## Concordância entre anotadores — DEC-020 (aprovada em 2026-10-21)
 
 A ferramenta `evals/ptbr/rgc_agreement.py` calcula Cohen's kappa não ponderado para os cinco rótulos nominais definitivos, com gate pela estimativa pontual `κ ≥ 0,6`, IC95% percentil bootstrap por caso (10.000 reamostragens, seed `20261003`), concordância observada, matriz de confusão e marginais por classe. Exclui pares em que qualquer anotador usa `RULE_GAP` e reporta as exclusões separadamente. A ferramenta interrompe se os arquivos de anotação não tiverem IDs exatamente correspondentes ou contiverem duplicatas/rótulos inválidos. O esquema JSONL e os comandos estão no [guia de concordância entre anotadores](ANNOTATOR-AGREEMENT.md). Nenhum arquivo de anotação humana foi fornecido ou processado nesta execução.
+
+## RGC PT-BR — decisões estatísticas por componentes (DEC-021 a DEC-023; 2026-11-07)
+
+**Estado:** DEC-021, DEC-022 e DEC-023 foram aprovadas pelo mantenedor em 2026-11-07. Esta seção registra a especificação estatística aprovada; não altera o pré-registro, o protocolo, o executor ou a autorização de execução. A implementação permanece pendente. **Protocolo [PROPOSTO]; executor bloqueado; nenhuma execução real autorizada.**
+
+### Unidade final de reamostragem e permutação — DEC-023
+
+A unidade estatística final é o componente conectado de casos, construído a partir de `cited_article_ids`:
+
+1. Cada caso é um vértice.
+2. Dois casos pertencem à mesma componente quando compartilham ao menos um ID de artigo citado. A relação é transitiva.
+3. Para cada componente, reunir os IDs de artigos únicos, validar a forma canônica de cada ID, ordenar lexicalmente e serializar a lista em JSON canônico UTF-8 (chaves ordenadas, separadores compactos, sem espaços; Unicode NFC e `ensure_ascii=False`). O ID estável é `component:sha256:` seguido do SHA-256 hexadecimal dessa serialização. Não usar concatenação com `+`, que pode ser ambígua. Guardar a lista JSON original e o hash para auditoria.
+4. A componente é uma única unidade de reamostragem ou permutação; todos os casos que a integram permanecem juntos.
+5. Reportar o número de valores distintos de `bootstrap_cluster_id` antes da união, o número de componentes depois da união, os casos por componente e o tamanho da maior componente.
+
+O `bootstrap_cluster_id` de DEC-019 continua sendo metadado de entrada e permite informar as unidades anteriores à união. A lista completa `cited_article_ids`, e não apenas o artigo principal ou os membros de um `bundle:`, determina as conexões transitivas. Componentes grandes reduzem o número efetivo de unidades; a contagem de casos, isoladamente, não demonstra que há unidades independentes suficientes.
+
+### Teste confirmatório de H1 por sign-flip — DEC-021
+
+Para cada componente `k`:
+
+- `a_k`: casos em que o sistema acerta e a Baseline B erra;
+- `b_k`: casos em que a Baseline B acerta e o sistema erra;
+- `d_k = a_k - b_k`.
+
+A estatística observada é `T_obs = sum_k d_k`. A ponderação é pelo número de casos de cada componente; componentes com `d_k = 0` permanecem na análise.
+
+- Se `K <= 20`, enumerar todas as `2^K` combinações de sinais. O p-valor bilateral é a fração de combinações com `|T*| >= |T_obs|`.
+- Se `K > 20`, usar 10.000 sorteios com seed `20261003` e correção de Monte Carlo `p = (1 + E) / (1 + 10_000)`, em que `E` é o número de permutações extremas. **Gerador fixado para implementação:** NumPy `2.3.3` (versão exata a pin em ambiente); `numpy.random.Generator(numpy.random.PCG64(20261003))`. Para cada réplica, gerar `K` sinais independentes e equiprováveis em `{-1,+1}` (`rng.choice([-1, +1], size=K, replace=True)`), aplicar `T* = sum_k(s_k d_k)` e contar como extremo quando `abs(T*) >= abs(T_obs)`. A sequência de sinais é gerada na ordem canônica dos componentes, definida pelo ID de componente. A versão pinada e o seed devem constar no relatório. Para `K <= 20`, enumeração lexicográfica de todas as sequências `(-1,+1)^K`, incluindo a sequência observada; não usar RNG.
+- Reportar `K`, o número de combinações consideradas e a resolução mínima teórica `2 / 2^K`.
+- Se `K < 6`, registrar que a resolução não permite atingir `p < 0,05`. Não trocar o teste nem reduzir o nível de significância para contornar essa limitação.
+
+A validade do sign-flip depende da permutabilidade dos resultados sistema/Baseline B dentro de cada componente sob H0. Essa é uma hipótese metodológica, não uma propriedade garantida pelo algoritmo nem pela construção do grafo. A interpretação do p-valor deve declarar essa condição e reconhecer que componentes por artigo não provam independência entre componentes.
+
+**Sensibilidades, não testes primários:** McNemar exato por caso e o método de Obuchowski (1998) para proporções pareadas agrupadas. O artigo de Obuchowski estende a comparação de proporções correlacionadas a dados amostrados em clusters e alerta que o tamanho do teste de McNemar pode exceder o nível nominal na presença de correlação intraclasse. Referência: [Obuchowski, N. A. (1998), *On the comparison of correlated proportions for clustered data*, Statistics in Medicine, 17(13), 1495–1507](https://doi.org/10.1002/(SICI)1097-0258(19980715)17:13%3C1495::AID-SIM863%3E3.0.CO;2-I); [PubMed PMID 9695194](https://pubmed.ncbi.nlm.nih.gov/9695194/). Ambos os métodos são análises de sensibilidade descritivas segundo DEC-021, não substitutos do sign-flip confirmatório.
+
+### IC95% de Cohen's kappa por componente — DEC-022
+
+- Calcular o IC95% percentil de Cohen's kappa não ponderado por bootstrap de componente, com 10.000 reamostragens e seed `20261003`. Fixar `numpy==2.3.3` e usar `numpy.random.Generator(numpy.random.PCG64(20261003))`. Em cada réplica, sortear `K` índices de componente uniformemente com reposição (`rng.integers(0, K, size=K)`); concatenar todos os casos de cada componente sorteado. Se um componente for sorteado várias vezes, duplicar seus casos pela mesma multiplicidade; não deduplicar nem reamostrar casos dentro do componente. A ordem dos componentes é a ordem lexical dos IDs canônicos.
+- Contabilizar as reamostras em que kappa é indefinido e excluí-las do cálculo do intervalo.
+- Publicar a contagem e a proporção de reamostras indefinidas; se a proporção superar 5%, marcar o intervalo como **instável**. Se nenhuma reamostra produzir kappa definido, o intervalo deve ser reportado como indisponível, nunca inventado.
+- O gate permanece na estimativa pontual `kappa >= 0,6`. O IC95% não altera esse gate.
+- Permanecem obrigatórios a concordância observada, a matriz de confusão, as marginais por classe e a contagem de pares excluídos por `RULE_GAP`, conforme DEC-020.
+
+**Quantil bootstrap fixado:** usar quantis percentis com interpolação linear `method="linear"` do NumPy (Hyndman–Fan tipo 7), calculados sobre as réplicas com kappa definido: limites em `q=0.025` e `q=0.975`. Informar `B=10.000` sorteios totais, quantas réplicas válidas/indefinidas e proporção indefinida. O sorteio é por componentes com reposição e mantém multiplicidade (um componente repetido aparece repetido na amostra bootstrap).
+
+### Estado de implementação — não confundir especificação com execução
+
+No estado de código consultado em 2026-11-07:
+
+- `evals/ptbr/rgc_eval.py` calcula o bootstrap por `bootstrap_cluster_id` de DEC-019 e valida `cited_article_ids`, mas não constrói componentes conectados nem implementa o sign-flip de DEC-021.
+- `evals/ptbr/rgc_agreement.py` ainda reamostra casos individualmente e publica `ci95_case_bootstrap`; não implementa o bootstrap por componente de DEC-022.
+- Os testes existentes cobrem as regras anteriores com dados sintéticos; não há testes para a união transitiva, o sign-flip ou o bootstrap de kappa por componente.
+
+Essas diferenças são pendências de implementação, não resultados do benchmark. Não há casos RGC reais, anotação humana processada ou estatística observada nesta atualização. O PR que registrou DEC-021–DEC-023 alterou somente `docs/DECISIONS-PENDING.md`; não implementou os métodos.
+
+### Alinhamento documental obrigatório antes de qualquer execução
+
+As decisões aprovadas mais recentes ainda não estão reconciliadas com todos os documentos normativos anteriores:
+
+- O §5 de `PREREGISTRATION-RGC-v1.md` ainda usa o p-valor do McNemar como condição de sucesso de H1, enquanto DEC-021 define o sign-flip por componente como teste confirmatório e relega McNemar à sensibilidade.
+- A Emenda 10/DEC-020 no protocolo e a seção DEC-020 desta página descrevem IC de kappa por bootstrap de casos; DEC-022 aprova bootstrap por componente.
+- DEC-019 descreve clusters por artigo/`bundle:`; DEC-023 acrescenta a união transitiva de todos os artigos citados como unidade final de reamostragem/permutação.
+
+A aprovação documental de DEC-021–DEC-023 declarou expressamente que não altera o pré-registro nem o protocolo. Portanto, este registro não reescreve esses artefatos protegidos nem presume que o conflito esteja resolvido. Uma emenda datada e uma reconciliação explícita entre pré-registro, protocolo, estatísticas, executor e testes são necessárias antes de qualquer avaliação confirmatória. Até lá, não executar H1 nem calcular concordância humana sob a nova especificação.
