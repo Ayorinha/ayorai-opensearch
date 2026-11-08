@@ -70,18 +70,18 @@ O `bootstrap_cluster_id` de DEC-019 continua sendo metadado de entrada e permite
 
 ### Teste confirmatório de H1 por sign-flip — DEC-021
 
-Para cada componente (k):
+Para cada componente `k`:
 
-- (a_k): casos em que o sistema acerta e a Baseline B erra;
-- (b_k): casos em que a Baseline B acerta e o sistema erra;
-- (d_k = a_k - b_k).
+- `a_k`: casos em que o sistema acerta e a Baseline B erra;
+- `b_k`: casos em que a Baseline B acerta e o sistema erra;
+- `d_k = a_k - b_k`.
 
-A estatística observada é (T_{obs} = \sum_{k=1}^{K} d_k). A ponderação é pelo número de casos de cada componente; componentes com (d_k=0) permanecem na análise.
+A estatística observada é (T_{obs} = \sum_{k=1}^{K} d_k). A ponderação é pelo número de casos de cada componente; componentes com `d_k = 0` permanecem na análise.
 
-- Se (K \leq 20), enumerar todas as (2^K) combinações de sinais. O p-valor bilateral é a fração de combinações com (|T^*| \geq |T_{obs}|).
-- Se (K > 20), usar 10.000 sorteios com seed `20261003` e correção de Monte Carlo (p=(1+E)/(1+10.000)), em que (E) é o número de permutações extremas.
-- Reportar (K), o número de combinações consideradas e a resolução mínima teórica (2/2^K).
-- Se (K < 6), registrar que a resolução não permite atingir (p<0,05). Não trocar o teste nem reduzir o nível de significância para contornar essa limitação.
+- Se (K \leq 20), enumerar todas as `2^K` combinações de sinais. O p-valor bilateral é a fração de combinações com (|T^*| \geq |T_{obs}|).
+- Se `K > 20`, usar 10.000 sorteios com seed `20261003` e correção de Monte Carlo `p = (1 + E) / (1 + 10_000)`, em que (E) é o número de permutações extremas.
+- Reportar `K`, o número de combinações consideradas e a resolução mínima teórica `2 / 2^K`.
+- Se `K < 6`, registrar que a resolução não permite atingir `p < 0,05`. Não trocar o teste nem reduzir o nível de significância para contornar essa limitação.
 
 A validade do sign-flip depende da permutabilidade dos resultados sistema/Baseline B dentro de cada componente sob H0. Essa é uma hipótese metodológica, não uma propriedade garantida pelo algoritmo nem pela construção do grafo. A interpretação do p-valor deve declarar essa condição e reconhecer que componentes por artigo não provam independência entre componentes.
 
