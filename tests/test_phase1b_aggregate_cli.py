@@ -40,7 +40,7 @@ def _synthetic_rows() -> list[dict]:
     return rows
 
 
-def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
+def _write_synthetic_inputs(tmp_path: Path) -> tuple[Path, Path, dict[str, str], dict]:
     rows = _synthetic_rows()
     manifest = build_manifest(
         rows,
@@ -97,10 +97,15 @@ def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
 
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest))
-    output_path = tmp_path / "aggregate.json"
     env = {key_name: value for key_name, value in os.environ.items() if key_name != "PYTHONPATH"}
     env["PHASE1B_ARTIFACT_ENCRYPTION_KEY"] = base64.b64encode(key).decode()
 
+    return manifest_path, encrypted_dir, env, rows_by_id
+
+
+def _run_aggregator(tmp_path: Path, *extra: str) -> tuple[subprocess.CompletedProcess, Path, dict]:
+    manifest_path, encrypted_dir, env, rows_by_id = _write_synthetic_inputs(tmp_path)
+    output_path = tmp_path / "aggregate.json"
     completed = subprocess.run(
         [
             sys.executable,
@@ -112,6 +117,7 @@ def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
             "--output",
             str(output_path),
             "--calibration-v2",
+            *extra,
         ],
         cwd=tmp_path,
         env=env,
@@ -120,6 +126,12 @@ def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
         check=False,
     )
 
+    return completed, output_path, {"env": env, "rows_by_id": rows_by_id}
+
+
+def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
+    completed, output_path, context = _run_aggregator(tmp_path)
+    rows_by_id = context["rows_by_id"]
     assert completed.returncode == 0, completed.stderr
     report = json.loads(output_path.read_text())
     serialized = json.dumps(report, sort_keys=True)

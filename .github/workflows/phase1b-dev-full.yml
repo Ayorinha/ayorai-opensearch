@@ -235,7 +235,8 @@ jobs:
           python scripts/benchmarks/phase1b/aggregate_dev.py \
             --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
             --encrypted-dir /tmp/phase1b-encrypted \
-            --output /tmp/phase1b-aggregate.json --calibration-v2
+            --output /tmp/phase1b-aggregate.json --calibration-v2 \
+            --score-cache-output /tmp/phase1b-score-cache/phase1b-dev-score-cache.json
           python - <<'PY'
           import json
           from pathlib import Path
@@ -254,5 +255,12 @@ jobs:
           path: /tmp/phase1b-aggregate.json
           if-no-files-found: error
           retention-days: 30
+      # A1: encrypted per-instance DEV score cache (AES-256-GCM; never published in plaintext).
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-score-cache
+          path: /tmp/phase1b-score-cache/phase1b-dev-score-cache.json
+          if-no-files-found: error
+          retention-days: 90
 
 # No TEST split/job, no dispatch from repository tooling, and no automatic trigger.
