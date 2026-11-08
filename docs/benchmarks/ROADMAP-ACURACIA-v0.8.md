@@ -3,7 +3,7 @@
 **Status:** proposta de planejamento e pré-registro documental; não autoriza experimentos nem execução.  
 **Autoria e responsabilidade:** ANDERSON AYORA.  
 **Escopo desta alteração:** somente este documento. Nenhuma implementação, inferência, execução de benchmark, alteração de dados, dispatch de workflow, criação de secret, alteração de Judge/Golden/thresholds/RGC ou avaliação TEST.  
-**Referência de estado:** `main` no momento da abertura desta PR: `3e124a5d93548514f2a2edeb8c6df5e3dd392776` (merge da PR #485, que registrou a DOI da v0.7.0). O campo de referência de `main` no topo de `docs/STATUS.md` ainda apontava para `5cf34d7c`; por isso, para esta PR foi usado o SHA efetivo da base retornado pelo GitHub. A PR #488, que propõe a Emenda 2 do LTT e retenção de sete dias, foi observada aberta durante a preparação deste roadmap; seu conteúdo não é tratado como regra vigente até merge e revisão.
+**Referência de estado:** `main` após o merge squash da PR #489: `f8895caab6f3d81fdfea0eaffa91a7a255477d36`. A PR #489 adicionou este roadmap. A PR #488, que propõe a Emenda 2 do LTT e retenção de sete dias, continua pendente e não é tratada como regra vigente até merge e revisão. O radar documental complementar está em `docs/benchmarks/RADAR-TECNOLOGICO-2026-11.md`.
 
 ## 1. Objetivo e limite científico
 
@@ -23,7 +23,7 @@ O relatório DEV da Calibration V2, disponível em `reports/benchmarks/2026-11-0
 
 ECE informado para a calibração reportada: 0,0054. A Camada 3 terminou em 0/11 coortes certificadas pela regra original do LTT. Esses números são resultados DEV, não TEST, não certificação e não evidência de superioridade geral. Antes de reutilizá-los em material público, conferir o relatório e a proveniência no SHA exato correspondente.
 
-Há referências externas de ranking mencionadas no planejamento inicial, mas seus valores, versões de modelos, protocolo, partição e comparabilidade ainda precisam ser confirmados diretamente na fonte oficial. **Não citar esses números como ranking validado nem usá-los como baseline comparável** até essa conferência. Qualquer comparação futura identificará modelos de terceiros e suas revisões/licenças.
+A consulta ao leaderboard oficial em 2026-11-07 confirmou, entre outros, MiniCheck-Flan-T5-L em 75,0, FactCG-DeBERTa-L em 75,6, Granite Guardian 3.3 em 76,5 e Bespoke-MiniCheck-7B em 77,4. A tabela também contém modelos com médias superiores a 77,4; portanto, Bespoke não é mais o primeiro colocado na página consultada. Esses números são referências externas, não resultados AYORAI nem baseline diretamente comparável: versão, prompt, modo, split e protocolo devem ser verificados. A auditoria e as fontes estão em `RADAR-TECNOLOGICO-2026-11.md`.
 
 O possível ruído de rótulo de 6–16% é uma hipótese/estimativa de contexto, não uma medição confirmada neste conjunto. Não subtrair esse intervalo dos resultados nem apresentá-lo como limite empírico do LLM-AggreFact sem estudo específico.
 
@@ -36,11 +36,13 @@ O possível ruído de rótulo de 6–16% é uma hipótese/estimativa de contexto
    - DEV-B: confirmação interna, sem retroalimentar escolhas de modelo, hiperparâmetros, método ou limiares.
    - TEST: avaliação final única, somente depois de configuração congelada por hash e aprovação explícita do mantenedor. Nunca usar TEST para depuração, seleção, calibração ou decisão metodológica.
 3. **Termos de uso do LLM-AggreFact.** O pin em `configs/benchmarks/llm-aggrefact-dev-pin.json` registra: “benchmark evaluation only; pretraining and fine-tuning prohibited”. É proibido treinar ou ajustar pesos de modelos com LLM-AggreFact. A possibilidade de calibração pós-hoc, ajuste de limiares e combinação de sinais precisa da decisão formal descrita na DEC proposta da seção 4 antes de qualquer ajuste. Na dúvida, parar.
-4. **Modelos de terceiros.** Antes de qualquer uso, verificar a licença na página oficial do modelo no Hugging Face e registrar autor, identificador, URL, revisão imutável (SHA), licença, restrições de uso, dependências e data da verificação. Licenças não comerciais, restritivas ou incompatíveis devem ser sinalizadas e não usadas sem decisão explícita do mantenedor e revisão apropriada.
-5. **Autoridade e artefatos protegidos.** Judge 2.0 permanece a única autoridade de veredito. Não alterar Judge, Golden, hashes/manifests congelados, thresholds do sistema, RGC, Piloto 02 ou ResponsePolicy.
-6. **Privacidade.** Nenhum dado por instância, rótulo, score, predição ou trecho documental será publicado. Artefatos por instância, se autorizados, serão privados, cifrados, com acesso mínimo e retenção limitada. A publicação de experimentos conterá apenas agregados com proteção contra divulgação.
-7. **Governança operacional.** Nenhum merge, dispatch, criação/migração de secret ou alteração de ambiente protegido sem autorização explícita do mantenedor. CI verde é específico ao SHA e não substitui revisão humana.
-8. **Alegações públicas.** Toda alegação identificará partição (DEV ou TEST), população/coortes, cobertura quando houver modo seletivo, protocolo, versão/revisão dos modelos e que os verificadores são modelos de terceiros. Não alegar certificação, validação externa, superioridade geral ou acurácia em produção com base em DEV.
+4. **Gate de contaminação e sobreposição de fontes.** Antes de qualquer uso, verificar se o modelo, seu modelo-base, adapters, SFT/DPO, dados sintéticos/preferências ou corpora divulgados foram treinados/ajustados com LLM-AggreFact ou com qualquer dataset-fonte das 11 coortes. Treino direto no benchmark bloqueia todas as coortes; treino em uma coorte bloqueia aquela coorte; dados sintéticos herdam a abrangência da fonte. Verificar também bases e dados herdados de modelos-base, não apenas o último fine-tune. Se os IDs de origem não estiverem disponíveis, bloquear a coorte potencialmente sobreposta até deduplicação documentada. Registrar status por modelo/coorte e links de evidência no radar.
+5. **Gate de exposição de benchmark.** Registrar separadamente se os autores usaram LLM-AggreFact para avaliação, seleção de modelo, ajuste de hiperparâmetros, calibração ou escolha de limiar, identificando o split. Avaliação publicada sem treino não é contaminação de pesos, mas não é resultado independente do AYORAI. Threshold tuning/stacking com rótulos do DEV/validation torna esse split exposto e não confirmatório; não copiar limiares dos autores. Reservar split não exposto para confirmação e nunca usar TEST para desenvolvimento.
+6. **Gate de licença e cadeia de suprimentos.** Verificar separadamente licença do checkpoint final, modelo-base, datasets, adapters, código remoto, tokenizer e dependências. Pesos MIT/Apache não anulam restrições NC de dados de treino. Modelos treinados com ANLI/XNLI CC BY-NC são EVAL_ONLY sob a política atual; não entram em produto comercial. Registrar autor, URL, SHA imutável, licença, restrições e data. `trust_remote_code` exige revisão do código no SHA pinado. Licenças `other`, não comerciais ou incompatíveis bloqueiam uso em produto; não inferir licença pela família ou nome.
+6. **Autoridade e artefatos protegidos.** Judge 2.0 permanece a única autoridade de veredito. Não alterar Judge, Golden, hashes/manifests congelados, thresholds do sistema, RGC, Piloto 02 ou ResponsePolicy.
+7. **Privacidade.** Nenhum dado por instância, rótulo, score, predição ou trecho documental será publicado. Artefatos por instância, se autorizados, serão privados, cifrados, com acesso mínimo e retenção limitada. A publicação de experimentos conterá apenas agregados com proteção contra divulgação.
+8. **Governança operacional.** Nenhum merge, dispatch, criação/migração de secret ou alteração de ambiente protegido sem autorização explícita do mantenedor. CI verde é específico ao SHA e não substitui revisão humana.
+9. **Alegações públicas.** Toda alegação identificará partição (DEV ou TEST), população/coortes, cobertura quando houver modo seletivo, protocolo, versão/revisão dos modelos e que os verificadores são modelos de terceiros. Não alegar certificação, validação externa, superioridade geral ou acurácia em produção com base em DEV.
 
 ## 3. Pré-registro da regra final de escolha
 
@@ -48,7 +50,7 @@ Esta seção propõe a regra de seleção para a linha experimental v0.8. Deve s
 
 ### 3.1 Métrica primária
 
-A métrica primária será a **média macro da Balanced Accuracy (BA) por dataset/coorte**, calculada a partir de predições out-of-fold em DEV-A. Cada dataset/coorte terá o mesmo peso no agregado, independentemente de seu número de exemplos. Publicar também resultados por coorte, tamanho amostral, intervalo de incerteza e métricas secundárias.
+A métrica primária será a **média macro da Balanced Accuracy (BA) por dataset/coorte**, calculada a partir de predições out-of-fold em DEV-A. Cada dataset/coorte terá o mesmo peso no agregado, independentemente de seu número de exemplos. Cada modelo terá uma matriz explícita de coortes elegíveis/ineligíveis. Comparações entre modelos só podem usar a interseção comum de coortes elegíveis; não calcular médias macro com denominadores diferentes. Publicar também resultados por coorte, tamanho amostral, coortes excluídas e motivo, intervalo de incerteza e métricas secundárias.
 
 O protocolo de cálculo, a definição da unidade de agregação, o tratamento de classes ausentes, abstenções e previsões inválidas deverão ser fixados no pré-registro específico de cada experimento antes de executar. Não comparar configurações com denominadores ou populações diferentes sem declarar a diferença.
 
@@ -56,7 +58,7 @@ O protocolo de cálculo, a definição da unidade de agregação, o tratamento d
 
 - Cada candidato será avaliado com cross-fitting em DEV-A; os dados do fold avaliado não poderão ajustar o calibrador, pesos, limiar ou qualquer parâmetro que produza sua predição.
 - DEV-B será usado somente como confirmação interna da configuração selecionada, sem alterar a seleção. Divergência em DEV-B será reportada, não corrigida com ajustes retroativos.
-- A seleção da configuração (E3–E7) usa BA macro com cobertura total (sem abstenção). O modo seletivo (E8) é uma camada posterior: para cada coorte, reporta acerto, cobertura e risco; uma coorte só conta como atingindo o alvo se o acerto entre aceitas for **≥ 90%** (risco observado **≤ 10%**) com **n ≥ 25** respostas aceitas. Não há piso de cobertura; cobertura baixa é reportada, nunca escondida.
+- A seleção da configuração (E3–E7) usa BA macro com cobertura total (sem abstenção). O modo seletivo (E8) é uma camada posterior: para cada coorte, reporta acerto, cobertura e risco. `n ≥ 25` é condição mínima de elegibilidade, não garantia estatística. Acerto observado ≥ 90% é descritivo; certificação só ocorre se o teste LTT vigente satisfizer o limite de risco/nível de erro pré-registrado, com tratamento de múltiplas coortes e seleção de limiar corretamente aplicado. Com `n < 25`, não há certificação. **Não há piso de cobertura**; cobertura baixa é reportada, nunca escondida.
 - O resultado de DEV-B é uma verificação interna de consistência, não certificação, teste independente externo ou resultado TEST.
 
 ### 3.3 Regra determinística de escolha
@@ -111,9 +113,9 @@ Cada item será tratado em PR própria, com pré-registro/escopo, testes e evid�
 
 ### A1. Cache privado cifrado de scores por instância
 
-- Fazer o agregador produzir, além do relatório agregado, um artefato **privado e cifrado** contendo apenas os campos estritamente necessários: `record_id`, coorte, rótulo gold e score por modelo.
+- Fazer o agregador produzir um artefato **privado e cifrado de predições**, sem rótulos gold: `record_id`, coorte, split/fold, score, status e metadados mínimos de inferência. Manter rótulos gold em artefato separado, com acesso restrito ao avaliador autorizado; a junção ocorre apenas na etapa de avaliação, nunca no processo de inferência.
 - Restringir leitura/decifragem a workflow protegido e ambiente autorizado; não disponibilizar o artefato em releases, páginas públicas, logs ou artefatos públicos.
-- O workflow de experimento deve consumir o cache, executar somente operações autorizadas e publicar apenas agregados.
+- Cada score deve ser acompanhado de `model_id`, revisão SHA, tokenizer, hash do input, hash da configuração, direção/semântica do score, precisão, chunking, timestamp, runtime e checksum. Exigir chave idempotente, detecção de duplicatas, retomada, escrita atômica e falha fechada. O workflow consome o cache e publica apenas agregados.
 - Definir retenção pelo menor prazo operacional possível, limitado à política do repositório e do provedor; o prazo de sete dias proposto na PR #488 só será considerado vigente se aquela PR for mesclada e sua política se aplicar a estes artefatos.
 - Testar com dados sintéticos, controle de acesso, falhas de chave, ausência/expiração do cache e caminho real do CLI, no padrão de cobertura de caminho de `test_phase1b_aggregate_cli.py`.
 - Critério de parada: qualquer exposição de dados por instância, decifragem fora do ambiente autorizado ou inconsistência de integridade interrompe a fase.
@@ -151,23 +153,31 @@ Comparar, sob a decisão da seção 4:
 3. Regressão logística externa com até três pesos, cross-fitted, somente se expressamente autorizada pela DEC.
 4. Votação ponderada, com pesos fixos definidos previamente ou procedimento de ajuste explicitamente autorizado.
 
-O cache A1 deverá ser usado para evitar nova inferência. Cada fold retido será avaliado com calibradores/pesos ajustados somente nos folds de treino. Não usar DEV-B para selecionar a variante. Comparar custo, estabilidade e BA macro; expectativa de ganho de 1–2,5 pontos é apenas hipótese de planejamento, não promessa nem resultado.
+O cache A1 deverá ser usado para evitar nova inferência. Antes de comparar, aplicar a matriz de elegibilidade por modelo/coorte do radar. Cada fold retido será avaliado com calibradores/pesos ajustados somente nos folds de treino. Não usar DEV-B para selecionar a variante. Os scores históricos do baseline permanecem referências de pesquisa; não os descrever como avaliação comercialmente limpa ou sem exposição em todas as coortes. A referência RAIM sugere testar correlação de erros, dupla falha e ganho incremental contra o melhor membro; seus autores usam bootstrap pareado por clusters (2.000 reamostragens, IC 95%). Pré-registrar unidade de cluster, número de reamostragens, seed e correção de multiplicidade; não copiar seu código (repositórios com licença `other`/NOASSERTION). O stacking RAIM ajusta um meta-modelo com rótulos e depende da DEC-024. Comparar custo, estabilidade e BA macro; expectativa de ganho de 1–2,5 pontos é apenas hipótese de planejamento, não promessa nem resultado.
 
 ### E4. Verificadores adicionais
 
-Avaliar inicialmente em subamostra estratificada de aproximadamente 3.000 casos DEV-A, com seleção e tamanho justificados no pré-registro:
+A lista, o status de contaminação e as fontes verificadas estão em `docs/benchmarks/RADAR-TECNOLOGICO-2026-11.md`. E4 aplica elegibilidade por modelo/coorte; não existe autorização para tratar todos os candidatos como full-11.
 
-- Bespoke-MiniCheck-7B;
-- Granite Guardian 3.3;
-- MiniCheck-Flan-T5-L;
-- Paladin-mini;
-- **HalluGuard-4B** — Bergeron, Buhnila, François e State; base Qwen3-4B. O preprint [arXiv:2510.00880](https://arxiv.org/abs/2510.00880), de outubro/2025, reporta **75,7% de BAcc** no LLM-AggreFact completo. A versão final publicada em Findings of ACL 2026 reporta **77,1% de BAcc** no benchmark completo e 84,4% no subconjunto RAGTruth. São resultados dos autores, não resultados do AYORAI. Registrar explicitamente que HalluGuard já foi avaliado pelos autores no LLM-AggreFact, evitando apresentar essa avaliação como medição independente nossa. Referência da versão final: [ACL 2026](https://aclanthology.org/2026.findings-acl.835/).
+**Novo candidato CPU — cross-encoder/nli-distilroberta-base.** 82,1M, Apache-2.0, treinado em SNLI/MultiNLI; não há sobreposição direta conhecida com as 11 coortes. É um NLI genérico, não detector específico de alucinação. Prioridade para piloto de 200 itens após A1, com SHA, labels/score direction e licenças dos datasets pinados.
 
-**Verificação de disponibilidade/licença HalluGuard (consulta documental em 2026-11-07):** os pesos estão publicados no repositório Hugging Face [lrsbrgrn/HalluGuard-Qwen3-4B](https://huggingface.co/lrsbrgrn/HalluGuard-Qwen3-4B), com arquivos Safetensors presentes; o model card e os metadados do Hub declaram `apache-2.0`. Portanto, não está bloqueado por ausência de pesos ou de declaração de licença nesta consulta. **Ainda não está liberado para execução:** antes de qualquer uso, fixar uma revisão imutável (SHA) do repositório, arquivar a evidência da licença nessa revisão e verificar separadamente as licenças/restrições do modelo-base Qwen3-4B e de todos os componentes/dependências. Se os pesos ou a licença deixarem de estar disponíveis/claros na revisão fixada, marcar como **BLOQUEADO** até nova verificação.
+**LettuceDetect (KRLabsOrg/lettucedect-large-modernbert-en-v1).** MIT, ~396M, treinado em RAGTruth. Excluir RAGTruth; avaliar as outras 10 coortes após auditoria. Saída token-level exige regra pré-registrada de agregação token→claim, offsets originais e métrica compatível.
 
-Antes de qualquer execução de qualquer modelo, confirmar licença, autor, revisão imutável, restrições, dependências e compatibilidade de uso. Não inferir licença pela família ou pelo nome. Modelos não comerciais ou com termos incompatíveis ficam bloqueados até decisão do mantenedor.
+**MiniCheck-Flan-T5-Large (lytang/MiniCheck-Flan-T5-Large).** Pesos MIT, mas 21K ANLI (CC BY-NC) + 14K sintéticos; o backbone Flan-T5 foi instruído em CNN/DailyMail e XSum, e o C2D usa claims Wikipedia citadas (fonte WiCE) com D2C de Google News. EVAL_ONLY para produto; bloquear AggreFact-CNN/XSum e WiCE/REVEAL até deduplicação. Não é candidato full-11. Piloto apenas nas coortes elegíveis e como pesquisa.
 
-Para cada modelo, apresentar antes da execução uma estimativa de custo e viabilidade para: (a) runner com GPU; (b) Hugging Face Inference Endpoint; (c) quantização 4-bit em CPU, se tecnicamente viável. Informar hardware, memória, throughput esperado, custo monetário/horas e limitações; estimativas não serão apresentadas como medições. O mantenedor escolhe a modalidade e autoriza o custo. Somente modelos que demonstrem ganho de pelo menos **1 ponto percentual** na métrica pré-registrada, sem violar os gates, poderão ser propostos para o ensemble. A subamostra é triagem exploratória, não resultado confirmatório.
+**MiniCheck-DeBERTa e FactCG.** Pesos MIT não removem a restrição CC BY-NC de ANLI. C2D usa claims Wikipedia citadas e D2C usa Google News; bloquear WiCE até deduplicação e investigar sobreposição de fontes noticiosas. FactCG também ajustou limiares por dataset no validation do LLM-AggreFact; não copiar esses limiares nem tratar o score publicado como avaliação independente.
+
+**mDeBERTa-v3-base.** O checkpoint NLI usa XNLI (CC BY-NC); manter EVAL_ONLY para produto. Não há sobreposição direta conhecida com as 11 coortes, mas a licença continua restritiva.
+
+**HHEM-2.1-Open.** Apache-2.0, 109,6M, base Flan-T5 e código remoto. Treino em RAGTruth train + outros datasets confidenciais; base Flan-T5 tem exposição CNN/DailyMail e XSum. Bloquear RAGTruth/CNN/XSum e não pontuar outras coortes até disclosure. Piloto apenas com dados sintéticos externos para throughput; revisar código remoto e SHA.
+
+**HalluGuard-Qwen3-4B.** Pesos Safetensors publicados; Apache-2.0, LoRA+ORPO em 76.708 preferências sintéticas derivadas de FineWeb, base Qwen3-4B. Findings of ACL 2026 reporta 77,1% BAcc LLM-AggreFact e 84,4% RAGTruth; preprint 75,7%, todos resultados dos autores. Avaliação dos autores é exposição C4, não prova de treino no benchmark. Rodada posterior após SHA imutável, licença/base/dependências arquivadas e orçamento GPU/GGUF auditado.
+
+**Granite Guardian 3.3 8B.** Apache-2.0, 76,5 leaderboard; treino declarado inclui HH-RLHF, anotações humanas e dados sintéticos internos sem inventário completo. Inglês; fixar think/no-think e prompt. Não confirmar no benchmark até esclarecer proveniência.
+
+**Bespoke-MiniCheck-7B.** CC BY-NC 4.0; somente pesquisa não comercial. **Paladin-mini** removido: treinamento declarado com LLM-AggreFact e licença `other`.
+
+**Critério de execução:** piloto de 200 casos após A1 para DistilRoBERTa e LettuceDetect; LettuceDetect somente fora de RAGTruth. MiniCheck-Flan-T5 somente em coortes que passem a auditoria; HHEM apenas com dados sintéticos externos para throughput. Não executar cinco modelos como agregado homogêneo. DEV completo deve usar matriz de elegibilidade por coorte e macro somente na interseção comum de coortes; se os denominadores diferirem, publicar por coorte sem ranking global. O ganho incremental mínimo de 1 ponto percentual é critério de triagem proposto, não promessa nem obrigação.
 
 ### E5. Seleção de evidência em documentos longos
 
@@ -186,9 +196,15 @@ Comparar o chunking oficial com recuperação dos `k` trechos mais relevantes, u
 - Métrica primária: a mesma da seção 3 — BA macro por dataset/coorte, cross-fitted em DEV-A. Reportar também, por coorte, taxa de contradições falsas atribuíveis à quebra de correferência, cobertura, erros, custo e falhas de resolução.
 - Critério de decisão, ablações, tratamento de pronomes sem antecedente inequívoco, entidades ambíguas e erros do resolvedor devem ser fixados no pré-registro. Se a resolução alterar o sentido, perder o antecedente ou não puder ser alinhada ao original, usar fallback para o texto original e contabilizar a falha.
 
-### E6. Decomposição de afirmações longas
+### E6. Decomposição e estratégias sequenciais de prova
 
-Avaliar decomposição em afirmações atômicas, começando por regras determinísticas. Um LLM poderá ser usado somente como sinal opcional, nunca como autoridade. Pré-registrar critérios de atomicidade, detecção de falha, preservação de entidades/quantificadores/negações e agregação pelo mínimo: todas as subafirmações devem ser sustentadas para que o conjunto seja considerado sustentado. Medir também falsos desdobramentos, omissões e custo.
+Avaliar decomposição em fatos atômicos e verificação sequencial inspirada em Ye, Santos-Rodriguez e Simpson, “Teaching Language Models to Check Grounded Claim Factuality with Human Test-Taking Strategies”, ACL 2026, https://aclanthology.org/2026.acl-long.1468/.
+
+O método verifica, em sequência: (C1) sujeito e objeto aparecem no documento; (C2) suas descrições são explicitamente apoiadas; (C3) a relação entre eles é explicitamente apoiada; (C4) o que ainda não foi verificado pode ser inferido do documento. O paper reporta 76,3 ± 0,4 BAcc no LLM-AggreFact com Qwen3-30B-A3B-Instruct e 75,6 ± 0,4 com Qwen3-4B. São números dos autores, não resultados AYORAI.
+
+**Limite de contaminação:** o mesmo paper treina SLMs por SFT/DPO com dados de destilação derivados de LLM-AggreFact. Não usar esses checkpoints, nem reutilizar seus resultados como avaliação independente, pois o benchmark proíbe fine-tuning. Avaliar apenas a estratégia/prompt com modelo geral congelado, sem treino, após pré-registro e verificação de licença/revisão. O repositório de código não declara licença; não reutilizar código.
+
+Pré-registrar decomposição, critérios C1–C4, agregação, falha/ambiguidade e custo. Preservar negação, sujeito, objeto, relação, números, datas, quantificadores e modalidade. Cada fato atômico deve manter vínculo com o texto e evidência originais. Se a decomposição omitir ou alterar informação, falhar de modo conservador e registrar. O LLM continua sendo apenas um sinal; Judge 2.0 permanece autoridade única.
 
 ### E7. RuleStance como veto experimental
 
@@ -228,16 +244,16 @@ Avaliar mDeBERTa e o verificador que eventualmente vencer E4 em português com p
 
 ## 9. Ordem operacional proposta e dependências
 
-A ordem de trabalho após aprovação deste roadmap é:
+A ordem operacional prioritária, após aprovação do mantenedor, é:
 
-1. **A1** — cache privado cifrado e testes sintéticos/caminho.
-2. **A2** — somente depois da DEC de segurança e migração de secrets pelo mantenedor.
-3. **A3** — determinismo em amostra DEV pré-registrada.
-4. **A4** — auditoria agregada de erros.
-5. **E3** — somente após DEC-024 aprovada; reutilizar cache.
-6. **Decisão de GPU/custo** — apresentar alternativas e aguardar escolha explícita antes de E4.
-7. **E4** — triagem de modelos, após licenças/revisões verificadas.
-8. **E5, E5b, E6–E8** — cada experimento com PR/pré-registro e autorização próprios; E5b sempre comparado diretamente com E5.
+1. **A1** — implementar e testar cache privado cifrado antes de qualquer nova inferência DEV. Predições e labels ficam separados; nenhum label é acessível ao processo de inferência.
+2. **A4** — auditoria agregada de erros do baseline atual e ledger de elegibilidade por modelo/coorte, incluindo licença, dataset-fonte, sobreposição sintética e exposição a calibração/threshold no benchmark. Reutilizar artefatos existentes e não exportar linhas por instância.
+3. **E3** — somente após DEC-024 aprovada; reutilizar cache e usar OOF. Incluir análise de correlação/dupla falha e comparação com o melhor membro.
+4. **Decisão de GPU/custo** — apresentar alternativas e aguardar escolha explícita antes de E4.
+5. **E4** — piloto de 200 casos após A1 para cross-encoder/nli-distilroberta-base e LettuceDetect (fora de RAGTruth), com protocolo token→claim para este último. MiniCheck-Flan-T5 somente nas coortes elegíveis após excluir CNN/XSum e resolver WiCE/REVEAL; HHEM somente dados sintéticos externos para throughput.
+6. **DEV completo** — painel por coorte, com matriz de elegibilidade. Não executar cinco modelos como agregado homogêneo. Usar DistilRoBERTa como novo candidato geral; LettuceDetect em 10 coortes; MiniCheck/FactCG/mDeBERTa como comparadores de pesquisa sob suas restrições. Publicar macro apenas na interseção comum de coortes elegíveis e declarar denominador.
+7. **E5, E5b, E6–E8** — cada experimento com PR/pré-registro e autorização próprios; E5b comparado diretamente com E5; E6 pode testar estratégias sequenciais de prova sem reutilizar código ou checkpoints treinados no LLM-AggreFact.
+8. **A2/A3** — permanecem tarefas de robustez antes de TEST: A2 depende da DEC de segurança e migração de secrets pelo mantenedor; A3 exige protocolo de determinismo pré-registrado. Não bloquear A4 enquanto essas dependências não forem necessárias.
 9. **C1–C3** — congelamento e TEST único, após todos os gates e autorização específica.
 10. **D1–D2** — trilha brasileira paralela, sujeita aos gates humanos e de protocolo já existentes.
 
@@ -249,4 +265,4 @@ Para cada experimento, publicar: hipótese; pré-registro e versão; partição;
 
 Se um resultado não superar o baseline, se o alvo seletivo de acerto não for atingido em uma coorte, se a licença for incompatível, se a reprodução divergir ou se o protocolo não puder ser cumprido, registrar o resultado observado (incluindo cobertura, mesmo que baixa) e interromper ou reavaliar o caminho correspondente. Não alterar retroativamente hipótese, métrica ou critério de parada.
 
-**Estado final deste documento:** roadmap e regra de escolha propostos; DEC-024 não aprovada; nenhum código implementado; nenhum novo benchmark executado; TEST intocado; nenhuma alteração em Judge, Golden, hashes, thresholds do sistema, RGC, Piloto 02 ou ResponsePolicy.
+**Estado final deste documento:** roadmap e regra de escolha propostos; DEC-024 não aprovada; nenhum código implementado; nenhum novo benchmark executado por esta alteração; TEST intocado; nenhuma alteração em Judge, Golden, hashes, thresholds do sistema, RGC, Piloto 02 ou ResponsePolicy. O radar documental complementar está em `docs/benchmarks/RADAR-TECNOLOGICO-2026-11.md`.
