@@ -168,8 +168,10 @@ n = np.arange(1, n_max + 1)
 # por isso kcrit = ppf(alpha) - 1.
 k_crit = binom.ppf(alpha_cohort, n, risk_null).astype(int) - 1
 
+
 def power_curve(p_true):
     return np.where(k_crit >= 0, binom.cdf(k_crit, n, p_true), 0.0)
+
 
 for p_true in (0.03, 0.05, 0.07):
     power = power_curve(p_true)
