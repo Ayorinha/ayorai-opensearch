@@ -118,9 +118,9 @@ O repositório público `Haruhi07/Test-Taking` não declara licença no metadado
 
 Referência: “RAIM: Robust Aggregation of Inexpensive Models for Hallucination Detection”, arXiv:2609.39229, https://arxiv.org/abs/2609.39229.
 
-RAIM estuda um painel de dez juízes open-weight de 4B–9B, de famílias/desenvolvedores distintos. Combina votos por regressão logística empilhada (stacking), treinada com rótulos e cross-fitting de cinco folds; compara com maioria simples, média, melhor membro e referência de fronteira. Usa bootstrap pareado por clusters (2.000 reamostragens, IC 95%) e argumenta que o painel só agrega valor quando existem membros competentes com erros suficientemente descorrelacionados.
+RAIM estuda um painel de dez juízes open-weight de 4B–9B, de famílias distintas. Combina votos por regressão logística empilhada (stacking), treinada com rótulos e cross-fitting de cinco folds; compara com maioria simples, média, melhor membro e juiz frontier. Usa bootstrap pareado por clusters (2.000 reamostragens, IC 95%) e argumenta que o painel só agrega valor quando existem membros competentes com erros suficientemente descorrelacionados.
 
-Os autores reportam 69,5 BAcc na média dos quatro conjuntos LLM-AggreFact incluídos na análise (WiCE, XSum, CNN e ExpertQA) e 73,0 na suíte de oito conjuntos; 50–100 rótulos são o orçamento de calibração explorado. Não é comparação direta com o leaderboard completo: os quatro conjuntos são subconjuntos do split de teste e o protocolo/seleção/denominadores diferem. Contra o juiz frontier, o painel melhora claramente em um benchmark, piora em três e deixa quatro sem resolução estatística. Contra seu próprio melhor membro, melhora nos quatro conjuntos grounded centrais, mas apenas um contraste é estatisticamente resolvido. Aumentar a quantidade de modelos não garante ganho.
+Os autores reportam 69,5 BAcc na média dos quatro conjuntos LLM-AggreFact incluídos na análise (WiCE, XSum, CNN e ExpertQA) e 73,0 na suíte de oito conjuntos; 50–100 rótulos são o orçamento de calibração explorado. Não é comparação direta com o leaderboard completo: os quatro conjuntos são subconjuntos do split de teste e o protocolo/seleção/denominadores diferem. **Contra o juiz frontier**, o painel melhora claramente em um benchmark, piora em três e deixa quatro sem resolução estatística. **Contra seu próprio melhor membro**, melhora nos quatro conjuntos grounded centrais, mas apenas um contraste é estatisticamente resolvido. São comparações diferentes. Aumentar a quantidade de modelos não garante ganho.
 
 **Aplicação recomendada ao AYORAI:**
 - calcular correlação de erros, dupla falha, desacordo e ganho incremental de cada modelo em predições OOF;
@@ -180,7 +180,55 @@ A ordem que preserva o trabalho já feito e reduz retrabalho é:
 
 **Urgência operacional:** a PR #488 continua sendo dependência separada para a Emenda 2 do LTT e retenção de sete dias. Não tratar a proposta como regra vigente até merge. A re-agregação indicada pelo mantenedor deve ocorrer dentro da janela operacional declarada (até 2026-11-08 13:00 BRT), mas este radar não autoriza merge da #488 nem dispatch. A autorização específica é necessária antes dessas ações.
 
-## 9. Controles estatísticos adicionais recomendados
+## 9. Outras frentes para excelência e robustez
+
+Estas frentes são oportunidades de pesquisa para versões futuras. Não alteram a ordem A1 → A4 → E3 → decisão de GPU → E4 → E5–E8 → C, não autorizam implementação e exigem pré-registro/decisão próprios.
+
+### 9.1 Testes de invariância e adversariais
+
+Criar uma suíte sintética independente do LLM-AggreFact para medir se os verificadores respondem ao conteúdo relevante, e não a artefatos de apresentação:
+- inversão controlada de negação, números, datas, unidades, nomes, quantificadores e modalidade;
+- troca de entidade/sujeito/objeto mantendo o restante;
+- mudança da ordem dos parágrafos, sentenças e documentos;
+- adição de contexto irrelevante, duplicado, contraditório ou desatualizado;
+- truncamento em início/meio/fim, fronteira de chunk e antecedente de pronome;
+- paráfrase que preserva sentido versus paráfrase que muda uma relação factual;
+- texto de prompt injection dentro do documento-fonte, explicitamente tratado como dado não confiável e nunca como instrução ao verificador;
+- respostas em português brasileiro, inglês e mistura de idiomas, com métricas separadas.
+
+Critérios esperados: alterações irrelevantes não devem causar mudança material; uma contradição factual controlada deve alterar o score na direção prevista; falhas de parsing/ambiguidade devem ser registradas, nunca convertidas silenciosamente em rótulo favorável. Não misturar esta suíte com DEV/TEST do LLM-AggreFact.
+
+### 9.2 Qualidade da trilha de evidência
+
+A acurácia binária não basta para um sistema de auditoria. Em amostra anotada independentemente, avaliar se cada afirmação aponta para o trecho exato e suficiente da fonte:
+- precisão e cobertura de spans;
+- offsets corretos no texto original após chunking, correferência ou normalização;
+- citações literais sem reescrita;
+- separação entre “contradito”, “não localizado/não sustentado” e “fonte insuficiente”;
+- preservação de negação, números, datas, unidades, sujeitos, objetos e relações;
+- taxa de alegações sem span, span errado e span apenas parcialmente sustentador.
+
+Quando o benchmark não tiver gold de span, declarar avaliação qualitativa ou anotação humana de amostra; não fabricar uma métrica automática de localização.
+
+### 9.3 Robustez operacional e cadeia de suprimentos
+
+Antes de considerar qualquer verificador para produto:
+- gerar SBOM e fixar versões de runtime, tokenizer, bibliotecas, código remoto e quantização;
+- executar revisão de segurança em `trust_remote_code` e pin de commit SHA;
+- testar offline/reprodutibilidade, timeout, OOM, corrupção de cache, saída malformada e falha parcial;
+- medir latência p50/p95/p99, throughput, RAM/VRAM, energia/custo por mil claims e custo de manutenção;
+- verificar licença do modelo, base, datasets, adapters, tokenizer, código e conversão quantizada;
+- definir fallback determinístico e registrar falhas como indisponibilidade/abstenção, nunca como sustentação.
+
+### 9.4 Validação humana e qualidade dos rótulos
+
+Para auditorias de erro, usar amostra estratificada por coorte, classe, comprimento e discordância entre modelos; anotadores cegos à previsão do sistema; segunda anotação independente e adjudicação de divergências. O objetivo é caracterizar erros e possíveis ambiguidades, não alterar retroativamente os rótulos oficiais do benchmark nem treinar modelos com LLM-AggreFact.
+
+### 9.5 Generalização e mudança de distribuição
+
+Além da média macro, estudar leave-one-cohort-out como diagnóstico de transferência, sem usar a coorte retida para seleção. Reportar calibração e desempenho por coorte, comprimento, tipo de tarefa e idioma. Mudança de distribuição deve gerar sinal de incerteza/abstenção ou necessidade de revisão, não uma alegação de validade universal.
+
+## 10. Controles estatísticos adicionais recomendados
 
 - Reportar BA por coorte e macro média; também sensibilidade, especificidade, precisão, F1, MCC, ECE/Brier quando aplicável. Não selecionar pela métrica secundária.
 - Usar intervalos de confiança pareados e bootstrap por cluster/documento quando houver dependência entre exemplos. Informar unidade de reamostragem, número de replicações e seed.
@@ -190,7 +238,7 @@ A ordem que preserva o trabalho já feito e reduz retrabalho é:
 - Não permitir que DEV-B retroalimente a escolha; não tocar TEST até congelamento.
 - Se houver ruído de rótulo, investigar por amostragem humana independente e protocolo cego; não supor percentual de ruído nem descontá-lo aritmeticamente do score.
 
-## 10. Decisões recomendadas ao mantenedor
+## 11. Decisões recomendadas ao mantenedor
 
 1. Aprovar MiniCheck-Flan-T5-Large como próximo candidato CPU, sujeito a pin/licença e piloto.
 2. Não incluir HHEM no agregado confirmatório das 11 coortes enquanto a proveniência adicional não for divulgada; RAGTruth é inelegível.
@@ -203,7 +251,7 @@ A ordem que preserva o trabalho já feito e reduz retrabalho é:
 9. Manter stacking com rótulos bloqueado até DEC-024.
 10. Não alterar Judge 2.0, Golden, hashes, thresholds do sistema, RGC, Piloto 02 ou ResponsePolicy.
 
-## 11. Fontes oficiais e primárias consultadas
+## 12. Fontes oficiais e primárias consultadas
 
 **Data de verificação: 2026-11-07.** Os links abaixo são a base de evidência desta versão; revalidar antes de fixar revisões ou executar.
 
