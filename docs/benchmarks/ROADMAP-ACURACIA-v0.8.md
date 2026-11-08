@@ -3,7 +3,7 @@
 **Status:** proposta de planejamento e pré-registro documental; não autoriza experimentos nem execução.  
 **Autoria e responsabilidade:** ANDERSON AYORA.  
 **Escopo desta alteração:** somente este documento. Nenhuma implementação, inferência, execução de benchmark, alteração de dados, dispatch de workflow, criação de secret, alteração de Judge/Golden/thresholds/RGC ou avaliação TEST.  
-**Referência de estado:** `main` conforme `docs/STATUS.md` (referência registrada: `5cf34d7c8106413dfdebfef1d4f5a1d4c739f668`). A PR #488, que propõe a Emenda 2 do LTT e retenção de sete dias, foi observada aberta durante a preparação deste roadmap; seu conteúdo não é tratado como regra vigente até merge e revisão.
+**Referência de estado:** `main` no momento da abertura desta PR: `3e124a5d93548514f2a2edeb8c6df5e3dd392776` (merge da PR #485, que registrou a DOI da v0.7.0). O campo de referência de `main` no topo de `docs/STATUS.md` ainda apontava para `5cf34d7c`; por isso, para esta PR foi usado o SHA efetivo da base retornado pelo GitHub. A PR #488, que propõe a Emenda 2 do LTT e retenção de sete dias, foi observada aberta durante a preparação deste roadmap; seu conteúdo não é tratado como regra vigente até merge e revisão.
 
 ## 1. Objetivo e limite científico
 
