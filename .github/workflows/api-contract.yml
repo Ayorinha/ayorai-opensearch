@@ -65,7 +65,7 @@ jobs:
           OASDIFF_SHA256: "43a4e328e2d13ba1552d760aa68d2485c75c5621f309f6ff64ae895188345247"
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location \
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2 --retry-max-time 120 --retry-connrefused \
             "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/${OASDIFF_ARCHIVE}" \
             --output "${OASDIFF_ARCHIVE}"
           echo "${OASDIFF_SHA256}  ${OASDIFF_ARCHIVE}" | sha256sum --check -
