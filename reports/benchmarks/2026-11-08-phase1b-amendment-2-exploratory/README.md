@@ -138,7 +138,7 @@ O caráter discreto do teste importa: o poder não cresce de forma estritamente 
 
 Recomenda-se discutir \(p_1=5\%\) como cenário de planejamento: é metade do limite máximo de risco de 10%, representando um desempenho substancialmente melhor que o limite que se pretende garantir. Essa escolha é uma decisão de desenho baseada no limite de risco pré-existente e no alvo convencional de poder de 80%; **não foi escolhida olhando quais coortes passariam**.
 
-Para evitar a oscilação do poder causada pelos valores críticos inteiros, a análise numérica procurou o menor piso N tal que o poder permanecesse ≥80% para todos os tamanhos amostrais avaliados a partir desse piso (varredura reproduzível até n=1.000.000):
+Para evitar a oscilação do poder causada pelos valores críticos inteiros, a análise numérica procurou o menor piso N tal que o poder permanecesse ≥80% para todos os tamanhos amostrais avaliados a partir desse piso (varredura reproduzível até n=15.206 (tamanho total de DEV-B nesta execução, portanto um limite superior conservador para qualquer coorte)):
 
 | Alternativa verdadeira \(p_1\) | Primeiro n isolado com poder ≥80% | Piso operacional robusto N | Poder em N | Menor poder observado para n ≥ N na varredura |
 |---:|---:|---:|---:|---:|
@@ -150,7 +150,39 @@ Para evitar a oscilação do poder causada pelos valores críticos inteiros, a a
 
 O cálculo de poder pressupõe, para cada limiar fixo, erros Bernoulli independentes com taxa verdadeira \(p_1\), e a mesma estrutura binomial usada no teste. Dependência entre observações, agrupamento por fonte, correlação entre itens ou desvio da distribuição binomial pode reduzir o poder real e comprometer a interpretação do teste. A revisão da v0.8 deve verificar a unidade amostral e a plausibilidade da independência/exchangeability; se a premissa não for defensável, não basta aumentar N: será necessário um desenho estatístico adequado, com decisão explícita e pré-registro próprio.
 
-### 6.3 Informação usada e controle de circularidade
+### 6.3 Esboço reproduzível do cálculo
+
+A tabela pode ser reproduzida com a CDF binomial exata. O exemplo abaixo explicita o cálculo de (k_{crit}), poder e piso robusto; deve ser executado com a versão de SciPy fixada no ambiente de análise e os valores resultantes arquivados no pacote de revisão:
+
+```python
+import numpy as np
+from scipy.stats import binom
+
+alpha_cohort = 0.05 / 11
+risk_null = 0.10
+power_target = 0.80
+n_max = 15_206
+n = np.arange(1, n_max + 1)
+
+# ppf(alpha) é o menor k cuja CDF alcança alpha;
+# por isso kcrit = ppf(alpha) - 1.
+k_crit = binom.ppf(alpha_cohort, n, risk_null).astype(int) - 1
+
+def power_curve(p_true):
+    return np.where(k_crit >= 0, binom.cdf(k_crit, n, p_true), 0.0)
+
+for p_true in (0.03, 0.05, 0.07):
+    power = power_curve(p_true)
+    # O piso exige poder >=80% em todo n >= N até o máximo DEV-B.
+    suffix_min = np.minimum.accumulate(power[::-1])[::-1]
+    candidates = np.flatnonzero(suffix_min >= power_target)
+    n_floor = int(candidates[0] + 1) if len(candidates) else None
+    print(p_true, n_floor, suffix_min[n_floor - 1] if n_floor else None)
+```
+
+O cálculo acima usa a mesma hipótese nula e o mesmo (alpha_c) do LTT; a distribuição sob (p_1) é usada somente para calcular poder. O piso robusto evita escolher um n isolado no qual o poder ultrapasse 80% por um salto discreto, mas caia novamente para n ligeiramente maior.
+
+### 6.4 Informação usada e controle de circularidade
 
 A escolha ilustrativa de \(p_1=5\%\) e a proposta de piso 367 foram motivadas por:
 
