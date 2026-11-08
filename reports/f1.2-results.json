@@ -989,7 +989,7 @@
       ],
       "golden_sha256": "a7076512196c1ee9670478f036f7a3996fe89a483efad140ec7b985a54846fb9"
     },
-    "report_sha256": "a23b8b0bc570721d94df9484126b35b943d8e805976037a849080a9e54806afc"
+    "report_sha256": "7b30c35cbd7268bfb5e24c947126fb7abdca89a24def60f449388dd2bcca0f15"
   },
   "candidate": {
     "path": "C",
@@ -2035,5 +2035,5 @@
       ]
     }
   },
-  "results_sha256": "a4900f01aa9e61e2dd09332ef7eff41b18393865c2720ba72ba1a2e383621001"
+  "results_sha256": "298ae163a8d1be037ef2213568c8c931cfc9e2f1b781586c01b20472ca62a3d4"
 }
