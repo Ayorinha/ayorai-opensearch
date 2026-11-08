@@ -89,11 +89,11 @@ As decisões aprovadas anteriores permanecem como registradas:
 
 DEC-021 declara que sistema e Baseline B são permutáveis dentro de cada componente sob H0. A construção do grafo por artigo não prova essa permutabilidade nem independência entre componentes. O relatório deverá declarar a hipótese e não apresentar o p-valor como garantia mecânica de validade.
 
-A estatística (T_{obs}=\sum d_k) pondera implicitamente componentes pelo número de casos. Uma componente muito grande pode dominar o resultado; por isso, os tamanhos de todas as componentes e da maior componente são essenciais.
+A estatística `T_obs = sum_k d_k` pondera implicitamente componentes pelo número de casos. Uma componente muito grande pode dominar o resultado; por isso, os tamanhos de todas as componentes e da maior componente são essenciais.
 
 ### R-06 — Baixo número de componentes pode tornar o critério inatingível
 
-Com resolução mínima `2 / 2^K`, para `K < 6` não é possível obter `p < 0,05`. A partição oculta proposta (~90 casos) pode resultar em poucas componentes após a união transitiva. Como não há casos elegíveis, (K), a distribuição de tamanhos e o poder efetivo são desconhecidos. Não reduzir o nível, trocar o teste ou fragmentar componentes para obter significância.
+Com resolução mínima `2 / 2^K`, para `K < 6` não é possível obter `p < 0,05`. A partição oculta proposta (~90 casos) pode resultar em poucas componentes após a união transitiva. Como não há casos elegíveis, `K`, a distribuição de tamanhos e o poder efetivo são desconhecidos. Não reduzir o nível, trocar o teste ou fragmentar componentes para obter significância.
 
 ### R-07 — O bootstrap de kappa precisa explicitar detalhes operacionais
 
