@@ -17,6 +17,9 @@ N_COHORTS = 11
 COHORT_ALPHA = FAMILY_ALPHA / N_COHORTS
 MIN_ACCEPTED = 25
 THRESHOLDS = tuple(index / 100 for index in range(99, 49, -1))
+# Preregistration Amendment 2: thresholds with fewer than MIN_ACCEPTED accepted answers are
+# skipped (neither rejection nor non-rejection) until the first eligible threshold.
+LTT_RULE = "amendment-2-skip-ineligible"
 
 
 def _binomial_lower_tail_pvalue(errors: int, n: int) -> float:
@@ -150,9 +153,14 @@ def learn_then_test(
     Input probabilities must be DEV-B predictions from an IVAP calibrator
     fitted on all DEV-A (calibration_fit="dev_a_full"). DEV-B is certification-only;
     DEV-A cross-fit predictions and TEST are rejected.
-    The sequence is t=0.99,...,0.50; it stops at the first ineligible or
-    non-rejected threshold. The certified threshold is the smallest rejected
-    threshold reached before stopping. Later curve points are descriptive only.
+    The sequence is t=0.99,...,0.50 (preregistration §5.2 as amended by
+    Amendment 2). A threshold with fewer than 25 accepted answers is ineligible:
+    it is skipped, is neither a rejection nor a non-rejection, and can never be
+    certified. Eligibility depends only on the calibrated probabilities, never
+    on DEV-B labels. Accepted counts can only grow as t decreases, so after the
+    first eligible threshold every later threshold is eligible too. Testing
+    stops at the first non-rejection. The certified threshold is the smallest
+    rejected threshold reached before stopping. Later points are descriptive.
     """
     probability_array, label_array, cohort_array = _validated_inputs(
         probabilities, labels, cohorts, partition, split, calibration_fit
@@ -167,6 +175,7 @@ def learn_then_test(
         certified_threshold: float | None = None
         stop_reason: str | None = None
         tested_thresholds: list[float] = []
+        skipped_ineligible: list[float] = []
 
         for threshold in THRESHOLDS:
             point = _threshold_result(cohort_probabilities, cohort_labels, threshold, total)
@@ -176,7 +185,11 @@ def learn_then_test(
             if stop_reason is None:
                 if n_accepted < MIN_ACCEPTED:
                     point["decision"] = "ineligible_min_accepted"
-                    stop_reason = "n_below_25; sequence_stopped"
+                    if tested_thresholds:
+                        # Unreachable with monotone acceptance; fail closed if it ever happens.
+                        stop_reason = "ineligible_after_testing; sequence_stopped"
+                    else:
+                        skipped_ineligible.append(threshold)
                 else:
                     p_value = _binomial_lower_tail_pvalue(point["errors"], n_accepted)
                     point["p_value"] = p_value
@@ -197,7 +210,9 @@ def learn_then_test(
             "minimum_accepted": MIN_ACCEPTED,
             "n_total": total,
             "tested_thresholds": tested_thresholds,
-            "stop_reason": stop_reason or "all_thresholds_rejected",
+            "skipped_ineligible_thresholds": skipped_ineligible,
+            "stop_reason": stop_reason
+            or ("all_thresholds_rejected" if tested_thresholds else "no_eligible_threshold"),
             "curve": curve,
             "aurc": _aurc(curve),
             "aurc_interpretation": (
@@ -207,6 +222,7 @@ def learn_then_test(
     return {
         "partition": partition,
         "split": split,
+        "ltt_rule": LTT_RULE,
         "thresholds": list(THRESHOLDS),
         "cohort_alpha": COHORT_ALPHA,
         "risk_limit": RISK_LIMIT,
