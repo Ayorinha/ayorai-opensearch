@@ -311,6 +311,101 @@
         }
       }
     },
+    "/v1/fields": {
+      "post": {
+        "summary": "Fields",
+        "description": "Compare submitted field values (amount, date, CPF/CNPJ, names) with a document.\n\nDeterministic: each field is located next to its labels and normalised by type;\nthe outcome is conforme, divergente (with the document's value and excerpt),\nausente (abstention) or invalido (malformed expected value).",
+        "operationId": "fields_v1_fields_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request body could not be parsed as JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The request rate limit was exceeded.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/verify": {
       "post": {
         "summary": "Verify",
@@ -1350,6 +1445,249 @@
           "unsupported_claim"
         ],
         "title": "FailureType"
+      },
+      "FieldResultModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "expected": {
+            "type": "string",
+            "title": "Expected"
+          },
+          "expected_normalized": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Normalized"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "conforme",
+              "divergente",
+              "ausente",
+              "invalido"
+            ],
+            "title": "Outcome"
+          },
+          "found": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Found"
+          },
+          "found_normalized": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Found Normalized"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "expected",
+          "expected_normalized",
+          "outcome",
+          "found",
+          "found_normalized",
+          "start",
+          "end",
+          "page",
+          "excerpt",
+          "reason"
+        ],
+        "title": "FieldResultModel"
+      },
+      "FieldSpecModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$",
+            "title": "Name",
+            "description": "Field name, e.g. valor."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "money",
+              "date",
+              "cpf_cnpj",
+              "number",
+              "text"
+            ],
+            "title": "Type"
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Value",
+            "description": "Expected value, as submitted."
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Labels",
+            "description": "Labels that introduce the field in the document (e.g. 'Vencimento')."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "value"
+        ],
+        "title": "FieldSpecModel"
+      },
+      "FieldsRequest": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "f1",
+            "title": "Schema Version",
+            "default": "f1"
+          },
+          "document": {
+            "$ref": "#/components/schemas/CheckDocument"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldSpecModel"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Fields"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document",
+          "fields"
+        ],
+        "title": "FieldsRequest"
+      },
+      "FieldsResponse": {
+        "properties": {
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "engine": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Engine"
+          },
+          "document": {
+            "$ref": "#/components/schemas/CheckDocumentDigest"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/FieldResultModel"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "summary": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Summary"
+          },
+          "scope_note": {
+            "type": "string",
+            "title": "Scope Note",
+            "default": "Deterministic field comparison against the supplied document only. 'ausente' means the value was not located next to the field labels; it is an abstention, not a finding of error."
+          }
+        },
+        "type": "object",
+        "required": [
+          "trace_id",
+          "engine",
+          "document",
+          "results",
+          "summary"
+        ],
+        "title": "FieldsResponse"
       },
       "HTTPValidationError": {
         "properties": {

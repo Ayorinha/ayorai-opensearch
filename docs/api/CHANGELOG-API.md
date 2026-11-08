@@ -2,6 +2,13 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## 2026-11-08 — POST /v1/fields
+
+- New endpoint: compares submitted field values (money, date, CPF/CNPJ, number, text)
+  with one document (text or PDF). Outcomes: `conforme`, `divergente` (with the document
+  value, offsets, page and excerpt), `ausente` (abstention) or `invalido` (malformed
+  expected value, e.g. wrong CPF/CNPJ check digits). Labels match whole words only.
+
 ## 2026-11-08 — POST /v1/check (additive)
 
 - New endpoint `POST /v1/check` (schema `c1`): checks caller-supplied `claims`, or an `answer` decomposed into claims, against caller-supplied `documents` (1–20, up to 200,000 characters each).

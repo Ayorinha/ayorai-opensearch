@@ -113,3 +113,58 @@ class CheckResponse(BaseModel):
         "support from two or more independent documents. An abstention means "
         "the documents do not establish the claim; it is not a statement that the claim is false."
     )
+
+
+class FieldSpecModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(pattern=r"^[A-Za-z0-9._-]{1,64}$", description="Field name, e.g. valor.")
+    type: Literal["money", "date", "cpf_cnpj", "number", "text"]
+    value: str = Field(min_length=1, max_length=500, description="Expected value, as submitted.")
+    labels: list[str] = Field(
+        default_factory=list,
+        max_length=10,
+        description="Labels that introduce the field in the document (e.g. 'Vencimento').",
+    )
+
+
+class FieldsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["f1"] = "f1"
+    document: CheckDocument
+    fields: list[FieldSpecModel] = Field(min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def _unique_names(self) -> FieldsRequest:
+        if len({field.name for field in self.fields}) != len(self.fields):
+            raise ValueError("field names must be unique")
+        return self
+
+
+class FieldResultModel(BaseModel):
+    name: str
+    type: str
+    expected: str
+    expected_normalized: str | None
+    outcome: Literal["conforme", "divergente", "ausente", "invalido"]
+    found: str | None
+    found_normalized: str | None
+    start: int | None
+    end: int | None
+    page: int | None
+    excerpt: str | None
+    reason: str
+
+
+class FieldsResponse(BaseModel):
+    trace_id: str
+    engine: dict[str, str]
+    document: CheckDocumentDigest
+    results: list[FieldResultModel]
+    summary: dict[str, int]
+    scope_note: str = (
+        "Deterministic field comparison against the supplied document only. 'ausente' means "
+        "the value was not located next to the field labels; it is an abstention, not a "
+        "finding of error."
+    )
