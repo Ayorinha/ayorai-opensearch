@@ -11,11 +11,33 @@ class CheckDocument(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(pattern=r"^[A-Za-z0-9._-]{1,128}$", description="Caller-chosen document id.")
-    text: str = Field(min_length=1, max_length=200_000, description="Full document text.")
+    text: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=200_000,
+        description="Full document text. Provide either text or content_base64.",
+    )
+    content_base64: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=7_000_000,
+        description="Base64 file content (PDF with a text layer, or UTF-8 text).",
+    )
+    media_type: Literal["text/plain", "application/pdf"] | None = Field(
+        default=None, description="Required with content_base64."
+    )
     source: str | None = Field(
         default=None, max_length=512, description="Human-readable origin (file name, title)."
     )
     url: HttpUrl | None = None
+
+    @model_validator(mode="after")
+    def _exactly_one_content(self) -> CheckDocument:
+        if (self.text is None) == (self.content_base64 is None):
+            raise ValueError("provide exactly one of 'text' or 'content_base64'")
+        if self.content_base64 is not None and self.media_type is None:
+            raise ValueError("'media_type' is required with 'content_base64'")
+        return self
 
 
 class CheckRequest(BaseModel):
@@ -55,6 +77,7 @@ class CheckEvidence(BaseModel):
     end: int = Field(ge=0, description="Exclusive character offset in the document.")
     excerpt: str
     stance: Literal["supports", "contradicts", "neutral"]
+    page: int = Field(ge=1, description="1-based page of the evidence start.")
 
 
 class CheckClaimResult(BaseModel):
@@ -70,8 +93,11 @@ class CheckClaimResult(BaseModel):
 
 class CheckDocumentDigest(BaseModel):
     id: str
-    sha256: str
+    sha256: str = Field(description="SHA-256 of the checked (extracted) text.")
     characters: int = Field(ge=0)
+    media_type: str
+    pages: int = Field(ge=1)
+    source_sha256: str = Field(description="SHA-256 of the original uploaded bytes or text.")
 
 
 class CheckResponse(BaseModel):

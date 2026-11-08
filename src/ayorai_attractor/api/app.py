@@ -32,6 +32,7 @@ from ayorai_attractor.verification.api_models import (
 )
 from ayorai_attractor.verification.check_models import CheckRequest, CheckResponse
 from ayorai_attractor.verification.document_check import CheckDocumentInput, check_documents
+from ayorai_attractor.verification.document_ingest import DocumentIngestError, ingest
 from ayorai_attractor.verification.judge import InvalidJudgeInput, judge
 from ayorai_attractor.verification.judge2 import adjudicate
 from ayorai_attractor.verification.judge2.explanations import explain_canonical_result
@@ -246,16 +247,36 @@ def check(request: CheckRequest) -> CheckResponse:
     piece of evidence carries exact character offsets; the response carries the SHA-256
     of every document and the version of every component.
     """
-    result = check_documents(
-        [
+    inputs = []
+    for position, doc in enumerate(request.documents):
+        try:
+            ingested = ingest(
+                text=doc.text, content_base64=doc.content_base64, media_type=doc.media_type
+            )
+        except DocumentIngestError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail=[
+                    {
+                        "type": "document_ingest_error",
+                        "loc": ["body", "documents", position],
+                        "msg": str(exc),
+                    }
+                ],
+            ) from exc
+        inputs.append(
             CheckDocumentInput(
                 id=doc.id,
-                text=doc.text,
+                text=ingested.text,
                 source=doc.source,
                 url=str(doc.url) if doc.url is not None else None,
+                media_type=ingested.media_type,
+                page_starts=ingested.page_starts,
+                source_sha256=ingested.source_sha256,
             )
-            for doc in request.documents
-        ],
+        )
+    result = check_documents(
+        inputs,
         claims=request.claims,
         answer=request.answer,
     )

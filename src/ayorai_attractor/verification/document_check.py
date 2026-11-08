@@ -108,6 +108,18 @@ class CheckDocumentInput:
     text: str
     source: str | None = None
     url: str | None = None
+    media_type: str = "text/plain"
+    page_starts: tuple[int, ...] = (0,)
+    source_sha256: str | None = None
+
+    def page_of(self, offset: int) -> int:
+        page = 1
+        for index, start in enumerate(self.page_starts, start=1):
+            if offset >= start:
+                page = index
+            else:
+                break
+        return page
 
 
 @dataclass(frozen=True)
@@ -125,6 +137,7 @@ class EvidenceView:
     end: int
     excerpt: str
     stance: str
+    page: int = 1
 
 
 @dataclass(frozen=True)
@@ -330,6 +343,7 @@ def check_documents(
                 end=item.end_offset,
                 excerpt=item.excerpt,
                 stance=stance_by_evidence.get(item.id, "neutral"),
+                page=by_id[item.source_id].page_of(item.start_offset),
             )
             for item in outcome.evidence
         )
@@ -360,7 +374,14 @@ def check_documents(
         trace_id=_trace_id(claim_texts, documents, engine),
         engine=engine,
         documents=tuple(
-            {"id": doc.id, "sha256": _sha256(doc.text), "characters": len(doc.text)}
+            {
+                "id": doc.id,
+                "sha256": _sha256(doc.text),
+                "characters": len(doc.text),
+                "media_type": doc.media_type,
+                "pages": len(doc.page_starts),
+                "source_sha256": doc.source_sha256 or _sha256(doc.text),
+            }
             for doc in documents
         ),
         results=tuple(results),

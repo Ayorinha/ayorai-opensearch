@@ -801,11 +801,48 @@
             "description": "Caller-chosen document id."
           },
           "text": {
-            "type": "string",
-            "maxLength": 200000,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Text",
-            "description": "Full document text."
+            "description": "Full document text. Provide either text or content_base64."
+          },
+          "content_base64": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 7000000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Base64",
+            "description": "Base64 file content (PDF with a text layer, or UTF-8 text)."
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "text/plain",
+                  "application/pdf"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type",
+            "description": "Required with content_base64."
           },
           "source": {
             "anyOf": [
@@ -838,8 +875,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "id",
-          "text"
+          "id"
         ],
         "title": "CheckDocument"
       },
@@ -851,19 +887,37 @@
           },
           "sha256": {
             "type": "string",
-            "title": "Sha256"
+            "title": "Sha256",
+            "description": "SHA-256 of the checked (extracted) text."
           },
           "characters": {
             "type": "integer",
             "minimum": 0.0,
             "title": "Characters"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Pages"
+          },
+          "source_sha256": {
+            "type": "string",
+            "title": "Source Sha256",
+            "description": "SHA-256 of the original uploaded bytes or text."
           }
         },
         "type": "object",
         "required": [
           "id",
           "sha256",
-          "characters"
+          "characters",
+          "media_type",
+          "pages",
+          "source_sha256"
         ],
         "title": "CheckDocumentDigest"
       },
@@ -897,6 +951,12 @@
               "neutral"
             ],
             "title": "Stance"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page",
+            "description": "1-based page of the evidence start."
           }
         },
         "type": "object",
@@ -905,7 +965,8 @@
           "start",
           "end",
           "excerpt",
-          "stance"
+          "stance",
+          "page"
         ],
         "title": "CheckEvidence"
       },
