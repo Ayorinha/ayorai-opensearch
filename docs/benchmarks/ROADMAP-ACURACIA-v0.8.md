@@ -247,7 +247,7 @@ Avaliar mDeBERTa e o verificador que eventualmente vencer E4 em português com p
 A ordem operacional prioritária, após aprovação do mantenedor, é:
 
 1. **A1** — implementar e testar cache privado cifrado antes de qualquer nova inferência DEV. Predições e labels ficam separados; nenhum label é acessível ao processo de inferência.
-2. **A4** — auditoria agregada de erros do baseline atual, reutilizando artefatos existentes e sem exportar linhas por instância.
+2. **A4** — auditoria agregada de erros do baseline atual e ledger de elegibilidade por modelo/coorte, incluindo licença, dataset-fonte, sobreposição sintética e exposição a calibração/threshold no benchmark. Reutilizar artefatos existentes e não exportar linhas por instância.
 3. **E3** — somente após DEC-024 aprovada; reutilizar cache e usar OOF. Incluir análise de correlação/dupla falha e comparação com o melhor membro.
 4. **Decisão de GPU/custo** — apresentar alternativas e aguardar escolha explícita antes de E4.
 5. **E4** — piloto de 200 casos após A1 para cross-encoder/nli-distilroberta-base e LettuceDetect (fora de RAGTruth), com protocolo token→claim para este último. MiniCheck-Flan-T5 somente nas coortes elegíveis após excluir CNN/XSum e resolver WiCE/REVEAL; HHEM somente dados sintéticos externos para throughput.
