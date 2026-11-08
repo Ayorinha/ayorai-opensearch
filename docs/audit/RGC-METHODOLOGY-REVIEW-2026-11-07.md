@@ -45,7 +45,7 @@ As decisões aprovadas anteriores permanecem como registradas:
 - **DEC-018:** H1 usa somente a partição oculta; a partição pública é descritiva/exploratória.
 - **DEC-019:** `bootstrap_cluster_id` identifica a unidade inicial por artigo ou `bundle:`; bootstrap por caso é sensibilidade.
 - **DEC-020:** Cohen's kappa não ponderado; gate pela estimativa pontual `κ ≥ 0,6`; reportar concordância observada, matriz e marginais; `RULE_GAP` fica fora do kappa.
-- **DEC-021 (aprovada em 2026-11-07):** sign-flip bilateral por componente; enumeração completa para (K≤20), Monte Carlo de 10.000 sorteios para (K>20), seed `20261003`; McNemar por caso e Obuchowski (1998) somente como sensibilidades.
+- **DEC-021 (aprovada em 2026-11-07):** sign-flip bilateral por componente; enumeração completa para `K <= 20`, Monte Carlo de 10.000 sorteios para `K > 20`, seed `20261003`; McNemar por caso e Obuchowski (1998) somente como sensibilidades.
 - **DEC-022 (aprovada em 2026-11-07):** IC95% percentil de kappa por bootstrap de componente; 10.000 reamostragens, seed `20261003`; indefinidas excluídas e contabilizadas; intervalo instável se >5%; gate pontual de 0,6 preservado.
 - **DEC-023 (aprovada em 2026-11-07):** componentes conectados por qualquer artigo compartilhado em `cited_article_ids`, com transitividade; ID determinístico `component:` + IDs únicos ordenados; reportar unidades antes/depois e tamanhos.
 
@@ -93,7 +93,7 @@ A estatística (T_{obs}=\sum d_k) pondera implicitamente componentes pelo númer
 
 ### R-06 — Baixo número de componentes pode tornar o critério inatingível
 
-Com resolução mínima (2/2^K), para (K<6) não é possível obter (p<0,05). A partição oculta proposta (~90 casos) pode resultar em poucas componentes após a união transitiva. Como não há casos elegíveis, (K), a distribuição de tamanhos e o poder efetivo são desconhecidos. Não reduzir o nível, trocar o teste ou fragmentar componentes para obter significância.
+Com resolução mínima `2 / 2^K`, para `K < 6` não é possível obter `p < 0,05`. A partição oculta proposta (~90 casos) pode resultar em poucas componentes após a união transitiva. Como não há casos elegíveis, (K), a distribuição de tamanhos e o poder efetivo são desconhecidos. Não reduzir o nível, trocar o teste ou fragmentar componentes para obter significância.
 
 ### R-07 — O bootstrap de kappa precisa explicitar detalhes operacionais
 
