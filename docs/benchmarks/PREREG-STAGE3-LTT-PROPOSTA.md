@@ -23,7 +23,8 @@ Membros, revisões, regra de combinação, calibradores IVAP (ajustados só em D
 - Família definida antes: {candidato ∈ {FactCG, E3b-01}} × {coorte} × {limiar da grade}.
 - Dentro de cada par (candidato, coorte): sequência fixa nos limiares, do mais conservador para o menos (procedimento atual da Calibration V2, com a regra da Emenda 2).
 - Entre pares: Bonferroni, `δ / (número de coortes × número de candidatos)`.
-- Controle simultâneo do FWER na família: as certificações valem para qualquer candidato escolhido depois, mesmo com a escolha feita nos mesmos dados (Angelopoulos et al., "Learn then Test").
+- **Argumento de validade (a ser conferido na revisão):** (i) dentro de cada par, o procedimento de sequência fixa sobre a grade ordenada controla o FWER no nível `δ_par` (cada hipótese só é testada se todas as anteriores foram rejeitadas, cada uma no nível `δ_par`); (ii) entre `K` pares, a desigualdade de Bonferroni dá P(alguma rejeição falsa) ≤ `K · δ_par` = `δ`. Logo o FWER na família inteira é ≤ `δ`. Sob controle simultâneo, todas as rejeições valem ao mesmo tempo, o que cobre a escolha posterior de **um candidato dentro da família pré-especificada**, inclusive com os mesmos dados (Angelopoulos et al., "Learn then Test"). Não cobre candidatos, coortes ou limiares fora da família, nem mudanças na grade depois de ver os dados.
+- **Condição de implementação:** o argumento vale para a sequência fixa **com a regra da Emenda 2** (limiares inelegíveis por amostra mínima são pulados sem teste) somente se o pulo depender apenas de quantidades que não usam os rótulos de certificação. Verificação no código (`calibration_v2/selective_ltt.py`, linhas 96–102 e 182–187 na revisão desta PR): `n_accepted` é calculado só a partir das probabilidades e do limiar, sem rótulos, e o pulo usa apenas `n_accepted < 25`. A condição é atendida; a revisão independente deve conferir.
 - Holm ou testes fechados (abordagem gráfica, Bretz et al., *Statistics in Medicine* 28(4):586–604, 2009, DOI 10.1002/sim.3495) só se a integração com a sequência fixa for demonstrada formalmente e pré-registrada; nunca apenas para recuperar poder.
 - O teste de superioridade da P1 (BA) é separado e não entra nesta família.
 
@@ -37,7 +38,9 @@ Consequência para resultados já publicados: as 4 certificações da Emenda 2 f
 
 ## 6. Tamanhos amostrais (casos aceitos por coorte, pisos robustos)
 
-Piso robusto = menor `n` a partir do qual o poder nunca cai abaixo da meta (a discretização da binomial faz o poder oscilar). Recalculados e conferidos: reproduzem 168 / 367 / 1108 do projeto.
+Definição: teste binomial exato unilateral de H0: risco ≥ `R_max` contra H1: risco < `R_max`, no nível `δ_par`, sobre os `n` casos aceitos; rejeita-se H0 quando o número de erros `k` satisfaz P(Bin(`n`, `R_max`) ≤ `k`) ≤ `δ_par`. Poder com taxa real `p1`: P(Bin(`n`, `p1`) ≤ `k_crit(n)`). Piso robusto = menor `n` tal que o poder é ≥ à meta para todo `n' ≥ n` (a discretização faz o poder oscilar).
+
+**Reprodução:** `python scripts/benchmarks/phase1b/ltt_power.py --r-max 0.10 --delta-family 0.05 --pairs 11 --p1 0.03 0.05 0.07 --power 0.8`. O teste `tests/test_phase1b_ltt_power.py` confirma 168 / 367 / 1108 para esse cenário. Os demais cenários da tabela são obtidos pelo mesmo script, variando `--r-max`, `--delta-family`, `--pairs` e `--power`. São números de **planejamento**, não regras de aceitação.
 
 `p1` = 3% / 5% / 7% quando `R_max` = 10%; `p1` = 1% / 2% / 3% quando `R_max` = 5%:
 
