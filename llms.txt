@@ -8,9 +8,9 @@ Core principle / Princípio fundamental: Intelligence ≠ Authorization ≠ Exec
 
 Judge 2.0 verdicts: SUPPORTED, PARTIALLY_SUPPORTED, UNVERIFIED, REFUTED, CONFLICTING.
 
-Current version: 0.6.0. Python 3.11, 3.12, 3.13.
+Current version: 0.7.0. Version DOI: https://doi.org/10.5281/zenodo.24045951. Concept DOI: https://doi.org/10.5281/zenodo.23125082. Python 3.11, 3.12, 3.13.
 
-Status and limits: research and engineering project. Not presented as certified; does not guarantee detection of every hallucination; does not by itself establish regulatory compliance. There is no Portuguese-language benchmark result yet; historical Golden v0 and v0.1 results are synthetic, in English and development-oriented. Hashes verify artifact integrity, not content truth.
+Status and limits: research and engineering project. Not presented as certified; does not guarantee detection of every hallucination; does not by itself establish regulatory compliance. There is no Portuguese-language benchmark result yet. Calibration V2 has a documented DEV result on the English LLM-AggreFact dataset (30,420 examples): FactCG selected with 74.68% cross-fitted balanced accuracy in DEV-A; 0/11 cohorts met the originally registered LTT certification rule in DEV-B. These are development results, not TEST, production performance, ranking or evidence of Portuguese generalization. Historical Golden v0 and v0.1 results are synthetic, in English and development-oriented. Hashes verify artifact integrity, not content truth.
 
 ## Official links
 
