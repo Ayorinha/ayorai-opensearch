@@ -989,7 +989,7 @@
       ],
       "golden_sha256": "a7076512196c1ee9670478f036f7a3996fe89a483efad140ec7b985a54846fb9"
     },
-    "report_sha256": "7b30c35cbd7268bfb5e24c947126fb7abdca89a24def60f449388dd2bcca0f15"
+    "report_sha256": "29a65c6ec0f7d1fbfad0e9f03c1b57b6820f567ac1dc78a74e9e7b36b2c3eead"
   },
   "candidate": {
     "path": "C",
@@ -1980,7 +1980,7 @@
       ],
       "golden_sha256": "a7076512196c1ee9670478f036f7a3996fe89a483efad140ec7b985a54846fb9"
     },
-    "report_sha256": "2dbbf0e27143c1d3fbd10d2c61a49c66b79ecb1aaf057ea9bf62f721e1c8760f"
+    "report_sha256": "7b30c35cbd7268bfb5e24c947126fb7abdca89a24def60f449388dd2bcca0f15"
   },
   "paired": {
     "golden_v0": {
