@@ -54,7 +54,7 @@ A ferramenta `evals/ptbr/rgc_agreement.py` calcula Cohen's kappa não ponderado 
 
 ## RGC PT-BR — decisões estatísticas por componentes (DEC-021 a DEC-023; 2026-11-07)
 
-**Estado:** DEC-021, DEC-022 e DEC-023 foram aprovadas pelo mantenedor em 2026-11-07. Esta seção registra a especificação estatística aprovada; não altera o pré-registro, o protocolo, o executor ou a autorização de execução. A implementação permanece pendente.
+**Estado:** DEC-021, DEC-022 e DEC-023 foram aprovadas pelo mantenedor em 2026-11-07. Esta seção registra a especificação estatística aprovada; não altera o pré-registro, o protocolo, o executor ou a autorização de execução. A implementação permanece pendente. **Protocolo [PROPOSTO]; executor bloqueado; nenhuma execução real autorizada.**
 
 ### Unidade final de reamostragem e permutação — DEC-023
 
@@ -62,7 +62,7 @@ A unidade estatística final é o componente conectado de casos, construído a p
 
 1. Cada caso é um vértice.
 2. Dois casos pertencem à mesma componente quando compartilham ao menos um ID de artigo citado. A relação é transitiva.
-3. Para cada componente, reunir os IDs de artigos únicos, ordenar lexicalmente e formar `component:` + IDs unidos por `+`.
+3. Para cada componente, reunir os IDs de artigos únicos, validar a forma canônica de cada ID, ordenar lexicalmente e serializar a lista em JSON canônico UTF-8 (chaves ordenadas, separadores compactos, sem espaços; Unicode NFC e `ensure_ascii=False`). O ID estável é `component:sha256:` seguido do SHA-256 hexadecimal dessa serialização. Não usar concatenação com `+`, que pode ser ambígua. Guardar a lista JSON original e o hash para auditoria.
 4. A componente é uma única unidade de reamostragem ou permutação; todos os casos que a integram permanecem juntos.
 5. Reportar o número de valores distintos de `bootstrap_cluster_id` antes da união, o número de componentes depois da união, os casos por componente e o tamanho da maior componente.
 
@@ -79,7 +79,7 @@ Para cada componente `k`:
 A estatística observada é `T_obs = sum_k d_k`. A ponderação é pelo número de casos de cada componente; componentes com `d_k = 0` permanecem na análise.
 
 - Se `K <= 20`, enumerar todas as `2^K` combinações de sinais. O p-valor bilateral é a fração de combinações com `|T*| >= |T_obs|`.
-- Se `K > 20`, usar 10.000 sorteios com seed `20261003` e correção de Monte Carlo `p = (1 + E) / (1 + 10_000)`, em que `E` é o número de permutações extremas.
+- Se `K > 20`, usar 10.000 sorteios com seed `20261003` e correção de Monte Carlo `p = (1 + E) / (1 + 10_000)`, em que `E` é o número de permutações extremas. **Gerador fixado para implementação:** NumPy `2.3.3` (versão exata a pin em ambiente); `numpy.random.Generator(numpy.random.PCG64(20261003))`. Para cada réplica, gerar `K` sinais independentes e equiprováveis em `{-1,+1}` (`rng.choice([-1, +1], size=K, replace=True)`), aplicar `T* = sum_k(s_k d_k)` e contar como extremo quando `abs(T*) >= abs(T_obs)`. A sequência de sinais é gerada na ordem canônica dos componentes, definida pelo ID de componente. A versão pinada e o seed devem constar no relatório. Para `K <= 20`, enumeração lexicográfica de todas as sequências `(-1,+1)^K`, incluindo a sequência observada; não usar RNG.
 - Reportar `K`, o número de combinações consideradas e a resolução mínima teórica `2 / 2^K`.
 - Se `K < 6`, registrar que a resolução não permite atingir `p < 0,05`. Não trocar o teste nem reduzir o nível de significância para contornar essa limitação.
 
@@ -89,13 +89,13 @@ A validade do sign-flip depende da permutabilidade dos resultados sistema/Baseli
 
 ### IC95% de Cohen's kappa por componente — DEC-022
 
-- Calcular o IC95% percentil de Cohen's kappa não ponderado por bootstrap de componente, com 10.000 reamostragens e seed `20261003`.
+- Calcular o IC95% percentil de Cohen's kappa não ponderado por bootstrap de componente, com 10.000 reamostragens e seed `20261003`. Fixar `numpy==2.3.3` e usar `numpy.random.Generator(numpy.random.PCG64(20261003))`. Em cada réplica, sortear `K` índices de componente uniformemente com reposição (`rng.integers(0, K, size=K)`); concatenar todos os casos de cada componente sorteado. Se um componente for sorteado várias vezes, duplicar seus casos pela mesma multiplicidade; não deduplicar nem reamostrar casos dentro do componente. A ordem dos componentes é a ordem lexical dos IDs canônicos.
 - Contabilizar as reamostras em que kappa é indefinido e excluí-las do cálculo do intervalo.
 - Publicar a contagem e a proporção de reamostras indefinidas; se a proporção superar 5%, marcar o intervalo como **instável**. Se nenhuma reamostra produzir kappa definido, o intervalo deve ser reportado como indisponível, nunca inventado.
 - O gate permanece na estimativa pontual `kappa >= 0,6`. O IC95% não altera esse gate.
 - Permanecem obrigatórios a concordância observada, a matriz de confusão, as marginais por classe e a contagem de pares excluídos por `RULE_GAP`, conforme DEC-020.
 
-Para reprodutibilidade da implementação, o procedimento de sorteio dos componentes, a preservação da multiplicidade de componentes selecionados e a convenção de quantis devem ser registrados explicitamente antes de gerar qualquer relatório humano. A DEC-022 fixa iterações, seed e tratamento de indefinição, mas não descreve esses detalhes operacionais.
+**Quantil bootstrap fixado:** usar quantis percentis com interpolação linear `method="linear"` do NumPy (Hyndman–Fan tipo 7), calculados sobre as réplicas com kappa definido: limites em `q=0.025` e `q=0.975`. Informar `B=10.000` sorteios totais, quantas réplicas válidas/indefinidas e proporção indefinida. O sorteio é por componentes com reposição e mantém multiplicidade (um componente repetido aparece repetido na amostra bootstrap).
 
 ### Estado de implementação — não confundir especificação com execução
 
