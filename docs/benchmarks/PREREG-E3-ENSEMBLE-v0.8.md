@@ -159,6 +159,8 @@ Isto é, ganho mínimo de **0,005 (0,5 ponto percentual)**, a mesma tolerância 
 
 A unidade de cluster será a **coorte/dataset**. O bootstrap será pareado: em cada reamostragem, a mesma lista de coortes sorteadas será aplicada ao ensemble e ao FactCG.
 
+**Definição de K:** K = número de coortes comuns; com poucos clusters o IC é aproximado.
+
 - Definir previamente **K** como o número de coortes elegíveis comuns ao ensemble e ao FactCG, usando o mesmo denominador fixado para a comparação primária. K será calculado antes de consultar os resultados do ensemble.
 - Número de reamostragens: **2.000**.
 - Seed: **20261108**.
