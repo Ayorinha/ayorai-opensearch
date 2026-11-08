@@ -2,6 +2,8 @@
 
 Este branch (`gh-pages`) contém somente o site público do projeto, publicado pelo GitHub Pages em:
 
+**Versão de referência do código:** v0.7.0 · Version DOI: https://doi.org/10.5281/zenodo.24045951 · Concept DOI: https://doi.org/10.5281/zenodo.23125082
+
 **https://ayorinha.github.io/ayorai-opensearch/**
 
 O código-fonte, a documentação técnica e os artefatos de avaliação ficam no branch `main`. Nenhum arquivo deste branch é usado pela aplicação.
@@ -26,7 +28,7 @@ O código-fonte, a documentação técnica e os artefatos de avaliação ficam n
 
 ## Princípios do conteúdo
 
-- O texto acompanha o `README.md` do `main` e declara os mesmos limites: o projeto não é apresentado como certificado e ainda não há resultado de benchmark em português.
+- O texto acompanha o `README.md` e `docs/STATUS.md` do `main`. A página inicial apresenta os resultados DEV da Calibration V2 com suas limitações; o projeto não é apresentado como certificado e ainda não há resultado de benchmark em português.
 - A identidade visual segue `docs/assets/brand/README.md`: fundo preto e banner sem distorção, recoloração ou separação do dente-de-leão.
 - Nenhuma afirmação de benchmark validado, certificação, parceria ou endosso sem evidência verificável (ver `AGENTS.md`).
 
