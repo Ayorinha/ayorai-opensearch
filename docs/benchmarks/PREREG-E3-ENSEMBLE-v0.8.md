@@ -155,17 +155,17 @@ Isto é, ganho mínimo de **0,005 (0,5 ponto percentual)**, a mesma tolerância 
 
 ## 6. Incerteza — bootstrap pareado por cluster/coorte
 
-A unidade de cluster será a **coorte/dataset** (11 coortes nativas do LLM-AggreFact). O bootstrap será pareado: em cada reamostragem, a mesma lista de coortes sorteadas será aplicada ao ensemble e ao FactCG.
+A unidade de cluster será a **coorte/dataset**. O bootstrap será pareado: em cada reamostragem, a mesma lista de coortes sorteadas será aplicada ao ensemble e ao FactCG.
 
+- Definir previamente **K** como o número de coortes elegíveis comuns ao ensemble e ao FactCG, usando o mesmo denominador fixado para a comparação primária. K será calculado antes de consultar os resultados do ensemble.
 - Número de reamostragens: **2.000**.
 - Seed: **20261108**.
 - Gerador: **NumPy `Generator(PCG64(20261108))`**.
-- Amostragem: sortear 11 coortes com reposição dentre as coortes do conjunto comum elegível; manter cada coorte sorteada como cluster inteiro.
+- Amostragem: sortear **K coortes com reposição** dentre as K coortes elegíveis comuns; manter cada coorte sorteada como cluster inteiro. Não usar 11 como tamanho fixo quando houver coortes bloqueadas.
 - Estatística em cada réplica: diferença BA macro ensemble − FactCG, calculada como média aritmética das diferenças de BA por coorte nos clusters sorteados (com multiplicidade conforme a amostragem).
-- Intervalo: IC95% percentil bilateral, quantis 2,5% e 97,5%, usando interpolação linear de quantis (`method="linear"` em NumPy). Reportar limites, estimativa pontual, número de clusters elegíveis e distribuição das réplicas.
-- Se o número de coortes elegíveis for menor que 11, sortear com reposição apenas do conjunto elegível e registrar o tamanho efetivo; não preencher coortes ausentes.
+- Intervalo: IC95% percentil bilateral, quantis 2,5% e 97,5%, usando interpolação linear de quantis (`method="linear"` em NumPy). Reportar limites, estimativa pontual, K e distribuição das réplicas.
 - Se alguma réplica não puder calcular BA por ausência de classe, aplicar a regra pré-registrada de excluir essa réplica e reportar quantidade/percentual excluído. Se mais de 5% das réplicas forem inválidas, IC95% será declarado **não estimável**; não alterar bootstrap ou denominador após observar os resultados.
-- O IC95% descreve incerteza da diferença por cluster/coorte; não é certificação, não demonstra generalização a novos datasets e não substitui a regra de +0,005.
+- **Interpretação:** com poucos clusters/coortes, o IC95% bootstrap é **aproximado e potencialmente instável**. Reportar explicitamente K e essa limitação; não apresentar o intervalo como precisão garantida, prova de generalização ou inferência robusta para uma população de datasets. O IC95% não substitui a regra de +0,005.
 
 ## 7. DEV-A, DEV-B e TEST
 
