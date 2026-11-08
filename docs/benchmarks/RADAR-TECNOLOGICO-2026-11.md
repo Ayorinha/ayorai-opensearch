@@ -10,16 +10,18 @@ O melhor caminho para o AYORAI não é copiar o primeiro colocado de um leaderbo
 
 As conclusões práticas desta revisão são:
 
-1. **Novo gate obrigatório de contaminação:** registrar origem dos dados de pré-treinamento, fine-tuning, dados sintéticos, preferências, avaliação e modelos-base. Avaliação anterior em um benchmark não é automaticamente contaminação de treinamento; treino no benchmark ou em uma coorte é.
-2. **MiniCheck-Flan-T5-Large é a adição CPU prioritária:** 0,8B, MIT, 75,0 no leaderboard atual, e arquitetura T5 diferente dos três verificadores DeBERTa do baseline. O desempenho real e o throughput do AYORAI precisam ser medidos.
-3. **HHEM-2.1-Open não pode entrar no agregado confirmatório das 11 coortes:** os autores declaram que foi treinado com o split de treino de RAGTruth e outros conjuntos cuja composição específica é confidencial. RAGTruth está bloqueado; as outras coortes não estão liberadas para confirmação até que as demais fontes sejam esclarecidas.
-4. **HalluGuard merece avaliação posterior, não imediata:** os pesos existem, Apache-2.0 declarado; o paper final reporta 77,1% BAcc no LLM-AggreFact e 84,4% em RAGTruth, resultados dos autores. É um modelo generativo de 4B, com custo e parsing maiores; quantização GGUF de terceiros existe, mas precisa de auditoria independente.
-5. **Granite Guardian 3.3 é condicional:** 8B, Apache-2.0, 76,5 no leaderboard; os dados de treino incluem HH-RLHF e dados sintéticos internos, mas a proveniência completa do conjunto sintético não está enumerada. É inglês e exige o modo/prompt prescrito.
-6. **Bespoke-MiniCheck-7B é somente pesquisa não comercial:** CC BY-NC 4.0. O 77,4 do leaderboard não é mais o primeiro lugar na página consultada; há sistemas com pontuação superior. Não pode integrar produto comercial sem licença comercial separada.
-7. **Paladin-mini deve ser removido:** o model card identifica LLM-AggreFact entre os datasets usados no treino e a licença é `other`.
-8. **LettuceDetect só pode ser avaliado fora de RAGTruth:** seu paper declara treino no RAGTruth; é um modelo de classificação por token, não um classificador de sentença intercambiável sem camada de agregação.
-9. **A principal descoberta metodológica é diversidade de erros, não diversidade nominal:** os três modelos atuais são da família DeBERTa; MiniCheck-Flan-T5-Large e HHEM são ambos T5/Flan-T5. Cinco nomes não significam cinco sinais independentes. Medir correlação de erros e ganho incremental é obrigatório.
-10. **RAIM e as estratégias de prova são referências de método, não receitas para copiar:** os resultados publicados têm partições, métricas, custos e procedimentos diferentes. O stacker RAIM usa rótulos; qualquer adaptação no LLM-AggreFact depende da DEC-024.
+1. **O gate precisa cobrir treinamento, fonte de dados, licença e exposição ao benchmark.** O checkpoint, o modelo-base, o dataset de fine-tuning, os dados sintéticos, a calibração, a seleção de limiar e a exposição a DEV/TEST precisam de registros separados.
+2. **A proposta inicial de cinco modelos CPU não é elegível como painel confirmatório homogêneo.** MiniCheck-Flan-T5 e HHEM têm sobreposições conhecidas com coortes; MiniCheck/FactCG também usam ANLI (CC BY-NC) e dados sintéticos derivados de fontes Wikipedia/Google News. Os modelos do baseline têm restrições de licença que precisam ser respeitadas.
+3. **MiniCheck-Flan-T5-Large não é um candidato limpo para as 11 coortes nem para produto comercial.** Apesar dos pesos MIT e score publicado 75,0, o fine-tune usa 21K ANLI (CC BY-NC 4.0), o backbone FLAN-T5 foi instruído com CNN/DailyMail e XSum, e o C2D do MiniCheck usa claims da Wikipedia com citações, citando WiCE. No mínimo, bloquear CNN, XSum e WiCE; investigar REVEAL e notícias por deduplicação. EVAL_ONLY para produto.
+4. **HHEM-2.1-Open não entra no agregado confirmatório:** treinado com RAGTruth train split e outros conjuntos confidenciais; usa base Flan-T5 (que também tem exposição a CNN/DailyMail e XSum). RAGTruth, CNN e XSum ficam bloqueados; as demais coortes continuam não verificadas.
+5. **O baseline também precisa do gate, sem grandfathering.** mDeBERTa usa XNLI (CC BY-NC); MiniCheck-DeBERTa usa ANLI (CC BY-NC) e dados sintéticos MiniCheck; FactCG usa ANLI, C2D/D2C e faz threshold tuning por dataset no validation do LLM-AggreFact. São referências de pesquisa, não modelos comerciais limpos.
+6. **Novo candidato CPU recomendado:** cross-encoder/nli-distilroberta-base, 82,1M, Apache-2.0, treinado em SNLI/MultiNLI; não há sobreposição direta conhecida com as 11 coortes. É um NLI genérico, não um detector específico, e precisa de piloto/avaliação própria.
+7. **LettuceDetect é um candidato complementar para 10 coortes:** MIT, treinado em RAGTruth (Apache-2.0); bloquear RAGTruth. Saída token-level exige agregação claim-level e validação própria.
+8. **HalluGuard permanece candidato posterior para produto/benchmark:** pesos e base Apache-2.0; 77,1% no artigo final e 84,4% em RAGTruth são resultados dos autores. Verificar Qwen3 base, SHA, FineWeb e protocolo; quantização GGUF é de terceiro.
+9. **Granite Guardian 3.3 é condicional:** 8B, Apache-2.0, 76,5 no leaderboard; proveniência do dado sintético interno não está enumerada. Inglês e modo/prompt prescrito.
+10. **Bespoke-MiniCheck é pesquisa não comercial; Paladin-mini deve ser removido.** Bespoke é CC BY-NC 4.0 e não é mais primeiro no leaderboard. Paladin lista LLM-AggreFact entre os dados de treino e licença other.
+11. **Não perseguir cinco nomes; perseguir cinco sinais elegíveis e complementares.** Medir correlação de erros, dupla falha, ganho marginal, estabilidade por coorte e custo. Painéis com diferentes coortes elegíveis não podem ser comparados por uma média global com denominadores diferentes.
+12. **RAIM e estratégias de prova são referências de método, não receitas para copiar.** O stacker RAIM usa rótulos; qualquer adaptação no LLM-AggreFact depende da DEC-024.
 
 ## 2. Gate obrigatório: contaminação e proveniência
 
@@ -29,13 +31,14 @@ Antes de qualquer modelo entrar em um experimento, criar um registro por artefat
 
 | Classe | Evidência | Regra |
 |---|---|---|
-| C0 — sem sobreposição direta conhecida | Fontes de treino divulgadas e sem correspondência conhecida com o benchmark/coorte | Elegível, mantendo a ressalva sobre corpora de pré-treinamento opacos |
-| C1 — treino direto no LLM-AggreFact completo | Dataset ou split do benchmark usado para treino, SFT, DPO, distilação ou ajuste | BLOQUEADO para as 11 coortes |
-| C2 — treino em uma coorte-fonte | RAGTruth, AggreFact-CNN/XSum, TofuEval, WiCE etc. usado no treino | BLOQUEADO apenas na coorte sobreposta; outras coortes somente se a proveniência restante estiver verificada |
-| C3 — derivação/sintetização de benchmark | Dados sintéticos, preferências, pares ou rótulos gerados a partir de itens/labels do benchmark | Mesma regra de C1/C2, conforme a abrangência |
-| C4 — avaliação publicada, sem treino conhecido no benchmark | O autor avaliou o modelo no LLM-AggreFact, mas não declara treino nesses dados | Não é, por si só, contaminação de treino. Registrar a avaliação dos autores e nunca apresentá-la como medição independente do AYORAI |
-| C5 — proveniência insuficiente/oculta | Fontes de treino incompletas, “other datasets” não identificados, corpora não auditáveis | BLOQUEADO para resultado confirmatório no conjunto afetado. Só permitir exploração em dados externos comprovadamente não sobrepostos, com rótulo de incerteza |
-| C6 — licença ou código incompatível | Licença não comercial, “other” sem termos claros, código remoto não revisado | BLOQUEADO até solução documental e aprovação |
+| C0 — sem sobreposição direta conhecida | Treino divulgado e sem fonte coincidente conhecida | Elegível apenas para as coortes efetivamente verificadas; corpora-base opacos permanecem como risco residual |
+| C1 — treino direto no LLM-AggreFact | Dataset/split completo usado para treino, SFT, DPO, distilação ou ajuste | BLOQUEADO para as 11 coortes |
+| C2 — treino em dataset-fonte de coorte | RAGTruth, CNN/DailyMail, XSum, TofuEval, WiCE etc. usado no treino | BLOQUEAR a coorte afetada; liberar outras somente após inventário completo |
+| C3 — derivação/sintetização de fonte | Claims, documentos, pares, preferências ou rótulos sintéticos derivados de um dataset-fonte | Herdar a restrição da fonte; se IDs não estiverem disponíveis, manter bloqueio preventivo |
+| C4 — avaliação publicada | Autores avaliaram o modelo no benchmark, sem treino conhecido nele | Não prova treino; registrar split e protocolo, sem apresentar o score do autor como medição AYORAI |
+| C5 — exposição de desenvolvimento/calibração | Limiar, hiperparâmetros, seleção de modelo ou stacker ajustados com rótulos DEV/validation do LLM-AggreFact | O split exposto não é confirmação independente. Usar somente como desenvolvimento/exploratório; reservar split não exposto para confirmação |
+| C6 — proveniência insuficiente/oculta | Fontes task-specific incompletas, “other datasets” não identificados ou corpora de treino não auditáveis | BLOQUEADO para confirmação nas coortes que possam sobrepor; não declarar “limpo” sem evidência |
+| C7 — licença/código incompatível | Dataset NC, licença other, código remoto não revisado ou dependência incompatível | BLOQUEADO para uso comercial/execução até solução documental e aprovação |
 
 **Distinção crítica:** um artigo dizer que avaliou seu modelo no LLM-AggreFact não prova que o treinou nele. Por outro lado, um model card dizer “dados sintéticos” não prova ausência de contaminação: é necessário identificar a origem dos documentos, prompts, rótulos e critérios usados para gerar os exemplos.
 
@@ -55,21 +58,29 @@ O benchmark agrega 11 conjuntos: AggreFact-CNN, AggreFact-XSum, TofuEval-MediaS,
 
 Os resultados abaixo são referências publicadas. Não são medições do AYORAI e não devem ser tratados como comparação perfeitamente pareada: leaderboard, paper, split, prompt, modo de geração, limiar e agregação podem diferir.
 
-| Modelo | Tamanho / licença | Evidência de treino e contaminação | Referência pública | Decisão recomendada |
+| Modelo | Tamanho / licença dos pesos | Treino, licença dos dados e exposição | Referência pública | Decisão recomendada |
 |---|---|---|---|---|
-| MiniCheck-Flan-T5-Large — `lytang/MiniCheck-Flan-T5-Large` | 0,8B; MIT | Treino declarado de 35K exemplos: 21K ANLI + 14K sintéticos gerados de forma estruturada; os autores apresentam LLM-AggreFact como benchmark não visto no treino. Modelo T5. | 75,0 BAcc média no leaderboard atual | **PRIORIDADE ALTA.** Piloto CPU de 200 itens, depois avaliação full DEV se throughput e revisão SHA forem aceitáveis |
-| HHEM-2.1-Open — `vectara/hallucination_evaluation_model` | 109,6M; Apache-2.0; base Flan-T5-base | Treinado com RAGTruth train split e outros datasets; Vectara declara que detalhes específicos de treino são confidenciais. Usa `trust_remote_code=True`. | Não aparece como linha própria comparável no leaderboard atual consultado; resultados Vectara antigos usam subconjuntos/protocolos diferentes | **BLOQUEADO para confirmação no LLM-AggreFact** até esclarecer os outros datasets. RAGTruth sempre bloqueado. Só piloto de throughput com dados sintéticos, sem pontuação de benchmark |
-| HalluGuard-Qwen3-4B — `lrsbrgrn/HalluGuard-Qwen3-4B` | 4B; Apache-2.0; base Qwen3-4B Apache-2.0 | Fine-tune LoRA+ORPO em 76.708 preferências sintéticas derivadas de FineWeb. Não declara treino direto em LLM-AggreFact; o corpus-base do Qwen3 mantém risco residual não auditável por completo. | Preprint: 75,7%; artigo final ACL Findings 2026: 77,1% no LLM-AggreFact e 84,4% em RAGTruth | **PRIORIDADE POSTERIOR.** Avaliar com GPU ou quantização validada, depois de fixar SHA, base, dependências, licença e protocolo de inferência. Resultados são dos autores |
-| Granite Guardian 3.3 — `ibm-granite/granite-guardian-3.3-8b` | 8B; Apache-2.0 | Treino declarado com HH-RLHF, anotações humanas e dados sintéticos de red-team; fontes completas do material sintético não enumeradas. Inglês. | 76,5 BAcc no leaderboard; 76,5 em modo think e 76,1 em no-think na página de referência | **CONDICIONAL.** Solicitar proveniência adicional; não usar em confirmação enquanto fontes sintéticas não forem esclarecidas. GPU. Fixar think/no-think e prompt |
-| Bespoke-MiniCheck-7B — `bespokelabs/Bespoke-MiniCheck-7B` | 7B/8B conforme contagem do card; CC BY-NC 4.0 | 21K ANLI + 14K sintéticos; autores dizem que as fontes foram curadas independentemente do benchmark. | 77,4 no leaderboard consultado; não é mais o primeiro colocado na página atual | **PESQUISA NÃO COMERCIAL.** Não integrar produto nem redistribuir sem licença comercial escrita. Não perseguir como solução de produto |
-| Paladin-mini — `qualifire/context-grounding-paladin-mini` | 3,8B; licença `other`; gated | O card lista explicitamente `lytang/LLM-AggreFact` entre os datasets de treino | Resultados não são elegíveis como avaliação limpa | **REMOVER DO RADAR DE CANDIDATOS.** Contaminação direta + licença sem clareza |
-| LettuceDetect — `KRLabsOrg/lettucedect-large-modernbert-en-v1` | 395,8M; MIT; ModernBERT | O artigo declara treino no RAGTruth | 79,22% F1 example-level no RAGTruth, resultado dos autores | **CONDICIONAL POR COORTE.** Bloquear RAGTruth; outras coortes somente se não houver sobreposição. Saída token-level exige agregação e validação separadas |
+| mDeBERTa-v3-base NLI — `MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7` | ~0,3B; MIT | Fine-tune XNLI; dataset XNLI CC BY-NC 4.0. Sem sobreposição direta conhecida com as 11 coortes | Baseline interno histórico | **EVAL_ONLY.** Pode ser referência de pesquisa; não produto comercial |
+| MiniCheck-DeBERTa-v3-Large — `lytang/MiniCheck-DeBERTa-v3-Large` | ~0,4B; MIT | 21K ANLI (CC BY-NC 4.0) + 14K sintéticos. C2D usa claims da Wikipedia com citações (cita WiCE); D2C usa Google News. Possível sobreposição em WiCE e fonte de notícias | 74,1 no paper FactCG sob protocolo/limiares dos autores; não é score AYORAI | **EVAL_ONLY.** Bloquear WiCE até deduplicação por IDs; investigar notícias; não produto |
+| FactCG-DeBERTa-v3-Large — `yaxili96/FactCG-DeBERTa-v3-Large` | ~0,4B; MIT | Treino em ANLI subset (CC BY-NC), MiniCheck C2D/D2C, HotpotQA e Musique. C2D deriva de claims Wikipedia citadas; D2C de Google News. Paper ajusta limiar por dataset no validation do LLM-AggreFact | 77,2 no paper, com threshold tuning por dataset; não comparável a limiar fixo/OOF | **EVAL_ONLY e exposição C5.** Bloquear WiCE até deduplicação; resultados de DEV do paper são benchmark-exposed; não produto |
+| MiniCheck-Flan-T5-Large — `lytang/MiniCheck-Flan-T5-Large` | ~0,8B; pesos MIT; base Flan-T5-Large Apache-2.0 | 21K ANLI (CC BY-NC) + 14K sintéticos; base FLAN-T5 foi instruído em CNN/DailyMail e XSum; C2D usa claims Wikipedia citadas (cita WiCE) e D2C Google News | 75,0 BAcc no leaderboard; score dos autores | **EVAL_ONLY.** Bloquear AggreFact-CNN e XSum; bloquear WiCE e REVEAL até deduplicação; investigar coortes de notícias. Não usar como full-11 nem em produto |
+| MiniCheck-RoBERTa-Large — `lytang/MiniCheck-RoBERTa-Large` | ~0,4B; MIT | Base AlignScore; código de treino do AlignScore lista CNN/DailyMail, XSum e ANLI, além de outros datasets. Também usa dados sintéticos MiniCheck | 74,4 no paper FactCG; protocolo dos autores | **EVAL_ONLY.** Bloquear CNN/XSum e WiCE até deduplicação. A classificação comercial atual em MODEL-LICENSE-POLICY.md precisa ser revista |
+| HHEM-2.1-Open — `vectara/hallucination_evaluation_model` | 109,6M; Apache-2.0; base Flan-T5-base | Treinado com RAGTruth train split e outros datasets confidenciais; base Flan-T5 também tem exposição a CNN/DailyMail e XSum. Usa trust_remote_code=True | Não há linha comparável no leaderboard atual; resultados Vectara antigos usam subsets/protocolos diferentes | **BLOQUEADO para confirmação** em RAGTruth, CNN e XSum; demais coortes não liberadas até disclosure dos outros datasets. Só throughput com dados sintéticos |
+| cross-encoder NLI DistilRoBERTa — `cross-encoder/nli-distilroberta-base` | 82,1M; Apache-2.0 | Fine-tune SNLI + MultiNLI; sem sobreposição direta conhecida com as 11 coortes; base DistilRoBERTa | Sem score LLM-AggreFact publicado comparável; MNLI mismatched 83,98% na documentação Sentence Transformers | **PRIORIDADE CPU/PRODUTO.** Candidato independente e pequeno; pin SHA, validar licenças de SNLI/MultiNLI e executar piloto |
+| HalluGuard-Qwen3-4B — `lrsbrgrn/HalluGuard-Qwen3-4B` | 4B; Apache-2.0; base Qwen3-4B Apache-2.0 | LoRA+ORPO em 76.708 preferências sintéticas derivadas de FineWeb. Não declara treino direto no benchmark; corpus-base Qwen3 mantém risco residual | Preprint 75,7%; ACL Findings 2026: 77,1% LLM-AggreFact e 84,4% RAGTruth, resultados dos autores | **PRIORIDADE POSTERIOR.** GPU/GGUF auditado, SHA, base e protocolo fixados |
+| Granite Guardian 3.3 — `ibm-granite/granite-guardian-3.3-8b` | 8B; Apache-2.0 | HH-RLHF, anotações humanas e dados sintéticos internos; fontes completas do sintético não enumeradas. Inglês | 76,5 BAcc leaderboard; 76,5 think e 76,1 no-think | **CONDICIONAL.** Proveniência adicional antes de confirmação; GPU |
+| Bespoke-MiniCheck-7B — `bespokelabs/Bespoke-MiniCheck-7B` | 7B/8B conforme card; CC BY-NC 4.0 | 21K ANLI + 14K sintéticos; autores dizem que fontes foram curadas independentemente do benchmark | 77,4 leaderboard; não é mais primeiro | **PESQUISA NÃO COMERCIAL.** Bloqueado para produto sem licença comercial |
+| Paladin-mini — `qualifire/context-grounding-paladin-mini` | 3,8B; licença other; gated | Card lista explicitamente LLM-AggreFact entre datasets de treino | Score não elegível como avaliação limpa | **REMOVER.** Contaminação direta + licença sem clareza |
+| LettuceDetect — `KRLabsOrg/lettucedect-large-modernbert-en-v1` | 395,8M; MIT; ModernBERT | Treinado no RAGTruth (dataset Apache-2.0); token classification, inglês | 79,22% F1 example-level RAGTruth, resultado dos autores | **CANDIDATO CPU por coorte.** Bloquear RAGTruth; outras 10 coortes após verificação. Exige agregação token→claim |
+
 
 ### 3.1 Interpretação por modelo
 
-**MiniCheck-Flan-T5-Large.** É a melhor próxima adição de baixo custo relativo. Os três verificadores atuais do AYORAI são DeBERTa; este checkpoint acrescenta uma família T5. A licença MIT e o resultado 75,0 são confirmados nas fontes consultadas. O modelo ocupa aproximadamente 3,14 GB no repositório de pesos; isso não impede CPU, mas tampouco prova throughput adequado. Medir RAM, tempo e timeout no hardware real. O modelo e suas dependências devem ser pinados.
+**Família MiniCheck.** O model card declara 21K exemplos ANLI + 14K sintéticos para MiniCheck-DBTA/FT5; ANLI é CC BY-NC 4.0, portanto os pesos MIT não tornam esses modelos comerciais. O paper MiniCheck informa que C2D parte de cerca de 400 claims da Wikipedia com documentos citados (citando Kamoi et al./WiCE) e D2C de cerca de 300 artigos Google News. A sobreposição com WiCE é, no mínimo, provável; bloquear WiCE até deduplicação por IDs. A exposição a fontes de notícias também exige auditoria.
 
-**HHEM-2.1-Open.** A aparente vantagem operacional — 109,6M parâmetros e latência inferior a 1,5 s em CPU Intel Xeon w7-3445 para premissa + hipótese com 2K tokens, segundo a Vectara — não elimina a contaminação. O artigo de 2025 afirma explicitamente que HHEM-2.1-Open usou RAGTruth train split e outros conjuntos, cujos detalhes são confidenciais. O model card exige `trust_remote_code=True`. Não permitir que rapidez operacional se sobreponha ao gate científico. A revisão do código remoto e a fixação SHA são obrigatórias mesmo para teste de engenharia.
+**MiniCheck-Flan-T5-Large.** Além do treino ANLI/NC, o backbone google/flan-t5-large foi instruído em tarefas FLAN que incluem CNN/DailyMail e XSum, fontes diretas de duas coortes do benchmark. Portanto, bloquear AggreFact-CNN e AggreFact-XSum; bloquear WiCE e REVEAL até deduplicação de claims/fontes; não usar como modelo full-11. O resultado 75,0 é dos autores/leaderboard, não medição independente AYORAI. CPU é tecnicamente possível, mas throughput deve ser medido apenas nas coortes elegíveis. EVAL_ONLY para produto.
+
+**HHEM-2.1-Open.** A aparente vantagem operacional — 109,6M parâmetros e latência inferior a 1,5 s em CPU Intel Xeon w7-3445 para premissa + hipótese com 2K tokens, segundo a Vectara — não elimina a contaminação. O artigo de 2025 afirma treino em RAGTruth train split e outros conjuntos confidenciais. A base Flan-T5 também tem exposição a CNN/DailyMail e XSum. Bloquear ao menos RAGTruth, AggreFact-CNN e AggreFact-XSum; os demais conjuntos permanecem não verificados. O model card exige `trust_remote_code=True`; revisão de código remoto e SHA pin são obrigatórios.
 
 **HalluGuard.** O repositório oficial contém pesos Safetensors e declara Apache-2.0; o Qwen3-4B base também declara Apache-2.0. O paper final ACL Findings 2026 é a referência principal; 75,7% é o valor do preprint, substituído no artigo final por 77,1%. A quantização GGUF de mradermacher existe e declara Apache-2.0, com Q4_K_M em torno de 2,5 GB, mas é conversão de terceiro: verificar SHA, lineage, qualidade da quantização e equivalência do template de chat. Não assumir que quantização mantém o score dos autores.
 
@@ -79,7 +90,13 @@ Os resultados abaixo são referências publicadas. Não são medições do AYORA
 
 **Paladin-mini.** O card lista LLM-AggreFact como dataset usado no treinamento e a licença é `other`. Não há justificativa para mantê-lo como candidato limpo.
 
-**LettuceDetect.** O artigo declara que foi treinado no RAGTruth e avalia detecção token-level. Não pontuar no RAGTruth. Em outras coortes, converter tokens em spans/claims requer regra própria, com offsets do original e métrica de nível de instância compatível; não comparar F1 token-level com BA claim-level.
+**LettuceDetect.** O artigo declara que foi treinado no RAGTruth, cujo dataset card declara Apache-2.0. Não pontuar no RAGTruth. Em outras coortes, converter tokens em spans/claims requer regra própria, com offsets do original e métrica de nível de instância compatível; não comparar F1 token-level com BA claim-level.
+
+**FactCG.** O paper usa ANLI subset (CC BY-NC), MiniCheck C2D/D2C, HotpotQA e Musique. O C2D parte de claims Wikipedia citadas e o D2C de Google News; bloquear WiCE até deduplicação e investigar fontes de notícias. O paper ajusta limiar por dataset no validation do LLM-AggreFact, portanto seus scores publicados têm exposição C5 e não são comparação de limiar fixo/OOF.
+
+**MiniCheck-RoBERTa/AlignScore.** O código de treinamento do AlignScore lista CNN/DailyMail, XSum e ANLI entre as fontes. Isso contradiz a classificação comercial atual de MiniCheck-RoBERTa em docs/legal/MODEL-LICENSE-POLICY.md; não confiar nela até revisão. A mesma política não inclui FactCG, que também usa ANLI; uma atualização separada deve corrigir o registro.
+
+**cross-encoder/nli-distilroberta-base.** É um NLI genérico de 82,1M parâmetros, Apache-2.0, treinado em SNLI e MultiNLI. Não tem score LLM-AggreFact comparável, mas é pequeno, CPU-friendly e não tem sobreposição direta conhecida com as 11 coortes. É a alternativa mais limpa para um novo sinal CPU/produto; validar SHA, licença dos dados e comportamento claim-document.
 
 ## 4. O que o leaderboard realmente diz
 
@@ -132,36 +149,37 @@ Os autores reportam 69,5 BAcc na média dos quatro conjuntos LLM-AggreFact inclu
 
 ## 7. Consequências para o ensemble CPU
 
-O plano inicial de cinco modelos CPU precisa ser dividido em dois níveis:
+Não existe, com a lista original, um painel confirmatório de cinco modelos elegíveis para as 11 coortes. O plano correto é separar modelos por coorte e por uso comercial.
 
-### 7.1 Painel confirmatório recomendado para DEV completo
+### 7.1 Painel de pesquisa CPU
 
-Manter os três verificadores já avaliados:
-- mDeBERTa-v3-base NLI;
-- MiniCheck-DeBERTa-v3-Large;
-- FactCG-DeBERTa-v3-Large.
+- Manter mDeBERTa, MiniCheck-DeBERTa e FactCG como referências históricas, com status de licença e exposição registrados; não chamá-los de modelos comerciais limpos.
+- Adicionar cross-encoder/nli-distilroberta-base como candidato CPU prioritário: 82,1M, Apache-2.0, SNLI/MultiNLI, sem sobreposição direta conhecida com as 11 coortes.
+- Adicionar LettuceDetect como sinal complementar nas 10 coortes fora de RAGTruth, depois de pré-registrar agregação token→claim.
+- MiniCheck-Flan-T5-Large pode ser avaliado apenas nas coortes que sobreviverem à auditoria: excluir CNN/XSum e bloquear WiCE/REVEAL até deduplicação. É EVAL_ONLY por ANLI.
+- FactCG e MiniCheck-DeBERTa devem bloquear WiCE até deduplicação e permanecer EVAL_ONLY por ANLI. mDeBERTa permanece EVAL_ONLY por XNLI.
+- Não calcular uma única média macro comparando modelos em denominadores diferentes. Publicar BA por coorte e macro somente sobre a interseção comum de coortes elegíveis, explicitando a cobertura do benchmark.
 
-Adicionar como prioridade:
-- MiniCheck-Flan-T5-Large.
+### 7.2 Trilha de produto comercial
 
-Esse painel tem quatro verificadores elegíveis segundo as informações divulgadas, sujeito à auditoria do SHA, dados-base e dependências. É uma comparação mais defensável do que incluir HHEM no agregado completo.
+Priorizar checkpoints com pesos e dados permissivos, sem NC declarado e sem sobreposição direta conhecida:
+- cross-encoder/nli-distilroberta-base (CPU; NLI genérico);
+- LettuceDetect fora de RAGTruth (CPU; token-level; validar uso comercial e dados);
+- HalluGuard-Qwen3-4B (GPU/quantizado; Apache-2.0; base Qwen3 auditada);
+- Granite Guardian 3.3 somente após esclarecer a proveniência sintética.
 
-### 7.2 HHEM: trilha isolada
+mDeBERTa, MiniCheck (variantes ANLI), FactCG e Bespoke não devem ser promovidos como componentes comerciais sob a política atual; pesos MIT não removem restrições NC dos dados de treino.
 
-- RAGTruth: bloqueado por treino direto no split de treino.
-- Outras coortes LLM-AggreFact: não liberar para confirmação até que a Vectara esclareça os outros datasets de treino. Se não houver esclarecimento, manter fora do agregado confirmatório.
-- Piloto de throughput: pode usar exemplos sintéticos fora do benchmark, sem rótulos LLM-AggreFact, apenas para medir consumo, latência e estabilidade do código remoto.
-- Se surgir documentação suficiente, registrar exatamente quais coortes são elegíveis antes de executar.
+### 7.3 HHEM: trilha isolada
 
-### 7.3 Regras de diversidade
+- RAGTruth, AggreFact-CNN e AggreFact-XSum: bloqueados por treino direto/base FLAN.
+- Outras coortes: não liberar para confirmação até a Vectara esclarecer os outros datasets de treino.
+- Piloto de throughput: apenas dados sintéticos fora do benchmark, sem pontuação de acurácia.
+- trust_remote_code=True: revisar código no SHA pinado antes de qualquer execução.
 
-Não presumir independência pelo número de checkpoints. MiniCheck-Flan-T5-Large e HHEM são ambos Flan-T5/T5; os três verificadores atuais pertencem à família DeBERTa. Para cada novo sinal, reportar:
-- correlação de scores e de erros;
-- matriz de dupla falha por coorte;
-- ganho OOF marginal ao adicioná-lo ao melhor modelo;
-- estabilidade do ganho por fold e por coorte;
-- custo/latência/memória por mil exemplos;
-- impacto de truncamento e comprimento.
+### 7.4 Regras de diversidade
+
+Não presumir independência pelo número de checkpoints. O baseline tem três DeBERTa; MiniCheck-Flan e HHEM são T5/Flan-T5; DistilRoBERTa e LettuceDetect trazem arquiteturas/tarefas distintas. Para cada sinal, reportar correlação de scores/erros, dupla falha, ganho OOF marginal, estabilidade por coorte, custo, latência, memória, truncamento e comprimento.
 
 O objetivo do ensemble é melhorar erros difíceis e generalização entre coortes, não aumentar o número de membros.
 
@@ -173,8 +191,8 @@ A ordem que preserva o trabalho já feito e reduz retrabalho é:
 2. **A4 — auditoria agregada dos erros atuais.** Usar somente agregados e métricas de erro por coorte/comprimento/truncamento. Nenhum dado por instância em artefato público.
 3. **E3 — somente depois da DEC-024.** Reutilizar cache; comparação OOF e sem acesso a DEV-B/TEST durante ajuste.
 4. **Decisão de GPU/custo.** Só então apresentar alternativas e aguardar decisão do mantenedor.
-5. **E4 — pilotos de throughput.** Rodar 200 casos DEV-A para MiniCheck-Flan-T5-Large depois de A1; testar HHEM apenas com dados sintéticos para throughput enquanto o gate de contaminação permanecer aberto. Registrar p50/p95, RAM/VRAM, tempo total, timeouts, falhas, truncamento e consumo.
-6. **DEV completo:** quatro verificadores no painel confirmatório de 11 coortes, se os gates finais forem aprovados. HHEM não entra no agregado até liberação documental. Se a proveniência de qualquer novo modelo não puder ser confirmada, excluir ou separar por coorte antes de pontuar.
+5. **E4 — pilotos de throughput.** Depois de A1, rodar 200 casos DEV-A para cross-encoder/nli-distilroberta-base; testar LettuceDetect apenas em coortes fora de RAGTruth, com protocolo de agregação pré-registrado. MiniCheck-Flan-T5 pode ser testado apenas em coortes elegíveis após excluir CNN/XSum e resolver WiCE/REVEAL. HHEM usa somente dados sintéticos fora do benchmark para throughput. Registrar p50/p95, RAM/VRAM, tempo, timeouts, falhas, truncamento e consumo.
+6. **DEV completo:** painel por coorte com elegibilidade individual. Não executar cinco modelos como um agregado homogêneo. Usar DistilRoBERTa como novo candidato geral; LettuceDetect em 10 coortes; MiniCheck/FactCG/mDeBERTa como comparadores de pesquisa sob suas restrições. Publicar macro apenas na interseção comum de coortes elegíveis e sempre declarar o denominador.
 7. **E5, E5b, E6, E7 e E8:** experimentos independentes, cada um com pré-registro e autorização. E5b deve ser comparado diretamente com E5; E6 pode usar a ideia de estratégias de prova, sem código de terceiros e sem SFT/DPO no benchmark.
 8. **C — TEST único:** congelar configuração e hashes; executar uma única vez somente após aprovação explícita.
 
@@ -240,16 +258,17 @@ Além da média macro, estudar leave-one-cohort-out como diagnóstico de transfe
 
 ## 11. Decisões recomendadas ao mantenedor
 
-1. Aprovar MiniCheck-Flan-T5-Large como próximo candidato CPU, sujeito a pin/licença e piloto.
-2. Não incluir HHEM no agregado confirmatório das 11 coortes enquanto a proveniência adicional não for divulgada; RAGTruth é inelegível.
-3. Manter HalluGuard para rodada posterior, com revisão SHA e orçamento GPU/quantização.
-4. Manter Granite como candidato condicional, bloqueado até esclarecimento da proveniência dos dados sintéticos.
-5. Excluir Paladin-mini do radar de candidatos.
-6. Restringir Bespoke-MiniCheck a pesquisa não comercial; não usar no produto.
-7. Permitir LettuceDetect apenas fora de RAGTruth, após avaliação de compatibilidade da tarefa.
-8. Adotar análise de correlação/dupla falha e bootstrap pareado por cluster como exigências do relatório E3/E4.
-9. Manter stacking com rótulos bloqueado até DEC-024.
-10. Não alterar Judge 2.0, Golden, hashes, thresholds do sistema, RGC, Piloto 02 ou ResponsePolicy.
+1. Priorizar cross-encoder/nli-distilroberta-base como candidato CPU comercial, sujeito a pin e piloto.
+2. Avaliar LettuceDetect em coortes não-RAGTruth, com agregação token→claim.
+3. Não usar MiniCheck-Flan-T5 como full-11 nem produto; bloquear CNN/XSum e WiCE/REVEAL até deduplicação; ANLI torna-o EVAL_ONLY.
+4. Não promover MiniCheck-DeBERTa, FactCG ou mDeBERTa a produto; ANLI/XNLI os deixam EVAL_ONLY. Auditar a exposição por coorte e a calibração prévia de FactCG.
+5. Não incluir HHEM no agregado confirmatório enquanto a proveniência adicional não for divulgada; RAGTruth/CNN/XSum inelegíveis.
+6. Manter HalluGuard para rodada posterior, com revisão SHA e orçamento GPU/quantização.
+7. Manter Granite como candidato condicional, bloqueado até esclarecimento da proveniência dos dados sintéticos.
+8. Excluir Paladin-mini; restringir Bespoke-MiniCheck a pesquisa não comercial.
+9. Corrigir em PR separada docs/legal/MODEL-LICENSE-POLICY.md: reavaliar MiniCheck-RoBERTa à luz do AlignScore base (ANLI/CNN/XSum) e adicionar FactCG (ANLI); não alterar essa política nesta PR.
+10. Adotar análise de correlação/dupla falha e bootstrap pareado por cluster como exigências do relatório E3/E4; stacking com rótulos bloqueado até DEC-024.
+11. Não alterar Judge 2.0, Golden, hashes, thresholds do sistema, RGC, Piloto 02 ou ResponsePolicy.
 
 ## 12. Fontes oficiais e primárias consultadas
 
@@ -260,6 +279,14 @@ Além da média macro, estudar leave-one-cohort-out como diagnóstico de transfe
 - [MiniCheck paper, arXiv:2404.10774](https://arxiv.org/abs/2404.10774) — dados sintéticos, 770M e benchmark.
 - [MiniCheck-Flan-T5-Large model card](https://huggingface.co/lytang/MiniCheck-Flan-T5-Large) — MIT e arquitetura T5.
 - [Bespoke-MiniCheck-7B model card](https://huggingface.co/bespokelabs/Bespoke-MiniCheck-7B) — treino, alegação de fontes independentes e licença CC BY-NC 4.0.
+
+- [ANLI dataset card](https://huggingface.co/datasets/facebook/anli) — licença CC BY-NC 4.0.
+- [FLAN-T5-Large model card](https://huggingface.co/google/flan-t5-large) e [FLAN task registry](https://github.com/google-research/FLAN/blob/main/flan/tasks.py) — base instruída com tarefas que incluem CNN/DailyMail e XSum.
+- [MiniCheck Appendix D](https://aclanthology.org/2024.emnlp-main.499.pdf) — C2D com ~400 claims Wikipedia citadas (refs. Kamoi/WiCE) e D2C com ~300 artigos Google News.
+- [FactCG paper](https://arxiv.org/abs/2501.17144) — ANLI subset, MiniCheck C2D/D2C, HotpotQA/Musique e threshold tuning por dataset no validation do LLM-AggreFact.
+- [AlignScore training data script](https://github.com/yuh-zha/AlignScore/blob/main/generate_training_data.py) — inclui CNN/DailyMail, XSum e ANLI; relevante para o backbone MiniCheck-RoBERTa.
+- [cross-encoder/nli-distilroberta-base](https://huggingface.co/cross-encoder/nli-distilroberta-base) — 82,1M, Apache-2.0, treino SNLI/MultiNLI.
+- [RAGTruth dataset card](https://huggingface.co/datasets/leobianco/ragtruth) — Apache-2.0.
 
 ### HHEM e contaminação
 - [HHEM-2.1-Open model card](https://huggingface.co/vectara/hallucination_evaluation_model) — Apache-2.0, Flan-T5-base, código remoto.
