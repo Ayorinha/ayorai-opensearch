@@ -56,13 +56,13 @@ O protocolo de cálculo, a definição da unidade de agregação, o tratamento d
 
 - Cada candidato será avaliado com cross-fitting em DEV-A; os dados do fold avaliado não poderão ajustar o calibrador, pesos, limiar ou qualquer parâmetro que produza sua predição.
 - DEV-B será usado somente como confirmação interna da configuração selecionada, sem alterar a seleção. Divergência em DEV-B será reportada, não corrigida com ajustes retroativos.
-- Em modo seletivo, cobertura será sempre reportada por coorte. Para ser elegível à escolha final, a configuração seletiva deverá atingir cobertura mínima de **90% em cada coorte**. A BA e a cobertura devem ser reportadas lado a lado, com regra de contabilização de abstenções pré-fixada; não se pode melhorar BA ocultando a redução de cobertura.
+- A seleção da configuração (E3–E7) usa BA macro com cobertura total (sem abstenção). O modo seletivo (E8) é uma camada posterior: para cada coorte, reporta acerto, cobertura e risco; uma coorte só conta como atingindo o alvo se o acerto entre aceitas for **≥ 90%** (risco observado **≤ 10%**) com **n ≥ 25** respostas aceitas. Não há piso de cobertura; cobertura baixa é reportada, nunca escondida.
 - O resultado de DEV-B é uma verificação interna de consistência, não certificação, teste independente externo ou resultado TEST.
 
 ### 3.3 Regra determinística de escolha
 
-1. Excluir da seleção apenas candidatos que violem gates previamente registrados (licença, integridade, cobertura mínima aplicável, falha de execução ou protocolo).
-2. Entre os candidatos elegíveis, selecionar o de maior BA macro cross-fitted em DEV-A.
+1. A seleção principal compara as configurações de E3–E7 com cobertura total (sem abstenção). Excluir apenas candidatos que violem gates previamente registrados (licença, integridade, falha de execução ou protocolo).
+2. Entre os candidatos elegíveis de E3–E7, selecionar o de maior BA macro cross-fitted em DEV-A. E8 não concorre nessa seleção: é uma camada seletiva posterior, avaliada separadamente por coorte.
 3. Se a diferença absoluta de BA macro entre o primeiro colocado e outro candidato for **inferior a 0,005** (0,5 ponto percentual), considerar empate prático e escolher o candidato de menor custo operacional e menor complexidade; documentar a justificativa e os custos medidos.
 4. Não escolher por resultado em DEV-B, por resultado TEST, por ranking externo não comparável ou por uma métrica secundária observada após a execução.
 5. Se nenhum candidato satisfizer os gates, não declarar vencedor: manter o baseline e registrar a conclusão negativa.
@@ -160,15 +160,31 @@ Avaliar inicialmente em subamostra estratificada de aproximadamente 3.000 casos 
 - Bespoke-MiniCheck-7B;
 - Granite Guardian 3.3;
 - MiniCheck-Flan-T5-L;
-- Paladin-mini.
+- Paladin-mini;
+- **HalluGuard-4B** — Bergeron, Buhnila, François e State; base Qwen3-4B. O preprint [arXiv:2510.00880](https://arxiv.org/abs/2510.00880), de outubro/2025, reporta **75,7% de BAcc** no LLM-AggreFact completo. A versão final publicada em Findings of ACL 2026 reporta **77,1% de BAcc** no benchmark completo e 84,4% no subconjunto RAGTruth. São resultados dos autores, não resultados do AYORAI. Registrar explicitamente que HalluGuard já foi avaliado pelos autores no LLM-AggreFact, evitando apresentar essa avaliação como medição independente nossa. Referência da versão final: [ACL 2026](https://aclanthology.org/2026.findings-acl.835/).
 
-Antes de qualquer execução, confirmar licença, autor, revisão imutável, restrições, dependências e compatibilidade de uso. Não inferir licença pela família ou pelo nome. Modelos não comerciais ou com termos incompatíveis ficam bloqueados até decisão do mantenedor.
+**Verificação de disponibilidade/licença HalluGuard (consulta documental em 2026-11-07):** os pesos estão publicados no repositório Hugging Face [lrsbrgn/HalluGuard-Qwen3-4B](https://huggingface.co/lrsbrgrn/HalluGuard-Qwen3-4B), com arquivos Safetensors presentes; o model card e os metadados do Hub declaram `apache-2.0`. Portanto, não está bloqueado por ausência de pesos ou de declaração de licença nesta consulta. **Ainda não está liberado para execução:** antes de qualquer uso, fixar uma revisão imutável (SHA) do repositório, arquivar a evidência da licença nessa revisão e verificar separadamente as licenças/restrições do modelo-base Qwen3-4B e de todos os componentes/dependências. Se os pesos ou a licença deixarem de estar disponíveis/claros na revisão fixada, marcar como **BLOQUEADO** até nova verificação.
+
+Antes de qualquer execução de qualquer modelo, confirmar licença, autor, revisão imutável, restrições, dependências e compatibilidade de uso. Não inferir licença pela família ou pelo nome. Modelos não comerciais ou com termos incompatíveis ficam bloqueados até decisão do mantenedor.
 
 Para cada modelo, apresentar antes da execução uma estimativa de custo e viabilidade para: (a) runner com GPU; (b) Hugging Face Inference Endpoint; (c) quantização 4-bit em CPU, se tecnicamente viável. Informar hardware, memória, throughput esperado, custo monetário/horas e limitações; estimativas não serão apresentadas como medições. O mantenedor escolhe a modalidade e autoriza o custo. Somente modelos que demonstrem ganho de pelo menos **1 ponto percentual** na métrica pré-registrada, sem violar os gates, poderão ser propostos para o ensemble. A subamostra é triagem exploratória, não resultado confirmatório.
 
 ### E5. Seleção de evidência em documentos longos
 
 Comparar o chunking oficial com recuperação dos `k` trechos mais relevantes, usando BM25 e embeddings, para reduzir truncamento e melhorar cobertura de evidência em ExpertQA, Lfqa e AggreFact-CNN. Pré-registrar `k`, tamanho/overlap dos trechos, modelo de embeddings, licença, estratégia de ranking, custo e fallback. Não alterar offsets do documento original nem a semântica dos contratos. A recuperação é um sinal de seleção, não prova de sustentação.
+
+### E5b. Resolução de correferência antes do chunking/decomposição
+
+**Hipótese:** resolver pronomes e outras expressões correferenciais para seus antecedentes antes do chunking e da decomposição reduz contradições falsas causadas por antecedentes distantes que ficam separados dos pronomes quando o documento é cortado. Alvos: ExpertQA, Lfqa e AggreFact-CNN.
+
+**Base metodológica:** Oukelmoun, Semmar e De Chalendar, “Decomposed Entailment for Factuality Checking and Hallucination Detection”, [arXiv:2608.05823 (6 ago. 2026)](https://arxiv.org/abs/2608.05823). Os autores identificam a correferência durante a extração como gargalo: pronomes separados de antecedentes distantes pelo chunking podem propagar contradições espúrias. O trabalho também declara limitações relevantes: execuções únicas sem estimativa de variância ou testes de significância; ausência de comparação controlada com MiniCheck; ausência de avaliação no LLM-AggreFact; e escopo restrito a alucinações intrínsecas, sem verificação de alegações extrínsecas dependentes de conhecimento externo. O código disponibilizado é declarado “research use only” e não apresenta licença de reutilização identificável nesta consulta. **Não reutilizar, copiar ou adaptar o código dos autores.** Qualquer implementação do AYORAI deverá ser feita do zero, usando ferramenta/biblioteca de correferência cuja licença e revisão tenham sido verificadas e registradas.
+
+**Pré-registro obrigatório antes da execução:**
+- Identificar a ferramenta/modelo de correferência, autor, URL, revisão imutável (SHA), licença, restrições, dependências e data da verificação. Sem licença clara e compatível, não usar.
+- Comparar E5 sem correferência com E5b com correferência, mantendo iguais os demais parâmetros, conjuntos, partições, chunking, decomposição e configuração do verificador.
+- Preservar integralmente o documento original. A substituição de pronomes por antecedentes gera somente uma **visão auxiliar** para recuperação/chunking/verificação; offsets, spans de evidência, citações e referências auditáveis continuam apontando para o texto original. Registrar o mapeamento entre a visão auxiliar e os offsets originais; nunca apresentar texto reescrito como citação literal da fonte.
+- Métrica primária: a mesma da seção 3 — BA macro por dataset/coorte, cross-fitted em DEV-A. Reportar também, por coorte, taxa de contradições falsas atribuíveis à quebra de correferência, cobertura, erros, custo e falhas de resolução.
+- Critério de decisão, ablações, tratamento de pronomes sem antecedente inequívoco, entidades ambíguas e erros do resolvedor devem ser fixados no pré-registro. Se a resolução alterar o sentido, perder o antecedente ou não puder ser alinhada ao original, usar fallback para o texto original e contabilizar a falha.
 
 ### E6. Decomposição de afirmações longas
 
@@ -180,7 +196,7 @@ Avaliar se contradições explícitas detectadas por RuleStance — negação, n
 
 ### E8. Modo seletivo e cobertura
 
-Comparar limiares Mondrian por coorte com limiar global e produzir curva acerto × cobertura por coorte. Objetivo proposto: cobertura mínima de 90% em cada coorte, sem ocultar coortes que não alcancem o piso. Reportar quantidade aceita, erros, abstenções, BA, risco observado e incerteza.
+Comparar limiares Mondrian por coorte com limiar global e produzir curva acerto × cobertura por coorte. **Objetivo: maximizar a cobertura sujeita a acerto ≥ 90% (risco observado ≤ 10%) entre as respostas aceitas em cada coorte**, aplicando a regra LTT vigente. Para cada coorte, reportar quantidade aceita (n), acertos, erros, abstenções, acerto entre aceitas, cobertura, risco observado e incerteza. Uma coorte só conta como atingindo o alvo quando houver n ≥ 25 respostas aceitas e acerto observado ≥ 90%; com n < 25, o alvo não é certificado. **Não há piso de cobertura**: a cobertura que resultar deve ser publicada, inclusive quando baixa. Se uma coorte não alcançar o alvo, reportar o resultado sem ocultá-la ou declarar sucesso global.
 
 A regra LTT deverá corresponder exatamente à versão aprovada e mesclada do pré-registro. A Emenda 2 proposta na PR #488 — pular limiares inelegíveis com menos de 25 aceitas, sem certificá-los, testar o primeiro limiar elegível e parar na primeira não rejeição — **não será tratada como vigente enquanto a PR não estiver mesclada e revisada**. Se a PR for alterada ou não for mesclada, reconciliar este roadmap com a regra efetivamente aprovada antes do pré-registro de E8. Nenhum resultado exploratório de DEV-B será descrito como confirmação independente.
 
@@ -221,7 +237,7 @@ A ordem de trabalho após aprovação deste roadmap é:
 5. **E3** — somente após DEC-024 aprovada; reutilizar cache.
 6. **Decisão de GPU/custo** — apresentar alternativas e aguardar escolha explícita antes de E4.
 7. **E4** — triagem de modelos, após licenças/revisões verificadas.
-8. **E5–E8** — cada experimento com PR/pré-registro e autorização próprios.
+8. **E5, E5b, E6–E8** — cada experimento com PR/pré-registro e autorização próprios; E5b sempre comparado diretamente com E5.
 9. **C1–C3** — congelamento e TEST único, após todos os gates e autorização específica.
 10. **D1–D2** — trilha brasileira paralela, sujeita aos gates humanos e de protocolo já existentes.
 
@@ -231,6 +247,6 @@ A ordem não autoriza execução automática. Cada PR de implementação terá e
 
 Para cada experimento, publicar: hipótese; pré-registro e versão; partição; SHA do código; hashes de dados/configuração; modelos/revisões/licenças; métrica primária e secundárias; cobertura; custo; falhas/desvios; limitações; e decisão de avançar ou parar. Somente agregados serão públicos.
 
-Se um resultado não superar o baseline, se a cobertura mínima falhar, se a licença for incompatível, se a reprodução divergir ou se o protocolo não puder ser cumprido, registrar o resultado negativo e interromper o caminho correspondente. Não alterar retroativamente hipótese, métrica ou critério de parada.
+Se um resultado não superar o baseline, se o alvo seletivo de acerto não for atingido em uma coorte, se a licença for incompatível, se a reprodução divergir ou se o protocolo não puder ser cumprido, registrar o resultado observado (incluindo cobertura, mesmo que baixa) e interromper ou reavaliar o caminho correspondente. Não alterar retroativamente hipótese, métrica ou critério de parada.
 
 **Estado final deste documento:** roadmap e regra de escolha propostos; DEC-024 não aprovada; nenhum código implementado; nenhum novo benchmark executado; TEST intocado; nenhuma alteração em Judge, Golden, hashes, thresholds do sistema, RGC, Piloto 02 ou ResponsePolicy.
