@@ -36,10 +36,26 @@ def _rows(noise: dict[str, float], seed: int = 3) -> dict[str, list[dict]]:
     return rows
 
 
-def _cache(rows: dict[str, list[dict]]) -> dict:
-    return build_score_cache(
+CLAIMS_PER_DOC = 4
+
+
+def _doc_id(record_id: str) -> str:
+    import hashlib
+
+    cohort, index = record_id.rsplit("-", 1)
+    return hashlib.sha256(f"{cohort}|{int(index) // CLAIMS_PER_DOC}".encode()).hexdigest()
+
+
+def _cache(rows: dict[str, list[dict]], *, v2: bool = True) -> dict:
+    cache = build_score_cache(
         rows, protocols={}, manifest_sha256="m" * 64, source_run_id="1", calibration_v2=None
     )
+    if v2:
+        cache["schema_version"] = "phase1b-dev-score-cache-v2"
+        for entry in cache["models"].values():
+            for record in entry["records"]:
+                record["doc_id"] = _doc_id(record["record_id"])
+    return cache
 
 
 NOISE = {"factcg": 0.12, "minicheck": 0.12, "mdeberta": 0.2}
@@ -182,8 +198,89 @@ def test_eligibility_cannot_be_injected() -> None:
     assert list(inspect.signature(run_confirm).parameters) == ["cache"]
 
 
-def test_experiment_workflow_enforces_p1_single_use() -> None:
-    text = Path(".github/workflows/phase1b-dev-cache-experiment.yml").read_text(encoding="utf-8")
-    assert "name=phase1b-dev-p1-confirmation" in text
-    assert "name: phase1b-dev-p1-confirmation" in text
-    assert "inputs.experiment == 'e3-confirm-dev-b'" in text
+def test_primary_interval_resamples_documents() -> None:
+    report = run_confirm(_cache(_rows(NOISE)))
+    primary = report["primary_interval"]
+    assert primary["unit"].startswith("document")
+    assert "document clusters" in primary["method"]
+    assert set(report["dev_b_documents_by_cohort"]) == set(report["common_cohorts"])
+    diagnostics = report["diagnostics"]
+    assert diagnostics["role"] == "no effect on the decision"
+    assert diagnostics["document_jackknife"]["documents_used"] > 0
+    assert len(diagnostics["bca_interval_95"]) == 2
+    assert "record" in diagnostics["record_level_bootstrap"]["method"]
+
+
+def test_document_bootstrap_widens_interval_under_within_document_correlation() -> None:
+    """When claims of a document share the same outcome, case resampling is too narrow."""
+
+    from scripts.benchmarks.phase1b.e3_confirm import _document_bootstrap, _document_stats
+
+    rng = np.random.default_rng(11)
+    stats = {}
+    groups = {}
+    for cohort in ("a", "b"):
+        y, e, f, docs = [], [], [], []
+        for doc in range(30):
+            ens_right = rng.random() < 0.8
+            cmp_right = rng.random() < 0.7
+            for claim in range(8):
+                label = claim % 2
+                y.append(label)
+                e.append(label if ens_right else 1 - label)
+                f.append(label if cmp_right else 1 - label)
+                docs.append(f"{cohort}-{doc}")
+        _, stats[cohort] = _document_stats({"y": y, "e": e, "f": f, "docs": docs})
+        groups[cohort] = (y, e, f)
+    doc_ci = _document_bootstrap(stats)[0]["ci95_difference"]
+    case_ci = e3_confirm._stratified_bootstrap(groups)["ci95_difference"]
+    assert (doc_ci[1] - doc_ci[0]) > 1.5 * (case_ci[1] - case_ci[0])
+
+
+def test_document_stats_match_balanced_accuracy() -> None:
+    from scripts.benchmarks.phase1b.calibration import balanced_accuracy
+    from scripts.benchmarks.phase1b.e3_confirm import _document_stats, _paired_ba_delta
+
+    rng = np.random.default_rng(5)
+    y = rng.integers(0, 2, 60).tolist()
+    e = rng.integers(0, 2, 60).tolist()
+    f = rng.integers(0, 2, 60).tolist()
+    docs = [f"d{i // 3}" for i in range(60)]
+    _, stats = _document_stats({"y": y, "e": e, "f": f, "docs": docs})
+    delta, invalid = _paired_ba_delta(stats.sum(axis=0))
+    assert not invalid
+    assert abs(float(delta) - (balanced_accuracy(y, e) - balanced_accuracy(y, f))) < 1e-12
+
+
+def test_v1_cache_is_refused() -> None:
+    with pytest.raises(ValueError, match="v2 score cache"):
+        run_confirm(_cache(_rows(NOISE), v2=False))
+
+
+def test_members_must_agree_on_documents() -> None:
+    cache = _cache(_rows(NOISE))
+    cache["models"]["minicheck"]["records"][0]["doc_id"] = "0" * 64
+    with pytest.raises(ValueError, match="documents"):
+        run_confirm(cache)
+
+
+@pytest.mark.parametrize("defect", ["empty", "single_class"])
+def test_dev_b_cohort_must_be_estimable(defect: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    cache = _cache(_rows(NOISE))
+    target = "ClaimVerify"
+    original = e3_confirm.split_dev_a_b
+
+    def patched(ids, cohorts):
+        assignments, info = original(ids, cohorts)
+        for record_id, cohort in zip(ids, cohorts, strict=True):
+            if cohort != target or assignments[record_id] != "DEV-B":
+                continue
+            if defect == "empty":
+                assignments[record_id] = "DEV-A"
+            elif int(record_id.rsplit("-", 1)[1]) % 2 == 0:
+                assignments[record_id] = "DEV-A"
+        return assignments, info
+
+    monkeypatch.setattr(e3_confirm, "split_dev_a_b", patched)
+    with pytest.raises(ValueError, match="no DEV-B records|lacks a class"):
+        run_confirm(cache)

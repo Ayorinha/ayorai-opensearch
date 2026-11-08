@@ -6,8 +6,11 @@ DEC-025:
 - IVAP calibrators fitted on all of DEV-A produce the DEV-B probabilities;
 - per-cohort thresholds are chosen on DEV-A out-of-fold probabilities (Calibration V2
   folds) and applied once to DEV-B; no DEV-B label enters any fitted quantity;
-- primary interval: paired bootstrap stratified by cohort (records resampled within each
-  cohort), 2,000 replicates, PCG64(20261109); secondary: cohort-cluster bootstrap;
+- primary interval: paired bootstrap of DOCUMENT clusters within each cohort (whole
+  documents resampled with replacement, same draws for both arms, BA recomputed per
+  replicate), 2,000 replicates, PCG64(20261109); requires the v2 score cache (doc_id);
+- diagnostics (no effect on the decision): jackknife by document, BCa interval,
+  record-level bootstrap, leave-one-cohort-out; secondary: cohort-cluster bootstrap;
 - CONFIRMED only if delta >= 0.005 and the primary 95% lower bound > 0.
 
 Output is aggregate-only. TEST is never used.
@@ -45,6 +48,7 @@ CONFIGURATION = "E3b-01"
 STRATIFIED_REPLICATES = 2000
 STRATIFIED_SEED = 20261109
 MAX_INVALID_FRACTION = 0.05
+REQUIRED_CACHE_SCHEMA = "phase1b-dev-score-cache-v2"
 # Single-execution lock (persistent part): a published P1 report in the repository.
 REPORT_LOCK_GLOB = "reports/benchmarks/*p1-dev-b-confirmation*"
 ESTIMAND_STATEMENT = (
@@ -66,9 +70,9 @@ def validate_members(models: Mapping[str, Any]) -> list[str]:
     missing = [member for member in MEMBERS if member not in models]
     if missing:
         raise ValueError(f"the score cache lacks members: {missing}")
-    reference: dict[str, tuple[str, str]] | None = None
+    reference: dict[str, tuple[str, str, str]] | None = None
     for member in MEMBERS:
-        seen: dict[str, tuple[str, str]] = {}
+        seen: dict[str, tuple[str, str, str]] = {}
         for record in models[member]["records"]:
             record_id = record["record_id"]
             if record_id in seen:
@@ -80,11 +84,16 @@ def validate_members(models: Mapping[str, Any]) -> list[str]:
                 raise ValueError(f"{member} has a non-numeric score")
             if not math.isfinite(float(score)) or not 0.0 <= float(score) <= 1.0:
                 raise ValueError(f"{member} has a score outside [0, 1]")
-            seen[record_id] = (record["cohort"], record["gold"])
+            doc_id = record.get("doc_id")
+            if not isinstance(doc_id, str) or len(doc_id) != 64:
+                raise ValueError(f"{member} lacks a valid doc_id (cache v2 required)")
+            seen[record_id] = (record["cohort"], record["gold"], doc_id)
         if reference is None:
             reference = seen
         elif seen != reference:
-            raise ValueError(f"{member} disagrees with {MEMBERS[0]} on records, cohorts or labels")
+            raise ValueError(
+                f"{member} disagrees with {MEMBERS[0]} on records, cohorts, labels or documents"
+            )
     return sorted(reference or {})
 
 
@@ -168,10 +177,150 @@ def _stratified_bootstrap(
     }
 
 
+_STAT_COLUMNS = ("positives", "negatives", "ens_tp", "ens_tn", "cmp_tp", "cmp_tn")
+
+
+def _document_stats(group: Mapping[str, Sequence[Any]]) -> tuple[list[str], Any]:
+    """Per-document sufficient statistics for paired balanced accuracy."""
+
+    import numpy as np
+
+    documents = sorted(set(group["docs"]))
+    position = {doc: index for index, doc in enumerate(documents)}
+    stats = np.zeros((len(documents), len(_STAT_COLUMNS)), dtype=np.float64)
+    for y, e, f, doc in zip(group["y"], group["e"], group["f"], group["docs"], strict=True):
+        row = stats[position[doc]]
+        if y == 1:
+            row[0] += 1
+            row[2] += e == 1
+            row[4] += f == 1
+        else:
+            row[1] += 1
+            row[3] += e == 0
+            row[5] += f == 0
+    return documents, stats
+
+
+def _paired_ba_delta(totals: Any) -> tuple[Any, Any]:
+    """BA(ensemble) - BA(comparator) from summed statistics; also an 'invalid' mask."""
+
+    import numpy as np
+
+    positives, negatives = totals[..., 0], totals[..., 1]
+    invalid = (positives == 0) | (negatives == 0)
+    safe_p = np.where(invalid, 1.0, positives)
+    safe_n = np.where(invalid, 1.0, negatives)
+    ens = (totals[..., 2] / safe_p + totals[..., 3] / safe_n) / 2.0
+    cmp_ = (totals[..., 4] / safe_p + totals[..., 5] / safe_n) / 2.0
+    return ens - cmp_, invalid
+
+
+def _document_bootstrap(stats_by_cohort: Mapping[str, Any]) -> tuple[dict[str, Any], Any]:
+    """Primary interval: resample whole documents within each cohort, paired arms."""
+
+    import numpy as np
+
+    rng = np.random.Generator(np.random.PCG64(STRATIFIED_SEED))
+    differences = np.zeros(STRATIFIED_REPLICATES, dtype=np.float64)
+    invalid = np.zeros(STRATIFIED_REPLICATES, dtype=bool)
+    for cohort in sorted(stats_by_cohort):
+        stats = stats_by_cohort[cohort]
+        n_docs = stats.shape[0]
+        draws = rng.integers(0, n_docs, size=(STRATIFIED_REPLICATES, n_docs))
+        multiplicity = np.zeros((STRATIFIED_REPLICATES, n_docs), dtype=np.float64)
+        for replicate in range(STRATIFIED_REPLICATES):
+            multiplicity[replicate] = np.bincount(draws[replicate], minlength=n_docs)
+        delta, bad = _paired_ba_delta(multiplicity @ stats)
+        differences += delta
+        invalid |= bad
+    differences /= len(stats_by_cohort)
+    valid = differences[~invalid]
+    invalid_count = int(invalid.sum())
+    estimable = invalid_count <= MAX_INVALID_FRACTION * STRATIFIED_REPLICATES and valid.size > 1
+    low, high = (
+        (float(v) for v in np.quantile(valid, [0.025, 0.975], method="linear"))
+        if estimable
+        else (None, None)
+    )
+    result = {
+        "method": (
+            "paired bootstrap of document clusters within each cohort "
+            "(whole documents resampled with replacement; same draws for both arms)"
+        ),
+        "unit": "document (doc_id, scoped by cohort)",
+        "replicates": STRATIFIED_REPLICATES,
+        "invalid_replicates": invalid_count,
+        "invalid_rule": "a replicate in which any cohort lacks a class is invalid",
+        "estimable": bool(estimable),
+        "generator": f"numpy.random.Generator(PCG64({STRATIFIED_SEED}))",
+        "numpy_version": np.__version__,
+        "quantile_method": "linear",
+        "ci95_difference": [low, high],
+    }
+    return result, valid
+
+
+def _document_jackknife(stats_by_cohort: Mapping[str, Any], delta: float) -> dict[str, Any]:
+    """Diagnostic: macro delta with each document removed in turn (influence)."""
+
+    import numpy as np
+
+    cohorts = sorted(stats_by_cohort)
+    per_cohort = {c: float(_paired_ba_delta(stats_by_cohort[c].sum(axis=0))[0]) for c in cohorts}
+    total = sum(per_cohort.values())
+    values: list[float] = []
+    skipped = 0
+    for cohort in cohorts:
+        stats = stats_by_cohort[cohort]
+        reduced = stats.sum(axis=0) - stats
+        cohort_delta, bad = _paired_ba_delta(reduced)
+        skipped += int(bad.sum())
+        for value in cohort_delta[~bad]:
+            values.append((total - per_cohort[cohort] + float(value)) / len(cohorts))
+    array = np.asarray(values, dtype=np.float64)
+    n = array.size
+    se = float(np.sqrt((n - 1) / n * np.sum((array - array.mean()) ** 2))) if n > 1 else None
+    return {
+        "role": "diagnostic; no effect on the decision",
+        "documents_used": int(n),
+        "documents_skipped_class_missing": skipped,
+        "jackknife_se": se,
+        "max_abs_influence": float(np.max(np.abs(array - delta))) if n else None,
+        "values": array,
+    }
+
+
+def _bca_interval(boot: Any, theta_hat: float, jack: Any) -> list[float | None]:
+    """Diagnostic BCa interval from the document bootstrap and jackknife values."""
+
+    from statistics import NormalDist
+
+    import numpy as np
+
+    normal = NormalDist()
+    if boot.size < 2 or jack.size < 3:
+        return [None, None]
+    proportion = float(np.mean(boot < theta_hat))
+    if proportion <= 0.0 or proportion >= 1.0:
+        return [None, None]
+    z0 = normal.inv_cdf(proportion)
+    centred = jack.mean() - jack
+    denominator = 6.0 * float(np.sum(centred**2)) ** 1.5
+    acceleration = float(np.sum(centred**3)) / denominator if denominator > 0 else 0.0
+    bounds = []
+    for alpha in (0.025, 0.975):
+        z = normal.inv_cdf(alpha)
+        adjusted = normal.cdf(z0 + (z0 + z) / (1.0 - acceleration * (z0 + z)))
+        bounds.append(float(np.quantile(boot, adjusted, method="linear")))
+    return bounds
+
+
 def run_confirm(cache: Mapping[str, Any]) -> dict:
     """Single execution of P1; the only eligibility accepted is the preregistered file."""
 
     approved_on = preregistration_approval(PREREGISTRATION_PATH)
+    if cache.get("schema_version") != REQUIRED_CACHE_SCHEMA:
+        raise ValueError("P1 requires the v2 score cache with document ids")
     if published_confirmation_exists():
         raise RuntimeError("a P1 confirmation report is already published; P1 is single-use")
     file_sha256 = sha256_bytes(Path(ELIGIBILITY_PATH).read_bytes())
@@ -184,6 +333,7 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     reference = {r["record_id"]: r for r in models[COMPARATOR]["records"]}
     cohorts = [reference[r]["cohort"] for r in record_ids]
     labels = [1 if reference[r]["gold"] == "SUPPORTED" else 0 for r in record_ids]
+    doc_ids = [reference[r]["doc_id"] for r in record_ids]
 
     common = [c for c in eligibility["cohorts"] if _eligible(eligibility, COMPARATOR, c)]
     for cohort in common:
@@ -231,23 +381,37 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
 
     labels_b = [labels[index_b[k]] for k in keep_b]
     cohorts_b = [cohorts[index_b[k]] for k in keep_b]
+    docs_b = [doc_ids[index_b[k]] for k in keep_b]
     groups: dict[str, tuple[list[int], list[int], list[int]]] = {}
+    stats_by_cohort: dict[str, Any] = {}
+    documents_by_cohort: dict[str, int] = {}
     ba_by_arm: dict[str, dict[str, float]] = {"ensemble": {}, "comparator": {}}
     counts: dict[str, int] = {}
     for cohort in common:
         members_idx = [j for j, c in enumerate(cohorts_b) if c == cohort]
+        if not members_idx:
+            raise ValueError(f"common cohort {cohort} has no DEV-B records")
         y = [labels_b[j] for j in members_idx]
+        if len(set(y)) < 2:
+            raise ValueError(f"cohort {cohort} lacks a class in DEV-B; BA is undefined")
         e = [predictions["ensemble"][j] for j in members_idx]
         f = [predictions["comparator"][j] for j in members_idx]
         groups[cohort] = (y, e, f)
         counts[cohort] = len(members_idx)
+        _, stats_by_cohort[cohort] = _document_stats(
+            {"y": y, "e": e, "f": f, "docs": [docs_b[j] for j in members_idx]}
+        )
+        documents_by_cohort[cohort] = int(stats_by_cohort[cohort].shape[0])
         ba_by_arm["ensemble"][cohort] = balanced_accuracy(y, e)
         ba_by_arm["comparator"][cohort] = balanced_accuracy(y, f)
 
     macro_e = sum(ba_by_arm["ensemble"].values()) / len(common)
     macro_c = sum(ba_by_arm["comparator"].values()) / len(common)
     delta = macro_e - macro_c
-    primary = _stratified_bootstrap(groups)
+    primary, boot_values = _document_bootstrap(stats_by_cohort)
+    jackknife = _document_jackknife(stats_by_cohort, delta)
+    bca = _bca_interval(boot_values, delta, jackknife.pop("values"))
+    case_bootstrap = _stratified_bootstrap(groups)
     secondary = _paired_bootstrap(
         [ba_by_arm["ensemble"][c] - ba_by_arm["comparator"][c] for c in common]
     )
@@ -257,7 +421,7 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     contrary = bool(primary["estimable"] and high is not None and high < 0)
 
     report: dict[str, Any] = {
-        "schema_version": "phase1b-dev-e3-confirm-v1",
+        "schema_version": "phase1b-dev-e3-confirm-v2",
         "split": "dev",
         "partition": "DEV-B confirmation (calibrated on DEV-A)",
         "experiment": "e3-confirm-dev-b",
@@ -284,6 +448,13 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
         "delta": delta,
         "replacement_margin": REPLACEMENT_MARGIN,
         "primary_interval": primary,
+        "dev_b_documents_by_cohort": documents_by_cohort,
+        "diagnostics": {
+            "role": "no effect on the decision",
+            "document_jackknife": jackknife,
+            "bca_interval_95": bca,
+            "record_level_bootstrap": case_bootstrap,
+        },
         "secondary_cluster_bootstrap": secondary,
         "leave_one_cohort_out_delta": leave_one_cohort_out(ba_by_arm, common),
         "leave_one_cohort_out_role": "descriptive diagnostic; no effect on the decision",
