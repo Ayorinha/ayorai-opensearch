@@ -18,6 +18,7 @@ on:
         type: choice
         options:
           - replay-calibration-v2
+          - e3-fixed-rule-ensemble
         default: replay-calibration-v2
 
 permissions:
@@ -97,6 +98,9 @@ jobs:
           assert "records" not in serialized
           if report["experiment"] == "replay-calibration-v2":
               assert report["replay_matches_source"] is True
+          if report["experiment"] == "e3-fixed-rule-ensemble":
+              assert report["partition"] == "DEV-A cross-fitted"
+              assert report["decision_record"] == "DEC-024 option B"
           provenance = {
               "schema_version": "phase1b-dev-cache-experiment-provenance-v1",
               "cache_run_id": os.environ["CACHE_RUN_ID"],

@@ -168,7 +168,18 @@ def replay_calibration_v2(cache: dict[str, Any]) -> dict[str, Any]:
     return report
 
 
-EXPERIMENTS = {"replay-calibration-v2": replay_calibration_v2}
+def run_e3_fixed_rule_ensemble(cache: dict[str, Any]) -> dict[str, Any]:
+    """E3 under DEC-024 option B; see scripts/benchmarks/phase1b/e3_ensemble.py."""
+
+    from scripts.benchmarks.phase1b.e3_ensemble import run_e3
+
+    return run_e3(cache)
+
+
+EXPERIMENTS = {
+    "replay-calibration-v2": replay_calibration_v2,
+    "e3-fixed-rule-ensemble": run_e3_fixed_rule_ensemble,
+}
 
 
 def main() -> None:
