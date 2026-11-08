@@ -11,7 +11,15 @@ import pytest
 
 from scripts.benchmarks.phase1b import e3_ensemble
 from scripts.benchmarks.phase1b.calibration_v2.aggregate import COHORTS
-from scripts.benchmarks.phase1b.e3_ensemble import combine, load_eligibility, run_e3
+from scripts.benchmarks.phase1b.calibration_v2.venn_abers import venn_abers_reference
+from scripts.benchmarks.phase1b.e3_ensemble import (
+    _tie_break_key,
+    combine,
+    configuration_cost,
+    load_eligibility,
+    run_e3,
+)
+from scripts.benchmarks.phase1b.e3_ivap import ivap, nested_ivap
 from scripts.benchmarks.phase1b.score_cache import build_score_cache
 
 PER_COHORT = 60
@@ -48,7 +56,7 @@ def _cache(noise: dict[str, float], seed: int = 20261108) -> dict:
 @pytest.fixture(autouse=True)
 def _preregistration(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     prereg = tmp_path / "PREREG-E3-ENSEMBLE-v0.8.md"
-    prereg.write_text("synthetic stand-in\n", encoding="utf-8")
+    prereg.write_text("**Status:** Aprovado pelo mantenedor em 2026-11-08.\n", encoding="utf-8")
     monkeypatch.setattr(e3_ensemble, "PREREGISTRATION_PATH", prereg)
 
 
@@ -106,3 +114,85 @@ def test_e3_refuses_to_run_without_preregistration(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(e3_ensemble, "PREREGISTRATION_PATH", Path("/nonexistent/prereg.md"))
     with pytest.raises(RuntimeError, match="preregistration"):
         run_e3(_cache({"factcg": 0.1, "minicheck": 0.1}))
+
+
+def test_e3_refuses_unapproved_preregistration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    draft = tmp_path / "draft.md"
+    draft.write_text(
+        "**Status:** PR Draft; pré-registro documental proposto. Não aprovado para execução.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(e3_ensemble, "PREREGISTRATION_PATH", draft)
+    with pytest.raises(RuntimeError, match="not approved"):
+        run_e3(_cache({"factcg": 0.1, "minicheck": 0.1}))
+
+
+def test_repository_preregistration_is_not_yet_approved() -> None:
+    """The merged document is still a proposal; E3 must not run until the maintainer approves."""
+
+    with pytest.raises(RuntimeError, match="not approved"):
+        e3_ensemble.preregistration_approval(
+            e3_ensemble.REPOSITORY_ROOT / "docs" / "benchmarks" / "PREREG-E3-ENSEMBLE-v0.8.md"
+        )
+
+
+def test_e3_rejects_injected_eligibility_with_other_status() -> None:
+    eligibility = load_eligibility()
+    eligibility["status"] = "confirmatory"
+    with pytest.raises(ValueError, match="status"):
+        run_e3(_cache({"factcg": 0.1, "minicheck": 0.1}), eligibility=eligibility)
+
+
+def test_tie_break_prefers_lower_measured_cost_then_fewer_members() -> None:
+    cheap = {
+        "configuration": "E3a-03",
+        "members": 2,
+        "cost": configuration_cost(["factcg", "mdeberta"]),
+    }
+    dear = {
+        "configuration": "E3a-01",
+        "members": 2,
+        "cost": configuration_cost(["factcg", "minicheck"]),
+    }
+    unmeasured = {
+        "configuration": "E3a-02",
+        "members": 2,
+        "cost": configuration_cost(["factcg", "hhem"]),
+    }
+    bigger = {"configuration": "E3b-04", "members": 3, "cost": cheap["cost"]}
+    assert unmeasured["cost"] is None
+    ranked = sorted([unmeasured, bigger, dear, cheap], key=_tie_break_key)
+    assert [c["configuration"] for c in ranked] == ["E3a-03", "E3b-04", "E3a-01", "E3a-02"]
+
+
+@pytest.mark.parametrize("seed", range(6))
+def test_fast_ivap_matches_reference(seed: int) -> None:
+    rng = np.random.default_rng(seed)
+    n = int(rng.integers(5, 80))
+    scores = rng.integers(0, 9, n) / 8.0 if seed % 2 else rng.random(n)
+    labels = rng.integers(0, 2, n)
+    queries = np.concatenate([rng.random(20), scores[:5], [0.0, 1.0]])
+    fast = ivap(scores, labels, queries)
+    reference = venn_abers_reference(scores, labels, queries)
+    for key in ("p0", "p1", "p"):
+        np.testing.assert_allclose(fast[key], reference[key], rtol=0, atol=1e-12)
+
+
+def test_nested_ivap_inner_never_sees_outer_fold() -> None:
+    rng = np.random.default_rng(7)
+    scores = rng.random(150)
+    labels = rng.integers(0, 2, 150)
+    folds = np.arange(150) % 5
+    inner, outer = nested_ivap(scores, labels, folds)
+
+    flipped = labels.copy()
+    flipped[folds == 2] = 1 - flipped[folds == 2]
+    inner_flipped, outer_flipped = nested_ivap(scores, flipped, folds)
+    # Thresholds for outer fold 2 come only from inner[2]; its labels must not matter there.
+    np.testing.assert_array_equal(inner[2], inner_flipped[2])
+    assert np.isnan(inner[2][folds == 2]).all()
+    # Outer predictions of fold 2 come from calibrators that never saw fold 2 either.
+    np.testing.assert_array_equal(outer[folds == 2], outer_flipped[folds == 2])
+    assert not np.isnan(outer).any()

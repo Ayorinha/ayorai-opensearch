@@ -12,13 +12,20 @@ Implements docs/benchmarks/PREREG-E3-ENSEMBLE-v0.8.md under DEC-024 option B:
   linear-interpolated 95% percentile interval.
 
 Comparator choice (documented, fixed before results): the paired comparator is FactCG
-passed through the identical pipeline (IVAP out-of-fold probabilities, then cross-fitted
-per-cohort thresholds). Both arms share the same probability step, so the comparison
-is like-for-like. The Calibration V2 Layer 1 FactCG value (raw-score thresholds) is
-reported alongside for reference. Known limitation, shared by both arms: an out-of-fold
-probability for a record in fold j comes from a calibrator fitted on the other folds,
-including the fold later used for evaluation of a different record; thresholds are
-still chosen only on training folds.
+passed through the identical pipeline, so the comparison is like-for-like.
+
+Nested cross-fitting (no leakage between steps): for each outer DEV-A fold ``k``, the
+per-cohort thresholds are chosen on inner out-of-fold IVAP probabilities of the other
+folds, whose calibrators never see fold ``k``; the records of fold ``k`` are then scored by
+a calibrator fitted on the other folds only. See ``e3_ivap.nested_ivap``.
+
+Fail-closed: the run refuses unless the preregistration on this revision carries the
+maintainer approval status line and the eligibility matrix has an accepted status.
+
+Tie-break (preregistration section 6): among qualifying candidates within 0.005 macro BA
+of the best, the lowest measured operational cost wins (sum of the members' measured
+costs); a candidate with an unmeasured member ranks after measured ones; remaining ties
+go to fewer members.
 
 DEV-B and TEST are never used. Output is aggregate-only.
 """
@@ -27,14 +34,16 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from scripts.benchmarks.phase1b.calibration_v2.aggregate import _crossfit_threshold_ba
+from scripts.benchmarks.phase1b.calibration import balanced_accuracy, calibrate_by_cohort
+from scripts.benchmarks.phase1b.calibration_v2.aggregate import MODEL_COST_SECONDS
 from scripts.benchmarks.phase1b.calibration_v2.splits import crossfit_folds, split_dev_a_b
-from scripts.benchmarks.phase1b.calibration_v2.venn_abers import ivap_crossfit
 from scripts.benchmarks.phase1b.common import canonical_json, sha256_bytes
+from scripts.benchmarks.phase1b.e3_ivap import nested_ivap
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 ELIGIBILITY_PATH = REPOSITORY_ROOT / "configs" / "benchmarks" / "e3-eligibility-v0.8.json"
@@ -44,6 +53,63 @@ REPLACEMENT_MARGIN = 0.005
 BOOTSTRAP_REPLICATES = 2000
 BOOTSTRAP_SEED = 20261108
 RULES = ("E3a", "E3b")
+ACCEPTED_ELIGIBILITY_STATUSES = frozenset({"exploratory_pre_ledger"})
+APPROVAL_LINE = re.compile(
+    r"^\*\*Status:\*\* Aprovado pelo mantenedor em (\d{4}-\d{2}-\d{2})\b", re.MULTILINE
+)
+
+
+def preregistration_approval(path: Path | None = None) -> str:
+    """Return the approval date, or refuse when the preregistration is absent or not approved."""
+
+    path = path if path is not None else PREREGISTRATION_PATH
+    if not path.is_file():
+        raise RuntimeError("E3 preregistration is not on this revision; refusing to run")
+    match = APPROVAL_LINE.search(path.read_text(encoding="utf-8"))
+    if match is None:
+        raise RuntimeError(
+            "E3 preregistration is not approved by the maintainer "
+            "(expected '**Status:** Aprovado pelo mantenedor em YYYY-MM-DD'); refusing to run"
+        )
+    return match.group(1)
+
+
+def _validate_eligibility(eligibility: Mapping[str, Any]) -> None:
+    if eligibility.get("schema_version") != "phase1b-e3-eligibility-v1":
+        raise ValueError("unsupported E3 eligibility file")
+    if eligibility.get("status") not in ACCEPTED_ELIGIBILITY_STATUSES:
+        raise ValueError(f"E3 eligibility status is not accepted: {eligibility.get('status')!r}")
+    cohorts = set(eligibility["cohorts"])
+    for member, entry in eligibility["members"].items():
+        unknown = set(entry["blocked_cohorts"]) - cohorts
+        if unknown:
+            raise ValueError(f"{member} blocks unknown cohorts: {sorted(unknown)}")
+    if eligibility["comparator"] not in eligibility["members"]:
+        raise ValueError("the comparator must be a listed member")
+    for config_id, members in eligibility["configurations"].items():
+        if eligibility["comparator"] not in members:
+            raise ValueError(f"configuration {config_id} must contain the comparator")
+        missing = set(members) - set(eligibility["members"])
+        if missing:
+            raise ValueError(f"configuration {config_id} has unknown members: {sorted(missing)}")
+
+
+def configuration_cost(members: Sequence[str]) -> float | None:
+    """Sum of measured member costs; ``None`` when any member has no measured cost."""
+
+    if any(member not in MODEL_COST_SECONDS for member in members):
+        return None
+    return round(sum(MODEL_COST_SECONDS[member] for member in members), 6)
+
+
+def _tie_break_key(candidate: Mapping[str, Any]) -> tuple:
+    cost = candidate["cost"]
+    return (
+        cost is None,
+        cost if cost is not None else 0.0,
+        candidate["members"],
+        candidate["configuration"],
+    )
 
 
 def _logit(probability: float) -> float:
@@ -72,19 +138,7 @@ def combine(probabilities: Sequence[float], rule: str) -> float:
 
 def load_eligibility(path: Path = ELIGIBILITY_PATH) -> dict[str, Any]:
     eligibility = json.loads(path.read_text(encoding="utf-8"))
-    if eligibility.get("schema_version") != "phase1b-e3-eligibility-v1":
-        raise ValueError("unsupported E3 eligibility file")
-    cohorts = set(eligibility["cohorts"])
-    for member, entry in eligibility["members"].items():
-        unknown = set(entry["blocked_cohorts"]) - cohorts
-        if unknown:
-            raise ValueError(f"{member} blocks unknown cohorts: {sorted(unknown)}")
-    for config_id, members in eligibility["configurations"].items():
-        if eligibility["comparator"] not in members:
-            raise ValueError(f"configuration {config_id} must contain the comparator")
-        missing = set(members) - set(eligibility["members"])
-        if missing:
-            raise ValueError(f"configuration {config_id} has unknown members: {sorted(missing)}")
+    _validate_eligibility(eligibility)
     return eligibility
 
 
@@ -116,12 +170,47 @@ def _paired_bootstrap(differences: Sequence[float]) -> dict[str, Any]:
     }
 
 
+def _nested_threshold_ba(
+    cohorts: Sequence[str],
+    labels: Sequence[int],
+    folds: Sequence[int],
+    inner: Mapping[int, Sequence[float]],
+    outer: Sequence[float],
+) -> dict[str, float]:
+    """Per-cohort BA with thresholds chosen only on inner probabilities of the training folds."""
+
+    predictions: list[int | None] = [None] * len(labels)
+    for outer_fold, inner_values in sorted(inner.items()):
+        train = [i for i, fold in enumerate(folds) if fold != outer_fold]
+        thresholds = calibrate_by_cohort(
+            [float(inner_values[i]) for i in train],
+            [labels[i] for i in train],
+            [cohorts[i] for i in train],
+        )
+        for index, fold in enumerate(folds):
+            if fold != outer_fold:
+                continue
+            threshold = thresholds.get(cohorts[index])
+            if threshold is None:
+                raise ValueError("held-out cohort has no eligible training threshold")
+            predictions[index] = int(outer[index] > threshold)
+    if any(prediction is None for prediction in predictions):
+        raise ArithmeticError("nested evaluation did not cover every DEV-A record")
+    result: dict[str, float] = {}
+    for cohort in sorted(set(cohorts)):
+        members = [i for i, value in enumerate(cohorts) if value == cohort]
+        result[cohort] = balanced_accuracy(
+            [labels[i] for i in members], [int(predictions[i]) for i in members]
+        )
+    return result
+
+
 def run_e3(cache: Mapping[str, Any], eligibility: Mapping[str, Any] | None = None) -> dict:
     """Evaluate every preregistered configuration and rule that the cache supports."""
 
-    if not PREREGISTRATION_PATH.is_file():
-        raise RuntimeError("E3 preregistration is not on this revision; refusing to run")
+    approved_on = preregistration_approval()
     eligibility = eligibility if eligibility is not None else load_eligibility()
+    _validate_eligibility(eligibility)
     comparator = eligibility["comparator"]
     models = cache["models"]
     if comparator not in models:
@@ -145,16 +234,31 @@ def run_e3(cache: Mapping[str, Any], eligibility: Mapping[str, Any] | None = Non
         raise ValueError("DEV-A has cross-fitting strata below five")
     fold_list = [folds_a[record_id] for record_id in ids_a]
 
-    probabilities: dict[str, list[float]] = {}
+    inner_by_model: dict[str, dict[int, Any]] = {}
+    outer_by_model: dict[str, Any] = {}
     for model, entry in sorted(models.items()):
         scores = {r["record_id"]: r["score"] for r in entry["records"]}
-        result = ivap_crossfit([scores[r] for r in ids_a], labels_a, fold_list)
-        probabilities[model] = [float(value) for value in result["p"]]
+        inner, outer = nested_ivap([scores[r] for r in ids_a], labels_a, fold_list)
+        inner_by_model[model] = inner
+        outer_by_model[model] = outer
 
-    def crossfit_ba(values: Sequence[float]) -> dict[str, float]:
-        return _crossfit_threshold_ba(ids_a, cohorts_a, labels_a, values, range(len(ids_a)))
+    def combined_ba(members_by_index: Sequence[Sequence[str]], rule: str) -> dict[str, float]:
+        def mix(values_by_model: Mapping[str, Any], index: int) -> float:
+            return combine(
+                [float(values_by_model[m][index]) for m in members_by_index[index]], rule
+            )
 
-    comparator_ba = crossfit_ba(probabilities[comparator])
+        outer = [mix(outer_by_model, index) for index in range(len(ids_a))]
+        inner = {}
+        for fold in sorted(set(fold_list)):
+            per_model = {m: inner_by_model[m][fold] for m in inner_by_model}
+            inner[fold] = [
+                mix(per_model, index) if fold_list[index] != fold else math.nan
+                for index in range(len(ids_a))
+            ]
+        return _nested_threshold_ba(cohorts_a, labels_a, fold_list, inner, outer)
+
+    comparator_ba = combined_ba([[comparator]] * len(ids_a), "E3a")
     configurations: dict[str, Any] = {}
     candidates: list[dict[str, Any]] = []
 
@@ -184,16 +288,11 @@ def run_e3(cache: Mapping[str, Any], eligibility: Mapping[str, Any] | None = Non
             "degenerate_cohorts": degenerate,
             "rules": {},
         }
+        members_by_index = [effective.get(cohort) or [comparator] for cohort in cohorts_a]
+        cost = configuration_cost(members)
+        entry["cost_measured"] = cost
         for rule in RULES:
-            combined = [
-                combine(
-                    [probabilities[m][index] for m in effective.get(cohorts_a[index], [])]
-                    or [probabilities[comparator][index]],
-                    rule,
-                )
-                for index in range(len(ids_a))
-            ]
-            ba = crossfit_ba(combined)
+            ba = combined_ba(members_by_index, rule)
             differences = [ba[c] - comparator_ba[c] for c in common]
             ensemble_macro = sum(ba[c] for c in common) / len(common)
             comparator_macro = sum(comparator_ba[c] for c in common) / len(common)
@@ -208,7 +307,12 @@ def run_e3(cache: Mapping[str, Any], eligibility: Mapping[str, Any] | None = Non
             }
             entry["rules"][rule] = result
             candidates.append(
-                {"configuration": f"{rule}-{config_id}", "members": len(members), **result}
+                {
+                    "configuration": f"{rule}-{config_id}",
+                    "members": len(members),
+                    "cost": cost,
+                    **result,
+                }
             )
         configurations[config_id] = entry
 
@@ -219,13 +323,21 @@ def run_e3(cache: Mapping[str, Any], eligibility: Mapping[str, Any] | None = Non
     else:
         best = max(c["macro_ba"] for c in qualifying)
         tied = [c for c in qualifying if best - c["macro_ba"] < REPLACEMENT_MARGIN]
-        tied.sort(key=lambda c: (c["members"], c["configuration"]))
+        tied.sort(key=_tie_break_key)
         decision.update(
             {
                 "outcome": "ensemble_replaces_factcg",
                 "selected": tied[0]["configuration"],
-                "tie_break": "fewest members (cost not measured per configuration)",
-                "tied_candidates": [c["configuration"] for c in tied],
+                "tie_break": "lowest measured cost, then fewest members",
+                "tied_candidates": [
+                    {
+                        "configuration": c["configuration"],
+                        "cost_measured": c["cost"],
+                        "members": c["members"],
+                        "macro_ba": c["macro_ba"],
+                    }
+                    for c in tied
+                ],
             }
         )
 
@@ -236,6 +348,9 @@ def run_e3(cache: Mapping[str, Any], eligibility: Mapping[str, Any] | None = Non
         "experiment": "e3-fixed-rule-ensemble",
         "classification": eligibility["status"],
         "preregistration": "docs/benchmarks/PREREG-E3-ENSEMBLE-v0.8.md",
+        "preregistration_approved_on": approved_on,
+        "cross_fitting": "nested: inner IVAP out-of-fold for thresholds, outer IVAP for evaluation",
+        "cost_source": "MODEL_COST_SECONDS (Calibration V2 measured cost per member)",
         "decision_record": "DEC-024 option B",
         "eligibility_sha256": sha256_bytes(canonical_json(dict(eligibility))),
         "source_run_id": cache["source_run_id"],
@@ -244,7 +359,7 @@ def run_e3(cache: Mapping[str, Any], eligibility: Mapping[str, Any] | None = Non
         "dev_a_count": len(ids_a),
         "models_in_cache": sorted(models),
         "comparator": comparator,
-        "comparator_pipeline": "IVAP out-of-fold probabilities + cross-fitted cohort thresholds",
+        "comparator_pipeline": "same nested IVAP + per-cohort threshold pipeline as the ensembles",
         "comparator_ba_by_cohort": comparator_ba,
         "clip": CLIP,
         "configurations": configurations,
