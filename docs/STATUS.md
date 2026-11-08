@@ -1,26 +1,22 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-07
+Updated: 2026-11-08 — after merge of PR #502
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-11-07
+## Estado atual — 2026-11-08
 
-- **Calibration V2 — resultado DEV completo (2026-11-07):** relatório documental em [reports/benchmarks/2026-11-07-dev-calibration-v2/README.md](../reports/benchmarks/2026-11-07-dev-calibration-v2/README.md), com proveniência em [PROVENANCE.md](../reports/benchmarks/2026-11-07-dev-calibration-v2/PROVENANCE.md). FactCG selecionado em DEV-A (BA cross-fitted 0,7468; macro simples por dataset); Camada 3: 0/11 coortes certificadas pela regra registrada. Resultado DEV, não TEST nem ranking. Os arquivos agregados originais e seus hashes conferidos estão na pasta do relatório.
-- **Backlog operacional (não implementado):** avaliar criptografia assimétrica dos shards, para que cada shard cifre com chave pública e somente o aggregate decifre, visando reduzir aprovações por execução para cerca de duas. Não criar secrets nem alterar a criptografia nesta atualização.
+- **E3 exploratório:** PR #497 (implementação E3) e PR #501 (aprovação para publicação exploratória) foram mescladas. A PR #503 publicou o relatório exploratório E3b-01.
+- **Resultado publicado em DEV-A:** E3b-01 = **0.7611** versus FactCG = **0.7475**. Resultado exclusivamente exploratório, não confirmatório e **não comparável ao leaderboard**. Não representa desempenho externo, produção ou resultado de TEST.
+- **Resiliência do CI:** PR #502 mesclada após atualização da branch com a main e conclusão bem-sucedida dos checks.
+- **P1 — confirmação em DEV-B:** pré-registro e implementação nas PRs #504 e #505 permanecem em revisão, sem aprovação e sem execução autorizada.
+- **P2/P3 — propostas documentais:** matriz de elegibilidade derivada do ledger A4 e protocolo MiniCheck-Flan-T5-Large permanecem em Draft nas PRs #506 e #507. Não houve download de pesos nem inferência; as células atualmente não verificadas ou contaminadas permanecem bloqueadas.
+- **RGC:** protocolo permanece **[PROPOSTO]**, não congelado. Não há resultado de benchmark RGC em português publicado.
+- **Limites públicos:** o projeto não é apresentado como certificado, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só. O resultado E3 é exploratório; hashes verificam integridade de artefatos, não a veracidade do conteúdo.
 
-- **`main` de referência:** `5cf34d7c` (merge da PR #482). O CI pós-merge [run 42423061030](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42423061030) foi concluído com sucesso no SHA `5cf34d7c8106413dfdebfef1d4f5a1d4c739f668`. Referência anterior: `b358b4de` (merge da PR #468), CI [run 42362947691](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42362947691).
-- **Baseline — RuleStance isolado, LLM-AggreFact TEST (n=29.320):** BA 49,2% (IC95% bootstrap 48,5–49,8%), média macro ≈54,7%, código `5f79290`, run [42276765499](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42276765499) do workflow `international-benchmark` (06/11, head `5f79290c`, conclusão `success`). Relatório agregado registrado na PR #471: `reports/benchmarks/2026-11-06-llm-aggrefact-test-rulestance/`. TEST é baseline de avaliação, não calibração.
-- **Piloto de throughput Phase 1b:** run [42288837777](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42288837777), código `91977dc9494ae9507e8bdda3791ceba965b9fd6e`, DEV (200 exemplos), 3/3 modelos concluídos com `SUCCESS`; HHEM `SKIPPED`. Tempo por exemplo: mDeBERTa 1,89 s; MiniCheck 4,28 s; FactCG 4,30 s. Relatório: `reports/benchmarks/2026-11-06-throughput-pilot/`. Apenas throughput; sem métricas de qualidade ou predições.
-- **Pins de reprodutibilidade:** DEV em `configs/benchmarks/llm-aggrefact-dev-pin.json`, SHA-256 `ca9a5bda9561bbc6f7327ef81ab41727fa10e96f96e9dc74ef32ba3af3c1d8a8`; NLTK `3.9.4`, `punkt_tab` em `nltk/nltk_data@550b6625bcef1f2abff2ff770a5a0d272c9c6b2a`, registro `configs/benchmarks/nltk-punkt-tab-pin.json`.
-- **Phase 1b:** PRs #466 e #467 integradas; execução continua sujeita aos gates de aprovação e proteção de artefatos. Nenhum dispatch adicional foi realizado nesta atualização.
-- **DEC-021 a DEC-023:** registradas pela PR #468; emendas estatísticas documentais, sem congelar protocolo nem autorizar implementação.
-- **PR #469:** Draft documental para corrigir o pin de `actions/download-artifact` nos workflows propostos; não ativou workflows nem executou benchmark.
-- **RGC:** protocolo permanece **[PROPOSTO]**, não congelado. Piloto 02 manual, segunda anotação humana independente e revisão humana independente F-01 continuam pendentes.
-
-> As seções seguintes preservam snapshots e referências históricas; statements sobre a publicação ainda pendente refletem o estado registrado na data original e foram superados pela publicação de 2026-10-23.
+> As seções seguintes preservam snapshots históricos. Datas, SHAs e estados registrados nelas descrevem exclusivamente o momento da respectiva captura e não substituem o estado atual acima.
 
 ## Snapshot — 2026-10-25
 
