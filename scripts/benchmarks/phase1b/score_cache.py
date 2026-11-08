@@ -7,8 +7,9 @@ AES-256-GCM envelope, so later DEV experiments (calibration replays, fixed-rule
 ensembles) can run in minutes without repeating inference.
 
 Privacy contract:
-- only four whitelisted fields per record are kept: ``record_id`` (a stable hash, not
-  dataset text), ``cohort``, ``gold`` and ``score``;
+- only whitelisted fields per record are kept: ``record_id`` (a stable hash, not
+  dataset text), ``cohort``, ``gold`` and ``score``; schema v2 adds ``doc_id`` (a hash
+  of cohort and document, never the text) so experiments can resample whole documents;
 - the cache is DEV-only; TEST is rejected;
 - the plaintext never leaves the protected job; only the encrypted envelope is
   uploaded, and experiment outputs are aggregates.
@@ -19,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -34,13 +36,19 @@ except ImportError:  # direct script execution
     from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 
 SCHEMA_VERSION = "phase1b-dev-score-cache-v1"
+SCHEMA_VERSION_V2 = "phase1b-dev-score-cache-v2"
 CACHE_SHARD_ID = "dev-score-cache"
 RECORD_FIELDS = ("record_id", "cohort", "gold", "score")
+RECORD_FIELDS_V2 = (*RECORD_FIELDS, "doc_id")
+FIELDS_BY_SCHEMA = {SCHEMA_VERSION: RECORD_FIELDS, SCHEMA_VERSION_V2: RECORD_FIELDS_V2}
 GOLD_VALUES = frozenset({"SUPPORTED", "NOT_SUPPORTED"})
+_HEX64 = re.compile(r"[0-9a-f]{64}")
 
 
-def _clean_record(record: dict[str, Any]) -> dict[str, Any]:
-    missing = [field for field in RECORD_FIELDS if field not in record]
+def _clean_record(
+    record: dict[str, Any], fields: tuple[str, ...] = RECORD_FIELDS
+) -> dict[str, Any]:
+    missing = [field for field in fields if field not in record]
     if missing:
         raise ValueError(f"score record is missing fields: {missing}")
     record_id = record["record_id"]
@@ -57,11 +65,19 @@ def _clean_record(record: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("score must be numeric")
     if not math.isfinite(float(score)) or not 0.0 <= float(score) <= 1.0:
         raise ValueError("score must be finite and within [0, 1]")
-    return {"record_id": record_id, "cohort": cohort, "gold": gold, "score": float(score)}
+    cleaned = {"record_id": record_id, "cohort": cohort, "gold": gold, "score": float(score)}
+    if "doc_id" in fields:
+        doc_id = record["doc_id"]
+        if not isinstance(doc_id, str) or not _HEX64.fullmatch(doc_id):
+            raise ValueError("doc_id must be a 64-character lowercase hex digest")
+        cleaned["doc_id"] = doc_id
+    return cleaned
 
 
-def _validated_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    cleaned = [_clean_record(record) for record in rows]
+def _validated_rows(
+    rows: list[dict[str, Any]], fields: tuple[str, ...] = RECORD_FIELDS
+) -> list[dict[str, Any]]:
+    cleaned = [_clean_record(record, fields) for record in rows]
     ids = [record["record_id"] for record in cleaned]
     if len(set(ids)) != len(ids):
         raise ValueError("duplicate record_id in one model")
@@ -118,7 +134,7 @@ def _cache_metadata(cache: dict[str, Any], *, dataset_revision: str, code_sha: s
 def encrypt_score_cache(
     cache: dict[str, Any], *, key: bytes, dataset_revision: str, code_sha: str
 ) -> dict[str, Any]:
-    if cache.get("schema_version") != SCHEMA_VERSION or cache.get("split") != "dev":
+    if cache.get("schema_version") not in FIELDS_BY_SCHEMA or cache.get("split") != "dev":
         raise ValueError("only DEV score caches may be encrypted")
     metadata = _cache_metadata(cache, dataset_revision=dataset_revision, code_sha=code_sha)
     return encrypt_bytes(canonical_json(cache), key=key, metadata=metadata)
@@ -129,12 +145,13 @@ def decrypt_score_cache(envelope: dict[str, Any], *, key: bytes) -> dict[str, An
     if metadata.get("shard_id") != CACHE_SHARD_ID or metadata.get("split") != "dev":
         raise ValueError("envelope is not a DEV score cache")
     cache = json.loads(decrypt_bytes(envelope, key=key))
-    if cache.get("schema_version") != SCHEMA_VERSION or cache.get("split") != "dev":
+    fields = FIELDS_BY_SCHEMA.get(cache.get("schema_version"))
+    if fields is None or cache.get("split") != "dev":
         raise ValueError("unsupported score cache payload")
     if str(cache.get("source_run_id")) != str(metadata.get("run_id")):
         raise ValueError("score cache payload does not match its envelope metadata")
     for model, entry in cache["models"].items():
-        records = _validated_rows(entry["records"])
+        records = _validated_rows(entry["records"], fields)
         if len(records) != cache["record_count"]:
             raise ValueError(f"score cache for {model} has an unexpected record count")
         entry["records"] = records
@@ -146,7 +163,10 @@ def replay_calibration_v2(cache: dict[str, Any]) -> dict[str, Any]:
 
     from scripts.benchmarks.phase1b.calibration_v2.aggregate import calibration_v2_report
 
-    rows = {model: entry["records"] for model, entry in cache["models"].items()}
+    rows = {
+        model: [{field: record[field] for field in RECORD_FIELDS} for record in entry["records"]]
+        for model, entry in cache["models"].items()
+    }
     calibration = calibration_v2_report(rows)
     calibration_sha256 = sha256_bytes(canonical_json(calibration))
     expected = cache.get("calibration_v2_sha256")
