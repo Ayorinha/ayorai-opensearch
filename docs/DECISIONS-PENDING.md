@@ -37,6 +37,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-021 | Teste confirmatório de H1 por componentes do RGC | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
 | DEC-022 | IC95% de Cohen's kappa por componentes | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
 | DEC-023 | Componentes conectados por artigos citados | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
+| DEC-024 | Limites de calibração e combinação de sinais no LLM-AggreFact | Aprovada pelo mantenedor (2026-11-08); opção B | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -497,5 +498,35 @@ Reportar:
 - Não autoriza execução, produção de métricas ou congelamento do protocolo.
 
 ---
+
+## DEC-024 — Limites de calibração e combinação de sinais no LLM-AggreFact
+
+**Estado vigente:** Aprovada pelo mantenedor (2026-11-08), opção B.
+
+- **Data da decisão:** 08/11/2026
+- **Decisor:** Anderson Leon Ayora
+- **Opção aprovada:** B — somente calibração monotônica e limiares (minuta em `docs/benchmarks/ROADMAP-ACURACIA-v0.8.md`, seção 4).
+- **Contexto:** os termos de acesso do LLM-AggreFact permitem "benchmark evaluation only" e proíbem "pretraining and fine-tuning".
+
+### O que fica autorizado
+
+- Calibração monotônica de scores de modelos congelados (IVAP / Venn-Abers), com cross-fitting em DEV-A, como na Calibration V2.
+- Seleção de limiares, inclusive por coorte, ajustada somente em DEV-A.
+- Combinação de modelos por **regra fixa declarada antes da avaliação** (por exemplo, média das probabilidades calibradas ou média dos logits), sem parâmetros escolhidos a partir dos rótulos.
+
+### O que fica proibido
+
+- Atualizar pesos de qualquer verificador, continuar pré-treinamento, adaptar encoders ou treinar qualquer modelo com exemplos ou rótulos do LLM-AggreFact.
+- Pesos aprendidos a partir de rótulos: regressão logística, stacking, votação ponderada ajustada ou meta-modelos (E3(c), E3(d) e o stacking RAIM).
+- Qualquer ajuste em DEV-B ou TEST.
+
+### Limites
+
+- Não autoriza TEST, execução automática nem publicação de resultados; cada experimento continua exigindo pré-registro e autorização própria.
+- A opção A (até cinco parâmetros externos) só poderá ser reconsiderada por nova decisão, de preferência após esclarecimento formal dos mantenedores do dataset sobre os termos.
+- Esta classificação técnica não substitui interpretação jurídica dos termos.
+
+---
+
 
 **Registro de aprovação do mantenedor (2026-11-07):** DEC-021, DEC-022 e DEC-023 aprovadas na opção A, com as especificações acima. A aprovação autoriza somente a preparação de uma PR Draft documental. A implementação permanece não autorizada.

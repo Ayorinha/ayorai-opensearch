@@ -73,7 +73,9 @@ A regra não garante ganho. Expectativas de ganho são hipóteses e não resulta
 
 ## 4. DEC proposta — calibração pós-hoc versus fine-tuning
 
-**PROPOSTA — NÃO APROVADA**
+**DECISÃO REGISTRADA (2026-11-08): opção B aprovada.** Ver [DEC-024](../DECISIONS-PENDING.md#dec-024--limites-de-calibração-e-combinação-de-sinais-no-llm-aggrefact). O texto abaixo é a minuta original, preservada para histórico. Consequência para E3: (a) média fixa de probabilidades calibradas e (b) média fixa de logits ficam autorizadas como regras declaradas antes da avaliação; (c) regressão logística e (d) votação ponderada ajustada continuam bloqueadas.
+
+**MINUTA ORIGINAL — PROPOSTA**
 
 **Identificador sugerido:** DEC-024 — Limites de calibração e combinação de sinais no LLM-AggreFact.  
 **Decisor:** Anderson Leon Ayora, mantenedor.  
@@ -265,4 +267,4 @@ Para cada experimento, publicar: hipótese; pré-registro e versão; partição;
 
 Se um resultado não superar o baseline, se o alvo seletivo de acerto não for atingido em uma coorte, se a licença for incompatível, se a reprodução divergir ou se o protocolo não puder ser cumprido, registrar o resultado observado (incluindo cobertura, mesmo que baixa) e interromper ou reavaliar o caminho correspondente. Não alterar retroativamente hipótese, métrica ou critério de parada.
 
-**Estado final deste documento:** roadmap e regra de escolha propostos; DEC-024 não aprovada; nenhum código implementado; nenhum novo benchmark executado por esta alteração; TEST intocado; nenhuma alteração em Judge, Golden, hashes, thresholds do sistema, RGC, Piloto 02 ou ResponsePolicy. O radar documental complementar está em `docs/benchmarks/RADAR-TECNOLOGICO-2026-11.md`.
+**Estado final deste documento:** roadmap e regra de escolha propostos; DEC-024 aprovada em 2026-11-08 (opção B: somente calibração monotônica, limiares e combinação por regra fixa); nenhum código implementado; nenhum novo benchmark executado por esta alteração; TEST intocado; nenhuma alteração em Judge, Golden, hashes, thresholds do sistema, RGC, Piloto 02 ou ResponsePolicy. O radar documental complementar está em `docs/benchmarks/RADAR-TECNOLOGICO-2026-11.md`.
