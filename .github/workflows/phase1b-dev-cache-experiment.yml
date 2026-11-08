@@ -19,6 +19,7 @@ on:
         options:
           - replay-calibration-v2
           - e3-fixed-rule-ensemble
+          - e3-confirm-dev-b
         default: replay-calibration-v2
 
 permissions:
@@ -101,6 +102,10 @@ jobs:
           if report["experiment"] == "e3-fixed-rule-ensemble":
               assert report["partition"] == "DEV-A cross-fitted"
               assert report["decision_record"] == "DEC-024 option B"
+          if report["experiment"] == "e3-confirm-dev-b":
+              assert report["partition"] == "DEV-B confirmation (calibrated on DEV-A)"
+              assert report["decision_record"] == "DEC-024 option B; DEC-025"
+              assert report["outcome"] in {"CONFIRMED", "NOT_CONFIRMED"}
           provenance = {
               "schema_version": "phase1b-dev-cache-experiment-provenance-v1",
               "cache_run_id": os.environ["CACHE_RUN_ID"],

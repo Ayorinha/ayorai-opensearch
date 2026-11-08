@@ -176,9 +176,18 @@ def run_e3_fixed_rule_ensemble(cache: dict[str, Any]) -> dict[str, Any]:
     return run_e3(cache)
 
 
+def run_e3_confirm_dev_b(cache: dict[str, Any]) -> dict[str, Any]:
+    """P1 under DEC-024 option B and DEC-025; see scripts/benchmarks/phase1b/e3_confirm.py."""
+
+    from scripts.benchmarks.phase1b.e3_confirm import run_confirm
+
+    return run_confirm(cache)
+
+
 EXPERIMENTS = {
     "replay-calibration-v2": replay_calibration_v2,
     "e3-fixed-rule-ensemble": run_e3_fixed_rule_ensemble,
+    "e3-confirm-dev-b": run_e3_confirm_dev_b,
 }
 
 
