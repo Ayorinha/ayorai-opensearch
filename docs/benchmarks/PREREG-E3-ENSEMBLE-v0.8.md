@@ -133,6 +133,8 @@ E3a e E3b são regras fixas. Não há intercepto, pesos treináveis, regressão 
 - seed e atribuição dos folds conforme Calibration V2 (`20261107`, ordenação determinística documentada no pré-registro V2);
 - BA por coorte e média macro com peso igual por coorte;
 - comparar ensemble e FactCG nas mesmas coortes elegíveis e nos mesmos folds;
+
+**Comparador pareado:** FactCG pelo mesmo pipeline do ensemble (probabilidades IVAP cross-fitted + limiar por coorte cross-fitted, mesmos folds); o valor da Camada 1 da Calibration V2 (0,7468, limiar sobre score bruto) é reportado como referência.
 - reportar BA por coorte, macro BA, quantidade de coortes e casos, elegibilidade, classes ausentes e limitações.
 
 A métrica é cross-fitted: calibradores e probabilidades para cada fold são produzidos sem utilizar os rótulos do fold avaliado. Não reportar BA aparente como se fosse BA cross-fitted.
