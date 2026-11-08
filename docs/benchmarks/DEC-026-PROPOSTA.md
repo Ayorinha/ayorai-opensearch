@@ -37,7 +37,17 @@ A matriz anterior (v0.8, sha256 `8b7becf74727a1ad1d52706760c9682b04bd1805476bf3c
 - **Método:** correspondência exata e sobreposição de n-gramas de 50 caracteres entre os dados de fine-tuning públicos de cada modelo e os documentos e afirmações de cada coorte, seguindo Vilar et al., *Benchmark Data Contamination in Underrepresented Languages: A Comprehensive Analysis Using Brazilian Data*, LREC 2026, pp. 4765–4777, DOI [10.63317/39wbjvajnh7t](https://aclanthology.org/2026.lrec-1.374/).
 - **Dados de treino testáveis (públicos):** `lytang/C2D-and-D2C-MiniCheck` (MIT; 14,4 mil linhas, C2D e D2C); ANLI; MultiNLI, FEVER-NLI, LingNLI e WANLI (mDeBERTa); HotpotQA e MuSiQue (fontes do CG2C-MHQA do FactCG). A publicação dos dados gerados CG2C não foi verificada.
 - **Somente DEV, somente contagens agregadas por célula.** O TEST nunca é lido. Texto obrigatório em toda comunicação: "A investigação empírica de contaminação foi realizada no DEV. Como DEV e TEST compartilham fontes, os resultados fornecem evidência auxiliar sobre exposição potencial, mas não constituem verificação direta de independência dos exemplos do TEST."
-- **Critério de "correspondência relevante":** a ser fixado em protocolo próprio antes da execução.
+- **Protocolo a fixar ANTES de qualquer execução:** normalização do texto (por exemplo, minúsculas, espaços), tamanho do n-grama, unidade (documento, afirmação), limiar de "correspondência relevante", denominador, fonte e versão exata de cada corpus de treino, tratamento de corpus incompleto e risco de falso negativo (um teste negativo não prova independência).
+
+### 4.1 Viabilidade por modelo (não é uniforme)
+
+| Modelo | Dados de fine-tuning | Viabilidade do teste |
+|---|---|---|
+| MiniCheck-DeBERTa | ANLI + C2D/D2C (`lytang/C2D-and-D2C-MiniCheck`, MIT) | Viável: corpora públicos e pequenos |
+| MiniCheck-Flan-T5 | Mesmo fine-tuning do MiniCheck; backbone com a coleção FLAN | Viável para o fine-tuning; para o backbone, a coleção FLAN é muito ampla e o teste pode ser impraticável — células podem continuar no estado 4 |
+| FactCG | ANLI, C2D/D2C (públicos), CG2C-MHQA (de HotpotQA e MuSiQue, públicos) e CG2C-Doc (publicação dos dados gerados não verificada) | Parcial: viável nas fontes públicas; incompleto sem os dados gerados. E a exposição de **seleção** não é resolvida por este teste |
+| mDeBERTa NLI | MultiNLI, FEVER-NLI, ANLI, LingNLI, WANLI, XNLI validation | Viável, mas volume grande (milhões de pares) |
+| HHEM-2.1-Open | Parcialmente confidencial | Inviável: permanece no estado 4 |
 - **Testes de memorização comportamental:** não adotados para classificadores encoder (MiniCheck, FactCG, mDeBERTa), por falta de método validado para essa classe de modelo. TS-Guessing não é adaptado automaticamente.
 - **Avaliado e descartado:** Kernel Divergence Score (Choi et al., ICML 2025, PMLR 267:10666–10682), porque exige fine-tuning do modelo no próprio benchmark, o que é vedado pelos termos de uso do LLM-AggreFact e pela DEC-024.
 - **`contamination_identifier`:** usado como canário de rotina para novos membros e versões; encontrá-lo num corpus é evidência de exposição; não encontrá-lo não prova independência.
@@ -56,7 +66,7 @@ As citações literais de cada célula estão no ledger A4.
 
 ## 6. Pontos em aberto para a revisão
 
-1. A exposição de seleção do FactCG deve bloquear células?
+1. A exposição de seleção do FactCG deve bloquear células? Enquanto não houver decisão, o FactCG não pode ser tratado como independente numa alegação confirmatória.
 2. Qual critério de "correspondência relevante" no teste de n-gramas (proporção de documentos/afirmações com correspondência, por célula)?
 3. A coleção FLAN deve ser testada por n-gramas, apesar do custo, ou o Flan-T5 permanece no estado 4?
 
