@@ -96,7 +96,7 @@ jobs:
           name: phase1b-dev-full-manifest
           path: /tmp/phase1b-manifest.json
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
   shard:
     needs: plan
@@ -195,7 +195,7 @@ jobs:
           name: phase1b-dev-full-encrypted-${{ matrix.model_id }}-${{ matrix.shard_id }}
           path: /tmp/phase1b-encrypted/${{ matrix.model_id }}-${{ matrix.shard_id }}.json
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
       - name: Remove local encrypted artifact after upload
         run: rm -rf /tmp/phase1b-encrypted
 
