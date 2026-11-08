@@ -52,7 +52,8 @@ def test_fixed_sequence_stops_at_first_non_rejection() -> None:
     assert result["certified_threshold"] is None
 
 
-def test_n_below_25_makes_cohort_ineligible_and_stops_sequence() -> None:
+def test_all_thresholds_ineligible_is_not_certified() -> None:
+    # Amendment 2: with fewer than 25 accepted answers everywhere, nothing is tested.
     result = learn_then_test(
         [1.0] * 24,
         [1] * 24,
@@ -64,9 +65,63 @@ def test_n_below_25_makes_cohort_ineligible_and_stops_sequence() -> None:
 
     assert result["status"] == "not_certified"
     assert result["tested_thresholds"] == []
-    assert result["curve"][0]["decision"] == "ineligible_min_accepted"
-    assert result["stop_reason"] == "n_below_25; sequence_stopped"
-    assert all(point["decision"] == "descriptive" for point in result["curve"][1:])
+    assert result["skipped_ineligible_thresholds"] == list(THRESHOLDS)
+    assert all(point["decision"] == "ineligible_min_accepted" for point in result["curve"])
+    assert result["stop_reason"] == "no_eligible_threshold"
+
+
+def test_leading_ineligible_thresholds_are_skipped_then_eligible_ones_are_tested() -> None:
+    # 10 answers at 0.99 (n<25 at t=0.99..0.96), then 90 more at 0.95: first eligible t=0.95.
+    probabilities = [0.99] * 10 + [0.95] * 90
+    labels = [1] * 100
+    result = learn_then_test(
+        probabilities,
+        labels,
+        ["cohort"] * 100,
+        partition="dev_b",
+        split="dev",
+        calibration_fit="dev_a_full",
+    )["results"]["cohort"]
+
+    assert result["skipped_ineligible_thresholds"] == [0.99, 0.98, 0.97, 0.96]
+    assert result["tested_thresholds"][0] == 0.95
+    assert result["status"] == "certified"
+    assert result["certified_threshold"] == 0.50
+    assert result["certified_threshold"] not in result["skipped_ineligible_thresholds"]
+    assert result["stop_reason"] == "all_thresholds_rejected"
+
+
+def test_first_non_rejection_after_skipping_stops_the_sequence() -> None:
+    # 30 answers at 0.97 with 9 errors: first eligible threshold 0.97 is not rejected.
+    probabilities = [0.97] * 30 + [0.80] * 70
+    labels = [1] * 21 + [0] * 9 + [1] * 70
+    result = learn_then_test(
+        probabilities,
+        labels,
+        ["cohort"] * 100,
+        partition="dev_b",
+        split="dev",
+        calibration_fit="dev_a_full",
+    )["results"]["cohort"]
+
+    assert result["skipped_ineligible_thresholds"] == [0.99, 0.98]
+    assert result["tested_thresholds"] == [0.97]
+    assert result["status"] == "not_certified"
+    assert result["stop_reason"] == "first_non_rejection; sequence_stopped"
+    later = result["curve"][THRESHOLDS.index(0.96) :]
+    assert all(point["decision"] == "descriptive" and point["p_value"] is None for point in later)
+
+
+def test_ltt_output_records_amended_rule() -> None:
+    output = learn_then_test(
+        [1.0] * 25,
+        [1] * 25,
+        ["cohort"] * 25,
+        partition="dev_b",
+        split="dev",
+        calibration_fit="dev_a_full",
+    )
+    assert output["ltt_rule"] == "amendment-2-skip-ineligible"
 
 
 def test_neutral_probability_abstains_at_threshold_point_five() -> None:
