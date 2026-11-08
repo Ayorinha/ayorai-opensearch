@@ -90,10 +90,11 @@ FactCG, MiniCheck e mDeBERTa são modelos de terceiros (licença MIT), usados se
 
 **Como interpretar:** estes são resultados de **DEV**, não de TEST, produção ou ranking. A BA de 74,68% é uma métrica cross-fitted de desenvolvimento, não uma estimativa de desempenho externo. A regra LTT original interrompeu a sequência no primeiro limiar inelegível (n inferior a 25); essa limitação metodológica está explicitada no relatório. A curva descritiva não deve ser divulgada como certificação. Como referência (não comparação direta, por ser outra partição): a linha de base por regras registrou BA de 49,2% no TEST.
 
-Uma emenda ao pré-registro sobre limiares inelegíveis está em preparação; a certificação confirmatória só será feita em dados não vistos (TEST), com a regra e a configuração congeladas antes.
+A Emenda 2 ao pré-registro foi integrada na PR #488: limiares com menos de 25 respostas aceitas são pulados, sem serem tratados como rejeição ou não rejeição; o primeiro limiar elegível é testado e a sequência para na primeira não rejeição. A reaggregação dos mesmos artefatos DEV sob essa regra, registrada em 8 nov. 2026, é **exploratória e pós-hoc**: quatro coortes passaram pelo procedimento (RAGTruth, ClaimVerify, Lfqa e Reveal), enquanto sete não rejeitaram a hipótese nula no primeiro limiar testado. O resultado oficial da v0.7.0 permanece 0/11 pela regra original; nenhum resultado da reaggregação é certificação confirmatória. Consulte o [relatório exploratório e análise de poder LTT](reports/benchmarks/2026-11-08-phase1b-amendment-2-exploratory/README.md).
 
 - [Relatório completo Calibration V2 — resultados e limitações](reports/benchmarks/2026-11-07-dev-calibration-v2/README.md)
 - [Proveniência, execuções e hashes](reports/benchmarks/2026-11-07-dev-calibration-v2/PROVENANCE.md)
+- [Relatório exploratório Amendment 2 — DEV e análise de poder LTT](reports/benchmarks/2026-11-08-phase1b-amendment-2-exploratory/README.md)
 - [Status técnico atualizado](docs/STATUS.md)
 
 **Ainda não há resultado de benchmark em português.** O conjunto LLM-AggreFact usado nesta avaliação é em inglês. O protocolo RGC permanece em desenvolvimento e não está congelado; resultados deste benchmark não demonstram generalização para documentos jurídicos brasileiros.
