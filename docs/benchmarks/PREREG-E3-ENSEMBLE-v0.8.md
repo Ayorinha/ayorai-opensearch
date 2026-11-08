@@ -1,6 +1,6 @@
 # Pré-registro E3 — Ensemble de verificadores v0.8
 
-**Status:** PR Draft; pré-registro documental proposto. Não aprovado para execução até revisão e aprovação explícita do mantenedor.  
+**Status:** Aprovado pelo mantenedor em 2026-11-08 para execução exploratória em DEV (matriz exploratory_pre_ledger). Não autoriza TEST.
 **Autoria:** ANDERSON AYORA  
 **DEC aplicável:** DEC-024, Opção B (documentação da PR #493; calibração pós-hoc e combinação por regra fixa declarada previamente).  
 **Escopo desta PR:** somente este documento. Não implementa código, workflow, cache A1, inferência, avaliação, ajuste ou publicação de resultados.
@@ -217,4 +217,4 @@ Qualquer mudança exige nova versão de pré-registro, explicação do motivo, d
 - PR #493 — DEC-024, Opção B.
 - PR #477 — tolerância prática de 0,005.
 
-**Estado final:** este documento fixa uma proposta fechada para revisão. Não autoriza inferência, workflow, dispatch, benchmark, TEST, publicação de resultados ou mudança em artefatos protegidos. A execução exigirá aprovação explícita posterior do mantenedor.
+**Estado final:** aprovado pelo mantenedor em 2026-11-08 para uma execução exploratória do E3 em DEV-A, via workflow protegido, com saída somente agregada. Resultado não confirmatório até a matriz derivada do ledger A4 substituir configs/benchmarks/e3-eligibility-v0.8.json. Não autoriza TEST nem alteração de artefatos protegidos.
