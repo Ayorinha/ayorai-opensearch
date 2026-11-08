@@ -25,6 +25,7 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 ## Snapshot — 2026-10-25
 
 - **`main` de referência para este snapshot:** `4f3c0cea4e40df5141521c4a12010bc3da5ac365` (merge da PR #410, testes de cobertura). No SHA exato, os runs pós-merge [CI 40213557463](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557463), [Security 40213557486](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557486) e [CodeQL 40213557412](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557412) concluíram com sucesso. O CI executou a matriz Python 3.11–3.13: `1201 passed, 1 skipped in 39.65s`; cobertura global 95%. O merge desta atualização documental produzirá outro SHA de `main`.
+- **v0.7.0 publicada:** data oficial da versão 2026-11-07; tag `v0.7.0` em `43bbe8e562375d3160851610f3e7b0bc05437900` (merge da PR #484); GitHub Release publicada em 2026-11-08T00:07Z; Version DOI [`10.5281/zenodo.24045951`](https://doi.org/10.5281/zenodo.24045951); Concept DOI `10.5281/zenodo.23125082`. Registra o primeiro resultado DEV da Calibration V2, antes da emenda sobre limiares inelegíveis.
 - **v0.6.0 publicada:** data oficial da versão 2026-10-23; tag `v0.6.0` em `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a`; GitHub Release publicada em 2026-10-24T00:41Z; Version DOI `10.5281/zenodo.23607357`; Concept DOI `10.5281/zenodo.23125082`.
 - **Comandos e jobs observados no CI do SHA `4755f94`:** testes Python 3.11, 3.12 e 3.13 passaram; `pytest -q` no job `namespace-compatibility` passou; `ruff check .` e `ruff format --check .` passaram nos jobs de teste; `mypy --strict` e os gates de regressão Judge/Golden passaram; o build de sdist/wheel e a verificação SHA-256 passaram. Estes são resultados do CI, não execução local.
 - **CI da release:** os 10 workflows da PR #402 passaram no head `d4d8cb0a83bb855b8b07ab108e94905798bd5d85`. Os 8 workflows da PR #405 e os 7 workflows da PR #406 também passaram nos respectivos heads antes dos merges. Esses resultados são específicos dos heads citados e não devem ser descritos como execução local nem como CI pós-merge do SHA atual de `main`.
@@ -66,7 +67,8 @@ Registros detalhados: [verificação de continuidade de 2026-10-24](audit/RGC-ME
 | **HISTÓRICO** | `main` após a PR #402 — `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a` | A preparação global v0.6.0 foi mesclada em 2026-10-23. Naquele registro, a tag/release ainda não havia sido confirmada; a publicação posterior está registrada no estado atual acima. |
 | **VIGENTE** | Autenticação da API | `api_key` é o modo padrão; a aplicação falha fechada quando falta material obrigatório. Consulte `docs/api/CHANGELOG-API.md` para migração. |
 | **HISTÓRICO** | Release global `0.5.0` | Versão publicada anterior. DOI específico da versão: [`10.5281/zenodo.23344005`](https://doi.org/10.5281/zenodo.23344005). |
-| **VIGENTE** | DOI no `CITATION.cff` | O campo `doi` mantém o DOI de conceito `10.5281/zenodo.23125082`; `identifiers` registra o DOI específico da v0.6.0 `10.5281/zenodo.23607357`. A versão é `0.6.0` e a data oficial é `2026-10-23`. |
+| **VIGENTE** | DOI no `CITATION.cff` | O campo `doi` mantém o DOI de conceito `10.5281/zenodo.23125082`; `identifiers` registra o DOI específico da v0.7.0 `10.5281/zenodo.24045951`. A versão é `0.7.0` e a data oficial é `2026-11-07`. |
+| **HISTÓRICO** | Release global `0.6.0` | Versão publicada anterior. DOI específico da versão: [`10.5281/zenodo.23607357`](https://doi.org/10.5281/zenodo.23607357). |
 
 **Registro de decisão de DOI — resolvido em 2026-10-25:** o campo `doi` permanece no DOI de conceito e `identifiers` contém o DOI específico da versão v0.6.0. Os dois identificadores têm funções distintas.
 
@@ -120,7 +122,7 @@ The frozen contract remains HTTP 422 with error type `missing` and location `["b
 
 ## Release and system boundaries
 
-- A release publicada mais recente é **v0.6.0** (Zenodo DOI [10.5281/zenodo.23607357](https://doi.org/10.5281/zenodo.23607357)); o DOI de todas as versões é [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082).
+- A release publicada mais recente é **v0.7.0** (Zenodo DOI [10.5281/zenodo.24045951](https://doi.org/10.5281/zenodo.24045951)); o DOI de todas as versões é [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082).
 - As notas da v0.6.0 estão em `docs/release/v0.6.0.md`; publicação confirmada. Nenhuma tag ou release foi criada ou alterada por esta atualização documental.
 - The RGC protocol remains `[PROPOSTO]`; approved decision options define rules but do not freeze the protocol or authorize a benchmark run.
 - No claims of certification, institutional validation, independent review or production readiness are supported by the current evidence.
