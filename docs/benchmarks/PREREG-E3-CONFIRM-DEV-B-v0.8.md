@@ -71,7 +71,7 @@ Se **CONFIRMADO**, a E3b-01 passa a ser o candidato principal para a execução 
 - Trava de execução única **persistente e atômica** (proposta, implementação em PR separada sujeita a autorização): antes de qualquer cálculo, o job cria uma referência Git reservada (`refs/tags/p1-dev-b-confirmation-lock`) apontando para o commit executado. A criação de referência é atômica no GitHub (uma segunda tentativa falha com conflito), persiste após a execução e independe de artefatos. Execuções concorrentes ficam também serializadas por um grupo de concorrência. Camadas adicionais: o código recusa se houver relatório da P1 publicado no repositório. Limite declarado: um administrador pode apagar a referência; para impedir, o mantenedor deve protegê-la por regra de proteção de tags, e qualquer exclusão fica registrada no log de auditoria do repositório.
 - Saída somente agregada; nenhum dado por instância.
 
-## 7. Natureza do DEV-B: holdout parcialmente usado (DECISÃO PENDENTE do mantenedor)
+## 7. Natureza do DEV-B: holdout parcialmente usado (decisão: opção A, aprovada pelo mantenedor em 2026-11-08)
 
 **Fato:** o DEV-B já foi usado pela Calibration V2 para a certificação LTT do FactCG (Emenda 2). O DEV-B, portanto, **não é um holdout intocado**: o comportamento do comparador (FactCG) nele já foi parcialmente observado. A E3b-01 nunca foi avaliada no DEV-B, e a hipótese foi escolhida apenas com dados do DEV-A.
 
@@ -83,7 +83,11 @@ Se **CONFIRMADO**, a E3b-01 passa a ser o candidato principal para a execução 
 | B. **Reclassificar a P1 como avaliação exploratória** em DEV-B e ir ao TEST único quando os demais gates estiverem fechados | Exploratório | Nenhum | Perde-se o passo intermediário antes de gastar o TEST |
 | C. Obter **dados independentes novos** (conjunto anotado externo, fora do LLM-AggreFact) para a confirmação | Confirmação independente | Alto (anotação, tempo) | Comparabilidade com o leaderboard menor |
 
-Proposta do revisor técnico: **A**, com o rótulo "confirmação condicional" obrigatório e o TEST único como única confirmação independente. A escolha é do mantenedor e deve ser registrada antes da aprovação deste documento.
+**Decisão do mantenedor (2026-11-08): opção A.** Consequências obrigatórias:
+
+- Todo relato da P1 usa o rótulo **"confirmação condicional em holdout parcialmente usado (DEV-B)"** e declara o uso anterior do DEV-B pela Calibration V2 (FactCG, Emenda 2).
+- A P1 **nunca** é apresentada como confirmação independente. A única confirmação independente prevista é a execução única no TEST, com pré-registro e autorização próprios.
+- Esta decisão define a classificação do resultado; **não** aprova este pré-registro nem autoriza a execução da P1, que continuam dependendo da elegibilidade (DEC-026), da regra de coorte não estimável, da trava de execução única e da aprovação expressa do Status.
 
 ## 8. Relação com a Calibration V2
 
