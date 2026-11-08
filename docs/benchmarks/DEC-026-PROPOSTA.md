@@ -16,7 +16,7 @@
 |---|---|---|
 | 1. Exposição confirmada | Fonte primária documenta, no treino, a fonte ou o corpus da coorte | Bloqueada |
 | 2. Exposição provável | Indício concreto sem confirmação documental (por exemplo, correspondência textual relevante no teste empírico) | Bloqueada |
-| 3. Sem exposição detectada pelos testes realizados | Dados de fine-tuning públicos **e** teste empírico pré-especificado executado com resultado negativo | Elegível, com o rótulo "independência não demonstrada; sem exposição detectada pelos testes realizados" |
+| 3. Sem exposição detectada pelos testes realizados | Dados de fine-tuning públicos **e** teste empírico pré-especificado executado com resultado negativo | **Elegível para análise limitada** (não confirmatória), com o rótulo "independência não demonstrada; sem exposição detectada pelos testes realizados". Uso confirmatório exige, além disso, decisão sobre a exposição de seleção e aprovação expressa do mantenedor |
 | 4. Independência não verificável | Teste ainda não executado, ou impossível por dados confidenciais | Bloqueada |
 
 Regras complementares:
@@ -35,6 +35,7 @@ A matriz anterior (v0.8, sha256 `8b7becf74727a1ad1d52706760c9682b04bd1805476bf3c
 ## 4. Investigação empírica proposta (não executada)
 
 - **Método:** correspondência exata e sobreposição de n-gramas de 50 caracteres entre os dados de fine-tuning públicos de cada modelo e os documentos e afirmações de cada coorte, seguindo Vilar et al., *Benchmark Data Contamination in Underrepresented Languages: A Comprehensive Analysis Using Brazilian Data*, LREC 2026, pp. 4765–4777, DOI [10.63317/39wbjvajnh7t](https://aclanthology.org/2026.lrec-1.374/).
+- **Testabilidade condicionada:** a testabilidade depende da disponibilidade de IDs/splits e da cobertura real de cada corpus; sem manifesto completo, o teste pode ser **inconclusivo**, e a célula permanece no estado 4.
 - **Dados de treino testáveis (públicos):** `lytang/C2D-and-D2C-MiniCheck` (MIT; 14,4 mil linhas, C2D e D2C); ANLI; MultiNLI, FEVER-NLI, LingNLI e WANLI (mDeBERTa); HotpotQA e MuSiQue (fontes do CG2C-MHQA do FactCG). A publicação dos dados gerados CG2C não foi verificada.
 - **Somente DEV, somente contagens agregadas por célula.** O TEST nunca é lido. Texto obrigatório em toda comunicação: "A investigação empírica de contaminação foi realizada no DEV. Como DEV e TEST compartilham fontes, os resultados fornecem evidência auxiliar sobre exposição potencial, mas não constituem verificação direta de independência dos exemplos do TEST."
 - **Protocolo a fixar ANTES de qualquer execução:** normalização do texto (por exemplo, minúsculas, espaços), tamanho do n-grama, unidade (documento, afirmação), limiar de "correspondência relevante", denominador, fonte e versão exata de cada corpus de treino, tratamento de corpus incompleto e risco de falso negativo (um teste negativo não prova independência).
