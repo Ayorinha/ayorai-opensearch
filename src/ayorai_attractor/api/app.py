@@ -30,6 +30,8 @@ from ayorai_attractor.verification.api_models import (
     VerificationAPIResponse,
     VerificationRequest,
 )
+from ayorai_attractor.verification.check_models import CheckRequest, CheckResponse
+from ayorai_attractor.verification.document_check import CheckDocumentInput, check_documents
 from ayorai_attractor.verification.judge import InvalidJudgeInput, judge
 from ayorai_attractor.verification.judge2 import adjudicate
 from ayorai_attractor.verification.judge2.explanations import explain_canonical_result
@@ -228,6 +230,55 @@ def audit(request: SearchRequest) -> AuditResponse:
             )
             for item in report.findings
         ],
+    )
+
+
+@app.post(
+    "/v1/check",
+    response_model=CheckResponse,
+    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+)
+def check(request: CheckRequest) -> CheckResponse:
+    """Check claims, or an AI answer, against the supplied documents.
+
+    Closed world and deterministic: relevant passages are selected from the documents,
+    a conservative stance detector labels them and the ADR-002 Judge decides. Each
+    piece of evidence carries exact character offsets; the response carries the SHA-256
+    of every document and the version of every component.
+    """
+    result = check_documents(
+        [
+            CheckDocumentInput(
+                id=doc.id,
+                text=doc.text,
+                source=doc.source,
+                url=str(doc.url) if doc.url is not None else None,
+            )
+            for doc in request.documents
+        ],
+        claims=request.claims,
+        answer=request.answer,
+    )
+    return CheckResponse.model_validate(
+        {
+            "trace_id": result.trace_id,
+            "engine": result.engine,
+            "documents": list(result.documents),
+            "results": [
+                {
+                    "claim_id": item.claim_id,
+                    "claim": item.claim,
+                    "status": item.status,
+                    "verdict": item.verdict,
+                    "confidence": item.confidence,
+                    "evidence": [vars(view) for view in item.evidence],
+                    "rationale": item.rationale,
+                    "abstention_reason": item.abstention_reason,
+                }
+                for item in result.results
+            ],
+            "summary": result.summary,
+        }
     )
 
 

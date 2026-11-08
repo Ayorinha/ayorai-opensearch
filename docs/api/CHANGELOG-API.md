@@ -2,6 +2,14 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## 2026-11-08 — POST /v1/check (additive)
+
+- New endpoint `POST /v1/check` (schema `c1`): checks caller-supplied `claims`, or an `answer` decomposed into claims, against caller-supplied `documents` (1–20, up to 200,000 characters each).
+- Per claim: Judge verdict (ADR-002) or abstention, with evidence passages carrying exact character offsets and stance (`supports`, `contradicts`, `neutral`).
+- Response includes `trace_id` (deterministic), SHA-256 and length of each document, and the version of every component (claim extractor, passage selection, stance detector, Judge).
+- Support is conservative: a passage supports a claim only if it contains at least 80% of the claim's content words and every number in the claim; contradictions are never weakened. Absent support yields `abstain/no_answer`, never an inferred verdict.
+- Additive only: no existing request schema, response schema, status code or Judge rule changed.
+
 ## 2026-11-04 — Failure stage diagnostics (additive)
 
 - Added the optional, nullable `stage` field to `Failure` (in `SearchResponse.failures`) and to `AuditFindingResponse` (in `POST /v1/audit` findings). Allowed values: `retrieval`, `extraction`, `nli`, `judge` (schema `FailureStage`).

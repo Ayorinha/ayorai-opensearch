@@ -1,1225 +1,129 @@
 {
-  "components": {
-    "schemas": {
-      "AuditFindingResponse": {
-        "properties": {
-          "code": {
-            "title": "Code",
-            "type": "string"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          },
-          "severity": {
-            "title": "Severity",
-            "type": "string"
-          },
-          "stage": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FailureStage"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "code",
-          "severity",
-          "message"
-        ],
-        "title": "AuditFindingResponse",
-        "type": "object"
-      },
-      "AuditResponse": {
-        "properties": {
-          "evidence_count": {
-            "minimum": 0.0,
-            "title": "Evidence Count",
-            "type": "integer"
-          },
-          "failure_count": {
-            "minimum": 0.0,
-            "title": "Failure Count",
-            "type": "integer"
-          },
-          "findings": {
-            "items": {
-              "$ref": "#/components/schemas/AuditFindingResponse"
-            },
-            "title": "Findings",
-            "type": "array"
-          },
-          "formal_verification_endpoint": {
-            "default": "/v1/verify",
-            "title": "Formal Verification Endpoint",
-            "type": "string"
-          },
-          "independent_evidence_count": {
-            "minimum": 0.0,
-            "title": "Independent Evidence Count",
-            "type": "integer"
-          },
-          "operation_status": {
-            "default": "completed",
-            "enum": [
-              "completed",
-              "failed",
-              "not_recorded"
-            ],
-            "title": "Operation Status",
-            "type": "string"
-          },
-          "trace_id": {
-            "title": "Trace Id",
-            "type": "string"
-          },
-          "verdict_authority": {
-            "const": "not_adjudicated",
-            "default": "not_adjudicated",
-            "title": "Verdict Authority",
-            "type": "string"
-          },
-          "verification": {
-            "title": "Verification",
-            "type": "null"
-          },
-          "verified_evidence_count": {
-            "minimum": 0.0,
-            "title": "Verified Evidence Count",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "trace_id",
-          "evidence_count",
-          "independent_evidence_count",
-          "verified_evidence_count",
-          "failure_count"
-        ],
-        "title": "AuditResponse",
-        "type": "object"
-      },
-      "AuditTraceResponse": {
-        "properties": {
-          "evidence_count": {
-            "minimum": 0.0,
-            "title": "Evidence Count",
-            "type": "integer"
-          },
-          "failure_count": {
-            "minimum": 0.0,
-            "title": "Failure Count",
-            "type": "integer"
-          },
-          "finding_count": {
-            "minimum": 0.0,
-            "title": "Finding Count",
-            "type": "integer"
-          },
-          "formal_verification_endpoint": {
-            "default": "/v1/verify",
-            "title": "Formal Verification Endpoint",
-            "type": "string"
-          },
-          "independent_evidence_count": {
-            "minimum": 0.0,
-            "title": "Independent Evidence Count",
-            "type": "integer"
-          },
-          "legacy_verification": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Legacy Verification"
-          },
-          "operation_status": {
-            "default": "completed",
-            "enum": [
-              "completed",
-              "failed",
-              "not_recorded"
-            ],
-            "title": "Operation Status",
-            "type": "string"
-          },
-          "replay_digest": {
-            "title": "Replay Digest",
-            "type": "string"
-          },
-          "replay_integrity": {
-            "enum": [
-              "valid",
-              "invalid"
-            ],
-            "title": "Replay Integrity",
-            "type": "string"
-          },
-          "replay_version": {
-            "enum": [
-              "r2-v1",
-              "r2-v2"
-            ],
-            "title": "Replay Version",
-            "type": "string"
-          },
-          "trace_id": {
-            "title": "Trace Id",
-            "type": "string"
-          },
-          "verdict_authority": {
-            "const": "not_adjudicated",
-            "default": "not_adjudicated",
-            "title": "Verdict Authority",
-            "type": "string"
-          },
-          "verification": {
-            "title": "Verification",
-            "type": "null"
-          },
-          "verified_evidence_count": {
-            "minimum": 0.0,
-            "title": "Verified Evidence Count",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "trace_id",
-          "evidence_count",
-          "independent_evidence_count",
-          "verified_evidence_count",
-          "failure_count",
-          "finding_count",
-          "replay_digest",
-          "replay_version",
-          "replay_integrity"
-        ],
-        "title": "AuditTraceResponse",
-        "type": "object"
-      },
-      "Claim": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "minLength": 1,
-            "title": "Id",
-            "type": "string"
-          },
-          "text": {
-            "minLength": 1,
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "text"
-        ],
-        "title": "Claim",
-        "type": "object"
-      },
-      "ClaimJudgmentResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "claim_id": {
-            "title": "Claim Id",
-            "type": "string"
-          },
-          "contradiction_clusters": {
-            "minimum": 0.0,
-            "title": "Contradiction Clusters",
-            "type": "integer"
-          },
-          "provenance_complete": {
-            "title": "Provenance Complete",
-            "type": "boolean"
-          },
-          "support_clusters": {
-            "minimum": 0.0,
-            "title": "Support Clusters",
-            "type": "integer"
-          },
-          "verdict": {
-            "$ref": "#/components/schemas/Verdict"
-          }
-        },
-        "required": [
-          "claim_id",
-          "support_clusters",
-          "contradiction_clusters",
-          "provenance_complete",
-          "verdict"
-        ],
-        "title": "ClaimJudgmentResponse",
-        "type": "object"
-      },
-      "Evidence-Input": {
-        "additionalProperties": false,
-        "properties": {
-          "canonical_url": {
-            "anyOf": [
-              {
-                "format": "uri",
-                "maxLength": 2083,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Canonical Url"
-          },
-          "cited_origin_id": {
-            "anyOf": [
-              {
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cited Origin Id"
-          },
-          "claim_id": {
-            "minLength": 1,
-            "title": "Claim Id",
-            "type": "string"
-          },
-          "end_offset": {
-            "description": "Exclusive end offset; must be greater than start_offset.",
-            "minimum": 0.0,
-            "title": "End Offset",
-            "type": "integer"
-          },
-          "excerpt": {
-            "minLength": 1,
-            "title": "Excerpt",
-            "type": "string"
-          },
-          "id": {
-            "minLength": 1,
-            "title": "Id",
-            "type": "string"
-          },
-          "normalized_content_hash": {
-            "anyOf": [
-              {
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Normalized Content Hash"
-          },
-          "origin_id": {
-            "anyOf": [
-              {
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Origin Id"
-          },
-          "provenance_complete": {
-            "default": true,
-            "title": "Provenance Complete",
-            "type": "boolean"
-          },
-          "retrieved_at": {
-            "format": "date-time",
-            "title": "Retrieved At",
-            "type": "string"
-          },
-          "source_id": {
-            "minLength": 1,
-            "title": "Source Id",
-            "type": "string"
-          },
-          "source_location": {
-            "minLength": 1,
-            "title": "Source Location",
-            "type": "string"
-          },
-          "start_offset": {
-            "description": "Inclusive start offset in the source text.",
-            "minimum": 0.0,
-            "title": "Start Offset",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "claim_id",
-          "source_id",
-          "source_location",
-          "retrieved_at",
-          "start_offset",
-          "end_offset",
-          "excerpt"
-        ],
-        "title": "Evidence",
-        "type": "object"
-      },
-      "Evidence-Output": {
-        "properties": {
-          "claim": {
-            "title": "Claim",
-            "type": "string"
-          },
-          "excerpt": {
-            "title": "Excerpt",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "independent": {
-            "default": true,
-            "title": "Independent",
-            "type": "boolean"
-          },
-          "source": {
-            "title": "Source",
-            "type": "string"
-          },
-          "verified": {
-            "default": false,
-            "title": "Verified",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "claim",
-          "source",
-          "excerpt"
-        ],
-        "title": "Evidence",
-        "type": "object"
-      },
-      "Failure": {
-        "properties": {
-          "message": {
-            "title": "Message",
-            "type": "string"
-          },
-          "recoverable": {
-            "default": true,
-            "title": "Recoverable",
-            "type": "boolean"
-          },
-          "stage": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FailureStage"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "type": {
-            "$ref": "#/components/schemas/FailureType"
-          }
-        },
-        "required": [
-          "type",
-          "message"
-        ],
-        "title": "Failure",
-        "type": "object"
-      },
-      "FailureStage": {
-        "enum": [
-          "retrieval",
-          "extraction",
-          "nli",
-          "judge"
-        ],
-        "title": "FailureStage",
-        "type": "string"
-      },
-      "FailureType": {
-        "enum": [
-          "timeout",
-          "api_error",
-          "rate_limit",
-          "empty_response",
-          "low_confidence",
-          "no_sources",
-          "weak_sources",
-          "contradictory_result",
-          "tool_failure",
-          "invalid_format",
-          "insufficient_evidence",
-          "stale_information",
-          "unsupported_claim"
-        ],
-        "title": "FailureType",
-        "type": "string"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "title": "Detail",
-            "type": "array"
-          }
-        },
-        "title": "HTTPValidationError",
-        "type": "object"
-      },
-      "Judge2AtomRequest": {
-        "additionalProperties": false,
-        "description": "Strict public schema for a Judge 2 atom and its source-text span.",
-        "properties": {
-          "end_offset": {
-            "description": "Exclusive end offset in source text; must be within the RFC 8785 safe-integer range.",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991.0,
-            "title": "End Offset",
-            "type": "integer"
-          },
-          "id": {
-            "minLength": 1,
-            "title": "Id",
-            "type": "string"
-          },
-          "start_offset": {
-            "maximum": 9007199254740991.0,
-            "minimum": 0.0,
-            "title": "Start Offset",
-            "type": "integer"
-          },
-          "text": {
-            "minLength": 1,
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "text",
-          "start_offset",
-          "end_offset"
-        ],
-        "title": "Judge2AtomRequest",
-        "type": "object"
-      },
-      "Judge2EvidenceRequest": {
-        "additionalProperties": false,
-        "description": "Strict r2-a evidence shape; relational offsets are adjudicated by Judge 2.",
-        "properties": {
-          "canonical_url": {
-            "anyOf": [
-              {
-                "format": "uri",
-                "maxLength": 2083,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Canonical Url"
-          },
-          "cited_origin_id": {
-            "anyOf": [
-              {
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cited Origin Id"
-          },
-          "claim_id": {
-            "minLength": 1,
-            "title": "Claim Id",
-            "type": "string"
-          },
-          "end_offset": {
-            "description": "Must be greater than start_offset; the relational invariant is enforced by the API and Judge 2.",
-            "maximum": 9007199254740991.0,
-            "minimum": 0.0,
-            "title": "End Offset",
-            "type": "integer"
-          },
-          "excerpt": {
-            "minLength": 1,
-            "title": "Excerpt",
-            "type": "string"
-          },
-          "id": {
-            "minLength": 1,
-            "title": "Id",
-            "type": "string"
-          },
-          "normalized_content_hash": {
-            "anyOf": [
-              {
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Normalized Content Hash"
-          },
-          "origin_id": {
-            "anyOf": [
-              {
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Origin Id"
-          },
-          "provenance_complete": {
-            "default": true,
-            "title": "Provenance Complete",
-            "type": "boolean"
-          },
-          "retrieved_at": {
-            "format": "date-time",
-            "title": "Retrieved At",
-            "type": "string"
-          },
-          "source_id": {
-            "minLength": 1,
-            "title": "Source Id",
-            "type": "string"
-          },
-          "source_location": {
-            "minLength": 1,
-            "title": "Source Location",
-            "type": "string"
-          },
-          "start_offset": {
-            "maximum": 9007199254740991.0,
-            "minimum": 0.0,
-            "title": "Start Offset",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "claim_id",
-          "source_id",
-          "source_location",
-          "retrieved_at",
-          "start_offset",
-          "end_offset",
-          "excerpt"
-        ],
-        "title": "Judge2EvidenceRequest",
-        "type": "object"
-      },
-      "Judge2StanceRequest": {
-        "additionalProperties": false,
-        "description": "Strict public schema for an explicit atom/evidence stance edge.",
-        "properties": {
-          "atom_id": {
-            "minLength": 1,
-            "title": "Atom Id",
-            "type": "string"
-          },
-          "evidence_id": {
-            "minLength": 1,
-            "title": "Evidence Id",
-            "type": "string"
-          },
-          "id": {
-            "minLength": 1,
-            "title": "Id",
-            "type": "string"
-          },
-          "stance": {
-            "enum": [
-              "SUPPORTS",
-              "CONTRADICTS",
-              "NEUTRAL",
-              "supports",
-              "contradicts",
-              "neutral"
-            ],
-            "title": "Stance",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "atom_id",
-          "evidence_id",
-          "stance"
-        ],
-        "title": "Judge2StanceRequest",
-        "type": "object"
-      },
-      "Judge2VerificationRequest": {
-        "additionalProperties": false,
-        "description": "Strict JSON contract for the r2-a Judge 2.0.0 API path.",
-        "properties": {
-          "atoms": {
-            "items": {
-              "$ref": "#/components/schemas/Judge2AtomRequest"
-            },
-            "title": "Atoms",
-            "type": "array"
-          },
-          "claim_id": {
-            "minLength": 1,
-            "title": "Claim Id",
-            "type": "string"
-          },
-          "claim_text": {
-            "minLength": 1,
-            "title": "Claim Text",
-            "type": "string"
-          },
-          "evidence": {
-            "items": {
-              "$ref": "#/components/schemas/Judge2EvidenceRequest"
-            },
-            "title": "Evidence",
-            "type": "array"
-          },
-          "evidence_pool_integrity_ok": {
-            "default": true,
-            "title": "Evidence Pool Integrity Ok",
-            "type": "boolean"
-          },
-          "factual_claim": {
-            "default": true,
-            "title": "Factual Claim",
-            "type": "boolean"
-          },
-          "out_of_scope": {
-            "default": false,
-            "title": "Out Of Scope",
-            "type": "boolean"
-          },
-          "protocol_version": {
-            "const": "r2-a",
-            "default": "r2-a",
-            "title": "Protocol Version",
-            "type": "string"
-          },
-          "retrieval_succeeded": {
-            "default": true,
-            "title": "Retrieval Succeeded",
-            "type": "boolean"
-          },
-          "schema_version": {
-            "const": "r2-a",
-            "title": "Schema Version",
-            "type": "string"
-          },
-          "source_texts": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "title": "Source Texts",
-            "type": "object"
-          },
-          "stances": {
-            "items": {
-              "$ref": "#/components/schemas/Judge2StanceRequest"
-            },
-            "title": "Stances",
-            "type": "array"
-          },
-          "temporal_anchor_present": {
-            "default": true,
-            "title": "Temporal Anchor Present",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "schema_version",
-          "claim_id",
-          "claim_text",
-          "atoms",
-          "source_texts"
-        ],
-        "title": "Judge2VerificationRequest",
-        "type": "object"
-      },
-      "Judge2VerificationResponse": {
-        "additionalProperties": false,
-        "description": "Additive r2-a response with explanations derived from canonical output.",
-        "properties": {
-          "response_policy": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ResponsePolicy"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "result": {
-            "additionalProperties": true,
-            "title": "Result",
-            "type": "object"
-          },
-          "schema_version": {
-            "const": "r2-a",
-            "title": "Schema Version",
-            "type": "string"
-          },
-          "simple_explanation": {
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 5,
-            "minItems": 1,
-            "title": "Simple Explanation",
-            "type": "array"
-          },
-          "technical_explanation": {
-            "additionalProperties": true,
-            "title": "Technical Explanation",
-            "type": "object"
-          }
-        },
-        "required": [
-          "schema_version",
-          "result",
-          "simple_explanation",
-          "technical_explanation"
-        ],
-        "title": "Judge2VerificationResponse",
-        "type": "object"
-      },
-      "QualityMode": {
-        "enum": [
-          "fast",
-          "balanced",
-          "deep"
-        ],
-        "title": "QualityMode",
-        "type": "string"
-      },
-      "ResponsePolicy": {
-        "description": "Transport-level abstention policy; never a factual verdict.",
-        "enum": [
-          "abstain/no_answer",
-          "abstain/out_of_scope",
-          "abstain/processing_error"
-        ],
-        "title": "ResponsePolicy",
-        "type": "string"
-      },
-      "SearchRequest": {
-        "properties": {
-          "max_agents": {
-            "default": 5,
-            "description": "Preferred form: JSON integer. Legacy coercion is preserved for compatibility: numeric strings (e.g. \"5\"), integral floats and booleans are still accepted for backward compatibility; removal is not scheduled before v0.6.0.",
-            "maximum": 100.0,
-            "minimum": 1.0,
-            "title": "Max Agents",
-            "type": "integer"
-          },
-          "mode": {
-            "$ref": "#/components/schemas/QualityMode",
-            "default": "balanced"
-          },
-          "query": {
-            "maxLength": 10000,
-            "minLength": 3,
-            "title": "Query",
-            "type": "string"
-          },
-          "require_primary_source": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "enum": [
-                  0,
-                  1
-                ],
-                "type": "integer"
-              }
-            ],
-            "default": false,
-            "title": "Require Primary Source"
-          }
-        },
-        "required": [
-          "query"
-        ],
-        "title": "SearchRequest",
-        "type": "object"
-      },
-      "SearchResponse": {
-        "properties": {
-          "agents_used": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Agents Used",
-            "type": "array"
-          },
-          "answer": {
-            "title": "Answer",
-            "type": "string"
-          },
-          "confidence": {
-            "anyOf": [
-              {
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Confidence"
-          },
-          "evidence": {
-            "items": {
-              "$ref": "#/components/schemas/Evidence-Output"
-            },
-            "title": "Evidence",
-            "type": "array"
-          },
-          "failures": {
-            "items": {
-              "$ref": "#/components/schemas/Failure"
-            },
-            "title": "Failures",
-            "type": "array"
-          },
-          "formal_verification_endpoint": {
-            "default": "/v1/verify",
-            "title": "Formal Verification Endpoint",
-            "type": "string"
-          },
-          "mode": {
-            "$ref": "#/components/schemas/QualityMode"
-          },
-          "notice": {
-            "default": "No factual verdict was adjudicated. Submit structured claims and evidence to /v1/verify for formal verification.",
-            "title": "Notice",
-            "type": "string"
-          },
-          "operation_status": {
-            "default": "completed",
-            "enum": [
-              "completed",
-              "failed",
-              "not_recorded"
-            ],
-            "title": "Operation Status",
-            "type": "string"
-          },
-          "query": {
-            "title": "Query",
-            "type": "string"
-          },
-          "trace_id": {
-            "title": "Trace Id",
-            "type": "string"
-          },
-          "verdict_authority": {
-            "const": "not_adjudicated",
-            "default": "not_adjudicated",
-            "title": "Verdict Authority",
-            "type": "string"
-          },
-          "verification": {
-            "title": "Verification",
-            "type": "null"
-          }
-        },
-        "required": [
-          "query",
-          "mode",
-          "answer",
-          "trace_id"
-        ],
-        "title": "SearchResponse",
-        "type": "object"
-      },
-      "Stance": {
-        "enum": [
-          "supports",
-          "contradicts",
-          "neutral"
-        ],
-        "title": "Stance",
-        "type": "string"
-      },
-      "StanceEdge": {
-        "additionalProperties": false,
-        "properties": {
-          "claim_id": {
-            "minLength": 1,
-            "title": "Claim Id",
-            "type": "string"
-          },
-          "evidence_id": {
-            "minLength": 1,
-            "title": "Evidence Id",
-            "type": "string"
-          },
-          "id": {
-            "minLength": 1,
-            "title": "Id",
-            "type": "string"
-          },
-          "stance": {
-            "$ref": "#/components/schemas/Stance"
-          }
-        },
-        "required": [
-          "id",
-          "claim_id",
-          "evidence_id",
-          "stance"
-        ],
-        "title": "StanceEdge",
-        "type": "object"
-      },
-      "Traceability": {
-        "additionalProperties": false,
-        "properties": {
-          "adr": {
-            "const": "ADR-002",
-            "default": "ADR-002",
-            "title": "Adr",
-            "type": "string"
-          },
-          "rules": {
-            "items": {
-              "type": "string"
-            },
-            "minItems": 1,
-            "title": "Rules",
-            "type": "array"
-          }
-        },
-        "required": [
-          "rules"
-        ],
-        "title": "Traceability",
-        "type": "object"
-      },
-      "ValidationError": {
-        "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "title": "Location",
-            "type": "array"
-          },
-          "msg": {
-            "title": "Message",
-            "type": "string"
-          },
-          "type": {
-            "title": "Error Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError",
-        "type": "object"
-      },
-      "Verdict": {
-        "enum": [
-          "verified",
-          "supported",
-          "partially_supported",
-          "unverified",
-          "refuted",
-          "conflicting"
-        ],
-        "title": "Verdict",
-        "type": "string"
-      },
-      "VerificationAPIResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "judgments": {
-            "items": {
-              "$ref": "#/components/schemas/ClaimJudgmentResponse"
-            },
-            "title": "Judgments",
-            "type": "array"
-          },
-          "schema_version": {
-            "const": "r1-a",
-            "default": "r1-a",
-            "title": "Schema Version",
-            "type": "string"
-          },
-          "status": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Verdict"
-              },
-              {
-                "$ref": "#/components/schemas/ResponsePolicy"
-              }
-            ],
-            "title": "Status"
-          },
-          "traceability": {
-            "$ref": "#/components/schemas/Traceability"
-          },
-          "verdict": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Verdict"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "status",
-          "judgments",
-          "traceability"
-        ],
-        "title": "VerificationAPIResponse",
-        "type": "object"
-      },
-      "VerificationRequest": {
-        "additionalProperties": false,
-        "not": {
-          "properties": {
-            "evidence": {
-              "maxItems": 0
-            },
-            "stances": {
-              "minItems": 1
-            }
-          },
-          "required": [
-            "stances"
-          ],
-          "type": "object"
-        },
-        "properties": {
-          "claims": {
-            "items": {
-              "$ref": "#/components/schemas/Claim"
-            },
-            "minItems": 1,
-            "title": "Claims",
-            "type": "array"
-          },
-          "evidence": {
-            "items": {
-              "$ref": "#/components/schemas/Evidence-Input"
-            },
-            "title": "Evidence",
-            "type": "array"
-          },
-          "schema_version": {
-            "const": "r1-a",
-            "default": "r1-a",
-            "title": "Schema Version",
-            "type": "string"
-          },
-          "stances": {
-            "items": {
-              "$ref": "#/components/schemas/StanceEdge"
-            },
-            "title": "Stances",
-            "type": "array"
-          }
-        },
-        "required": [
-          "claims"
-        ],
-        "title": "VerificationRequest",
-        "type": "object"
-      }
-    }
-  },
+  "openapi": "3.1.0",
   "info": {
     "title": "AYORAI ATTRACTOR",
     "version": "0.1.0"
   },
-  "openapi": "3.1.0",
   "paths": {
     "/health": {
       "get": {
+        "summary": "Health",
         "operationId": "health_health_get",
         "responses": {
           "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
                   "additionalProperties": {
                     "type": "string"
                   },
-                  "title": "Response Health Health Get",
-                  "type": "object"
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/opensearch": {
+      "post": {
+        "summary": "Opensearch",
+        "operationId": "opensearch_v1_opensearch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request body could not be parsed as JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The request rate limit was exceeded.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
                 }
               }
             },
-            "description": "Successful Response"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
           }
-        },
-        "summary": "Health"
+        }
       }
     },
     "/v1/audit": {
       "post": {
+        "summary": "Audit",
         "description": "Run the engine and expose a deterministic audit of its evidence.",
         "operationId": "audit_v1_audit_post",
         "requestBody": {
@@ -1234,16 +138,17 @@
         },
         "responses": {
           "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AuditResponse"
                 }
               }
-            },
-            "description": "Successful Response"
+            }
           },
           "400": {
+            "description": "Request body could not be parsed as JSON.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1252,16 +157,16 @@
                       "type": "string"
                     }
                   },
+                  "type": "object",
                   "required": [
                     "detail"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
-            },
-            "description": "Request body could not be parsed as JSON."
+            }
           },
           "422": {
+            "description": "Request validation failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1273,73 +178,25 @@
                       "type": "array"
                     }
                   },
+                  "type": "object",
                   "required": [
                     "detail"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
-            },
-            "description": "Request validation failed."
+            }
           },
           "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "detail": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "detail"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
             "description": "The request rate limit was exceeded.",
             "headers": {
               "Retry-After": {
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
-                  "minimum": 1,
-                  "type": "integer"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Audit"
-      }
-    },
-    "/v1/audit/{trace_id}": {
-      "get": {
-        "description": "Return persisted audit metadata without exposing raw evidence or prompts.",
-        "operationId": "audit_trace_v1_audit__trace_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "trace_id",
-            "required": true,
-            "schema": {
-              "title": "Trace Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuditTraceResponse"
+                  "type": "integer",
+                  "minimum": 1.0
                 }
               }
             },
-            "description": "Successful Response"
-          },
-          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -1348,75 +205,27 @@
                       "type": "string"
                     }
                   },
+                  "type": "object",
                   "required": [
                     "detail"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "The requested audit trace does not exist."
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "detail": {
-                      "items": {
-                        "type": "object"
-                      },
-                      "type": "array"
-                    }
-                  },
-                  "required": [
-                    "detail"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Request validation failed."
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "detail": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "detail"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "The request rate limit was exceeded.",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds to wait before retrying the request.",
-                "schema": {
-                  "minimum": 1,
-                  "type": "integer"
+                  ]
                 }
               }
             }
           }
-        },
-        "summary": "Audit Trace"
+        }
       }
     },
-    "/v1/opensearch": {
+    "/v1/check": {
       "post": {
-        "operationId": "opensearch_v1_opensearch_post",
+        "summary": "Check",
+        "description": "Check claims, or an AI answer, against the supplied documents.\n\nClosed world and deterministic: relevant passages are selected from the documents,\na conservative stance detector labels them and the ADR-002 Judge decides. Each\npiece of evidence carries exact character offsets; the response carries the SHA-256\nof every document and the version of every component.",
+        "operationId": "check_v1_check_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SearchRequest"
+                "$ref": "#/components/schemas/CheckRequest"
               }
             }
           },
@@ -1424,16 +233,17 @@
         },
         "responses": {
           "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SearchResponse"
+                  "$ref": "#/components/schemas/CheckResponse"
                 }
               }
-            },
-            "description": "Successful Response"
+            }
           },
           "400": {
+            "description": "Request body could not be parsed as JSON.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1442,16 +252,16 @@
                       "type": "string"
                     }
                   },
+                  "type": "object",
                   "required": [
                     "detail"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
-            },
-            "description": "Request body could not be parsed as JSON."
+            }
           },
           "422": {
+            "description": "Request validation failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1463,16 +273,25 @@
                       "type": "array"
                     }
                   },
+                  "type": "object",
                   "required": [
                     "detail"
-                  ],
-                  "type": "object"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The request rate limit was exceeded.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
                 }
               }
             },
-            "description": "Request validation failed."
-          },
-          "429": {
             "content": {
               "application/json": {
                 "schema": {
@@ -1481,30 +300,20 @@
                       "type": "string"
                     }
                   },
+                  "type": "object",
                   "required": [
                     "detail"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "The request rate limit was exceeded.",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds to wait before retrying the request.",
-                "schema": {
-                  "minimum": 1,
-                  "type": "integer"
+                  ]
                 }
               }
             }
           }
-        },
-        "summary": "Opensearch"
+        }
       }
     },
     "/v1/verify": {
       "post": {
+        "summary": "Verify",
         "description": "Dispatch r1-a unchanged or expose the canonical Judge 2.0.0 result for r2-a.",
         "operationId": "verify_v1_verify_post",
         "requestBody": {
@@ -1527,6 +336,7 @@
         },
         "responses": {
           "200": {
+            "description": "r1-a or r2-a verification result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1540,10 +350,10 @@
                   ]
                 }
               }
-            },
-            "description": "r1-a or r2-a verification result."
+            }
           },
           "400": {
+            "description": "Request body could not be parsed as JSON.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1552,16 +362,16 @@
                       "type": "string"
                     }
                   },
+                  "type": "object",
                   "required": [
                     "detail"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
-            },
-            "description": "Request body could not be parsed as JSON."
+            }
           },
           "422": {
+            "description": "Request validation failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1573,16 +383,25 @@
                       "type": "array"
                     }
                   },
+                  "type": "object",
                   "required": [
                     "detail"
-                  ],
-                  "type": "object"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The request rate limit was exceeded.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
                 }
               }
             },
-            "description": "Request validation failed."
-          },
-          "429": {
             "content": {
               "application/json": {
                 "schema": {
@@ -1591,26 +410,1599 @@
                       "type": "string"
                     }
                   },
+                  "type": "object",
                   "required": [
                     "detail"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
-            },
+            }
+          }
+        }
+      }
+    },
+    "/v1/audit/{trace_id}": {
+      "get": {
+        "summary": "Audit Trace",
+        "description": "Return persisted audit metadata without exposing raw evidence or prompts.",
+        "operationId": "audit_trace_v1_audit__trace_id__get",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditTraceResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested audit trace does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
             "description": "The request rate limit was exceeded.",
             "headers": {
               "Retry-After": {
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
-                  "minimum": 1,
-                  "type": "integer"
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
                 }
               }
             }
           }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuditFindingResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FailureStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
         },
-        "summary": "Verify"
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "title": "AuditFindingResponse"
+      },
+      "AuditResponse": {
+        "properties": {
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "verification": {
+            "type": "null",
+            "title": "Verification"
+          },
+          "verdict_authority": {
+            "type": "string",
+            "const": "not_adjudicated",
+            "title": "Verdict Authority",
+            "default": "not_adjudicated"
+          },
+          "formal_verification_endpoint": {
+            "type": "string",
+            "title": "Formal Verification Endpoint",
+            "default": "/v1/verify"
+          },
+          "operation_status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "not_recorded"
+            ],
+            "title": "Operation Status",
+            "default": "completed"
+          },
+          "evidence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Evidence Count"
+          },
+          "independent_evidence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Independent Evidence Count"
+          },
+          "verified_evidence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Verified Evidence Count"
+          },
+          "failure_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Failure Count"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/AuditFindingResponse"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "trace_id",
+          "evidence_count",
+          "independent_evidence_count",
+          "verified_evidence_count",
+          "failure_count"
+        ],
+        "title": "AuditResponse"
+      },
+      "AuditTraceResponse": {
+        "properties": {
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "verification": {
+            "type": "null",
+            "title": "Verification"
+          },
+          "verdict_authority": {
+            "type": "string",
+            "const": "not_adjudicated",
+            "title": "Verdict Authority",
+            "default": "not_adjudicated"
+          },
+          "formal_verification_endpoint": {
+            "type": "string",
+            "title": "Formal Verification Endpoint",
+            "default": "/v1/verify"
+          },
+          "operation_status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "not_recorded"
+            ],
+            "title": "Operation Status",
+            "default": "completed"
+          },
+          "evidence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Evidence Count"
+          },
+          "independent_evidence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Independent Evidence Count"
+          },
+          "verified_evidence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Verified Evidence Count"
+          },
+          "failure_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Failure Count"
+          },
+          "finding_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Finding Count"
+          },
+          "replay_digest": {
+            "type": "string",
+            "title": "Replay Digest"
+          },
+          "legacy_verification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legacy Verification"
+          },
+          "replay_version": {
+            "type": "string",
+            "enum": [
+              "r2-v1",
+              "r2-v2"
+            ],
+            "title": "Replay Version"
+          },
+          "replay_integrity": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "invalid"
+            ],
+            "title": "Replay Integrity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "trace_id",
+          "evidence_count",
+          "independent_evidence_count",
+          "verified_evidence_count",
+          "failure_count",
+          "finding_count",
+          "replay_digest",
+          "replay_version",
+          "replay_integrity"
+        ],
+        "title": "AuditTraceResponse"
+      },
+      "CheckClaimResult": {
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "claim": {
+            "type": "string",
+            "title": "Claim"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Judge verdict, or an abstention policy."
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict",
+            "description": "Judge verdict; null when the system abstains."
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/CheckEvidence"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "abstention_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abstention Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "claim_id",
+          "claim",
+          "status",
+          "verdict",
+          "confidence",
+          "evidence",
+          "rationale"
+        ],
+        "title": "CheckClaimResult"
+      },
+      "CheckDocument": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,128}$",
+            "title": "Id",
+            "description": "Caller-chosen document id."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Text",
+            "description": "Full document text."
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Human-readable origin (file name, title)."
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "CheckDocument"
+      },
+      "CheckDocumentDigest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          },
+          "characters": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Characters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sha256",
+          "characters"
+        ],
+        "title": "CheckDocumentDigest"
+      },
+      "CheckEvidence": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Start",
+            "description": "Inclusive character offset in the document."
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "End",
+            "description": "Exclusive character offset in the document."
+          },
+          "excerpt": {
+            "type": "string",
+            "title": "Excerpt"
+          },
+          "stance": {
+            "type": "string",
+            "enum": [
+              "supports",
+              "contradicts",
+              "neutral"
+            ],
+            "title": "Stance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "start",
+          "end",
+          "excerpt",
+          "stance"
+        ],
+        "title": "CheckEvidence"
+      },
+      "CheckRequest": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "c1",
+            "title": "Schema Version",
+            "default": "c1"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/CheckDocument"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Documents"
+          },
+          "claims": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 50,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claims",
+            "description": "Claims to check, verbatim. Provide either claims or answer."
+          },
+          "answer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer",
+            "description": "An AI answer to decompose into claims. Provide either claims or answer."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "documents"
+        ],
+        "title": "CheckRequest"
+      },
+      "CheckResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "c1",
+            "title": "Schema Version",
+            "default": "c1"
+          },
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          },
+          "engine": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Engine"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/CheckDocumentDigest"
+            },
+            "type": "array",
+            "title": "Documents"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/CheckClaimResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "summary": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Summary"
+          },
+          "scope_note": {
+            "type": "string",
+            "title": "Scope Note",
+            "default": "Closed-world check against the supplied documents only. Under the ADR-002 Judge, 'partially_supported' means support from a single independent source and 'verified' support from two or more independent documents. An abstention means the documents do not establish the claim; it is not a statement that the claim is false."
+          }
+        },
+        "type": "object",
+        "required": [
+          "trace_id",
+          "engine",
+          "documents",
+          "results",
+          "summary"
+        ],
+        "title": "CheckResponse"
+      },
+      "Claim": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "Claim"
+      },
+      "ClaimJudgmentResponse": {
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "support_clusters": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Support Clusters"
+          },
+          "contradiction_clusters": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Contradiction Clusters"
+          },
+          "provenance_complete": {
+            "type": "boolean",
+            "title": "Provenance Complete"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/Verdict"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "claim_id",
+          "support_clusters",
+          "contradiction_clusters",
+          "provenance_complete",
+          "verdict"
+        ],
+        "title": "ClaimJudgmentResponse"
+      },
+      "Evidence-Input": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "claim_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Claim Id"
+          },
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Source Id"
+          },
+          "source_location": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Source Location"
+          },
+          "retrieved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Retrieved At"
+          },
+          "start_offset": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Start Offset",
+            "description": "Inclusive start offset in the source text."
+          },
+          "end_offset": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "End Offset",
+            "description": "Exclusive end offset; must be greater than start_offset."
+          },
+          "excerpt": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Excerpt"
+          },
+          "origin_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Id"
+          },
+          "canonical_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Url"
+          },
+          "normalized_content_hash": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Content Hash"
+          },
+          "cited_origin_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cited Origin Id"
+          },
+          "provenance_complete": {
+            "type": "boolean",
+            "title": "Provenance Complete",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "claim_id",
+          "source_id",
+          "source_location",
+          "retrieved_at",
+          "start_offset",
+          "end_offset",
+          "excerpt"
+        ],
+        "title": "Evidence"
+      },
+      "Evidence-Output": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "claim": {
+            "type": "string",
+            "title": "Claim"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "excerpt": {
+            "type": "string",
+            "title": "Excerpt"
+          },
+          "independent": {
+            "type": "boolean",
+            "title": "Independent",
+            "default": true
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "claim",
+          "source",
+          "excerpt"
+        ],
+        "title": "Evidence"
+      },
+      "Failure": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/FailureType"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "recoverable": {
+            "type": "boolean",
+            "title": "Recoverable",
+            "default": true
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FailureStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "message"
+        ],
+        "title": "Failure"
+      },
+      "FailureStage": {
+        "type": "string",
+        "enum": [
+          "retrieval",
+          "extraction",
+          "nli",
+          "judge"
+        ],
+        "title": "FailureStage"
+      },
+      "FailureType": {
+        "type": "string",
+        "enum": [
+          "timeout",
+          "api_error",
+          "rate_limit",
+          "empty_response",
+          "low_confidence",
+          "no_sources",
+          "weak_sources",
+          "contradictory_result",
+          "tool_failure",
+          "invalid_format",
+          "insufficient_evidence",
+          "stale_information",
+          "unsupported_claim"
+        ],
+        "title": "FailureType"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Judge2AtomRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          },
+          "start_offset": {
+            "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "title": "Start Offset"
+          },
+          "end_offset": {
+            "type": "integer",
+            "maximum": 9007199254740991.0,
+            "exclusiveMinimum": 0.0,
+            "title": "End Offset",
+            "description": "Exclusive end offset in source text; must be within the RFC 8785 safe-integer range."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "start_offset",
+          "end_offset"
+        ],
+        "title": "Judge2AtomRequest",
+        "description": "Strict public schema for a Judge 2 atom and its source-text span."
+      },
+      "Judge2EvidenceRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "claim_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Claim Id"
+          },
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Source Id"
+          },
+          "source_location": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Source Location"
+          },
+          "retrieved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Retrieved At"
+          },
+          "start_offset": {
+            "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "title": "Start Offset"
+          },
+          "end_offset": {
+            "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "title": "End Offset",
+            "description": "Must be greater than start_offset; the relational invariant is enforced by the API and Judge 2."
+          },
+          "excerpt": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Excerpt"
+          },
+          "origin_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Id"
+          },
+          "canonical_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Url"
+          },
+          "normalized_content_hash": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Content Hash"
+          },
+          "cited_origin_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cited Origin Id"
+          },
+          "provenance_complete": {
+            "type": "boolean",
+            "title": "Provenance Complete",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "claim_id",
+          "source_id",
+          "source_location",
+          "retrieved_at",
+          "start_offset",
+          "end_offset",
+          "excerpt"
+        ],
+        "title": "Judge2EvidenceRequest",
+        "description": "Strict r2-a evidence shape; relational offsets are adjudicated by Judge 2."
+      },
+      "Judge2StanceRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "atom_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Atom Id"
+          },
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Evidence Id"
+          },
+          "stance": {
+            "type": "string",
+            "enum": [
+              "SUPPORTS",
+              "CONTRADICTS",
+              "NEUTRAL",
+              "supports",
+              "contradicts",
+              "neutral"
+            ],
+            "title": "Stance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "atom_id",
+          "evidence_id",
+          "stance"
+        ],
+        "title": "Judge2StanceRequest",
+        "description": "Strict public schema for an explicit atom/evidence stance edge."
+      },
+      "Judge2VerificationRequest": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "r2-a",
+            "title": "Schema Version"
+          },
+          "protocol_version": {
+            "type": "string",
+            "const": "r2-a",
+            "title": "Protocol Version",
+            "default": "r2-a"
+          },
+          "claim_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Claim Id"
+          },
+          "claim_text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Claim Text"
+          },
+          "atoms": {
+            "items": {
+              "$ref": "#/components/schemas/Judge2AtomRequest"
+            },
+            "type": "array",
+            "title": "Atoms"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Judge2EvidenceRequest"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "stances": {
+            "items": {
+              "$ref": "#/components/schemas/Judge2StanceRequest"
+            },
+            "type": "array",
+            "title": "Stances"
+          },
+          "source_texts": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Source Texts"
+          },
+          "out_of_scope": {
+            "type": "boolean",
+            "title": "Out Of Scope",
+            "default": false
+          },
+          "factual_claim": {
+            "type": "boolean",
+            "title": "Factual Claim",
+            "default": true
+          },
+          "temporal_anchor_present": {
+            "type": "boolean",
+            "title": "Temporal Anchor Present",
+            "default": true
+          },
+          "retrieval_succeeded": {
+            "type": "boolean",
+            "title": "Retrieval Succeeded",
+            "default": true
+          },
+          "evidence_pool_integrity_ok": {
+            "type": "boolean",
+            "title": "Evidence Pool Integrity Ok",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "claim_id",
+          "claim_text",
+          "atoms",
+          "source_texts"
+        ],
+        "title": "Judge2VerificationRequest",
+        "description": "Strict JSON contract for the r2-a Judge 2.0.0 API path."
+      },
+      "Judge2VerificationResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "r2-a",
+            "title": "Schema Version"
+          },
+          "result": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Result"
+          },
+          "simple_explanation": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Simple Explanation"
+          },
+          "technical_explanation": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Technical Explanation"
+          },
+          "response_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponsePolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "result",
+          "simple_explanation",
+          "technical_explanation"
+        ],
+        "title": "Judge2VerificationResponse",
+        "description": "Additive r2-a response with explanations derived from canonical output."
+      },
+      "QualityMode": {
+        "type": "string",
+        "enum": [
+          "fast",
+          "balanced",
+          "deep"
+        ],
+        "title": "QualityMode"
+      },
+      "ResponsePolicy": {
+        "type": "string",
+        "enum": [
+          "abstain/no_answer",
+          "abstain/out_of_scope",
+          "abstain/processing_error"
+        ],
+        "title": "ResponsePolicy",
+        "description": "Transport-level abstention policy; never a factual verdict."
+      },
+      "SearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 3,
+            "title": "Query"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/QualityMode",
+            "default": "balanced"
+          },
+          "max_agents": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Agents",
+            "description": "Preferred form: JSON integer. Legacy coercion is preserved for compatibility: numeric strings (e.g. \"5\"), integral floats and booleans are still accepted for backward compatibility; removal is not scheduled before v0.6.0.",
+            "default": 5
+          },
+          "require_primary_source": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer",
+                "enum": [
+                  0,
+                  1
+                ]
+              }
+            ],
+            "title": "Require Primary Source",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "SearchRequest"
+      },
+      "SearchResponse": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/QualityMode"
+          },
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "verification": {
+            "type": "null",
+            "title": "Verification"
+          },
+          "verdict_authority": {
+            "type": "string",
+            "const": "not_adjudicated",
+            "title": "Verdict Authority",
+            "default": "not_adjudicated"
+          },
+          "formal_verification_endpoint": {
+            "type": "string",
+            "title": "Formal Verification Endpoint",
+            "default": "/v1/verify"
+          },
+          "operation_status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "not_recorded"
+            ],
+            "title": "Operation Status",
+            "default": "completed"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "notice": {
+            "type": "string",
+            "title": "Notice",
+            "default": "No factual verdict was adjudicated. Submit structured claims and evidence to /v1/verify for formal verification."
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence-Output"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/Failure"
+            },
+            "type": "array",
+            "title": "Failures"
+          },
+          "agents_used": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Agents Used"
+          },
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "mode",
+          "answer",
+          "trace_id"
+        ],
+        "title": "SearchResponse"
+      },
+      "Stance": {
+        "type": "string",
+        "enum": [
+          "supports",
+          "contradicts",
+          "neutral"
+        ],
+        "title": "Stance"
+      },
+      "StanceEdge": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "claim_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Claim Id"
+          },
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Evidence Id"
+          },
+          "stance": {
+            "$ref": "#/components/schemas/Stance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "claim_id",
+          "evidence_id",
+          "stance"
+        ],
+        "title": "StanceEdge"
+      },
+      "Traceability": {
+        "properties": {
+          "adr": {
+            "type": "string",
+            "const": "ADR-002",
+            "title": "Adr",
+            "default": "ADR-002"
+          },
+          "rules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Rules"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rules"
+        ],
+        "title": "Traceability"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Verdict": {
+        "type": "string",
+        "enum": [
+          "verified",
+          "supported",
+          "partially_supported",
+          "unverified",
+          "refuted",
+          "conflicting"
+        ],
+        "title": "Verdict"
+      },
+      "VerificationAPIResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "r1-a",
+            "title": "Schema Version",
+            "default": "r1-a"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Verdict"
+              },
+              {
+                "$ref": "#/components/schemas/ResponsePolicy"
+              }
+            ],
+            "title": "Status"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Verdict"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "judgments": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimJudgmentResponse"
+            },
+            "type": "array",
+            "title": "Judgments"
+          },
+          "traceability": {
+            "$ref": "#/components/schemas/Traceability"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "judgments",
+          "traceability"
+        ],
+        "title": "VerificationAPIResponse"
+      },
+      "VerificationRequest": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "r1-a",
+            "title": "Schema Version",
+            "default": "r1-a"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Claims"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence-Input"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "stances": {
+            "items": {
+              "$ref": "#/components/schemas/StanceEdge"
+            },
+            "type": "array",
+            "title": "Stances"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "claims"
+        ],
+        "title": "VerificationRequest",
+        "not": {
+          "type": "object",
+          "properties": {
+            "evidence": {
+              "maxItems": 0
+            },
+            "stances": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "stances"
+          ]
+        }
       }
     }
   }
