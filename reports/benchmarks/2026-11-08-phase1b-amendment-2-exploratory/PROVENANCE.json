@@ -1,0 +1,9 @@
+{
+  "aggregate_code_sha": "caa912cb836e2c263b22c5693ce6f8ccc5fd2ef5",
+  "aggregate_run_id": "42436331559",
+  "manifest_sha256": "deb3ef389553a03bb840e03a1e314e3f4d02dac50f4aa3d1c713c88a9dd55a74",
+  "report_sha256": "43b45a752a464e11431752cb21f7ffc8c6e2821a6eded66401dc6c863f3c647c",
+  "schema_version": "phase1b-dev-reaggregate-provenance-v1",
+  "source_head_sha": "34b7ccd654896890ab0197bffd6c607fbc3f729e",
+  "source_run_id": "42389121599"
+}

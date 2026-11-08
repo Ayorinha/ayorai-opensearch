@@ -13,14 +13,14 @@
 |---|---|
 | Execução original de inferência | [42389121599](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42389121599) |
 | Execução de reaggregação exploratória | [42436331559](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42436331559) |
-| SHA do código da reaggregação | \`caa912cb836e2c263b22c5693ce6f8ccc5fd2ef5\` |
-| Run de origem | \`42389121599\` |
-| \`manifest_sha256\` | \`deb3ef389553a03bb840e03a1e314e3f4d02dac50f4aa3d1c713c88a9dd55a74\` |
-| \`report_sha256\` | \`43b45a752a464e11431752cb21f7ffc8c6e2821a6eded66401dc6c863f3c647c\` |
-| SHA-256 esperado de \`phase1b-aggregate.json\` | \`9260e4d3033cee02e29d9e2978d9a177a3924705369580b8ac9e5fd49676c9a0\` |
-| SHA-256 esperado de \`PROVENANCE.json\` | \`3ebf003fa563ec875e25d3b648f15b16fd12827cdee325ccd96f9b1cf81c9a22\` |
+| SHA do código da reaggregação | `caa912cb836e2c263b22c5693ce6f8ccc5fd2ef5` |
+| Run de origem | `42389121599` |
+| `manifest_sha256` | `deb3ef389553a03bb840e03a1e314e3f4d02dac50f4aa3d1c713c88a9dd55a74` |
+| `report_sha256` | `43b45a752a464e11431752cb21f7ffc8c6e2821a6eded66401dc6c863f3c647c` |
+| SHA-256 esperado de `phase1b-aggregate.json` | `9260e4d3033cee02e29d9e2978d9a177a3924705369580b8ac9e5fd49676c9a0` |
+| SHA-256 esperado de `PROVENANCE.json` | `3ebf003fa563ec875e25d3b648f15b16fd12827cdee325ccd96f9b1cf81c9a22` |
 
-Os arquivos originais \`phase1b-aggregate.json\` e \`PROVENANCE.json\` serão adicionados a esta pasta pelo mantenedor/revisor. **Não reconstruir, editar, regenerar ou substituir esses JSONs.** Após sua inclusão, conferir os hashes acima e registrar a conferência. Até lá, este documento é o registro analítico acompanhado dos hashes fornecidos pelo revisor, não uma substituição dos artefatos de origem.
+Os arquivos originais do artefato `phase1b-dev-full-aggregate` da run 42436331559 estão nesta pasta, sem modificação: [`phase1b-aggregate.json`](phase1b-aggregate.json) e [`PROVENANCE.json`](PROVENANCE.json). **Conferência do revisor (2026-11-08):** os SHA-256 dos dois arquivos correspondem aos valores acima; o arquivo não contém `record_id` nem `records`; as Camadas 1 e 2 (`model_selection` e `models`) são idênticas, campo a campo, às do relatório da v0.7.0; `ltt_rule = "amendment-2-skip-ineligible"`.
 
 A execução de reaggregação não realizou nova inferência: ela reprocessou os artefatos cifrados originados na run 42389121599. Não há dados individuais neste documento.
 
@@ -38,7 +38,7 @@ A Emenda 2 não alterou seleção de modelo, calibração ou métricas das Camad
 
 ## 3. Camada 3 — quatro coortes passaram pela regra emendada
 
-A regra executada foi \`ltt_rule = "amendment-2-skip-ineligible"\`. Os valores abaixo são agregados por coorte.
+A regra executada foi `ltt_rule = "amendment-2-skip-ineligible"`. Os valores abaixo são agregados por coorte.
 
 | Coorte | Limiar | Acerto entre aceitas | Cobertura |
 |---|---:|---:|---:|
@@ -51,7 +51,7 @@ RAGTruth é especialmente relevante por representar uma coorte de respostas base
 
 ## 4. Sete coortes sem aprovação no primeiro limiar testado
 
-Os valores de \`p\` são p-valores da cauda binomial inferior, calculados sob a hipótese nula de risco de 10%, e comparados com \(\alpha_c = 0{,}05/11 \approx 0{,}004545\). Não são taxas de erro observadas.
+Os valores de `p` são p-valores da cauda binomial inferior, calculados sob a hipótese nula de risco de 10%, e comparados com $\alpha_c = 0{,}05/11 \approx 0{,}004545$. Não são taxas de erro observadas.
 
 | Coorte | Primeiro limiar testado | Aceitas (n) | Erros | Acerto observado | p-valor |
 |---|---:|---:|---:|---:|---:|
@@ -69,25 +69,25 @@ Nenhum desses p-valores ficou abaixo de 0,004545. Portanto, o teste não rejeito
 
 ## 5. O que significam 52, 91 e 196 casos
 
-O código vigente implementa \`_binomial_lower_tail_pvalue(errors, n)\` em \`scripts/benchmarks/phase1b/calibration_v2/selective_ltt.py\`. A função calcula:
+O código vigente implementa `_binomial_lower_tail_pvalue(errors, n)` em `scripts/benchmarks/phase1b/calibration_v2/selective_ltt.py`. A função calcula:
 
-\[
+$$
 P_{p_0=0{,}10}(X \le e), \quad X \sim \operatorname{Binomial}(n, 0{,}10)
-\]
+$$
 
 A rejeição ocorre quando esse valor é menor ou igual a:
 
-\[
+$$
 \alpha_c = \frac{0{,}05}{11} \approx 0{,}00454545.
-\]
+$$
 
 Os números 52, 91 e 196 são tamanhos mínimos para **rejeitar a hipótese nula dado um número observado de erros compatível com determinada proporção**. Foram reproduzidos com a CDF binomial exata e a regra:
 
-\[
+$$
 P(\operatorname{Bin}(n,0{,}10) \le \lfloor r n \rfloor) \le 0{,}05/11.
-\]
+$$
 
-| Erro observado de referência \(r\) | Menor n | Erros observados usados no cálculo | p-valor sob \(p_0=10\%\) |
+| Erro observado de referência $r$ | Menor n | Erros observados usados no cálculo | p-valor sob $p_0=10\%$ |
 |---:|---:|---:|---:|
 | 0% | 52 | 0 | 0,004175 |
 | 3% | 91 | 2 | 0,004228 |
@@ -97,25 +97,25 @@ Esses valores **não são cálculos de poder**. Eles respondem: “dado este nú
 
 ## 6. Análise de poder: cálculo correto
 
-Para cada tamanho amostral \(n\), definir o maior número crítico de erros:
+Para cada tamanho amostral $n$, definir o maior número crítico de erros:
 
-\[
+$$
 k_{\mathrm{crit}}(n)=\max\{k: P_{0{,}10}(X\le k)\le 0{,}05/11\}.
-\]
+$$
 
-Se não existir tal \(k\), o teste não pode rejeitar para aquele n e o poder é zero. Para uma taxa verdadeira alternativa \(p_1\), o poder é:
+Se não existir tal $k$, o teste não pode rejeitar para aquele n e o poder é zero. Para uma taxa verdadeira alternativa $p_1$, o poder é:
 
-\[
+$$
 \operatorname{Power}(n,p_1)
 =P_{p_1}(X\le k_{\mathrm{crit}}(n)),
 \quad X\sim\operatorname{Binomial}(n,p_1).
-\]
+$$
 
-O cálculo mantém o teste unilateral exato, o limite de risco \(p_0=10\%\) e o ajuste familiar \(\alpha_c=0{,}05/11\). Não altera a regra de aceitação.
+O cálculo mantém o teste unilateral exato, o limite de risco $p_0=10\%$ e o ajuste familiar $\alpha_c=0{,}05/11$. Não altera a regra de aceitação.
 
 ### 6.1 Tabela de poder
 
-| n de respostas aceitas | \(k_{\mathrm{crit}}\) | Poder se \(p_1=3\%\) | Poder se \(p_1=5\%\) | Poder se \(p_1=7\%\) |
+| n de respostas aceitas | $k_{\mathrm{crit}}$ | Poder se $p_1=3\%$ | Poder se $p_1=5\%$ | Poder se $p_1=7\%$ |
 |---:|---:|---:|---:|---:|
 | 25 | — | 0,00% | 0,00% | 0,00% |
 | 50 | — | 0,00% | 0,00% | 0,00% |
@@ -132,15 +132,15 @@ O cálculo mantém o teste unilateral exato, o limite de risco \(p_0=10\%\) e o 
 | 750 | 53 | 100,00% | 99,46% | 56,48% |
 | 1.051 | 80 | 100,00% | 99,99% | 80,04% |
 
-O caráter discreto do teste importa: o poder não cresce de forma estritamente monotônica a cada incremento de n. Por exemplo, para \(p_1=5\%\), o poder é 80,38% em n=342, 80,02% em n=343 e cai para 79,66% em n=344, até o próximo salto de \(k_{\mathrm{crit}}\). Portanto, escolher simplesmente o primeiro n que cruza 80% pode deixar tamanhos amostrais imediatamente maiores abaixo de 80%.
+O caráter discreto do teste importa: o poder não cresce de forma estritamente monotônica a cada incremento de n. Por exemplo, para $p_1=5\%$, o poder é 80,38% em n=342, 80,02% em n=343 e cai para 79,66% em n=344, até o próximo salto de $k_{\mathrm{crit}}$. Portanto, escolher simplesmente o primeiro n que cruza 80% pode deixar tamanhos amostrais imediatamente maiores abaixo de 80%.
 
 ### 6.2 Proposta de cenário de planejamento e mínimo operacional
 
-Recomenda-se discutir \(p_1=5\%\) como cenário de planejamento: é metade do limite máximo de risco de 10%, representando um desempenho substancialmente melhor que o limite que se pretende garantir. Essa escolha é uma decisão de desenho baseada no limite de risco pré-existente e no alvo convencional de poder de 80%; **não foi escolhida olhando quais coortes passariam**.
+Recomenda-se discutir $p_1=5\%$ como cenário de planejamento: é metade do limite máximo de risco de 10%, representando um desempenho substancialmente melhor que o limite que se pretende garantir. Essa escolha é uma decisão de desenho baseada no limite de risco pré-existente e no alvo convencional de poder de 80%; **não foi escolhida olhando quais coortes passariam**.
 
 Para evitar a oscilação do poder causada pelos valores críticos inteiros, a análise numérica procurou o menor piso N tal que o poder permanecesse ≥80% para todos os tamanhos amostrais avaliados a partir desse piso (varredura reproduzível até n=15.206 (tamanho total de DEV-B nesta execução, portanto um limite superior conservador para qualquer coorte)):
 
-| Alternativa verdadeira \(p_1\) | Primeiro n isolado com poder ≥80% | Piso operacional robusto N | Poder em N | Menor poder observado para n ≥ N na varredura |
+| Alternativa verdadeira $p_1$ | Primeiro n isolado com poder ≥80% | Piso operacional robusto N | Poder em N | Menor poder observado para n ≥ N na varredura |
 |---:|---:|---:|---:|---:|
 | 3% | 154 | 168 | 86,56% | 82,10% (n=181) |
 | **5%** | **342** | **367** | **84,04%** | **80,18% (n=379)** |
@@ -148,11 +148,11 @@ Para evitar a oscilação do poder causada pelos valores críticos inteiros, a a
 
 **Proposta para deliberação na v0.8:** elevar o mínimo de respostas aceitas para o primeiro teste LTT de 25 para **367 por coorte**, condicionado à revisão independente do cálculo e à confirmação de que as premissas binomiais são adequadas. O número 367 é uma proposta metodológica, não uma regra vigente ou congelada.
 
-O cálculo de poder pressupõe, para cada limiar fixo, erros Bernoulli independentes com taxa verdadeira \(p_1\), e a mesma estrutura binomial usada no teste. Dependência entre observações, agrupamento por fonte, correlação entre itens ou desvio da distribuição binomial pode reduzir o poder real e comprometer a interpretação do teste. A revisão da v0.8 deve verificar a unidade amostral e a plausibilidade da independência/exchangeability; se a premissa não for defensável, não basta aumentar N: será necessário um desenho estatístico adequado, com decisão explícita e pré-registro próprio.
+O cálculo de poder pressupõe, para cada limiar fixo, erros Bernoulli independentes com taxa verdadeira $p_1$, e a mesma estrutura binomial usada no teste. Dependência entre observações, agrupamento por fonte, correlação entre itens ou desvio da distribuição binomial pode reduzir o poder real e comprometer a interpretação do teste. A revisão da v0.8 deve verificar a unidade amostral e a plausibilidade da independência/exchangeability; se a premissa não for defensável, não basta aumentar N: será necessário um desenho estatístico adequado, com decisão explícita e pré-registro próprio.
 
 ### 6.3 Esboço reproduzível do cálculo
 
-A tabela pode ser reproduzida com a CDF binomial exata. O exemplo abaixo explicita o cálculo de (k_{crit}), poder e piso robusto; deve ser executado com a versão de SciPy fixada no ambiente de análise e os valores resultantes arquivados no pacote de revisão:
+A tabela pode ser reproduzida com a CDF binomial exata. O exemplo abaixo explicita o cálculo de $k_{crit}$, poder e piso robusto; deve ser executado com a versão de SciPy fixada no ambiente de análise e os valores resultantes arquivados no pacote de revisão:
 
 ```python
 import numpy as np
@@ -180,11 +180,11 @@ for p_true in (0.03, 0.05, 0.07):
     print(p_true, n_floor, suffix_min[n_floor - 1] if n_floor else None)
 ```
 
-O cálculo acima usa a mesma hipótese nula e o mesmo (alpha_c) do LTT; a distribuição sob (p_1) é usada somente para calcular poder. O piso robusto evita escolher um n isolado no qual o poder ultrapasse 80% por um salto discreto, mas caia novamente para n ligeiramente maior.
+O cálculo acima usa a mesma hipótese nula e o mesmo $\alpha_c$ do LTT; a distribuição sob $p_1$ é usada somente para calcular poder. O piso robusto evita escolher um n isolado no qual o poder ultrapasse 80% por um salto discreto, mas caia novamente para n ligeiramente maior.
 
 ### 6.4 Informação usada e controle de circularidade
 
-A escolha ilustrativa de \(p_1=5\%\) e a proposta de piso 367 foram motivadas por:
+A escolha ilustrativa de $p_1=5\%$ e a proposta de piso 367 foram motivadas por:
 
 1. limite de risco já fixado em 10%;
 2. escolha de um cenário alternativo equivalente à metade desse limite;
@@ -196,15 +196,21 @@ Não foram usados para escolher 5% ou 367: a identidade das coortes aprovadas, o
 
 O DEV pode informar o planejamento amostral, pois essa é a finalidade da partição de desenvolvimento. A vedação é escolher N após examinar quais coortes específicas passariam com cada valor. A justificativa, o cálculo, o código de reprodução, o N escolhido e a regra de elegibilidade devem ser registrados e congelados **antes de qualquer acesso ao TEST**.
 
+### 6.5 Verificação independente e viabilidade por coorte (nota do revisor)
+
+**Verificação:** o revisor recalculou de forma independente $k_{crit}$, os primeiros n com poder ≥ 80% (154, 342 e 1.051) e os pisos robustos (168, 367 e 1.108), e conferiu $k_{crit}$ em n = 75, 100, 154, 200, 342 e 367 contra `_binomial_lower_tail_pvalue` do repositório. Os valores conferem.
+
+**Consequência a decidir explicitamente:** um piso de N aceitas torna **estruturalmente impossível** testar qualquer coorte cujo tamanho total seja menor que N, independentemente do desempenho. Em DEV-B, os tamanhos por coorte foram: Wice 174; AggreFact-CNN 229; AggreFact-XSum 388; ClaimVerify 546; ExpertQA 1.886; FactCheck-GPT 768; Lfqa 1.014; RAGTruth 7.670; Reveal 828; TofuEval-MediaS 900; TofuEval-MeetB 803. Com N = 367, Wice e AggreFact-CNN não poderiam ser testadas em DEV-B, e coortes com cobertura baixa também ficariam inelegíveis. A decisão da v0.8 deve declarar isso como custo assumido do desenho (essas coortes seriam reportadas como "não testáveis pelo desenho"), sem criar exceções por coorte. Tamanhos de coorte são metadados de desenho; esta nota não usa resultados por coorte para escolher N.
+
 ## 7. Proposta para v0.8: separar mínimo amostral de regra de aceitação
 
 ### 7.1 Alteração recomendada — mínimo de amostras (preserva a garantia)
 
 A única mudança recomendada para a v0.8 nesta etapa é aumentar o mínimo de aceitas exigido para que um limiar seja elegível ao teste, mantendo:
 
-- risco máximo \(p_0=10\%\);
-- nível familiar \(\delta=0{,}05\);
-- Bonferroni em onze coortes (\(0{,}05/11\));
+- risco máximo $p_0=10\%$;
+- nível familiar $\delta=0{,}05$;
+- Bonferroni em onze coortes ($0{,}05/11$);
 - teste binomial exato e sua definição;
 - sequência de limiares e ordem atual;
 - regra fixed-sequence: parar na primeira não rejeição;
@@ -245,8 +251,8 @@ Não usar “quatro coortes certificadas” sem o qualificador exploratório/pó
 
 ## 9. Checklist para revisão e fechamento
 
-- [ ] Mantenedor/revisor adiciona os arquivos originais \`phase1b-aggregate.json\` e \`PROVENANCE.json\`, sem reconstrução.
-- [ ] Conferir SHA-256 dos dois arquivos com os valores da seção 1.
+- [x] Mantenedor/revisor adiciona os arquivos originais `phase1b-aggregate.json` e `PROVENANCE.json`, sem reconstrução.
+- [x] Conferir SHA-256 dos dois arquivos com os valores da seção 1.
 - [ ] Revisar os p-valores e os resultados agregados contra o relatório de origem.
 - [ ] Revisar independentemente o cálculo de poder, o piso robusto 367 e as premissas de independência.
 - [ ] Confirmar que a proposta não altera risco, alfa, Bonferroni, sequência ou parada.
