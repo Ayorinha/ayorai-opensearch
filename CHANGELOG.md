@@ -4,6 +4,37 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-11-07
+
+Primeira medição completa em benchmark internacional (LLM-AggreFact, partição DEV) com calibração pré-registrada. O DOI desta versão registra o resultado **antes** da emenda ao pré-registro sobre limiares inelegíveis, que fica para a versão seguinte.
+
+### Resultados registrados
+- **Calibration V2 — DEV completo (PRs #479–#482):** 30.420 casos, 11 coortes, três modelos de terceiros (FactCG, MiniCheck, mDeBERTa; licença MIT), FactCG e MiniCheck com protocolos oficiais de referência e mDeBERTa com protocolo próprio do AYORAI, em CPU fp32. FactCG selecionado em DEV-A pela regra pré-registrada (#477), com BA cross-fitted de **74,68%** (média macro por dataset); ECE 0,0054; AUROC 0,8650. Camada LTT em DEV-B: **0/11 coortes certificadas pela regra registrada** (a sequência parou no primeiro limiar inelegível). Resultado DEV, não TEST nem ranking. Relatório: `reports/benchmarks/2026-11-07-dev-calibration-v2/`.
+- **Linha de base RuleStance — LLM-AggreFact TEST (#471):** BA 49,2% (n=29.320).
+
+### Benchmarks e calibração
+- Harness de avaliação internacional, pins do dataset e proveniência (#462–#464).
+- Piloto de throughput DEV e execução Phase 1b em shards com protocolos oficiais (FactCG, MiniCheck) e protocolo próprio (mDeBERTa), artefatos cifrados (AES-GCM) e aprovação do mantenedor (#465–#467).
+- Calibração DEV e métricas (#472); Calibration V2 pré-registrada (#473): splits determinísticos e métricas probabilísticas (#474), Venn-Abers/IVAP com cross-fitting e Mondrian (#475), certificação seletiva Learn then Test (#476), seleção pré-registrada de um único modelo (#477) e integração ao agregador (#479).
+- Workflow DEV completo protegido (#480) e caminho de re-agregação sem nova inferência (#481).
+
+### API, segurança e auditoria
+- Rate limiting limitado na autenticação e isolamento dos limitadores; documentação de 429 e confiança em proxy (#442, #445).
+- Acesso serializado ao armazenamento SQLite de auditoria (#443).
+- IDs de correlação gerados pelo servidor (#478).
+- Teste do pipeline offline com sockets bloqueados (#446).
+
+### RGC e verificação
+- Emendas estatísticas DEC-021..DEC-023 (#468); validações de IDs de cluster e de anotação (#452, #454).
+- Testes de invariância (paráfrase, retificação normativa, propriedades do Judge 2.0) e JSON Schema versionado do relatório Golden.
+
+### Documentação
+- Política de alegações públicas (#461), demo Docker/curl, roadmap de engenharia e auditoria E1.
+
+### Limites
+- Nenhum resultado de benchmark em português; RGC permanece não congelado.
+- Nenhuma certificação estatística obtida; o projeto não é apresentado como certificado.
+
 ## [0.6.0] — 2026-10-23
 
 ### Mudanças incompatíveis previstas para a versão global 0.6.0
