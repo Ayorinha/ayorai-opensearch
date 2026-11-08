@@ -5,7 +5,8 @@
 - Hora exata da captura: não registrada na fonte disponível; não inferir.
 - Captura arquivada nesta PR: 2026-11-08 (hora UTC do commit).
 - Método: transcrição manual da tabela visível; não é dump oficial nem snapshot fornecido pelo mantenedor do leaderboard.
-- SHA-256 do texto transcrito (UTF-8): PENDENTE DE CÁLCULO — não usar como integridade verificada até preencher.
+- SHA-256 do texto transcrito (UTF-8): `f1fd7c86b56cf6f59cdb209e223f87f78ecd25e7423510c55612742a4640d42a`. Definição: todas as linhas que começam com `|` na seção "Tabela transcrita" (cabeçalho, separador e 19 linhas), unidas por `\n`, com um `\n` final.
+- Conferência independente: em 2026-11-08 ~10:55 UTC a página oficial foi consultada novamente e as 19 linhas (modelo, tamanho, média e 11 colunas) coincidem valor a valor com esta transcrição; a única diferença é tipográfica (tamanho não informado aparece como `-` na página e como `—` aqui).
 
 ## Tabela transcrita
 
