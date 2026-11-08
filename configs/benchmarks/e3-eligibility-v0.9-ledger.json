@@ -1,0 +1,109 @@
+{
+  "schema_version": "phase1b-e3-eligibility-v1",
+  "status": "ledger_derived_proposed",
+  "source": "docs/benchmarks/CONTAMINATION-LEDGER-v0.8.md sections 3 and 4 (55 cell-level assessments; consulted 2026-11-08)",
+  "note": "PROPOSAL ONLY. Every model × cohort cell is blocked because the ledger records confirmed source exposure or unverified provenance. No absence of contamination is inferred from missing evidence. This matrix is not approved for execution and does not replace e3-eligibility-v0.8.json.",
+  "cohorts": [
+    "AggreFact-CNN",
+    "AggreFact-XSum",
+    "TofuEval-MediaS",
+    "TofuEval-MeetB",
+    "Wice",
+    "REVEAL",
+    "ClaimVerify",
+    "FactCheck-GPT",
+    "ExpertQA",
+    "LFQA",
+    "RAGTruth"
+  ],
+  "members": {
+    "factcg": {
+      "label": "FactCG-DeBERTa-v3-Large",
+      "blocked_cohorts": [
+        "AggreFact-CNN",
+        "AggreFact-XSum",
+        "TofuEval-MediaS",
+        "TofuEval-MeetB",
+        "Wice",
+        "REVEAL",
+        "ClaimVerify",
+        "FactCheck-GPT",
+        "ExpertQA",
+        "LFQA",
+        "RAGTruth"
+      ]
+    },
+    "minicheck": {
+      "label": "MiniCheck-DeBERTa-v3-Large",
+      "blocked_cohorts": [
+        "AggreFact-CNN",
+        "AggreFact-XSum",
+        "TofuEval-MediaS",
+        "TofuEval-MeetB",
+        "Wice",
+        "REVEAL",
+        "ClaimVerify",
+        "FactCheck-GPT",
+        "ExpertQA",
+        "LFQA",
+        "RAGTruth"
+      ]
+    },
+    "mdeberta": {
+      "label": "mDeBERTa-v3-base NLI",
+      "blocked_cohorts": [
+        "AggreFact-CNN",
+        "AggreFact-XSum",
+        "TofuEval-MediaS",
+        "TofuEval-MeetB",
+        "Wice",
+        "REVEAL",
+        "ClaimVerify",
+        "FactCheck-GPT",
+        "ExpertQA",
+        "LFQA",
+        "RAGTruth"
+      ]
+    },
+    "minicheck_flan_t5": {
+      "label": "MiniCheck-Flan-T5-Large",
+      "blocked_cohorts": [
+        "AggreFact-CNN",
+        "AggreFact-XSum",
+        "TofuEval-MediaS",
+        "TofuEval-MeetB",
+        "Wice",
+        "REVEAL",
+        "ClaimVerify",
+        "FactCheck-GPT",
+        "ExpertQA",
+        "LFQA",
+        "RAGTruth"
+      ]
+    },
+    "hhem": {
+      "label": "HHEM-2.1-Open",
+      "blocked_cohorts": [
+        "AggreFact-CNN",
+        "AggreFact-XSum",
+        "TofuEval-MediaS",
+        "TofuEval-MeetB",
+        "Wice",
+        "REVEAL",
+        "ClaimVerify",
+        "FactCheck-GPT",
+        "ExpertQA",
+        "LFQA",
+        "RAGTruth"
+      ]
+    }
+  },
+  "comparator": "factcg",
+  "configurations": {
+    "01": ["factcg", "minicheck"],
+    "02": ["factcg", "minicheck", "minicheck_flan_t5"],
+    "03": ["factcg", "mdeberta"],
+    "04": ["factcg", "minicheck", "mdeberta"],
+    "05": ["factcg", "minicheck", "mdeberta", "minicheck_flan_t5", "hhem"]
+  }
+}
