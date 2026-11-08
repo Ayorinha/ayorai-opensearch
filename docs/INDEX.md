@@ -22,7 +22,7 @@ A documentação é organizada por finalidade. Comece pelo README para entender 
 | Decisões | [ADRs](adr/README.md) | Consultar decisões técnicas e suas justificativas. |
 | Segurança | [Modelo de ameaças](THREAT-MODEL.md) | Entender riscos considerados, controles e exclusões. |
 | Contexto brasileiro | [Conformidade no Brasil](CONFORMIDADE-BRASIL.md) | Conhecer possíveis pontos de apoio e limites regulatórios. |
-| Avaliação | [Guia de execução](GUIA-PASSO-A-PASSO.md) e os artefatos de avaliação no repositório | Reproduzir resultados e consultar as limitações dos conjuntos. |
+| Avaliação | [Calibration V2 — relatório DEV](../reports/benchmarks/2026-11-07-dev-calibration-v2/README.md) · [Proveniência](../reports/benchmarks/2026-11-07-dev-calibration-v2/PROVENANCE.md) | Consultar resultados DEV, limitações, versões dos modelos, execuções e hashes. Não confundir DEV com TEST ou desempenho em produção. |
 | Documento técnico institucional | [Documento técnico público v1.1 (PDF)](institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf) | Consultar a apresentação técnica consolidada; para o estado vigente, confira também o Status técnico. |
 | Autoria e citação | [Autoria](AUTHORSHIP.md) · [CITATION.cff](../CITATION.cff) | Atribuir e citar o projeto corretamente. |
 
