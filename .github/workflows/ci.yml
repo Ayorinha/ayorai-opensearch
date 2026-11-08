@@ -123,7 +123,8 @@ jobs:
           ACTIONLINT_ARCHIVE: "actionlint_1.7.12_linux_amd64.tar.gz"
         run: |
           set -euo pipefail
-          curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${ACTIONLINT_ARCHIVE}"
+          curl --fail --silent --show-error --location --remote-name --retry 5 --retry-delay 2 --retry-max-time 120 --retry-connrefused \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${ACTIONLINT_ARCHIVE}"
           echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  ${ACTIONLINT_ARCHIVE}" | sha256sum -c -
           tar -xzf "${ACTIONLINT_ARCHIVE}" actionlint
           install -m 0755 actionlint /usr/local/bin/actionlint
