@@ -1,0 +1,52 @@
+{
+  "schema_version": "phase1b-e3-eligibility-v1",
+  "status": "exploratory_pre_ledger",
+  "source": "docs/benchmarks/PREREG-E3-ENSEMBLE-v0.8.md section 2.2 (explicit radar blocks only)",
+  "note": "Only the explicit blocks transcribed in the E3 preregistration are applied. The contamination ledger (roadmap A4) has not verified the remaining cohorts, so any result computed with this matrix is EXPLORATORY and cannot support a confirmatory E3 claim. A ledger-verified matrix must replace this file before a confirmatory run.",
+  "cohorts": [
+    "AggreFact-CNN",
+    "AggreFact-XSum",
+    "ClaimVerify",
+    "ExpertQA",
+    "FactCheck-GPT",
+    "Lfqa",
+    "RAGTruth",
+    "Reveal",
+    "TofuEval-MediaS",
+    "TofuEval-MeetB",
+    "Wice"
+  ],
+  "members": {
+    "factcg": {"label": "FactCG-DeBERTa-v3-Large", "blocked_cohorts": ["Wice"]},
+    "minicheck": {"label": "MiniCheck-DeBERTa-v3-Large", "blocked_cohorts": ["Wice"]},
+    "mdeberta": {"label": "mDeBERTa-v3-base NLI", "blocked_cohorts": []},
+    "minicheck_flan_t5": {
+      "label": "MiniCheck-Flan-T5-Large",
+      "blocked_cohorts": ["AggreFact-CNN", "AggreFact-XSum", "Reveal", "Wice"]
+    },
+    "hhem": {
+      "label": "HHEM-2.1-Open",
+      "blocked_cohorts": [
+        "AggreFact-CNN",
+        "AggreFact-XSum",
+        "ClaimVerify",
+        "ExpertQA",
+        "FactCheck-GPT",
+        "Lfqa",
+        "RAGTruth",
+        "Reveal",
+        "TofuEval-MediaS",
+        "TofuEval-MeetB",
+        "Wice"
+      ]
+    }
+  },
+  "comparator": "factcg",
+  "configurations": {
+    "01": ["factcg", "minicheck"],
+    "02": ["factcg", "minicheck", "minicheck_flan_t5"],
+    "03": ["factcg", "mdeberta"],
+    "04": ["factcg", "minicheck", "mdeberta"],
+    "05": ["factcg", "minicheck", "mdeberta", "minicheck_flan_t5", "hhem"]
+  }
+}
