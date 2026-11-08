@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -44,8 +45,14 @@ def aggregate_packages(
     *,
     key: bytes,
     calibration_v2: bool = False,
+    score_sink: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Validate encrypted shard provenance and aggregate operational metadata only."""
+    """Validate encrypted shard provenance and aggregate operational metadata only.
+
+    When ``score_sink`` is given (Calibration V2 only), it receives the decrypted
+    per-instance rows, protocols and source run id so the caller can build the
+    encrypted score cache (A1). Nothing from the sink is written to the report.
+    """
     if manifest.get("split") != "dev":
         raise ValueError("aggregator accepts DEV manifests only")
     manifest_body = {
@@ -184,9 +191,43 @@ def aggregate_packages(
 
         report["calibration_v2"] = calibration_v2_report(calibration_rows)
         report["quality_metrics"] = "calibration_v2_aggregate_only"
+        if score_sink is not None:
+            score_sink["rows_by_model"] = calibration_rows
+            score_sink["protocols"] = {model: summaries[model]["protocol"] for model in summaries}
+            score_sink["source_run_id"] = next(iter(run_ids))
 
     report["report_sha256"] = sha256_bytes(canonical_json(report))
     return report
+
+
+def _write_score_cache(
+    args: argparse.Namespace,
+    manifest: dict[str, Any],
+    report: dict[str, Any],
+    score_sink: dict[str, Any],
+    key: bytes,
+) -> None:
+    try:
+        from .score_cache import build_score_cache, encrypt_score_cache
+    except ImportError:  # direct script execution
+        from score_cache import build_score_cache, encrypt_score_cache
+
+    code_sha = args.code_sha or os.environ.get("GITHUB_SHA") or "local-unversioned"
+    cache = build_score_cache(
+        score_sink["rows_by_model"],
+        protocols=score_sink["protocols"],
+        manifest_sha256=str(manifest.get("manifest_sha256")),
+        source_run_id=score_sink["source_run_id"],
+        calibration_v2=report.get("calibration_v2"),
+    )
+    envelope = encrypt_score_cache(
+        cache,
+        key=key,
+        dataset_revision=str(manifest.get("dataset_revision")),
+        code_sha=code_sha,
+    )
+    args.score_cache_output.parent.mkdir(parents=True, exist_ok=True)
+    args.score_cache_output.write_text(json.dumps(envelope, sort_keys=True), encoding="utf-8")
 
 
 def main() -> None:
@@ -199,7 +240,19 @@ def main() -> None:
         action="store_true",
         help=("Opt-in V2 aggregate calibration; does not change the protected minimal workflow"),
     )
+    parser.add_argument(
+        "--score-cache-output",
+        type=Path,
+        help="Write the encrypted per-instance DEV score cache (A1); requires --calibration-v2",
+    )
+    parser.add_argument(
+        "--code-sha",
+        default=None,
+        help="Code SHA bound into the score cache envelope (defaults to $GITHUB_SHA)",
+    )
     args = parser.parse_args()
+    if args.score_cache_output is not None and not args.calibration_v2:
+        parser.error("--score-cache-output requires --calibration-v2")
 
     # Fail closed before opening encrypted artifacts if the secret is absent/invalid.
     key = decode_key()
@@ -208,9 +261,20 @@ def main() -> None:
         json.loads(path.read_text(encoding="utf-8"))
         for path in sorted(args.encrypted_dir.glob("*.json"))
     ]
-    report = aggregate_packages(manifest, envelopes, key=key, calibration_v2=args.calibration_v2)
+    score_sink: dict[str, Any] | None = {} if args.score_cache_output is not None else None
+    report = aggregate_packages(
+        manifest,
+        envelopes,
+        key=key,
+        calibration_v2=args.calibration_v2,
+        score_sink=score_sink,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(canonical_json(report) + b"\n")
+    if score_sink is not None:
+        if not score_sink:
+            raise SystemExit("score cache requested but no Calibration V2 rows were produced")
+        _write_score_cache(args, manifest, report, score_sink, key)
     print(
         json.dumps(
             {
