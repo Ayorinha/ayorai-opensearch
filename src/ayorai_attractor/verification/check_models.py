@@ -2,13 +2,40 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, UrlConstraints, model_validator
+
+
+def _exactly_one(first: list[str], second: list[str]) -> dict[str, Any]:
+    """JSON Schema for "exactly one of two non-null inputs" (documents the validator)."""
+
+    def present(names: list[str]) -> dict[str, Any]:
+        return {
+            "required": names,
+            "properties": {name: {"not": {"type": "null"}} for name in names},
+        }
+
+    return {
+        "oneOf": [
+            {**present(first), "not": present(second[:1])},
+            {**present(second), "not": present(first[:1])},
+        ]
+    }
+
+
+_DOCUMENT_SCHEMA = _exactly_one(["text"], ["content_base64", "media_type"])
+# A text document may only declare text/plain (or nothing).
+_DOCUMENT_SCHEMA["oneOf"][0]["properties"]["media_type"] = {"enum": ["text/plain", None]}
+
+ClaimText = Annotated[str, Field(min_length=1, max_length=2_000, pattern=r"\S")]
 
 
 class CheckDocument(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra=_DOCUMENT_SCHEMA,
+    )
 
     id: str = Field(pattern=r"^[A-Za-z0-9._-]{1,128}$", description="Caller-chosen document id.")
     text: str | None = Field(
@@ -29,7 +56,9 @@ class CheckDocument(BaseModel):
     source: str | None = Field(
         default=None, max_length=512, description="Human-readable origin (file name, title)."
     )
-    url: HttpUrl | None = None
+    # Below the 2083-character HttpUrl limit so the normalised URL (which may gain a
+    # trailing slash) still fits the internal evidence model.
+    url: Annotated[HttpUrl, UrlConstraints(max_length=2048)] | None = None
 
     @model_validator(mode="after")
     def _exactly_one_content(self) -> CheckDocument:
@@ -41,11 +70,13 @@ class CheckDocument(BaseModel):
 
 
 class CheckRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_extra=_exactly_one(["claims"], ["answer"])
+    )
 
     schema_version: Literal["c1"] = "c1"
     documents: list[CheckDocument] = Field(min_length=1, max_length=20)
-    claims: list[str] | None = Field(
+    claims: list[ClaimText] | None = Field(
         default=None,
         min_length=1,
         max_length=50,
@@ -62,10 +93,6 @@ class CheckRequest(BaseModel):
     def _exactly_one_input(self) -> CheckRequest:
         if (self.claims is None) == (self.answer is None):
             raise ValueError("provide exactly one of 'claims' or 'answer'")
-        if self.claims is not None and any(
-            not item.strip() or len(item) > 2_000 for item in self.claims
-        ):
-            raise ValueError("each claim must be non-empty and at most 2000 characters")
         if len({doc.id for doc in self.documents}) != len(self.documents):
             raise ValueError("document ids must be unique")
         return self

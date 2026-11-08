@@ -163,3 +163,14 @@ def test_api_fields_rejects_duplicate_names() -> None:
         "/v1/fields", json={"document": {"id": "d", "text": DOC}, "fields": fields}
     )
     assert response.status_code == 422
+
+
+def test_api_check_long_url_is_not_a_server_error() -> None:
+    # Regression: a URL at the 2083-character limit gained a trailing slash when
+    # normalised and crashed evidence validation (HTTP 500). Found by Schemathesis.
+    url = "https://" + ".".join(["a" * 63] * 32)[:2075]
+    body = {"answer": "0", "documents": [{"id": "0", "text": "0", "url": url}]}
+    response = TestClient(app).post("/v1/check", json=body)
+    assert response.status_code == 422
+    short = {"answer": "0", "documents": [{"id": "0", "text": "0", "url": "https://a.example"}]}
+    assert TestClient(app).post("/v1/check", json=short).status_code == 200

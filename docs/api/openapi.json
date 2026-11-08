@@ -888,6 +888,68 @@
         "title": "CheckClaimResult"
       },
       "CheckDocument": {
+        "oneOf": [
+          {
+            "not": {
+              "properties": {
+                "content_base64": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
+              "required": [
+                "content_base64"
+              ]
+            },
+            "properties": {
+              "text": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "media_type": {
+                "enum": [
+                  "text/plain",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "text"
+            ]
+          },
+          {
+            "not": {
+              "properties": {
+                "text": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
+              "required": [
+                "text"
+              ]
+            },
+            "properties": {
+              "content_base64": {
+                "not": {
+                  "type": "null"
+                }
+              },
+              "media_type": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            },
+            "required": [
+              "content_base64",
+              "media_type"
+            ]
+          }
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -956,7 +1018,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 2083,
+                "maxLength": 2048,
                 "minLength": 1,
                 "format": "uri"
               },
@@ -1066,6 +1128,56 @@
         "title": "CheckEvidence"
       },
       "CheckRequest": {
+        "oneOf": [
+          {
+            "not": {
+              "properties": {
+                "answer": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
+              "required": [
+                "answer"
+              ]
+            },
+            "properties": {
+              "claims": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            },
+            "required": [
+              "claims"
+            ]
+          },
+          {
+            "not": {
+              "properties": {
+                "claims": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
+              "required": [
+                "claims"
+              ]
+            },
+            "properties": {
+              "answer": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            },
+            "required": [
+              "answer"
+            ]
+          }
+        ],
         "properties": {
           "schema_version": {
             "type": "string",
@@ -1086,7 +1198,10 @@
             "anyOf": [
               {
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 1,
+                  "pattern": "\\S"
                 },
                 "type": "array",
                 "maxItems": 50,
