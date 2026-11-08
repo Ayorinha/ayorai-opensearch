@@ -30,10 +30,19 @@ from .models import Evidence, Stance, StanceEdge, Verdict
 from .response import ResponsePolicy
 from .stance import DetectedStance, RuleStanceDetector, StanceDetectionResult, StanceDetector
 
-ENGINE_VERSION = "document-check-1"
+ENGINE_VERSION = "document-check-2"
 MAX_PASSAGE_CHARS = 600
 TOP_K_PASSAGES = 3
 MIN_SUPPORT_COVERAGE = 0.8
+# Text inside quotation marks is reported speech, not an assertion by the document.
+_QUOTED_RE = re.compile(r"\"[^\"\n]*\"|“[^”\n]*”|«[^»\n]*»|'[^'\n]{3,}'")
+# A passage that addresses the checker is an instruction, never evidence (documents are
+# data). Matched on accent-folded, lower-case text.
+_INSTRUCTION_RE = re.compile(
+    r"\b(?:instrucao|instrucoes|ignore|ignorar|desconsidere|verificador|verifier|"
+    r"considere (?:como )?(?:verdadeir|fals|corret|valid)\w*|"
+    r"status\s*:\s*(?:verified|verificado|aprovado|conforme)|system prompt)\b"
+)
 _WORD_RE = re.compile(r"\w+", re.UNICODE)
 _PARAGRAPH_RE = re.compile(r"\r?\n")
 _SENTENCE_END_RE = re.compile(r"(?<=[.!?;:])\s+")
@@ -54,7 +63,9 @@ class ConservativeStanceDetector:
     The wrapped detector may label a passage as supporting on partial lexical overlap.
     For auditing, unsupported support is the costly error, so SUPPORTS is kept only if
     (a) at least MIN_SUPPORT_COVERAGE of the claim's content words occur in the passage
-    and (b) every number in the claim occurs in the passage. Otherwise it becomes
+    outside quotation marks (quoted text is reported speech) and (b) every number in the
+    claim occurs there; a passage that addresses the checker (an embedded instruction)
+    never supports anything. Otherwise it becomes
     NEUTRAL (the claim then ends as unverified/abstention). CONTRADICTS is never
     weakened. The wrapped detector itself is not modified.
     """
@@ -65,10 +76,18 @@ class ConservativeStanceDetector:
         self.inner = inner or RuleStanceDetector()
         inner_name = getattr(self.inner, "component", type(self.inner).__name__)
         inner_version = getattr(self.inner, "version", "unknown")
-        self.version = f"1(min_coverage={MIN_SUPPORT_COVERAGE};inner={inner_name}/{inner_version})"
+        self.version = f"2(min_coverage={MIN_SUPPORT_COVERAGE};inner={inner_name}/{inner_version})"
 
     @staticmethod
     def support_is_complete(claim: str, passage: str) -> bool:
+        folded = "".join(
+            char
+            for char in unicodedata.normalize("NFKD", passage.casefold())
+            if not unicodedata.combining(char)
+        )
+        if _INSTRUCTION_RE.search(folded):
+            return False
+        passage = _QUOTED_RE.sub(" ", passage)
         claim_tokens = content_tokens(claim)
         passage_tokens = set(content_tokens(passage))
         numbers = {token for token in claim_tokens if token.isdigit()}

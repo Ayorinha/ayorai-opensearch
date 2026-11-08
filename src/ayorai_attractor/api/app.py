@@ -343,7 +343,9 @@ def fields(request: FieldsRequest) -> FieldsResponse:
         sort_keys=True,
         ensure_ascii=False,
     )
-    summary = {outcome: 0 for outcome in ("conforme", "divergente", "ausente", "invalido")}
+    summary = {
+        outcome: 0 for outcome in ("conforme", "divergente", "ambiguo", "ausente", "invalido")
+    }
     for item in results:
         summary[item.outcome] += 1
     return FieldsResponse.model_validate(

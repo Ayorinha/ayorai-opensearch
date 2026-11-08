@@ -12,8 +12,15 @@ Outcomes per field:
   reported with its excerpt;
 - ``ausente``: no candidate of that type (near a label, when labels are given); the
   system abstains rather than guess;
+- ``ambiguo``: the field label introduces more than one distinct value (for example an
+  original and a corrected amount); a person must decide;
 - ``invalido``: the expected value itself is malformed (for example, a CPF/CNPJ with
   wrong check digits).
+
+Labels match whole words; a value belongs to the nearest preceding label (no other value
+of the same type in between), on its own line or on the line above. A text field with
+labels is compared with the whole value the label introduces, never with a fragment of
+it and never with the same name under another label (sacador versus sacado).
 
 Normalisation is explicit and versioned; nothing is inferred by a model.
 """
@@ -27,12 +34,13 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-FIELD_CHECK_VERSION = "field-check-1"
+FIELD_CHECK_VERSION = "field-check-2"
 FIELD_TYPES = ("money", "date", "cpf_cnpj", "number", "text")
 LABEL_WINDOW = 80  # characters before a candidate searched for a label
 
 _MONEY_RE = re.compile(
     r"(?:R\$\s*)?(?<![\d.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2}|\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})(?![\d])"
+    r"|R\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?![\d.,]*\d)"
 )
 _DATE_RE = re.compile(
     r"(?<!\d)(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?!\d)|(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)"
@@ -86,6 +94,8 @@ def normalize_money(raw: str) -> str | None:
         value = value.replace(".", "").replace(",", ".")
     elif re.fullmatch(r"\d{1,3}(?:,\d{3})+\.\d{2}", value):
         value = value.replace(",", "")
+    elif re.fullmatch(r"\d{1,3}(?:\.\d{3})+", value):  # 1.250 (Brazilian thousands)
+        value = value.replace(".", "")
     elif not re.fullmatch(r"\d+(?:\.\d{1,2})?", value):
         return None
     try:
@@ -158,14 +168,54 @@ NORMALIZERS = {
 }
 
 
-def _labelled(text: str, start: int, labels: Sequence[str]) -> bool:
-    if not labels:
-        return False
+_TEXT_STOP = re.compile(r"\s+-\s+|\s*\(|\s*;|\s+(?:CPF|CNPJ)\b|\s{2,}", re.IGNORECASE)
+
+
+def _label_spans(text: str, labels: Sequence[str]) -> list[tuple[int, int, bool]]:
+    """(start, end, followed_by_colon) of every whole-word label occurrence."""
+
+    folded = _fold(text)  # same length as text for Latin script
+    if len(folded) != len(text):
+        return []
+    spans: list[tuple[int, int, bool]] = []
+    for label in labels:
+        needle = _fold(label).strip()
+        if not needle:
+            continue
+        for match in re.finditer(r"(?<!\w)" + re.escape(needle) + r"(?!\w)", folded):
+            after = text[match.end() : match.end() + 40].split("\n", 1)[0]
+            spans.append((match.start(), match.end(), bool(re.match(r"[^:\n]{0,30}:", after))))
+    return sorted(spans)
+
+
+def _search_start(text: str, start: int) -> int:
+    """Labels count on the candidate's line, or on the line above when the candidate
+    starts its line (table and PDF layouts put the label above the value)."""
+
     line_start = text.rfind("\n", 0, start) + 1
-    window = _fold(text[max(line_start, start - LABEL_WINDOW) : start])
-    return any(
-        re.search(r"(?<!\w)" + re.escape(_fold(label)) + r"(?!\w)", window) for label in labels
-    )
+    if text[line_start:start].strip() or line_start == 0:
+        return max(line_start, start - LABEL_WINDOW)
+    previous = text.rfind("\n", 0, line_start - 1) + 1
+    return max(previous, start - LABEL_WINDOW)
+
+
+def _mark_labelled(text: str, found: list[Candidate], labels: Sequence[str]) -> list[Candidate]:
+    """A candidate is labelled when a label precedes it nearby and no other value of
+    the same type sits between that label and the candidate (nearest-label rule)."""
+
+    spans = _label_spans(text, labels)
+    marked = []
+    for item in found:
+        lower = _search_start(text, item.start)
+        labelled = False
+        for _, label_end, _ in spans:
+            if lower <= label_end <= item.start and not any(
+                label_end <= other.start < item.start for other in found if other is not item
+            ):
+                labelled = True
+                break
+        marked.append(Candidate(item.start, item.end, item.raw, item.normalized, labelled))
+    return marked
 
 
 def candidates(text: str, spec: FieldSpec) -> list[Candidate]:
@@ -183,26 +233,43 @@ def candidates(text: str, spec: FieldSpec) -> list[Candidate]:
             window = folded_tokens[index : index + size]
             if " ".join(token for _, _, token in window) == expected:
                 start, end = window[0][0], window[-1][1]
-                found.append(
-                    Candidate(
-                        start, end, text[start:end], expected, _labelled(text, start, spec.labels)
-                    )
-                )
+                found.append(Candidate(start, end, text[start:end], expected, False))
         return found
     pattern = {"money": _MONEY_RE, "date": _DATE_RE, "cpf_cnpj": _DOC_RE, "number": _NUMBER_RE}[
         spec.type
     ]
     normalizer = NORMALIZERS[spec.type]
     for match in pattern.finditer(text):
-        group = 1 if spec.type == "money" else 0
+        group = (1 if match.group(1) else 2) if spec.type == "money" else 0
         raw = match.group(group)
         start, end = match.start(group), match.end(group)
         normalized = normalizer(raw)
         if normalized is not None:
-            found.append(
-                Candidate(start, end, raw, normalized, _labelled(text, start, spec.labels))
-            )
-    return found
+            found.append(Candidate(start, end, raw, normalized, False))
+    return _mark_labelled(text, found, spec.labels) if spec.labels else found
+
+
+def labelled_text_values(text: str, labels: Sequence[str]) -> list[tuple[int, int, str, bool]]:
+    """The text value introduced by each label: from the label (after a colon, when
+    there is one) to the end of the line or the next separator."""
+
+    values = []
+    for _, label_end, has_colon in _label_spans(text, labels):
+        line_end = text.find("\n", label_end)
+        line_end = len(text) if line_end == -1 else line_end
+        start = label_end
+        if has_colon:
+            start = text.index(":", label_end) + 1
+        segment = text[start:line_end]
+        stop = _TEXT_STOP.search(segment)
+        if stop:
+            segment = segment[: stop.start()]
+        stripped = segment.strip().rstrip(".,")
+        if not stripped:
+            continue
+        offset = start + segment.index(stripped)
+        values.append((offset, offset + len(stripped), stripped, has_colon))
+    return values
 
 
 def _excerpt(text: str, start: int, end: int) -> tuple[int, int, str]:
@@ -212,72 +279,142 @@ def _excerpt(text: str, start: int, end: int) -> tuple[int, int, str]:
     return line_start, line_end, text[line_start:line_end].strip()
 
 
+def _result(
+    spec: FieldSpec,
+    expected: str | None,
+    outcome: str,
+    reason: str,
+    text: str = "",
+    hit: tuple[int, int, str, str] | None = None,
+) -> FieldResult:
+    start = end = None
+    found = found_normalized = excerpt = None
+    if hit is not None:
+        start, end, found, found_normalized = hit
+        excerpt = _excerpt(text, start, end)[2]
+    return FieldResult(
+        name=spec.name,
+        type=spec.type,
+        expected=spec.value,
+        expected_normalized=expected,
+        outcome=outcome,
+        found=found,
+        found_normalized=found_normalized,
+        start=start,
+        end=end,
+        excerpt=excerpt,
+        reason=reason,
+    )
+
+
+def _check_text(text: str, spec: FieldSpec, expected: str) -> FieldResult:
+    if not spec.labels:
+        found = candidates(text, spec)
+        if found:
+            first = found[0]
+            return _result(
+                spec,
+                expected,
+                "conforme",
+                "equal text found (no label given)",
+                text,
+                (first.start, first.end, first.raw, first.normalized),
+            )
+        return _result(spec, expected, "ausente", "the expected text does not appear")
+    values = labelled_text_values(text, spec.labels)
+    if not values:
+        return _result(spec, expected, "ausente", "no value next to the field label")
+    matches = []
+    for start, end, value, has_colon in values:
+        normalized = normalize_text(value)
+        # After "Label:" the whole value must be equal; in running text ("endosso ao
+        # Banco Beta S.A.") the value must end with the expected name.
+        equal = normalized == expected or (
+            not has_colon and (" " + normalized).endswith(" " + expected)
+        )
+        matches.append((equal, (start, end, value, normalized)))
+    distinct = {hit[3] for equal, hit in matches if not equal}
+    if any(equal for equal, _ in matches):
+        if distinct:
+            hit = next(hit for equal, hit in matches if not equal)
+            return _result(
+                spec,
+                expected,
+                "ambiguo",
+                "the field label introduces different values; a person must decide",
+                text,
+                hit,
+            )
+        hit = next(hit for equal, hit in matches if equal)
+        return _result(spec, expected, "conforme", "equal value next to a field label", text, hit)
+    return _result(
+        spec,
+        expected,
+        "divergente",
+        "a different value appears next to the field label",
+        text,
+        matches[0][1],
+    )
+
+
 def check_field(text: str, spec: FieldSpec) -> FieldResult:
     if spec.type not in FIELD_TYPES:
         raise ValueError(f"unsupported field type {spec.type!r}")
     expected = (
         normalize_text(spec.value) if spec.type == "text" else NORMALIZERS[spec.type](spec.value)
     )
-    base = {"name": spec.name, "type": spec.type, "expected": spec.value}
     if not expected or (spec.type == "cpf_cnpj" and not cpf_cnpj_is_valid(expected)):
-        return FieldResult(
-            **base,
-            expected_normalized=expected or None,
-            outcome="invalido",
-            found=None,
-            found_normalized=None,
-            start=None,
-            end=None,
-            excerpt=None,
-            reason="the expected value is malformed or has invalid check digits",
+        return _result(
+            spec,
+            expected or None,
+            "invalido",
+            "the expected value is malformed or has invalid check digits",
         )
+    if spec.type == "text":
+        return _check_text(text, spec, expected)
     found = candidates(text, spec)
-    labelled = [item for item in found if item.labelled]
-    pool = labelled if spec.labels and labelled else ([] if spec.labels else found)
-    if spec.type == "text" and found and not pool:
-        pool = found  # exact multi-word text match is meaningful even without a label
-    match = next((item for item in pool if item.normalized == expected), None)
-    if match is not None:
-        _, _, excerpt = _excerpt(text, match.start, match.end)
-        return FieldResult(
-            **base,
-            expected_normalized=expected,
-            outcome="conforme",
-            found=match.raw,
-            found_normalized=match.normalized,
-            start=match.start,
-            end=match.end,
-            excerpt=excerpt,
-            reason="equal value found" + (" next to a field label" if match.labelled else ""),
-        )
-    if labelled and spec.type != "text":
-        other = labelled[0]
-        _, _, excerpt = _excerpt(text, other.start, other.end)
-        return FieldResult(
-            **base,
-            expected_normalized=expected,
-            outcome="divergente",
-            found=other.raw,
-            found_normalized=other.normalized,
-            start=other.start,
-            end=other.end,
-            excerpt=excerpt,
-            reason="a different value appears next to the field label",
-        )
-    return FieldResult(
-        **base,
-        expected_normalized=expected,
-        outcome="ausente",
-        found=None,
-        found_normalized=None,
-        start=None,
-        end=None,
-        excerpt=None,
-        reason=(
+    pool = [item for item in found if item.labelled] if spec.labels else found
+    if not pool:
+        return _result(
+            spec,
+            expected,
+            "ausente",
             "no value of this type next to the field label"
             if spec.labels
-            else "the expected value does not appear in the document"
-        ),
+            else "the expected value does not appear in the document",
+        )
+    if not spec.labels:
+        match = next((item for item in pool if item.normalized == expected), None)
+        if match is None:
+            return _result(spec, expected, "ausente", "the expected value does not appear")
+        return _result(
+            spec,
+            expected,
+            "conforme",
+            "equal value found (no label given)",
+            text,
+            (match.start, match.end, match.raw, match.normalized),
+        )
+    values = {item.normalized for item in pool}
+    if len(values) > 1:
+        other = next(item for item in pool if item.normalized != expected)
+        return _result(
+            spec,
+            expected,
+            "ambiguo",
+            "the field label introduces different values; a person must decide",
+            text,
+            (other.start, other.end, other.raw, other.normalized),
+        )
+    item = pool[0]
+    outcome = "conforme" if item.normalized == expected else "divergente"
+    reason = (
+        "equal value next to a field label"
+        if outcome == "conforme"
+        else "a different value appears next to the field label"
+    )
+    return _result(
+        spec, expected, outcome, reason, text, (item.start, item.end, item.raw, item.normalized)
     )
 
 

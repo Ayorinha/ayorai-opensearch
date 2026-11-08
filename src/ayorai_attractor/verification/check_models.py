@@ -174,7 +174,7 @@ class FieldResultModel(BaseModel):
     type: str
     expected: str
     expected_normalized: str | None
-    outcome: Literal["conforme", "divergente", "ausente", "invalido"]
+    outcome: Literal["conforme", "divergente", "ambiguo", "ausente", "invalido"]
     found: str | None
     found_normalized: str | None
     start: int | None

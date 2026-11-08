@@ -88,8 +88,10 @@ def test_wrong_amount_is_divergente() -> None:
     assert result.outcome == "divergente" and result.found_normalized == "1250.00"
 
 
-def test_absent_entity_abstains() -> None:
-    assert _outcome(FieldSpec("endosso", "text", "Banco Gama S.A.", ("endosso",))) == "ausente"
+def test_other_entity_is_divergente_and_absent_label_abstains() -> None:
+    result = check_field(DOC, FieldSpec("endosso", "text", "Banco Gama S.A.", ("endosso",)))
+    assert result.outcome == "divergente" and result.found == "translativo ao Banco Beta S.A"
+    assert _outcome(FieldSpec("aval", "text", "Banco Gama S.A.", ("avalista",))) == "ausente"
     assert _outcome(FieldSpec("protocolo", "number", "77", ("protocolo",))) == "ausente"
 
 
@@ -130,10 +132,16 @@ def test_api_fields_text_document() -> None:
     assert outcomes == {
         "valor": "conforme",
         "vencimento": "divergente",
-        "endosso": "ausente",
+        "endosso": "divergente",
         "sacador": "invalido",
     }
-    assert payload["summary"] == {"conforme": 1, "divergente": 1, "ausente": 1, "invalido": 1}
+    assert payload["summary"] == {
+        "conforme": 1,
+        "divergente": 2,
+        "ambiguo": 0,
+        "ausente": 0,
+        "invalido": 1,
+    }
     assert payload["trace_id"].startswith("fld_")
     assert client.post("/v1/fields", json=body).json()["trace_id"] == payload["trace_id"]
 

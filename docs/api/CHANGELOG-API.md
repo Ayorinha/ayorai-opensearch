@@ -2,6 +2,15 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## 2026-11-08 — /v1/fields and /v1/check hardening (field-check-2, document-check-2)
+
+- `/v1/fields`: new outcome `ambiguo` when one label introduces different values; a value
+  belongs to the nearest preceding label (same line or the line above); a text field
+  with labels is compared with the whole value the label introduces (no fragments, no
+  match under another label); `R$` amounts without cents are recognised.
+- `/v1/check`: quoted text and passages addressed to the checker (embedded
+  instructions) never count as support.
+
 ## 2026-11-08 — POST /v1/fields
 
 - New endpoint: compares submitted field values (money, date, CPF/CNPJ, number, text)
