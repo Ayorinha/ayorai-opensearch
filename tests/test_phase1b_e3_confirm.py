@@ -66,6 +66,7 @@ def _approved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     prereg = tmp_path / "PREREG-E3-CONFIRM-DEV-B-v0.8.md"
     prereg.write_text("**Status:** Aprovado pelo mantenedor em 2026-11-08.\n", encoding="utf-8")
     monkeypatch.setattr(e3_confirm, "PREREGISTRATION_PATH", prereg)
+    monkeypatch.setattr(e3_confirm, "NON_ESTIMABLE_RULE", {"synthetic": True})
 
 
 def test_confirmation_report_is_aggregate_and_complete() -> None:
@@ -205,9 +206,9 @@ def test_primary_interval_resamples_documents() -> None:
     assert "document clusters" in primary["method"]
     assert set(report["dev_b_documents_by_cohort"]) == set(report["common_cohorts"])
     diagnostics = report["diagnostics"]
-    assert diagnostics["role"] == "no effect on the decision"
-    assert diagnostics["document_jackknife"]["documents_used"] > 0
-    assert len(diagnostics["bca_interval_95"]) == 2
+    assert diagnostics["role"].startswith("exploratory; not inferential")
+    assert diagnostics["document_influence"]["documents_used"] > 0
+    assert "bca_interval_95" not in diagnostics
     assert "record" in diagnostics["record_level_bootstrap"]["method"]
 
 
@@ -284,3 +285,9 @@ def test_dev_b_cohort_must_be_estimable(defect: str, monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(e3_confirm, "split_dev_a_b", patched)
     with pytest.raises(ValueError, match="no DEV-B records|lacks a class"):
         run_confirm(cache)
+
+
+def test_refuses_until_non_estimable_rule_is_fixed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(e3_confirm, "NON_ESTIMABLE_RULE", None)
+    with pytest.raises(RuntimeError, match="non-estimable"):
+        run_confirm(_cache(_rows(NOISE)))

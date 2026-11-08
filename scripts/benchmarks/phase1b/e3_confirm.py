@@ -9,8 +9,11 @@ DEC-025:
 - primary interval: paired bootstrap of DOCUMENT clusters within each cohort (whole
   documents resampled with replacement, same draws for both arms, BA recomputed per
   replicate), 2,000 replicates, PCG64(20261109); requires the v2 score cache (doc_id);
-- diagnostics (no effect on the decision): jackknife by document, BCa interval,
-  record-level bootstrap, leave-one-cohort-out; secondary: cohort-cluster bootstrap;
+- diagnostics (no effect on the decision, exploratory, not inferential): document
+  jackknife influence, record-level bootstrap, leave-one-cohort-out; secondary:
+  cohort-cluster bootstrap;
+- refuses to run until the objective rule for non-estimable cohorts is fixed by a
+  dated amendment (NON_ESTIMABLE_RULE);
 - CONFIRMED only if delta >= 0.005 and the primary 95% lower bound > 0.
 
 Output is aggregate-only. TEST is never used.
@@ -49,6 +52,9 @@ STRATIFIED_REPLICATES = 2000
 STRATIFIED_SEED = 20261109
 MAX_INVALID_FRACTION = 0.05
 REQUIRED_CACHE_SCHEMA = "phase1b-dev-score-cache-v2"
+# Fixed by a dated amendment after the cache v2 aggregate counts are published and before
+# any DEV-B computation. Until then P1 refuses to run (fail-closed).
+NON_ESTIMABLE_RULE: dict[str, Any] | None = None
 # Single-execution lock (persistent part): a published P1 report in the repository.
 REPORT_LOCK_GLOB = "reports/benchmarks/*p1-dev-b-confirmation*"
 ESTIMAND_STATEMENT = (
@@ -261,7 +267,13 @@ def _document_bootstrap(stats_by_cohort: Mapping[str, Any]) -> tuple[dict[str, A
 
 
 def _document_jackknife(stats_by_cohort: Mapping[str, Any], delta: float) -> dict[str, Any]:
-    """Diagnostic: macro delta with each document removed in turn (influence)."""
+    """Exploratory influence diagnostic, NOT an inferential jackknife.
+
+    Each document is removed in turn and the macro delta recomputed. Removals that leave
+    a cohort without a class are skipped, and removals from cohorts of different sizes are
+    pooled, so this is not a standard stratified jackknife; it only shows how much a
+    single document can move the estimate.
+    """
 
     import numpy as np
 
@@ -281,44 +293,23 @@ def _document_jackknife(stats_by_cohort: Mapping[str, Any], delta: float) -> dic
     n = array.size
     se = float(np.sqrt((n - 1) / n * np.sum((array - array.mean()) ** 2))) if n > 1 else None
     return {
-        "role": "diagnostic; no effect on the decision",
+        "role": "exploratory influence diagnostic; not inferential; no effect on the decision",
         "documents_used": int(n),
         "documents_skipped_class_missing": skipped,
-        "jackknife_se": se,
+        "pooled_jackknife_se_not_inferential": se,
         "max_abs_influence": float(np.max(np.abs(array - delta))) if n else None,
         "values": array,
     }
-
-
-def _bca_interval(boot: Any, theta_hat: float, jack: Any) -> list[float | None]:
-    """Diagnostic BCa interval from the document bootstrap and jackknife values."""
-
-    from statistics import NormalDist
-
-    import numpy as np
-
-    normal = NormalDist()
-    if boot.size < 2 or jack.size < 3:
-        return [None, None]
-    proportion = float(np.mean(boot < theta_hat))
-    if proportion <= 0.0 or proportion >= 1.0:
-        return [None, None]
-    z0 = normal.inv_cdf(proportion)
-    centred = jack.mean() - jack
-    denominator = 6.0 * float(np.sum(centred**2)) ** 1.5
-    acceleration = float(np.sum(centred**3)) / denominator if denominator > 0 else 0.0
-    bounds = []
-    for alpha in (0.025, 0.975):
-        z = normal.inv_cdf(alpha)
-        adjusted = normal.cdf(z0 + (z0 + z) / (1.0 - acceleration * (z0 + z)))
-        bounds.append(float(np.quantile(boot, adjusted, method="linear")))
-    return bounds
 
 
 def run_confirm(cache: Mapping[str, Any]) -> dict:
     """Single execution of P1; the only eligibility accepted is the preregistered file."""
 
     approved_on = preregistration_approval(PREREGISTRATION_PATH)
+    if NON_ESTIMABLE_RULE is None:
+        raise RuntimeError(
+            "the objective rule for non-estimable cohorts is not fixed yet; P1 cannot run"
+        )
     if cache.get("schema_version") != REQUIRED_CACHE_SCHEMA:
         raise ValueError("P1 requires the v2 score cache with document ids")
     if published_confirmation_exists():
@@ -408,9 +399,9 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     macro_e = sum(ba_by_arm["ensemble"].values()) / len(common)
     macro_c = sum(ba_by_arm["comparator"].values()) / len(common)
     delta = macro_e - macro_c
-    primary, boot_values = _document_bootstrap(stats_by_cohort)
+    primary, _ = _document_bootstrap(stats_by_cohort)
     jackknife = _document_jackknife(stats_by_cohort, delta)
-    bca = _bca_interval(boot_values, delta, jackknife.pop("values"))
+    jackknife.pop("values")
     case_bootstrap = _stratified_bootstrap(groups)
     secondary = _paired_bootstrap(
         [ba_by_arm["ensemble"][c] - ba_by_arm["comparator"][c] for c in common]
@@ -449,10 +440,10 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
         "replacement_margin": REPLACEMENT_MARGIN,
         "primary_interval": primary,
         "dev_b_documents_by_cohort": documents_by_cohort,
+        "non_estimable_rule": NON_ESTIMABLE_RULE,
         "diagnostics": {
-            "role": "no effect on the decision",
-            "document_jackknife": jackknife,
-            "bca_interval_95": bca,
+            "role": "exploratory; not inferential; no effect on the decision",
+            "document_influence": jackknife,
             "record_level_bootstrap": case_bootstrap,
         },
         "secondary_cluster_bootstrap": secondary,
