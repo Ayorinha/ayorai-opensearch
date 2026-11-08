@@ -152,7 +152,7 @@ Comparar, sob a decisão da seção 4:
 3. Regressão logística externa com até três pesos, cross-fitted, somente se expressamente autorizada pela DEC.
 4. Votação ponderada, com pesos fixos definidos previamente ou procedimento de ajuste explicitamente autorizado.
 
-O cache A1 deverá ser usado para evitar nova inferência. Cada fold retido será avaliado com calibradores/pesos ajustados somente nos folds de treino. Não usar DEV-B para selecionar a variante. A referência RAIM sugere testar correlação de erros, dupla falha e ganho incremental contra o melhor membro; não copiar seu código (repositórios com licença `other`/NOASSERTION). O stacking RAIM ajusta um meta-modelo com rótulos e depende da DEC-024. Comparar custo, estabilidade e BA macro; expectativa de ganho de 1–2,5 pontos é apenas hipótese de planejamento, não promessa nem resultado.
+O cache A1 deverá ser usado para evitar nova inferência. Cada fold retido será avaliado com calibradores/pesos ajustados somente nos folds de treino. Não usar DEV-B para selecionar a variante. A referência RAIM sugere testar correlação de erros, dupla falha e ganho incremental contra o melhor membro; seus autores usam bootstrap pareado por clusters (2.000 reamostragens, IC 95%). Pré-registrar unidade de cluster, número de reamostragens, seed e correção de multiplicidade; não copiar seu código (repositórios com licença `other`/NOASSERTION). O stacking RAIM ajusta um meta-modelo com rótulos e depende da DEC-024. Comparar custo, estabilidade e BA macro; expectativa de ganho de 1–2,5 pontos é apenas hipótese de planejamento, não promessa nem resultado.
 
 ### E4. Verificadores adicionais
 
