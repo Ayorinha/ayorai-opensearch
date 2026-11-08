@@ -76,10 +76,10 @@ Para cada componente `k`:
 - `b_k`: casos em que a Baseline B acerta e o sistema erra;
 - `d_k = a_k - b_k`.
 
-A estatística observada é (T_{obs} = \sum_{k=1}^{K} d_k). A ponderação é pelo número de casos de cada componente; componentes com `d_k = 0` permanecem na análise.
+A estatística observada é `T_obs = sum_k d_k`. A ponderação é pelo número de casos de cada componente; componentes com `d_k = 0` permanecem na análise.
 
-- Se (K \leq 20), enumerar todas as `2^K` combinações de sinais. O p-valor bilateral é a fração de combinações com (|T^*| \geq |T_{obs}|).
-- Se `K > 20`, usar 10.000 sorteios com seed `20261003` e correção de Monte Carlo `p = (1 + E) / (1 + 10_000)`, em que (E) é o número de permutações extremas.
+- Se `K <= 20`, enumerar todas as `2^K` combinações de sinais. O p-valor bilateral é a fração de combinações com `|T*| >= |T_obs|`.
+- Se `K > 20`, usar 10.000 sorteios com seed `20261003` e correção de Monte Carlo `p = (1 + E) / (1 + 10_000)`, em que `E` é o número de permutações extremas.
 - Reportar `K`, o número de combinações consideradas e a resolução mínima teórica `2 / 2^K`.
 - Se `K < 6`, registrar que a resolução não permite atingir `p < 0,05`. Não trocar o teste nem reduzir o nível de significância para contornar essa limitação.
 
@@ -92,7 +92,7 @@ A validade do sign-flip depende da permutabilidade dos resultados sistema/Baseli
 - Calcular o IC95% percentil de Cohen's kappa não ponderado por bootstrap de componente, com 10.000 reamostragens e seed `20261003`.
 - Contabilizar as reamostras em que kappa é indefinido e excluí-las do cálculo do intervalo.
 - Publicar a contagem e a proporção de reamostras indefinidas; se a proporção superar 5%, marcar o intervalo como **instável**. Se nenhuma reamostra produzir kappa definido, o intervalo deve ser reportado como indisponível, nunca inventado.
-- O gate permanece na estimativa pontual (\kappa \geq 0,6). O IC95% não altera esse gate.
+- O gate permanece na estimativa pontual `kappa >= 0,6`. O IC95% não altera esse gate.
 - Permanecem obrigatórios a concordância observada, a matriz de confusão, as marginais por classe e a contagem de pares excluídos por `RULE_GAP`, conforme DEC-020.
 
 Para reprodutibilidade da implementação, o procedimento de sorteio dos componentes, a preservação da multiplicidade de componentes selecionados e a convenção de quantis devem ser registrados explicitamente antes de gerar qualquer relatório humano. A DEC-022 fixa iterações, seed e tratamento de indefinição, mas não descreve esses detalhes operacionais.
