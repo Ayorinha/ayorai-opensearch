@@ -15,6 +15,7 @@ Output is aggregate-only. TEST is never used.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -44,6 +45,61 @@ CONFIGURATION = "E3b-01"
 STRATIFIED_REPLICATES = 2000
 STRATIFIED_SEED = 20261109
 MAX_INVALID_FRACTION = 0.05
+# Single-execution lock (persistent part): a published P1 report in the repository.
+REPORT_LOCK_GLOB = "reports/benchmarks/*p1-dev-b-confirmation*"
+ESTIMAND_STATEMENT = (
+    "The estimand is the macro balanced accuracy over the common cohorts. No superiority "
+    "claim is made for any individual cohort; per-cohort values are descriptive."
+)
+
+
+def published_confirmation_exists(root: Path | None = None) -> bool:
+    """True when a P1 confirmation report is already published (execution is single-use)."""
+
+    root = root if root is not None else REPOSITORY_ROOT
+    return any(root.glob(REPORT_LOCK_GLOB))
+
+
+def validate_members(models: Mapping[str, Any]) -> list[str]:
+    """Strict cross-member checks; returns the sorted record ids."""
+
+    missing = [member for member in MEMBERS if member not in models]
+    if missing:
+        raise ValueError(f"the score cache lacks members: {missing}")
+    reference: dict[str, tuple[str, str]] | None = None
+    for member in MEMBERS:
+        seen: dict[str, tuple[str, str]] = {}
+        for record in models[member]["records"]:
+            record_id = record["record_id"]
+            if record_id in seen:
+                raise ValueError(f"{member} has a duplicate record_id")
+            if record["gold"] not in {"SUPPORTED", "NOT_SUPPORTED"}:
+                raise ValueError(f"{member} has an invalid gold label")
+            score = record["score"]
+            if isinstance(score, bool) or not isinstance(score, (int, float)):
+                raise ValueError(f"{member} has a non-numeric score")
+            if not math.isfinite(float(score)) or not 0.0 <= float(score) <= 1.0:
+                raise ValueError(f"{member} has a score outside [0, 1]")
+            seen[record_id] = (record["cohort"], record["gold"])
+        if reference is None:
+            reference = seen
+        elif seen != reference:
+            raise ValueError(f"{member} disagrees with {MEMBERS[0]} on records, cohorts or labels")
+    return sorted(reference or {})
+
+
+def leave_one_cohort_out(
+    ba_by_arm: Mapping[str, Mapping[str, float]], common: Sequence[str]
+) -> dict[str, float]:
+    """Descriptive only: macro delta recomputed without each cohort in turn."""
+
+    result: dict[str, float] = {}
+    for left_out in common:
+        kept = [cohort for cohort in common if cohort != left_out]
+        result[left_out] = sum(
+            ba_by_arm["ensemble"][c] - ba_by_arm["comparator"][c] for c in kept
+        ) / len(kept)
+    return result
 
 
 def _out_of_fold(scores: Sequence[float], labels: Sequence[int], folds: Sequence[int]) -> list:
@@ -112,26 +168,22 @@ def _stratified_bootstrap(
     }
 
 
-def run_confirm(cache: Mapping[str, Any], eligibility: Mapping[str, Any] | None = None) -> dict:
+def run_confirm(cache: Mapping[str, Any]) -> dict:
+    """Single execution of P1; the only eligibility accepted is the preregistered file."""
+
     approved_on = preregistration_approval(PREREGISTRATION_PATH)
-    if eligibility is None:
-        file_sha256 = sha256_bytes(Path(ELIGIBILITY_PATH).read_bytes())
-        if file_sha256 != ELIGIBILITY_SHA256:
-            raise RuntimeError("eligibility file differs from the preregistered version")
-        eligibility = load_eligibility()
+    if published_confirmation_exists():
+        raise RuntimeError("a P1 confirmation report is already published; P1 is single-use")
+    file_sha256 = sha256_bytes(Path(ELIGIBILITY_PATH).read_bytes())
+    if file_sha256 != ELIGIBILITY_SHA256:
+        raise RuntimeError("eligibility file differs from the preregistered version")
+    eligibility = load_eligibility()
     _validate_eligibility(eligibility)
     models = cache["models"]
-    missing = [member for member in MEMBERS if member not in models]
-    if missing:
-        raise ValueError(f"the score cache lacks members: {missing}")
-
+    record_ids = validate_members(models)
     reference = {r["record_id"]: r for r in models[COMPARATOR]["records"]}
-    record_ids = sorted(reference)
     cohorts = [reference[r]["cohort"] for r in record_ids]
     labels = [1 if reference[r]["gold"] == "SUPPORTED" else 0 for r in record_ids]
-    for member in MEMBERS:
-        if {r["record_id"] for r in models[member]["records"]} != set(record_ids):
-            raise ValueError(f"{member} does not cover the same DEV records")
 
     common = [c for c in eligibility["cohorts"] if _eligible(eligibility, COMPARATOR, c)]
     for cohort in common:
@@ -233,6 +285,9 @@ def run_confirm(cache: Mapping[str, Any], eligibility: Mapping[str, Any] | None 
         "replacement_margin": REPLACEMENT_MARGIN,
         "primary_interval": primary,
         "secondary_cluster_bootstrap": secondary,
+        "leave_one_cohort_out_delta": leave_one_cohort_out(ba_by_arm, common),
+        "leave_one_cohort_out_role": "descriptive diagnostic; no effect on the decision",
+        "estimand_statement": ESTIMAND_STATEMENT,
         "outcome": outcome,
         "contrary_evidence": contrary,
         "instance_level_output_published": False,

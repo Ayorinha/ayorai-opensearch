@@ -66,6 +66,18 @@ jobs:
           assert run["status"] == "completed" and run["conclusion"] == "success"
           print(f"CACHE_RUN_VERIFIED path={run['path']} head_sha={run['head_sha']}")
           PY
+      # P1 is single-use: refuse if any earlier run already produced its reserved artifact.
+      # Limit: artifact records can be deleted; the persistent lock is the published report
+      # (checked in e3_confirm.py).
+      - name: Enforce single execution of the P1 confirmation
+        if: ${{ inputs.experiment == 'e3-confirm-dev-b' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          count="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=phase1b-dev-p1-confirmation&per_page=1" --jq '.total_count')"
+          if [ "$count" != "0" ]; then echo "P1 confirmation already executed ($count artifact record(s))"; exit 1; fi
+          echo "P1_SINGLE_USE_LOCK: no earlier execution found"
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: phase1b-dev-score-cache
@@ -120,6 +132,15 @@ jobs:
           )
           print(json.dumps(provenance, sort_keys=True))
           PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ inputs.experiment == 'e3-confirm-dev-b' }}
+        with:
+          name: phase1b-dev-p1-confirmation
+          path: |
+            /tmp/phase1b-output/phase1b-cache-experiment.json
+            /tmp/phase1b-output/PROVENANCE.json
+          if-no-files-found: error
+          retention-days: 90
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: phase1b-dev-cache-experiment

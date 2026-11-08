@@ -132,3 +132,58 @@ def test_identical_arms_give_zero_interval() -> None:
 
 def test_experiment_is_registered() -> None:
     assert "e3-confirm-dev-b" in EXPERIMENTS
+
+
+def test_estimand_statement_and_loco_are_descriptive() -> None:
+    report = run_confirm(_cache(_rows(NOISE)))
+    assert "No superiority claim is made for any individual cohort" in report["estimand_statement"]
+    loco = report["leave_one_cohort_out_delta"]
+    assert set(loco) == set(report["common_cohorts"])
+    assert report["leave_one_cohort_out_role"].startswith("descriptive")
+
+
+@pytest.mark.parametrize("defect", ["gold", "cohort", "duplicate", "nan", "range"])
+def test_strict_member_validation(defect: str) -> None:
+    rows = _rows(NOISE)
+    cache = _cache(rows)
+    target = cache["models"]["minicheck"]["records"]
+    if defect == "gold":
+        target[0]["gold"] = "SUPPORTED" if target[0]["gold"] == "NOT_SUPPORTED" else "NOT_SUPPORTED"
+        message = "disagrees"
+    elif defect == "cohort":
+        target[0]["cohort"] = "another-cohort"
+        message = "disagrees"
+    elif defect == "duplicate":
+        target.append(dict(target[0]))
+        message = "duplicate"
+    elif defect == "nan":
+        target[0]["score"] = float("nan")
+        message = "outside"
+    else:
+        target[0]["score"] = 1.5
+        message = "outside"
+    with pytest.raises(ValueError, match=message):
+        run_confirm(cache)
+
+
+def test_refuses_when_a_confirmation_report_is_published(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    published = tmp_path / "reports" / "benchmarks" / "2026-12-01-p1-dev-b-confirmation"
+    published.mkdir(parents=True)
+    monkeypatch.setattr(e3_confirm, "REPOSITORY_ROOT", tmp_path)
+    with pytest.raises(RuntimeError, match="single-use"):
+        run_confirm(_cache(_rows(NOISE)))
+
+
+def test_eligibility_cannot_be_injected() -> None:
+    import inspect
+
+    assert list(inspect.signature(run_confirm).parameters) == ["cache"]
+
+
+def test_experiment_workflow_enforces_p1_single_use() -> None:
+    text = Path(".github/workflows/phase1b-dev-cache-experiment.yml").read_text(encoding="utf-8")
+    assert "name=phase1b-dev-p1-confirmation" in text
+    assert "name: phase1b-dev-p1-confirmation" in text
+    assert "inputs.experiment == 'e3-confirm-dev-b'" in text
