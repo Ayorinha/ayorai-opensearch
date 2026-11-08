@@ -14,6 +14,18 @@ def test_critical_errors_respects_level() -> None:
     assert power(400, 0.10, 0.05 / 11, 0.10) <= 0.05 / 11 + 1e-12
 
 
-@pytest.mark.parametrize(("p1", "expected"), [(0.03, 168), (0.05, 367), (0.07, 1108)])
-def test_reproduces_project_floors(p1: float, expected: int) -> None:
-    assert robust_floor(0.10, 0.05 / 11, p1, 0.80, horizon=1800) == expected
+@pytest.mark.parametrize(
+    ("pairs", "p1", "expected"),
+    [
+        # Historical Calibration V2 family: 1 candidate x 11 cohorts.
+        (11, 0.03, 168),
+        (11, 0.05, 367),
+        (11, 0.07, 1108),
+        # Proposed stage-3 family: 2 candidates x 11 cohorts.
+        (22, 0.03, 193),
+        (22, 0.05, 420),
+        (22, 0.07, 1258),
+    ],
+)
+def test_reproduces_floors_up_to_horizon(pairs: int, p1: float, expected: int) -> None:
+    assert robust_floor(0.10, 0.05 / pairs, p1, 0.80, horizon=2500) == expected

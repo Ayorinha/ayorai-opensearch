@@ -36,18 +36,23 @@ Proposta primária: a amostra de certificação contém **no máximo uma afirma�
 
 Consequência para resultados já publicados: as 4 certificações da Emenda 2 foram calculadas sem essa restrição. Proposta: não reescrever o histórico; acrescentar nota de limitação por errata datada, se o mantenedor autorizar.
 
-## 6. Tamanhos amostrais (casos aceitos por coorte, pisos robustos)
+## 6. Tamanhos amostrais (casos aceitos por coorte; pisos robustos até o horizonte verificado)
 
-Definição: teste binomial exato unilateral de H0: risco ≥ `R_max` contra H1: risco < `R_max`, no nível `δ_par`, sobre os `n` casos aceitos; rejeita-se H0 quando o número de erros `k` satisfaz P(Bin(`n`, `R_max`) ≤ `k`) ≤ `δ_par`. Poder com taxa real `p1`: P(Bin(`n`, `p1`) ≤ `k_crit(n)`). Piso robusto = menor `n` tal que o poder é ≥ à meta para todo `n' ≥ n` (a discretização faz o poder oscilar).
+Definição: teste binomial exato unilateral de H0: risco ≥ `R_max` contra H1: risco < `R_max`, no nível `δ_par`, sobre os `n` casos aceitos; rejeita-se H0 quando o número de erros `k` satisfaz P(Bin(`n`, `R_max`) ≤ `k`) ≤ `δ_par`. Poder com taxa real `p1`: P(Bin(`n`, `p1`) ≤ `k_crit(n)`). **Piso robusto até o horizonte H** = menor `n` tal que o poder é ≥ à meta para todo `n'` entre `n` e `H` (a discretização faz o poder oscilar). É uma verificação numérica até `H` (3.000 no script; 2.500 no teste), não uma prova para todo `n` além de `H`; como as oscilações diminuem com `n` e os pisos estão bem abaixo de `H`, o risco de nova queda além de `H` é pequeno, mas não foi demonstrado matematicamente.
 
-**Reprodução:** `python scripts/benchmarks/phase1b/ltt_power.py --r-max 0.10 --delta-family 0.05 --pairs 11 --p1 0.03 0.05 0.07 --power 0.8`. O teste `tests/test_phase1b_ltt_power.py` confirma 168 / 367 / 1108 para esse cenário. Os demais cenários da tabela são obtidos pelo mesmo script, variando `--r-max`, `--delta-family`, `--pairs` e `--power`. São números de **planejamento**, não regras de aceitação.
+**Dois cenários, que não devem ser confundidos:**
+
+- **Histórico (Calibration V2, 1 candidato × 11 coortes = 11 pares, `δ_par` = 0,05/11):** 168 / 367 / 1108. Reprodução: `python scripts/benchmarks/phase1b/ltt_power.py --r-max 0.10 --delta-family 0.05 --pairs 11 --p1 0.03 0.05 0.07 --power 0.8`.
+- **Proposto nesta etapa (2 candidatos × 11 coortes = 22 pares, `δ_par` = 0,05/22):** **193 / 420 / 1258**. Reprodução: `python scripts/benchmarks/phase1b/ltt_power.py --r-max 0.10 --delta-family 0.05 --pairs 22 --p1 0.03 0.05 0.07 --power 0.8`.
+
+Para a família proposta valem os números de 22 pares; os de 11 pares servem apenas como referência histórica. O teste `tests/test_phase1b_ltt_power.py` reproduz os dois cenários. São números de **planejamento**, não regras de aceitação; mínimo amostral (menos de 25 aceitas = limiar não testável) e regra de aceitação são coisas distintas.
 
 `p1` = 3% / 5% / 7% quando `R_max` = 10%; `p1` = 1% / 2% / 3% quando `R_max` = 5%:
 
-| R_max | δ por par | Poder 80% | Poder 90% | Poder 95% |
+| R_max | δ por par (pares) | Poder 80% | Poder 90% | Poder 95% |
 |---|---|---|---|---|
-| 10% | 0,05/11 | 168 / 367 / 1108 | 210 / 454 / 1378 | 237 / 527 / 1634 |
-| 10% | 0,05/22 | 193 / 420 / 1258 | 222 / 507 / 1540 | 263 / 593 / 1808 |
+| 10% | 0,05/11 (histórico) | 168 / 367 / 1108 | 210 / 454 / 1378 | 237 / 527 / 1634 |
+| 10% | 0,05/22 (**proposto**) | 193 / 420 / 1258 | 222 / 507 / 1540 | 263 / 593 / 1808 |
 | 10% | 0,01/22 | 247 / 530 / 1588 | 276 / 631 / 1917 | 318 / 718 / 2209 |
 | 5% | 0,05/22 | 269 / 587 / 1413 | 332 / 693 / 1745 | 362 / 797 / 2025 |
 | 5% | 0,01/22 | 345 / 728 / 1791 | 409 / 863 / 2149 | 440 / 968 / 2479 |

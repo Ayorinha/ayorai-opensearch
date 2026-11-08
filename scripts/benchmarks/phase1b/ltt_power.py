@@ -7,8 +7,11 @@ with the exact one-sided binomial test at level delta_pair on the n accepted cas
 the number of errors k satisfies P(Bin(n, R_max) <= k) <= delta_pair.
 
 Power at a true error rate p1 is P(Bin(n, p1) <= k_crit(n)). Because the binomial is
-discrete, power is not monotone in n; the *robust floor* is the smallest n such that
-power >= target for every n' >= n (checked up to ``horizon``).
+discrete, power is not monotone in n; the *robust floor up to the horizon H* is the
+smallest n such that power >= target for every n' in [n, H]. This is a numerical check
+up to H, not a proof for every n' beyond H.
+
+The number of pairs is the multiplicity family (candidates x cohorts); always state it.
 
 These numbers are planning aids, not acceptance rules.
 """

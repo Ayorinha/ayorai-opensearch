@@ -45,8 +45,8 @@ Nenhum limiar, calibrador, clipping, membro ou regra usa rótulos de DEV-B.
 - **Estimando:** BA macro, média aritmética das coortes comuns, com BA calculada por afirmação (o estimando do leaderboard). **Nenhuma alegação de superioridade por coorte será feita;** valores por coorte são descritivos.
 - **IC95% primário — bootstrap pareado por clusters de documentos, estratificado por coorte:** a unidade é o documento (`doc_id` do cache v2, com escopo por coorte). Em cada réplica e em cada coorte: (1) sortear, com reposição, tantos documentos quantos a coorte tem em DEV-B; (2) cada documento sorteado entra com **todas** as suas afirmações, tantas vezes quanto for sorteado; (3) os dois braços usam exatamente os mesmos documentos sorteados; (4) a BA de cada braço é recalculada integralmente na coorte; (5) Δ macro = média das diferenças por coorte. 2.000 réplicas, `numpy.random.Generator(PCG64(20261109))`, percentis 2,5% e 97,5% com `method="linear"`. Documentos com uma única classe são válidos (a BA é calculada na coorte, não no documento). Fundamento: afirmações do mesmo documento são correlacionadas; reamostrar casos isolados subestima a incerteza (Cameron & Miller, "A Practitioner's Guide to Cluster-Robust Inference", *Journal of Human Resources* 50(2):317–372, 2015). O bootstrap não muda o estimando; só estima sua incerteza.
 - **Réplica inválida:** se, numa réplica, alguma coorte reamostrada ficar sem uma das classes, a réplica inteira é inválida e descartada; a contagem é reportada. Mais de 5% inválidas → IC declarado não estimável e H1 **não confirmada**. Uma coorte comum sem registros em DEV-B, ou sem uma das classes em DEV-B, torna o estimando indefinido: a execução falha fechada.
-- **Coorte não suficientemente estimável:** o critério será **objetivo** (limiares numéricos sobre número de documentos, distribuição dos tamanhos e correlação intradocumento estimada só em DEV-A), fixado por emenda datada **depois** de publicadas as contagens agregadas do cache v2 e **antes** de qualquer cálculo em DEV-B; não pode depender de resultados. Uma coorte abaixo do critério continua no estimando macro (o denominador não muda), é sinalizada e não recebe inferência individual.
-- **Diagnósticos (sem efeito na decisão):** jackknife por documento (influência); IC BCa (sensibilidade); Δ macro sem cada coorte por vez (leave-one-cohort-out); bootstrap anterior por caso, para comparação.
+- **Coorte não suficientemente estimável:** o critério será **objetivo** (limiares numéricos sobre número de documentos, distribuição dos tamanhos e correlação intradocumento estimada só em DEV-A), fixado por emenda datada **depois** de publicadas as contagens agregadas do cache v2 e **antes** de qualquer cálculo em DEV-B; não pode depender de resultados. Uma coorte abaixo do critério continua no estimando macro (o denominador não muda), é sinalizada e não recebe inferência individual. O código recusa executar enquanto essa regra não estiver fixada (`NON_ESTIMABLE_RULE`).
+- **Diagnósticos exploratórios, não inferenciais (sem efeito na decisão):** influência por documento (cada documento removido por vez; não é um jackknife estratificado padrão e não gera intervalo); bootstrap por caso, para comparação; Δ macro sem cada coorte por vez (leave-one-cohort-out). Nenhum intervalo BCa é calculado.
 - **Secundário (descritivo, sem efeito na decisão):** bootstrap por cluster de coorte, igual ao do E3 (2.000 réplicas, PCG64(20261108)), e BA por coorte dos dois braços.
 - **Elegibilidade:** a execução depende da regra de elegibilidade vigente na data da aprovação. Com a DEC-026 apenas proposta, as células de FactCG e MiniCheck estão no estado "independência não verificável" e a P1 **não pode ser executada como confirmatória** até que os testes empíricos de contaminação sejam executados e a regra aprovada. **Ponto em aberto que pode impedir a confirmação mesmo com testes negativos:** a exposição de seleção do FactCG (limiar ajustado no validation do LLM-AggreFact, FactCG §6.2) não é resolvida por testes de sobreposição de treino e exige decisão metodológica própria.
 
@@ -71,15 +71,29 @@ Se **CONFIRMADO**, a E3b-01 passa a ser o candidato principal para a execução 
 - Trava de execução única **persistente e atômica** (proposta, implementação em PR separada sujeita a autorização): antes de qualquer cálculo, o job cria uma referência Git reservada (`refs/tags/p1-dev-b-confirmation-lock`) apontando para o commit executado. A criação de referência é atômica no GitHub (uma segunda tentativa falha com conflito), persiste após a execução e independe de artefatos. Execuções concorrentes ficam também serializadas por um grupo de concorrência. Camadas adicionais: o código recusa se houver relatório da P1 publicado no repositório. Limite declarado: um administrador pode apagar a referência; para impedir, o mantenedor deve protegê-la por regra de proteção de tags, e qualquer exclusão fica registrada no log de auditoria do repositório.
 - Saída somente agregada; nenhum dado por instância.
 
-## 7. Relação com a Calibration V2
+## 7. Natureza do DEV-B: holdout parcialmente usado (DECISÃO PENDENTE do mantenedor)
+
+**Fato:** o DEV-B já foi usado pela Calibration V2 para a certificação LTT do FactCG (Emenda 2). O DEV-B, portanto, **não é um holdout intocado**: o comportamento do comparador (FactCG) nele já foi parcialmente observado. A E3b-01 nunca foi avaliada no DEV-B, e a hipótese foi escolhida apenas com dados do DEV-A.
+
+**Consequência:** a P1 não pode ser apresentada como "confirmação independente". Opções para decisão:
+
+| Opção | Classificação do resultado | Custo | Risco |
+|---|---|---|---|
+| A. Executar a P1 como **confirmação condicional em holdout parcialmente usado**, com a limitação declarada em todo relato; a confirmação independente fica para o TEST único | Evidência confirmatória condicional, nunca "independente" | Baixo | O uso anterior do comparador pode enviesar a leitura; mitigado por declaração e pelo TEST |
+| B. **Reclassificar a P1 como avaliação exploratória** em DEV-B e ir ao TEST único quando os demais gates estiverem fechados | Exploratório | Nenhum | Perde-se o passo intermediário antes de gastar o TEST |
+| C. Obter **dados independentes novos** (conjunto anotado externo, fora do LLM-AggreFact) para a confirmação | Confirmação independente | Alto (anotação, tempo) | Comparabilidade com o leaderboard menor |
+
+Proposta do revisor técnico: **A**, com o rótulo "confirmação condicional" obrigatório e o TEST único como única confirmação independente. A escolha é do mantenedor e deve ser registrada antes da aprovação deste documento.
+
+## 8. Relação com a Calibration V2
 
 - A certificação LTT já publicada (DEV-B, FactCG) não é alterada.
 - Se, no futuro, a E3b-01 for certificada por LTT em DEV-B, o relatório deverá declarar que DEV-B também foi usado nesta confirmação (mesma amostra para confirmação e certificação).
 - A ampliação do uso de DEV-B é registrada na DEC-025 e limita-se a esta hipótese.
 - Para que uma certificação LTT posterior continue válida mesmo com a escolha do candidato feita nos mesmos dados, a família de hipóteses deve incluir os dois candidatos (proposta em `docs/benchmarks/PREREG-STAGE3-LTT-PROPOSTA.md`).
 
-## 8. Relato obrigatório
+## 9. Relato obrigatório
 
-Publicar, independentemente do resultado — positivo ou negativo, com a mesma visibilidade: Δ, IC95% primário, contagem de réplicas inválidas, BA por coorte dos dois braços, limiares usados por coorte, IC secundário por cluster, SHA do código, run do cache, run da execução, `report_sha256`, diagnósticos (jackknife, BCa, leave-one-cohort-out), estado de elegibilidade de cada célula com fonte, e a classificação CONFIRMADO / NÃO CONFIRMADO. Não omitir resultado negativo.
+Publicar, independentemente do resultado — positivo ou negativo, com a mesma visibilidade: Δ, IC95% primário, contagem de réplicas inválidas, BA por coorte dos dois braços, limiares usados por coorte, IC secundário por cluster, SHA do código, run do cache, run da execução, `report_sha256`, diagnósticos exploratórios (influência por documento, bootstrap por caso, leave-one-cohort-out), estado de elegibilidade de cada célula com fonte, e a classificação CONFIRMADO / NÃO CONFIRMADO. Não omitir resultado negativo.
 
 **Estado final:** proposta fechada para revisão. A execução exigirá aprovação explícita do mantenedor neste documento.
