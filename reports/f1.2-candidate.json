@@ -2,7 +2,7 @@
   "path": "C",
   "detector": "RuleStanceDetector",
   "detector_version": "5",
-  "package_file": "/home/claude/ayorai-opensearch/src/ayorai_attractor/__init__.py",
+  "package_file": "src/ayorai_attractor/__init__.py",
   "source_commit": "b57cb44cc166a1881a646157ae6a9556675cb3fe",
   "corpus_sha256": "ce2333ccfe4003ebfc90819400beaf6a245620754deb8572c7611bd8bbb7dea3",
   "seed": 20261003,
