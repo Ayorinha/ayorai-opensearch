@@ -28,7 +28,7 @@ O código-fonte, a documentação técnica e os artefatos de avaliação ficam n
 
 ## Princípios do conteúdo
 
-- O texto acompanha o `README.md` e `docs/STATUS.md` do `main`. A página inicial apresenta os resultados DEV da Calibration V2 com suas limitações; o projeto não é apresentado como certificado e ainda não há resultado de benchmark em português.
+- A página inicial usa a versão v0.7.0 como referência e apresenta os resultados DEV da Calibration V2 com suas limitações; o projeto não é apresentado como certificado e ainda não há resultado de benchmark em português.
 - A identidade visual segue `docs/assets/brand/README.md`: fundo preto e banner sem distorção, recoloração ou separação do dente-de-leão.
 - Nenhuma afirmação de benchmark validado, certificação, parceria ou endosso sem evidência verificável (ver `AGENTS.md`).
 
