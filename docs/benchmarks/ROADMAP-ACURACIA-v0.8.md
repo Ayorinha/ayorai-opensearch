@@ -71,7 +71,7 @@ A regra não garante ganho. Expectativas de ganho são hipóteses e não resulta
 
 ## 4. DEC proposta — calibração pós-hoc versus fine-tuning
 
-<badge>PROPOSTA — NÃO APROVADA</badge>
+**PROPOSTA — NÃO APROVADA**
 
 **Identificador sugerido:** DEC-024 — Limites de calibração e combinação de sinais no LLM-AggreFact.  
 **Decisor:** Anderson Leon Ayora, mantenedor.  
@@ -128,7 +128,7 @@ Cada item será tratado em PR própria, com pré-registro/escopo, testes e evid�
 ### A3. Teste de determinismo de scores
 
 - Reexecutar uma amostra pré-registrada de 200 casos DEV, com modelo, revisão, tokenizer, bibliotecas, hardware/precisão e parâmetros fixados.
-- Critério proposto: scores idênticos dentro da tolerância absoluta de (10^{-6}); registrar também diferenças máximas, distribuição das diferenças e causas conhecidas de não determinismo.
+- Critério proposto: scores idênticos dentro da tolerância absoluta de `1e-6`; registrar também diferenças máximas, distribuição das diferenças e causas conhecidas de não determinismo.
 - Se o critério falhar, não mascarar diferenças com arredondamento. Investigar e registrar; não avançar para comparação de modelos dependente de determinismo até decisão.
 
 ### A4. Auditoria agregada de erros E2b
@@ -168,7 +168,7 @@ Para cada modelo, apresentar antes da execução uma estimativa de custo e viabi
 
 ### E5. Seleção de evidência em documentos longos
 
-Comparar o chunking oficial com recuperação dos (k) trechos mais relevantes, usando BM25 e embeddings, para reduzir truncamento e melhorar cobertura de evidência em ExpertQA, Lfqa e AggreFact-CNN. Pré-registrar (k), tamanho/overlap dos trechos, modelo de embeddings, licença, estratégia de ranking, custo e fallback. Não alterar offsets do documento original nem a semântica dos contratos. A recuperação é um sinal de seleção, não prova de sustentação.
+Comparar o chunking oficial com recuperação dos `k` trechos mais relevantes, usando BM25 e embeddings, para reduzir truncamento e melhorar cobertura de evidência em ExpertQA, Lfqa e AggreFact-CNN. Pré-registrar `k`, tamanho/overlap dos trechos, modelo de embeddings, licença, estratégia de ranking, custo e fallback. Não alterar offsets do documento original nem a semântica dos contratos. A recuperação é um sinal de seleção, não prova de sustentação.
 
 ### E6. Decomposição de afirmações longas
 
