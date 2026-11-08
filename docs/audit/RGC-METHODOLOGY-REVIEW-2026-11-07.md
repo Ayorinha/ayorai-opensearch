@@ -1,6 +1,6 @@
 # Revisão metodológica de continuidade — benchmark RGC PT-BR
 
-**Data do retrato:** 2026-11-07 (horário local de São Paulo)  
+**Data do retrato:** 2026-11-07 (horário exato não preservado)  
 **Base Git consultada:** `main` em `f8895caab6f3d81fdfea0eaffa91a7a255477d36`  
 **Natureza:** revisão documental interna de consistência e prontidão metodológica. Não é revisão humana independente, parecer jurídico, validação institucional, resultado experimental ou aprovação de congelamento.
 
@@ -45,9 +45,9 @@ As decisões aprovadas anteriores permanecem como registradas:
 - **DEC-018:** H1 usa somente a partição oculta; a partição pública é descritiva/exploratória.
 - **DEC-019:** `bootstrap_cluster_id` identifica a unidade inicial por artigo ou `bundle:`; bootstrap por caso é sensibilidade.
 - **DEC-020:** Cohen's kappa não ponderado; gate pela estimativa pontual `κ ≥ 0,6`; reportar concordância observada, matriz e marginais; `RULE_GAP` fica fora do kappa.
-- **DEC-021 (aprovada em 2026-11-07):** sign-flip bilateral por componente; enumeração completa para `K <= 20`, Monte Carlo de 10.000 sorteios para `K > 20`, seed `20261003`; McNemar por caso e Obuchowski (1998) somente como sensibilidades.
-- **DEC-022 (aprovada em 2026-11-07):** IC95% percentil de kappa por bootstrap de componente; 10.000 reamostragens, seed `20261003`; indefinidas excluídas e contabilizadas; intervalo instável se >5%; gate pontual de 0,6 preservado.
-- **DEC-023 (aprovada em 2026-11-07):** componentes conectados por qualquer artigo compartilhado em `cited_article_ids`, com transitividade; ID determinístico `component:` + IDs únicos ordenados; reportar unidades antes/depois e tamanhos.
+- **DEC-021 (aprovada em 2026-11-07):** sign-flip bilateral por componente; enumeração completa para `K <= 20`, Monte Carlo de 10.000 sorteios para `K > 20`, seed `20261003`; gerador especificado `numpy.random.Generator(numpy.random.PCG64(20261003))`, NumPy `2.3.3` pinado; sinais independentes equiprováveis `{-1,+1}` na ordem dos IDs canônicos; McNemar por caso e Obuchowski (1998) somente como sensibilidades.
+- **DEC-022 (aprovada em 2026-11-07):** IC95% percentil de kappa por bootstrap de componente; 10.000 reamostragens, seed `20261003`; NumPy `2.3.3` + PCG64; sorteio de K componentes com reposição preservando multiplicidade; quantis `method="linear"` (tipo 7); indefinidas excluídas e contabilizadas; intervalo instável se >5%; gate pontual de 0,6 preservado.
+- **DEC-023 (aprovada em 2026-11-07):** componentes conectados por qualquer artigo compartilhado em `cited_article_ids`, com transitividade; ID canônico obtido serializando lista lexicalmente ordenada em JSON canônico UTF-8 e calculando SHA-256 (sem concatenação ambígua); reportar unidades antes/depois e tamanhos.
 
 ## 4. Achados da revisão metodológica
 
@@ -97,7 +97,7 @@ Com resolução mínima `2 / 2^K`, para `K < 6` não é possível obter `p < 0,0
 
 ### R-07 — O bootstrap de kappa precisa explicitar detalhes operacionais
 
-DEC-022 fixa 10.000 reamostragens, seed, exclusão de kappa indefinido e marcação de instabilidade acima de 5%, mas não detalha a convenção de quantis nem o sorteio operacional de componentes. O código atual usa bootstrap por caso e seleciona estatísticas de ordem sem interpolação. Antes da implementação, registrar a convenção de quantis e preservar a multiplicidade de componentes sorteados; publicar sempre número e proporção de réplicas válidas/indefinidas. O gate continua sendo a estimativa pontual, não o limite inferior do IC.
+DEC-022 fixa 10.000 reamostragens, seed, exclusão de kappa indefinido e marcação de instabilidade acima de 5%. Esta atualização documental especifica NumPy `2.3.3`, PCG64, amostragem de K componentes com reposição e preservação da multiplicidade, e quantis percentis com interpolação linear (`method="linear"`, tipo 7; q=0,025 e 0,975). Publicar número e proporção de réplicas válidas/indefinidas. O gate continua sendo a estimativa pontual, não o limite inferior do IC.
 
 ### R-08 — IDs canônicos e proveniência dos artigos são pré-condições
 
@@ -132,4 +132,4 @@ Nenhum caso foi criado, completado ou rotulado por IA. O sistema não foi execut
 6. Confirmar proveniência e isolamento da partição oculta antes de qualquer decisão de congelamento.
 7. Exigir decisão explícita e separada do mantenedor para congelar o protocolo e, depois, autorizar eventual execução confirmatória.
 
-**Conclusão:** a linhagem da PR #269 está encerrada e preservada; a revisão metodológica avançou para as decisões aprovadas em 2026-11-07. A principal pendência agora não é reiniciar a revisão antiga: é reconciliar formalmente DEC-021–DEC-023 com o pré-registro/protocolo e implementar os métodos somente após autorização. Até lá, não há base para executar o benchmark ou alegar resultado/validação externa.
+**Bloqueio preservado:** protocolo RGC permanece **[PROPOSTO]**, executor bloqueado e nenhuma execução real foi realizada ou autorizada por esta PR. A documentação não altera pré-registro, protocolo normativo ou decisão de congelamento.\n\n**Conclusão:** a linhagem da PR #269 está encerrada e preservada; a revisão metodológica avançou para as decisões aprovadas em 2026-11-07. A principal pendência agora não é reiniciar a revisão antiga: é reconciliar formalmente DEC-021–DEC-023 com o pré-registro/protocolo e implementar os métodos somente após autorização. Até lá, não há base para executar o benchmark ou alegar resultado/validação externa.
