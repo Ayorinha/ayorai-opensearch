@@ -102,6 +102,7 @@ def build_doc_map(
     """
 
     index: dict[str, tuple[str, str, str]] = {}
+    digest_owner: dict[str, tuple[str, str]] = {}
     for row in rows:
         if "split" in row and str(row["split"]).lower() == "test":
             raise ValueError("TEST rows are forbidden in Phase 1b")
@@ -112,8 +113,15 @@ def build_doc_map(
         doc = row["doc"]
         if not isinstance(doc, str) or not doc.strip():
             raise ValueError("DEV row has an empty or non-text document")
-        gold = "SUPPORTED" if str(row["label"]) == "1" else "NOT_SUPPORTED"
-        index[record_id] = (cohort, gold, document_id(cohort, doc))
+        label = str(row["label"])
+        if label not in {"0", "1"}:
+            raise ValueError("DEV label is outside the frozen binary mapping")
+        gold = "SUPPORTED" if label == "1" else "NOT_SUPPORTED"
+        doc_id = document_id(cohort, doc)
+        owner = digest_owner.setdefault(doc_id, (cohort, doc))
+        if owner != (cohort, doc):
+            raise ValueError("doc_id collision between two distinct documents")
+        index[record_id] = (cohort, gold, doc_id)
 
     missing = [record_id for record_id in expected if record_id not in index]
     if missing:

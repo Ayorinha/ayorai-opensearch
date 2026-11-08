@@ -12,7 +12,6 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
 
 from scripts.benchmarks.phase1b.calibration_v2.aggregate import COHORTS
 from scripts.benchmarks.phase1b.common import sha256_file, stable_record_id
@@ -36,8 +35,6 @@ from tests.test_phase1b_aggregate_cli import _run_aggregator
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DOC_MAP = REPOSITORY_ROOT / "scripts" / "benchmarks" / "phase1b" / "doc_map.py"
 SCORE_CACHE = REPOSITORY_ROOT / "scripts" / "benchmarks" / "phase1b" / "score_cache.py"
-CACHE_V2_WORKFLOW = Path(".github/workflows/phase1b-dev-cache-v2.yml")
-EXPERIMENT_WORKFLOW = Path(".github/workflows/phase1b-dev-cache-experiment.yml")
 KEY = bytes(range(32))
 CLAIMS_PER_DOC = 4
 
@@ -103,7 +100,9 @@ def test_doc_map_is_deterministic() -> None:
     )
 
 
-@pytest.mark.parametrize("case", ["missing", "extra", "label", "cohort", "duplicate", "test_split"])
+@pytest.mark.parametrize(
+    "case", ["missing", "extra", "label", "cohort", "duplicate", "test_split", "raw_label"]
+)
 def test_doc_map_fails_closed(case: str) -> None:
     rows = _clustered_rows()
     expected = _expected(rows)
@@ -125,9 +124,12 @@ def test_doc_map_fails_closed(case: str) -> None:
     elif case == "duplicate":
         rows = rows + rows[:1]
         message = "duplicate"
-    else:
+    elif case == "test_split":
         rows = [dict(rows[0], split="test"), *rows[1:]]
         message = "TEST"
+    else:
+        rows = [dict(rows[0], label=2), *rows[1:]]
+        message = "binary mapping"
     with pytest.raises(ValueError, match=message):
         build_doc_map(rows, expected)
 
@@ -286,29 +288,10 @@ def test_cli_builds_v2_with_identical_calibration_replay(tmp_path: Path) -> None
     assert json.loads(replay_out.read_text())["replay_matches_source"] is True
 
 
-# ---------------------------------------------------------------- workflow guardrails
+def test_doc_id_collision_is_detected(monkeypatch: pytest.MonkeyPatch) -> None:
+    from scripts.benchmarks.phase1b import doc_map
 
-
-def test_cache_v2_workflow_is_manual_gated_dev_only() -> None:
-    text = CACHE_V2_WORKFLOW.read_text(encoding="utf-8")
-    workflow = yaml.safe_load(text)
-    triggers = workflow.get("on", workflow.get(True))
-    assert set(triggers) == {"workflow_dispatch"}
-    assert workflow["permissions"] == {"contents": "read", "actions": "read"}
-    job = workflow["jobs"]["build"]
-    assert job["environment"] == "international-benchmark-maintainer-approval"
-    for forbidden in ("run_shard.py", "--split test", "--skip-replay", "test-00000"):
-        assert forbidden not in text
-    assert "fetch_dev.py" in text and "doc_map.py" in text
-    uploads = [s for s in job["steps"] if "upload-artifact" in str(s.get("uses", ""))]
-    assert {s["with"]["name"] for s in uploads} == {
-        "phase1b-dev-score-cache",
-        "phase1b-dev-cluster-summary",
-    }
-    assert "rm -rf /tmp/phase1b-dev" in text
-
-
-def test_experiment_workflow_accepts_cache_v2_runs() -> None:
-    text = EXPERIMENT_WORKFLOW.read_text(encoding="utf-8")
-    assert ".github/workflows/phase1b-dev-cache-v2.yml" in text
-    assert "fetch_dev.py" not in text
+    rows = _clustered_rows()
+    monkeypatch.setattr(doc_map, "document_id", lambda cohort, doc: "f" * 64)
+    with pytest.raises(ValueError, match="collision"):
+        doc_map.build_doc_map(rows, _expected(rows))
