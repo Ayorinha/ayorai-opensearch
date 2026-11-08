@@ -129,13 +129,11 @@ def test_e3_refuses_unapproved_preregistration(
         run_e3(_cache({"factcg": 0.1, "minicheck": 0.1}))
 
 
-def test_repository_preregistration_is_not_yet_approved() -> None:
-    """The merged document is still a proposal; E3 must not run until the maintainer approves."""
-
-    with pytest.raises(RuntimeError, match="not approved"):
-        e3_ensemble.preregistration_approval(
-            e3_ensemble.REPOSITORY_ROOT / "docs" / "benchmarks" / "PREREG-E3-ENSEMBLE-v0.8.md"
-        )
+def test_repository_preregistration_is_approved() -> None:
+    approved_on = e3_ensemble.preregistration_approval(
+        e3_ensemble.REPOSITORY_ROOT / "docs" / "benchmarks" / "PREREG-E3-ENSEMBLE-v0.8.md"
+    )
+    assert approved_on == "2026-11-08"
 
 
 def test_e3_rejects_injected_eligibility_with_other_status() -> None:
