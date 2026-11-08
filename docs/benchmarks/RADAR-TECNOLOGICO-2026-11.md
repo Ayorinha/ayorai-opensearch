@@ -1,12 +1,12 @@
 # Radar tecnológico — AYORAI ATTRACTOR
-**Data da verificação:** 2026-11-07 (horário de São Paulo).  
+**Data da verificação:** 2026-11-07 (horário exato da captura não preservado; ver snapshot arquivado).  
 **Responsável:** ANDERSON AYORA.  
 **Base documental:** `main` após merge da PR #489, SHA `f8895caab6f3d81fdfea0eaffa91a7a255477d36`.  
 **Natureza:** pesquisa documental e recomendações; não autoriza inferência, execução de benchmark, treinamento, calibração, alteração de código ou uso de modelos.
 
 ## 1. Conclusão executiva
 
-O melhor caminho para o AYORAI não é copiar o primeiro colocado de um leaderboard nem aumentar o ensemble por quantidade. É construir uma avaliação reproduzível que prove, por coorte, que cada componente adiciona informação independente, respeita as licenças e não tem contaminação conhecida.
+O melhor caminho para o AYORAI não é copiar o primeiro colocado de um leaderboard nem aumentar o ensemble por quantidade. É construir uma avaliação reproduzível que prove, por coorte, que cada componente adiciona informação independente, respeita as licenças e não apresenta contaminação conhecida nas fontes verificadas.
 
 As conclusões práticas desta revisão são:
 
@@ -31,7 +31,7 @@ Antes de qualquer modelo entrar em um experimento, criar um registro por artefat
 
 | Classe | Evidência | Regra |
 |---|---|---|
-| C0 — sem sobreposição direta conhecida | Treino divulgado e sem fonte coincidente conhecida | Elegível apenas para as coortes efetivamente verificadas; corpora-base opacos permanecem como risco residual |
+| C0 — sem sobreposição direta conhecida | Treino divulgado e sem fonte coincidente conhecida | **Isso não significa ausência de contaminação**: indica somente que não foi identificada sobreposição direta nas fontes examinadas. Elegível apenas para as coortes efetivamente verificadas; corpora-base opacos permanecem como risco residual |
 | C1 — treino direto no LLM-AggreFact | Dataset/split completo usado para treino, SFT, DPO, distilação ou ajuste | BLOQUEADO para as 11 coortes |
 | C2 — treino em dataset-fonte de coorte | RAGTruth, CNN/DailyMail, XSum, TofuEval, WiCE etc. usado no treino | BLOQUEAR a coorte afetada; liberar outras somente após inventário completo |
 | C3 — derivação/sintetização de fonte | Claims, documentos, pares, preferências ou rótulos sintéticos derivados de um dataset-fonte | Herdar a restrição da fonte; se IDs não estiverem disponíveis, manter bloqueio preventivo |
@@ -44,7 +44,7 @@ Antes de qualquer modelo entrar em um experimento, criar um registro por artefat
 
 ### 2.2 Auditoria de corpus e risco residual
 
-- Conferir separadamente o checkpoint final e o modelo-base. A licença Apache-2.0 do fine-tune não substitui a verificação da licença e das condições do modelo-base.
+- Conferir separadamente o checkpoint final e o modelo-base. A licença Apache-2.0 do checkpoint não substitui a verificação da licença e das condições do modelo-base nem das licenças dos datasets de treino. Registrar separadamente: (a) licença do checkpoint; (b) licença do modelo-base; (c) licença/termos de cada dataset de treinamento, validação e dados sintéticos.
 - Quando o pré-treinamento tiver corpus amplo e opaco, registrar **“sobreposição não verificável”**, não “livre de contaminação”. A ausência de um dataset listado não é prova de ausência.
 - Fazer deduplicação exata e aproximada entre exemplos de avaliação e qualquer corpus de treino disponível; registrar método, hashes, normalização e limites. Deduplicação não prova ausência de memorização ou exposição prévia.
 - Manter um ledger versionado com: `model_id`, revisão SHA, base model e SHA, autores, licença, dataset IDs, splits, origem de dados sintéticos, evidência/URL, data de verificação, coortes proibidas, status e responsável.
@@ -66,10 +66,10 @@ Os resultados abaixo são referências publicadas. Não são medições do AYORA
 | MiniCheck-Flan-T5-Large — `lytang/MiniCheck-Flan-T5-Large` | ~0,8B; pesos MIT; base Flan-T5-Large Apache-2.0 | 21K ANLI (CC BY-NC) + 14K sintéticos; base FLAN-T5 foi instruído em CNN/DailyMail e XSum; C2D usa claims Wikipedia citadas (cita WiCE) e D2C Google News | 75,0 BAcc no leaderboard; score dos autores | **EVAL_ONLY.** Bloquear AggreFact-CNN e XSum; bloquear WiCE e REVEAL até deduplicação; investigar coortes de notícias. Não usar como full-11 nem em produto |
 | MiniCheck-RoBERTa-Large — `lytang/MiniCheck-RoBERTa-Large` | ~0,4B; MIT | Base AlignScore; código de treino do AlignScore lista CNN/DailyMail, XSum e ANLI, além de outros datasets. Também usa dados sintéticos MiniCheck | 74,4 no paper FactCG; protocolo dos autores | **EVAL_ONLY.** Bloquear CNN/XSum e WiCE até deduplicação. A classificação comercial atual em MODEL-LICENSE-POLICY.md precisa ser revista |
 | HHEM-2.1-Open — `vectara/hallucination_evaluation_model` | 109,6M; Apache-2.0; base Flan-T5-base | Treinado com RAGTruth train split e outros datasets confidenciais; base Flan-T5 também tem exposição a CNN/DailyMail e XSum. Usa trust_remote_code=True | Não há linha comparável no leaderboard atual; resultados Vectara antigos usam subsets/protocolos diferentes | **BLOQUEADO para confirmação** em RAGTruth, CNN e XSum; demais coortes não liberadas até disclosure dos outros datasets. Só throughput com dados sintéticos |
-| cross-encoder NLI DistilRoBERTa — `cross-encoder/nli-distilroberta-base` | 82,1M; Apache-2.0 | Fine-tune SNLI + MultiNLI; sem sobreposição direta conhecida com as 11 coortes; base DistilRoBERTa | Sem score LLM-AggreFact publicado comparável; MNLI mismatched 83,98% na documentação Sentence Transformers | **PRIORIDADE CPU/PRODUTO.** Candidato independente e pequeno; pin SHA, validar licenças de SNLI/MultiNLI e executar piloto |
+| cross-encoder NLI DistilRoBERTa — `cross-encoder/nli-distilroberta-base` | 82,1M; Apache-2.0 | Fine-tune SNLI + MultiNLI; sem sobreposição direta conhecida com as 11 coortes — **não equivale a ausência de contaminação**; base DistilRoBERTa | Sem score LLM-AggreFact publicado comparável; MNLI mismatched 83,98% na documentação Sentence Transformers | **PRIORIDADE CPU PARA AVALIAÇÃO; elegibilidade comercial pendente.** O checkpoint declara Apache-2.0; verificar separadamente as licenças e condições de SNLI e MultiNLI antes de qualquer uso comercial. Candidato pequeno; pin SHA e piloto |
 | HalluGuard-Qwen3-4B — `lrsbrgrn/HalluGuard-Qwen3-4B` | 4B; Apache-2.0; base Qwen3-4B Apache-2.0 | LoRA+ORPO em 76.708 preferências sintéticas derivadas de FineWeb. Não declara treino direto no benchmark; corpus-base Qwen3 mantém risco residual | Preprint 75,7%; ACL Findings 2026: 77,1% LLM-AggreFact e 84,4% RAGTruth, resultados dos autores | **PRIORIDADE POSTERIOR.** GPU/GGUF auditado, SHA, base e protocolo fixados |
 | Granite Guardian 3.3 — `ibm-granite/granite-guardian-3.3-8b` | 8B; Apache-2.0 | HH-RLHF, anotações humanas e dados sintéticos internos; fontes completas do sintético não enumeradas. Inglês | 76,5 BAcc leaderboard; 76,5 think e 76,1 no-think | **CONDICIONAL.** Proveniência adicional antes de confirmação; GPU |
-| Bespoke-MiniCheck-7B — `bespokelabs/Bespoke-MiniCheck-7B` | 7B/8B conforme card; CC BY-NC 4.0 | 21K ANLI + 14K sintéticos; autores dizem que fontes foram curadas independentemente do benchmark | 77,4 leaderboard; não é mais primeiro | **PESQUISA NÃO COMERCIAL.** Bloqueado para produto sem licença comercial |
+| Bespoke-MiniCheck-7B — `bespokelabs/Bespoke-MiniCheck-7B` | 7B/8B conforme card; CC BY-NC 4.0 | 21K ANLI + 14K sintéticos; autores dizem que fontes foram curadas independentemente do benchmark | 77,4 no snapshot de 2026-11-07; não é o primeiro | **PESQUISA NÃO COMERCIAL.** Bloqueado para produto sem licença comercial |
 | Paladin-mini — `qualifire/context-grounding-paladin-mini` | 3,8B; licença other; gated | Card lista explicitamente LLM-AggreFact entre datasets de treino | Score não elegível como avaliação limpa | **REMOVER.** Contaminação direta + licença sem clareza |
 | LettuceDetect — `KRLabsOrg/lettucedect-large-modernbert-en-v1` | 395,8M; MIT; ModernBERT | Treinado no RAGTruth (dataset Apache-2.0); token classification, inglês | 79,22% F1 example-level RAGTruth, resultado dos autores | **CANDIDATO CPU por coorte.** Bloquear RAGTruth; outras 10 coortes após verificação. Exige agregação token→claim |
 
@@ -86,7 +86,7 @@ Os resultados abaixo são referências publicadas. Não são medições do AYORA
 
 **Granite Guardian 3.3.** A página oficial declara que deve ser usado no modo de scoring prescrito e que foi treinado/testado apenas em inglês. O modo think e no-think produz resultados diferentes; não misturar pontuações. A licença Apache-2.0 está declarada, mas a proveniência do dado sintético de treino não é suficientemente detalhada para certificar ausência de sobreposição com todas as coortes.
 
-**Bespoke-MiniCheck-7B.** O card informa 21K exemplos ANLI e 14K sintéticos, com curadoria independente do benchmark. Porém a licença é explicitamente CC BY-NC 4.0; a página indica contato para licença comercial. O leaderboard atual já contém sistemas com médias superiores a 77,4. Manter apenas como referência acadêmica não comercial, isolada de qualquer produto ou pacote distribuído.
+**Bespoke-MiniCheck-7B.** O card informa 21K exemplos ANLI e 14K sintéticos, com curadoria independente do benchmark. Porém a licença é explicitamente CC BY-NC 4.0; a página indica contato para licença comercial. O snapshot de 2026-11-07 contém sistemas com médias superiores a 77,4. Manter apenas como referência acadêmica não comercial, isolada de qualquer produto ou pacote distribuído.
 
 **Paladin-mini.** O card lista LLM-AggreFact como dataset usado no treinamento e a licença é `other`. Não há justificativa para mantê-lo como candidato limpo.
 
@@ -100,7 +100,7 @@ Os resultados abaixo são referências publicadas. Não são medições do AYORA
 
 ## 4. O que o leaderboard realmente diz
 
-Na página oficial consultada em 2026-11-07, o leaderboard lista 47 modelos disponíveis e exibe 19 selecionados. A tabela atual mostra:
+A página oficial consultada em 2026-11-07 lista 47 modelos disponíveis e exibe 19 selecionados. A transcrição arquivada em [snapshot do leaderboard de 2026-11-07](snapshots/LLM-AGGREFACT-LEADERBOARD-2026-11-07.md) registra a tabela apresentada na consulta. O snapshot é transcrição manual; hora exata da captura não foi preservada. Tabela dinâmica consultada:
 - nimble-v4-max: 79,5;
 - Clef: 79,0;
 - Decider v1.2 e Jev 1.13.0: 78,7;
