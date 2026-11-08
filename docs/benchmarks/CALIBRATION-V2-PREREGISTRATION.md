@@ -339,3 +339,43 @@ A integração efetiva da seleção do modelo, do IVAP e da certificação V2 ao
 ### E. Registro de decisão
 
 Esta emenda fixa previamente a seleção de um único modelo, o critério de média macro por dataset, a tolerância de empate e a regra determinística de custo. Nenhuma decisão de seleção poderá ser alterada após a consulta a DEV-B. Qualquer mudança futura exigirá nova emenda pré-execução, versionada antes de qualquer acesso aos resultados de certificação.
+
+## Emenda 2 — Limiares inelegíveis na sequência LTT (registrada APÓS observar o DEV-B)
+
+**Data:** 2026-11-07 · **Autoria:** ANDERSON AYORA
+
+### A. Transparência sobre o momento da emenda
+
+Esta emenda foi escrita **depois** da execução DEV completa (run 42389121599, re-agregada na run 42418593837) e depois de observar o resultado da Camada 3 em DEV-B e a curva descritiva acerto × cobertura. Por isso:
+
+1. O resultado oficial de DEV-B permanece **"0/11 coortes certificadas pela regra original"**, conforme `reports/benchmarks/2026-11-07-dev-calibration-v2/` e a release v0.7.0 (DOI 10.5281/zenodo.24045951). Esta emenda não altera esse registro.
+2. Qualquer aplicação da regra emendada ao mesmo DEV-B será rotulada **EXPLORATÓRIA, pós-hoc**, e não será apresentada como certificação.
+3. A certificação **confirmatória** só valerá numa avaliação futura em dados não vistos (TEST), com esta regra e toda a configuração congeladas antes da execução.
+
+### B. Problema observado
+
+A seção 5.2 exige pelo menos 25 respostas aceitas para que o teste num limiar seja elegível e manda prosseguir somente após rejeitar a hipótese nula. A implementação tratou o primeiro limiar inelegível (t = 0,99) como não rejeição e encerrou a sequência. Com probabilidades IVAP, confianças ≥ 0,99 são raras; nas 11 coortes a sequência terminou antes de qualquer teste (`tested_thresholds = []`). Com essa leitura, a certificação é praticamente inalcançável, independentemente da qualidade do modelo.
+
+### C. Regra emendada
+
+Na sequência fixa t = 0,99 → 0,50, para cada coorte:
+
+1. Um limiar com **menos de 25 respostas aceitas** é marcado `ineligible_min_accepted` e **pulado**. Ele não é teste, não é rejeição nem não rejeição, e nunca pode ser o limiar certificado.
+2. O primeiro limiar elegível é testado com o mesmo teste binomial exato (H0: taxa de erro entre aceitas > 10%; rejeição se p ≤ 0,05/11).
+3. Se H0 for rejeitada, esse limiar passa a ser o limiar certificado corrente e a sequência continua no próximo limiar.
+4. Na **primeira não rejeição**, a sequência para; os limiares seguintes são apenas descritivos.
+5. Se nenhum limiar for elegível, a coorte é **não certificada** (`no_eligible_threshold`).
+
+Como a confiança c = max(p, 1 − p) é fixa e o número de aceitas só aumenta quando t diminui, depois do primeiro limiar elegível todos os seguintes também são elegíveis. Se isso alguma vez falhar, a implementação encerra a sequência (falha fechada).
+
+### D. Justificativa estatística
+
+A elegibilidade depende apenas das probabilidades calibradas de DEV-B, fixadas pelo IVAP ajustado em todo DEV-A, e **nunca dos rótulos** de DEV-B. Condicionalmente a essas probabilidades, o conjunto de limiares testados é determinado antes de observar qualquer rótulo, e o teste binomial exato com fixed-sequence continua controlando o erro familiar no nível pré-registrado. Pular limiares inelegíveis equivale a iniciar a sequência fixa no primeiro limiar elegível, escolhido sem informação dos rótulos.
+
+### E. O que não muda
+
+δ = 0,05; Bonferroni em 11 coortes (0,05/11); risco-alvo de 10%; grade de 50 limiares e sua ordem; mínimo de 25 aceitas; regra neutra em t = 0,50; IVAP ajustado em todo DEV-A; seleção de um único modelo em DEV-A (Emenda pré-execução); proibição de usar DEV-B para ajustar qualquer decisão.
+
+### F. Implementação e registro
+
+A implementação identifica a regra no relatório (`ltt_rule = "amendment-2-skip-ineligible"`) e lista, por coorte, os limiares pulados (`skipped_ineligible_thresholds`). Relatórios produzidos com a regra original permanecem válidos como registro histórico.
