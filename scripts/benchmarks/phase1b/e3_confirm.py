@@ -78,9 +78,7 @@ def _validate_confirmatory_eligibility(
 
     authorization = eligibility.get("confirmatory_authorization")
     if not isinstance(authorization, Mapping):
-        raise RuntimeError(
-            "DEC-026 has no approved P1 confirmatory authorization; refusing to run"
-        )
+        raise RuntimeError("DEC-026 has no approved P1 confirmatory authorization; refusing to run")
     if (
         authorization.get("decision") != "DEC-026"
         or authorization.get("status") != "approved"
@@ -95,9 +93,7 @@ def _validate_confirmatory_eligibility(
         raise RuntimeError("DEC-026 approval does not bind the exact eligibility matrix")
     selection = authorization.get("selection_exposure")
     if not isinstance(selection, Mapping) or selection.get("status") != "resolved":
-        raise RuntimeError(
-            "FactCG selection exposure is unresolved; P1 cannot be confirmatory"
-        )
+        raise RuntimeError("FactCG selection exposure is unresolved; P1 cannot be confirmatory")
     if not isinstance(selection.get("decision_ref"), str) or not selection["decision_ref"].strip():
         raise RuntimeError("the selection-exposure decision reference is missing")
 
@@ -119,8 +115,7 @@ def _require_persistent_atomic_lock() -> None:
     """Fail closed until the protected workflow reserves a persistent Git ref atomically."""
 
     raise RuntimeError(
-        "the P1 workflow does not yet reserve the persistent single-use Git ref; "
-        "P1 cannot run"
+        "the P1 workflow does not yet reserve the persistent single-use Git ref; P1 cannot run"
     )
 
 
