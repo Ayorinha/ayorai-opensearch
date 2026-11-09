@@ -120,10 +120,7 @@ def test_trace_id_distinguishes_original_files_with_identical_extracted_text() -
     second_result = check_documents([second], claims=["O vencimento é em 15/03/2026."])
 
     assert first_result.documents[0]["sha256"] == second_result.documents[0]["sha256"]
-    assert (
-        first_result.documents[0]["source_sha256"]
-        != second_result.documents[0]["source_sha256"]
-    )
+    assert first_result.documents[0]["source_sha256"] != second_result.documents[0]["source_sha256"]
     assert first_result.trace_id != second_result.trace_id
 
 
