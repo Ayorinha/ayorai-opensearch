@@ -22,7 +22,7 @@ All public API contract changes are additive unless explicitly identified otherw
 
 - New endpoint `POST /v1/check` (schema `c1`): checks caller-supplied `claims`, or an `answer` decomposed into claims, against caller-supplied `documents` (1–20, up to 200,000 characters each).
 - Per claim: Judge verdict (ADR-002) or abstention, with evidence passages carrying exact character offsets and stance (`supports`, `contradicts`, `neutral`).
-- Response includes `trace_id` (deterministic), SHA-256 and length of each document, and the version of every component (claim extractor, passage selection, stance detector, Judge).
+- Response includes `trace_id` (deterministic and bound to the original source SHA-256 as well as extracted text), SHA-256 and length of each document, and the version of every component (claim extractor, passage selection, stance detector, Judge).
 - Support is conservative: a passage supports a claim only if it contains at least 80% of the claim's content words and every number in the claim; contradictions are never weakened. Absent support yields `abstain/no_answer`, never an inferred verdict.
 - Documents may be sent as `text` or as `content_base64` with `media_type` (`text/plain` or `application/pdf`). PDFs need a text layer (optional dependency `pypdf`, extra `documents`); a PDF without extractable text is rejected with HTTP 422 and an explicit message (OCR not supported). Evidence carries the 1-based `page`; each document digest carries `media_type`, `pages` and `source_sha256` (hash of the uploaded bytes).
 - Additive only: no existing request schema, response schema, status code or Judge rule changed.
