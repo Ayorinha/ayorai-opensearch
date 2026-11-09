@@ -86,6 +86,7 @@ class CheckRequest(BaseModel):
         default=None,
         min_length=1,
         max_length=20_000,
+        pattern=r"\S",
         description="An AI answer to decompose into claims. Provide either claims or answer.",
     )
 
@@ -195,3 +196,4 @@ class FieldsResponse(BaseModel):
         "the value was not located next to the field labels; it is an abstention, not a "
         "finding of error."
     )
+)
