@@ -12,6 +12,10 @@ from scripts.benchmarks.phase1b import e3_confirm
 from scripts.benchmarks.phase1b.calibration_v2.aggregate import COHORTS
 from scripts.benchmarks.phase1b.calibration_v2.splits import split_dev_a_b
 from scripts.benchmarks.phase1b.e3_confirm import _stratified_bootstrap, run_confirm
+
+_ORIGINAL_LOAD_ELIGIBILITY = e3_confirm.load_eligibility
+_ORIGINAL_NON_ESTIMABLE_GATE = e3_confirm._require_non_estimable_rule
+_ORIGINAL_ATOMIC_LOCK_GATE = e3_confirm._require_persistent_atomic_lock
 from scripts.benchmarks.phase1b.score_cache import EXPERIMENTS, build_score_cache
 
 PER_COHORT = 80
@@ -66,7 +70,23 @@ def _approved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     prereg = tmp_path / "PREREG-E3-CONFIRM-DEV-B-v0.8.md"
     prereg.write_text("**Status:** Aprovado pelo mantenedor em 2026-11-08.\n", encoding="utf-8")
     monkeypatch.setattr(e3_confirm, "PREREGISTRATION_PATH", prereg)
-    monkeypatch.setattr(e3_confirm, "NON_ESTIMABLE_RULE", {"synthetic": True})
+    eligibility = _ORIGINAL_LOAD_ELIGIBILITY()
+    eligibility["confirmatory_authorization"] = {
+        "decision": "DEC-026",
+        "status": "approved",
+        "scope": "p1-dev-b-confirmatory",
+        "approved_on": "2026-11-09",
+        "eligibility_sha256": e3_confirm.ELIGIBILITY_SHA256,
+        "selection_exposure": {
+            "status": "resolved",
+            "decision_ref": "TEST-ONLY-SYNTHETIC-DECISION",
+        },
+    }
+    monkeypatch.setattr(e3_confirm, "load_eligibility", lambda: eligibility)
+    # Algorithm tests bypass policy gates only to exercise synthetic data paths.
+    # Separate tests assert that production gates fail closed.
+    monkeypatch.setattr(e3_confirm, "_require_non_estimable_rule", lambda: None)
+    monkeypatch.setattr(e3_confirm, "_require_persistent_atomic_lock", lambda: None)
 
 
 def test_confirmation_report_is_aggregate_and_complete() -> None:
@@ -287,7 +307,30 @@ def test_dev_b_cohort_must_be_estimable(defect: str, monkeypatch: pytest.MonkeyP
         run_confirm(cache)
 
 
-def test_refuses_until_non_estimable_rule_is_fixed(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(e3_confirm, "NON_ESTIMABLE_RULE", None)
-    with pytest.raises(RuntimeError, match="non-estimable"):
+def test_refuses_until_non_estimable_rule_is_implemented(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(e3_confirm, "NON_ESTIMABLE_RULE", {"synthetic": True})
+    with pytest.raises(RuntimeError, match="non-null rule object is insufficient"):
+        _ORIGINAL_NON_ESTIMABLE_GATE()
+
+
+def test_refuses_without_persistent_atomic_execution_lock() -> None:
+    with pytest.raises(RuntimeError, match="persistent single-use Git ref"):
+        _ORIGINAL_ATOMIC_LOCK_GATE()
+
+
+def test_refuses_when_dec026_has_no_confirmatory_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(e3_confirm, "load_eligibility", _ORIGINAL_LOAD_ELIGIBILITY)
+    with pytest.raises(RuntimeError, match="DEC-026"):
         run_confirm(_cache(_rows(NOISE)))
+
+
+def test_confirmatory_eligibility_is_bound_to_matrix_and_selection_decision() -> None:
+    eligibility = _ORIGINAL_LOAD_ELIGIBILITY()
+    with pytest.raises(RuntimeError, match="DEC-026"):
+        e3_confirm._validate_confirmatory_eligibility(
+            eligibility, eligibility_sha256=e3_confirm.ELIGIBILITY_SHA256
+        )
