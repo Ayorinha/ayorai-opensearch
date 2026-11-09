@@ -8,7 +8,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from ayorai_attractor.api.app import app
-from ayorai_attractor.verification.document_ingest import DocumentIngestError, ingest
+from ayorai_attractor.verification.document_ingest import (
+    MAX_DOCUMENT_CHARS,
+    DocumentIngestError,
+    ingest,
+)
 from tests.pdf_fixture import make_pdf
 
 pytest.importorskip("pypdf")
@@ -49,6 +53,41 @@ def test_pdf_text_and_page_boundaries() -> None:
 def test_ingest_fails_closed(content: str, media_type: str, message: str) -> None:
     with pytest.raises(DocumentIngestError, match=message):
         ingest(text=None, content_base64=content, media_type=media_type)
+
+
+def test_ingest_rejects_text_over_character_limit() -> None:
+    oversized = "x" * (MAX_DOCUMENT_CHARS + 1)
+    with pytest.raises(DocumentIngestError, match="200000 characters"):
+        ingest(text=oversized, content_base64=None, media_type=None)
+    with pytest.raises(DocumentIngestError, match="200000 characters"):
+        ingest(text=None, content_base64=_b64(oversized.encode()), media_type="text/plain")
+
+
+def test_ingest_rejects_pdf_with_excessive_extracted_text() -> None:
+    pdf = make_pdf([["x" * (MAX_DOCUMENT_CHARS + 1)]])
+    with pytest.raises(DocumentIngestError, match="200000 characters"):
+        ingest(text=None, content_base64=_b64(pdf), media_type="application/pdf")
+
+
+def test_api_rejects_oversized_base64_text_for_both_document_endpoints() -> None:
+    content = _b64(b"x" * (MAX_DOCUMENT_CHARS + 1))
+    client = TestClient(app)
+    check = client.post(
+        "/v1/check",
+        json={
+            "documents": [{"id": "large", "content_base64": content, "media_type": "text/plain"}],
+            "claims": ["Afirmação fictícia."],
+        },
+    )
+    assert check.status_code == 422 and "200000 characters" in check.text
+    fields = client.post(
+        "/v1/fields",
+        json={
+            "document": {"id": "large", "content_base64": content, "media_type": "text/plain"},
+            "fields": [{"name": "valor", "type": "money", "value": "10,00"}],
+        },
+    )
+    assert fields.status_code == 422 and "200000 characters" in fields.text
 
 
 def test_api_checks_a_pdf_and_reports_pages() -> None:
