@@ -118,9 +118,7 @@ def ingest(
         if media_type not in (None, "text/plain"):
             raise DocumentIngestError("'text' documents must use media_type text/plain")
         if len(text) > MAX_DOCUMENT_CHARS:
-            raise DocumentIngestError(
-                f"document text exceeds {MAX_DOCUMENT_CHARS} characters"
-            )
+            raise DocumentIngestError(f"document text exceeds {MAX_DOCUMENT_CHARS} characters")
         return IngestedDocument(
             text=text,
             media_type="text/plain",
