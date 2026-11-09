@@ -26,6 +26,9 @@ nli = [
   "protobuf>=5,<8",
   "sentencepiece>=0.2,<1",
 ]
+documents = [
+  "pypdf>=6.10,<8",
+]
 telemetry = [
   "opentelemetry-api>=1.45,<2",
 ]
@@ -42,6 +45,7 @@ dev = [
   "PyYAML>=6.0,<7",
   "jsonschema[format-nongpl]>=4.23,<5",
   "numpy>=2.2,<3",
+  "pypdf>=6.10,<8",
 ]
 
 [project.scripts]

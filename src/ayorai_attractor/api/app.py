@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from collections.abc import AsyncIterator
@@ -29,6 +30,24 @@ from ayorai_attractor.verification.api_models import (
     Traceability,
     VerificationAPIResponse,
     VerificationRequest,
+)
+from ayorai_attractor.verification.check_models import (
+    CheckDocument,
+    CheckRequest,
+    CheckResponse,
+    FieldsRequest,
+    FieldsResponse,
+)
+from ayorai_attractor.verification.document_check import CheckDocumentInput, check_documents
+from ayorai_attractor.verification.document_ingest import (
+    DocumentIngestError,
+    IngestedDocument,
+    ingest,
+)
+from ayorai_attractor.verification.field_check import (
+    FIELD_CHECK_VERSION,
+    FieldSpec,
+    check_fields,
 )
 from ayorai_attractor.verification.judge import InvalidJudgeInput, judge
 from ayorai_attractor.verification.judge2 import adjudicate
@@ -228,6 +247,128 @@ def audit(request: SearchRequest) -> AuditResponse:
             )
             for item in report.findings
         ],
+    )
+
+
+def _ingest_or_422(doc: CheckDocument, loc: list[Any]) -> IngestedDocument:
+    try:
+        return ingest(text=doc.text, content_base64=doc.content_base64, media_type=doc.media_type)
+    except DocumentIngestError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=[{"type": "document_ingest_error", "loc": loc, "msg": str(exc)}],
+        ) from exc
+
+
+@app.post(
+    "/v1/check",
+    response_model=CheckResponse,
+    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+)
+def check(request: CheckRequest) -> CheckResponse:
+    """Check claims, or an AI answer, against the supplied documents.
+
+    Closed world and deterministic: relevant passages are selected from the documents,
+    a conservative stance detector labels them and the ADR-002 Judge decides. Each
+    piece of evidence carries exact character offsets; the response carries the SHA-256
+    of every document and the version of every component.
+    """
+    inputs = []
+    for position, doc in enumerate(request.documents):
+        ingested = _ingest_or_422(doc, ["body", "documents", position])
+        inputs.append(
+            CheckDocumentInput(
+                id=doc.id,
+                text=ingested.text,
+                source=doc.source,
+                url=str(doc.url) if doc.url is not None else None,
+                media_type=ingested.media_type,
+                page_starts=ingested.page_starts,
+                source_sha256=ingested.source_sha256,
+            )
+        )
+    result = check_documents(
+        inputs,
+        claims=request.claims,
+        answer=request.answer,
+    )
+    return CheckResponse.model_validate(
+        {
+            "trace_id": result.trace_id,
+            "engine": result.engine,
+            "documents": list(result.documents),
+            "results": [
+                {
+                    "claim_id": item.claim_id,
+                    "claim": item.claim,
+                    "status": item.status,
+                    "verdict": item.verdict,
+                    "confidence": item.confidence,
+                    "evidence": [vars(view) for view in item.evidence],
+                    "rationale": item.rationale,
+                    "abstention_reason": item.abstention_reason,
+                }
+                for item in result.results
+            ],
+            "summary": result.summary,
+        }
+    )
+
+
+@app.post(
+    "/v1/fields",
+    response_model=FieldsResponse,
+    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+)
+def fields(request: FieldsRequest) -> FieldsResponse:
+    """Compare submitted field values (amount, date, CPF/CNPJ, names) with a document.
+
+    Deterministic: each field is located next to its labels and normalised by type;
+    the outcome is conforme, divergente (with the document's value and excerpt),
+    ausente (abstention) or invalido (malformed expected value).
+    """
+    ingested = _ingest_or_422(request.document, ["body", "document"])
+    specs = [
+        FieldSpec(item.name, item.type, item.value, tuple(item.labels)) for item in request.fields
+    ]
+    results = check_fields(ingested.text, specs)
+    text_sha = hashlib.sha256(ingested.text.encode("utf-8")).hexdigest()
+    engine = {"field_check": FIELD_CHECK_VERSION}
+    trace_payload = json.dumps(
+        {
+            "engine": engine,
+            "document": text_sha,
+            "fields": [[s.name, s.type, s.value, list(s.labels)] for s in specs],
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+    summary = {
+        outcome: 0 for outcome in ("conforme", "divergente", "ambiguo", "ausente", "invalido")
+    }
+    for item in results:
+        summary[item.outcome] += 1
+    return FieldsResponse.model_validate(
+        {
+            "trace_id": "fld_" + hashlib.sha256(trace_payload.encode("utf-8")).hexdigest()[:32],
+            "engine": engine,
+            "document": {
+                "id": request.document.id,
+                "sha256": text_sha,
+                "characters": len(ingested.text),
+                "media_type": ingested.media_type,
+                "pages": len(ingested.page_starts),
+                "source_sha256": ingested.source_sha256,
+            },
+            "results": [
+                dict(
+                    vars(item),
+                    page=ingested.page_of(item.start) if item.start is not None else None,
+                )
+                for item in results
+            ],
+            "summary": summary,
+        }
     )
 
 
