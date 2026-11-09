@@ -196,4 +196,3 @@ class FieldsResponse(BaseModel):
         "the value was not located next to the field labels; it is an abstention, not a "
         "finding of error."
     )
-)
