@@ -155,3 +155,11 @@ def test_api_check_rejects_invalid_requests() -> None:
         == 422
     )
     assert client.post("/v1/check", json={"documents": [], "claims": ["x"]}).status_code == 422
+
+
+def test_api_check_rejects_whitespace_only_answer() -> None:
+    client = TestClient(app)
+    doc = {"id": "a", "text": "Documento fictício."}
+    for answer in ("   ", "\n\t "):
+        response = client.post("/v1/check", json={"documents": [doc], "answer": answer})
+        assert response.status_code == 422, response.text
