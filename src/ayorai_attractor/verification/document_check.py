@@ -269,7 +269,15 @@ def _trace_id(
 ) -> str:
     payload = {
         "claims": list(claims),
-        "documents": [[doc.id, _sha256(doc.text)] for doc in documents],
+        "documents": [
+            [
+                doc.id,
+                doc.media_type,
+                _sha256(doc.text),
+                doc.source_sha256 or _sha256(doc.text),
+            ]
+            for doc in documents
+        ],
         "engine": engine,
     }
     return "chk_" + _sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True))[:32]
