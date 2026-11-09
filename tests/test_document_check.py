@@ -103,6 +103,27 @@ def test_trace_is_deterministic_and_bound_to_document_content() -> None:
     assert first.documents[0]["sha256"] != changed.documents[0]["sha256"]
 
 
+def test_trace_id_distinguishes_original_files_with_identical_extracted_text() -> None:
+    first = CheckDocumentInput(
+        id="titulo",
+        text=TITLE,
+        media_type="application/pdf",
+        source_sha256="a" * 64,
+    )
+    second = CheckDocumentInput(
+        id="titulo",
+        text=TITLE,
+        media_type="application/pdf",
+        source_sha256="b" * 64,
+    )
+    first_result = check_documents([first], claims=["O vencimento é em 15/03/2026."])
+    second_result = check_documents([second], claims=["O vencimento é em 15/03/2026."])
+
+    assert first_result.documents[0]["sha256"] == second_result.documents[0]["sha256"]
+    assert first_result.documents[0]["source_sha256"] != second_result.documents[0]["source_sha256"]
+    assert first_result.trace_id != second_result.trace_id
+
+
 def test_passages_have_exact_offsets() -> None:
     for passage in split_passages(DOC):
         assert TITLE[passage.start : passage.end] == passage.text
