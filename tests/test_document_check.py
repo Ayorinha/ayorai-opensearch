@@ -163,3 +163,16 @@ def test_api_check_rejects_whitespace_only_answer() -> None:
     for answer in ("   ", "\n\t "):
         response = client.post("/v1/check", json={"documents": [doc], "answer": answer})
         assert response.status_code == 422, response.text
+
+
+def test_api_check_rejects_blank_document_text() -> None:
+    client = TestClient(app)
+    for text in ("", " ", "   ", "\\n\\t ", "\\r\\n"):
+        response = client.post(
+            "/v1/check",
+            json={
+                "documents": [{"id": "doc1", "text": text}],
+                "claims": ["Afirmação fictícia."],
+            },
+        )
+        assert response.status_code == 422, response.text
