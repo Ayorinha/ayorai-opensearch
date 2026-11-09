@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from io import BytesIO
 
 MAX_DECODED_BYTES = 5 * 1024 * 1024
+MAX_DOCUMENT_CHARS = 200_000
 MAX_PDF_PAGES = 300
 PAGE_SEPARATOR = "\n\n"
 SUPPORTED_MEDIA_TYPES = ("text/plain", "application/pdf")
@@ -77,7 +78,16 @@ def extract_pdf(data: bytes) -> tuple[str, tuple[int, ...]]:
             raise DocumentIngestError("encrypted PDFs are not supported")
         if len(reader.pages) > MAX_PDF_PAGES:
             raise DocumentIngestError(f"the PDF has more than {MAX_PDF_PAGES} pages")
-        page_texts = [_normalise(page.extract_text() or "") for page in reader.pages]
+        page_texts: list[str] = []
+        total_characters = 0
+        for page in reader.pages:
+            page_text = _normalise(page.extract_text() or "")
+            total_characters += len(page_text) + (len(PAGE_SEPARATOR) if page_texts else 0)
+            if total_characters > MAX_DOCUMENT_CHARS:
+                raise DocumentIngestError(
+                    f"extracted document text exceeds {MAX_DOCUMENT_CHARS} characters"
+                )
+            page_texts.append(page_text)
     except DocumentIngestError:
         raise
     except Exception as exc:  # malformed PDFs raise many pypdf-specific errors
@@ -107,6 +117,10 @@ def ingest(
     if text is not None:
         if media_type not in (None, "text/plain"):
             raise DocumentIngestError("'text' documents must use media_type text/plain")
+        if len(text) > MAX_DOCUMENT_CHARS:
+            raise DocumentIngestError(
+                f"document text exceeds {MAX_DOCUMENT_CHARS} characters"
+            )
         return IngestedDocument(
             text=text,
             media_type="text/plain",
@@ -123,5 +137,9 @@ def ingest(
             decoded = data.decode("utf-8")
         except UnicodeDecodeError as exc:
             raise DocumentIngestError("text/plain content must be UTF-8") from exc
+        if len(decoded) > MAX_DOCUMENT_CHARS:
+            raise DocumentIngestError(
+                f"document text exceeds {MAX_DOCUMENT_CHARS} characters"
+            )
         return IngestedDocument(decoded, "text/plain", (0,), digest)
     raise DocumentIngestError(f"unsupported media_type; use one of {SUPPORTED_MEDIA_TYPES}")
