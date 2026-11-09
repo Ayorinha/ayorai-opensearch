@@ -98,7 +98,7 @@
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
                   "type": "integer",
-                  "minimum": 1.0
+                  "minimum": 1
                 }
               }
             },
@@ -193,7 +193,7 @@
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
                   "type": "integer",
-                  "minimum": 1.0
+                  "minimum": 1
                 }
               }
             },
@@ -288,7 +288,7 @@
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
                   "type": "integer",
-                  "minimum": 1.0
+                  "minimum": 1
                 }
               }
             },
@@ -383,7 +383,7 @@
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
                   "type": "integer",
-                  "minimum": 1.0
+                  "minimum": 1
                 }
               }
             },
@@ -493,7 +493,7 @@
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
                   "type": "integer",
-                  "minimum": 1.0
+                  "minimum": 1
                 }
               }
             },
@@ -681,22 +681,22 @@
           },
           "evidence_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Evidence Count"
           },
           "independent_evidence_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Independent Evidence Count"
           },
           "verified_evidence_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Verified Evidence Count"
           },
           "failure_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failure Count"
           },
           "findings": {
@@ -750,27 +750,27 @@
           },
           "evidence_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Evidence Count"
           },
           "independent_evidence_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Independent Evidence Count"
           },
           "verified_evidence_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Verified Evidence Count"
           },
           "failure_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failure Count"
           },
           "finding_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Finding Count"
           },
           "replay_digest": {
@@ -848,8 +848,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence": {
@@ -962,7 +962,8 @@
               {
                 "type": "string",
                 "maxLength": 200000,
-                "minLength": 1
+                "minLength": 1,
+                "pattern": "\\\\S"
               },
               {
                 "type": "null"
@@ -1049,7 +1050,7 @@
           },
           "characters": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Characters"
           },
           "media_type": {
@@ -1058,7 +1059,7 @@
           },
           "pages": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Pages"
           },
           "source_sha256": {
@@ -1086,13 +1087,13 @@
           },
           "start": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Start",
             "description": "Inclusive character offset in the document."
           },
           "end": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "End",
             "description": "Exclusive character offset in the document."
           },
@@ -1111,7 +1112,7 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "description": "1-based page of the evidence start."
           }
@@ -1219,7 +1220,8 @@
               {
                 "type": "string",
                 "maxLength": 20000,
-                "minLength": 1
+                "minLength": 1,
+                "pattern": "\\\\S"
               },
               {
                 "type": "null"
@@ -1321,12 +1323,12 @@
           },
           "support_clusters": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Support Clusters"
           },
           "contradiction_clusters": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Contradiction Clusters"
           },
           "provenance_complete": {
@@ -1377,13 +1379,13 @@
           },
           "start_offset": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Start Offset",
             "description": "Inclusive start offset in the source text."
           },
           "end_offset": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "End Offset",
             "description": "Exclusive end offset; must be greater than start_offset."
           },
@@ -1709,11 +1711,15 @@
             "maxLength": 500,
             "minLength": 1,
             "title": "Value",
-            "description": "Expected value, as submitted."
+            "description": "Expected value, as submitted.",
+            "pattern": "\\\\S"
           },
           "labels": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "\\\\S"
             },
             "type": "array",
             "maxItems": 10,
@@ -1832,14 +1838,14 @@
           },
           "start_offset": {
             "type": "integer",
-            "maximum": 9007199254740991.0,
-            "minimum": 0.0,
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "title": "Start Offset"
           },
           "end_offset": {
             "type": "integer",
-            "maximum": 9007199254740991.0,
-            "exclusiveMinimum": 0.0,
+            "maximum": 9007199254740991,
+            "exclusiveMinimum": 0,
             "title": "End Offset",
             "description": "Exclusive end offset in source text; must be within the RFC 8785 safe-integer range."
           }
@@ -1884,14 +1890,14 @@
           },
           "start_offset": {
             "type": "integer",
-            "maximum": 9007199254740991.0,
-            "minimum": 0.0,
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "title": "Start Offset"
           },
           "end_offset": {
             "type": "integer",
-            "maximum": 9007199254740991.0,
-            "minimum": 0.0,
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "title": "End Offset",
             "description": "Must be greater than start_offset; the relational invariant is enforced by the API and Judge 2."
           },
@@ -2182,8 +2188,8 @@
           },
           "max_agents": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Agents",
             "description": "Preferred form: JSON integer. Legacy coercion is preserved for compatibility: numeric strings (e.g. \"5\"), integral floats and booleans are still accepted for backward compatibility; removal is not scheduled before v0.6.0.",
             "default": 5
@@ -2253,8 +2259,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1.0,
-                "minimum": 0.0
+                "maximum": 1,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -2521,4 +2527,4 @@
       }
     }
   }
-}
+}\n
