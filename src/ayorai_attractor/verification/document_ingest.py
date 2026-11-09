@@ -138,8 +138,6 @@ def ingest(
         except UnicodeDecodeError as exc:
             raise DocumentIngestError("text/plain content must be UTF-8") from exc
         if len(decoded) > MAX_DOCUMENT_CHARS:
-            raise DocumentIngestError(
-                f"document text exceeds {MAX_DOCUMENT_CHARS} characters"
-            )
+            raise DocumentIngestError(f"document text exceeds {MAX_DOCUMENT_CHARS} characters")
         return IngestedDocument(decoded, "text/plain", (0,), digest)
     raise DocumentIngestError(f"unsupported media_type; use one of {SUPPORTED_MEDIA_TYPES}")
