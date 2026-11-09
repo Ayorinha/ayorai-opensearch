@@ -182,3 +182,29 @@ def test_api_check_long_url_is_not_a_server_error() -> None:
     assert response.status_code == 422
     short = {"answer": "0", "documents": [{"id": "0", "text": "0", "url": "https://a.example"}]}
     assert TestClient(app).post("/v1/check", json=short).status_code == 200
+
+
+def test_api_fields_rejects_blank_expected_values_and_labels() -> None:
+    client = TestClient(app)
+    document = {"id": "synthetic", "text": "Valor: R$ 10,00"}
+    for value in ("", " ", "   ", "\\n\\t ", "\\r\\n"):
+        response = client.post(
+            "/v1/fields",
+            json={
+                "document": document,
+                "fields": [{"name": "valor", "type": "money", "value": value}],
+            },
+        )
+        assert response.status_code == 422, response.text
+
+    for label in ("", " ", "   ", "\\n\\t ", "\\r\\n"):
+        response = client.post(
+            "/v1/fields",
+            json={
+                "document": document,
+                "fields": [
+                    {"name": "valor", "type": "money", "value": "10", "labels": [label]}
+                ],
+            },
+        )
+        assert response.status_code == 422, response.text
