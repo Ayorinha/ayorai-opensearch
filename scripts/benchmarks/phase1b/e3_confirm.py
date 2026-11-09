@@ -22,8 +22,8 @@ Output is aggregate-only. TEST is never used.
 from __future__ import annotations
 
 import math
-from datetime import date
 from collections.abc import Mapping, Sequence
+from datetime import date
 from pathlib import Path
 from typing import Any
 
