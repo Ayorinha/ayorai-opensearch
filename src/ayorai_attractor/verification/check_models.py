@@ -42,6 +42,7 @@ class CheckDocument(BaseModel):
         default=None,
         min_length=1,
         max_length=200_000,
+        pattern=r"\S",
         description="Full document text. Provide either text or content_base64.",
     )
     content_base64: str | None = Field(
@@ -143,13 +144,21 @@ class CheckResponse(BaseModel):
     )
 
 
+NonBlankLabel = Annotated[str, Field(min_length=1, max_length=128, pattern=r"\S")]
+
+
 class FieldSpecModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(pattern=r"^[A-Za-z0-9._-]{1,64}$", description="Field name, e.g. valor.")
     type: Literal["money", "date", "cpf_cnpj", "number", "text"]
-    value: str = Field(min_length=1, max_length=500, description="Expected value, as submitted.")
-    labels: list[str] = Field(
+    value: str = Field(
+        min_length=1,
+        max_length=500,
+        pattern=r"\S",
+        description="Expected value, as submitted.",
+    )
+    labels: list[NonBlankLabel] = Field(
         default_factory=list,
         max_length=10,
         description="Labels that introduce the field in the document (e.g. 'Vencimento').",
