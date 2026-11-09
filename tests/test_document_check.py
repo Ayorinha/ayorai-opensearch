@@ -167,7 +167,7 @@ def test_api_check_rejects_whitespace_only_answer() -> None:
 
 def test_api_check_rejects_blank_document_text() -> None:
     client = TestClient(app)
-    for text in ("", " ", "   ", "\\n\\t ", "\\r\\n"):
+    for text in ("", " ", "   ", "\n\t ", "\r\n"):
         response = client.post(
             "/v1/check",
             json={
