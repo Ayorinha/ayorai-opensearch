@@ -202,9 +202,7 @@ def test_api_fields_rejects_blank_expected_values_and_labels() -> None:
             "/v1/fields",
             json={
                 "document": document,
-                "fields": [
-                    {"name": "valor", "type": "money", "value": "10", "labels": [label]}
-                ],
+                "fields": [{"name": "valor", "type": "money", "value": "10", "labels": [label]}],
             },
         )
         assert response.status_code == 422, response.text
