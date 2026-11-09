@@ -37,9 +37,9 @@ def test_protected_routes_document_rate_limit_response() -> None:
 
 def test_openapi_documents_non_blank_api_inputs() -> None:
     schemas = app.openapi()["components"]["schemas"]
-    assert schemas["CheckDocument"]["properties"]["text"]["anyOf"][0]["pattern"] == r"\\S"
-    assert schemas["CheckRequest"]["properties"]["answer"]["anyOf"][0]["pattern"] == r"\\S"
-    assert schemas["FieldSpecModel"]["properties"]["value"]["pattern"] == r"\\S"
+    assert schemas["CheckDocument"]["properties"]["text"]["anyOf"][0]["pattern"] == r"\S"
+    assert schemas["CheckRequest"]["properties"]["answer"]["anyOf"][0]["pattern"] == r"\S"
+    assert schemas["FieldSpecModel"]["properties"]["value"]["pattern"] == r"\S"
     label_schema = schemas["FieldSpecModel"]["properties"]["labels"]["items"]
-    assert label_schema["pattern"] == r"\\S"
+    assert label_schema["pattern"] == r"\S"
     assert label_schema["minLength"] == 1
