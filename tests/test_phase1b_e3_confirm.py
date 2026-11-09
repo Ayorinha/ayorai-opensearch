@@ -12,11 +12,11 @@ from scripts.benchmarks.phase1b import e3_confirm
 from scripts.benchmarks.phase1b.calibration_v2.aggregate import COHORTS
 from scripts.benchmarks.phase1b.calibration_v2.splits import split_dev_a_b
 from scripts.benchmarks.phase1b.e3_confirm import _stratified_bootstrap, run_confirm
+from scripts.benchmarks.phase1b.score_cache import EXPERIMENTS, build_score_cache
 
 _ORIGINAL_LOAD_ELIGIBILITY = e3_confirm.load_eligibility
 _ORIGINAL_NON_ESTIMABLE_GATE = e3_confirm._require_non_estimable_rule
 _ORIGINAL_ATOMIC_LOCK_GATE = e3_confirm._require_persistent_atomic_lock
-from scripts.benchmarks.phase1b.score_cache import EXPERIMENTS, build_score_cache
 
 PER_COHORT = 80
 
