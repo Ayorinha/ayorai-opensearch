@@ -22,6 +22,7 @@ Output is aggregate-only. TEST is never used.
 from __future__ import annotations
 
 import math
+from datetime import date
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -68,6 +69,59 @@ def published_confirmation_exists(root: Path | None = None) -> bool:
 
     root = root if root is not None else REPOSITORY_ROOT
     return any(root.glob(REPORT_LOCK_GLOB))
+
+
+def _validate_confirmatory_eligibility(
+    eligibility: Mapping[str, Any], *, eligibility_sha256: str
+) -> None:
+    """Require a maintainer-approved DEC-026 exception for this exact P1 matrix."""
+
+    authorization = eligibility.get("confirmatory_authorization")
+    if not isinstance(authorization, Mapping):
+        raise RuntimeError(
+            "DEC-026 has no approved P1 confirmatory authorization; refusing to run"
+        )
+    if (
+        authorization.get("decision") != "DEC-026"
+        or authorization.get("status") != "approved"
+        or authorization.get("scope") != "p1-dev-b-confirmatory"
+    ):
+        raise RuntimeError("DEC-026 does not explicitly approve this P1 scope")
+    try:
+        date.fromisoformat(str(authorization.get("approved_on", "")))
+    except ValueError as exc:
+        raise RuntimeError("DEC-026 P1 approval date is missing or invalid") from exc
+    if authorization.get("eligibility_sha256") != eligibility_sha256:
+        raise RuntimeError("DEC-026 approval does not bind the exact eligibility matrix")
+    selection = authorization.get("selection_exposure")
+    if not isinstance(selection, Mapping) or selection.get("status") != "resolved":
+        raise RuntimeError(
+            "FactCG selection exposure is unresolved; P1 cannot be confirmatory"
+        )
+    if not isinstance(selection.get("decision_ref"), str) or not selection["decision_ref"].strip():
+        raise RuntimeError("the selection-exposure decision reference is missing")
+
+
+def _require_non_estimable_rule() -> None:
+    """Fail closed until an approved rule and its evaluator are implemented."""
+
+    if NON_ESTIMABLE_RULE is None:
+        raise RuntimeError(
+            "the objective non-estimable-cohort amendment is not approved; P1 cannot run"
+        )
+    raise RuntimeError(
+        "a non-null rule object is insufficient: its approved amendment and "
+        "result-blind evaluator are not implemented; P1 cannot run"
+    )
+
+
+def _require_persistent_atomic_lock() -> None:
+    """Fail closed until the protected workflow reserves a persistent Git ref atomically."""
+
+    raise RuntimeError(
+        "the P1 workflow does not yet reserve the persistent single-use Git ref; "
+        "P1 cannot run"
+    )
 
 
 def validate_members(models: Mapping[str, Any]) -> list[str]:
@@ -306,19 +360,18 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     """Single execution of P1; the only eligibility accepted is the preregistered file."""
 
     approved_on = preregistration_approval(PREREGISTRATION_PATH)
-    if NON_ESTIMABLE_RULE is None:
-        raise RuntimeError(
-            "the objective rule for non-estimable cohorts is not fixed yet; P1 cannot run"
-        )
     if cache.get("schema_version") != REQUIRED_CACHE_SCHEMA:
         raise ValueError("P1 requires the v2 score cache with document ids")
-    if published_confirmation_exists():
-        raise RuntimeError("a P1 confirmation report is already published; P1 is single-use")
     file_sha256 = sha256_bytes(Path(ELIGIBILITY_PATH).read_bytes())
     if file_sha256 != ELIGIBILITY_SHA256:
         raise RuntimeError("eligibility file differs from the preregistered version")
     eligibility = load_eligibility()
     _validate_eligibility(eligibility)
+    _validate_confirmatory_eligibility(eligibility, eligibility_sha256=file_sha256)
+    _require_non_estimable_rule()
+    _require_persistent_atomic_lock()
+    if published_confirmation_exists():
+        raise RuntimeError("a P1 confirmation report is already published; P1 is single-use")
     models = cache["models"]
     record_ids = validate_members(models)
     reference = {r["record_id"]: r for r in models[COMPARATOR]["records"]}
