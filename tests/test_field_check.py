@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from ayorai_attractor.api.app import app
+from ayorai_attractor.verification.document_ingest import ingest
 from ayorai_attractor.verification.field_check import (
     FieldSpec,
     check_field,
@@ -15,7 +16,6 @@ from ayorai_attractor.verification.field_check import (
     normalize_date,
     normalize_money,
 )
-from ayorai_attractor.verification.document_ingest import ingest
 from tests.pdf_fixture import make_pdf
 
 DOC = """DUPLICATA MERCANTIL Nº 4521
