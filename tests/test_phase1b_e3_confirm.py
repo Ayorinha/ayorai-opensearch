@@ -373,7 +373,7 @@ def test_persistent_lock_creates_exact_single_use_ref(
         )
 
     monkeypatch.setattr(e3_confirm, "urlopen", fake_urlopen)
-    e3_confirm._require_persistent_atomic_lock()
+    _ORIGINAL_ATOMIC_LOCK_GATE()
     assert captured == {
         "url": "https://api.github.com/repos/Ayorinha/ayorai-opensearch/git/refs",
         "method": "POST",
@@ -395,7 +395,7 @@ def test_persistent_lock_refuses_existing_reservation(
 
     monkeypatch.setattr(e3_confirm, "urlopen", conflict)
     with pytest.raises(RuntimeError, match="already reserved"):
-        e3_confirm._require_persistent_atomic_lock()
+        _ORIGINAL_ATOMIC_LOCK_GATE()
 
 
 @pytest.mark.parametrize(
@@ -419,7 +419,7 @@ def test_persistent_lock_refuses_untrusted_or_incomplete_runner_context(
     else:
         monkeypatch.setenv(name, value)
     with pytest.raises(RuntimeError, match="P1|canonical|commit SHA|token"):
-        e3_confirm._require_persistent_atomic_lock()
+        _ORIGINAL_ATOMIC_LOCK_GATE()
 
 
 def test_persistent_lock_refuses_non_commit_ref_target(
@@ -434,7 +434,7 @@ def test_persistent_lock_refuses_non_commit_ref_target(
         ),
     )
     with pytest.raises(RuntimeError, match="mismatched"):
-        e3_confirm._require_persistent_atomic_lock()
+        _ORIGINAL_ATOMIC_LOCK_GATE()
 
 
 def test_persistent_lock_refuses_mismatched_github_response(
@@ -449,7 +449,7 @@ def test_persistent_lock_refuses_mismatched_github_response(
         ),
     )
     with pytest.raises(RuntimeError, match="mismatched"):
-        e3_confirm._require_persistent_atomic_lock()
+        _ORIGINAL_ATOMIC_LOCK_GATE()
 
 
 def test_refuses_when_dec026_has_no_confirmatory_approval(
