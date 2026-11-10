@@ -424,7 +424,6 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     record_ids = validate_members(models)
     reference = {r["record_id"]: r for r in models[COMPARATOR]["records"]}
     cohorts = [reference[r]["cohort"] for r in record_ids]
-    labels = [1 if reference[r]["gold"] == "SUPPORTED" else 0 for r in record_ids]
     doc_ids = [reference[r]["doc_id"] for r in record_ids]
 
     common = [c for c in eligibility["cohorts"] if _eligible(eligibility, COMPARATOR, c)]
@@ -445,7 +444,7 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
         raise ValueError("the deterministic DEV-A/DEV-B split is empty")
     ids_a = [record_ids[i] for i in index_a]
     cohorts_a = [cohorts[i] for i in index_a]
-    labels_a = [labels[i] for i in index_a]
+    labels_a = [1 if reference[record_ids[i]]["gold"] == "SUPPORTED" else 0 for i in index_a]
     folds, limitations = crossfit_folds(ids_a, cohorts_a, labels_a)
     if limitations:
         raise ValueError("DEV-A has cross-fitting strata below five")
