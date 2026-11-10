@@ -129,6 +129,12 @@ def _require_persistent_atomic_lock() -> None:
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise RuntimeError("P1 requires the protected GitHub Actions runner")
+    if os.environ.get("GITHUB_REF") != "refs/heads/main":
+        raise RuntimeError("P1 lock may only be reserved from the protected main branch")
+    if os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch":
+        raise RuntimeError("P1 lock requires an explicit workflow_dispatch event")
+    if not re.fullmatch(r"[0-9]+", os.environ.get("GITHUB_RUN_ID", "")):
+        raise RuntimeError("P1 lock requires a valid GitHub Actions run ID")
     if repository != "Ayorinha/ayorai-opensearch":
         raise RuntimeError("P1 lock may only be reserved in the canonical repository")
     if not isinstance(commit_sha, str) or re.fullmatch(r"[0-9a-f]{40}", commit_sha) is None:
@@ -148,7 +154,8 @@ def _require_persistent_atomic_lock() -> None:
         method="POST",
     )
     try:
-        with urlopen(request, timeout=15) as response:
+        # The URL is a fixed HTTPS GitHub API endpoint; no caller-controlled host is used.
+        with urlopen(request, timeout=15) as response:  # nosec B310
             created = json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
         if exc.code in {409, 422}:
