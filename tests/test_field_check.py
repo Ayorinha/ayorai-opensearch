@@ -15,6 +15,7 @@ from ayorai_attractor.verification.field_check import (
     normalize_date,
     normalize_money,
 )
+from ayorai_attractor.verification.document_ingest import ingest
 from tests.pdf_fixture import make_pdf
 
 DOC = """DUPLICATA MERCANTIL Nº 4521
@@ -163,6 +164,55 @@ def test_api_fields_pdf_reports_page() -> None:
     assert response.status_code == 200, response.text
     result = response.json()["results"][0]
     assert result["outcome"] == "conforme" and result["page"] == 2
+
+
+def test_api_fields_trace_id_binds_source_and_page_layout() -> None:
+    pytest.importorskip("pypdf")
+    client = TestClient(app)
+    pdf = make_pdf([["Identificação"], ["Valor: R$ 10,00"]])
+    encoded = base64.b64encode(pdf).decode()
+    ingested = ingest(text=None, content_base64=encoded, media_type="application/pdf")
+    fields = [{"name": "valor", "type": "money", "value": "10,00", "labels": ["Valor"]}]
+
+    pdf_response = client.post(
+        "/v1/fields",
+        json={
+            "document": {
+                "id": "same-document",
+                "content_base64": encoded,
+                "media_type": "application/pdf",
+            },
+            "fields": fields,
+        },
+    )
+    text_response = client.post(
+        "/v1/fields",
+        json={"document": {"id": "same-document", "text": ingested.text}, "fields": fields},
+    )
+
+    assert pdf_response.status_code == 200, pdf_response.text
+    assert text_response.status_code == 200, text_response.text
+    pdf_body = pdf_response.json()
+    text_body = text_response.json()
+    assert pdf_body["document"]["sha256"] == text_body["document"]["sha256"]
+    assert pdf_body["results"][0]["page"] == 2
+    assert text_body["results"][0]["page"] == 1
+    assert pdf_body["trace_id"] != text_body["trace_id"]
+    assert pdf_body["engine"]["trace"] == "fields-trace-2"
+
+
+def test_api_fields_trace_id_binds_document_id() -> None:
+    client = TestClient(app)
+    fields = _fields()
+    first = client.post(
+        "/v1/fields", json={"document": {"id": "document-a", "text": DOC}, "fields": fields}
+    )
+    second = client.post(
+        "/v1/fields", json={"document": {"id": "document-b", "text": DOC}, "fields": fields}
+    )
+
+    assert first.status_code == second.status_code == 200
+    assert first.json()["trace_id"] != second.json()["trace_id"]
 
 
 def test_api_fields_rejects_duplicate_names() -> None:
