@@ -420,11 +420,6 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     _validate_eligibility(eligibility)
     _validate_confirmatory_eligibility(eligibility, eligibility_sha256=file_sha256)
     _require_non_estimable_rule()
-    # Check the report-level single-use guard before reserving the persistent lock.
-    # An already-published report must refuse without consuming a fresh reservation.
-    if published_confirmation_exists():
-        raise RuntimeError("a P1 confirmation report is already published; P1 is single-use")
-    _require_persistent_atomic_lock()
     models = cache["models"]
     record_ids = validate_members(models)
     reference = {r["record_id"]: r for r in models[COMPARATOR]["records"]}
@@ -436,11 +431,18 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     for cohort in common:
         if not all(_eligible(eligibility, member, cohort) for member in MEMBERS):
             raise ValueError(f"a member is blocked in common cohort {cohort}")
+    if not common:
+        raise ValueError("the confirmatory eligibility matrix has no common cohorts")
     common_set = set(common)
 
+    # Complete deterministic preflight before consuming the one-shot reservation.
+    # This stage validates cache structure and prepares DEV-A folds only; it does not
+    # fit on, score, summarize, or inspect DEV-B outcomes.
     assignments, _ = split_dev_a_b(record_ids, cohorts)
     index_a = [i for i, r in enumerate(record_ids) if assignments[r] == "DEV-A"]
     index_b = [i for i, r in enumerate(record_ids) if assignments[r] == "DEV-B"]
+    if not index_a or not index_b:
+        raise ValueError("the deterministic DEV-A/DEV-B split is empty")
     ids_a = [record_ids[i] for i in index_a]
     cohorts_a = [cohorts[i] for i in index_a]
     labels_a = [labels[i] for i in index_a]
@@ -449,7 +451,13 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
         raise ValueError("DEV-A has cross-fitting strata below five")
     fold_list = [folds[r] for r in ids_a]
 
-    oof_a: dict[str, list[float]] = {}
+    # Check the report-level guard and reserve only after all deterministic preflight.
+    # An existing report or invalid cache must not consume a fresh reservation.
+    if published_confirmation_exists():
+        raise RuntimeError("a P1 confirmation report is already published; P1 is single-use")
+    _require_persistent_atomic_lock()
+
+    oof_a: dict[str, list[float]] = []
     prob_b: dict[str, list[float]] = {}
     for member in MEMBERS:
         scores = {r["record_id"]: r["score"] for r in models[member]["records"]}
