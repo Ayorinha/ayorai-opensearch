@@ -347,6 +347,9 @@ class _FakeHttpResponse:
 def _set_github_lock_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
     monkeypatch.setenv("GITHUB_REPOSITORY", "Ayorinha/ayorai-opensearch")
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
+    monkeypatch.setenv("GITHUB_RUN_ID", "42914353626")
     monkeypatch.setenv("GITHUB_SHA", "a" * 40)
     monkeypatch.setenv("GITHUB_TOKEN", "synthetic-test-token")
 
@@ -400,6 +403,9 @@ def test_persistent_lock_refuses_existing_reservation(
     [
         ("GITHUB_ACTIONS", None),
         ("GITHUB_REPOSITORY", "fork/ayorai-opensearch"),
+        ("GITHUB_REF", "refs/heads/feature"),
+        ("GITHUB_EVENT_NAME", "push"),
+        ("GITHUB_RUN_ID", "invalid"),
         ("GITHUB_SHA", "not-a-commit"),
         ("GITHUB_TOKEN", None),
     ],
