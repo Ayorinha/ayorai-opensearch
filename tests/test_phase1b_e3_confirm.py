@@ -179,7 +179,7 @@ def test_estimand_statement_and_loco_are_descriptive() -> None:
     assert report["leave_one_cohort_out_role"].startswith("descriptive")
 
 
-@pytest.mark.parametrize("defect", ["gold", "cohort", "duplicate", "nan", "range"])
+@pytest.mark.parametrize("defect", ["gold", "cohort", "duplicate", "nan", "range", "doc_id"])
 def test_strict_member_validation(defect: str) -> None:
     rows = _rows(NOISE)
     cache = _cache(rows)
@@ -196,6 +196,9 @@ def test_strict_member_validation(defect: str) -> None:
     elif defect == "nan":
         target[0]["score"] = float("nan")
         message = "outside"
+    elif defect == "doc_id":
+        target[0]["doc_id"] = "z" * 64
+        message = "doc_id"
     else:
         target[0]["score"] = 1.5
         message = "outside"
