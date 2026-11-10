@@ -23,6 +23,18 @@ import json
 import math
 
 
+def _validate_probability(name: str, value: float) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{name} must be a finite probability strictly between 0 and 1")
+    if not math.isfinite(float(value)) or not 0.0 < float(value) < 1.0:
+        raise ValueError(f"{name} must be a finite probability strictly between 0 and 1")
+
+
+def _validate_positive_integer(name: str, value: int) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError(f"{name} must be a positive integer")
+
+
 def _pmf_row(n: int, p: float) -> list[float]:
     log_p, log_q = math.log(p), math.log1p(-p)
     return [
@@ -40,6 +52,9 @@ def _pmf_row(n: int, p: float) -> list[float]:
 def critical_errors(n: int, r_max: float, delta_pair: float) -> int:
     """Largest k with P(Bin(n, r_max) <= k) <= delta_pair; -1 if none."""
 
+    _validate_positive_integer("n", n)
+    _validate_probability("r_max", r_max)
+    _validate_probability("delta_pair", delta_pair)
     cumulative = 0.0
     k = -1
     for i, mass in enumerate(_pmf_row(n, r_max)):
@@ -51,6 +66,7 @@ def critical_errors(n: int, r_max: float, delta_pair: float) -> int:
 
 
 def power(n: int, r_max: float, delta_pair: float, p1: float) -> float:
+    _validate_probability("p1", p1)
     k = critical_errors(n, r_max, delta_pair)
     return sum(_pmf_row(n, p1)[: k + 1]) if k >= 0 else 0.0
 
@@ -58,6 +74,11 @@ def power(n: int, r_max: float, delta_pair: float, p1: float) -> float:
 def robust_floor(
     r_max: float, delta_pair: float, p1: float, target: float, horizon: int = 3000
 ) -> int:
+    _validate_probability("r_max", r_max)
+    _validate_probability("delta_pair", delta_pair)
+    _validate_probability("p1", p1)
+    _validate_probability("target", target)
+    _validate_positive_integer("horizon", horizon)
     last_failure = 0
     for n in range(1, horizon + 1):
         if power(n, r_max, delta_pair, p1) < target:
@@ -76,6 +97,10 @@ def main() -> None:
     parser.add_argument("--power", type=float, default=0.8)
     parser.add_argument("--horizon", type=int, default=3000)
     args = parser.parse_args()
+    _validate_probability("delta_family", args.delta_family)
+    _validate_positive_integer("pairs", args.pairs)
+    _validate_probability("power", args.power)
+    _validate_positive_integer("horizon", args.horizon)
     delta_pair = args.delta_family / args.pairs
     floors = {
         str(p1): robust_floor(args.r_max, delta_pair, p1, args.power, args.horizon)
