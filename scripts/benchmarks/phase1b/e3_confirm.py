@@ -21,12 +21,16 @@ Output is aggregate-only. TEST is never used.
 
 from __future__ import annotations
 
+import json
 import math
+import os
 import re
 from collections.abc import Mapping, Sequence
 from datetime import date
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from scripts.benchmarks.phase1b.calibration import balanced_accuracy, calibrate_by_cohort
 from scripts.benchmarks.phase1b.calibration_v2.splits import crossfit_folds, split_dev_a_b
@@ -59,6 +63,7 @@ REQUIRED_CACHE_SCHEMA = "phase1b-dev-score-cache-v2"
 NON_ESTIMABLE_RULE: dict[str, Any] | None = None
 # Single-execution lock (persistent part): a published P1 report in the repository.
 REPORT_LOCK_GLOB = "reports/benchmarks/*p1-dev-b-confirmation*"
+P1_LOCK_REF = "refs/tags/p1-dev-b-confirmation-lock"
 ESTIMAND_STATEMENT = (
     "The estimand is the macro balanced accuracy over the common cohorts. No superiority "
     "claim is made for any individual cohort; per-cohort values are descriptive."
@@ -113,11 +118,53 @@ def _require_non_estimable_rule() -> None:
 
 
 def _require_persistent_atomic_lock() -> None:
-    """Fail closed until the protected workflow reserves a persistent Git ref atomically."""
+    """Atomically reserve the single-use P1 ref in GitHub before any DEV-B calculation.
 
-    raise RuntimeError(
-        "the P1 workflow does not yet reserve the persistent single-use Git ref; P1 cannot run"
+    The protected workflow must provide a write-scoped GITHUB_TOKEN, GITHUB_ACTIONS,
+    GITHUB_REPOSITORY and GITHUB_SHA. GitHub's create-ref endpoint is atomic: an
+    existing reservation is a hard failure, including when it points to the same SHA.
+    """
+    repository = os.environ.get("GITHUB_REPOSITORY")
+    commit_sha = os.environ.get("GITHUB_SHA")
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        raise RuntimeError("P1 requires the protected GitHub Actions runner")
+    if repository != "Ayorinha/ayorai-opensearch":
+        raise RuntimeError("P1 lock may only be reserved in the canonical repository")
+    if not isinstance(commit_sha, str) or re.fullmatch(r"[0-9a-f]{40}", commit_sha) is None:
+        raise RuntimeError("P1 lock requires the exact 40-character workflow commit SHA")
+    if not token:
+        raise RuntimeError("P1 lock requires a write-scoped GitHub token")
+
+    request = Request(
+        f"https://api.github.com/repos/{repository}/git/refs",
+        data=json.dumps({"ref": P1_LOCK_REF, "sha": commit_sha}).encode("utf-8"),
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        method="POST",
     )
+    try:
+        with urlopen(request, timeout=15) as response:
+            created = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        if exc.code in {409, 422}:
+            raise RuntimeError(
+                "the persistent single-use P1 Git ref is already reserved; refusing to run"
+            ) from exc
+        raise RuntimeError(f"GitHub rejected the P1 lock reservation (HTTP {exc.code})") from exc
+    except (URLError, TimeoutError) as exc:
+        raise RuntimeError("could not verify the persistent P1 lock reservation") from exc
+
+    if (
+        created.get("ref") != P1_LOCK_REF
+        or not isinstance(created.get("object"), Mapping)
+        or created["object"].get("sha") != commit_sha
+    ):
+        raise RuntimeError("GitHub returned a mismatched P1 lock reference or commit SHA")
 
 
 def validate_members(models: Mapping[str, Any]) -> list[str]:
