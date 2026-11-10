@@ -435,8 +435,8 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     common_set = set(common)
 
     # Complete deterministic preflight before consuming the one-shot reservation.
-    # This stage validates cache structure and prepares DEV-A folds only; it does not
-    # fit on, score, summarize, or inspect DEV-B outcomes.
+    # DEV-B labels are checked only for schema/cross-member consistency here; they are
+    # not used as outcomes, fitted quantities, scores, or diagnostics before reservation.
     assignments, _ = split_dev_a_b(record_ids, cohorts)
     index_a = [i for i, r in enumerate(record_ids) if assignments[r] == "DEV-A"]
     index_b = [i for i, r in enumerate(record_ids) if assignments[r] == "DEV-B"]
