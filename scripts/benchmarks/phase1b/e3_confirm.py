@@ -169,6 +169,7 @@ def _require_persistent_atomic_lock() -> None:
     if (
         created.get("ref") != P1_LOCK_REF
         or not isinstance(created.get("object"), Mapping)
+        or created["object"].get("type") != "commit"
         or created["object"].get("sha") != commit_sha
     ):
         raise RuntimeError("GitHub returned a mismatched P1 lock reference or commit SHA")
