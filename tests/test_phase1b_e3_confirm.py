@@ -330,6 +330,107 @@ def test_refuses_without_persistent_atomic_execution_lock() -> None:
         _ORIGINAL_ATOMIC_LOCK_GATE()
 
 
+class _FakeHttpResponse:
+    def __init__(self, payload: dict) -> None:
+        self.payload = json.dumps(payload).encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self.payload
+
+
+def _set_github_lock_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "Ayorinha/ayorai-opensearch")
+    monkeypatch.setenv("GITHUB_SHA", "a" * 40)
+    monkeypatch.setenv("GITHUB_TOKEN", "synthetic-test-token")
+
+
+def test_persistent_lock_creates_exact_single_use_ref(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _set_github_lock_environment(monkeypatch)
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["method"] = request.get_method()
+        captured["payload"] = json.loads(request.data)
+        captured["timeout"] = timeout
+        return _FakeHttpResponse(
+            {
+                "ref": e3_confirm.P1_LOCK_REF,
+                "object": {"sha": "a" * 40},
+            }
+        )
+
+    monkeypatch.setattr(e3_confirm, "urlopen", fake_urlopen)
+    e3_confirm._require_persistent_atomic_lock()
+    assert captured == {
+        "url": "https://api.github.com/repos/Ayorinha/ayorai-opensearch/git/refs",
+        "method": "POST",
+        "payload": {"ref": e3_confirm.P1_LOCK_REF, "sha": "a" * 40},
+        "timeout": 15,
+    }
+
+
+def test_persistent_lock_refuses_existing_reservation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from io import BytesIO
+    from urllib.error import HTTPError
+
+    _set_github_lock_environment(monkeypatch)
+
+    def conflict(request, timeout):
+        raise HTTPError(request.full_url, 422, "already exists", {}, BytesIO(b"{}"))
+
+    monkeypatch.setattr(e3_confirm, "urlopen", conflict)
+    with pytest.raises(RuntimeError, match="already reserved"):
+        e3_confirm._require_persistent_atomic_lock()
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("GITHUB_ACTIONS", None),
+        ("GITHUB_REPOSITORY", "fork/ayorai-opensearch"),
+        ("GITHUB_SHA", "not-a-commit"),
+        ("GITHUB_TOKEN", None),
+    ],
+)
+def test_persistent_lock_refuses_untrusted_or_incomplete_runner_context(
+    monkeypatch: pytest.MonkeyPatch, name: str, value: str | None
+) -> None:
+    _set_github_lock_environment(monkeypatch)
+    if value is None:
+        monkeypatch.delenv(name, raising=False)
+    else:
+        monkeypatch.setenv(name, value)
+    with pytest.raises(RuntimeError, match="P1|canonical|commit SHA|token"):
+        e3_confirm._require_persistent_atomic_lock()
+
+
+def test_persistent_lock_refuses_mismatched_github_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _set_github_lock_environment(monkeypatch)
+    monkeypatch.setattr(
+        e3_confirm,
+        "urlopen",
+        lambda request, timeout: _FakeHttpResponse(
+            {"ref": e3_confirm.P1_LOCK_REF, "object": {"sha": "b" * 40}}
+        ),
+    )
+    with pytest.raises(RuntimeError, match="mismatched"):
+        e3_confirm._require_persistent_atomic_lock()
+
+
 def test_refuses_when_dec026_has_no_confirmatory_approval(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
