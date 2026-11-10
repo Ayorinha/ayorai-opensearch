@@ -22,6 +22,7 @@ Output is aggregate-only. TEST is never used.
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Mapping, Sequence
 from datetime import date
 from pathlib import Path
@@ -140,7 +141,7 @@ def validate_members(models: Mapping[str, Any]) -> list[str]:
             if not math.isfinite(float(score)) or not 0.0 <= float(score) <= 1.0:
                 raise ValueError(f"{member} has a score outside [0, 1]")
             doc_id = record.get("doc_id")
-            if not isinstance(doc_id, str) or len(doc_id) != 64:
+            if not isinstance(doc_id, str) or re.fullmatch(r"[0-9a-f]{64}", doc_id) is None:
                 raise ValueError(f"{member} lacks a valid doc_id (cache v2 required)")
             seen[record_id] = (record["cohort"], record["gold"], doc_id)
         if reference is None:
