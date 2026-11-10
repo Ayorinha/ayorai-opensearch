@@ -247,6 +247,25 @@ def test_invalid_cache_is_rejected_before_consuming_persistent_lock(
     assert lock_calls == []
 
 
+def test_dev_a_preflight_failure_is_rejected_before_reservation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lock_calls: list[str] = []
+    monkeypatch.setattr(
+        e3_confirm,
+        "crossfit_folds",
+        lambda *_args, **_kwargs: ({}, ["synthetic insufficient stratum"]),
+    )
+    monkeypatch.setattr(
+        e3_confirm,
+        "_require_persistent_atomic_lock",
+        lambda: lock_calls.append("reserved"),
+    )
+    with pytest.raises(ValueError, match="cross-fitting strata"):
+        run_confirm(_cache(_rows(NOISE)))
+    assert lock_calls == []
+
+
 def test_eligibility_cannot_be_injected() -> None:
     import inspect
 
