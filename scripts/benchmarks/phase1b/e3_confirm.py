@@ -420,9 +420,11 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     _validate_eligibility(eligibility)
     _validate_confirmatory_eligibility(eligibility, eligibility_sha256=file_sha256)
     _require_non_estimable_rule()
-    _require_persistent_atomic_lock()
+    # Check the report-level single-use guard before reserving the persistent lock.
+    # An already-published report must refuse without consuming a fresh reservation.
     if published_confirmation_exists():
         raise RuntimeError("a P1 confirmation report is already published; P1 is single-use")
+    _require_persistent_atomic_lock()
     models = cache["models"]
     record_ids = validate_members(models)
     reference = {r["record_id"]: r for r in models[COMPARATOR]["records"]}
