@@ -230,6 +230,23 @@ def test_refuses_when_a_confirmation_report_is_published_without_consuming_lock(
     assert lock_calls == []
 
 
+def test_invalid_cache_is_rejected_before_consuming_persistent_lock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cache = _cache(_rows(NOISE))
+    records = cache["models"]["minicheck"]["records"]
+    records[1]["record_id"] = records[0]["record_id"]
+    lock_calls: list[str] = []
+    monkeypatch.setattr(
+        e3_confirm,
+        "_require_persistent_atomic_lock",
+        lambda: lock_calls.append("reserved"),
+    )
+    with pytest.raises(ValueError, match="duplicate record_id"):
+        run_confirm(cache)
+    assert lock_calls == []
+
+
 def test_eligibility_cannot_be_injected() -> None:
     import inspect
 
