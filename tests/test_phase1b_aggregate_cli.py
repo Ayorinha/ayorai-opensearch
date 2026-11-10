@@ -40,8 +40,10 @@ def _synthetic_rows() -> list[dict]:
     return rows
 
 
-def _write_synthetic_inputs(tmp_path: Path) -> tuple[Path, Path, dict[str, str], dict]:
-    rows = _synthetic_rows()
+def _write_synthetic_inputs(
+    tmp_path: Path, rows: list[dict] | None = None
+) -> tuple[Path, Path, dict[str, str], dict]:
+    rows = rows if rows is not None else _synthetic_rows()
     manifest = build_manifest(
         rows,
         dataset_sha256="c" * 64,
@@ -103,8 +105,10 @@ def _write_synthetic_inputs(tmp_path: Path) -> tuple[Path, Path, dict[str, str],
     return manifest_path, encrypted_dir, env, rows_by_id
 
 
-def _run_aggregator(tmp_path: Path, *extra: str) -> tuple[subprocess.CompletedProcess, Path, dict]:
-    manifest_path, encrypted_dir, env, rows_by_id = _write_synthetic_inputs(tmp_path)
+def _run_aggregator(
+    tmp_path: Path, *extra: str, rows: list[dict] | None = None
+) -> tuple[subprocess.CompletedProcess, Path, dict]:
+    manifest_path, encrypted_dir, env, rows_by_id = _write_synthetic_inputs(tmp_path, rows)
     output_path = tmp_path / "aggregate.json"
     completed = subprocess.run(
         [

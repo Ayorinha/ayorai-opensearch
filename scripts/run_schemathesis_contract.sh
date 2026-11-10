@@ -19,8 +19,19 @@ API_URL="${3:?API URL required}"
 # preferred JSON integer form, so only negative_data_rejection is excluded
 # for both operations; every other check, including positive_data_acceptance,
 # still runs for them.
+# POST /v1/check and POST /v1/fields accept uploaded file content: whether a
+# base64 string decodes to a readable PDF with a text layer, and whether document
+# ids / field names are unique, cannot be expressed in JSON Schema. Their schemas
+# do express the exactly-one-of input rules and non-blank claims; only
+# positive_data_acceptance is excluded for these two operations and every other
+# check, including negative_data_rejection, still runs for them.
 "$ST_BIN" run "$OPENAPI_URL" --url "$API_URL" --checks all \
-  --exclude-path /v1/verify --exclude-path /v1/opensearch --exclude-path /v1/audit
+  --exclude-path /v1/verify --exclude-path /v1/opensearch --exclude-path /v1/audit \
+  --exclude-path /v1/check --exclude-path /v1/fields
+
+"$ST_BIN" run "$OPENAPI_URL" --url "$API_URL" --checks all \
+  --include-path /v1/check --include-path /v1/fields \
+  --exclude-checks positive_data_acceptance
 
 "$ST_BIN" run "$OPENAPI_URL" --url "$API_URL" --checks all \
   --include-path /v1/opensearch --include-path /v1/audit \

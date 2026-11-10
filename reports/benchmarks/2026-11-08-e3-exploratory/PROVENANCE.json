@@ -1,0 +1,9 @@
+{
+  "cache_run_id": "42477997402",
+  "experiment": "e3-fixed-rule-ensemble",
+  "experiment_code_sha": "ba65753382cecdff0403461becc976916e30d4b8",
+  "experiment_run_id": "42485634513",
+  "manifest_sha256": "deb3ef389553a03bb840e03a1e314e3f4d02dac50f4aa3d1c713c88a9dd55a74",
+  "report_sha256": "43dcd7ef117e7c994664d1934729cb68f697ec2c027a086cefac2673bb942157",
+  "schema_version": "phase1b-dev-cache-experiment-provenance-v1"
+}
