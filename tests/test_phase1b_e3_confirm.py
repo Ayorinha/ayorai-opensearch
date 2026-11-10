@@ -213,14 +213,21 @@ def test_strict_member_validation(defect: str) -> None:
         run_confirm(cache)
 
 
-def test_refuses_when_a_confirmation_report_is_published(
+def test_refuses_when_a_confirmation_report_is_published_without_consuming_lock(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     published = tmp_path / "reports" / "benchmarks" / "2026-12-01-p1-dev-b-confirmation"
     published.mkdir(parents=True)
     monkeypatch.setattr(e3_confirm, "REPOSITORY_ROOT", tmp_path)
+    lock_calls = []
+    monkeypatch.setattr(
+        e3_confirm,
+        "_require_persistent_atomic_lock",
+        lambda: lock_calls.append("reserved"),
+    )
     with pytest.raises(RuntimeError, match="single-use"):
         run_confirm(_cache(_rows(NOISE)))
+    assert lock_calls == []
 
 
 def test_eligibility_cannot_be_injected() -> None:
