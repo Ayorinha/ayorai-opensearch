@@ -483,7 +483,9 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
             for k in keep_b
         ]
 
-    labels_b = [labels[index_b[k]] for k in keep_b]
+    labels_b = [
+        1 if reference[record_ids[index_b[k]]]["gold"] == "SUPPORTED" else 0 for k in keep_b
+    ]
     cohorts_b = [cohorts[index_b[k]] for k in keep_b]
     docs_b = [doc_ids[index_b[k]] for k in keep_b]
     groups: dict[str, tuple[list[int], list[int], list[int]]] = {}
