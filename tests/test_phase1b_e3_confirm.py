@@ -368,7 +368,7 @@ def test_persistent_lock_creates_exact_single_use_ref(
         return _FakeHttpResponse(
             {
                 "ref": e3_confirm.P1_LOCK_REF,
-                "object": {"sha": "a" * 40},
+                "object": {"type": "commit", "sha": "a" * 40},
             }
         )
 
@@ -422,6 +422,21 @@ def test_persistent_lock_refuses_untrusted_or_incomplete_runner_context(
         e3_confirm._require_persistent_atomic_lock()
 
 
+def test_persistent_lock_refuses_non_commit_ref_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _set_github_lock_environment(monkeypatch)
+    monkeypatch.setattr(
+        e3_confirm,
+        "urlopen",
+        lambda request, timeout: _FakeHttpResponse(
+            {"ref": e3_confirm.P1_LOCK_REF, "object": {"type": "tag", "sha": "a" * 40}}
+        ),
+    )
+    with pytest.raises(RuntimeError, match="mismatched"):
+        e3_confirm._require_persistent_atomic_lock()
+
+
 def test_persistent_lock_refuses_mismatched_github_response(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -430,7 +445,7 @@ def test_persistent_lock_refuses_mismatched_github_response(
         e3_confirm,
         "urlopen",
         lambda request, timeout: _FakeHttpResponse(
-            {"ref": e3_confirm.P1_LOCK_REF, "object": {"sha": "b" * 40}}
+            {"ref": e3_confirm.P1_LOCK_REF, "object": {"type": "commit", "sha": "b" * 40}}
         ),
     )
     with pytest.raises(RuntimeError, match="mismatched"):
