@@ -326,7 +326,7 @@ def test_refuses_until_non_estimable_rule_is_implemented(
 
 
 def test_refuses_without_persistent_atomic_execution_lock() -> None:
-    with pytest.raises(RuntimeError, match="persistent single-use Git ref"):
+    with pytest.raises(RuntimeError, match="P1"):
         _ORIGINAL_ATOMIC_LOCK_GATE()
 
 
