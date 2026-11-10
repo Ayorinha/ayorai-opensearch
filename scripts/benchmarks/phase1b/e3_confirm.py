@@ -456,7 +456,7 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
         raise RuntimeError("a P1 confirmation report is already published; P1 is single-use")
     _require_persistent_atomic_lock()
 
-    oof_a: dict[str, list[float]] = []
+    oof_a: dict[str, list[float]] = {}
     prob_b: dict[str, list[float]] = {}
     for member in MEMBERS:
         scores = {r["record_id"]: r["score"] for r in models[member]["records"]}
