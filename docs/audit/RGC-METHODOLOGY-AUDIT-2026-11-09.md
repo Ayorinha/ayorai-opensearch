@@ -27,9 +27,9 @@ Não são alterados o pré-registro RGC, o protocolo normativo, o executor, test
 
 - [PR #269](https://github.com/Ayorinha/ayorai-opensearch/pull/269): **fechada sem merge**, ainda marcada Draft no registro consultado; fechada em 2026-10-19. Head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`; cinco commits; dois arquivos no diff (`docs/ARCHITECTURE.md` e `docs/eval/METHODOLOGY-REVIEW-RGC-PTBR-2026-10-18.md`).
 - Conversa: três comentários; submissões de review: zero; comentários inline: zero.
-- No head da #269: 20 check-runs, **19 success e 1 skipped** (`rgc-design-simulation)); nenhum check-run falhou. Esses checks são históricos do head citado, não checks da main atual.
+- No head da #269: 20 check-runs, **19 success e 1 skipped** (`rgc-design-simulation`); nenhum check-run falhou. Esses checks são históricos do head citado, não checks da main atual.
 - A #269 foi substituída pela [#272](https://github.com/Ayorinha/ayorai-opensearch/pull/272), fechada sem merge; a revisão documental foi incorporada pela [#273](https://github.com/Ayorinha/ayorai-opensearch/pull/273), merge commit `5719db48fc82c726671af7c9c7f7ef386d161edb`.
-- A [#274](https://github.com/Ayorinha/ayorai-opensearch/pull/274), merge commit `c639d0fda7a6fb8ab29bb438611ee536b1f3ddc2`, corrigiu a derivação da Baseline B a partir da partição pública de desenvolvimento. A [#275](https://github.com/Ayorinha/ayorai-opensearch/pull/275), merge commit `9610d24e81fa9639462b610b8915ee5162a26d2a`, esclareceu o marcador `RULE_GAP) na ficha em branco do piloto 02. Essas tarefas concluídas não devem ser reiniciadas.
+- A [#274](https://github.com/Ayorinha/ayorai-opensearch/pull/274), merge commit `c639d0fda7a6fb8ab29bb438611ee536b1f3ddc2`, corrigiu a derivação da Baseline B a partir da partição pública de desenvolvimento. A [#275](https://github.com/Ayorinha/ayorai-opensearch/pull/275), merge commit `9610d24e81fa9639462b610b8915ee5162a26d2a`, esclareceu o marcador `RULE_GAP` na ficha em branco do piloto 02. Essas tarefas concluídas não devem ser reiniciadas.
 
 ### PR #512 — estado não vigente
 
