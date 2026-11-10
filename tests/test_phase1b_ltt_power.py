@@ -29,3 +29,19 @@ def test_critical_errors_respects_level() -> None:
 )
 def test_reproduces_floors_up_to_horizon(pairs: int, p1: float, expected: int) -> None:
     assert robust_floor(0.10, 0.05 / pairs, p1, 0.80, horizon=2500) == expected
+
+
+@pytest.mark.parametrize(
+    ("function", "args"),
+    [
+        (critical_errors, (10, 0.0, 0.05)),
+        (critical_errors, (10, 0.1, 0.0)),
+        (critical_errors, (0, 0.1, 0.05)),
+        (power, (10, 0.1, 0.05, 1.0)),
+        (robust_floor, (0.1, 0.05, 0.03, 1.0)),
+        (robust_floor, (0.1, 0.05, 0.03, 0.8, 0)),
+    ],
+)
+def test_rejects_invalid_power_inputs(function, args) -> None:
+    with pytest.raises(ValueError):
+        function(*args)
