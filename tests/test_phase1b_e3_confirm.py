@@ -154,6 +154,13 @@ def test_refuses_changed_eligibility_file(monkeypatch: pytest.MonkeyPatch) -> No
         run_confirm(_cache(_rows(NOISE)))
 
 
+def test_refuses_v1_cache_without_document_ids() -> None:
+    cache = _cache(_rows(NOISE), v2=False)
+    assert cache["schema_version"] == "phase1b-dev-score-cache-v1"
+    with pytest.raises(ValueError, match="v2 score cache with document ids"):
+        run_confirm(cache)
+
+
 def test_refuses_cache_without_members() -> None:
     with pytest.raises(ValueError, match="lacks members"):
         run_confirm(_cache(_rows({"factcg": 0.1, "mdeberta": 0.1})))
