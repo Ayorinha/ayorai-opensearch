@@ -170,6 +170,10 @@ jobs:
           assert run["status"] == "completed" and run["conclusion"] == "success"
           print(f"CACHE_RUN_VERIFIED path={run['path']} head_sha={run['head_sha']}")
           PY
+      - name: Require P1 scientific authorization before cache download
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/score_cache.py --experiment e3-confirm-dev-b --preflight-only
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: phase1b-dev-score-cache
