@@ -410,12 +410,10 @@ def _document_jackknife(stats_by_cohort: Mapping[str, Any], delta: float) -> dic
     }
 
 
-def run_confirm(cache: Mapping[str, Any]) -> dict:
-    """Single execution of P1; the only eligibility accepted is the preregistered file."""
+def preflight_confirm() -> tuple[str, dict[str, Any], str]:
+    """Validate every public P1 gate before any encrypted score cache is accessed."""
 
     approved_on = preregistration_approval(PREREGISTRATION_PATH)
-    if cache.get("schema_version") != REQUIRED_CACHE_SCHEMA:
-        raise ValueError("P1 requires the v2 score cache with document ids")
     file_sha256 = sha256_bytes(Path(ELIGIBILITY_PATH).read_bytes())
     if file_sha256 != ELIGIBILITY_SHA256:
         raise RuntimeError("eligibility file differs from the preregistered version")
@@ -423,6 +421,15 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     _validate_eligibility(eligibility)
     _validate_confirmatory_eligibility(eligibility, eligibility_sha256=file_sha256)
     _require_non_estimable_rule()
+    return approved_on, eligibility, file_sha256
+
+
+def run_confirm(cache: Mapping[str, Any]) -> dict:
+    """Single execution of P1; the only eligibility accepted is the preregistered file."""
+
+    approved_on, eligibility, file_sha256 = preflight_confirm()
+    if cache.get("schema_version") != REQUIRED_CACHE_SCHEMA:
+        raise ValueError("P1 requires the v2 score cache with document ids")
     models = cache["models"]
     record_ids = validate_members(models)
     reference = {r["record_id"]: r for r in models[COMPARATOR]["records"]}
