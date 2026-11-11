@@ -38,6 +38,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-022 | IC95% de Cohen's kappa por componentes | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
 | DEC-023 | Componentes conectados por artigos citados | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
 | DEC-024 | Limites de calibração e combinação de sinais no LLM-AggreFact | Aprovada pelo mantenedor (2026-11-08); opção B | Este arquivo |
+| DEC-025 | Uso único do DEV-B para confirmar a E3b-01 | Aprovada pelo mantenedor (2026-11-08) | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -496,6 +497,34 @@ Reportar:
 - Esta emenda define somente a unidade de agrupamento para os métodos estatísticos documentados.
 - Não altera o executor, o pré-registro ou o protocolo.
 - Não autoriza execução, produção de métricas ou congelamento do protocolo.
+
+---
+
+## DEC-025 — Uso único do DEV-B para confirmar a E3b-01
+
+**Estado vigente:** Aprovada pelo mantenedor (2026-11-08).
+
+- **Data da decisão:** 08/11/2026
+- **Decisor:** Anderson Leon Ayora
+- **Contexto:** o pré-registro da Calibration V2 (seção 2.2) reserva o DEV-B "exclusivamente" para a certificação LTT da Camada 3 e proíbe que ele oriente escolhas de combinação. O E3 exploratório (DEV-A, run 42485634513) selecionou a E3b-01 entre seis candidatos; esse ganho precisa ser confirmado fora dos dados de seleção.
+- **Alternativas consideradas:** (a) confirmar em DEV-B, com hipótese única pré-registrada; (b) usar o TEST como confirmação, gastando a execução única antes das demais melhorias; (c) manter o DEV-B intocado e buscar um conjunto externo independente.
+- **Opção aprovada:** (a).
+
+### O que fica autorizado
+
+- Um único teste confirmatório da E3b-01 (FactCG + MiniCheck, média dos logits) contra o FactCG em DEV-B, conforme `docs/benchmarks/PREREG-E3-CONFIRM-DEV-B-v0.8.md`, depois que esse documento for aprovado.
+- Calibradores e limiares ajustados somente em DEV-A e aplicados uma vez em DEV-B.
+
+### O que continua proibido
+
+- Ajustar qualquer limiar, calibrador, membro, regra ou parâmetro com DEV-B.
+- Avaliar em DEV-B outras configurações E3 ou variantes, ou repetir a confirmação para obter outro resultado.
+- Usar o TEST.
+
+### Limites
+
+- Não altera a certificação LTT já publicada. Uma futura certificação LTT da E3b-01 em DEV-B deverá declarar o reuso da mesma amostra.
+- Não autoriza execução por si só: a execução depende da aprovação do pré-registro e do disparo manual pelo mantenedor.
 
 ---
 

@@ -2,7 +2,7 @@ name: Schemathesis Full API Contract
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/e3-confirm-dev-b]
   workflow_dispatch:
 
 permissions:
