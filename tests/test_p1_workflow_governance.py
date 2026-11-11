@@ -53,6 +53,13 @@ def test_both_cache_jobs_reject_non_main_dispatch_before_checkout_or_secrets() -
         decrypt = next(step for step in steps if step.get("name") == decrypt_name)
         assert steps.index(decrypt) > 1
         assert "PHASE1B_ARTIFACT_ENCRYPTION_KEY" in decrypt["env"]
+        secret_steps = [
+            index
+            for index, step in enumerate(steps)
+            if "PHASE1B_ARTIFACT_ENCRYPTION_KEY" in step.get("env", {})
+        ]
+        assert secret_steps
+        assert min(secret_steps) > 1
 
 
 def test_p1_global_single_flight_and_non_p1_ref_scoping() -> None:
