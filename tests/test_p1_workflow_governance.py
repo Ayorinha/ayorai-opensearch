@@ -74,7 +74,8 @@ def test_p1_is_manual_approval_gated_and_does_not_run_inference() -> None:
     assert "--split test" not in text
 
     lock_step = next(
-        step for step in p1["steps"]
+        step
+        for step in p1["steps"]
         if step.get("name") == "Decrypt cache and run P1 with a one-shot lock"
     )
     assert "GH_TOKEN" in lock_step["env"]
