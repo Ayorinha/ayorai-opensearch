@@ -382,6 +382,7 @@ def test_non_estimable_gate_blocks_before_consuming_persistent_lock(
     with pytest.raises(RuntimeError, match="NON_ESTIMABLE_GATE_SENTINEL"):
         run_confirm(_cache(_rows(NOISE)))
 
+
 def test_refuses_without_persistent_atomic_execution_lock() -> None:
     with pytest.raises(RuntimeError, match="P1"):
         _ORIGINAL_ATOMIC_LOCK_GATE()
