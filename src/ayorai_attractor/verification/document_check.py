@@ -275,6 +275,7 @@ def _trace_id(
                 doc.media_type,
                 _sha256(doc.text),
                 doc.source_sha256 or _sha256(doc.text),
+                list(doc.page_starts),
             ]
             for doc in documents
         ],
@@ -307,6 +308,7 @@ def check_documents(
         claim_texts = [str(text).strip() for text in claims or () if str(text).strip()]
     engine = {
         "version": ENGINE_VERSION,
+        "trace_identity": "document-check-trace-2",
         "claim_extractor": (
             f"{extractor.component}/{extractor.version}" if answer is not None else "caller"
         ),
