@@ -84,6 +84,26 @@ def test_p1_is_manual_approval_gated_and_does_not_run_inference() -> None:
     assert "fetch_dev.py" not in text
     assert "--split test" not in text
 
+    credential_step = next(
+        step
+        for step in p1["steps"]
+        if step.get("name") == "Require one-shot lock credential before cache download"
+    )
+    download_step = next(
+        index
+        for index, step in enumerate(p1["steps"])
+        if step.get("uses", "").startswith("actions/download-artifact@")
+    )
+    preflight_index = next(
+        index
+        for index, step in enumerate(p1["steps"])
+        if step.get("name") == "Require P1 scientific authorization before cache download"
+    )
+    credential_index = p1["steps"].index(credential_step)
+    assert preflight_index < credential_index < download_step
+    assert "P1_LOCK_TOKEN" in credential_step["run"]
+    assert "PHASE1B_ARTIFACT_ENCRYPTION_KEY" not in credential_step.get("env", {})
+
     lock_step = next(
         step
         for step in p1["steps"]
