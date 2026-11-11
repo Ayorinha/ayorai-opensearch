@@ -2,6 +2,13 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## 2026-11-11 — `/v1/fields` trace identity v2 (semantics clarified)
+
+- The deterministic `trace_id` now binds the caller document ID, media type, extracted-text SHA-256, original-source SHA-256 and page boundaries, in addition to the submitted field specification.
+- Changing the source file or page layout therefore produces a different trace ID even when extracted text is identical. This prevents distinct source/evidence provenance from sharing one trace identifier.
+- The response engine metadata identifies this format as `fields-trace-2`.
+- No request or response fields were added or removed; consumers should treat `trace_id` as an opaque identifier and must not assume IDs remain equal across the previous trace format.
+
 ## 2026-11-08 — /v1/fields and /v1/check hardening (field-check-2, document-check-2)
 
 - `/v1/fields`: new outcome `ambiguo` when one label introduces different values; a value
