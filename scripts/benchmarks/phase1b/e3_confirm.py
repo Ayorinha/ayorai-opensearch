@@ -120,15 +120,14 @@ def _require_non_estimable_rule() -> None:
 def _require_persistent_atomic_lock() -> None:
     """Atomically reserve the single-use P1 ref in GitHub before any DEV-B calculation.
 
-    The protected workflow must provide a write-scoped GITHUB_TOKEN, GITHUB_ACTIONS,
-    GITHUB_REPOSITORY and GITHUB_SHA. GitHub's create-ref endpoint is atomic: an
+    The protected workflow must provide a short-lived, repository-scoped P1_LOCK_TOKEN,
+    GITHUB_ACTIONS, GITHUB_REPOSITORY and GITHUB_SHA. The ordinary GITHUB_TOKEN must
+    remain read-only and is never accepted as a fallback. GitHub's create-ref endpoint is atomic: an
     existing reservation is a hard failure, including when it points to the same SHA.
     """
     repository = os.environ.get("GITHUB_REPOSITORY")
     commit_sha = os.environ.get("GITHUB_SHA")
-    token = os.environ.pop("GITHUB_TOKEN", None)
-    fallback_token = os.environ.pop("GH_TOKEN", None)
-    token = token or fallback_token
+    token = os.environ.pop("P1_LOCK_TOKEN", None)
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise RuntimeError("P1 requires the protected GitHub Actions runner")
     if os.environ.get("GITHUB_REF") != "refs/heads/main":
@@ -142,7 +141,7 @@ def _require_persistent_atomic_lock() -> None:
     if not isinstance(commit_sha, str) or re.fullmatch(r"[0-9a-f]{40}", commit_sha) is None:
         raise RuntimeError("P1 lock requires the exact 40-character workflow commit SHA")
     if not token:
-        raise RuntimeError("P1 lock requires a write-scoped GitHub token")
+        raise RuntimeError("P1 lock requires a dedicated short-lived P1_LOCK_TOKEN; refusing to use GITHUB_TOKEN")
 
     request = Request(
         f"https://api.github.com/repos/{repository}/git/refs",
