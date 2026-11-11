@@ -43,7 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple \\\n  cryptography==46.0.3 numpy==2.2.6
+          python -m pip install --index-url https://pypi.org/simple cryptography==46.0.3 numpy==2.2.6
       - name: Verify cache source run
         env:
           GH_TOKEN: ${{ github.token }}
@@ -56,7 +56,7 @@ jobs:
           import json
           from pathlib import Path
           run = json.loads(Path("/tmp/cache-run.json").read_text())
-          allowed = {\n      ".github/workflows/phase1b-dev-full.yml",\n      ".github/workflows/phase1b-dev-full-reaggregate.yml",\n  }
+          allowed = {".github/workflows/phase1b-dev-full.yml", ".github/workflows/phase1b-dev-full-reaggregate.yml"}
           assert run["path"] in allowed, run["path"]
           assert run["head_branch"] == "main"
           assert run["event"] == "workflow_dispatch"
@@ -78,7 +78,7 @@ jobs:
           set -euo pipefail
           trap 'rm -rf /tmp/phase1b-score-cache' EXIT
           mkdir -p /tmp/phase1b-output
-          python scripts/benchmarks/phase1b/score_cache.py \\\n  --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json \\\n  --experiment "$EXPERIMENT" \\\n  --output /tmp/phase1b-output/phase1b-cache-experiment.json
+          python scripts/benchmarks/phase1b/score_cache.py --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json --experiment "$EXPERIMENT" --output /tmp/phase1b-output/phase1b-cache-experiment.json
           python - <<'PY'
           import json, os
           from pathlib import Path
@@ -87,15 +87,15 @@ jobs:
           assert report["split"] == "dev"
           assert report["experiment"] == os.environ["EXPERIMENT"]
           assert report["instance_level_output_published"] is False
-          assert "record_id" not in serialized\n  assert "records" not in serialized
+          assert "record_id" not in serialized and "records" not in serialized
           if report["experiment"] == "replay-calibration-v2":
               assert report["replay_matches_source"] is True
           if report["experiment"] == "e3-fixed-rule-ensemble":
               assert report["partition"] == "DEV-A cross-fitted"
               assert report["decision_record"] == "DEC-024 option B"
-          provenance = {\n      "schema_version": "phase1b-dev-cache-experiment-provenance-v1",\n      "cache_run_id": os.environ["CACHE_RUN_ID"],\n      "experiment_run_id": os.environ["GITHUB_RUN_ID"],\n      "experiment_code_sha": os.environ["GITHUB_SHA"],\n      "experiment": report["experiment"],\n      "report_sha256": report["report_sha256"],\n      "manifest_sha256": report["manifest_sha256"],\n  }
+          provenance = {"schema_version":"phase1b-dev-cache-experiment-provenance-v1","cache_run_id":os.environ["CACHE_RUN_ID"],"experiment_run_id":os.environ["GITHUB_RUN_ID"],"experiment_code_sha":os.environ["GITHUB_SHA"],"experiment":report["experiment"],"report_sha256":report["report_sha256"],"manifest_sha256":report["manifest_sha256"]}
           Path("/tmp/phase1b-output/PROVENANCE.json").write_text(json.dumps(provenance,indent=2,sort_keys=True)+"\n")
-          print(json.dumps(provenance, sort_keys=True))
+          print(json.dumps(provenance,sort_keys=True))
           PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -124,7 +124,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple \\\n  cryptography==46.0.3 numpy==2.2.6
+          python -m pip install --index-url https://pypi.org/simple cryptography==46.0.3 numpy==2.2.6
       - name: Verify cache source run
         env:
           GH_TOKEN: ${{ github.token }}
@@ -137,7 +137,7 @@ jobs:
           import json
           from pathlib import Path
           run = json.loads(Path("/tmp/cache-run.json").read_text())
-          allowed = {\n      ".github/workflows/phase1b-dev-full.yml",\n      ".github/workflows/phase1b-dev-full-reaggregate.yml",\n  }
+          allowed = {".github/workflows/phase1b-dev-full.yml", ".github/workflows/phase1b-dev-full-reaggregate.yml"}
           assert run["path"] in allowed, run["path"]
           assert run["head_branch"] == "main"
           assert run["event"] == "workflow_dispatch"
@@ -160,7 +160,7 @@ jobs:
           set -euo pipefail
           trap 'rm -rf /tmp/phase1b-score-cache' EXIT
           mkdir -p /tmp/phase1b-output
-          python scripts/benchmarks/phase1b/score_cache.py \\\n  --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json \\\n  --experiment "$EXPERIMENT" \\\n  --output /tmp/phase1b-output/phase1b-cache-experiment.json
+          python scripts/benchmarks/phase1b/score_cache.py --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json --experiment "$EXPERIMENT" --output /tmp/phase1b-output/phase1b-cache-experiment.json
           python - <<'PY'
           import json, os
           from pathlib import Path
@@ -171,10 +171,10 @@ jobs:
           assert report["partition"] == "conditional confirmation on partially used holdout (DEV-B; calibrated on DEV-A)"
           assert report["confirmation_classification"] == "confirmação condicional em holdout parcialmente usado (DEV-B)"
           assert report["instance_level_output_published"] is False
-          assert "record_id" not in serialized\n  assert "records" not in serialized
-          provenance = {\n      "schema_version": "phase1b-dev-cache-experiment-provenance-v1",\n      "cache_run_id": os.environ["CACHE_RUN_ID"],\n      "experiment_run_id": os.environ["GITHUB_RUN_ID"],\n      "experiment_code_sha": os.environ["GITHUB_SHA"],\n      "experiment": report["experiment"],\n      "report_sha256": report["report_sha256"],\n      "manifest_sha256": report["manifest_sha256"],\n  }
+          assert "record_id" not in serialized and "records" not in serialized
+          provenance = {"schema_version":"phase1b-dev-cache-experiment-provenance-v1","cache_run_id":os.environ["CACHE_RUN_ID"],"experiment_run_id":os.environ["GITHUB_RUN_ID"],"experiment_code_sha":os.environ["GITHUB_SHA"],"experiment":report["experiment"],"report_sha256":report["report_sha256"],"manifest_sha256":report["manifest_sha256"]}
           Path("/tmp/phase1b-output/PROVENANCE.json").write_text(json.dumps(provenance,indent=2,sort_keys=True)+"\n")
-          print(json.dumps(provenance, sort_keys=True))
+          print(json.dumps(provenance,sort_keys=True))
           PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
