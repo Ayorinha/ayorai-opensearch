@@ -50,6 +50,7 @@ def test_experiment_workflow_is_manual_gated_and_inference_free() -> None:
     assert "run-id: ${{ inputs.cache_run_id }}" in text
     assert "replay_matches_source" in text
 
+
 def test_producers_upload_only_the_encrypted_cache() -> None:
     for path in PRODUCERS:
         text = path.read_text(encoding="utf-8")
