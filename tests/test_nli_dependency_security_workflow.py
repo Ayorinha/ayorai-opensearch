@@ -10,7 +10,11 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
     workflow = WORKFLOW.read_text(encoding="utf-8")
     pyproject = PYPROJECT.read_text(encoding="utf-8")
 
-    install_pilot = workflow.index("pip install -r requirements-benchmark-pilot.txt")
+    cpu_torch = workflow.index(
+        'python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"'
+    )
+    install_extras = workflow.index('python -m pip install --index-url https://pypi.org/simple -e ".[dev,nli]"')
+    install_pilot = workflow.index("python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt")
     pip_check = workflow.index("pip check", install_pilot)
     audit_step = workflow.index(
         "- name: Audit the complete optional NLI and benchmark dependency environment",
@@ -22,5 +26,6 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
         audit_command,
     )
 
-    assert install_pilot < pip_check < audit_step < audit_command < verify_versions
+    assert cpu_torch < install_extras < install_pilot < pip_check < audit_step < audit_command < verify_versions
+    assert "assert torch.version.cuda is None" in workflow
     assert '"pip-audit>=2.9,<3"' in pyproject
