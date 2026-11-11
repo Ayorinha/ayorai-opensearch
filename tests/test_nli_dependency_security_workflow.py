@@ -20,7 +20,7 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
         "- name: Audit the complete optional NLI and benchmark dependency environment",
         pip_check,
     )
-    audit_command = workflow.index("run: pip-audit", audit_step)
+    audit_command = workflow.index("run: pip-audit --strict", audit_step)
     verify_versions = workflow.index(
         "- name: Verify installed dependency versions",
         audit_command,
