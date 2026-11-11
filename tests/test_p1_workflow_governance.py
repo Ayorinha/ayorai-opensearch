@@ -46,7 +46,8 @@ def test_p1_rejects_non_main_dispatch_before_checkout_or_secrets() -> None:
     assert "env" not in guard
     assert steps[1]["uses"].startswith("actions/checkout@")
     decrypt = next(
-        step for step in steps
+        step
+        for step in steps
         if step.get("name") == "Decrypt cache and run P1 with a one-shot lock"
     )
     assert steps.index(decrypt) > 1
