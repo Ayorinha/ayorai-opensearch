@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -92,6 +93,8 @@ def _approved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_confirmation_report_is_aggregate_and_complete() -> None:
     report = run_confirm(_cache(_rows(NOISE)))
     assert report["experiment"] == "e3-confirm-dev-b"
+    assert report["partition"] == "conditional confirmation on partially used holdout (DEV-B; calibrated on DEV-A)"
+    assert report["confirmation_classification"] == "confirmação condicional em holdout parcialmente usado (DEV-B)"
     assert report["configuration"] == "E3b-01"
     assert report["outcome"] in {"CONFIRMED", "NOT_CONFIRMED"}
     assert "Wice" not in report["common_cohorts"]
@@ -409,12 +412,14 @@ def _set_github_lock_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GITHUB_RUN_ID", "42914353626")
     monkeypatch.setenv("GITHUB_SHA", "a" * 40)
     monkeypatch.setenv("GITHUB_TOKEN", "synthetic-test-token")
+    monkeypatch.setenv("GH_TOKEN", "synthetic-fallback-token")
 
 
-def test_persistent_lock_creates_exact_single_use_ref(
+def test_persistent_lock_creates_exact_single_use_branch_ref(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _set_github_lock_environment(monkeypatch)
+    assert e3_confirm.P1_LOCK_REF == "refs/heads/p1-dev-b-confirmation-lock"
     captured = {}
 
     def fake_urlopen(request, timeout):
@@ -431,12 +436,37 @@ def test_persistent_lock_creates_exact_single_use_ref(
 
     monkeypatch.setattr(e3_confirm, "urlopen", fake_urlopen)
     _ORIGINAL_ATOMIC_LOCK_GATE()
+    assert "GITHUB_TOKEN" not in os.environ
+    assert "GH_TOKEN" not in os.environ
     assert captured == {
         "url": "https://api.github.com/repos/Ayorinha/ayorai-opensearch/git/refs",
         "method": "POST",
         "payload": {"ref": e3_confirm.P1_LOCK_REF, "sha": "a" * 40},
         "timeout": 15,
     }
+
+
+def test_persistent_lock_accepts_fallback_token_and_discards_both(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _set_github_lock_environment(monkeypatch)
+    monkeypatch.delenv("GITHUB_TOKEN")
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["authorization"] = request.get_header("Authorization")
+        return _FakeHttpResponse(
+            {
+                "ref": e3_confirm.P1_LOCK_REF,
+                "object": {"type": "commit", "sha": "a" * 40},
+            }
+        )
+
+    monkeypatch.setattr(e3_confirm, "urlopen", fake_urlopen)
+    _ORIGINAL_ATOMIC_LOCK_GATE()
+    assert captured["authorization"] == "Bearer synthetic-fallback-token"
+    assert "GITHUB_TOKEN" not in os.environ
+    assert "GH_TOKEN" not in os.environ
 
 
 def test_persistent_lock_refuses_existing_reservation(
@@ -464,14 +494,17 @@ def test_persistent_lock_refuses_existing_reservation(
         ("GITHUB_EVENT_NAME", "push"),
         ("GITHUB_RUN_ID", "invalid"),
         ("GITHUB_SHA", "not-a-commit"),
-        ("GITHUB_TOKEN", None),
+        ("NO_TOKENS", None),
     ],
 )
 def test_persistent_lock_refuses_untrusted_or_incomplete_runner_context(
     monkeypatch: pytest.MonkeyPatch, name: str, value: str | None
 ) -> None:
     _set_github_lock_environment(monkeypatch)
-    if value is None:
+    if name == "NO_TOKENS":
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+    elif value is None:
         monkeypatch.delenv(name, raising=False)
     else:
         monkeypatch.setenv(name, value)
