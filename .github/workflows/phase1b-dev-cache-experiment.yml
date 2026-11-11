@@ -1,7 +1,7 @@
 name: Phase 1b DEV — score-cache experiment
 
-# Protected maintainer dispatch only. P1 uses a separate write-scoped job so the
-# ordinary cache experiments retain read-only repository permissions.
+# Protected maintainer dispatch only. Every job remains read-only. P1 cannot reserve
+# its persistent lock until a separately reviewed, short-lived App token is provided.
 
 on:
   workflow_dispatch:
@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     permissions:
-      contents: write
+      contents: read
       actions: read
     environment: international-benchmark-maintainer-approval
     steps:
@@ -181,7 +181,6 @@ jobs:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
           EXPERIMENT: ${{ inputs.experiment }}
           CACHE_RUN_ID: ${{ inputs.cache_run_id }}
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           trap 'rm -rf /tmp/phase1b-score-cache' EXIT
