@@ -73,3 +73,33 @@ def test_p1_preflight_only_never_reads_or_decrypts_cache(monkeypatch) -> None:
     score_cache.main()
 
     assert events == ["preflight"]
+
+
+def test_p1_preflight_failure_stops_before_key_or_cache_access(monkeypatch) -> None:
+    def reject() -> None:
+        raise RuntimeError("DEC-026 authorization is missing")
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("cache access must not follow a failed P1 preflight")
+
+    monkeypatch.setattr(e3_confirm, "preflight_confirm", reject)
+    monkeypatch.setattr(score_cache, "decode_key", forbidden)
+    monkeypatch.setattr(score_cache, "decrypt_score_cache", forbidden)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "score_cache.py",
+            "--experiment",
+            "e3-confirm-dev-b",
+            "--cache",
+            "/nonexistent/cache.json",
+            "--output",
+            "/nonexistent/report.json",
+        ],
+    )
+
+    import pytest
+
+    with pytest.raises(RuntimeError, match="DEC-026 authorization"):
+        score_cache.main()
