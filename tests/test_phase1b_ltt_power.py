@@ -31,7 +31,6 @@ def test_reproduces_floors_up_to_horizon(pairs: int, p1: float, expected: int) -
     assert robust_floor(0.10, 0.05 / pairs, p1, 0.80, horizon=2500) == expected
 
 
-
 @pytest.mark.parametrize(
     ("r_max", "delta_pair", "p1", "target", "horizon"),
     [
