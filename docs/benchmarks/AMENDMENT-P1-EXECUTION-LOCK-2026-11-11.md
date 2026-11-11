@@ -15,6 +15,12 @@ A referência é uma branch técnica de bloqueio, não uma tag Git, tag de vers�
 
 A referência deverá ser criada somente após aprovação do environment `international-benchmark-maintainer-approval`. **O workflow atual mantém todos os jobs com `contents: read` e não fornece credencial de escrita à P1.** A implementação deverá permanecer bloqueada até existir um mecanismo separado, revisado e testado, que forneça `P1_LOCK_TOKEN` como token de instalação de GitHub App de curta duração, restrito ao repositório e a `contents: write`, somente ao passo que reserva a referência. O `GITHUB_TOKEN` padrão nunca será elevado nem aceito como fallback. Se o App/secrets não estiverem configurados, a reserva falha fechada. A concorrência do workflow serializa chamadas P1, mas a garantia persistente é a criação atômica da referência, não o grupo de concorrência.
 
+## 2. Pré-validação antes do acesso ao cache
+
+Antes de baixar o artefato cifrado, o workflow executa `score_cache.py --experiment e3-confirm-dev-b --preflight-only`. A mesma validação é repetida pelo CLI normal antes de ler a chave, abrir o envelope ou descriptografar qualquer byte do cache. A pré-validação consulta somente o pré-registro, o hash da matriz pública de elegibilidade, a autorização DEC-026 vinculada ao hash exato e a regra objetiva de coorte não estimável com seu avaliador result-blind.
+
+Qualquer gate ausente ou não aprovado encerra a tentativa antes do download/descriptografia. No estado atual, a regra e o avaliador não estão implementados/aprovados e a DEC-026 não autoriza a P1; portanto, a pré-validação deve falhar e nenhum cache P1 pode ser acessado.
+
 ## 2. Semântica de uso único e falhas
 
 Se aprovada, a primeira tentativa que ultrapassar todos os gates determinísticos e reservar a referência consumirá a única tentativa P1. Falha posterior, inclusive falha de infraestrutura, não autoriza nova tentativa automática nem remoção, movimentação ou recriação da referência. Uma eventual repetição exigiria nova decisão explícita e emenda aprovada pelo mantenedor antes de qualquer nova execução.
@@ -47,7 +53,7 @@ A implementação proposta correspondente:
 - usa branch ref, nunca `refs/tags`;
 - mantém todos os jobs read-only e não expõe token de escrita no workflow atual;
 - exige, para uma futura habilitação, `P1_LOCK_TOKEN` temporário e de escopo mínimo, sem fallback para `GITHUB_TOKEN`;
-- valida no workflow a classificação obrigatória e a saída agregada;
+- valida a autorização científica antes de baixar/descriptografar o cache e, depois, a classificação obrigatória e a saída agregada;
 - mantém concorrência sem cancelamento automático.
 
 **Estado:** emenda operacional proposta para revisão do mantenedor. Não é autorização de execução P1. DEV-B e TEST permanecem intocados.
