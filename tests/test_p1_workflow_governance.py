@@ -1,4 +1,4 @@
-""""Security contract tests for the stacked P1 confirmation workflow."""
+"""Security contract tests for the stacked P1 confirmation workflow."""
 
 from __future__ import annotations
 
