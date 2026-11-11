@@ -533,12 +533,9 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
         "split": "dev",
         "partition": (
             "conditional confirmation on partially used holdout "
-            "(DEV-B; calibrated on DEV-A)"
+            + "(DEV-B; calibrated on DEV-A)"
         ),
-        "confirmation_classification": (
-            "confirmação condicional em holdout parcialmente usado "
-            "(DEV-B)"
-        ),
+        "confirmation_classification": "confirmação condicional em holdout parcialmente usado (DEV-B)",
         "experiment": "e3-confirm-dev-b",
         "decision_record": "DEC-024 option B; DEC-025",
         "preregistration": "docs/benchmarks/PREREG-E3-CONFIRM-DEV-B-v0.8.md",
