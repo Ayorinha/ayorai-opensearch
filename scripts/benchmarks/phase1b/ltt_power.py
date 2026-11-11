@@ -23,7 +23,20 @@ import json
 import math
 
 
+def _require_probability(name: str, value: float) -> None:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or not 0.0 < value < 1.0
+    ):
+        raise ValueError(f"{name} must be finite and strictly between 0 and 1")
+
+
 def _pmf_row(n: int, p: float) -> list[float]:
+    if isinstance(n, bool) or not isinstance(n, int) or n < 0:
+        raise ValueError("n must be a non-negative integer")
+    _require_probability("p", p)
     log_p, log_q = math.log(p), math.log1p(-p)
     return [
         math.exp(
@@ -40,6 +53,10 @@ def _pmf_row(n: int, p: float) -> list[float]:
 def critical_errors(n: int, r_max: float, delta_pair: float) -> int:
     """Largest k with P(Bin(n, r_max) <= k) <= delta_pair; -1 if none."""
 
+    if isinstance(n, bool) or not isinstance(n, int) or n < 1:
+        raise ValueError("n must be a positive integer")
+    _require_probability("r_max", r_max)
+    _require_probability("delta_pair", delta_pair)
     cumulative = 0.0
     k = -1
     for i, mass in enumerate(_pmf_row(n, r_max)):
@@ -51,6 +68,7 @@ def critical_errors(n: int, r_max: float, delta_pair: float) -> int:
 
 
 def power(n: int, r_max: float, delta_pair: float, p1: float) -> float:
+    _require_probability("p1", p1)
     k = critical_errors(n, r_max, delta_pair)
     return sum(_pmf_row(n, p1)[: k + 1]) if k >= 0 else 0.0
 
@@ -58,6 +76,14 @@ def power(n: int, r_max: float, delta_pair: float, p1: float) -> float:
 def robust_floor(
     r_max: float, delta_pair: float, p1: float, target: float, horizon: int = 3000
 ) -> int:
+    _require_probability("r_max", r_max)
+    _require_probability("delta_pair", delta_pair)
+    _require_probability("p1", p1)
+    _require_probability("target", target)
+    if p1 >= r_max:
+        raise ValueError("p1 must be lower than r_max for the planned alternative")
+    if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon < 1:
+        raise ValueError("horizon must be a positive integer")
     last_failure = 0
     for n in range(1, horizon + 1):
         if power(n, r_max, delta_pair, p1) < target:
@@ -76,6 +102,13 @@ def main() -> None:
     parser.add_argument("--power", type=float, default=0.8)
     parser.add_argument("--horizon", type=int, default=3000)
     args = parser.parse_args()
+    _require_probability("r_max", args.r_max)
+    _require_probability("delta_family", args.delta_family)
+    if args.pairs < 1:
+        parser.error("--pairs must be a positive integer")
+    if args.horizon < 1:
+        parser.error("--horizon must be a positive integer")
+    _require_probability("power", args.power)
     delta_pair = args.delta_family / args.pairs
     floors = {
         str(p1): robust_floor(args.r_max, delta_pair, p1, args.power, args.horizon)
