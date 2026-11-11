@@ -125,7 +125,7 @@ def test_trace_id_distinguishes_original_files_with_identical_extracted_text() -
 
 
 def test_trace_id_binds_page_boundaries_and_page_attribution() -> None:
-    claim = "O valor do título é de R$ 1.250,00."
+    claim = "O vencimento é em 10/03/2026."
     single_page = CheckDocumentInput(
         id="titulo",
         text=TITLE,
