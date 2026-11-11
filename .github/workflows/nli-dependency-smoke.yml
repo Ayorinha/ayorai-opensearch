@@ -5,6 +5,7 @@ on:
     paths:
       - "pyproject.toml"
       - ".github/workflows/nli-dependency-smoke.yml"
+      - "requirements-benchmark-pilot.txt"
   workflow_dispatch:
 
 permissions:
@@ -20,21 +21,53 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements-benchmark-pilot.txt
       - name: Install optional NLI dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev,nli]"
+          pip install -r requirements-benchmark-pilot.txt
+          pip check
       - name: Verify installed dependency versions
         run: |
           python - <<'PY'
           from importlib.metadata import version
+          import accelerate
           import google.protobuf
+          import huggingface_hub
+          import numpy as np
+          import pandas as pd
+          import pyarrow as pa
+          import pyarrow.parquet as pq
+          import psutil
+          import safetensors
           import sentencepiece
           import torch
           import transformers
 
-          for package in ("transformers", "torch", "protobuf", "sentencepiece"):
+          packages = (
+              "transformers", "torch", "protobuf", "sentencepiece",
+              "huggingface-hub", "pyarrow", "pandas", "numpy", "psutil",
+              "accelerate", "safetensors",
+          )
+          for package in packages:
               print(f"{package}=={version(package)}")
+
+          frame = pd.DataFrame({
+              "record_id": ["synthetic-a", "synthetic-b"],
+              "score": np.asarray([0.25, 0.75], dtype=np.float64),
+          })
+          sink = pa.BufferOutputStream()
+          pq.write_table(pa.Table.from_pandas(frame, preserve_index=False), sink)
+          restored = pq.read_table(pa.BufferReader(sink.getvalue())).to_pandas()
+          assert restored.equals(frame)
+          assert psutil.Process().memory_info().rss > 0
+          assert accelerate.__version__ and safetensors.__version__
+          assert huggingface_hub.__version__ and google.protobuf.__version__
+          print("BENCHMARK_PILOT_DEPENDENCIES_IMPORT: PASS")
+          print("PARQUET_PANDAS_NUMPY_ROUNDTRIP: PASS")
           print("NLI_OPTIONAL_DEPENDENCIES_IMPORT: PASS")
           PY
       - name: Load pinned NLI model and exercise inference
