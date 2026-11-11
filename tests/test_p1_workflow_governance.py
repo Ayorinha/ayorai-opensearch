@@ -32,6 +32,27 @@ def test_p1_workflow_separates_read_only_and_write_jobs() -> None:
     assert any(step.get("with", {}).get("persist-credentials") is False for step in p1["steps"])
 
 
+def test_p1_rejects_non_main_dispatch_before_checkout_or_secrets() -> None:
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["p1-confirmation"]["steps"]
+    guard = steps[0]
+    assert guard["name"] == "Require canonical protected-main dispatch before checkout"
+    assert guard["shell"] == "bash"
+    assert '[[ "$GITHUB_REPOSITORY" == "Ayorinha/ayorai-opensearch" ]]' in guard["run"]
+    assert '[[ "$GITHUB_REF" == "refs/heads/main" ]]' in guard["run"]
+    assert '[[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]' in guard["run"]
+    assert '[[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ ]]' in guard["run"]
+    assert '[[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]' in guard["run"]
+    assert "env" not in guard
+    assert steps[1]["uses"].startswith("actions/checkout@")
+    decrypt = next(
+        step for step in steps
+        if step.get("name") == "Decrypt cache and run P1 with a one-shot lock"
+    )
+    assert steps.index(decrypt) > 1
+    assert "PHASE1B_ARTIFACT_ENCRYPTION_KEY" in decrypt["env"]
+
+
 def test_p1_global_single_flight_and_non_p1_ref_scoping() -> None:
     workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     concurrency = workflow["concurrency"]
