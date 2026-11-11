@@ -124,6 +124,37 @@ def test_trace_id_distinguishes_original_files_with_identical_extracted_text() -
     assert first_result.trace_id != second_result.trace_id
 
 
+def test_trace_id_binds_page_boundaries_and_page_attribution() -> None:
+    claim = "O valor do título é de R$ 1.250,00."
+    single_page = CheckDocumentInput(
+        id="titulo",
+        text=TITLE,
+        media_type="application/pdf",
+        page_starts=(0,),
+        source_sha256="c" * 64,
+    )
+    two_pages = CheckDocumentInput(
+        id="titulo",
+        text=TITLE,
+        media_type="application/pdf",
+        page_starts=(0, 10),
+        source_sha256="c" * 64,
+    )
+
+    first = check_documents([single_page], claims=[claim])
+    second = check_documents([two_pages], claims=[claim])
+
+    assert first.documents[0]["sha256"] == second.documents[0]["sha256"]
+    assert first.documents[0]["source_sha256"] == second.documents[0]["source_sha256"]
+    assert first.trace_id != second.trace_id
+    assert first.engine["trace_identity"] == "document-check-trace-2"
+    assert second.engine["trace_identity"] == "document-check-trace-2"
+    assert first.results[0].evidence
+    assert second.results[0].evidence
+    assert {item.page for item in first.results[0].evidence} == {1}
+    assert {item.page for item in second.results[0].evidence} == {2}
+
+
 def test_passages_have_exact_offsets() -> None:
     for passage in split_passages(DOC):
         assert TITLE[passage.start : passage.end] == passage.text
