@@ -8,6 +8,7 @@ All public API contract changes are additive unless explicitly identified otherw
 - Changing the source file or page layout therefore produces a different trace ID even when extracted text is identical. This prevents distinct source/evidence provenance from sharing one trace identifier.
 - The response engine metadata identifies this format as `fields-trace-2`.
 - No request or response fields were added or removed; consumers should treat `trace_id` as an opaque identifier and must not assume IDs remain equal across the previous trace format.
+- `trace_id` is a provenance/diagnostic identifier, not a business key, authorization token or digital signature; consumers should not use it as a substitute for document identity or evidence verification.
 
 ## 2026-11-08 — /v1/fields and /v1/check hardening (field-check-2, document-check-2)
 
