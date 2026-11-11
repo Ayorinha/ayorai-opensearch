@@ -10,7 +10,7 @@ WORKFLOW = Path(".github/workflows/phase1b-dev-cache-experiment.yml")
 APPROVAL_ENVIRONMENT = "international-benchmark-maintainer-approval"
 
 
-def test_p1_workflow_separates_read_only_and_write_jobs() -> None:
+def test_all_p1_workflow_jobs_remain_read_only() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     workflow = yaml.safe_load(text)
     triggers = workflow.get("on", workflow.get(True))
@@ -29,8 +29,9 @@ def test_p1_workflow_separates_read_only_and_write_jobs() -> None:
 
     p1 = jobs["p1-confirmation"]
     assert p1["if"] == "inputs.experiment == 'e3-confirm-dev-b'"
-    assert p1["permissions"] == {"contents": "write", "actions": "read"}
+    assert p1["permissions"] == {"contents": "read", "actions": "read"}
     assert p1["environment"] == APPROVAL_ENVIRONMENT
+    assert all(job["permissions"].get("contents") != "write" for job in jobs.values())
     assert any(step.get("with", {}).get("persist-credentials") is False for step in p1["steps"])
 
 
@@ -88,8 +89,8 @@ def test_p1_is_manual_approval_gated_and_does_not_run_inference() -> None:
         for step in p1["steps"]
         if step.get("name") == "Decrypt cache and run P1 with a one-shot lock"
     )
-    assert "GH_TOKEN" in lock_step["env"]
+    assert "GH_TOKEN" not in lock_step["env"]
+    assert "P1_LOCK_TOKEN" not in lock_step["env"]
     run = lock_step["run"]
-    assert "unset GH_TOKEN" in run
-    assert run.index("score_cache.py") < run.index("unset GH_TOKEN")
-    assert run.index("unset GH_TOKEN") < run.index("python - <<'PY'")
+    assert "unset GH_TOKEN" not in run
+    assert "P1_LOCK_TOKEN" not in run
