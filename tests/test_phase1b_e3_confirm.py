@@ -419,8 +419,7 @@ def _set_github_lock_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
     monkeypatch.setenv("GITHUB_RUN_ID", "42914353626")
     monkeypatch.setenv("GITHUB_SHA", "a" * 40)
-    monkeypatch.setenv("GITHUB_TOKEN", "synthetic-test-token")
-    monkeypatch.setenv("GH_TOKEN", "synthetic-fallback-token")
+    monkeypatch.setenv("P1_LOCK_TOKEN", "synthetic-short-lived-app-token")
 
 
 def test_persistent_lock_creates_exact_single_use_branch_ref(
@@ -444,8 +443,7 @@ def test_persistent_lock_creates_exact_single_use_branch_ref(
 
     monkeypatch.setattr(e3_confirm, "urlopen", fake_urlopen)
     _ORIGINAL_ATOMIC_LOCK_GATE()
-    assert "GITHUB_TOKEN" not in os.environ
-    assert "GH_TOKEN" not in os.environ
+    assert "P1_LOCK_TOKEN" not in os.environ
     assert captured == {
         "url": "https://api.github.com/repos/Ayorinha/ayorai-opensearch/git/refs",
         "method": "POST",
@@ -454,27 +452,22 @@ def test_persistent_lock_creates_exact_single_use_branch_ref(
     }
 
 
-def test_persistent_lock_accepts_fallback_token_and_discards_both(
+def test_persistent_lock_never_uses_legacy_github_tokens(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _set_github_lock_environment(monkeypatch)
-    monkeypatch.delenv("GITHUB_TOKEN")
-    captured = {}
+    monkeypatch.delenv("P1_LOCK_TOKEN")
+    monkeypatch.setenv("GITHUB_TOKEN", "synthetic-read-only-token")
+    monkeypatch.setenv("GH_TOKEN", "synthetic-legacy-token")
 
-    def fake_urlopen(request, timeout):
-        captured["authorization"] = request.get_header("Authorization")
-        return _FakeHttpResponse(
-            {
-                "ref": e3_confirm.P1_LOCK_REF,
-                "object": {"type": "commit", "sha": "a" * 40},
-            }
-        )
+    def forbidden_urlopen(request, timeout):
+        raise AssertionError("legacy GitHub tokens must never be used for lock creation")
 
-    monkeypatch.setattr(e3_confirm, "urlopen", fake_urlopen)
-    _ORIGINAL_ATOMIC_LOCK_GATE()
-    assert captured["authorization"] == "Bearer synthetic-fallback-token"
-    assert "GITHUB_TOKEN" not in os.environ
-    assert "GH_TOKEN" not in os.environ
+    monkeypatch.setattr(e3_confirm, "urlopen", forbidden_urlopen)
+    with pytest.raises(RuntimeError, match="P1_LOCK_TOKEN"):
+        _ORIGINAL_ATOMIC_LOCK_GATE()
+    assert os.environ["GITHUB_TOKEN"] == "synthetic-read-only-token"
+    assert os.environ["GH_TOKEN"] == "synthetic-legacy-token"
 
 
 def test_persistent_lock_refuses_existing_reservation(
@@ -510,6 +503,7 @@ def test_persistent_lock_refuses_untrusted_or_incomplete_runner_context(
 ) -> None:
     _set_github_lock_environment(monkeypatch)
     if name == "NO_TOKENS":
+        monkeypatch.delenv("P1_LOCK_TOKEN", raising=False)
         monkeypatch.delenv("GITHUB_TOKEN", raising=False)
         monkeypatch.delenv("GH_TOKEN", raising=False)
     elif value is None:
