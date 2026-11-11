@@ -1,5 +1,5 @@
-from pathlib import Path
 import re
+from pathlib import Path
 
 import yaml
 
@@ -19,7 +19,9 @@ def test_python_dependency_audit_fails_on_incomplete_collection() -> None:
 def test_high_severity_dependency_review_is_a_required_gate() -> None:
     workflow = yaml.safe_load(DEPENDENCY_REVIEW_WORKFLOW.read_text(encoding="utf-8"))
     job = workflow["jobs"]["dependency-review"]
-    review_step = next(step for step in job["steps"] if step.get("name") == "Review dependency changes")
+    review_step = next(
+        step for step in job["steps"] if step.get("name") == "Review dependency changes"
+    )
 
     assert job.get("continue-on-error", False) is False
     assert review_step["with"]["fail-on-severity"] == "high"
