@@ -215,6 +215,36 @@ def test_api_fields_trace_id_binds_document_id() -> None:
     assert first.json()["trace_id"] != second.json()["trace_id"]
 
 
+
+def test_api_fields_trace_id_binds_submitted_field_specification() -> None:
+    client = TestClient(app)
+    document = {"id": "same-document", "text": "Valor: R$ 10,00"}
+    base_fields = [{"name": "valor", "type": "money", "value": "10,00", "labels": ["Valor"]}]
+
+    baseline = client.post(
+        "/v1/fields", json={"document": document, "fields": base_fields}
+    )
+    changed_value = client.post(
+        "/v1/fields",
+        json={
+            "document": document,
+            "fields": [{"name": "valor", "type": "money", "value": "11,00", "labels": ["Valor"]}],
+        },
+    )
+    changed_label = client.post(
+        "/v1/fields",
+        json={
+            "document": document,
+            "fields": [{"name": "valor", "type": "money", "value": "10,00", "labels": ["Montante"]}],
+        },
+    )
+
+    assert baseline.status_code == changed_value.status_code == changed_label.status_code == 200
+    baseline_trace = baseline.json()["trace_id"]
+    assert changed_value.json()["trace_id"] != baseline_trace
+    assert changed_label.json()["trace_id"] != baseline_trace
+
+
 def test_api_fields_rejects_duplicate_names() -> None:
     fields = _fields()[:1] * 2
     response = TestClient(app).post(
