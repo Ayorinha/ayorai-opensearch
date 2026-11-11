@@ -44,11 +44,13 @@ def test_experiment_workflow_is_manual_gated_and_inference_free() -> None:
         assert any(step.get("with", {}).get("persist-credentials") is False for step in p1["steps"])
         steps = p1["steps"]
         preflight = next(
-            i for i, step in enumerate(steps)
+            i
+            for i, step in enumerate(steps)
             if step.get("name") == "Require P1 scientific authorization before cache download"
         )
         download = next(
-            i for i, step in enumerate(steps)
+            i
+            for i, step in enumerate(steps)
             if step.get("uses", "").startswith("actions/download-artifact@")
         )
         assert preflight < download
@@ -61,6 +63,7 @@ def test_experiment_workflow_is_manual_gated_and_inference_free() -> None:
         assert forbidden not in text
     assert "run-id: ${{ inputs.cache_run_id }}" in text
     assert "replay_matches_source" in text
+
 
 def test_producers_upload_only_the_encrypted_cache() -> None:
     for path in PRODUCERS:
