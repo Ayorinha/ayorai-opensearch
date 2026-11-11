@@ -368,6 +368,20 @@ def test_refuses_until_non_estimable_rule_is_implemented(
         _ORIGINAL_NON_ESTIMABLE_GATE()
 
 
+def test_non_estimable_gate_blocks_before_consuming_persistent_lock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lock_calls: list[str] = []
+    monkeypatch.setattr(
+        e3_confirm,
+        "_require_persistent_atomic_lock",
+        lambda: lock_calls.append("reserved"),
+    )
+    with pytest.raises(RuntimeError, match="non-estimable-cohort amendment"):
+        run_confirm(_cache(_rows(NOISE)))
+    assert lock_calls == []
+
+
 def test_refuses_without_persistent_atomic_execution_lock() -> None:
     with pytest.raises(RuntimeError, match="P1"):
         _ORIGINAL_ATOMIC_LOCK_GATE()
