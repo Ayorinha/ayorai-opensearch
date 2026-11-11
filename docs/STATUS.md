@@ -1,22 +1,25 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-08 — after merge of PR #502
+Updated: 2026-11-11 — after merges of PRs #515, #513 and #518
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-11-08
+## Estado atual — 2026-11-11
 
-- **E3 exploratório:** PR #497 (implementação E3) e PR #501 (aprovação para publicação exploratória) foram mescladas. A PR #503 publicou o relatório exploratório E3b-01.
-- **Resultado publicado em DEV-A:** E3b-01 = **0.7611** versus FactCG = **0.7475**. Resultado exclusivamente exploratório, não confirmatório e **não comparável ao leaderboard**. Não representa desempenho externo, produção ou resultado de TEST.
-- **Resiliência do CI:** PR #502 mesclada após atualização da branch com a main e conclusão bem-sucedida dos checks.
-- **P1 — confirmação em DEV-B:** pré-registro e implementação nas PRs #504 e #505 permanecem em revisão, sem aprovação e sem execução autorizada.
-- **P2/P3 — propostas documentais:** matriz de elegibilidade derivada do ledger A4 e protocolo MiniCheck-Flan-T5-Large permanecem em Draft nas PRs #506 e #507. Não houve download de pesos nem inferência; as células atualmente não verificadas ou contaminadas permanecem bloqueadas.
-- **RGC:** protocolo permanece **[PROPOSTO]**, não congelado. Não há resultado de benchmark RGC em português publicado.
-- **Limites públicos:** o projeto não é apresentado como certificado, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só. O resultado E3 é exploratório; hashes verificam integridade de artefatos, não a veracidade do conteúdo.
+- **Main de referência:** `bd3d262855215734ebba657d5ac6728d97350a4b`. A atualização desta página produzirá um novo SHA; este valor identifica a base revisada.
+- **API documental:** PR #515 foi mesclada após 21/21 checks. `/v1/fields` agora usa `fields-trace-2`, vinculando ID do documento, tipo de mídia, hash do texto extraído, hash da origem e limites de página. A PR #526 documenta a semântica no changelog da API; está pronta para revisão, com checks no novo HEAD ainda pendentes.
+- **Governança:** PR #513 foi mesclada após 20/20 checks. Integrações automatizadas exigem autorização escrita e específica do mantenedor, revisão concluída, checks obrigatórios verdes no HEAD final e preservação do escopo/artefatos protegidos.
+- **CodeQL:** PR #518 foi mesclada após 20/20 checks, atualizando CodeQL Action para v4.39.3 com SHA imutável.
+- **E3 exploratório:** PRs #497 e #501 foram mescladas; a PR #503 publicou E3b-01. Resultado DEV-A = **0.7611** versus FactCG = **0.7475**. É exclusivamente exploratório, não confirmatório, não comparável ao leaderboard e não representa desempenho de TEST ou produção.
+- **P1 — confirmação em DEV-B:** PR #508 (cache v2) foi mesclada. PRs #504 (pré-registro/DEC-025), #505 (implementação confirmatória) e #517 (workflow/trava de uso único) continuam em Draft. A P1 permanece bloqueada: DEC-026 não aprovada, 0/55 células liberadas na reconciliação atual, exposição de seleção do FactCG não resolvida, regra objetiva de coorte não estimável e avaliador result-blind não implementados/aprovados, pré-registro sem aprovação formal. Nenhum dispatch, cache decrypt, DEV-B, TEST ou benchmark foi executado.
+- **P2/P3 — propostas documentais:** PR #509 (DEC-026 e reconciliação de elegibilidade) e PR #507 (protocolo MiniCheck-Flan-T5-Large) permanecem Draft. Não houve download de pesos nem inferência. Nenhuma proposta altera automaticamente a matriz ou libera células.
+- **RGC PT-BR:** protocolo permanece **[PROPOSTO]**, não congelado; não há resultado de benchmark RGC publicado. PR #514 continua Draft com auditoria documental da identidade de componentes. Os bloqueios metodológicos e humanos descritos abaixo continuam válidos; revisão automatizada não substitui anotação ou revisão humana independente.
+- **Dependências e CI:** PRs #519–#524 atualizam dependências e ações. PR #521 (PyArrow 26.0.1) é prioridade de segurança por corrigir a vulnerabilidade no Brotli empacotado. PR #525 adiciona smoke de dependências NLI/Parquet e compatibilidade de artefatos v7→v8: o round-trip de artefato, instalação dos pins e inferência NLI sintética passaram; a suíte completa e o CI principal ainda estão em execução. Nenhuma dessas PRs deve ser integrada sem checks no HEAD atualizado.
+- **Limites públicos:** o projeto não é apresentado como certificado, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só. Hashes verificam integridade de artefatos, não a veracidade do conteúdo.
 
-> As seções seguintes preservam snapshots históricos. Datas, SHAs e estados registrados nelas descrevem exclusivamente o momento da respectiva captura e não substituem o estado atual acima.
+> As seções seguintes preservam snapshots históricos. Datas, SHAs e estados nelas registrados descrevem exclusivamente o momento da respectiva captura e não substituem o estado atual acima.
 
 ## Snapshot — 2026-10-25
 
