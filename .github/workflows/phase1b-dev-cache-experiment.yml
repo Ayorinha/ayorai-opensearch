@@ -20,8 +20,12 @@ on:
           - e3-confirm-dev-b
         default: replay-calibration-v2
 
+permissions:
+  contents: read
+  actions: read
+
 concurrency:
-  group: ${{ inputs.experiment == 'e3-confirm-dev-b' && 'p1-dev-b-confirmation-single-flight' || format('phase1b-cache-{0}-{1}', inputs.cache_run_id, inputs.experiment) }}
+  group: ${{ inputs.experiment == 'e3-confirm-dev-b' && 'p1-dev-b-confirmation-single-flight' || format('phase1b-cache-{0}-{1}-{2}', github.ref, inputs.cache_run_id, inputs.experiment) }}
   cancel-in-progress: false
 
 jobs:
