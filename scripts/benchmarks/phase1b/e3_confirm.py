@@ -126,7 +126,9 @@ def _require_persistent_atomic_lock() -> None:
     """
     repository = os.environ.get("GITHUB_REPOSITORY")
     commit_sha = os.environ.get("GITHUB_SHA")
-    token = os.environ.pop("GITHUB_TOKEN", None) or os.environ.pop("GH_TOKEN", None)
+    token = os.environ.pop("GITHUB_TOKEN", None)
+    fallback_token = os.environ.pop("GH_TOKEN", None)
+    token = token or fallback_token
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise RuntimeError("P1 requires the protected GitHub Actions runner")
     if os.environ.get("GITHUB_REF") != "refs/heads/main":
