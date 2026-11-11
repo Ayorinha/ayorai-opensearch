@@ -5,8 +5,12 @@ Este arquivo estabelece limites para agentes automatizados que contribuam com es
 ## 1. Autoridade
 
 - Anderson Leon Ayora, mantenedor, é a única autoridade sobre merges, releases, tags, publicações e decisões metodológicas ou de governança.
-- Agentes automatizados não mesclam PRs, não fecham PRs de terceiros, não criam tags nem publicam versões.
-- Parar e pedir decisão do mantenedor quando a tarefa exigir decisão humana, anotação isolada, congelamento de protocolo, mudança de contrato, mudança de escopo ou autorização de merge.
+- Agentes automatizados podem mesclar uma PR somente após autorização explícita, escrita e individual do mantenedor para aquela PR. A autorização não presume aprovação técnica nem substitui revisão independente quando exigida.
+- Antes do merge, verificar no SHA exato: revisão técnica concluída; todos os checks obrigatórios verdes; ausência de conflitos e comentários bloqueadores; dependências e ordem de integração satisfeitas; diff ainda contido no escopo autorizado; e preservação de todos os artefatos protegidos e decisões metodológicas.
+- Se houver novo commit, check falho/pendente, conflito, comentário bloqueador, alteração de dependência ou mudança de escopo após a autorização, a permissão fica suspensa. Revalidar todos os gates e obter nova confirmação explícita do mantenedor antes de qualquer merge.
+- É proibido contornar, desabilitar ou enfraquecer branch protection, rulesets, required reviews ou checks para viabilizar merge.
+- A autorização para uma PR não autoriza merges de outras PRs, fechamento de PRs de terceiros, releases, tags ou publicações.
+- Parar e pedir decisão do mantenedor quando a tarefa exigir decisão humana, anotação isolada, congelamento de protocolo, mudança de contrato ou mudança de escopo.
 
 ## 2. Identidade do projeto e proibição de autopromoção
 
