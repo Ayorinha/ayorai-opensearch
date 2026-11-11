@@ -77,4 +77,7 @@ def test_p1_is_manual_approval_gated_and_does_not_run_inference() -> None:
         if step.get("name") == "Decrypt cache and run P1 with a one-shot lock"
     )
     assert "GH_TOKEN" in lock_step["env"]
-    assert "unset GH_TOKEN" in lock_step["run"]
+    run = lock_step["run"]
+    assert "unset GH_TOKEN" in run
+    assert run.index("score_cache.py") < run.index("unset GH_TOKEN")
+    assert run.index("unset GH_TOKEN") < run.index("python - <<'PY'")
