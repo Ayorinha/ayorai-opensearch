@@ -1,10 +1,10 @@
 # Direct, exact pins for the DEV throughput pilot (Python 3.12).
 # PyTorch CPU is installed separately from the official CPU wheel index in the workflow.
-huggingface-hub==0.34.4
+huggingface-hub==1.33.0
 transformers==5.22.2
 pyarrow==21.0.0
 pandas==2.3.2
 numpy==2.2.6
 psutil==7.0.0
 accelerate==1.10.1
-safetensors==0.6.2
+safetensors==0.8.0
