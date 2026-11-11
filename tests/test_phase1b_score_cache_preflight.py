@@ -6,6 +6,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 from scripts.benchmarks.phase1b import e3_confirm, score_cache
 
 
@@ -98,8 +100,6 @@ def test_p1_preflight_failure_stops_before_key_or_cache_access(monkeypatch) -> N
             "/nonexistent/report.json",
         ],
     )
-
-    import pytest
 
     with pytest.raises(RuntimeError, match="DEC-026 authorization"):
         score_cache.main()
