@@ -238,6 +238,55 @@ def test_api_fields_trace_id_isolates_page_boundary_identity(monkeypatch) -> Non
     assert second_body["results"][0]["page"] == 2
 
 
+@pytest.mark.parametrize(
+    ("first_media_type", "second_media_type", "first_source_sha", "second_source_sha"),
+    [
+        ("application/pdf", "application/pdf", "a" * 64, "b" * 64),
+        ("application/pdf", "text/plain", "c" * 64, "c" * 64),
+    ],
+)
+def test_api_fields_trace_id_binds_source_metadata_independently(
+    monkeypatch, first_media_type, second_media_type, first_source_sha, second_source_sha
+) -> None:
+    import ayorai_attractor.api.app as api_module
+
+    metadata = iter(
+        (
+            (first_media_type, first_source_sha),
+            (second_media_type, second_source_sha),
+        )
+    )
+
+    def fake_ingest(*, text, content_base64, media_type):
+        resolved_media_type, source_sha256 = next(metadata)
+        return IngestedDocument(
+            text="Valor: R$ 10,00",
+            media_type=resolved_media_type,
+            page_starts=(0,),
+            source_sha256=source_sha256,
+        )
+
+    monkeypatch.setattr(api_module, "ingest", fake_ingest)
+    client = TestClient(app)
+    body = {
+        "document": {"id": "same-document", "text": "Valor: R$ 10,00"},
+        "fields": [{"name": "valor", "type": "money", "value": "10,00", "labels": ["Valor"]}],
+    }
+
+    first = client.post("/v1/fields", json=body)
+    second = client.post("/v1/fields", json=body)
+
+    assert first.status_code == second.status_code == 200
+    first_body, second_body = first.json(), second.json()
+    assert first_body["document"]["sha256"] == second_body["document"]["sha256"]
+    assert first_body["document"]["pages"] == second_body["document"]["pages"]
+    assert first_body["trace_id"] != second_body["trace_id"]
+    assert first_body["document"]["media_type"] == first_media_type
+    assert second_body["document"]["media_type"] == second_media_type
+    assert first_body["document"]["source_sha256"] == first_source_sha
+    assert second_body["document"]["source_sha256"] == second_source_sha
+
+
 def test_api_fields_trace_id_binds_document_id() -> None:
     client = TestClient(app)
     fields = _fields()
