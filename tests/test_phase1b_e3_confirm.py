@@ -398,6 +398,7 @@ def _set_github_lock_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GITHUB_RUN_ID", "42914353626")
     monkeypatch.setenv("GITHUB_SHA", "a" * 40)
     monkeypatch.setenv("GITHUB_TOKEN", "synthetic-test-token")
+    monkeypatch.setenv("GH_TOKEN", "synthetic-fallback-token")
 
 
 def test_persistent_lock_creates_exact_single_use_branch_ref(
@@ -422,6 +423,7 @@ def test_persistent_lock_creates_exact_single_use_branch_ref(
     monkeypatch.setattr(e3_confirm, "urlopen", fake_urlopen)
     _ORIGINAL_ATOMIC_LOCK_GATE()
     assert "GITHUB_TOKEN" not in os.environ
+    assert "GH_TOKEN" not in os.environ
     assert captured == {
         "url": "https://api.github.com/repos/Ayorinha/ayorai-opensearch/git/refs",
         "method": "POST",
