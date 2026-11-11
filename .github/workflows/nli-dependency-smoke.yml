@@ -30,6 +30,8 @@ jobs:
           pip install -e ".[dev,nli]"
           pip install -r requirements-benchmark-pilot.txt
           pip check
+      - name: Audit the complete optional NLI and benchmark dependency environment
+        run: pip-audit
       - name: Verify installed dependency versions
         run: |
           python - <<'PY'
