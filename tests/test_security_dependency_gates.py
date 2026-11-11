@@ -26,5 +26,5 @@ def test_high_severity_dependency_review_is_a_required_gate() -> None:
     assert job.get("continue-on-error", False) is False
     assert review_step["with"]["fail-on-severity"] == "high"
     assert review_step["with"]["warn-only"] is False
-    assert re.search(r"@[0-9a-f]{40}(?:\\s|$)", review_step["uses"])
+    assert re.search(r"@[0-9a-f]{40}(?:\s|$)", review_step["uses"])
     assert workflow["permissions"] == {"contents": "read"}
