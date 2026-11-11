@@ -397,7 +397,7 @@ def _set_github_lock_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GITHUB_TOKEN", "synthetic-test-token")
 
 
-def test_persistent_lock_creates_exact_single_use_ref(
+def test_persistent_lock_creates_exact_single_use_branch_ref(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _set_github_lock_environment(monkeypatch)
