@@ -29,3 +29,21 @@ def test_critical_errors_respects_level() -> None:
 )
 def test_reproduces_floors_up_to_horizon(pairs: int, p1: float, expected: int) -> None:
     assert robust_floor(0.10, 0.05 / pairs, p1, 0.80, horizon=2500) == expected
+
+
+
+@pytest.mark.parametrize(
+    ("r_max", "delta_pair", "p1", "target", "horizon"),
+    [
+        (0.0, 0.05, 0.03, 0.80, 100),
+        (0.10, 0.0, 0.03, 0.80, 100),
+        (0.10, 0.05, 0.10, 0.80, 100),
+        (0.10, 0.05, 0.03, 1.0, 100),
+        (0.10, 0.05, 0.03, 0.80, 0),
+    ],
+)
+def test_rejects_invalid_planning_inputs(
+    r_max: float, delta_pair: float, p1: float, target: float, horizon: int
+) -> None:
+    with pytest.raises(ValueError):
+        robust_floor(r_max, delta_pair, p1, target, horizon)
