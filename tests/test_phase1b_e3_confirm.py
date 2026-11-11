@@ -432,6 +432,29 @@ def test_persistent_lock_creates_exact_single_use_branch_ref(
     }
 
 
+def test_persistent_lock_accepts_fallback_token_and_discards_both(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _set_github_lock_environment(monkeypatch)
+    monkeypatch.delenv("GITHUB_TOKEN")
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["authorization"] = request.get_header("Authorization")
+        return _FakeHttpResponse(
+            {
+                "ref": e3_confirm.P1_LOCK_REF,
+                "object": {"type": "commit", "sha": "a" * 40},
+            }
+        )
+
+    monkeypatch.setattr(e3_confirm, "urlopen", fake_urlopen)
+    _ORIGINAL_ATOMIC_LOCK_GATE()
+    assert captured["authorization"] == "Bearer synthetic-fallback-token"
+    assert "GITHUB_TOKEN" not in os.environ
+    assert "GH_TOKEN" not in os.environ
+
+
 def test_persistent_lock_refuses_existing_reservation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -457,14 +480,17 @@ def test_persistent_lock_refuses_existing_reservation(
         ("GITHUB_EVENT_NAME", "push"),
         ("GITHUB_RUN_ID", "invalid"),
         ("GITHUB_SHA", "not-a-commit"),
-        ("GITHUB_TOKEN", None),
+        ("NO_TOKENS", None),
     ],
 )
 def test_persistent_lock_refuses_untrusted_or_incomplete_runner_context(
     monkeypatch: pytest.MonkeyPatch, name: str, value: str | None
 ) -> None:
     _set_github_lock_environment(monkeypatch)
-    if value is None:
+    if name == "NO_TOKENS":
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+    elif value is None:
         monkeypatch.delenv(name, raising=False)
     else:
         monkeypatch.setenv(name, value)
