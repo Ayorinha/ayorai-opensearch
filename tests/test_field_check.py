@@ -229,9 +229,7 @@ def test_api_fields_trace_id_isolates_page_boundary_identity(monkeypatch) -> Non
     assert first.status_code == second.status_code == 200
     first_body, second_body = first.json(), second.json()
     assert first_body["document"]["sha256"] == second_body["document"]["sha256"]
-    assert (
-        first_body["document"]["source_sha256"] == second_body["document"]["source_sha256"]
-    )
+    assert first_body["document"]["source_sha256"] == second_body["document"]["source_sha256"]
     assert first_body["document"]["media_type"] == second_body["document"]["media_type"]
     assert first_body["trace_id"] != second_body["trace_id"]
     assert first_body["results"][0]["page"] == 1
