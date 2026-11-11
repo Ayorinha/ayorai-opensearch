@@ -21,13 +21,13 @@ Antes de baixar o artefato cifrado, o workflow executa `score_cache.py --experim
 
 Qualquer gate ausente ou não aprovado encerra a tentativa antes do download/descriptografia. No estado atual, a regra e o avaliador não estão implementados/aprovados e a DEC-026 não autoriza a P1; portanto, a pré-validação deve falhar e nenhum cache P1 pode ser acessado.
 
-## 2. Semântica de uso único e falhas
+## 3. Semântica de uso único e falhas
 
 Se aprovada, a primeira tentativa que ultrapassar todos os gates determinísticos e reservar a referência consumirá a única tentativa P1. Falha posterior, inclusive falha de infraestrutura, não autoriza nova tentativa automática nem remoção, movimentação ou recriação da referência. Uma eventual repetição exigiria nova decisão explícita e emenda aprovada pelo mantenedor antes de qualquer nova execução.
 
 Se aprovada, esta regra mais conservadora substituirá a permissão de repetição por falha de infraestrutura descrita na seção 6 do pré-registro. Não há mecanismo de reset automático ou manual implícito.
 
-## 3. Limites que permanecem inalterados
+## 4. Limites que permanecem inalterados
 
 Esta proposta de emenda:
 - não aprova o pré-registro P1 nem adiciona a linha de aprovação exigida pelo código;
@@ -38,7 +38,7 @@ Esta proposta de emenda:
 
 A opção `e3-confirm-dev-b` no workflow apenas torna a rota operacional explícita. Os gates científicos continuam fail-closed e devem ser aprovados separadamente pelo mantenedor.
 
-## 4. Proteção administrativa da referência
+## 5. Proteção administrativa da referência
 
 Antes de qualquer futura execução autorizada, o mantenedor deve configurar e verificar, no GitHub, dois controles administrativos independentes:
 
@@ -47,7 +47,7 @@ Antes de qualquer futura execução autorizada, o mantenedor deve configurar e v
 
 A proteção administrativa não é criada por esta alteração de código e não se presume ativa. Antes de qualquer execução, deve haver evidência verificável de que o environment restringe a branch de origem e de que o ruleset impede atualização/exclusão sem bloquear a criação inicial. Sem essas evidências, a trava não deve ser considerada resistente a dispatch indevido ou reset administrativo.
 
-## 5. Evidência e estado
+## 6. Evidência e estado
 
 A implementação proposta correspondente:
 - usa branch ref, nunca `refs/tags`;
