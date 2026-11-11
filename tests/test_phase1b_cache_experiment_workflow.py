@@ -20,8 +20,23 @@ def test_experiment_workflow_is_manual_gated_and_inference_free() -> None:
     triggers = workflow.get("on", workflow.get(True))
     assert set(triggers) == {"workflow_dispatch"}
     assert workflow["permissions"] == {"contents": "read", "actions": "read"}
-    assert set(workflow["jobs"]) == {"experiment"}
-    assert workflow["jobs"]["experiment"]["environment"] == APPROVAL_ENVIRONMENT
+    assert set(workflow["jobs"]) == {"experiment-read-only", "p1-confirmation"}
+
+    read_only = workflow["jobs"]["experiment-read-only"]
+    assert read_only["if"] == "inputs.experiment != 'e3-confirm-dev-b'"
+    assert read_only["permissions"] == {"contents": "read", "actions": "read"}
+    assert read_only["environment"] == APPROVAL_ENVIRONMENT
+
+    p1 = workflow["jobs"]["p1-confirmation"]
+    assert p1["if"] == "inputs.experiment == 'e3-confirm-dev-b'"
+    assert p1["permissions"] == {"contents": "write", "actions": "read"}
+    assert p1["environment"] == APPROVAL_ENVIRONMENT
+    assert workflow["concurrency"]["cancel-in-progress"] is False
+    assert any(
+        step.get("with", {}).get("persist-credentials") is False
+        for step in p1["steps"]
+    )
+
     for forbidden in ("run_shard.py", "fetch_dev.py", "--split test"):
         assert forbidden not in text
     assert "run-id: ${{ inputs.cache_run_id }}" in text
