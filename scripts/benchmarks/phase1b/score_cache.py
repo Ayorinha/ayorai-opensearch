@@ -213,10 +213,35 @@ EXPERIMENTS = {
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--cache", required=True, type=Path, help="encrypted cache envelope")
+    parser.add_argument("--cache", type=Path, help="encrypted cache envelope")
     parser.add_argument("--experiment", required=True, choices=sorted(EXPERIMENTS))
-    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--preflight-only",
+        action="store_true",
+        help="validate P1 authorization gates without reading or decrypting the score cache",
+    )
     args = parser.parse_args()
+
+    if args.preflight_only and args.experiment != "e3-confirm-dev-b":
+        parser.error("--preflight-only is available only for e3-confirm-dev-b")
+
+    if args.experiment == "e3-confirm-dev-b":
+        from scripts.benchmarks.phase1b.e3_confirm import preflight_confirm
+
+        preflight_confirm()
+
+    if args.preflight_only:
+        print(
+            json.dumps(
+                {"experiment": args.experiment, "preflight": "passed", "cache_accessed": False},
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.cache is None or args.output is None:
+        parser.error("--cache and --output are required unless --preflight-only is used")
 
     key = decode_key()
     envelope = json.loads(args.cache.read_text(encoding="utf-8"))
