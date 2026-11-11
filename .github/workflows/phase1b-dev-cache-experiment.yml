@@ -186,7 +186,6 @@ jobs:
           trap 'rm -rf /tmp/phase1b-score-cache' EXIT
           mkdir -p /tmp/phase1b-output
           python scripts/benchmarks/phase1b/score_cache.py --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json --experiment "$EXPERIMENT" --output /tmp/phase1b-output/phase1b-cache-experiment.json
-          unset GH_TOKEN
           python - <<'PY'
           import json, os
           from pathlib import Path
