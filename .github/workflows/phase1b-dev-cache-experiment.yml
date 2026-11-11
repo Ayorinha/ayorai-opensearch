@@ -1,9 +1,7 @@
 name: Phase 1b DEV — score-cache experiment
 
-# Roadmap v0.8, item A1. Runs a registered DEV experiment on the encrypted per-instance
-# score cache produced by a full DEV aggregate or re-aggregation, without new inference.
-# The cache is decrypted only inside this protected job; only aggregates are published.
-# No TEST split, no automatic trigger, maintainer dispatch and approval only.
+# Protected maintainer dispatch only. P1 uses a separate write-scoped job so the
+# ordinary cache experiments retain read-only repository permissions.
 
 on:
   workflow_dispatch:
@@ -19,16 +17,21 @@ on:
         options:
           - replay-calibration-v2
           - e3-fixed-rule-ensemble
+          - e3-confirm-dev-b
         default: replay-calibration-v2
 
-permissions:
-  contents: read
-  actions: read
+concurrency:
+  group: ${{ inputs.experiment == 'e3-confirm-dev-b' && 'p1-dev-b-confirmation-single-flight' || format('phase1b-cache-{0}-{1}', inputs.cache_run_id, inputs.experiment) }}
+  cancel-in-progress: false
 
 jobs:
-  experiment:
+  experiment-read-only:
+    if: inputs.experiment != 'e3-confirm-dev-b'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read
     environment: international-benchmark-maintainer-approval
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -40,8 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple \
-            cryptography==46.0.3 numpy==2.2.6
+          python -m pip install --index-url https://pypi.org/simple cryptography==46.0.3 numpy==2.2.6
       - name: Verify cache source run
         env:
           GH_TOKEN: ${{ github.token }}
@@ -53,12 +55,8 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-
           run = json.loads(Path("/tmp/cache-run.json").read_text())
-          allowed = {
-              ".github/workflows/phase1b-dev-full.yml",
-              ".github/workflows/phase1b-dev-full-reaggregate.yml",
-          }
+          allowed = {".github/workflows/phase1b-dev-full.yml", ".github/workflows/phase1b-dev-full-reaggregate.yml"}
           assert run["path"] in allowed, run["path"]
           assert run["head_branch"] == "main"
           assert run["event"] == "workflow_dispatch"
@@ -71,7 +69,7 @@ jobs:
           path: /tmp/phase1b-score-cache
           run-id: ${{ inputs.cache_run_id }}
           github-token: ${{ github.token }}
-      - name: Decrypt cache in protected job and run the registered experiment
+      - name: Decrypt cache and run read-only experiment
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
           EXPERIMENT: ${{ inputs.experiment }}
@@ -80,40 +78,24 @@ jobs:
           set -euo pipefail
           trap 'rm -rf /tmp/phase1b-score-cache' EXIT
           mkdir -p /tmp/phase1b-output
-          python scripts/benchmarks/phase1b/score_cache.py \
-            --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json \
-            --experiment "$EXPERIMENT" \
-            --output /tmp/phase1b-output/phase1b-cache-experiment.json
+          python scripts/benchmarks/phase1b/score_cache.py --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json --experiment "$EXPERIMENT" --output /tmp/phase1b-output/phase1b-cache-experiment.json
           python - <<'PY'
-          import json
-          import os
+          import json, os
           from pathlib import Path
-
           report = json.loads(Path("/tmp/phase1b-output/phase1b-cache-experiment.json").read_text())
           serialized = json.dumps(report, sort_keys=True)
           assert report["split"] == "dev"
           assert report["experiment"] == os.environ["EXPERIMENT"]
           assert report["instance_level_output_published"] is False
-          assert "record_id" not in serialized
-          assert "records" not in serialized
+          assert "record_id" not in serialized and "records" not in serialized
           if report["experiment"] == "replay-calibration-v2":
               assert report["replay_matches_source"] is True
           if report["experiment"] == "e3-fixed-rule-ensemble":
               assert report["partition"] == "DEV-A cross-fitted"
               assert report["decision_record"] == "DEC-024 option B"
-          provenance = {
-              "schema_version": "phase1b-dev-cache-experiment-provenance-v1",
-              "cache_run_id": os.environ["CACHE_RUN_ID"],
-              "experiment_run_id": os.environ["GITHUB_RUN_ID"],
-              "experiment_code_sha": os.environ["GITHUB_SHA"],
-              "experiment": report["experiment"],
-              "report_sha256": report["report_sha256"],
-              "manifest_sha256": report["manifest_sha256"],
-          }
-          Path("/tmp/phase1b-output/PROVENANCE.json").write_text(
-              json.dumps(provenance, indent=2, sort_keys=True) + "\n"
-          )
-          print(json.dumps(provenance, sort_keys=True))
+          provenance = {"schema_version":"phase1b-dev-cache-experiment-provenance-v1","cache_run_id":os.environ["CACHE_RUN_ID"],"experiment_run_id":os.environ["GITHUB_RUN_ID"],"experiment_code_sha":os.environ["GITHUB_SHA"],"experiment":report["experiment"],"report_sha256":report["report_sha256"],"manifest_sha256":report["manifest_sha256"]}
+          Path("/tmp/phase1b-output/PROVENANCE.json").write_text(json.dumps(provenance,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(provenance,sort_keys=True))
           PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -124,4 +106,87 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-# No inference, no TEST split/job, no dispatch from repository tooling, no automatic trigger.
+  p1-confirmation:
+    if: inputs.experiment == 'e3-confirm-dev-b'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      actions: read
+    environment: international-benchmark-maintainer-approval
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install "pip==25.2"
+          python -m pip install --index-url https://pypi.org/simple cryptography==46.0.3 numpy==2.2.6
+      - name: Verify cache source run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CACHE_RUN_ID: ${{ inputs.cache_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$CACHE_RUN_ID" =~ ^[0-9]+$ ]] || { echo "cache_run_id must be numeric"; exit 1; }
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CACHE_RUN_ID}" > /tmp/cache-run.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          run = json.loads(Path("/tmp/cache-run.json").read_text())
+          allowed = {".github/workflows/phase1b-dev-full.yml", ".github/workflows/phase1b-dev-full-reaggregate.yml"}
+          assert run["path"] in allowed, run["path"]
+          assert run["head_branch"] == "main"
+          assert run["event"] == "workflow_dispatch"
+          assert run["status"] == "completed" and run["conclusion"] == "success"
+          print(f"CACHE_RUN_VERIFIED path={run['path']} head_sha={run['head_sha']}")
+          PY
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: phase1b-dev-score-cache
+          path: /tmp/phase1b-score-cache
+          run-id: ${{ inputs.cache_run_id }}
+          github-token: ${{ github.token }}
+      - name: Decrypt cache and run P1 with a one-shot lock
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          EXPERIMENT: ${{ inputs.experiment }}
+          CACHE_RUN_ID: ${{ inputs.cache_run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          trap 'rm -rf /tmp/phase1b-score-cache' EXIT
+          mkdir -p /tmp/phase1b-output
+          python scripts/benchmarks/phase1b/score_cache.py --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json --experiment "$EXPERIMENT" --output /tmp/phase1b-output/phase1b-cache-experiment.json
+          unset GH_TOKEN
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = json.loads(Path("/tmp/phase1b-output/phase1b-cache-experiment.json").read_text())
+          serialized = json.dumps(report, sort_keys=True)
+          assert report["split"] == "dev"
+          assert report["experiment"] == "e3-confirm-dev-b"
+          assert report["partition"] == "conditional confirmation on partially used holdout (DEV-B; calibrated on DEV-A)"
+          assert report["confirmation_classification"] == "confirmação condicional em holdout parcialmente usado (DEV-B)"
+          assert report["instance_level_output_published"] is False
+          assert "record_id" not in serialized and "records" not in serialized
+          provenance = {"schema_version":"phase1b-dev-cache-experiment-provenance-v1","cache_run_id":os.environ["CACHE_RUN_ID"],"experiment_run_id":os.environ["GITHUB_RUN_ID"],"experiment_code_sha":os.environ["GITHUB_SHA"],"experiment":report["experiment"],"report_sha256":report["report_sha256"],"manifest_sha256":report["manifest_sha256"]}
+          Path("/tmp/phase1b-output/PROVENANCE.json").write_text(json.dumps(provenance,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(provenance,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-p1-confirmation
+          path: |
+            /tmp/phase1b-output/phase1b-cache-experiment.json
+            /tmp/phase1b-output/PROVENANCE.json
+          if-no-files-found: error
+          retention-days: 30
+
+# P1 remains blocked by its independent preregistration, DEC-026, and non-estimable
+# cohort gates. Adding the dispatch path does not authorize or execute any benchmark.
