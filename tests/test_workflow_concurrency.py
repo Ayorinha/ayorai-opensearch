@@ -28,7 +28,12 @@ def test_some_workflow_declares_concurrency() -> None:
     assert _workflows_with_concurrency(), "expected at least one workflow with concurrency"
 
 
-def test_concurrency_groups_are_scoped_per_ref() -> None:
+def test_concurrency_groups_are_scoped_per_ref_except_global_p1_lock() -> None:
     for path, group in _workflows_with_concurrency():
         assert "${{" in group, f"{path.name}: concurrency group is a literal: {group!r}"
+        if path.name == "phase1b-dev-cache-experiment.yml":
+            assert "inputs.experiment == 'e3-confirm-dev-b'" in group
+            assert "p1-dev-b-confirmation-single-flight" in group
+            assert "github.ref" in group  # non-P1 experiments remain scoped per ref
+            continue
         assert "github.ref" in group, f"{path.name}: concurrency group not scoped by ref: {group!r}"
