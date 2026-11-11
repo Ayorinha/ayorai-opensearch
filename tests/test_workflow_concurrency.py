@@ -1,4 +1,4 @@
-""""Regression guard: CI concurrency groups must be scoped per ref/PR.
+"""Regression guard: CI concurrency groups must be scoped per ref/PR.
 
 A hard-coded group (e.g. ``-github-workflows-ci-yml-main``) makes every run of a
 workflow, across all branches and pull requests, share one group. With
