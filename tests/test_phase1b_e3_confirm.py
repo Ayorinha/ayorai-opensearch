@@ -93,8 +93,15 @@ def _approved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_confirmation_report_is_aggregate_and_complete() -> None:
     report = run_confirm(_cache(_rows(NOISE)))
     assert report["experiment"] == "e3-confirm-dev-b"
-    assert report["partition"] == "conditional confirmation on partially used holdout (DEV-B; calibrated on DEV-A)"
-    assert report["confirmation_classification"] == "confirmação condicional em holdout parcialmente usado (DEV-B)"
+    expected_partition = (
+        "conditional confirmation on partially used holdout "
+        "(DEV-B; calibrated on DEV-A)"
+    )
+    expected_classification = (
+        "confirmação condicional em holdout parcialmente usado (DEV-B)"
+    )
+    assert report["partition"] == expected_partition
+    assert report["confirmation_classification"] == expected_classification
     assert report["configuration"] == "E3b-01"
     assert report["outcome"] in {"CONFIRMED", "NOT_CONFIRMED"}
     assert "Wice" not in report["common_cohorts"]
