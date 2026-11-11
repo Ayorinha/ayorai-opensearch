@@ -48,14 +48,22 @@ def test_experiment_workflow_is_manual_gated_and_inference_free() -> None:
             for i, step in enumerate(steps)
             if step.get("name") == "Require P1 scientific authorization before cache download"
         )
+        credential = next(
+            i
+            for i, step in enumerate(steps)
+            if step.get("name") == "Require one-shot lock credential before cache download"
+        )
         download = next(
             i
             for i, step in enumerate(steps)
             if step.get("uses", "").startswith("actions/download-artifact@")
         )
-        assert preflight < download
+        assert preflight < credential < download
         assert "preflight-only" in steps[preflight]["run"]
+        assert "P1_LOCK_TOKEN" in steps[credential]["run"]
+        assert "short-lived GitHub App installation token" in steps[credential]["run"]
         assert "PHASE1B_ARTIFACT_ENCRYPTION_KEY" not in steps[preflight].get("env", {})
+        assert "PHASE1B_ARTIFACT_ENCRYPTION_KEY" not in steps[credential].get("env", {})
     else:
         raise AssertionError(f"unexpected experiment workflow jobs: {sorted(jobs)}")
 
