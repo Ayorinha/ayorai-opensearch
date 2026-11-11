@@ -528,17 +528,16 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     outcome = "CONFIRMED" if confirmed else "NOT_CONFIRMED"
     contrary = bool(primary["estimable"] and high is not None and high < 0)
 
+    partition_label = (
+        "conditional confirmation on partially used holdout "
+        "(DEV-B; calibrated on DEV-A)"
+    )
+    confirmation_label = "confirmação condicional em holdout parcialmente usado (DEV-B)"
     report: dict[str, Any] = {
         "schema_version": "phase1b-dev-e3-confirm-v2",
         "split": "dev",
-        "partition": (
-            "conditional confirmation on partially used holdout "
-            + "(DEV-B; calibrated on DEV-A)"
-        ),
-        "confirmation_classification": (
-            "confirmação condicional em holdout parcialmente usado "
-            + "(DEV-B)"
-        ),
+        "partition": partition_label,
+        "confirmation_classification": confirmation_label,
         "experiment": "e3-confirm-dev-b",
         "decision_record": "DEC-024 option B; DEC-025",
         "preregistration": "docs/benchmarks/PREREG-E3-CONFIRM-DEV-B-v0.8.md",
