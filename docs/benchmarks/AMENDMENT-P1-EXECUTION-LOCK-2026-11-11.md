@@ -34,7 +34,12 @@ A opção `e3-confirm-dev-b` no workflow apenas torna a rota operacional explíc
 
 ## 4. Proteção administrativa da referência
 
-Antes de qualquer futura execução autorizada, o mantenedor deve configurar no GitHub um ruleset de branches que proteja exatamente `p1-dev-b-confirmation-lock`, impedindo exclusão e atualização da referência por atores não autorizados. A proteção administrativa não é criada por esta alteração de código e não se presume ativa. Sem evidência dessa regra, a trava não deve ser considerada resistente à exclusão administrativa.
+Antes de qualquer futura execução autorizada, o mantenedor deve configurar e verificar, no GitHub, dois controles administrativos independentes:
+
+1. **Environment:** `international-benchmark-maintainer-approval` exige revisão por mantenedor, impede autoaprovação quando a configuração permitir e restringe deployments à branch protegida `main`. O job não deve receber a chave do cache nem o token de escrita por uma execução originada de outra branch.
+2. **Branch ruleset:** proteger exatamente `p1-dev-b-confirmation-lock` contra atualização e exclusão por atores não autorizados. A criação inicial da referência deve continuar permitida ao workflow; não habilitar uma regra de restrição de criação que impeça a reserva atômica. Após a criação, a referência deve permanecer imutável e não removível pelos atores comuns.
+
+A proteção administrativa não é criada por esta alteração de código e não se presume ativa. Antes de qualquer execução, deve haver evidência verificável de que o environment restringe a branch de origem e de que o ruleset impede atualização/exclusão sem bloquear a criação inicial. Sem essas evidências, a trava não deve ser considerada resistente a dispatch indevido ou reset administrativo.
 
 ## 5. Evidência e estado
 
