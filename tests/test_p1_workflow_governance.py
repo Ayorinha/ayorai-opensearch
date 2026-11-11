@@ -1,4 +1,4 @@
-"""Security contract tests for the stacked P1 confirmation workflow."""
+""""Security contract tests for the stacked P1 confirmation workflow."""
 
 from __future__ import annotations
 
@@ -24,10 +24,7 @@ def test_p1_workflow_separates_read_only_and_write_jobs() -> None:
     assert read_only["if"] == "inputs.experiment != 'e3-confirm-dev-b'"
     assert read_only["permissions"] == {"contents": "read", "actions": "read"}
     assert read_only["environment"] == APPROVAL_ENVIRONMENT
-    assert any(
-        step.get("with", {}).get("persist-credentials") is False
-        for step in read_only["steps"]
-    )
+    assert any(step.get("with", {}).get("persist-credentials") is False for step in read_only["steps"])
 
     p1 = jobs["p1-confirmation"]
     assert p1["if"] == "inputs.experiment == 'e3-confirm-dev-b'"
