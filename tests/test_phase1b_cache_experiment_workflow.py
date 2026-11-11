@@ -32,10 +32,7 @@ def test_experiment_workflow_is_manual_gated_and_inference_free() -> None:
     assert p1["permissions"] == {"contents": "write", "actions": "read"}
     assert p1["environment"] == APPROVAL_ENVIRONMENT
     assert workflow["concurrency"]["cancel-in-progress"] is False
-    assert any(
-        step.get("with", {}).get("persist-credentials") is False
-        for step in p1["steps"]
-    )
+    assert any(step.get("with", {}).get("persist-credentials") is False for step in p1["steps"])
 
     for forbidden in ("run_shard.py", "fetch_dev.py", "--split test"):
         assert forbidden not in text
