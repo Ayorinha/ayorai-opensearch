@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from ayorai_attractor.api.app import app
+from ayorai_attractor.verification.document_ingest import IngestedDocument, ingest
 from ayorai_attractor.verification.field_check import (
     FieldSpec,
     check_field,
@@ -163,6 +164,168 @@ def test_api_fields_pdf_reports_page() -> None:
     assert response.status_code == 200, response.text
     result = response.json()["results"][0]
     assert result["outcome"] == "conforme" and result["page"] == 2
+
+
+def test_api_fields_trace_id_binds_source_and_page_layout() -> None:
+    pytest.importorskip("pypdf")
+    client = TestClient(app)
+    pdf = make_pdf([["Identificação"], ["Valor: R$ 10,00"]])
+    encoded = base64.b64encode(pdf).decode()
+    ingested = ingest(text=None, content_base64=encoded, media_type="application/pdf")
+    fields = [{"name": "valor", "type": "money", "value": "10,00", "labels": ["Valor"]}]
+
+    pdf_response = client.post(
+        "/v1/fields",
+        json={
+            "document": {
+                "id": "same-document",
+                "content_base64": encoded,
+                "media_type": "application/pdf",
+            },
+            "fields": fields,
+        },
+    )
+    text_response = client.post(
+        "/v1/fields",
+        json={"document": {"id": "same-document", "text": ingested.text}, "fields": fields},
+    )
+
+    assert pdf_response.status_code == 200, pdf_response.text
+    assert text_response.status_code == 200, text_response.text
+    pdf_body = pdf_response.json()
+    text_body = text_response.json()
+    assert pdf_body["document"]["sha256"] == text_body["document"]["sha256"]
+    assert pdf_body["results"][0]["page"] == 2
+    assert text_body["results"][0]["page"] == 1
+    assert pdf_body["trace_id"] != text_body["trace_id"]
+    assert pdf_body["engine"]["trace"] == "fields-trace-2"
+
+
+def test_api_fields_trace_id_isolates_page_boundary_identity(monkeypatch) -> None:
+    import ayorai_attractor.api.app as api_module
+
+    layouts = iter(((0,), (0, 1)))
+    text = "Valor: R$ 10,00"
+    source_sha256 = "c" * 64
+
+    def fake_ingest(*, text, content_base64, media_type):
+        return IngestedDocument(
+            text="Valor: R$ 10,00",
+            media_type="application/pdf",
+            page_starts=next(layouts),
+            source_sha256=source_sha256,
+        )
+
+    monkeypatch.setattr(api_module, "ingest", fake_ingest)
+    client = TestClient(app)
+    body = {
+        "document": {"id": "same-document", "text": text},
+        "fields": [{"name": "valor", "type": "money", "value": "10,00", "labels": ["Valor"]}],
+    }
+
+    first = client.post("/v1/fields", json=body)
+    second = client.post("/v1/fields", json=body)
+
+    assert first.status_code == second.status_code == 200
+    first_body, second_body = first.json(), second.json()
+    assert first_body["document"]["sha256"] == second_body["document"]["sha256"]
+    assert first_body["document"]["source_sha256"] == second_body["document"]["source_sha256"]
+    assert first_body["document"]["media_type"] == second_body["document"]["media_type"]
+    assert first_body["trace_id"] != second_body["trace_id"]
+    assert first_body["results"][0]["page"] == 1
+    assert second_body["results"][0]["page"] == 2
+
+
+@pytest.mark.parametrize(
+    ("first_media_type", "second_media_type", "first_source_sha", "second_source_sha"),
+    [
+        ("application/pdf", "application/pdf", "a" * 64, "b" * 64),
+        ("application/pdf", "text/plain", "c" * 64, "c" * 64),
+    ],
+)
+def test_api_fields_trace_id_binds_source_metadata_independently(
+    monkeypatch, first_media_type, second_media_type, first_source_sha, second_source_sha
+) -> None:
+    import ayorai_attractor.api.app as api_module
+
+    metadata = iter(
+        (
+            (first_media_type, first_source_sha),
+            (second_media_type, second_source_sha),
+        )
+    )
+
+    def fake_ingest(*, text, content_base64, media_type):
+        resolved_media_type, source_sha256 = next(metadata)
+        return IngestedDocument(
+            text="Valor: R$ 10,00",
+            media_type=resolved_media_type,
+            page_starts=(0,),
+            source_sha256=source_sha256,
+        )
+
+    monkeypatch.setattr(api_module, "ingest", fake_ingest)
+    client = TestClient(app)
+    body = {
+        "document": {"id": "same-document", "text": "Valor: R$ 10,00"},
+        "fields": [{"name": "valor", "type": "money", "value": "10,00", "labels": ["Valor"]}],
+    }
+
+    first = client.post("/v1/fields", json=body)
+    second = client.post("/v1/fields", json=body)
+
+    assert first.status_code == second.status_code == 200
+    first_body, second_body = first.json(), second.json()
+    assert first_body["document"]["sha256"] == second_body["document"]["sha256"]
+    assert first_body["document"]["pages"] == second_body["document"]["pages"]
+    assert first_body["trace_id"] != second_body["trace_id"]
+    assert first_body["document"]["media_type"] == first_media_type
+    assert second_body["document"]["media_type"] == second_media_type
+    assert first_body["document"]["source_sha256"] == first_source_sha
+    assert second_body["document"]["source_sha256"] == second_source_sha
+
+
+def test_api_fields_trace_id_binds_document_id() -> None:
+    client = TestClient(app)
+    fields = _fields()
+    first = client.post(
+        "/v1/fields", json={"document": {"id": "document-a", "text": DOC}, "fields": fields}
+    )
+    second = client.post(
+        "/v1/fields", json={"document": {"id": "document-b", "text": DOC}, "fields": fields}
+    )
+
+    assert first.status_code == second.status_code == 200
+    assert first.json()["trace_id"] != second.json()["trace_id"]
+
+
+def test_api_fields_trace_id_binds_submitted_field_specification() -> None:
+    client = TestClient(app)
+    document = {"id": "same-document", "text": "Valor: R$ 10,00"}
+    base_fields = [{"name": "valor", "type": "money", "value": "10,00", "labels": ["Valor"]}]
+
+    baseline = client.post("/v1/fields", json={"document": document, "fields": base_fields})
+    changed_value = client.post(
+        "/v1/fields",
+        json={
+            "document": document,
+            "fields": [{"name": "valor", "type": "money", "value": "11,00", "labels": ["Valor"]}],
+        },
+    )
+    changed_label = client.post(
+        "/v1/fields",
+        json={
+            "document": document,
+            "fields": [
+                {"name": "valor", "type": "money", "value": "10,00", "labels": ["Montante"]}
+            ],
+        },
+    )
+
+    assert baseline.status_code == changed_value.status_code == changed_label.status_code == 200
+    baseline_trace = baseline.json()["trace_id"]
+    assert changed_value.json()["trace_id"] != baseline_trace
+    assert changed_label.json()["trace_id"] != baseline_trace
 
 
 def test_api_fields_rejects_duplicate_names() -> None:
