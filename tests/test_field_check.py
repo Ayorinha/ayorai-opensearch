@@ -220,9 +220,7 @@ def test_api_fields_trace_id_isolates_page_boundary_identity(monkeypatch) -> Non
     client = TestClient(app)
     body = {
         "document": {"id": "same-document", "text": text},
-        "fields": [
-            {"name": "valor", "type": "money", "value": "10,00", "labels": ["Valor"]}
-        ],
+        "fields": [{"name": "valor", "type": "money", "value": "10,00", "labels": ["Valor"]}],
     }
 
     first = client.post("/v1/fields", json=body)
