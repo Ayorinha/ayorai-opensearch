@@ -92,6 +92,8 @@ def _approved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_confirmation_report_is_aggregate_and_complete() -> None:
     report = run_confirm(_cache(_rows(NOISE)))
     assert report["experiment"] == "e3-confirm-dev-b"
+    assert report["partition"] == "conditional confirmation on partially used holdout (DEV-B; calibrated on DEV-A)"
+    assert report["confirmation_classification"] == "confirmação condicional em holdout parcialmente usado (DEV-B)"
     assert report["configuration"] == "E3b-01"
     assert report["outcome"] in {"CONFIRMED", "NOT_CONFIRMED"}
     assert "Wice" not in report["common_cohorts"]
@@ -401,6 +403,7 @@ def test_persistent_lock_creates_exact_single_use_branch_ref(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _set_github_lock_environment(monkeypatch)
+    assert e3_confirm.P1_LOCK_REF == "refs/heads/p1-dev-b-confirmation-lock"
     captured = {}
 
     def fake_urlopen(request, timeout):
