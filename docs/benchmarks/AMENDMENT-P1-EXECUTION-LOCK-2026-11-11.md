@@ -13,7 +13,7 @@ Se aprovada, a reserva atômica passará a criar a referência:
 
 A referência é uma branch técnica de bloqueio, não uma tag Git, tag de versão ou release. Ela aponta para o SHA exato do commit `main` que executou o workflow. A criação ocorre pelo endpoint Git References do GitHub; conflito ou referência preexistente significa recusa definitiva. O código confere o nome da referência, o tipo `commit` e o SHA retornado.
 
-A referência deverá ser criada somente pelo job `p1-confirmation`, após aprovação do environment `international-benchmark-maintainer-approval`. Esse job tem `contents: write`; o job de experimentos exploratórios mantém `contents: read`. O token de escrita só é exposto ao processo de P1. A concorrência do workflow serializa chamadas P1, mas a garantia persistente é a criação atômica da referência, não o grupo de concorrência.
+A referência deverá ser criada somente após aprovação do environment `international-benchmark-maintainer-approval`. **O workflow atual mantém todos os jobs com `contents: read` e não fornece credencial de escrita à P1.** A implementação deverá permanecer bloqueada até existir um mecanismo separado, revisado e testado, que forneça `P1_LOCK_TOKEN` como token de instalação de GitHub App de curta duração, restrito ao repositório e a `contents: write`, somente ao passo que reserva a referência. O `GITHUB_TOKEN` padrão nunca será elevado nem aceito como fallback. Se o App/secrets não estiverem configurados, a reserva falha fechada. A concorrência do workflow serializa chamadas P1, mas a garantia persistente é a criação atômica da referência, não o grupo de concorrência.
 
 ## 2. Semântica de uso único e falhas
 
@@ -45,8 +45,8 @@ A proteção administrativa não é criada por esta alteração de código e nã
 
 A implementação proposta correspondente:
 - usa branch ref, nunca `refs/tags`;
-- separa permissões de escrita do job P1 dos jobs read-only;
-- passa o token de escrita apenas ao passo P1;
+- mantém todos os jobs read-only e não expõe token de escrita no workflow atual;
+- exige, para uma futura habilitação, `P1_LOCK_TOKEN` temporário e de escopo mínimo, sem fallback para `GITHUB_TOKEN`;
 - valida no workflow a classificação obrigatória e a saída agregada;
 - mantém concorrência sem cancelamento automático.
 
