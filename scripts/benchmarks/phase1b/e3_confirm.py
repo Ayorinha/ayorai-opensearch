@@ -63,7 +63,7 @@ REQUIRED_CACHE_SCHEMA = "phase1b-dev-score-cache-v2"
 NON_ESTIMABLE_RULE: dict[str, Any] | None = None
 # Single-execution lock (persistent part): a published P1 report in the repository.
 REPORT_LOCK_GLOB = "reports/benchmarks/*p1-dev-b-confirmation*"
-P1_LOCK_REF = "refs/tags/p1-dev-b-confirmation-lock"
+P1_LOCK_REF = "refs/heads/p1-dev-b-confirmation-lock"
 ESTIMAND_STATEMENT = (
     "The estimand is the macro balanced accuracy over the common cohorts. No superiority "
     "claim is made for any individual cohort; per-cohort values are descriptive."
@@ -529,7 +529,8 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     report: dict[str, Any] = {
         "schema_version": "phase1b-dev-e3-confirm-v2",
         "split": "dev",
-        "partition": "DEV-B confirmation (calibrated on DEV-A)",
+        "partition": "conditional confirmation on partially used holdout (DEV-B; calibrated on DEV-A)",
+        "confirmation_classification": "confirmação condicional em holdout parcialmente usado (DEV-B)",
         "experiment": "e3-confirm-dev-b",
         "decision_record": "DEC-024 option B; DEC-025",
         "preregistration": "docs/benchmarks/PREREG-E3-CONFIRM-DEV-B-v0.8.md",
