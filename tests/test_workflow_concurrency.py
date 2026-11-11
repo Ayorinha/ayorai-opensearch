@@ -38,4 +38,6 @@ def test_concurrency_groups_are_scoped_per_ref_except_global_p1_lock() -> None:
             assert "inputs.experiment == 'e3-confirm-dev-b'" in group
             assert "github.ref" in group  # non-P1 fallback remains scoped per ref
             continue
-        assert "github.ref" in group, f"{path.name}: concurrency group not scoped by ref: {group!r}"
+        assert "github.ref" in group, (
+            f"{path.name}: concurrency group not scoped by ref: {group!r}"
+        )
