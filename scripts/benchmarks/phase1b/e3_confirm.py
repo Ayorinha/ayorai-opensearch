@@ -63,7 +63,7 @@ REQUIRED_CACHE_SCHEMA = "phase1b-dev-score-cache-v2"
 NON_ESTIMABLE_RULE: dict[str, Any] | None = None
 # Single-execution lock (persistent part): a published P1 report in the repository.
 REPORT_LOCK_GLOB = "reports/benchmarks/*p1-dev-b-confirmation*"
-P1_LOCK_REF = "refs/tags/p1-dev-b-confirmation-lock"
+P1_LOCK_REF = "refs/heads/p1-dev-b-confirmation-lock"
 ESTIMAND_STATEMENT = (
     "The estimand is the macro balanced accuracy over the common cohorts. No superiority "
     "claim is made for any individual cohort; per-cohort values are descriptive."
@@ -120,13 +120,14 @@ def _require_non_estimable_rule() -> None:
 def _require_persistent_atomic_lock() -> None:
     """Atomically reserve the single-use P1 ref in GitHub before any DEV-B calculation.
 
-    The protected workflow must provide a write-scoped GITHUB_TOKEN, GITHUB_ACTIONS,
-    GITHUB_REPOSITORY and GITHUB_SHA. GitHub's create-ref endpoint is atomic: an
+    The protected workflow must provide a short-lived, repository-scoped P1_LOCK_TOKEN,
+    GITHUB_ACTIONS, GITHUB_REPOSITORY and GITHUB_SHA. The ordinary GITHUB_TOKEN must
+    remain read-only and is never accepted as a fallback. GitHub's create-ref endpoint is atomic: an
     existing reservation is a hard failure, including when it points to the same SHA.
     """
     repository = os.environ.get("GITHUB_REPOSITORY")
     commit_sha = os.environ.get("GITHUB_SHA")
-    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    token = os.environ.pop("P1_LOCK_TOKEN", None)
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise RuntimeError("P1 requires the protected GitHub Actions runner")
     if os.environ.get("GITHUB_REF") != "refs/heads/main":
@@ -140,7 +141,9 @@ def _require_persistent_atomic_lock() -> None:
     if not isinstance(commit_sha, str) or re.fullmatch(r"[0-9a-f]{40}", commit_sha) is None:
         raise RuntimeError("P1 lock requires the exact 40-character workflow commit SHA")
     if not token:
-        raise RuntimeError("P1 lock requires a write-scoped GitHub token")
+        raise RuntimeError(
+            "P1 lock requires a dedicated short-lived P1_LOCK_TOKEN; refusing GITHUB_TOKEN"
+        )
 
     request = Request(
         f"https://api.github.com/repos/{repository}/git/refs",
@@ -407,12 +410,10 @@ def _document_jackknife(stats_by_cohort: Mapping[str, Any], delta: float) -> dic
     }
 
 
-def run_confirm(cache: Mapping[str, Any]) -> dict:
-    """Single execution of P1; the only eligibility accepted is the preregistered file."""
+def preflight_confirm() -> tuple[str, dict[str, Any], str]:
+    """Validate every public P1 gate before any encrypted score cache is accessed."""
 
     approved_on = preregistration_approval(PREREGISTRATION_PATH)
-    if cache.get("schema_version") != REQUIRED_CACHE_SCHEMA:
-        raise ValueError("P1 requires the v2 score cache with document ids")
     file_sha256 = sha256_bytes(Path(ELIGIBILITY_PATH).read_bytes())
     if file_sha256 != ELIGIBILITY_SHA256:
         raise RuntimeError("eligibility file differs from the preregistered version")
@@ -420,6 +421,15 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     _validate_eligibility(eligibility)
     _validate_confirmatory_eligibility(eligibility, eligibility_sha256=file_sha256)
     _require_non_estimable_rule()
+    return approved_on, eligibility, file_sha256
+
+
+def run_confirm(cache: Mapping[str, Any]) -> dict:
+    """Single execution of P1; the only eligibility accepted is the preregistered file."""
+
+    approved_on, eligibility, file_sha256 = preflight_confirm()
+    if cache.get("schema_version") != REQUIRED_CACHE_SCHEMA:
+        raise ValueError("P1 requires the v2 score cache with document ids")
     models = cache["models"]
     record_ids = validate_members(models)
     reference = {r["record_id"]: r for r in models[COMPARATOR]["records"]}
@@ -526,10 +536,23 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
     outcome = "CONFIRMED" if confirmed else "NOT_CONFIRMED"
     contrary = bool(primary["estimable"] and high is not None and high < 0)
 
+    partition_label = " ".join(
+        (
+            "conditional confirmation on partially used holdout",
+            "(DEV-B; calibrated on DEV-A)",
+        )
+    )
+    confirmation_label = " ".join(
+        (
+            "confirmação condicional em holdout parcialmente usado",
+            "(DEV-B)",
+        )
+    )
     report: dict[str, Any] = {
         "schema_version": "phase1b-dev-e3-confirm-v2",
         "split": "dev",
-        "partition": "DEV-B confirmation (calibrated on DEV-A)",
+        "partition": partition_label,
+        "confirmation_classification": confirmation_label,
         "experiment": "e3-confirm-dev-b",
         "decision_record": "DEC-024 option B; DEC-025",
         "preregistration": "docs/benchmarks/PREREG-E3-CONFIRM-DEV-B-v0.8.md",
