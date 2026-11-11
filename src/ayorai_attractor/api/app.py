@@ -333,11 +333,20 @@ def fields(request: FieldsRequest) -> FieldsResponse:
     ]
     results = check_fields(ingested.text, specs)
     text_sha = hashlib.sha256(ingested.text.encode("utf-8")).hexdigest()
-    engine = {"field_check": FIELD_CHECK_VERSION}
+    engine = {
+        "field_check": FIELD_CHECK_VERSION,
+        "trace": "fields-trace-2",
+    }
     trace_payload = json.dumps(
         {
             "engine": engine,
-            "document": text_sha,
+            "document": {
+                "id": request.document.id,
+                "media_type": ingested.media_type,
+                "sha256": text_sha,
+                "source_sha256": ingested.source_sha256,
+                "page_starts": list(ingested.page_starts),
+            },
             "fields": [[s.name, s.type, s.value, list(s.labels)] for s in specs],
         },
         sort_keys=True,
