@@ -141,7 +141,9 @@ def _require_persistent_atomic_lock() -> None:
     if not isinstance(commit_sha, str) or re.fullmatch(r"[0-9a-f]{40}", commit_sha) is None:
         raise RuntimeError("P1 lock requires the exact 40-character workflow commit SHA")
     if not token:
-        raise RuntimeError("P1 lock requires a dedicated short-lived P1_LOCK_TOKEN; refusing to use GITHUB_TOKEN")
+        raise RuntimeError(
+            "P1 lock requires a dedicated short-lived P1_LOCK_TOKEN; refusing GITHUB_TOKEN"
+        )
 
     request = Request(
         f"https://api.github.com/repos/{repository}/git/refs",
