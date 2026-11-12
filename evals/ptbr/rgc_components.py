@@ -151,3 +151,55 @@ def build_article_components(
         largest_component_size=sizes[0] if sizes else 0,
         component_sizes=sizes,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class SignFlipResult:
+    """Exact two-sided sign-flip result for at most 20 independent components."""
+
+    statistic_observed: int
+    p_value_two_sided: float
+    extreme_permutations: int
+    permutations_considered: int
+    minimum_resolution: float
+    component_count: int
+    significance_below_005_possible: bool
+
+
+def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
+    """Enumerate the DEC-021 sign space exactly when K <= 20.
+
+    Monte Carlo mode for K > 20 is intentionally not guessed here: the
+    repository's decision record must settle the exact PRNG/version before
+    that path can claim deterministic reproducibility.
+    """
+    from itertools import product
+
+    differences = tuple(component_differences)
+    if not differences:
+        raise ValueError("at least one component difference is required")
+    if any(type(value) is not int for value in differences):
+        raise ValueError("component differences must be integers")
+    component_count = len(differences)
+    if component_count > 20:
+        raise ValueError(
+            "K > 20 requires the maintainer-approved deterministic PRNG specification"
+        )
+
+    observed = sum(differences)
+    total = 1 << component_count
+    extreme = 0
+    for signs in product((-1, 1), repeat=component_count):
+        permuted = sum(sign * difference for sign, difference in zip(signs, differences, strict=True))
+        if abs(permuted) >= abs(observed):
+            extreme += 1
+
+    return SignFlipResult(
+        statistic_observed=observed,
+        p_value_two_sided=extreme / total,
+        extreme_permutations=extreme,
+        permutations_considered=total,
+        minimum_resolution=2 / total,
+        component_count=component_count,
+        significance_below_005_possible=2 / total < 0.05,
+    )
