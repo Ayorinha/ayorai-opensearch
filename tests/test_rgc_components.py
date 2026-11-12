@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import runpy
 from pathlib import Path
 from typing import Any
@@ -31,10 +33,13 @@ def test_components_merge_transitively_and_keep_isolated_cases() -> None:
     assert result.case_count == 4
     assert result.largest_component_size == 3
     assert result.component_sizes == (3, 1)
-    assert result.components[0].component_id == "component:art-1+art-2"
+    expected_json = json.dumps(["art-1", "art-2"], ensure_ascii=False, separators=(",", ":"))
+    expected_hash = hashlib.sha256(expected_json.encode("utf-8")).hexdigest()
+    assert result.components[0].component_id == f"component:sha256:{expected_hash}"
+    assert result.components[0].canonical_article_ids_json == expected_json
     assert result.components[0].case_ids == ("case-a", "case-b", "case-c")
-    assert result.components[1].component_id == "component:art-9"
-    assert result.components[1].case_ids == ("case-d",)
+    assert result.components[1].article_ids == ("art-9",)
+    assert result.components[1].canonical_article_ids_json == '["art-9"]'
 
 
 def test_component_output_is_independent_of_input_order() -> None:
@@ -68,7 +73,6 @@ def test_shared_article_joins_multiple_cases_even_with_different_old_clusters() 
     [
         ([{"case_id": "a", "cited_article_ids": []}], "non-empty list"),
         ([{"case_id": "a", "cited_article_ids": ["x", "x"]}], "duplicate article ID"),
-        ([{"case_id": "a", "cited_article_ids": ["x+y"]}], "reserved"),
         ([{"case_id": "a", "cited_article_ids": [" x"]}], "canonical"),
         (
             [
@@ -82,6 +86,23 @@ def test_shared_article_joins_multiple_cases_even_with_different_old_clusters() 
 def test_invalid_component_inputs_fail_closed(cases: list[dict[str, object]], message: str) -> None:
     with pytest.raises(ValueError, match=message):
         MODULE["build_article_components"](cases)
+
+
+def test_plus_is_safe_inside_article_ids_under_json_hash_serialization() -> None:
+    result = MODULE["build_article_components"](
+        [{"case_id": "a", "cited_article_ids": ["x+y"]}]
+    )
+
+    assert result.components[0].article_ids == ("x+y",)
+    assert result.components[0].canonical_article_ids_json == '["x+y"]'
+    assert result.components[0].component_id.startswith("component:sha256:")
+
+
+def test_non_nfc_article_ids_are_rejected() -> None:
+    with pytest.raises(ValueError, match="NFC"):
+        MODULE["build_article_components"](
+            [{"case_id": "a", "cited_article_ids": ["e\u0301"]}]
+        )
 
 
 def test_empty_input_has_a_well_formed_empty_summary() -> None:
