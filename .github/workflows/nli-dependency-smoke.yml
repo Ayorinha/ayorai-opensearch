@@ -29,6 +29,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev,nli]"
           pip install -r requirements-benchmark-pilot.txt
+          # DEC-021/022 pin the statistical runtime to NumPy 2.3.3.
+          python -m pip install --no-deps "numpy==2.3.3"
           pip check
       - name: Verify installed dependency versions
         run: |
