@@ -8,11 +8,11 @@ case records explicitly. It implements the graph unit specified by DEC-023.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from itertools import product
+from typing import NamedTuple
 
 
-@dataclass(frozen=True, slots=True)
-class ArticleComponent:
+class ArticleComponent(NamedTuple):
     """One connected component of cases linked by shared cited article IDs."""
 
     component_id: str
@@ -20,8 +20,7 @@ class ArticleComponent:
     article_ids: tuple[str, ...]
 
 
-@dataclass(frozen=True, slots=True)
-class ComponentSummary:
+class ComponentSummary(NamedTuple):
     """Deterministic component inventory suitable for audit reports."""
 
     components: tuple[ArticleComponent, ...]
@@ -153,8 +152,7 @@ def build_article_components(
     )
 
 
-@dataclass(frozen=True, slots=True)
-class SignFlipResult:
+class SignFlipResult(NamedTuple):
     """Exact two-sided sign-flip result for at most 20 independent components."""
 
     statistic_observed: int
@@ -173,8 +171,6 @@ def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
     repository's decision record must settle the exact PRNG/version before
     that path can claim deterministic reproducibility.
     """
-    from itertools import product
-
     differences = tuple(component_differences)
     if not differences:
         raise ValueError("at least one component difference is required")
@@ -190,7 +186,10 @@ def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
     total = 1 << component_count
     extreme = 0
     for signs in product((-1, 1), repeat=component_count):
-        permuted = sum(sign * difference for sign, difference in zip(signs, differences, strict=True))
+        permuted = sum(
+            sign * difference
+            for sign, difference in zip(signs, differences, strict=True)
+        )
         if abs(permuted) >= abs(observed):
             extreme += 1
 
