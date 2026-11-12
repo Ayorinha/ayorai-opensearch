@@ -123,16 +123,10 @@ def build_article_components(
         member_ids = tuple(sorted(members))
         article_ids = tuple(
             sorted(
-                {
-                    article_id
-                    for case_id in member_ids
-                    for article_id in citations_by_case[case_id]
-                }
+                {article_id for case_id in member_ids for article_id in citations_by_case[case_id]}
             )
         )
-        canonical_json = json.dumps(
-            list(article_ids), ensure_ascii=False, separators=(",", ":")
-        )
+        canonical_json = json.dumps(list(article_ids), ensure_ascii=False, separators=(",", ":"))
         digest = hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
         component_id = f"component:sha256:{digest}"
         components.append(
@@ -189,8 +183,7 @@ def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
         extreme = 0
         for signs in product((-1, 1), repeat=component_count):
             permuted = sum(
-                sign * difference
-                for sign, difference in zip(signs, differences, strict=True)
+                sign * difference for sign, difference in zip(signs, differences, strict=True)
             )
             if abs(permuted) >= abs(observed):
                 extreme += 1
@@ -212,8 +205,7 @@ def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
 
     if np.__version__ != "2.3.3":
         raise RuntimeError(
-            "DEC-021 Monte Carlo requires numpy==2.3.3; "
-            f"found numpy=={np.__version__}"
+            f"DEC-021 Monte Carlo requires numpy==2.3.3; found numpy=={np.__version__}"
         )
     seed = 20261003
     iterations = 10_000
@@ -319,9 +311,7 @@ def bootstrap_cohen_kappa_by_component(
         n = len(case_ids)
         observed = sum(matrix[label][label] for label in vocabulary) / n
         rows = {label: sum(matrix[label].values()) for label in vocabulary}
-        columns = {
-            label: sum(matrix[row][label] for row in vocabulary) for label in vocabulary
-        }
+        columns = {label: sum(matrix[row][label] for row in vocabulary) for label in vocabulary}
         expected = sum(rows[label] * columns[label] for label in vocabulary) / (n * n)
         denominator = 1.0 - expected
         if abs(denominator) <= 1e-12:
@@ -335,8 +325,7 @@ def bootstrap_cohen_kappa_by_component(
 
     if np.__version__ != "2.3.3":
         raise RuntimeError(
-            "DEC-022 bootstrap requires numpy==2.3.3; "
-            f"found numpy=={np.__version__}"
+            f"DEC-022 bootstrap requires numpy==2.3.3; found numpy=={np.__version__}"
         )
     seed = 20261003
     iterations = 10_000
