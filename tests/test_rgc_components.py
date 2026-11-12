@@ -9,9 +9,7 @@ from typing import Any
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE: dict[str, Any] = runpy.run_path(
-    str(ROOT / "evals" / "ptbr" / "rgc_components.py")
-)
+MODULE: dict[str, Any] = runpy.run_path(str(ROOT / "evals" / "ptbr" / "rgc_components.py"))
 
 
 def test_components_merge_transitively_and_keep_isolated_cases() -> None:
@@ -117,7 +115,13 @@ def test_exact_sign_flip_keeps_zero_difference_components() -> None:
 
 def test_exact_sign_flip_is_symmetric_and_deterministic() -> None:
     fn = MODULE["exact_sign_flip"]
-    assert fn([3, -2, 1]) == fn([-3, 2, -1])
+    positive = fn([3, -2, 1])
+    negative = fn([-3, 2, -1])
+
+    assert positive.statistic_observed == -negative.statistic_observed
+    assert positive.p_value_two_sided == negative.p_value_two_sided
+    assert positive.extreme_permutations == negative.extreme_permutations
+    assert positive.permutations_considered == negative.permutations_considered
 
 
 def test_exact_sign_flip_rejects_empty_and_non_integer_inputs() -> None:
