@@ -89,9 +89,7 @@ def build_article_components(
                 or not article_id
                 or article_id != article_id.strip()
             ):
-                raise ValueError(
-                    f"{case_id}: article IDs must be canonical non-empty strings"
-                )
+                raise ValueError(f"{case_id}: article IDs must be canonical non-empty strings")
             if "+" in article_id:
                 raise ValueError(
                     f"{case_id}: article ID {article_id!r} contains reserved '+' delimiter"
@@ -178,9 +176,7 @@ def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
         raise ValueError("component differences must be integers")
     component_count = len(differences)
     if component_count > 20:
-        raise ValueError(
-            "K > 20 requires the maintainer-approved deterministic PRNG specification"
-        )
+        raise ValueError("K > 20 requires the maintainer-approved deterministic PRNG specification")
 
     observed = sum(differences)
     total = 1 << component_count
