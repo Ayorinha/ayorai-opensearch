@@ -95,3 +95,88 @@ def test_p1_preflight_failure_stops_before_key_or_cache_access(monkeypatch) -> N
 
     with pytest.raises(RuntimeError, match="DEC-026 authorization"):
         score_cache.main()
+
+
+def test_reserve_lock_hashes_envelope_and_never_decrypts(monkeypatch, tmp_path: Path) -> None:
+    import hashlib
+
+    cache_path = tmp_path / "encrypted-cache.json"
+    cache_path.write_bytes(b'{"ciphertext": "synthetic"}')
+    reservation = tmp_path / "reservation.json"
+    seen: dict[str, object] = {}
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("the reserve step must never read the key or decrypt")
+
+    def fake_reserve(path: Path, envelope_sha256: str) -> dict[str, str]:
+        seen.update(path=path, envelope=envelope_sha256)
+        return {"ref": "refs/heads/p1-dev-b-confirmation-lock", "sha": "a" * 40, "run_id": "1"}
+
+    monkeypatch.setattr(e3_confirm, "preflight_confirm", lambda: None)
+    monkeypatch.setattr(e3_confirm, "reserve_lock", fake_reserve)
+    monkeypatch.setattr(score_cache, "decode_key", forbidden)
+    monkeypatch.setattr(score_cache, "decrypt_score_cache", forbidden)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "score_cache.py",
+            "--experiment",
+            "e3-confirm-dev-b",
+            "--cache",
+            str(cache_path),
+            "--reserve-lock",
+            str(reservation),
+        ],
+    )
+    score_cache.main()
+    assert seen == {
+        "path": reservation,
+        "envelope": hashlib.sha256(cache_path.read_bytes()).hexdigest(),
+    }
+
+
+def test_validate_cache_only_writes_nothing_and_computes_no_outcome(
+    monkeypatch, tmp_path: Path, capsys
+) -> None:
+    cache_path = tmp_path / "encrypted-cache.json"
+    cache_path.write_text(json.dumps({"ciphertext": "synthetic"}), encoding="utf-8")
+    events: list[str] = []
+    monkeypatch.setattr(e3_confirm, "preflight_confirm", lambda: None)
+    monkeypatch.setattr(score_cache, "decode_key", lambda: b"key")
+    monkeypatch.setattr(score_cache, "decrypt_score_cache", lambda envelope, key: {"x": 1})
+    monkeypatch.setattr(
+        e3_confirm,
+        "validate_cache",
+        lambda cache: events.append("validate") or {"cache_preflight": "passed"},
+    )
+    monkeypatch.setitem(
+        score_cache.EXPERIMENTS,
+        "e3-confirm-dev-b",
+        lambda cache: pytest.fail("validation must not run the experiment"),
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "score_cache.py",
+            "--experiment",
+            "e3-confirm-dev-b",
+            "--cache",
+            str(cache_path),
+            "--validate-cache-only",
+        ],
+    )
+    score_cache.main()
+    assert events == ["validate"]
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["encrypted-cache.json"]
+    assert json.loads(capsys.readouterr().out)["cache_preflight"] == "passed"
+
+
+@pytest.mark.parametrize("flag", ["--validate-cache-only", "--preflight-only"])
+def test_p1_modes_are_rejected_for_other_experiments(monkeypatch, flag: str) -> None:
+    monkeypatch.setattr(
+        sys, "argv", ["score_cache.py", "--experiment", "replay-calibration-v2", flag]
+    )
+    with pytest.raises(SystemExit):
+        score_cache.main()

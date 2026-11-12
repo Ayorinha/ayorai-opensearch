@@ -117,7 +117,7 @@ def _require_non_estimable_rule() -> None:
     )
 
 
-def _require_persistent_atomic_lock() -> None:
+def _require_persistent_atomic_lock() -> dict[str, str]:
     """Atomically reserve the single-use P1 ref in GitHub before any DEV-B calculation.
 
     The protected workflow must provide a short-lived, repository-scoped P1_LOCK_TOKEN,
@@ -136,6 +136,8 @@ def _require_persistent_atomic_lock() -> None:
         raise RuntimeError("P1 lock requires an explicit workflow_dispatch event")
     if not re.fullmatch(r"[0-9]+", os.environ.get("GITHUB_RUN_ID", "")):
         raise RuntimeError("P1 lock requires a valid GitHub Actions run ID")
+    if os.environ.get("GITHUB_RUN_ATTEMPT") != "1":
+        raise RuntimeError("P1 lock may only be reserved on the first run attempt")
     if repository != "Ayorinha/ayorai-opensearch":
         raise RuntimeError("P1 lock may only be reserved in the canonical repository")
     if not isinstance(commit_sha, str) or re.fullmatch(r"[0-9a-f]{40}", commit_sha) is None:
@@ -157,17 +159,23 @@ def _require_persistent_atomic_lock() -> None:
         method="POST",
     )
     try:
-        # The URL is a fixed HTTPS GitHub API endpoint; no caller-controlled host is used.
-        with urlopen(request, timeout=15) as response:  # nosec B310
-            created = json.loads(response.read().decode("utf-8"))
-    except HTTPError as exc:
-        if exc.code in {409, 422}:
+        try:
+            # The URL is a fixed HTTPS GitHub API endpoint; no caller-controlled host is used.
+            with urlopen(request, timeout=15) as response:  # nosec B310
+                created = json.loads(response.read().decode("utf-8"))
+        except HTTPError as exc:
+            if exc.code in {409, 422}:
+                raise RuntimeError(
+                    "the persistent single-use P1 Git ref is already reserved; refusing to run"
+                ) from exc
             raise RuntimeError(
-                "the persistent single-use P1 Git ref is already reserved; refusing to run"
+                f"GitHub rejected the P1 lock reservation (HTTP {exc.code})"
             ) from exc
-        raise RuntimeError(f"GitHub rejected the P1 lock reservation (HTTP {exc.code})") from exc
-    except (URLError, TimeoutError) as exc:
-        raise RuntimeError("could not verify the persistent P1 lock reservation") from exc
+        except (URLError, TimeoutError) as exc:
+            raise RuntimeError("could not verify the persistent P1 lock reservation") from exc
+    finally:
+        revocation = _revoke_installation_token(token)
+        del token
 
     if (
         created.get("ref") != P1_LOCK_REF
@@ -176,6 +184,91 @@ def _require_persistent_atomic_lock() -> None:
         or created["object"].get("sha") != commit_sha
     ):
         raise RuntimeError("GitHub returned a mismatched P1 lock reference or commit SHA")
+    return {"ref": P1_LOCK_REF, "sha": commit_sha, "token_revocation": revocation}
+
+
+def _revoke_installation_token(token: str) -> str:
+    """Revoke the GitHub App installation token immediately after the single API call.
+
+    Returns "revoked" on HTTP 204 and "failed" otherwise. A failed revocation does not
+    raise: the token is already removed from the process environment, never reaches a
+    later step, expires within one hour and is revoked again by the action post step.
+    The status is recorded in the reservation for audit.
+    """
+    request = Request(
+        "https://api.github.com/installation/token",
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        method="DELETE",
+    )
+    try:
+        # Fixed HTTPS GitHub API endpoint; no caller-controlled host is used.
+        with urlopen(request, timeout=15) as response:  # nosec B310
+            return "revoked" if response.status == 204 else "failed"
+    except (HTTPError, URLError, TimeoutError):
+        return "failed"
+
+
+RESERVATION_SCHEMA = "p1-lock-reservation-v1"
+
+
+def reserve_lock(reservation_path: Path, envelope_sha256: str) -> dict[str, str]:
+    """Reserve the single-use P1 ref in a step that never sees the cache decryption key.
+
+    Runs every public gate first, then creates the ref with the dedicated App token and
+    writes a reservation record (exclusive create) that binds this run, attempt, commit
+    and the exact encrypted cache envelope validated in the previous step.
+    """
+    if os.environ.get("PHASE1B_ARTIFACT_ENCRYPTION_KEY"):
+        raise RuntimeError("the cache decryption key must not be present while reserving P1")
+    if re.fullmatch(r"[0-9a-f]{64}", envelope_sha256) is None:
+        raise ValueError("envelope_sha256 must be a lowercase SHA-256 hex digest")
+    preflight_confirm()
+    if published_confirmation_exists():
+        raise RuntimeError("a P1 confirmation report is already published; P1 is single-use")
+    created = _require_persistent_atomic_lock()
+    reservation = {
+        "schema_version": RESERVATION_SCHEMA,
+        "repository": os.environ["GITHUB_REPOSITORY"],
+        "ref": created["ref"],
+        "sha": created["sha"],
+        "run_id": os.environ["GITHUB_RUN_ID"],
+        "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+        "envelope_sha256": envelope_sha256,
+        "token_revocation": created["token_revocation"],
+    }
+    with reservation_path.open("x", encoding="utf-8") as handle:
+        handle.write(json.dumps(reservation, sort_keys=True) + "\n")
+    return reservation
+
+
+def _require_lock_reservation() -> None:
+    """Accept only the reservation written by this run's reserve step for this cache."""
+    path = os.environ.get("P1_LOCK_RESERVATION")
+    envelope_sha256 = os.environ.get("P1_CACHE_ENVELOPE_SHA256")
+    if not path or not envelope_sha256:
+        raise RuntimeError("P1 requires this run's lock reservation and cache envelope digest")
+    try:
+        reservation = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError("P1 lock reservation is missing or unreadable") from exc
+    expected = {
+        "schema_version": RESERVATION_SCHEMA,
+        "repository": os.environ.get("GITHUB_REPOSITORY"),
+        "ref": P1_LOCK_REF,
+        "sha": os.environ.get("GITHUB_SHA"),
+        "run_id": os.environ.get("GITHUB_RUN_ID"),
+        "run_attempt": "1",
+        "envelope_sha256": envelope_sha256,
+    }
+    if os.environ.get("GITHUB_RUN_ATTEMPT") != "1":
+        raise RuntimeError("P1 may only run on the first run attempt")
+    mismatched = sorted(k for k, v in expected.items() if reservation.get(k) != v)
+    if mismatched:
+        raise RuntimeError(f"P1 lock reservation does not match this run: {mismatched}")
 
 
 def validate_members(models: Mapping[str, Any]) -> list[str]:
@@ -424,8 +517,11 @@ def preflight_confirm() -> tuple[str, dict[str, Any], str]:
     return approved_on, eligibility, file_sha256
 
 
-def run_confirm(cache: Mapping[str, Any]) -> dict:
-    """Single execution of P1; the only eligibility accepted is the preregistered file."""
+def _prepare_confirmation(cache: Mapping[str, Any]) -> dict[str, Any]:
+    """Run every gate and cache-level check that precedes the reservation.
+
+    Computes no DEV-B score, outcome or diagnostic.
+    """
 
     approved_on, eligibility, file_sha256 = preflight_confirm()
     if cache.get("schema_version") != REQUIRED_CACHE_SCHEMA:
@@ -460,11 +556,58 @@ def run_confirm(cache: Mapping[str, Any]) -> dict:
         raise ValueError("DEV-A has cross-fitting strata below five")
     fold_list = [folds[r] for r in ids_a]
 
-    # Check the report-level guard and reserve only after all deterministic preflight.
-    # An existing report or invalid cache must not consume a fresh reservation.
+    return {
+        "approved_on": approved_on,
+        "eligibility": eligibility,
+        "file_sha256": file_sha256,
+        "models": models,
+        "record_ids": record_ids,
+        "reference": reference,
+        "cohorts": cohorts,
+        "doc_ids": doc_ids,
+        "common": common,
+        "common_set": common_set,
+        "index_a": index_a,
+        "index_b": index_b,
+        "ids_a": ids_a,
+        "cohorts_a": cohorts_a,
+        "labels_a": labels_a,
+        "fold_list": fold_list,
+    }
+
+
+def validate_cache(cache: Mapping[str, Any]) -> dict[str, str]:
+    """Cache-level P1 preflight used before the single-use reservation."""
+
+    _prepare_confirmation(cache)
+    return {"experiment": "e3-confirm-dev-b", "cache_preflight": "passed"}
+
+
+def run_confirm(cache: Mapping[str, Any]) -> dict:
+    """Single execution of P1; the only eligibility accepted is the preregistered file."""
+
+    prepared = _prepare_confirmation(cache)
+    approved_on = prepared["approved_on"]
+    eligibility = prepared["eligibility"]
+    models = prepared["models"]
+    record_ids = prepared["record_ids"]
+    reference = prepared["reference"]
+    cohorts = prepared["cohorts"]
+    doc_ids = prepared["doc_ids"]
+    common = prepared["common"]
+    common_set = prepared["common_set"]
+    index_a = prepared["index_a"]
+    index_b = prepared["index_b"]
+    ids_a = prepared["ids_a"]
+    cohorts_a = prepared["cohorts_a"]
+    labels_a = prepared["labels_a"]
+    fold_list = prepared["fold_list"]
+
+    # Check the report-level guard and require the reservation made by this run's
+    # dedicated reserve step. An existing report or invalid cache never reaches it.
     if published_confirmation_exists():
         raise RuntimeError("a P1 confirmation report is already published; P1 is single-use")
-    _require_persistent_atomic_lock()
+    _require_lock_reservation()
 
     oof_a: dict[str, list[float]] = {}
     prob_b: dict[str, list[float]] = {}

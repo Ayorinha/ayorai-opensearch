@@ -18,8 +18,10 @@ Privacy contract:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
+import os
 import re
 import sys
 from pathlib import Path
@@ -221,10 +223,26 @@ def main() -> None:
         action="store_true",
         help="validate P1 authorization gates without reading or decrypting the score cache",
     )
+    parser.add_argument(
+        "--validate-cache-only",
+        action="store_true",
+        help="P1: decrypt and run the cache-level preflight; compute no DEV-B outcome",
+    )
+    parser.add_argument(
+        "--reserve-lock",
+        type=Path,
+        metavar="RESERVATION_JSON",
+        help="P1: reserve the single-use ref (hashes the envelope; never decrypts it)",
+    )
     args = parser.parse_args()
 
-    if args.preflight_only and args.experiment != "e3-confirm-dev-b":
-        parser.error("--preflight-only is available only for e3-confirm-dev-b")
+    p1_modes = [args.preflight_only, args.validate_cache_only, args.reserve_lock is not None]
+    if any(p1_modes) and args.experiment != "e3-confirm-dev-b":
+        parser.error("P1 modes are available only for e3-confirm-dev-b")
+    if sum(p1_modes) > 1:
+        parser.error(
+            "choose at most one of --preflight-only, --validate-cache-only, --reserve-lock"
+        )
 
     if args.experiment == "e3-confirm-dev-b":
         from scripts.benchmarks.phase1b.e3_confirm import preflight_confirm
@@ -240,13 +258,37 @@ def main() -> None:
         )
         return
 
-    if args.cache is None or args.output is None:
-        parser.error("--cache and --output are required unless --preflight-only is used")
+    if args.cache is None:
+        parser.error("--cache is required unless --preflight-only is used")
+    envelope_bytes = args.cache.read_bytes()
+    envelope_sha256 = hashlib.sha256(envelope_bytes).hexdigest()
+
+    if args.reserve_lock is not None:
+        from scripts.benchmarks.phase1b.e3_confirm import reserve_lock
+
+        reservation = reserve_lock(args.reserve_lock, envelope_sha256)
+        print(json.dumps({k: reservation[k] for k in ("ref", "sha", "run_id")}, sort_keys=True))
+        return
+
+    if args.output is None and not args.validate_cache_only:
+        parser.error("--output is required to run an experiment")
 
     key = decode_key()
-    envelope = json.loads(args.cache.read_text(encoding="utf-8"))
+    envelope = json.loads(envelope_bytes.decode("utf-8"))
     cache = decrypt_score_cache(envelope, key=key)
-    report = EXPERIMENTS[args.experiment](cache)
+    if args.validate_cache_only:
+        from scripts.benchmarks.phase1b.e3_confirm import validate_cache
+
+        result = validate_cache(cache)
+        print(json.dumps({**result, "envelope_sha256": envelope_sha256}, sort_keys=True))
+        return
+    if args.experiment == "e3-confirm-dev-b":
+        # Bind the reservation check to the bytes actually decrypted in this process.
+        os.environ["P1_CACHE_ENVELOPE_SHA256"] = envelope_sha256
+    try:
+        report = EXPERIMENTS[args.experiment](cache)
+    finally:
+        os.environ.pop("P1_CACHE_ENVELOPE_SHA256", None)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(canonical_json(report) + b"\n")
     print(

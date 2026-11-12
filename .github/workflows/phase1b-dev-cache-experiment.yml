@@ -139,18 +139,20 @@ jobs:
           [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]
           [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ ]]
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_RUN_ATTEMPT" == "1" ]]
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
-          cache: pip
       - name: Install pinned dependencies
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple cryptography==46.0.3 numpy==2.2.6
+          python -m pip install --index-url https://pypi.org/simple \
+            cryptography==46.0.3 \
+            numpy==2.2.6
       - name: Verify cache source run
         env:
           GH_TOKEN: ${{ github.token }}
@@ -162,24 +164,34 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
+
           run = json.loads(Path("/tmp/cache-run.json").read_text())
-          allowed = {".github/workflows/phase1b-dev-full.yml", ".github/workflows/phase1b-dev-full-reaggregate.yml"}
+          allowed = {
+              ".github/workflows/phase1b-dev-full.yml",
+              ".github/workflows/phase1b-dev-full-reaggregate.yml",
+          }
           assert run["path"] in allowed, run["path"]
           assert run["head_branch"] == "main"
           assert run["event"] == "workflow_dispatch"
-          assert run["status"] == "completed" and run["conclusion"] == "success"
+          assert run["status"] == "completed"
+          assert run["conclusion"] == "success"
           print(f"CACHE_RUN_VERIFIED path={run['path']} head_sha={run['head_sha']}")
           PY
       - name: Require P1 scientific authorization before cache download
         run: |
           set -euo pipefail
-          python scripts/benchmarks/phase1b/score_cache.py --experiment e3-confirm-dev-b --preflight-only
-      - name: Require one-shot lock credential before cache download
+          python scripts/benchmarks/phase1b/score_cache.py \
+            --experiment e3-confirm-dev-b \
+            --preflight-only
+      - name: Require one-shot lock App configuration before cache download
         shell: bash
+        env:
+          P1_LOCK_APP_CLIENT_ID: ${{ vars.P1_LOCK_APP_CLIENT_ID }}
+          P1_LOCK_APP_KEY_CONFIGURED: ${{ secrets.P1_LOCK_APP_PRIVATE_KEY != '' }}
         run: |
           set -euo pipefail
-          [[ -n "${P1_LOCK_TOKEN:-}" ]] || {
-            echo "::error::P1_LOCK_TOKEN must be a short-lived GitHub App installation token before cache download."
+          [[ -n "$P1_LOCK_APP_CLIENT_ID" && "$P1_LOCK_APP_KEY_CONFIGURED" == "true" ]] || {
+            echo "::error::The P1 lock GitHub App (client ID and private key) is not configured."
             exit 1
           }
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
@@ -188,6 +200,33 @@ jobs:
           path: /tmp/phase1b-score-cache
           run-id: ${{ inputs.cache_run_id }}
           github-token: ${{ github.token }}
+      - name: Validate decrypted cache before reserving P1
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/score_cache.py \
+            --experiment e3-confirm-dev-b \
+            --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json \
+            --validate-cache-only
+      - name: Mint short-lived P1 lock token
+        id: p1-lock-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.P1_LOCK_APP_CLIENT_ID }}
+          private-key: ${{ secrets.P1_LOCK_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ayorai-opensearch
+          permission-contents: write
+      - name: Reserve single-use P1 lock
+        env:
+          P1_LOCK_TOKEN: ${{ steps.p1-lock-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/score_cache.py \
+            --experiment e3-confirm-dev-b \
+            --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json \
+            --reserve-lock "$RUNNER_TEMP/p1-lock-reservation.json"
       - name: Decrypt cache and run P1 with a one-shot lock
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
@@ -197,21 +236,46 @@ jobs:
           set -euo pipefail
           trap 'rm -rf /tmp/phase1b-score-cache' EXIT
           mkdir -p /tmp/phase1b-output
-          python scripts/benchmarks/phase1b/score_cache.py --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json --experiment "$EXPERIMENT" --output /tmp/phase1b-output/phase1b-cache-experiment.json
+          export P1_LOCK_RESERVATION="$RUNNER_TEMP/p1-lock-reservation.json"
+          python scripts/benchmarks/phase1b/score_cache.py \
+            --cache /tmp/phase1b-score-cache/phase1b-dev-score-cache.json \
+            --experiment "$EXPERIMENT" \
+            --output /tmp/phase1b-output/phase1b-cache-experiment.json
+          cp "$P1_LOCK_RESERVATION" /tmp/phase1b-output/p1-lock-reservation.json
           python - <<'PY'
-          import json, os
+          import json
+          import os
           from pathlib import Path
-          report = json.loads(Path("/tmp/phase1b-output/phase1b-cache-experiment.json").read_text())
+
+          output = Path("/tmp/phase1b-output")
+          report = json.loads((output / "phase1b-cache-experiment.json").read_text())
           serialized = json.dumps(report, sort_keys=True)
           assert report["split"] == "dev"
           assert report["experiment"] == "e3-confirm-dev-b"
-          assert report["partition"] == "conditional confirmation on partially used holdout (DEV-B; calibrated on DEV-A)"
-          assert report["confirmation_classification"] == "confirmação condicional em holdout parcialmente usado (DEV-B)"
+          assert report["partition"] == (
+              "conditional confirmation on partially used holdout (DEV-B; calibrated on DEV-A)"
+          )
+          assert report["confirmation_classification"] == (
+              "confirmação condicional em holdout parcialmente usado (DEV-B)"
+          )
           assert report["instance_level_output_published"] is False
-          assert "record_id" not in serialized and "records" not in serialized
-          provenance = {"schema_version":"phase1b-dev-cache-experiment-provenance-v1","cache_run_id":os.environ["CACHE_RUN_ID"],"experiment_run_id":os.environ["GITHUB_RUN_ID"],"experiment_code_sha":os.environ["GITHUB_SHA"],"experiment":report["experiment"],"report_sha256":report["report_sha256"],"manifest_sha256":report["manifest_sha256"]}
-          Path("/tmp/phase1b-output/PROVENANCE.json").write_text(json.dumps(provenance,indent=2,sort_keys=True)+"\n")
-          print(json.dumps(provenance,sort_keys=True))
+          assert "record_id" not in serialized
+          assert "records" not in serialized
+          reservation = json.loads((output / "p1-lock-reservation.json").read_text())
+          provenance = {
+              "schema_version": "phase1b-dev-cache-experiment-provenance-v1",
+              "cache_run_id": os.environ["CACHE_RUN_ID"],
+              "experiment_run_id": os.environ["GITHUB_RUN_ID"],
+              "experiment_code_sha": os.environ["GITHUB_SHA"],
+              "experiment": report["experiment"],
+              "report_sha256": report["report_sha256"],
+              "manifest_sha256": report["manifest_sha256"],
+              "lock_reservation": reservation,
+          }
+          (output / "PROVENANCE.json").write_text(
+              json.dumps(provenance, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(provenance, sort_keys=True))
           PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -219,6 +283,7 @@ jobs:
           path: |
             /tmp/phase1b-output/phase1b-cache-experiment.json
             /tmp/phase1b-output/PROVENANCE.json
+            /tmp/phase1b-output/p1-lock-reservation.json
           if-no-files-found: error
           retention-days: 30
 
