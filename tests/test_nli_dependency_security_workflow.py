@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "nli-dependency-smoke.yml"
 PYPROJECT = ROOT / "pyproject.toml"
@@ -19,7 +18,8 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
         'python -m pip install --index-url https://pypi.org/simple -e ".[dev,nli]"'
     )
     install_pilot = workflow.index(
-        "python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt"
+        "python -m pip install --index-url "
+        "https://pypi.org/simple -r requirements-benchmark-pilot.txt"
     )
     pip_check = workflow.index("pip check", install_pilot)
     uninstall_local = workflow.index(
@@ -45,7 +45,8 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
         pypi_command,
     )
     restore_torch_command = workflow.index(
-        'run: python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.14.0"',
+        'run: python -m pip install --index-url '
+        'https://download.pytorch.org/whl/cpu "torch==2.14.0"',
         restore_torch,
     )
     restore_local = workflow.index(
