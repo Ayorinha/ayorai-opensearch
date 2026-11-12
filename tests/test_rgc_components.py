@@ -155,3 +155,80 @@ def test_exact_sign_flip_rejects_empty_and_non_integer_inputs() -> None:
 def test_exact_sign_flip_refuses_unspecified_monte_carlo_path() -> None:
     with pytest.raises(ValueError, match="PRNG specification"):
         MODULE["exact_sign_flip"]([1] * 21)
+
+
+
+def test_monte_carlo_sign_flip_uses_fixed_reproducible_pcg64() -> None:
+    fn = MODULE["exact_sign_flip"]
+    first = fn([1] * 21)
+    second = fn([1] * 21)
+
+    assert first == second
+    assert first.method == "monte_carlo"
+    assert first.seed == 20261003
+    assert first.generator == "numpy.random.Generator(numpy.random.PCG64)"
+    assert first.iterations == 10_000
+    assert first.permutations_considered == 10_000
+    assert first.p_value_two_sided == (1 + first.extreme_permutations) / 10_001
+    assert first.minimum_resolution == 2 / (2**21)
+
+
+def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> None:
+    fn = MODULE["bootstrap_cohen_kappa_by_component"]
+    annotations_a = {
+        "a1": "SUPPORTED",
+        "a2": "REFUTED",
+        "b1": "UNVERIFIED",
+        "b2": "PARTIALLY_SUPPORTED",
+        "excluded": "RULE_GAP",
+    }
+    annotations_b = {
+        "a1": "SUPPORTED",
+        "a2": "REFUTED",
+        "b1": "PARTIALLY_SUPPORTED",
+        "b2": "UNVERIFIED",
+        "excluded": "SUPPORTED",
+    }
+    components = {
+        "a1": "component-a",
+        "a2": "component-a",
+        "b1": "component-b",
+        "b2": "component-b",
+        "excluded": "component-c",
+    }
+
+    first = fn(annotations_a, annotations_b, components)
+    second = fn(annotations_a, annotations_b, components)
+
+    assert first == second
+    assert first.component_count == 2
+    assert first.case_count == 4
+    assert first.iterations == 10_000
+    assert first.seed == 20261003
+    assert first.generator == "numpy.random.Generator(numpy.random.PCG64)"
+    assert first.valid_replicates + first.undefined_replicates == 10_000
+    assert first.ci95 is not None
+    assert first.unstable == (first.undefined_fraction > 0.05)
+
+
+def test_component_kappa_bootstrap_reports_fully_undefined_interval() -> None:
+    result = MODULE["bootstrap_cohen_kappa_by_component"](
+        {"a": "SUPPORTED", "b": "SUPPORTED"},
+        {"a": "SUPPORTED", "b": "SUPPORTED"},
+        {"a": "component-a", "b": "component-b"},
+    )
+
+    assert result.kappa is None
+    assert result.ci95 is None
+    assert result.undefined_replicates == 10_000
+    assert result.undefined_fraction == 1.0
+    assert result.unstable is True
+
+
+def test_component_kappa_bootstrap_rejects_mismatched_case_ids() -> None:
+    with pytest.raises(ValueError, match="must match exactly"):
+        MODULE["bootstrap_cohen_kappa_by_component"](
+            {"a": "SUPPORTED"},
+            {"b": "SUPPORTED"},
+            {"a": "component-a"},
+        )
