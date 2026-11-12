@@ -8,7 +8,7 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 
 ## Estado atual — 2026-11-12
 
-- **Main de referência:** `b26d3583e79eb3e6781bd5ed0230ad445aa5a98c`. Este é o HEAD da main após o merge da PR #526; seus 13 check-runs pós-merge estavam em execução na última consulta.
+- **Main de referência:** `b26d3583e79eb3e6781bd5ed0230ad445aa5a98c`. Este é o HEAD da main após o merge da PR #526; seus 13/13 check-runs pós-merge concluíram com `success`.
 - **API documental:** PR #515 foi mesclada após 21/21 checks. `/v1/fields` agora usa `fields-trace-2`, vinculando ID do documento, tipo de mídia, hash do texto extraído, hash da origem e limites de página. A PR #526 documentou a semântica no changelog da API e foi mesclada em squash no commit `b26d3583e79eb3e6781bd5ed0230ad445aa5a98c`; os 20 check-runs do HEAD `7479bc2` concluíram com sucesso.
 - **Governança:** PR #513 foi mesclada após 20/20 checks. Integrações automatizadas exigem autorização escrita e específica do mantenedor, revisão concluída, checks obrigatórios verdes no HEAD final e preservação do escopo/artefatos protegidos.
 - **CodeQL:** PR #518 foi mesclada após 20/20 checks, atualizando CodeQL Action para v4.39.3 com SHA imutável.
