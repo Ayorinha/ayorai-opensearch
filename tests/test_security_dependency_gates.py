@@ -1,6 +1,6 @@
-from pathlib import Path
-
 import yaml
+
+from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
