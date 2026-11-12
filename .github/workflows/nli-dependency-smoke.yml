@@ -26,8 +26,8 @@ jobs:
             requirements-benchmark-pilot.txt
       - name: Install optional NLI dependencies
         run: |
-          python -m pip install "pip==25.2"
-          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
+          python -m pip install "pip==26.3" "setuptools==84.2.1"
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.10.0"
           python -m pip install --index-url https://pypi.org/simple -e ".[dev,nli]"
           python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt
           pip check
@@ -40,14 +40,13 @@ jobs:
       - name: Audit PyPI dependencies with strict collection
         run: pip-audit --strict
       - name: Restore the pinned CPU PyTorch wheel
-        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
+        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.10.0"
       - name: Restore the local project without changing resolved dependencies
         run: python -m pip install --no-deps -e .
       - name: Verify installed dependency versions
         run: |
           python - <<'PY'
           from importlib.metadata import version
-          import accelerate
           import google.protobuf
           import huggingface_hub
           import numpy as np
@@ -65,7 +64,7 @@ jobs:
           packages = (
               "transformers", "torch", "protobuf", "sentencepiece",
               "huggingface-hub", "pyarrow", "pandas", "numpy", "psutil",
-              "accelerate", "safetensors",
+              "safetensors",
           )
           for package in packages:
               print(f"{package}=={version(package)}")
@@ -79,7 +78,7 @@ jobs:
           restored = pq.read_table(pa.BufferReader(sink.getvalue())).to_pandas()
           assert restored.equals(frame)
           assert psutil.Process().memory_info().rss > 0
-          assert accelerate.__version__ and safetensors.__version__
+          assert safetensors.__version__
           assert huggingface_hub.__version__ and google.protobuf.__version__
           print("BENCHMARK_PILOT_DEPENDENCIES_IMPORT: PASS")
           print("PARQUET_PANDAS_NUMPY_ROUNDTRIP: PASS")
