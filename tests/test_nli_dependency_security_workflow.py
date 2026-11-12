@@ -24,14 +24,31 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
         "- name: Remove the local editable project before auditing third-party dependencies",
         pip_check,
     )
-    audit_step = workflow.index(
-        "- name: Audit the complete optional NLI and benchmark dependency environment",
+    osv_audit = workflow.index(
+        "- name: Audit optional dependencies against OSV, including CPU PyTorch",
         uninstall_local,
     )
-    audit_command = workflow.index("run: pip-audit --strict", audit_step)
+    osv_command = workflow.index("run: pip-audit --strict --vulnerability-service osv", osv_audit)
+    remove_torch = workflow.index(
+        "- name: Remove CPU PyTorch for the PyPI-native dependency audit",
+        osv_command,
+    )
+    pypi_audit = workflow.index(
+        "- name: Audit PyPI dependencies with strict collection",
+        remove_torch,
+    )
+    pypi_command = workflow.index("run: pip-audit --strict", pypi_audit)
+    restore_torch = workflow.index(
+        "- name: Restore the pinned CPU PyTorch wheel",
+        pypi_command,
+    )
+    restore_torch_command = workflow.index(
+        'run: python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"',
+        restore_torch,
+    )
     restore_local = workflow.index(
         "- name: Restore the local project without changing resolved dependencies",
-        audit_command,
+        restore_torch_command,
     )
     restore_command = workflow.index("run: python -m pip install --no-deps -e .", restore_local)
     verify_versions = workflow.index(
@@ -45,8 +62,13 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
         < install_pilot
         < pip_check
         < uninstall_local
-        < audit_step
-        < audit_command
+        < osv_audit
+        < osv_command
+        < remove_torch
+        < pypi_audit
+        < pypi_command
+        < restore_torch
+        < restore_torch_command
         < restore_local
         < restore_command
         < verify_versions
@@ -54,3 +76,6 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
     assert "assert torch.version.cuda is None" in workflow
     assert '"pip-audit>=2.9,<3"' in pyproject
     assert "--skip-editable" not in workflow
+    assert "pip-audit --strict --vulnerability-service osv" in workflow
+    assert "pip-audit --strict" in workflow
+    assert "python -m pip uninstall -y torch" in workflow
