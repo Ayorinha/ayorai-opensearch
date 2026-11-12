@@ -45,7 +45,7 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
         pypi_command,
     )
     restore_torch_command = workflow.index(
-        'run: python -m pip install --index-url '
+        "run: python -m pip install --index-url "
         'https://download.pytorch.org/whl/cpu "torch==2.14.0"',
         restore_torch,
     )
