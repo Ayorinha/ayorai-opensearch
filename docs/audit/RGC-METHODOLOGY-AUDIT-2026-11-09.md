@@ -186,7 +186,7 @@ Este adendo atualiza apenas a fotografia de continuidade e registra uma lacuna d
 
 ### Estado GitHub
 
-- `main`: SHA `b26d3583e79eb3e6781bd5ed0230ad445aa5a98c`, após o merge squash da PR #526. No momento da consulta, os 13 check-runs pós-merge tinham Security e CodeQL concluídos com sucesso; o workflow CI permanecia `in_progress`. Não declarar o conjunto pós-merge integralmente verde até o CI terminar.
+- `main`: SHA `b26d3583e79eb3e6781bd5ed0230ad445aa5a98c`, após o merge squash da PR #526. No momento da consulta, os 13/13 check-runs pós-merge concluíram com `success`. Não declarar o conjunto pós-merge integralmente verde até o CI terminar.
 - PR #526: mesclada em `b26d3583e79eb3e6781bd5ed0230ad445aa5a98c`; 20/20 check-runs do HEAD da PR concluídos com sucesso. Alterou somente `docs/api/CHANGELOG-API.md`.
 - PR #514 (versão anterior desta proposta): HEAD `764a3003d1c0cfbb2546d8d410ec6e900a240e37`, 20/20 check-runs verdes, mas base antiga e branch divergente da main; esta PR de atualização reaplica somente as duas alterações documentais sobre a main atual, sem force-push.
 - PR #530: atualização independente de `docs/STATUS.md`, baseada na main atual; Draft, com sete workflows queued no HEAD `f36abb2c272e0751f6861b8b75523c869a07ac89` na última consulta.
