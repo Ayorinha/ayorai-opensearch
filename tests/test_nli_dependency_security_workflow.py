@@ -13,7 +13,7 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
     requirements = REQUIREMENTS.read_text(encoding="utf-8")
 
     cpu_torch = workflow.index(
-        'python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.10.0"'
+        'python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.14.0"'
     )
     install_extras = workflow.index(
         'python -m pip install --index-url https://pypi.org/simple -e ".[dev,nli]"'
@@ -45,7 +45,7 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
         pypi_command,
     )
     restore_torch_command = workflow.index(
-        'run: python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.10.0"',
+        'run: python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.14.0"',
         restore_torch,
     )
     restore_local = workflow.index(
@@ -78,7 +78,7 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
     assert "assert torch.version.cuda is None" in workflow
     assert '"pip==26.3" "setuptools==84.2.1"' in workflow
     assert "accelerate" not in requirements
-    assert '"torch>=2.10,<3"' in pyproject
+    assert '"torch>=2.14,<3"' in pyproject
     assert '"pip-audit>=2.9,<3"' in pyproject
     assert "--skip-editable" not in workflow
     assert "pip-audit --strict --vulnerability-service osv" in workflow
