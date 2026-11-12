@@ -33,8 +33,14 @@ jobs:
           pip check
       - name: Remove the local editable project before auditing third-party dependencies
         run: python -m pip uninstall -y ayorai-opensearch
-      - name: Audit the complete optional NLI and benchmark dependency environment
+      - name: Audit optional dependencies against OSV, including CPU PyTorch
+        run: pip-audit --strict --vulnerability-service osv
+      - name: Remove CPU PyTorch for the PyPI-native dependency audit
+        run: python -m pip uninstall -y torch
+      - name: Audit PyPI dependencies with strict collection
         run: pip-audit --strict
+      - name: Restore the pinned CPU PyTorch wheel
+        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
       - name: Restore the local project without changing resolved dependencies
         run: python -m pip install --no-deps -e .
       - name: Verify installed dependency versions
