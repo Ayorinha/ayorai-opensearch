@@ -221,7 +221,7 @@ def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
     extreme = 0
     values = np.asarray(differences, dtype=np.int64)
     for _ in range(iterations):
-        signs = rng.choice((-1, 1), size=component_count, replace=True)
+        signs = rng.choice([-1, +1], size=component_count, replace=True)
         permuted = int(np.sum(signs * values))
         if abs(permuted) >= abs(observed):
             extreme += 1
@@ -254,6 +254,8 @@ class KappaBootstrapResult(NamedTuple):
     valid_replicates: int
     undefined_replicates: int
     undefined_fraction: float
+    rule_gap_excluded_count: int
+    rule_gap_excluded_disagreements: int
     unstable: bool
 
 
@@ -295,11 +297,12 @@ def bootstrap_cohen_kappa_by_component(
     ):
         raise ValueError("component IDs must be canonical non-empty strings")
 
-    eligible = [
+    excluded = [
         case_id
         for case_id in sorted(ids)
-        if annotations_a[case_id] != "RULE_GAP" and annotations_b[case_id] != "RULE_GAP"
+        if annotations_a[case_id] == "RULE_GAP" or annotations_b[case_id] == "RULE_GAP"
     ]
+    eligible = [case_id for case_id in sorted(ids) if case_id not in set(excluded)]
     if not eligible:
         raise ValueError("no eligible cases remain after excluding RULE_GAP pairs")
 
@@ -369,5 +372,9 @@ def bootstrap_cohen_kappa_by_component(
         valid_replicates=len(bootstrap_values),
         undefined_replicates=undefined,
         undefined_fraction=undefined_fraction,
+        rule_gap_excluded_count=len(excluded),
+        rule_gap_excluded_disagreements=sum(
+            annotations_a[case_id] != annotations_b[case_id] for case_id in excluded
+        ),
         unstable=undefined_fraction > 0.05,
     )
