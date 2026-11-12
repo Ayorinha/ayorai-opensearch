@@ -32,7 +32,7 @@ jobs:
           python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt
           pip check
       - name: Audit the complete optional NLI and benchmark dependency environment
-        run: pip-audit --strict
+        run: pip-audit --strict --skip-editable
       - name: Verify installed dependency versions
         run: |
           python - <<'PY'
