@@ -152,12 +152,6 @@ def test_exact_sign_flip_rejects_empty_and_non_integer_inputs() -> None:
         MODULE["exact_sign_flip"]([1, True])
 
 
-def test_exact_sign_flip_refuses_unspecified_monte_carlo_path() -> None:
-    with pytest.raises(ValueError, match="PRNG specification"):
-        MODULE["exact_sign_flip"]([1] * 21)
-
-
-
 def test_monte_carlo_sign_flip_uses_fixed_reproducible_pcg64() -> None:
     fn = MODULE["exact_sign_flip"]
     first = fn([1] * 21)
@@ -203,6 +197,8 @@ def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> No
     assert first == second
     assert first.component_count == 2
     assert first.case_count == 4
+    assert first.rule_gap_excluded_count == 1
+    assert first.rule_gap_excluded_disagreements == 1
     assert first.iterations == 10_000
     assert first.seed == 20261003
     assert first.generator == "numpy.random.Generator(numpy.random.PCG64)"
