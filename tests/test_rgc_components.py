@@ -89,9 +89,7 @@ def test_invalid_component_inputs_fail_closed(cases: list[dict[str, object]], me
 
 
 def test_plus_is_safe_inside_article_ids_under_json_hash_serialization() -> None:
-    result = MODULE["build_article_components"](
-        [{"case_id": "a", "cited_article_ids": ["x+y"]}]
-    )
+    result = MODULE["build_article_components"]([{"case_id": "a", "cited_article_ids": ["x+y"]}])
 
     assert result.components[0].article_ids == ("x+y",)
     assert result.components[0].canonical_article_ids_json == '["x+y"]'
@@ -100,9 +98,7 @@ def test_plus_is_safe_inside_article_ids_under_json_hash_serialization() -> None
 
 def test_non_nfc_article_ids_are_rejected() -> None:
     with pytest.raises(ValueError, match="NFC"):
-        MODULE["build_article_components"](
-            [{"case_id": "a", "cited_article_ids": ["e\u0301"]}]
-        )
+        MODULE["build_article_components"]([{"case_id": "a", "cited_article_ids": ["e\u0301"]}])
 
 
 def test_empty_input_has_a_well_formed_empty_summary() -> None:
