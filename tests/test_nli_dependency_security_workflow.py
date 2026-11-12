@@ -20,14 +20,23 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
         "python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt"
     )
     pip_check = workflow.index("pip check", install_pilot)
-    audit_step = workflow.index(
-        "- name: Audit the complete optional NLI and benchmark dependency environment",
+    uninstall_local = workflow.index(
+        "- name: Remove the local editable project before auditing third-party dependencies",
         pip_check,
     )
-    audit_command = workflow.index("run: pip-audit --strict --skip-editable", audit_step)
+    audit_step = workflow.index(
+        "- name: Audit the complete optional NLI and benchmark dependency environment",
+        uninstall_local,
+    )
+    audit_command = workflow.index("run: pip-audit --strict", audit_step)
+    restore_local = workflow.index(
+        "- name: Restore the local project without changing resolved dependencies",
+        audit_command,
+    )
+    restore_command = workflow.index("run: python -m pip install --no-deps -e .", restore_local)
     verify_versions = workflow.index(
         "- name: Verify installed dependency versions",
-        audit_command,
+        restore_command,
     )
 
     assert (
@@ -35,8 +44,11 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
         < install_extras
         < install_pilot
         < pip_check
+        < uninstall_local
         < audit_step
         < audit_command
+        < restore_local
+        < restore_command
         < verify_versions
     )
     assert "assert torch.version.cuda is None" in workflow
