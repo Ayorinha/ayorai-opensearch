@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 
 import yaml
@@ -16,9 +15,14 @@ def test_python_dependency_audit_fails_on_incomplete_collection() -> None:
     uninstall = next(
         index
         for index, step in enumerate(steps)
-        if step.get("name") == "Remove the local editable project before auditing third-party dependencies"
+        if step.get("name")
+        == "Remove the local editable project before auditing third-party dependencies"
     )
-    audit = next(index for index, step in enumerate(steps) if step.get("run") == "pip-audit --strict")
+    audit = next(
+        index
+        for index, step in enumerate(steps)
+        if step.get("run") == "pip-audit --strict"
+    )
     assert any(step.get("run") == 'pip install -e ".[dev]"' for step in steps)
     assert uninstall < audit
     assert steps[uninstall]["run"] == "python -m pip uninstall -y ayorai-opensearch"
@@ -34,5 +38,7 @@ def test_high_severity_dependency_review_is_a_required_gate() -> None:
     assert job.get("continue-on-error", False) is False
     assert review_step["with"]["fail-on-severity"] == "high"
     assert review_step["with"]["warn-only"] is False
-    assert re.search(r"@[0-9a-f]{40}(?:\s|$)", review_step["uses"])
+    pinned_ref = review_step["uses"].split("@", maxsplit=1)[1].split()[0]
+    assert len(pinned_ref) == 40
+    assert all(character in "0123456789abcdef" for character in pinned_ref)
     assert workflow["permissions"] == {"contents": "read"}
