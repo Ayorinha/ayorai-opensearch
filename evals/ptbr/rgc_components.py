@@ -7,6 +7,9 @@ case records explicitly. It implements the graph unit specified by DEC-023.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import unicodedata
 from collections.abc import Iterable, Mapping
 from itertools import product
 from typing import NamedTuple
@@ -18,6 +21,7 @@ class ArticleComponent(NamedTuple):
     component_id: str
     case_ids: tuple[str, ...]
     article_ids: tuple[str, ...]
+    canonical_article_ids_json: str
 
 
 class ComponentSummary(NamedTuple):
@@ -61,9 +65,9 @@ def build_article_components(
     """Build transitive case components from complete cited_article_ids lists.
 
     Every case must have a unique non-empty case_id and a non-empty list of
-    unique, trimmed article IDs. The '+' delimiter is reserved by DEC-023's
-    canonical component ID representation and is rejected inside IDs to avoid
-    ambiguous serialization. No input is modified.
+    unique, trimmed, NFC-normalized article IDs. Component IDs are SHA-256
+    commitments to the canonical compact JSON array required by DEC-023.
+    No input is modified.
     """
     records = list(cases)
     case_ids: list[str] = []
@@ -88,12 +92,9 @@ def build_article_components(
                 not isinstance(article_id, str)
                 or not article_id
                 or article_id != article_id.strip()
+                or article_id != unicodedata.normalize("NFC", article_id)
             ):
-                raise ValueError(f"{case_id}: article IDs must be canonical non-empty strings")
-            if "+" in article_id:
-                raise ValueError(
-                    f"{case_id}: article ID {article_id!r} contains reserved '+' delimiter"
-                )
+                raise ValueError(f"{case_id}: article IDs must be canonical non-empty NFC strings")
             if article_id in seen:
                 raise ValueError(f"{case_id}: duplicate article ID {article_id!r}")
             seen.add(article_id)
@@ -129,12 +130,17 @@ def build_article_components(
                 }
             )
         )
-        component_id = "component:" + "+".join(article_ids)
+        canonical_json = json.dumps(
+            list(article_ids), ensure_ascii=False, separators=(",", ":")
+        )
+        digest = hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
+        component_id = f"component:sha256:{digest}"
         components.append(
             ArticleComponent(
                 component_id=component_id,
                 case_ids=member_ids,
                 article_ids=article_ids,
+                canonical_article_ids_json=canonical_json,
             )
         )
 
