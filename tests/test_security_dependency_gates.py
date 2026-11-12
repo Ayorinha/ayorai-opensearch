@@ -13,7 +13,15 @@ def test_python_dependency_audit_fails_on_incomplete_collection() -> None:
     workflow = yaml.safe_load(SECURITY_WORKFLOW.read_text(encoding="utf-8"))
     steps = workflow["jobs"]["security"]["steps"]
 
-    assert any(step.get("run") == "pip-audit --strict" for step in steps)
+    uninstall = next(
+        index
+        for index, step in enumerate(steps)
+        if step.get("name") == "Remove the local editable project before auditing third-party dependencies"
+    )
+    audit = next(index for index, step in enumerate(steps) if step.get("run") == "pip-audit --strict")
+    assert any(step.get("run") == 'pip install -e ".[dev]"' for step in steps)
+    assert uninstall < audit
+    assert steps[uninstall]["run"] == "python -m pip uninstall -y ayorai-opensearch"
 
 
 def test_high_severity_dependency_review_is_a_required_gate() -> None:
