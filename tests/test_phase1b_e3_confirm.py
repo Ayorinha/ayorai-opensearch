@@ -558,4 +558,3 @@ def test_confirmatory_eligibility_is_bound_to_matrix_and_selection_decision() ->
         e3_confirm._validate_confirmatory_eligibility(
             eligibility, eligibility_sha256=e3_confirm.ELIGIBILITY_SHA256
         )
-

@@ -11,20 +11,14 @@ import pytest
 from scripts.benchmarks.phase1b import e3_confirm, score_cache
 
 
-def test_p1_preflight_runs_before_cache_decryption(
-    monkeypatch, tmp_path: Path
-) -> None:
+def test_p1_preflight_runs_before_cache_decryption(monkeypatch, tmp_path: Path) -> None:
     events: list[str] = []
     cache_path = tmp_path / "encrypted-cache.json"
     cache_path.write_text(json.dumps({"ciphertext": "synthetic"}), encoding="utf-8")
     output_path = tmp_path / "report.json"
 
-    monkeypatch.setattr(
-        e3_confirm, "preflight_confirm", lambda: events.append("preflight")
-    )
-    monkeypatch.setattr(
-        score_cache, "decode_key", lambda: events.append("decode-key") or b"key"
-    )
+    monkeypatch.setattr(e3_confirm, "preflight_confirm", lambda: events.append("preflight"))
+    monkeypatch.setattr(score_cache, "decode_key", lambda: events.append("decode-key") or b"key")
     monkeypatch.setattr(
         score_cache,
         "decrypt_score_cache",
@@ -57,9 +51,7 @@ def test_p1_preflight_runs_before_cache_decryption(
 
 def test_p1_preflight_only_never_reads_or_decrypts_cache(monkeypatch) -> None:
     events: list[str] = []
-    monkeypatch.setattr(
-        e3_confirm, "preflight_confirm", lambda: events.append("preflight")
-    )
+    monkeypatch.setattr(e3_confirm, "preflight_confirm", lambda: events.append("preflight"))
 
     def forbidden(*_args, **_kwargs):
         raise AssertionError("preflight-only must not access cache material")

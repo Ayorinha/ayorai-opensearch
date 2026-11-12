@@ -87,4 +87,3 @@ def test_producers_upload_only_the_encrypted_cache() -> None:
         assert len(cache_uploads) == 1, path
         assert cache_uploads[0]["with"]["path"].endswith("phase1b-dev-score-cache.json")
         assert "--score-cache-output" in text
-
