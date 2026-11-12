@@ -17,11 +17,7 @@ def test_python_dependency_audit_fails_on_incomplete_collection() -> None:
         if step.get("name")
         == "Remove the local editable project before auditing third-party dependencies"
     )
-    audit = next(
-        index
-        for index, step in enumerate(steps)
-        if step.get("run") == "pip-audit --strict"
-    )
+    audit = next(index for index, step in enumerate(steps) if step.get("run") == "pip-audit --strict")
     assert any(step.get("run") == 'pip install -e ".[dev]"' for step in steps)
     assert uninstall < audit
     assert steps[uninstall]["run"] == "python -m pip uninstall -y ayorai-opensearch"
