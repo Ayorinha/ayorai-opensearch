@@ -22,7 +22,11 @@ def test_python_dependency_audit_fails_on_incomplete_collection() -> None:
         for index, step in enumerate(steps)
         if step.get("run") == "pip-audit --strict --vulnerability-service osv"
     )
-    audit = next(index for index, step in enumerate(steps) if step.get("run") == "pip-audit --strict")
+    audit = next(
+        index
+        for index, step in enumerate(steps)
+        if step.get("run") == "pip-audit --strict"
+    )
     assert any(step.get("run") == 'pip install -e ".[dev]"' for step in steps)
     assert "python -m pip install --upgrade pip setuptools" in {step.get("run") for step in steps}
     assert uninstall < osv_audit < audit
