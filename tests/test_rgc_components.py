@@ -94,3 +94,39 @@ def test_empty_input_has_a_well_formed_empty_summary() -> None:
     assert result.case_count == 0
     assert result.largest_component_size == 0
     assert result.component_sizes == ()
+
+
+def test_exact_sign_flip_enumerates_all_sign_combinations() -> None:
+    result = MODULE["exact_sign_flip"]([1, 1])
+
+    assert result.statistic_observed == 2
+    assert result.permutations_considered == 4
+    assert result.extreme_permutations == 2
+    assert result.p_value_two_sided == 0.5
+    assert result.minimum_resolution == 0.5
+    assert result.significance_below_005_possible is False
+
+
+def test_exact_sign_flip_keeps_zero_difference_components() -> None:
+    result = MODULE["exact_sign_flip"]([1, 0])
+
+    assert result.component_count == 2
+    assert result.permutations_considered == 4
+    assert result.p_value_two_sided == 1.0
+
+
+def test_exact_sign_flip_is_symmetric_and_deterministic() -> None:
+    fn = MODULE["exact_sign_flip"]
+    assert fn([3, -2, 1]) == fn([-3, 2, -1])
+
+
+def test_exact_sign_flip_rejects_empty_and_non_integer_inputs() -> None:
+    with pytest.raises(ValueError, match="at least one"):
+        MODULE["exact_sign_flip"]([])
+    with pytest.raises(ValueError, match="integers"):
+        MODULE["exact_sign_flip"]([1, True])
+
+
+def test_exact_sign_flip_refuses_unspecified_monte_carlo_path() -> None:
+    with pytest.raises(ValueError, match="PRNG specification"):
+        MODULE["exact_sign_flip"]([1] * 21)
