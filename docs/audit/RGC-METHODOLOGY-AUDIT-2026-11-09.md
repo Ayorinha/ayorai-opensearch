@@ -1,3 +1,5 @@
+Revisão por ferramenta automatizada, publicada pelo mantenedor.
+
 # Auditoria de continuidade metodológica — RGC PT-BR
 
 **Data da verificação:** 2026-11-09  
@@ -125,3 +127,52 @@ DEC-021 a DEC-023 autorizam a especificação documental, não a implementação
 - Arquivos metodológicos lidos na main: `docs/DECISIONS-PENDING.md`, `docs/eval/STATISTICS.md`, `docs/eval/PREREGISTRATION-RGC-v1.md`, `docs/eval/PROTOCOL-GOLDEN-V1.md`, `docs/eval/RUNNER-RGC-v1.md`, `evals/ptbr/rgc_eval.py`, `evals/ptbr/rgc_agreement.py` e testes RGC correspondentes.
 
 **Este documento é uma auditoria interna de consistência. Não representa validação externa, aprovação científica independente, congelamento de protocolo ou autorização de execução.**
+
+
+---
+
+## Adendo de revalidação — 2026-11-11
+
+Este adendo atualiza os fatos de continuidade sem reescrever o snapshot de 2026-11-09. Ele não altera decisões, não aprova método, não congela o protocolo e não autoriza implementação ou execução.
+
+### 1. `main` e CI no estado reconsultado
+
+- HEAD atual: [`b64e56d28e49f1d680e2b281f2b11e0acb39914a`](https://github.com/Ayorinha/ayorai-opensearch/commit/b64e56d28e49f1d680e2b281f2b11e0acb39914a), commit de 2026-11-11 07:12:17 UTC (`ci: validate benchmark and artifact dependency pins`, PR #525).
+- O endpoint de check-runs retornou **13/13 concluídos com `success`** nesse SHA. CI: [run 42977783041](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42977783041); Security: [run 42977782962](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42977782962); CodeQL: [run 42977782987](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/42977782987).
+- O endpoint legado de commit statuses não retornou registros. Isso não foi interpretado como falha: os 13 check-runs individuais do SHA foram consultados diretamente.
+- A comparação de `ed533aad78e30d31d59cfcd8c073679000f585f9` até o HEAD atual mostra cinco commits novos. Os arquivos alterados nesse intervalo são workflows, `AGENTS.md` e código/testes da API; não aparecem alterações no pré-registro, protocolo, executor, ferramenta de concordância ou testes metodológicos RGC.
+- `docs/STATUS.md` na `main` ainda registra atualização em 2026-11-08. A atualização de status datada de 2026-11-11 está proposta na #512 e ainda não foi integrada.
+
+### 2. PR #269 e linhagem — confirmação atual
+
+- [#269](https://github.com/Ayorinha/ayorai-opensearch/pull/269) continua **fechada sem merge**, em estado Draft no registro do GitHub; head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`, cinco commits e dois arquivos alterados. O diff inclui a alteração incidental em `docs/ARCHITECTURE.md` e o documento de revisão metodológica.
+- A conversa tem três comentários; não há submissões de revisão nem threads inline.
+- No head histórico da #269, os 20 check-runs são: **19 success, 1 skipped** (`rgc-design-simulation`) e zero falhas. Esses resultados não são checks da `main` atual.
+- [#272](https://github.com/Ayorinha/ayorai-opensearch/pull/272) também foi fechada sem merge. A revisão documental final foi incorporada pela [#273](https://github.com/Ayorinha/ayorai-opensearch/pull/273), merge commit `5719db48fc82c726671af7c9c7f7ef386d161edb`, com alteração apenas do documento metodológico.
+- A correção da Baseline B já foi integrada pela [#274](https://github.com/Ayorinha/ayorai-opensearch/pull/274), commit `c639d0fda7a6fb8ab29bb438611ee536b1f3ddc2`. O esclarecimento de `RULE_GAP` somente no piloto já foi integrado pela [#275](https://github.com/Ayorinha/ayorai-opensearch/pull/275), commit `9610d24e81fa9639462b610b8915ee5162a26d2a`. Não reiniciar essas tarefas.
+
+### 3. PRs documentais em andamento
+
+- [#514](https://github.com/Ayorinha/ayorai-opensearch/pull/514) permanece aberta em Draft. Antes deste adendo, seu head era `dfd4b8ec7188a57b925f4d1b12d818c9359592c7`, com 20/20 check-runs e 7/7 workflow runs concluídos com sucesso; tinha um comentário de conversa, nenhuma submissão formal de review e nenhuma thread inline. O diff contém somente `docs/eval/STATISTICS.md` e este relatório.
+- A #514 foi criada sobre `ed533aad78e30d31d59cfcd8c073679000f585f9`. A comparação com a `main` atual mostra a branch **3 commits à frente e 5 atrás**; os cinco commits novos da `main` não tocaram os arquivos RGC envolvidos. O PR continua Draft e não deve ser mesclado nem considerado sincronizado por causa dos checks do head anterior. Qualquer novo commit exige rechecagem do SHA exato.
+- [#512](https://github.com/Ayorinha/ayorai-opensearch/pull/512) permanece aberta em Draft, com diff restrito a `docs/STATUS.md`, head atual `7df2fb5e1355f8b94c625953e9dc8f4d036e9034` e base `b64e56d28e49f1d680e2b281f2b11e0acb39914a`. No head atual foram encontrados sete workflow runs, todos ainda **queued**; não há conclusão verde a declarar. A review `COMMENTED` e os 20 checks citados em registros anteriores pertencem a um head anterior e não são transferíveis ao head atual.
+- Na #514, a alteração proposta em `STATISTICS.md` corrige o identificador de componente para a forma da DEC-023 e deixa PRNG/versão/ordem/interpolação como detalhes não aprovados. Essa correção ainda não está na `main`; a versão da `main` mantém a forma anterior `component:sha256:` e parâmetros operacionais que não constam das decisões aprovadas.
+
+### 4. Revalidação metodológica no código e nos testes da `main`
+
+A comparação documental e a inspeção dos arquivos atuais confirmam que os conflitos RGC-01 a RGC-05 descritos acima continuam presentes:
+
+1. **H1 — DEC-021 versus pré-registro/executor:** DEC-021 aprova sign-flip bilateral por componente como teste confirmatório primário. O §5 do pré-registro ainda usa McNemar exato como condição de H1; `rgc_eval.py` calcula `mcnemar_exact_pvalue` e inclui `mcnemar_p_below_0_05` em `h1_supported`. McNemar deve permanecer apenas como sensibilidade segundo a decisão aprovada.
+2. **IC de kappa — DEC-022 versus protocolo/executor:** DEC-022 aprova bootstrap por componente. A Emenda 10 ainda descreve bootstrap por caso; `rgc_agreement.py` usa `random.Random(seed)`, sorteia índices de casos com `randrange(n)` e reporta `ci95_case_bootstrap`. Os testes de concordância continuam cobrindo bootstrap por caso, não por componente.
+3. **Unidade final — DEC-023 versus executor:** DEC-023 exige componentes conectados transitivamente quando quaisquer casos compartilham artigo em `cited_article_ids`. O runner ainda agrupa diretamente por `bootstrap_cluster_id` (DEC-019), sem construir a união transitiva dos artigos citados. Os testes existentes validam clusters e bundles de entrada, mas não a construção de componentes transitivos.
+4. **Reprodutibilidade:** DEC-021/022 fixam número de reamostragens e seed, mas não fixam PRNG/versão, ordem de consumo ou interpolação dos quantis. Esses parâmetros continuam pendentes de decisão explícita; não adotar silenciosamente NumPy/PCG64, `random.Random` ou um método de quantil como se já fossem exigência aprovada.
+5. **Escopo da aprovação:** DEC-021 a DEC-023 autorizam apenas preparar a PR documental. Não autorizam alterar o pré-registro, o protocolo, o executor ou os testes metodológicos; tampouco autorizam execução ou congelamento. A implementação permanece bloqueada até autorização específica e reconciliação normativa.
+
+### 5. Estado humano e salvaguardas
+
+- O protocolo RGC continua **[PROPOSTO]**, não congelado. `docs/eval/PROTOCOL-FREEZE.json` não existe na `main`; a ficha do Piloto 02 continua em branco.
+- Piloto 02 manual sem IA e sem executar o sistema, segunda anotação independente, adjudicação, revisão humana independente F-01, proveniência por dispositivo e isolamento da partição oculta permanecem pendentes.
+- Nenhum arquivo privado de anotação/piloto foi acessado nesta revalidação. Nenhum caso foi criado, visto, completado ou rotulado; o ATTRACTOR não foi executado em casos RGC.
+- Não há resultado de benchmark RGC nem validação externa a declarar.
+
+**Próximos gates:** decisão humana sobre os detalhes operacionais ainda não especificados; autorização/emenda datada para reconciliar pré-registro e protocolo com DEC-021/022; autorização específica de implementação em branch/PR com fixtures sintéticas; e conclusão dos gates humanos do piloto e da anotação. Nenhum desses gates é satisfeito por este adendo.
