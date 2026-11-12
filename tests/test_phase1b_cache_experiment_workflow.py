@@ -38,10 +38,32 @@ def test_experiment_workflow_is_manual_gated_and_inference_free() -> None:
 
         p1 = jobs["p1-confirmation"]
         assert p1["if"] == "inputs.experiment == 'e3-confirm-dev-b'"
-        assert p1["permissions"] == {"contents": "write", "actions": "read"}
+        assert p1["permissions"] == {"contents": "read", "actions": "read"}
         assert p1["environment"] == APPROVAL_ENVIRONMENT
         assert workflow["concurrency"]["cancel-in-progress"] is False
         assert any(step.get("with", {}).get("persist-credentials") is False for step in p1["steps"])
+        steps = p1["steps"]
+        preflight = next(
+            i
+            for i, step in enumerate(steps)
+            if step.get("name") == "Require P1 scientific authorization before cache download"
+        )
+        credential = next(
+            i
+            for i, step in enumerate(steps)
+            if step.get("name") == "Require one-shot lock App configuration before cache download"
+        )
+        download = next(
+            i
+            for i, step in enumerate(steps)
+            if step.get("uses", "").startswith("actions/download-artifact@")
+        )
+        assert preflight < credential < download
+        assert "preflight-only" in steps[preflight]["run"]
+        assert "P1_LOCK_APP_CLIENT_ID" in steps[credential]["env"]
+        assert "P1_LOCK_TOKEN" not in str(steps[credential])
+        assert "PHASE1B_ARTIFACT_ENCRYPTION_KEY" not in steps[preflight].get("env", {})
+        assert "PHASE1B_ARTIFACT_ENCRYPTION_KEY" not in steps[credential].get("env", {})
     else:
         raise AssertionError(f"unexpected experiment workflow jobs: {sorted(jobs)}")
 

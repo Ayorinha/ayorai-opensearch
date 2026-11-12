@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +18,7 @@ from scripts.benchmarks.phase1b.score_cache import EXPERIMENTS, build_score_cach
 _ORIGINAL_LOAD_ELIGIBILITY = e3_confirm.load_eligibility
 _ORIGINAL_NON_ESTIMABLE_GATE = e3_confirm._require_non_estimable_rule
 _ORIGINAL_ATOMIC_LOCK_GATE = e3_confirm._require_persistent_atomic_lock
+_ORIGINAL_RESERVATION_GATE = e3_confirm._require_lock_reservation
 
 PER_COHORT = 80
 
@@ -86,12 +88,21 @@ def _approved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Algorithm tests bypass policy gates only to exercise synthetic data paths.
     # Separate tests assert that production gates fail closed.
     monkeypatch.setattr(e3_confirm, "_require_non_estimable_rule", lambda: None)
-    monkeypatch.setattr(e3_confirm, "_require_persistent_atomic_lock", lambda: None)
+    monkeypatch.setattr(e3_confirm, "_require_lock_reservation", lambda: None)
 
 
 def test_confirmation_report_is_aggregate_and_complete() -> None:
     report = run_confirm(_cache(_rows(NOISE)))
     assert report["experiment"] == "e3-confirm-dev-b"
+    expected_partition = " ".join(
+        (
+            "conditional confirmation on partially used holdout",
+            "(DEV-B; calibrated on DEV-A)",
+        )
+    )
+    expected_classification = "confirmação condicional em holdout parcialmente usado (DEV-B)"
+    assert report["partition"] == expected_partition
+    assert report["confirmation_classification"] == expected_classification
     assert report["configuration"] == "E3b-01"
     assert report["outcome"] in {"CONFIRMED", "NOT_CONFIRMED"}
     assert "Wice" not in report["common_cohorts"]
@@ -222,7 +233,7 @@ def test_refuses_when_a_confirmation_report_is_published_without_consuming_lock(
     lock_calls = []
     monkeypatch.setattr(
         e3_confirm,
-        "_require_persistent_atomic_lock",
+        "_require_lock_reservation",
         lambda: lock_calls.append("reserved"),
     )
     with pytest.raises(RuntimeError, match="single-use"):
@@ -239,7 +250,7 @@ def test_invalid_cache_is_rejected_before_consuming_persistent_lock(
     lock_calls: list[str] = []
     monkeypatch.setattr(
         e3_confirm,
-        "_require_persistent_atomic_lock",
+        "_require_lock_reservation",
         lambda: lock_calls.append("reserved"),
     )
     with pytest.raises(ValueError, match="duplicate record_id"):
@@ -258,7 +269,7 @@ def test_dev_a_preflight_failure_is_rejected_before_reservation(
     )
     monkeypatch.setattr(
         e3_confirm,
-        "_require_persistent_atomic_lock",
+        "_require_lock_reservation",
         lambda: lock_calls.append("reserved"),
     )
     with pytest.raises(ValueError, match="cross-fitting strata"):
@@ -378,7 +389,7 @@ def test_non_estimable_gate_blocks_before_consuming_persistent_lock(
         pytest.fail("persistent lock must not be consumed before non-estimable gate")
 
     monkeypatch.setitem(run_confirm.__globals__, "_require_non_estimable_rule", blocked_gate)
-    monkeypatch.setitem(run_confirm.__globals__, "_require_persistent_atomic_lock", forbidden_lock)
+    monkeypatch.setitem(run_confirm.__globals__, "_require_lock_reservation", forbidden_lock)
     with pytest.raises(RuntimeError, match="NON_ESTIMABLE_GATE_SENTINEL"):
         run_confirm(_cache(_rows(NOISE)))
 
@@ -389,8 +400,9 @@ def test_refuses_without_persistent_atomic_execution_lock() -> None:
 
 
 class _FakeHttpResponse:
-    def __init__(self, payload: dict) -> None:
+    def __init__(self, payload: dict, status: int = 201) -> None:
         self.payload = json.dumps(payload).encode("utf-8")
+        self.status = status
 
     def __enter__(self):
         return self
@@ -408,21 +420,29 @@ def _set_github_lock_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
     monkeypatch.setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
     monkeypatch.setenv("GITHUB_RUN_ID", "42914353626")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "1")
     monkeypatch.setenv("GITHUB_SHA", "a" * 40)
-    monkeypatch.setenv("GITHUB_TOKEN", "synthetic-test-token")
+    monkeypatch.setenv("P1_LOCK_TOKEN", "synthetic-short-lived-app-token")
 
 
-def test_persistent_lock_creates_exact_single_use_ref(
+def test_persistent_lock_creates_exact_single_use_branch_ref(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _set_github_lock_environment(monkeypatch)
-    captured = {}
+    assert e3_confirm.P1_LOCK_REF == "refs/heads/p1-dev-b-confirmation-lock"
+    calls: list[dict] = []
 
     def fake_urlopen(request, timeout):
-        captured["url"] = request.full_url
-        captured["method"] = request.get_method()
-        captured["payload"] = json.loads(request.data)
-        captured["timeout"] = timeout
+        calls.append(
+            {
+                "url": request.full_url,
+                "method": request.get_method(),
+                "payload": json.loads(request.data) if request.data else None,
+                "timeout": timeout,
+            }
+        )
+        if request.get_method() == "DELETE":
+            return _FakeHttpResponse({}, status=204)
         return _FakeHttpResponse(
             {
                 "ref": e3_confirm.P1_LOCK_REF,
@@ -431,13 +451,45 @@ def test_persistent_lock_creates_exact_single_use_ref(
         )
 
     monkeypatch.setattr(e3_confirm, "urlopen", fake_urlopen)
-    _ORIGINAL_ATOMIC_LOCK_GATE()
-    assert captured == {
-        "url": "https://api.github.com/repos/Ayorinha/ayorai-opensearch/git/refs",
-        "method": "POST",
-        "payload": {"ref": e3_confirm.P1_LOCK_REF, "sha": "a" * 40},
-        "timeout": 15,
+    created = _ORIGINAL_ATOMIC_LOCK_GATE()
+    assert "P1_LOCK_TOKEN" not in os.environ
+    assert calls == [
+        {
+            "url": "https://api.github.com/repos/Ayorinha/ayorai-opensearch/git/refs",
+            "method": "POST",
+            "payload": {"ref": e3_confirm.P1_LOCK_REF, "sha": "a" * 40},
+            "timeout": 15,
+        },
+        {
+            "url": "https://api.github.com/installation/token",
+            "method": "DELETE",
+            "payload": None,
+            "timeout": 15,
+        },
+    ]
+    assert created == {
+        "ref": e3_confirm.P1_LOCK_REF,
+        "sha": "a" * 40,
+        "token_revocation": "revoked",
     }
+
+
+def test_persistent_lock_never_uses_legacy_github_tokens(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _set_github_lock_environment(monkeypatch)
+    monkeypatch.delenv("P1_LOCK_TOKEN")
+    monkeypatch.setenv("GITHUB_TOKEN", "synthetic-read-only-token")
+    monkeypatch.setenv("GH_TOKEN", "synthetic-legacy-token")
+
+    def forbidden_urlopen(request, timeout):
+        raise AssertionError("legacy GitHub tokens must never be used for lock creation")
+
+    monkeypatch.setattr(e3_confirm, "urlopen", forbidden_urlopen)
+    with pytest.raises(RuntimeError, match="P1_LOCK_TOKEN"):
+        _ORIGINAL_ATOMIC_LOCK_GATE()
+    assert os.environ["GITHUB_TOKEN"] == "synthetic-read-only-token"
+    assert os.environ["GH_TOKEN"] == "synthetic-legacy-token"
 
 
 def test_persistent_lock_refuses_existing_reservation(
@@ -464,19 +516,24 @@ def test_persistent_lock_refuses_existing_reservation(
         ("GITHUB_REF", "refs/heads/feature"),
         ("GITHUB_EVENT_NAME", "push"),
         ("GITHUB_RUN_ID", "invalid"),
+        ("GITHUB_RUN_ATTEMPT", "2"),
         ("GITHUB_SHA", "not-a-commit"),
-        ("GITHUB_TOKEN", None),
+        ("NO_TOKENS", None),
     ],
 )
 def test_persistent_lock_refuses_untrusted_or_incomplete_runner_context(
     monkeypatch: pytest.MonkeyPatch, name: str, value: str | None
 ) -> None:
     _set_github_lock_environment(monkeypatch)
-    if value is None:
+    if name == "NO_TOKENS":
+        monkeypatch.delenv("P1_LOCK_TOKEN", raising=False)
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+    elif value is None:
         monkeypatch.delenv(name, raising=False)
     else:
         monkeypatch.setenv(name, value)
-    with pytest.raises(RuntimeError, match="P1|canonical|commit SHA|token"):
+    with pytest.raises(RuntimeError, match="P1|canonical|commit SHA|token|attempt"):
         _ORIGINAL_ATOMIC_LOCK_GATE()
 
 
@@ -524,3 +581,119 @@ def test_confirmatory_eligibility_is_bound_to_matrix_and_selection_decision() ->
         e3_confirm._validate_confirmatory_eligibility(
             eligibility, eligibility_sha256=e3_confirm.ELIGIBILITY_SHA256
         )
+
+
+def test_token_is_revoked_even_when_reservation_conflicts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from io import BytesIO
+    from urllib.error import HTTPError
+
+    _set_github_lock_environment(monkeypatch)
+    methods: list[str] = []
+
+    def conflict_then_revoke(request, timeout):
+        methods.append(request.get_method())
+        if request.get_method() == "DELETE":
+            return _FakeHttpResponse({}, status=204)
+        raise HTTPError(request.full_url, 422, "already exists", {}, BytesIO(b"{}"))
+
+    monkeypatch.setattr(e3_confirm, "urlopen", conflict_then_revoke)
+    with pytest.raises(RuntimeError, match="already reserved"):
+        _ORIGINAL_ATOMIC_LOCK_GATE()
+    assert methods == ["POST", "DELETE"]
+    assert "P1_LOCK_TOKEN" not in os.environ
+
+
+def _reservation_ready(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    _set_github_lock_environment(monkeypatch)
+    monkeypatch.delenv("PHASE1B_ARTIFACT_ENCRYPTION_KEY", raising=False)
+    monkeypatch.setattr(e3_confirm, "preflight_confirm", lambda: ("2026-11-12", {}, "0" * 64))
+    monkeypatch.setattr(e3_confirm, "published_confirmation_exists", lambda: False)
+    monkeypatch.setattr(
+        e3_confirm,
+        "_require_persistent_atomic_lock",
+        lambda: {"ref": e3_confirm.P1_LOCK_REF, "sha": "a" * 40, "token_revocation": "revoked"},
+    )
+    return tmp_path / "p1-lock-reservation.json"
+
+
+def test_reserve_lock_writes_run_bound_reservation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    path = _reservation_ready(monkeypatch, tmp_path)
+    reservation = e3_confirm.reserve_lock(path, "c" * 64)
+    assert json.loads(path.read_text(encoding="utf-8")) == reservation
+    assert reservation == {
+        "schema_version": "p1-lock-reservation-v1",
+        "repository": "Ayorinha/ayorai-opensearch",
+        "ref": e3_confirm.P1_LOCK_REF,
+        "sha": "a" * 40,
+        "run_id": "42914353626",
+        "run_attempt": "1",
+        "envelope_sha256": "c" * 64,
+        "token_revocation": "revoked",
+    }
+    with pytest.raises(FileExistsError):
+        e3_confirm.reserve_lock(path, "c" * 64)
+
+
+def test_reserve_lock_refuses_while_decryption_key_is_present(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    path = _reservation_ready(monkeypatch, tmp_path)
+    monkeypatch.setenv("PHASE1B_ARTIFACT_ENCRYPTION_KEY", "synthetic-key")
+    with pytest.raises(RuntimeError, match="decryption key"):
+        e3_confirm.reserve_lock(path, "c" * 64)
+    assert not path.exists()
+
+
+def test_reserve_lock_refuses_when_report_is_published(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    path = _reservation_ready(monkeypatch, tmp_path)
+    monkeypatch.setattr(e3_confirm, "published_confirmation_exists", lambda: True)
+    monkeypatch.setattr(
+        e3_confirm,
+        "_require_persistent_atomic_lock",
+        lambda: pytest.fail("published report must stop before the ref is created"),
+    )
+    with pytest.raises(RuntimeError, match="single-use"):
+        e3_confirm.reserve_lock(path, "c" * 64)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("sha", "b" * 40),
+        ("run_id", "1"),
+        ("run_attempt", "2"),
+        ("envelope_sha256", "d" * 64),
+        ("ref", "refs/heads/other"),
+        ("repository", "fork/ayorai-opensearch"),
+    ],
+)
+def test_lock_reservation_must_match_this_run_and_cache(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, field: str, value: str
+) -> None:
+    path = _reservation_ready(monkeypatch, tmp_path)
+    reservation = e3_confirm.reserve_lock(path, "c" * 64)
+    monkeypatch.setenv("P1_LOCK_RESERVATION", str(path))
+    monkeypatch.setenv("P1_CACHE_ENVELOPE_SHA256", "c" * 64)
+    _ORIGINAL_RESERVATION_GATE()
+    path.write_text(json.dumps({**reservation, field: value}), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="does not match"):
+        _ORIGINAL_RESERVATION_GATE()
+
+
+def test_lock_reservation_is_required(monkeypatch: pytest.MonkeyPatch) -> None:
+    _set_github_lock_environment(monkeypatch)
+    monkeypatch.delenv("P1_LOCK_RESERVATION", raising=False)
+    monkeypatch.delenv("P1_CACHE_ENVELOPE_SHA256", raising=False)
+    with pytest.raises(RuntimeError, match="reservation"):
+        _ORIGINAL_RESERVATION_GATE()
+
+
+def test_validate_only_stops_before_reservation_and_outcomes() -> None:
+    result = e3_confirm.validate_cache(_cache(_rows(NOISE)))
+    assert result == {"experiment": "e3-confirm-dev-b", "cache_preflight": "passed"}
