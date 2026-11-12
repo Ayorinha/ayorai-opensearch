@@ -1,0 +1,163 @@
+{
+  "schema_version": "ayorai-repro-environment-v1",
+  "status": "historical-record",
+  "scope": "Phase 1b DEV Calibration V2 inference shards, re-aggregations and E3 exploratory experiment (2026-11-07/08)",
+  "policy": "Historical DEV results are never recomputed with newer dependencies. Reproduction uses exactly this environment.",
+  "evidence_source": "GitHub Actions job logs of the listed runs ('Successfully set up CPython', 'Successfully installed', Runner Image).",
+  "runs": [
+    {
+      "role": "inference-and-cache",
+      "workflow": ".github/workflows/phase1b-dev-full.yml",
+      "run_id": "42389121599",
+      "head_sha": "34b7ccd654896890ab0197bffd6c607fbc3f729e",
+      "run_conclusion": "failure (aggregation step; shards succeeded; re-aggregated in 42418593837)",
+      "environment": "inference",
+      "note": "plan job 128452759097 differs from the shards: see environments.plan.note"
+    },
+    {
+      "role": "re-aggregate Calibration V2",
+      "workflow": ".github/workflows/phase1b-dev-full-reaggregate.yml",
+      "run_id": "42418593837",
+      "head_sha": "c3946aec35eeb32551c92f97472308ccdd20a744",
+      "report": "reports/benchmarks/2026-11-07-dev-calibration-v2",
+      "environment": "aggregate"
+    },
+    {
+      "role": "re-aggregate Amendment 2",
+      "workflow": ".github/workflows/phase1b-dev-full-reaggregate.yml",
+      "run_id": "42436331559",
+      "head_sha": "caa912cb836e2c263b22c5693ce6f8ccc5fd2ef5",
+      "report": "reports/benchmarks/2026-11-08-phase1b-amendment-2-exploratory",
+      "environment": "aggregate"
+    },
+    {
+      "role": "E3 fixed-rule ensemble (exploratory)",
+      "workflow": ".github/workflows/phase1b-dev-cache-experiment.yml",
+      "run_id": "42485634513",
+      "head_sha": "ba65753382cecdff0403461becc976916e30d4b8",
+      "cache_run_id": "42477997402",
+      "report": "reports/benchmarks/2026-11-08-e3-exploratory",
+      "environment": "aggregate"
+    }
+  ],
+  "shared_manifest_sha256": "deb3ef389553a03bb840e03a1e314e3f4d02dac50f4aa3d1c713c88a9dd55a74",
+  "runtime": {
+    "runner_image": "ubuntu-24.04",
+    "runner_image_version": "20261101.360.1",
+    "python": "3.12.16",
+    "implementation": "CPython",
+    "pip": "25.2",
+    "platform": "linux x86_64",
+    "accelerator": "CPU only (torch.version.cuda is None)"
+  },
+  "environments": {
+    "inference": {
+      "lock_file": "inference-requirements.lock.txt",
+      "packages": {
+        "accelerate": "1.10.1",
+        "certifi": "2026.10.23",
+        "cffi": "2.1.1",
+        "charset_normalizer": "3.5.2",
+        "click": "8.5.1",
+        "cloudpickle": "3.1.2",
+        "cryptography": "46.0.3",
+        "filelock": "4.2.4",
+        "fsspec": "2026.9.0",
+        "hf-xet": "1.8.0",
+        "huggingface-hub": "0.34.4",
+        "idna": "3.20",
+        "jinja2": "3.1.6",
+        "joblib": "1.6.0",
+        "MarkupSafe": "3.0.3",
+        "mpmath": "1.3.0",
+        "networkx": "3.7",
+        "nltk": "3.9.4",
+        "numpy": "2.2.6",
+        "packaging": "26.3",
+        "pandas": "2.3.2",
+        "psutil": "7.0.0",
+        "pyarrow": "21.0.0",
+        "pycparser": "3.12",
+        "python-dateutil": "4.0.0",
+        "pytz": "2026.6",
+        "pyyaml": "6.0.3",
+        "regex": "2026.11.7",
+        "requests": "2.34.2",
+        "safetensors": "0.6.2",
+        "setuptools": "78.1.0",
+        "sympy": "1.14.0",
+        "tokenizers": "0.21.4",
+        "torch": "2.7.1+cpu",
+        "tqdm": "4.70.1",
+        "transformers": "4.55.4",
+        "typing-extensions": "4.16.0",
+        "tzdata": "2026.6",
+        "urllib3": "2.8.0"
+      },
+      "torch_install": "pip install --index-url https://download.pytorch.org/whl/cpu torch==2.7.1 (installed before the lock file)",
+      "torch_wheel_sha256": "PENDING: read the #sha256 fragment of the cp312 linux x86_64 torch-2.7.1+cpu wheel at https://download.pytorch.org/whl/cpu/torch/"
+    },
+    "aggregate": {
+      "lock_file": "aggregate-requirements.lock.txt",
+      "packages": {
+        "cffi": "2.1.1",
+        "cryptography": "46.0.3",
+        "numpy": "2.2.6",
+        "pycparser": "3.12"
+      }
+    },
+    "plan": {
+      "lock_file": "inference-requirements.lock.txt",
+      "packages": {
+        "accelerate": "1.10.1",
+        "certifi": "2026.10.23",
+        "cffi": "2.1.1",
+        "charset_normalizer": "3.5.2",
+        "click": "8.5.1",
+        "cloudpickle": "3.1.2",
+        "cryptography": "46.0.3",
+        "filelock": "4.2.4",
+        "fsspec": "2026.9.0",
+        "hf-xet": "1.8.0",
+        "huggingface-hub": "0.34.4",
+        "idna": "3.20",
+        "jinja2": "3.1.6",
+        "joblib": "1.6.0",
+        "MarkupSafe": "3.0.3",
+        "mpmath": "1.3.0",
+        "networkx": "3.7",
+        "nltk": "3.9.4",
+        "numpy": "2.2.6",
+        "packaging": "26.3",
+        "pandas": "2.3.2",
+        "psutil": "7.0.0",
+        "pyarrow": "21.0.0",
+        "pycparser": "3.12",
+        "python-dateutil": "4.0.0",
+        "pytz": "2026.6",
+        "pyyaml": "6.0.3",
+        "regex": "2026.11.7",
+        "requests": "2.34.2",
+        "safetensors": "0.6.2",
+        "setuptools": "78.1.0",
+        "sympy": "1.14.0",
+        "tokenizers": "0.21.4",
+        "tqdm": "4.70.1",
+        "transformers": "4.55.4",
+        "typing-extensions": "4.16.0",
+        "tzdata": "2026.6",
+        "urllib3": "2.8.0"
+      },
+      "note": "Plan job (manifest and matrix only, no inference). Historically it installed requirements-benchmark-pilot.txt without the CPU index, so accelerate pulled an unpinned torch 2.15.0 with CUDA wheels (run 42389121599, job 128452759097). That torch was never imported by the plan scripts. From this record on, the plan job installs the inference lock with --no-deps and no torch."
+    }
+  },
+  "lock_file_sha256": {
+    "aggregate-requirements.lock.txt": "64e8244f7b0ae7a6abceef63840492f2cb5b8cb73dede1bb99696301a71ab908",
+    "inference-requirements.lock.txt": "cf052d1fb0c78a688349476b71ebd4b0856419945ba07b2d74997f2220347000"
+  },
+  "known_limitations": [
+    "The original runs installed exact direct pins without --require-hashes; the lock files bind the immutable PyPI files published for those exact versions, not proven byte-identical downloads.",
+    "The torch CPU wheel digest is pending (PyTorch index not reachable from the drafting environment).",
+    "Runner image updates outside this record (system libraries, BLAS) can still affect floating-point results; record any deviation instead of silently accepting it."
+  ]
+}
