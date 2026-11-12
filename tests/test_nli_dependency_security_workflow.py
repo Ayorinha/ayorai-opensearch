@@ -53,3 +53,4 @@ def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
     )
     assert "assert torch.version.cuda is None" in workflow
     assert '"pip-audit>=2.9,<3"' in pyproject
+    assert "--skip-editable" not in workflow
