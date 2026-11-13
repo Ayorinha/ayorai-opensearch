@@ -85,12 +85,15 @@ def test_producers_no_longer_install_mutable_pins(workflow: str) -> None:
 def test_nltk_394_occurs_only_in_the_historical_inference_lock() -> None:
     pin = "nltk" + "==" + "3.9.4"
     allowed = RECORD + "/inference-requirements.lock.txt"
-    candidates = [
-        *WORKFLOWS.glob("*.yml"),
-        *WORKFLOWS.glob("*.yaml"),
-        *ROOT.glob("requirements*.txt"),
-        ROOT / "pyproject.toml",
-    ]
+    text_suffixes = {".md", ".py", ".json", ".toml", ".txt", ".yml", ".yaml", ".ini", ".cfg"}
+    ignored = {".git", ".venv", "__pycache__", ".pytest_cache"}
+    candidates = (
+        path
+        for path in ROOT.rglob("*")
+        if path.is_file()
+        and path.suffix in text_suffixes
+        and not any(part in ignored for part in path.relative_to(ROOT).parts)
+    )
     occurrences = []
     for path in candidates:
         text = path.read_text(encoding="utf-8")
