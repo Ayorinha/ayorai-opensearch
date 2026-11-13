@@ -12,13 +12,14 @@ on:
   schedule:
     - cron: "41 4 * * 1"
 
-permissions:
-  contents: read
-  security-events: write
+permissions: {}
 
 jobs:
   analyze:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read # check out the code to analyze
+      security-events: write # upload CodeQL SARIF results to code scanning
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
