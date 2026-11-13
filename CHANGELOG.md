@@ -4,6 +4,36 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-11-13
+
+Versão de produto e de segurança da cadeia de dependências. Não traz resultado confirmatório novo de acurácia; os resultados de benchmark desta versão são exploratórios em DEV.
+
+### API de verificação por documentos
+- `POST /v1/check`: confere afirmações ou uma resposta de IA contra documentos enviados (texto ou PDF com camada de texto); cada trecho de evidência traz offsets e página, e `UNVERIFIED` significa abstenção (#511).
+- `POST /v1/fields`: compara valores enviados (dinheiro, data, CPF/CNPJ, número, texto) com um documento, com resultados `conforme`, `divergente`, `ambiguo`, `ausente` e `invalido` (#511).
+- Identidade do rastro vinculada aos limites de página em `/v1/check` (#516) e à identidade completa do documento em `/v1/fields` (#515); documentação da identidade de rastro v2 (#526).
+
+### Segurança e dependências
+- Auditoria estrita de dependências no CI (#533) e validação de pins de benchmark e de actions de artefato (#525); ruff fixado em 0.17.4 (#494); downloads de releases fixadas com nova tentativa em falhas transitórias (#502); atualização do grupo codeql-action (#518).
+- Ambiente NLI moderno auditado em arquivo próprio, sem alterar os pins dos workflows de produção DEV: transformers 5.22.2, huggingface-hub 1.32.0, pandas 3.1.1, pyarrow 26.0.1, torch 2.14.0 CPU e NumPy 2.3.3 único; `accelerate` removido; auditoria OSV e PyPI estrita e SBOM CycloneDX no workflow (#536).
+- `project.license` passa a usar a expressão SPDX `Apache-2.0` (o formato de tabela será recusado pelo setuptools a partir de 18/02/2027).
+
+### Benchmarks (exploratório, DEV)
+- Emenda 2 do Learn then Test: limiares inelegíveis são pulados (#488). A reagregação exploratória e pós-hoc sob essa regra e a análise de poder estão registradas (#492). O resultado oficial da v0.7.0 permanece 0/11.
+- Cache DEV cifrado de scores por instância e workflow de experimentos sobre o cache (#496); cache v2 com identificadores de documento (#508).
+- Ensemble E3 de regra fixa (#497), pré-registro aprovado para execução exploratória (#495, #501) e relatório exploratório em DEV-A (#503).
+- Roadmap de acurácia v0.8 (#489), radar tecnológico e gate de contaminação (#490), ledger de proveniência por célula A4 (#499) e DEC-024, opção B (#493).
+
+### Governança e documentação
+- Merge por agentes somente com autorização individual do mantenedor (#513).
+- Decisões estatísticas por componente documentadas (#491); documentação pública alinhada à v0.7.0 (#486); DOI da v0.7.0 registrado (#485).
+
+### Limites
+- Nenhum resultado confirmatório novo. Os números de E3 e da Emenda 2 são exploratórios em DEV; o split TEST não foi usado.
+- A confirmação P1 em DEV-B e a estatística por componentes do RGC (#532) não fazem parte desta versão.
+- O registro travado por hash do ambiente que produziu os resultados DEV (#535) não faz parte desta versão: depende de decisão do mantenedor sobre os alertas de segurança do `nltk 3.9.4` usado por esse ambiente. Os workflows de produção DEV continuam com os pins por versão já existentes.
+- Nenhum benchmark em português; o protocolo RGC permanece não congelado. Nenhuma certificação.
+
 ## [0.7.0] — 2026-11-07
 
 Primeira medição completa em benchmark internacional (LLM-AggreFact, partição DEV) com calibração pré-registrada. O DOI desta versão registra o resultado **antes** da emenda ao pré-registro sobre limiares inelegíveis, que fica para a versão seguinte.
