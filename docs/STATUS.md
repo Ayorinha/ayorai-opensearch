@@ -1,20 +1,22 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-08 — after merge of PR #502
+Updated: 2026-11-13 — after publication of v0.8.0
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-11-08
+## Estado atual — 2026-11-13
 
-- **E3 exploratório:** PR #497 (implementação E3) e PR #501 (aprovação para publicação exploratória) foram mescladas. A PR #503 publicou o relatório exploratório E3b-01.
-- **Resultado publicado em DEV-A:** E3b-01 = **0.7611** versus FactCG = **0.7475**. Resultado exclusivamente exploratório, não confirmatório e **não comparável ao leaderboard**. Não representa desempenho externo, produção ou resultado de TEST.
-- **Resiliência do CI:** PR #502 mesclada após atualização da branch com a main e conclusão bem-sucedida dos checks.
-- **P1 — confirmação em DEV-B:** pré-registro e implementação nas PRs #504 e #505 permanecem em revisão, sem aprovação e sem execução autorizada.
-- **P2/P3 — propostas documentais:** matriz de elegibilidade derivada do ledger A4 e protocolo MiniCheck-Flan-T5-Large permanecem em Draft nas PRs #506 e #507. Não houve download de pesos nem inferência; as células atualmente não verificadas ou contaminadas permanecem bloqueadas.
-- **RGC:** protocolo permanece **[PROPOSTO]**, não congelado. Não há resultado de benchmark RGC em português publicado.
-- **Limites públicos:** o projeto não é apresentado como certificado, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só. O resultado E3 é exploratório; hashes verificam integridade de artefatos, não a veracidade do conteúdo.
+- **Release v0.8.0 publicada:** [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0), publicada em 13/11/2026 às 12:51:50 UTC. A tag aponta para o commit `92ea5eb86b69724b05834d98c326e8315bb6b655`, cuja assinatura GitHub foi verificada como válida.
+- **Versão de código:** `0.8.0` em `pyproject.toml`, `src/ayorai_attractor/__init__.py` e `CITATION.cff`; `CITATION.cff` registra a data de lançamento 2026-11-13.
+- **API documental:** `POST /v1/check` verifica afirmações/respostas de IA contra texto ou PDF com camada de texto, preservando offsets e página; `UNVERIFIED` representa abstenção (#511). `POST /v1/fields` compara campos documentais (dinheiro, data, CPF/CNPJ, número e texto) e distingue conforme, divergente, ambíguo, ausente e inválido (#511).
+- **Rastreabilidade das APIs:** o rastro de `/v1/check` é vinculado às páginas (#516); em `/v1/fields`, ao documento completo (#515).
+- **Segurança da cadeia de dependências:** auditoria estrita no CI (#533); ambiente NLI isolado e SBOM CycloneDX (#536); checkout de workflow sem persistência de credenciais GitHub (#538); permissões de escrita concedidas por job (#540).
+- **Benchmarks:** a v0.8.0 não apresenta novo resultado confirmatório de acurácia e não utilizou o split TEST. Learn then Test com Emenda 2/reagregação pós-hoc (#488, #492), cache DEV cifrado (#496, #508) e ensemble E3 em DEV-A (#497, #503) permanecem experimentos exploratórios.
+- **Resultado histórico v0.7.0:** o resultado oficial LTT pela regra originalmente registrada permanece 0/11. A reagregação pós-hoc da Emenda 2 não substitui esse resultado nem constitui confirmação.
+- **RGC e português:** não há benchmark em português publicado; o protocolo RGC permanece **[PROPOSTO]**, não congelado. Não há certificação nem demonstração de conformidade regulatória automática.
+- **Fora da v0.8.0:** confirmação P1 em DEV-B, estatística por componentes RGC (#532) e registro travado por hash do ambiente histórico DEV (#535, pendente de decisão de segurança).
 
 > As seções seguintes preservam snapshots históricos. Datas, SHAs e estados registrados nelas descrevem exclusivamente o momento da respectiva captura e não substituem o estado atual acima.
 
