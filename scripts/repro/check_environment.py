@@ -45,6 +45,13 @@ def compare(
         found = installed(name)
         if found != expected:
             problems.append(f"{_normalize(name)}: expected {expected}, found {found or 'missing'}")
+    forbidden = spec.get("forbidden_packages", [])
+    if not isinstance(forbidden, list):
+        raise ValueError("forbidden_packages must be a list")
+    for name in sorted(forbidden, key=_normalize):
+        found = installed(name)
+        if found is not None:
+            problems.append(f"{_normalize(name)}: unexpected package {found}")
     return problems
 
 
