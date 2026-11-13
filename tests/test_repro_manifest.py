@@ -21,7 +21,7 @@ def _pins(path: Path) -> dict[str, str]:
     return dict(_PIN.findall(path.read_text(encoding="utf-8")))
 
 
-@pytest.mark.parametrize("environment", ["inference", "aggregate", "plan"])
+@pytest.mark.parametrize("environment", ["inference", "aggregate", "aggregate-minimal", "plan"])
 def test_lock_file_matches_manifest_and_requires_hashes(environment: str) -> None:
     spec = MANIFEST["environments"][environment]
     lock = RECORD / spec["lock_file"]
@@ -39,8 +39,14 @@ def test_historical_record_is_pinned_to_the_published_runs() -> None:
     assert MANIFEST["environments"]["inference"]["packages"]["transformers"] == "4.55.4"
     assert MANIFEST["environments"]["inference"]["packages"]["torch"] == "2.7.1+cpu"
     assert MANIFEST["environments"]["aggregate"]["packages"]["numpy"] == "2.2.6"
+    assert MANIFEST["environments"]["aggregate-minimal"]["packages"] == {
+        "cffi": "2.1.1",
+        "cryptography": "46.0.3",
+        "pycparser": "3.12",
+    }
+    assert "numpy" not in MANIFEST["environments"]["aggregate-minimal"]["packages"]
     run_ids = {run["run_id"] for run in MANIFEST["runs"]}
-    assert {"42389121599", "42418593837", "42436331559", "42485634513"} <= run_ids
+    assert {"42389121599", "42418593837", "42436331559", "42485634513", "42384213361"} <= run_ids
     for run in MANIFEST["runs"]:
         assert re.fullmatch(r"[0-9a-f]{40}", run["head_sha"])
 
