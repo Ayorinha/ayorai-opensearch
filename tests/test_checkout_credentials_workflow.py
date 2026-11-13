@@ -6,9 +6,6 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
-GIT_PUSH_EXCEPTION = "source-capture.yml"
-
-
 def test_checkout_does_not_persist_credentials_unless_git_push_requires_them() -> None:
     checked_out_workflows: set[str] = set()
 
@@ -26,12 +23,17 @@ def test_checkout_does_not_persist_credentials_unless_git_push_requires_them() -
                 checked_out_workflows.add(path.name)
                 persisted = (step.get("with") or {}).get("persist-credentials")
 
-                if path.name == GIT_PUSH_EXCEPTION:
-                    # This workflow commits and pushes its generated source-capture record.
-                    assert persisted is not False
-                else:
-                    assert persisted is False, f"{path.name}: checkout must not persist credentials"
+                assert persisted is False, f"{path.name}: checkout must not persist credentials"
 
-    assert GIT_PUSH_EXCEPTION in checked_out_workflows
-    source_capture = (WORKFLOWS / GIT_PUSH_EXCEPTION).read_text(encoding="utf-8")
-    assert 'git push origin "HEAD:${GITHUB_REF_NAME}"' in source_capture
+    assert "source-capture.yml" in checked_out_workflows
+    source_capture = yaml.safe_load(
+        (WORKFLOWS / "source-capture.yml").read_text(encoding="utf-8")
+    )
+    assert source_capture["permissions"]["contents"] == "write"
+    push_step = next(
+        step for step in source_capture["jobs"]["capture"]["steps"]
+        if step.get("name") == "Commit captured artifacts to this branch"
+    )
+    assert push_step["env"]["GITHUB_TOKEN"] == "${{ github.token }}"
+    assert "git -c http.extraheader=" in push_step["run"]
+    assert 'push origin "HEAD:${GITHUB_REF_NAME}"' in push_step["run"]
