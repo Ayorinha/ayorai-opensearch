@@ -82,7 +82,6 @@ def test_compare_rejects_unknown_environment() -> None:
         compare(MANIFEST, "test-split", python_version="3.12.16", installed=lambda _n: None)
 
 
-
 def test_compare_rejects_forbidden_packages_in_minimal_environment() -> None:
     manifest = {
         "runtime": {"python": "3.12.16"},
