@@ -46,5 +46,16 @@ jobs:
             exit 0
           fi
           git commit -m "data(ptbr): capture official sources (run ${GITHUB_RUN_ID})"
-          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)" \
-            push origin "HEAD:${GITHUB_REF_NAME}"
+          askpass="$(mktemp "${RUNNER_TEMP}/git-askpass.XXXXXX")"
+          trap 'rm -f "$askpass"' EXIT
+          cat > "$askpass" <<'ASKPASS'
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\n' 'x-access-token' ;;
+            *Password*) printf '%s\n' "$GITHUB_TOKEN" ;;
+            *) exit 1 ;;
+          esac
+          ASKPASS
+          chmod 700 "$askpass"
+          GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
+            git push origin "HEAD:${GITHUB_REF_NAME}"
