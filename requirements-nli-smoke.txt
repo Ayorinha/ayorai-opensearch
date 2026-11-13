@@ -1,7 +1,8 @@
 # Modern optional NLI environment for the dependency smoke and security audit (Python 3.12).
-# Not used to produce benchmark results: the historical DEV environment is recorded in
-# reproducibility/phase1b-dev-2026-11-07/. NumPy is held at 2.3.3 (maintainer decision,
-# 2026-11-12) so the whole modern environment shares one NumPy version.
+# Not used to produce benchmark results: the DEV producer workflows keep their own
+# historical pins (requirements-benchmark-pilot.txt and inline pins), unchanged here.
+# NumPy is held at 2.3.3 (maintainer decision, 2026-11-12) so the whole modern
+# environment shares one NumPy version.
 # PyTorch CPU is installed separately from the official CPU wheel index in the workflow.
 huggingface-hub==1.32.0
 transformers==5.22.2

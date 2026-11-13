@@ -108,3 +108,11 @@ def test_smoke_publishes_a_cyclonedx_sbom() -> None:
     tests = workflow.index("- name: Run test suite with NLI dependencies installed", upload)
     assert sbom < upload < tests
     assert "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9" in workflow
+
+
+def test_modern_requirements_reference_only_existing_paths() -> None:
+    for line in REQUIREMENTS.read_text(encoding="utf-8").splitlines():
+        if line.startswith("#"):
+            for token in line.split():
+                if "/" in token and not token.startswith("http"):
+                    assert (ROOT / token.rstrip(".,;:)")).exists(), token
