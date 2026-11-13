@@ -4,7 +4,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
-## [0.8.0] — 2026-11-12
+## [0.8.0] — 2026-11-13
 
 Versão de produto e de segurança da cadeia de dependências. Não traz resultado confirmatório novo de acurácia; os resultados de benchmark desta versão são exploratórios em DEV.
 
