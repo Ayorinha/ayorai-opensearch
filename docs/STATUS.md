@@ -10,13 +10,15 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 
 - **Release v0.8.0 publicada:** [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0), publicada em 13/11/2026 às 12:51:50 UTC. A tag aponta para o commit `92ea5eb86b69724b05834d98c326e8315bb6b655`, cuja assinatura GitHub foi verificada como válida.
 - **Versão de código:** `0.8.0` em `pyproject.toml`, `src/ayorai_attractor/__init__.py` e `CITATION.cff`; `CITATION.cff` registra a data de lançamento 2026-11-13.
-- **API documental:** `POST /v1/check` verifica afirmações/respostas de IA contra texto ou PDF com camada de texto, preservando offsets e página; `UNVERIFIED` representa abstenção (#511). `POST /v1/fields` compara campos documentais (dinheiro, data, CPF/CNPJ, número e texto) e distingue conforme, divergente, ambíguo, ausente e inválido (#511).
+- **API documental:** `POST /v1/check` verifica afirmações/respostas de IA contra texto ou PDF com camada de texto, preservando offsets e página; `UNVERIFIED` representa abstenção (#511). `POST /v1/fields` compara campos documentais (dinheiro, data, CPF/CNPJ, número e texto) e devolve os resultados `conforme`, `divergente`, `ambiguo`, `ausente` e `invalido` (#511).
 - **Rastreabilidade das APIs:** o rastro de `/v1/check` é vinculado às páginas (#516); em `/v1/fields`, ao documento completo (#515).
 - **Segurança da cadeia de dependências:** auditoria estrita no CI (#533); ambiente NLI isolado e SBOM CycloneDX (#536); checkout de workflow sem persistência de credenciais GitHub (#538); permissões de escrita concedidas por job (#540).
 - **Benchmarks:** a v0.8.0 não apresenta novo resultado confirmatório de acurácia e não utilizou o split TEST. Learn then Test com Emenda 2/reagregação pós-hoc (#488, #492), cache DEV cifrado (#496, #508) e ensemble E3 em DEV-A (#497, #503) permanecem experimentos exploratórios.
 - **Resultado histórico v0.7.0:** o resultado oficial LTT pela regra originalmente registrada permanece 0/11. A reagregação pós-hoc da Emenda 2 não substitui esse resultado nem constitui confirmação.
+- **E3 exploratório em DEV-A (#503):** E3b-01 = **0.7611** versus FactCG = **0.7475**. Resultado exclusivamente exploratório, não confirmatório e **não comparável ao leaderboard**; não representa desempenho externo, produção ou TEST.
 - **RGC e português:** não há benchmark em português publicado; o protocolo RGC permanece **[PROPOSTO]**, não congelado. Não há certificação nem demonstração de conformidade regulatória automática.
 - **Fora da v0.8.0:** confirmação P1 em DEV-B, estatística por componentes RGC (#532) e registro travado por hash do ambiente histórico DEV (#535, pendente de decisão de segurança).
+- **Em aberto, sem aprovação nem execução:** P1 em DEV-B (#504, #505, #527); propostas DEC-026 / elegibilidade de 55 células (#509) e protocolo MiniCheck-Flan-T5-Large (#507), sem download de pesos nem inferência. A identidade de componente do RGC diverge da DEC-023 aprovada (#531, #532, #539) e aguarda decisão do mantenedor.
 
 > As seções seguintes preservam snapshots históricos. Datas, SHAs e estados registrados nelas descrevem exclusivamente o momento da respectiva captura e não substituem o estado atual acima.
 
@@ -65,7 +67,7 @@ Registros detalhados: [verificação de continuidade de 2026-10-24](audit/RGC-ME
 | **HISTÓRICO** | `main` após a PR #402 — `6fcdb7d5e5ad1df19aa1d531fec07805b0c5545a` | A preparação global v0.6.0 foi mesclada em 2026-10-23. Naquele registro, a tag/release ainda não havia sido confirmada; a publicação posterior está registrada no estado atual acima. |
 | **VIGENTE** | Autenticação da API | `api_key` é o modo padrão; a aplicação falha fechada quando falta material obrigatório. Consulte `docs/api/CHANGELOG-API.md` para migração. |
 | **HISTÓRICO** | Release global `0.5.0` | Versão publicada anterior. DOI específico da versão: [`10.5281/zenodo.23344005`](https://doi.org/10.5281/zenodo.23344005). |
-| **VIGENTE** | DOI no `CITATION.cff` | O campo `doi` mantém o DOI de conceito `10.5281/zenodo.23125082`; `identifiers` registra o DOI específico da v0.7.0 `10.5281/zenodo.24045951`. A versão é `0.7.0` e a data oficial é `2026-11-07`. |
+| **VIGENTE** | DOI no `CITATION.cff` | O campo `doi` mantém o DOI de conceito `10.5281/zenodo.23125082`; `identifiers` ainda registra o DOI específico da v0.7.0 `10.5281/zenodo.24045951` até o DOI da v0.8.0 ser emitido. A versão é `0.8.0` e a data oficial é `2026-11-13`. |
 | **HISTÓRICO** | Release global `0.6.0` | Versão publicada anterior. DOI específico da versão: [`10.5281/zenodo.23607357`](https://doi.org/10.5281/zenodo.23607357). |
 
 **Registro de decisão de DOI — resolvido em 2026-10-25:** o campo `doi` permanece no DOI de conceito e `identifiers` contém o DOI específico da versão v0.6.0. Os dois identificadores têm funções distintas.
@@ -120,7 +122,7 @@ The frozen contract remains HTTP 422 with error type `missing` and location `["b
 
 ## Release and system boundaries
 
-- A release publicada mais recente é **v0.7.0** (Zenodo DOI [10.5281/zenodo.24045951](https://doi.org/10.5281/zenodo.24045951)); o DOI de todas as versões é [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082).
+- A release publicada mais recente é **v0.8.0** ([GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0)); o DOI de versão da v0.8.0 ainda não foi registrado. A versão anterior, v0.7.0, tem o DOI [10.5281/zenodo.24045951](https://doi.org/10.5281/zenodo.24045951); o DOI de todas as versões é [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082).
 - As notas da v0.6.0 estão em `docs/release/v0.6.0.md`; publicação confirmada. Nenhuma tag ou release foi criada ou alterada por esta atualização documental.
 - The RGC protocol remains `[PROPOSTO]`; approved decision options define rules but do not freeze the protocol or authorize a benchmark run.
 - No claims of certification, institutional validation, independent review or production readiness are supported by the current evidence.

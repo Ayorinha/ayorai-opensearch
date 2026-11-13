@@ -76,7 +76,7 @@ Esses princípios podem apoiar pesquisas e projetos que necessitam avaliar respo
 A v0.8.0 é uma versão de produto e de segurança da cadeia de dependências. **Não apresenta novo resultado confirmatório de acurácia**; os experimentos de benchmark desta versão são exploratórios em DEV, e o split TEST não foi utilizado.
 
 - **API `POST /v1/check`:** verifica afirmações ou respostas de IA contra documentos enviados em texto ou PDF com camada de texto; as evidências incluem offsets e página. `UNVERIFIED` representa abstenção (#511).
-- **API `POST /v1/fields`:** compara valores (dinheiro, data, CPF/CNPJ, número e texto) com um documento, com resultados conforme, divergente, ambíguo, ausente e inválido (#511).
+- **API `POST /v1/fields`:** compara valores (dinheiro, data, CPF/CNPJ, número e texto) com um documento, com os resultados `conforme`, `divergente`, `ambiguo`, `ausente` e `invalido` (#511).
 - **Rastreabilidade:** identidade do rastro vinculada às páginas em `/v1/check` (#516) e ao documento completo em `/v1/fields` (#515).
 - **Segurança da cadeia:** auditoria estrita de dependências no CI (#533), ambiente NLI separado e SBOM CycloneDX (#536), ausência de persistência de credenciais GitHub em checkout de workflows (#538) e permissões de escrita por job (#540).
 - **Experimentos DEV:** Emenda 2 do Learn then Test e reagregação exploratória pós-hoc (#488, #492), cache DEV cifrado (#496, #508) e ensemble E3 exploratório em DEV-A (#497, #503). Esses itens não constituem evidência confirmatória nem desempenho em produção.
