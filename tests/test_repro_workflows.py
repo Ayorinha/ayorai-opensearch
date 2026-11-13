@@ -20,7 +20,7 @@ EXPECTED = {
     ("phase1b-dev-full-reaggregate.yml", "aggregate"): "aggregate",
     ("phase1b-dev-minimal.yml", "plan"): "plan",
     ("phase1b-dev-minimal.yml", "shard"): "inference",
-    ("phase1b-dev-minimal.yml", "aggregate"): "aggregate",
+    ("phase1b-dev-minimal.yml", "aggregate"): "aggregate-minimal",
 }
 BENCHMARK_SCRIPTS = ("scripts/benchmarks/", "score_cache.py", "aggregate_dev.py")
 
@@ -40,7 +40,7 @@ def test_producer_job_installs_hash_locked_environment_before_benchmark_code(
     steps = _jobs(workflow)[job]["steps"]
     install = next(i for i, s in enumerate(steps) if "--require-hashes" in _run_text(s))
     text = _run_text(steps[install])
-    lock = "aggregate" if environment == "aggregate" else "inference"
+    lock = "inference" if environment in {"inference", "plan"} else environment
     assert f"-r {RECORD}/{lock}-requirements.lock.txt" in text
     assert "--no-deps" in text
     check = next(i for i, s in enumerate(steps) if CHECK in _run_text(s))
