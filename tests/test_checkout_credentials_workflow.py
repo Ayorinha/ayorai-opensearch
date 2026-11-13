@@ -36,5 +36,10 @@ def test_checkout_does_not_persist_credentials() -> None:
         if step.get("name") == "Commit captured artifacts to this branch"
     )
     assert push_step["env"]["GITHUB_TOKEN"] == "${{ github.token }}"
-    assert "git -c http.extraheader=" in push_step["run"]
-    assert 'push origin "HEAD:${GITHUB_REF_NAME}"' in push_step["run"]
+    run = push_step["run"]
+    assert "GIT_ASKPASS" in run
+    assert "GIT_TERMINAL_PROMPT=0" in run
+    assert "git push origin" in run
+    assert "base64" not in run
+    assert "http.extraheader" not in run
+    assert "printf '%s\\n' \"$GITHUB_TOKEN\"" in run
