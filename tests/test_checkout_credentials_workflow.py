@@ -29,7 +29,8 @@ def test_checkout_does_not_persist_credentials() -> None:
 
     assert "source-capture.yml" in checked_out_workflows
     source_capture = yaml.safe_load((WORKFLOWS / "source-capture.yml").read_text(encoding="utf-8"))
-    assert source_capture["permissions"]["contents"] == "write"
+    assert source_capture["permissions"] == {}
+    assert source_capture["jobs"]["capture"]["permissions"] == {"contents": "write"}
     push_step = next(
         step
         for step in source_capture["jobs"]["capture"]["steps"]

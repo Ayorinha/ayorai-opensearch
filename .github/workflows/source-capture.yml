@@ -12,8 +12,7 @@ on:
       - "scripts/capture_sources.py"
       - ".github/workflows/source-capture.yml"
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
   group: source-capture-${{ github.ref }}
@@ -23,6 +22,8 @@ jobs:
   capture:
     name: Capture official sources
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write # push the captured bytes back to the same capture/** branch
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
