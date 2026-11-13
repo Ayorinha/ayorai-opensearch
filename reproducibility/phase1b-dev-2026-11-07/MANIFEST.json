@@ -38,6 +38,17 @@
       "cache_run_id": "42477997402",
       "report": "reports/benchmarks/2026-11-08-e3-exploratory",
       "environment": "aggregate"
+    },
+    {
+      "role": "minimal protected validation aggregate",
+      "workflow": ".github/workflows/phase1b-dev-minimal.yml",
+      "run_id": "42384213361",
+      "head_sha": "d7ebf5b00d7abcb9da1dd3b31f0957dd60e3a53d",
+      "run_conclusion": "success",
+      "run_attempt": 3,
+      "aggregate_job_id": "128442655313",
+      "environment": "aggregate-minimal",
+      "note": "The historical aggregate job installed only cffi 2.1.1, cryptography 46.0.3 and pycparser 3.12; NumPy was not installed."
     }
   ],
   "shared_manifest_sha256": "deb3ef389553a03bb840e03a1e314e3f4d02dac50f4aa3d1c713c88a9dd55a74",
@@ -149,11 +160,20 @@
         "urllib3": "2.8.0"
       },
       "note": "Plan job (manifest and matrix only, no inference). Historically it installed requirements-benchmark-pilot.txt without the CPU index, so accelerate pulled an unpinned torch 2.15.0 with CUDA wheels (run 42389121599, job 128452759097). That torch was never imported by the plan scripts. From this record on, the plan job installs the inference lock with --no-deps and no torch."
+    },
+    "aggregate-minimal": {
+      "lock_file": "aggregate-minimal-requirements.lock.txt",
+      "packages": {
+        "cffi": "2.1.1",
+        "cryptography": "46.0.3",
+        "pycparser": "3.12"
+      }
     }
   },
   "lock_file_sha256": {
     "aggregate-requirements.lock.txt": "64e8244f7b0ae7a6abceef63840492f2cb5b8cb73dede1bb99696301a71ab908",
-    "inference-requirements.lock.txt": "cf052d1fb0c78a688349476b71ebd4b0856419945ba07b2d74997f2220347000"
+    "inference-requirements.lock.txt": "cf052d1fb0c78a688349476b71ebd4b0856419945ba07b2d74997f2220347000",
+    "aggregate-minimal-requirements.lock.txt": "a3d9cbf29d29ea358b59e03268a4fcb5bc169978835d190fee19f0299abd378c"
   },
   "known_limitations": [
     "The original runs installed exact direct pins without --require-hashes; the lock files bind the immutable PyPI files published for those exact versions, not proven byte-identical downloads.",
