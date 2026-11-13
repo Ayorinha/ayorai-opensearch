@@ -176,8 +176,8 @@ jobs:
           set -euo pipefail
           python -m pip install "pip==25.2"
           python -m pip install --index-url https://pypi.org/simple \
-            --require-hashes --no-deps -r reproducibility/phase1b-dev-2026-11-07/aggregate-requirements.lock.txt
-          python scripts/repro/check_environment.py reproducibility/phase1b-dev-2026-11-07/MANIFEST.json aggregate
+            --require-hashes --no-deps -r reproducibility/phase1b-dev-2026-11-07/aggregate-minimal-requirements.lock.txt
+          python scripts/repro/check_environment.py reproducibility/phase1b-dev-2026-11-07/MANIFEST.json aggregate-minimal
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: phase1b-dev-minimal-manifest
