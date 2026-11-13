@@ -9,6 +9,7 @@ import yaml
 WORKFLOW_PATH = Path(".github/workflows/phase1b-dev-full-reaggregate.yml")
 FULL_WORKFLOW_PATH = Path(".github/workflows/phase1b-dev-full.yml")
 APPROVAL_ENVIRONMENT = "international-benchmark-maintainer-approval"
+AGGREGATE_LOCK = "reproducibility/phase1b-dev-2026-11-07/aggregate-requirements.lock.txt"
 
 
 def test_reaggregate_is_manual_gated_and_aggregate_only() -> None:
@@ -26,7 +27,8 @@ def test_reaggregate_is_manual_gated_and_aggregate_only() -> None:
     assert "--calibration-v2" in text
     assert "run-id: ${{ inputs.source_run_id }}" in text
     assert '".github/workflows/phase1b-dev-full.yml"' in text
-    assert "numpy==2.2.6" in text
+    assert f"--require-hashes --no-deps -r {AGGREGATE_LOCK}" in text
+    assert "numpy==2.2.6 \\" in Path(AGGREGATE_LOCK).read_text(encoding="utf-8")
 
 
 def test_full_workflow_aggregate_installs_numpy() -> None:
@@ -36,4 +38,5 @@ def test_full_workflow_aggregate_installs_numpy() -> None:
         for step in workflow["jobs"]["aggregate"]["steps"]
         if step.get("name") == "Install pinned dependencies"
     )
-    assert "numpy==2.2.6" in install
+    assert f"-r {AGGREGATE_LOCK}" in install
+    assert "numpy==2.2.6 \\" in Path(AGGREGATE_LOCK).read_text(encoding="utf-8")
