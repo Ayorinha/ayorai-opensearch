@@ -1,0 +1,139 @@
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+WORKFLOW = ROOT / ".github" / "workflows" / "nli-dependency-smoke.yml"
+PYPROJECT = ROOT / "pyproject.toml"
+REQUIREMENTS = ROOT / "requirements-nli-smoke.txt"
+HISTORICAL = ROOT / "requirements-benchmark-pilot.txt"
+
+
+def test_nli_smoke_audits_the_fully_installed_optional_environment() -> None:
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    pyproject = PYPROJECT.read_text(encoding="utf-8")
+    requirements = REQUIREMENTS.read_text(encoding="utf-8")
+
+    cpu_torch = workflow.index(
+        'python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.14.0"'
+    )
+    install_extras = workflow.index(
+        'python -m pip install --index-url https://pypi.org/simple -e ".[dev,nli]"'
+    )
+    install_pilot = workflow.index(
+        "python -m pip install --index-url https://pypi.org/simple -r requirements-nli-smoke.txt"
+    )
+    pip_check = workflow.index("pip check", install_pilot)
+    uninstall_local = workflow.index(
+        "- name: Remove the local editable project before auditing third-party dependencies",
+        pip_check,
+    )
+    osv_audit = workflow.index(
+        "- name: Audit optional dependencies against OSV, including CPU PyTorch",
+        uninstall_local,
+    )
+    osv_command = workflow.index("run: pip-audit --strict --vulnerability-service osv", osv_audit)
+    remove_torch = workflow.index(
+        "- name: Remove CPU PyTorch for the PyPI-native dependency audit",
+        osv_command,
+    )
+    pypi_audit = workflow.index(
+        "- name: Audit PyPI dependencies with strict collection",
+        remove_torch,
+    )
+    pypi_command = workflow.index("run: pip-audit --strict", pypi_audit)
+    restore_torch = workflow.index(
+        "- name: Restore the pinned CPU PyTorch wheel",
+        pypi_command,
+    )
+    restore_torch_command = workflow.index(
+        "run: python -m pip install --index-url "
+        'https://download.pytorch.org/whl/cpu "torch==2.14.0"',
+        restore_torch,
+    )
+    restore_local = workflow.index(
+        "- name: Restore the local project without changing resolved dependencies",
+        restore_torch_command,
+    )
+    restore_command = workflow.index("run: python -m pip install --no-deps -e .", restore_local)
+    verify_versions = workflow.index(
+        "- name: Verify installed dependency versions",
+        restore_command,
+    )
+
+    assert (
+        cpu_torch
+        < install_extras
+        < install_pilot
+        < pip_check
+        < uninstall_local
+        < osv_audit
+        < osv_command
+        < remove_torch
+        < pypi_audit
+        < pypi_command
+        < restore_torch
+        < restore_torch_command
+        < restore_local
+        < restore_command
+        < verify_versions
+    )
+    assert "assert torch.version.cuda is None" in workflow
+    assert '"pip==26.3" "setuptools==84.2.1"' in workflow
+    assert "accelerate" not in requirements
+    assert '"torch>=2.14,<3"' in pyproject
+    assert '"pip-audit>=2.9,<3"' in pyproject
+    assert "--skip-editable" not in workflow
+    assert "pip-audit --strict --vulnerability-service osv" in workflow
+    assert "pip-audit --strict" in workflow
+    assert "python -m pip uninstall -y torch" in workflow
+
+
+def test_modern_environment_holds_numpy_at_the_maintainer_version() -> None:
+    requirements = REQUIREMENTS.read_text(encoding="utf-8")
+    pyproject = PYPROJECT.read_text(encoding="utf-8")
+    assert "numpy==2.3.3" in requirements.splitlines()
+    assert '"numpy==2.3.3",' in pyproject
+
+
+def test_historical_pilot_requirements_are_not_modernized() -> None:
+    historical = HISTORICAL.read_text(encoding="utf-8").splitlines()
+    for pin in ("transformers==4.55.4", "numpy==2.2.6", "pandas==2.3.2", "pyarrow==21.0.0"):
+        assert pin in historical
+    assert "requirements-benchmark-pilot.txt" not in WORKFLOW.read_text(encoding="utf-8")
+
+
+def test_smoke_publishes_a_cyclonedx_sbom() -> None:
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    sbom = workflow.index("--format cyclonedx-json --output nli-sbom.cdx.json")
+    upload = workflow.index("name: nli-sbom-${{ github.sha }}", sbom)
+    tests = workflow.index("- name: Run test suite with NLI dependencies installed", upload)
+    assert sbom < upload < tests
+    assert "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9" in workflow
+
+
+def test_modern_requirements_reference_only_existing_paths() -> None:
+    for line in REQUIREMENTS.read_text(encoding="utf-8").splitlines():
+        if line.startswith("#"):
+            for token in line.split():
+                if "/" in token and not token.startswith("http"):
+                    assert (ROOT / token.rstrip(".,;:)")).exists(), token
+
+
+def test_smoke_has_least_privilege_and_no_persisted_credentials() -> None:
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    assert workflow["permissions"] == {}
+    job = workflow["jobs"]["nli-dependency-smoke"]
+    assert job["permissions"] == {"contents": "read"}
+    checkout = [
+        step for step in job["steps"] if str(step.get("uses", "")).startswith("actions/checkout@")
+    ]
+    assert len(checkout) == 1
+    assert checkout[0]["with"]["persist-credentials"] is False
+    for step in job["steps"]:
+        uses = str(step.get("uses", ""))
+        if uses:
+            ref = uses.split("@", 1)[1].split()[0]
+            assert len(ref) == 40 and all(c in "0123456789abcdef" for c in ref), uses
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "secrets." not in text
