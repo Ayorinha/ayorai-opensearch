@@ -167,7 +167,11 @@
         "cffi": "2.1.1",
         "cryptography": "46.0.3",
         "pycparser": "3.12"
-      }
+      },
+      "forbidden_packages": [
+        "numpy",
+        "torch"
+      ]
     }
   },
   "lock_file_sha256": {
