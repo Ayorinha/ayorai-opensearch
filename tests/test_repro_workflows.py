@@ -99,8 +99,9 @@ def test_nltk_394_occurs_only_in_the_historical_inference_lock() -> None:
     assert occurrences == [allowed]
 
 
-def test_shard_torch_stays_cpu_only_and_pinned() -> None:
-    steps = _jobs("phase1b-dev-full.yml")["shard"]["steps"]
+@pytest.mark.parametrize("workflow", ["phase1b-dev-full.yml", "phase1b-dev-minimal.yml"])
+def test_shard_torch_stays_cpu_only_and_pinned(workflow: str) -> None:
+    steps = _jobs(workflow)["shard"]["steps"]
     text = "\n".join(_run_text(s) for s in steps)
     assert '--index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"' in text
     assert "assert torch.version.cuda is None" in text
@@ -112,6 +113,7 @@ def test_shard_torch_stays_cpu_only_and_pinned() -> None:
         "phase1b-dev-full.yml",
         "phase1b-dev-full-reaggregate.yml",
         "phase1b-dev-cache-experiment.yml",
+        "phase1b-dev-minimal.yml",
     ],
 )
 def test_producers_pin_the_recorded_python_patch_version(workflow: str) -> None:
