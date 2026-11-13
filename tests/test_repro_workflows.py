@@ -81,6 +81,24 @@ def test_producers_no_longer_install_mutable_pins(workflow: str) -> None:
     assert "cryptography==46.0.3 numpy==2.2.6" not in text
 
 
+@pytest.mark.parametrize(
+    "workflow",
+    [
+        "phase1b-dev-full.yml",
+        "phase1b-dev-full-reaggregate.yml",
+        "phase1b-dev-cache-experiment.yml",
+        "phase1b-dev-minimal.yml",
+    ],
+)
+def test_historical_producers_are_dispatch_only_and_approval_gated(workflow: str) -> None:
+    document = yaml.safe_load((WORKFLOWS / workflow).read_text(encoding="utf-8"))
+    events = document.get("on", document.get(True))
+    assert isinstance(events, dict)
+    assert set(events) == {"workflow_dispatch"}
+    for job_name, job in document["jobs"].items():
+        assert job["environment"] == "international-benchmark-maintainer-approval", job_name
+
+
 def test_nltk_394_occurs_only_in_the_historical_inference_lock() -> None:
     pin = "nltk" + "==" + "3.9.4"
     allowed = RECORD + "/inference-requirements.lock.txt"
