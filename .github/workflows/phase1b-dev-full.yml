@@ -132,7 +132,7 @@ jobs:
           PY
       - name: Install and verify pinned NLTK punkt_tab (no runtime downloads)
         run: python scripts/benchmarks/phase1b/nltk_resources.py --data-dir "$NLTK_DATA_DIR"
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: phase1b-dev-full-manifest
           path: /tmp/phase1b-manifest
@@ -223,11 +223,11 @@ jobs:
           python -m pip install "pip==25.2"
           python -m pip install --index-url https://pypi.org/simple \
             cryptography==46.0.3 numpy==2.2.6
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: phase1b-dev-full-manifest
           path: /tmp/phase1b-manifest
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: phase1b-dev-full-encrypted-*
           path: /tmp/phase1b-encrypted
