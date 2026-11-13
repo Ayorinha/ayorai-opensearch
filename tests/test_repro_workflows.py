@@ -18,6 +18,9 @@ EXPECTED = {
     ("phase1b-dev-full.yml", "shard"): "inference",
     ("phase1b-dev-full.yml", "aggregate"): "aggregate",
     ("phase1b-dev-full-reaggregate.yml", "aggregate"): "aggregate",
+    ("phase1b-dev-minimal.yml", "plan"): "plan",
+    ("phase1b-dev-minimal.yml", "shard"): "inference",
+    ("phase1b-dev-minimal.yml", "aggregate"): "aggregate",
 }
 BENCHMARK_SCRIPTS = ("scripts/benchmarks/", "score_cache.py", "aggregate_dev.py")
 
@@ -69,12 +72,31 @@ def test_cache_experiment_jobs_use_the_aggregate_lock() -> None:
         "phase1b-dev-full.yml",
         "phase1b-dev-full-reaggregate.yml",
         "phase1b-dev-cache-experiment.yml",
+        "phase1b-dev-minimal.yml",
     ],
 )
 def test_producers_no_longer_install_mutable_pins(workflow: str) -> None:
     text = (WORKFLOWS / workflow).read_text(encoding="utf-8")
     assert "requirements-benchmark-pilot.txt" not in text
     assert "cryptography==46.0.3 numpy==2.2.6" not in text
+
+
+
+def test_nltk_394_occurs_only_in_the_historical_inference_lock() -> None:
+    pin = "nltk" + "==" + "3.9.4"
+    allowed = RECORD + "/inference-requirements.lock.txt"
+    candidates = [
+        *WORKFLOWS.glob("*.yml"),
+        *WORKFLOWS.glob("*.yaml"),
+        *ROOT.glob("requirements*.txt"),
+        ROOT / "pyproject.toml",
+    ]
+    occurrences = []
+    for path in candidates:
+        text = path.read_text(encoding="utf-8")
+        if pin in text:
+            occurrences.append(path.relative_to(ROOT).as_posix())
+    assert occurrences == [allowed]
 
 
 def test_shard_torch_stays_cpu_only_and_pinned() -> None:
