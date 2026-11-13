@@ -45,6 +45,7 @@
       "programmingLanguage": "Python",
       "runtimePlatform": "Python 3.11, 3.12, 3.13",
       "softwareVersion": "0.8.0",
+      "dateModified": "2026-11-13",
       "license": "https://www.apache.org/licenses/LICENSE-2.0",
       "identifier": "https://doi.org/10.5281/zenodo.23125082",
       "keywords": "auditoria de inteligência artificial, auditoria de IA, verificação de respostas de IA, IA confiável, verificação de afirmações, evidências, LLM, RAG, open source",
@@ -207,18 +208,19 @@
         <strong>O que entrou na v0.8.0</strong>
         <ul>
           <li><strong><code>POST /v1/check</code>:</strong> verifica afirmações ou respostas de IA contra documentos em texto ou PDF com camada de texto; evidências incluem offsets e página. <code>UNVERIFIED</code> representa abstenção.</li>
-          <li><strong><code>POST /v1/fields</code>:</strong> compara valores como dinheiro, data, CPF/CNPJ, número e texto com um documento, distinguindo conforme, divergente, ambíguo, ausente e inválido.</li>
+          <li><strong><code>POST /v1/fields</code>:</strong> compara valores como dinheiro, data, CPF/CNPJ, número e texto com um documento, com os resultados <code>conforme</code>, <code>divergente</code>, <code>ambiguo</code>, <code>ausente</code> e <code>invalido</code>.</li>
           <li><strong>Rastreabilidade:</strong> identidade do rastro vinculada às páginas em <code>/v1/check</code> e ao documento completo em <code>/v1/fields</code>.</li>
           <li><strong>Segurança:</strong> auditoria estrita de dependências no CI, ambiente NLI separado com SBOM CycloneDX, checkout de workflow sem persistência de credenciais GitHub e permissões de escrita concedidas por job.</li>
         </ul>
         <p>Os experimentos DEV incluem Emenda 2 do Learn then Test e reagregação exploratória pós-hoc, cache DEV cifrado e ensemble E3 em DEV-A. Não são resultados confirmatórios, não demonstram desempenho em produção e não devem ser tratados como ranking ou certificação.</p>
-        <p>O resultado oficial da v0.7.0 permanece 0/11 pela regra LTT originalmente registrada. A reagregação pós-hoc não substitui esse resultado.</p>
+        <p><strong>Resultado histórico (v0.7.0, DEV, LLM-AggreFact em inglês):</strong> na Calibration V2, o FactCG foi selecionado na partição DEV-A com balanced accuracy cross-fitted de <strong>74,68%</strong> (AUROC 0,8650 · AUPRC 0,9454 · Brier 0,1168 · ECE 0,0054). O resultado oficial da v0.7.0 permanece 0/11 coortes pela regra LTT originalmente registrada; a reagregação pós-hoc da Emenda 2 é exploratória e não substitui esse resultado. Detalhes no <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/reports/benchmarks/2026-11-07-dev-calibration-v2/README.md">relatório Calibration V2</a> e na <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/reports/benchmarks/2026-11-08-phase1b-amendment-2-exploratory/README.md">reagregação exploratória</a>.</p>
       </div>
       <div class="limits">
         <strong style="color:var(--mid)">Limites declarados</strong>
         <ul>
           <li>Ainda não há resultado de benchmark em português; o protocolo RGC está em desenvolvimento e não está congelado.</li>
           <li>O split TEST não foi utilizado para os experimentos exploratórios descritos na v0.8.0.</li>
+          <li>Resultados sintéticos não demonstram desempenho em produção nem generalização para documentos jurídicos brasileiros.</li>
           <li>O projeto não é apresentado como certificado, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só.</li>
           <li>Hashes ajudam a verificar a integridade de artefatos; não provam a veracidade de seu conteúdo.</li>
         </ul>
