@@ -26,12 +26,16 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
       - name: Capture exact bytes and write manifest
         run: python scripts/capture_sources.py evals/ptbr/capture/targets.json evals/ptbr/sources/raw
       - name: Commit captured artifacts to this branch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -42,4 +46,5 @@ jobs:
             exit 0
           fi
           git commit -m "data(ptbr): capture official sources (run ${GITHUB_RUN_ID})"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)" \
+            push origin "HEAD:${GITHUB_REF_NAME}"
