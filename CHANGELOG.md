@@ -17,6 +17,8 @@ Versão de produto e de segurança da cadeia de dependências. Não traz resulta
 - Auditoria estrita de dependências no CI (#533) e validação de pins de benchmark e de actions de artefato (#525); ruff fixado em 0.17.4 (#494); downloads de releases fixadas com nova tentativa em falhas transitórias (#502); atualização do grupo codeql-action (#518).
 - Ambiente NLI moderno auditado em arquivo próprio, sem alterar os pins dos workflows de produção DEV: transformers 5.22.2, huggingface-hub 1.32.0, pandas 3.1.1, pyarrow 26.0.1, torch 2.14.0 CPU e NumPy 2.3.3 único; `accelerate` removido; auditoria OSV e PyPI estrita e SBOM CycloneDX no workflow (#536).
 - `project.license` passa a usar a expressão SPDX `Apache-2.0` (o formato de tabela será recusado pelo setuptools a partir de 18/02/2027).
+- Nenhum `actions/checkout` persiste a credencial do GitHub; o push do `source-capture` usa o token só no comando de envio, via `GIT_ASKPASS` (#538).
+- Permissões de escrita concedidas por job, nunca ao workflow inteiro (`codeql`, `source-capture`), com teste de regressão (#540).
 
 ### Benchmarks (exploratório, DEV)
 - Emenda 2 do Learn then Test: limiares inelegíveis são pulados (#488). A reagregação exploratória e pós-hoc sob essa regra e a análise de poder estão registradas (#492). O resultado oficial da v0.7.0 permanece 0/11.
