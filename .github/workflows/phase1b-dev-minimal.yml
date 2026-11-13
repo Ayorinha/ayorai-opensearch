@@ -35,13 +35,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.12"
+          python-version: "3.12.16"
           cache: pip
       - name: Install pinned dependencies
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3
+          python -m pip install --index-url https://pypi.org/simple \\
+            --require-hashes --no-deps -r reproducibility/phase1b-dev-2026-11-07/inference-requirements.lock.txt
+          python scripts/repro/check_environment.py reproducibility/phase1b-dev-2026-11-07/MANIFEST.json plan
       - name: Validate required secret without printing it
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
@@ -105,11 +107,13 @@ jobs:
           set -euo pipefail
           python -m pip install "pip==25.2"
           python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
-          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3 nltk==3.9.4
+          python -m pip install --index-url https://pypi.org/simple \\
+            --require-hashes --no-deps -r reproducibility/phase1b-dev-2026-11-07/inference-requirements.lock.txt
           python - <<'PY'
           import torch
           assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
           PY
+          python scripts/repro/check_environment.py reproducibility/phase1b-dev-2026-11-07/MANIFEST.json inference
       - name: Install and verify pinned NLTK punkt_tab (no runtime downloads)
         run: python scripts/benchmarks/phase1b/nltk_resources.py --data-dir "$NLTK_DATA_DIR"
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
@@ -171,7 +175,9 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple cryptography==46.0.3
+          python -m pip install --index-url https://pypi.org/simple \\
+            --require-hashes --no-deps -r reproducibility/phase1b-dev-2026-11-07/aggregate-requirements.lock.txt
+          python scripts/repro/check_environment.py reproducibility/phase1b-dev-2026-11-07/MANIFEST.json aggregate
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: phase1b-dev-minimal-manifest
