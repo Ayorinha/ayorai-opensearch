@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "nli-dependency-smoke.yml"
 PYPROJECT = ROOT / "pyproject.toml"
@@ -116,3 +118,22 @@ def test_modern_requirements_reference_only_existing_paths() -> None:
             for token in line.split():
                 if "/" in token and not token.startswith("http"):
                     assert (ROOT / token.rstrip(".,;:)")).exists(), token
+
+
+def test_smoke_has_least_privilege_and_no_persisted_credentials() -> None:
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    assert workflow["permissions"] == {}
+    job = workflow["jobs"]["nli-dependency-smoke"]
+    assert job["permissions"] == {"contents": "read"}
+    checkout = [
+        step for step in job["steps"] if str(step.get("uses", "")).startswith("actions/checkout@")
+    ]
+    assert len(checkout) == 1
+    assert checkout[0]["with"]["persist-credentials"] is False
+    for step in job["steps"]:
+        uses = str(step.get("uses", ""))
+        if uses:
+            ref = uses.split("@", 1)[1].split()[0]
+            assert len(ref) == 40 and all(c in "0123456789abcdef" for c in ref), uses
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "secrets." not in text
