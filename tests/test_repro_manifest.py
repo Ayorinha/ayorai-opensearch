@@ -45,6 +45,7 @@ def test_historical_record_is_pinned_to_the_published_runs() -> None:
         "pycparser": "3.12",
     }
     assert "numpy" not in MANIFEST["environments"]["aggregate-minimal"]["packages"]
+    assert MANIFEST["environments"]["aggregate-minimal"]["forbidden_packages"] == ["numpy", "torch"]
     run_ids = {run["run_id"] for run in MANIFEST["runs"]}
     assert {"42389121599", "42418593837", "42436331559", "42485634513", "42384213361"} <= run_ids
     for run in MANIFEST["runs"]:
@@ -79,3 +80,24 @@ def test_compare_accepts_exact_environment() -> None:
 def test_compare_rejects_unknown_environment() -> None:
     with pytest.raises(ValueError, match="unknown environment"):
         compare(MANIFEST, "test-split", python_version="3.12.16", installed=lambda _n: None)
+
+
+
+def test_compare_rejects_forbidden_packages_in_minimal_environment() -> None:
+    manifest = {
+        "runtime": {"python": "3.12.16"},
+        "environments": {
+            "aggregate-minimal": {
+                "packages": {"cffi": "2.1.1"},
+                "forbidden_packages": ["numpy", "torch"],
+            }
+        },
+    }
+    installed = {"cffi": "2.1.1", "numpy": "2.2.6"}
+    problems = compare(
+        manifest,
+        "aggregate-minimal",
+        python_version="3.12.16",
+        installed=installed.get,
+    )
+    assert problems == ["numpy: unexpected package 2.2.6"]
