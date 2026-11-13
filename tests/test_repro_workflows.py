@@ -81,7 +81,6 @@ def test_producers_no_longer_install_mutable_pins(workflow: str) -> None:
     assert "cryptography==46.0.3 numpy==2.2.6" not in text
 
 
-
 def test_nltk_394_occurs_only_in_the_historical_inference_lock() -> None:
     pin = "nltk" + "==" + "3.9.4"
     allowed = RECORD + "/inference-requirements.lock.txt"
