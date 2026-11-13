@@ -44,7 +44,8 @@
       "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch",
       "programmingLanguage": "Python",
       "runtimePlatform": "Python 3.11, 3.12, 3.13",
-      "softwareVersion": "0.7.0",
+      "softwareVersion": "0.8.0",
+      "dateModified": "2026-11-13",
       "license": "https://www.apache.org/licenses/LICENSE-2.0",
       "identifier": "https://doi.org/10.5281/zenodo.23125082",
       "keywords": "auditoria de inteligência artificial, auditoria de IA, verificação de respostas de IA, IA confiável, verificação de afirmações, evidências, LLM, RAG, open source",
@@ -122,9 +123,9 @@
       <div class="ctas">
         <a class="btn primary" href="https://github.com/Ayorinha/ayorai-opensearch">Ver código no GitHub</a>
         <a class="btn" href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf">Documento técnico (PDF)</a>
-        <a class="btn" href="https://doi.org/10.5281/zenodo.24045951">Citar versão 0.7.0 · DOI</a>
+        <a class="btn" href="https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0">Release v0.8.0</a>
       </div>
-      <div class="facts"><span>Apache-2.0</span><span>Python 3.11 · 3.12 · 3.13</span><span>v0.7.0</span><span>Judge 2.0</span><span>Mantido por Anderson Leon Ayora</span></div>
+      <div class="facts"><span>Apache-2.0</span><span>Python 3.11 · 3.12 · 3.13</span><span>v0.8.0</span><span>Judge 2.0</span><span>Mantido por Anderson Leon Ayora</span></div>
     </div>
   </div>
 
@@ -202,24 +203,29 @@
     <div class="wrap narrow">
       <p class="kicker">Estado e limites</p>
       <h2>O que está comprovado hoje</h2>
-      <p>O repositório contém implementação de verificação, contrato do Judge 2.0, testes de regressão e avaliações documentadas. Há resultados históricos para Golden v0 e v0.1, além de uma execução de desenvolvimento da Calibration V2 em LLM-AggreFact (em inglês). Cada resultado deve ser interpretado segundo sua partição, protocolo, commit e limitações documentadas.</p>
+      <p>A versão pública atual é a <strong>v0.8.0</strong>, publicada em 13 de novembro de 2026. Esta versão amplia a API documental e reforça a segurança da cadeia de dependências. Ela não apresenta novo resultado confirmatório de acurácia; os experimentos de benchmark associados são exploratórios em DEV, e o split TEST não foi utilizado.</p>
       <div class="callout">
-        <strong>Calibration V2 — resultado DEV (7 nov. 2026)</strong>
-        <p>Na partição DEV-A, o FactCG foi selecionado pela regra registrada, com balanced accuracy cross-fitted de <strong>74,68%</strong>. Métricas probabilísticas: AUROC 0,8650 · AUPRC 0,9454 · Brier 0,1168 · ECE (15 bins) 0,0054.</p>
-        <p>O resultado oficial da v0.7.0 foi: a regra LTT originalmente registrada não aprovou nenhuma das 11 coortes. Após a Emenda 2, uma reaggregação dos mesmos artefatos DEV — sem nova inferência — encontrou quatro coortes que passaram pelo procedimento emendado: RAGTruth (92,7% de acerto observado; 91,6% de cobertura), ClaimVerify (94,6%; 67,2%), Lfqa (93,7%; 45,2%) e Reveal (95,6%; 32,6%). Este resultado é <strong>exploratório e pós-hoc</strong>, não certificação confirmatória; sete coortes não rejeitaram a hipótese nula no primeiro limiar testado.</p>
-        <p>A análise de poder propõe discutir, para a v0.8, um piso operacional de 367 respostas aceitas por coorte, mas isso ainda é uma <strong>proposta, não uma regra vigente</strong>; coortes menores poderiam ficar estruturalmente não testáveis por esse desenho.</p>
-        <p><strong>Limite de interpretação:</strong> todos esses resultados são DEV, não TEST, produção, ranking ou evidência de generalização para português. FactCG, MiniCheck e mDeBERTa são modelos de terceiros; consulte o <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/reports/benchmarks/2026-11-07-dev-calibration-v2/README.md">relatório Calibration V2</a>, a <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/reports/benchmarks/2026-11-08-phase1b-amendment-2-exploratory/README.md">reaggregação exploratória e análise de poder</a> e a <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/reports/benchmarks/2026-11-07-dev-calibration-v2/PROVENANCE.md">proveniência</a>.</p>
+        <strong>O que entrou na v0.8.0</strong>
+        <ul>
+          <li><strong><code>POST /v1/check</code>:</strong> verifica afirmações ou respostas de IA contra documentos em texto ou PDF com camada de texto; evidências incluem offsets e página. <code>UNVERIFIED</code> representa abstenção.</li>
+          <li><strong><code>POST /v1/fields</code>:</strong> compara valores como dinheiro, data, CPF/CNPJ, número e texto com um documento, com os resultados <code>conforme</code>, <code>divergente</code>, <code>ambiguo</code>, <code>ausente</code> e <code>invalido</code>.</li>
+          <li><strong>Rastreabilidade:</strong> identidade do rastro vinculada às páginas em <code>/v1/check</code> e ao documento completo em <code>/v1/fields</code>.</li>
+          <li><strong>Segurança:</strong> auditoria estrita de dependências no CI, ambiente NLI separado com SBOM CycloneDX, checkout de workflow sem persistência de credenciais GitHub e permissões de escrita concedidas por job.</li>
+        </ul>
+        <p>Os experimentos DEV incluem Emenda 2 do Learn then Test e reagregação exploratória pós-hoc, cache DEV cifrado e ensemble E3 em DEV-A. Não são resultados confirmatórios, não demonstram desempenho em produção e não devem ser tratados como ranking ou certificação.</p>
+        <p><strong>Resultado histórico (v0.7.0, DEV, LLM-AggreFact em inglês):</strong> na Calibration V2, o FactCG foi selecionado na partição DEV-A com balanced accuracy cross-fitted de <strong>74,68%</strong> (AUROC 0,8650 · AUPRC 0,9454 · Brier 0,1168 · ECE 0,0054). O resultado oficial da v0.7.0 permanece 0/11 coortes pela regra LTT originalmente registrada; a reagregação pós-hoc da Emenda 2 é exploratória e não substitui esse resultado. Detalhes no <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/reports/benchmarks/2026-11-07-dev-calibration-v2/README.md">relatório Calibration V2</a> e na <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/reports/benchmarks/2026-11-08-phase1b-amendment-2-exploratory/README.md">reagregação exploratória</a>.</p>
       </div>
       <div class="limits">
         <strong style="color:var(--mid)">Limites declarados</strong>
         <ul>
           <li>Ainda não há resultado de benchmark em português; o protocolo RGC está em desenvolvimento e não está congelado.</li>
+          <li>O split TEST não foi utilizado para os experimentos exploratórios descritos na v0.8.0.</li>
           <li>Resultados sintéticos não demonstram desempenho em produção nem generalização para documentos jurídicos brasileiros.</li>
           <li>O projeto não é apresentado como certificado, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só.</li>
           <li>Hashes ajudam a verificar a integridade de artefatos; não provam a veracidade de seu conteúdo.</li>
         </ul>
       </div>
-      <p style="color:var(--muted)">Para o estado mais recente, consulte o <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Status técnico</a>.</p>
+      <p style="color:var(--muted)">Consulte a <a href="https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0">release v0.8.0</a> e o <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Status técnico</a> para detalhes e histórico.</p>
     </div>
   </section>
 
@@ -261,7 +267,7 @@ pytest</code></pre>
       <details><summary>Quem criou o projeto?</summary><p>Anderson Leon Ayora, autor, mantenedor e diretor técnico do AYORAI ATTRACTOR.</p></details>
       <details><summary>É gratuito?</summary><p>Sim. É distribuído sob a licença Apache-2.0.</p></details>
       <details><summary>Ele substitui revisão humana ou avaliação jurídica?</summary><p>Não. O sistema apoia a análise; não substitui profissionais responsáveis, revisão humana, controles internos ou avaliação jurídica.</p></details>
-      <details><summary>Como citar o projeto?</summary><p>Para citar a versão 0.7.0, use o DOI <a href="https://doi.org/10.5281/zenodo.24045951">10.5281/zenodo.24045951</a>. Para citar o projeto independentemente da versão, use o DOI de conceito <a href="https://doi.org/10.5281/zenodo.23125082">10.5281/zenodo.23125082</a>. Os metadados estão em <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/CITATION.cff">CITATION.cff</a>.</p></details>
+      <details><summary>Como citar o projeto?</summary><p>Para consultar a versão atual v0.8.0, use a <a href="https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0">release no GitHub</a>. O DOI <a href="https://doi.org/10.5281/zenodo.24045951">10.5281/zenodo.24045951</a> identifica a versão anterior v0.7.0. Para citar o projeto independentemente da versão, use o DOI de conceito <a href="https://doi.org/10.5281/zenodo.23125082">10.5281/zenodo.23125082</a>. Os metadados estão em <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/CITATION.cff">CITATION.cff</a>.</p></details>
     </div>
   </section>
 </main>
