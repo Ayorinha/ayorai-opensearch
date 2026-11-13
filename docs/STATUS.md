@@ -20,8 +20,6 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 
 > As seções seguintes preservam snapshots históricos. Datas, SHAs e estados registrados nelas descrevem exclusivamente o momento da respectiva captura e não substituem o estado atual acima.
 
-> As seções seguintes preservam snapshots históricos. Datas, SHAs e estados registrados nelas descrevem exclusivamente o momento da respectiva captura e não substituem o estado atual acima.
-
 ## Snapshot — 2026-10-25
 
 - **`main` de referência para este snapshot:** `4f3c0cea4e40df5141521c4a12010bc3da5ac365` (merge da PR #410, testes de cobertura). No SHA exato, os runs pós-merge [CI 40213557463](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557463), [Security 40213557486](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557486) e [CodeQL 40213557412](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/40213557412) concluíram com sucesso. O CI executou a matriz Python 3.11–3.13: `1201 passed, 1 skipped in 39.65s`; cobertura global 95%. O merge desta atualização documental produzirá outro SHA de `main`.
