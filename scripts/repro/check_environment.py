@@ -1,6 +1,6 @@
 """Compare the running Python environment with a historical reproduction manifest.
 
-Usage: python scripts/repro/check_environment.py MANIFEST.json {inference|aggregate|aggregate-minimal}
+Usage: python scripts/repro/check_environment.py MANIFEST.json {inference|aggregate|aggregate-minimal|plan}
 Exits 0 only when Python X.Y.Z and every recorded package version match exactly.
 """
 
