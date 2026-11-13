@@ -1,4 +1,4 @@
-"""Checkout credentials are not persisted except where a workflow pushes with git."""
+"""All checkout credentials are scoped explicitly to the steps that need them."""
 
 from pathlib import Path
 
@@ -6,7 +6,9 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
-def test_checkout_does_not_persist_credentials_unless_git_push_requires_them() -> None:
+
+
+def test_checkout_does_not_persist_credentials() -> None:
     checked_out_workflows: set[str] = set()
 
     for path in sorted((*WORKFLOWS.glob("*.yml"), *WORKFLOWS.glob("*.yaml"))):
