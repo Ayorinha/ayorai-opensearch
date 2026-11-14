@@ -151,14 +151,23 @@ def build_article_components(
 
 
 class SignFlipResult(NamedTuple):
-    """DEC-021 two-sided sign-flip result with reproducibility metadata."""
+    """DEC-021 two-sided sign-flip result with reproducibility metadata.
+
+    ``component_ids`` is the order in which components were consumed (lexical order of
+    their canonical IDs), so a Monte Carlo result can be reproduced from the report.
+    ``theoretical_exact_resolution`` is DEC-021's minimum attainable two-sided p of the
+    exact test, 2 / 2**K; ``monte_carlo_minimum_p`` is the smallest p the Monte Carlo
+    estimator can return, 1 / (1 + iterations), and is None for the exact test.
+    """
 
     statistic_observed: int
     p_value_two_sided: float
     extreme_permutations: int
     permutations_considered: int
-    minimum_resolution: float
+    theoretical_exact_resolution: float
+    monte_carlo_minimum_p: float | None
     component_count: int
+    component_ids: tuple[str, ...]
     significance_below_005_possible: bool
     method: str
     seed: int | None
@@ -166,18 +175,41 @@ class SignFlipResult(NamedTuple):
     iterations: int
 
 
-def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
-    """Run DEC-021 exactly for K <= 20 and with its fixed PCG64 for K > 20."""
-    differences = tuple(component_differences)
-    if not differences:
+def _ordered_differences(
+    component_differences: Mapping[str, int],
+) -> tuple[tuple[str, ...], tuple[int, ...]]:
+    """Components in lexical order of their canonical IDs, whatever the input order."""
+
+    if not isinstance(component_differences, Mapping):
+        raise TypeError("component differences must map component IDs to integers")
+    if not component_differences:
         raise ValueError("at least one component difference is required")
-    if any(type(value) is not int for value in differences):
-        raise ValueError("component differences must be integers")
+    for component_id, value in component_differences.items():
+        if (
+            not isinstance(component_id, str)
+            or not component_id
+            or component_id != component_id.strip()
+        ):
+            raise ValueError("component IDs must be canonical non-empty strings")
+        if type(value) is not int:
+            raise ValueError("component differences must be integers")
+    component_ids = tuple(sorted(component_differences))
+    return component_ids, tuple(component_differences[cid] for cid in component_ids)
+
+
+def exact_sign_flip(component_differences: Mapping[str, int]) -> SignFlipResult:
+    """Run DEC-021 exactly for K <= 20 and with its fixed PCG64 for K > 20.
+
+    The input maps each component ID to its paired difference a_k - b_k. Components are
+    consumed in lexical order of their IDs, so the result does not depend on the order
+    in which the caller built the mapping.
+    """
+    component_ids, differences = _ordered_differences(component_differences)
 
     component_count = len(differences)
     observed = sum(differences)
     total = 1 << component_count
-    minimum_resolution = 2 / total
+    theoretical_exact_resolution = 2 / total
 
     if component_count <= 20:
         extreme = 0
@@ -192,8 +224,10 @@ def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
             p_value_two_sided=extreme / total,
             extreme_permutations=extreme,
             permutations_considered=total,
-            minimum_resolution=minimum_resolution,
+            theoretical_exact_resolution=theoretical_exact_resolution,
+            monte_carlo_minimum_p=None,
             component_count=component_count,
+            component_ids=component_ids,
             significance_below_005_possible=component_count >= 6,
             method="exact",
             seed=None,
@@ -211,10 +245,10 @@ def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
     iterations = 10_000
     rng = np.random.Generator(np.random.PCG64(seed))
     extreme = 0
-    values = np.asarray(differences, dtype=np.int64)
+    difference_array = np.asarray(differences, dtype=np.int64)
     for _ in range(iterations):
-        signs = rng.choice([-1, +1], size=component_count, replace=True)
-        permuted = int(np.sum(signs * values))
+        random_signs = rng.choice([-1, +1], size=component_count, replace=True)
+        permuted = int(np.sum(random_signs * difference_array))
         if abs(permuted) >= abs(observed):
             extreme += 1
 
@@ -223,8 +257,10 @@ def exact_sign_flip(component_differences: Iterable[int]) -> SignFlipResult:
         p_value_two_sided=(1 + extreme) / (1 + iterations),
         extreme_permutations=extreme,
         permutations_considered=iterations,
-        minimum_resolution=minimum_resolution,
+        theoretical_exact_resolution=theoretical_exact_resolution,
+        monte_carlo_minimum_p=1 / (1 + iterations),
         component_count=component_count,
+        component_ids=component_ids,
         significance_below_005_possible=component_count >= 6,
         method="monte_carlo",
         seed=seed,

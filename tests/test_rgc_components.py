@@ -111,19 +111,35 @@ def test_empty_input_has_a_well_formed_empty_summary() -> None:
     assert result.component_sizes == ()
 
 
+def _components(*differences: int) -> dict[str, int]:
+    return {f"component:syn-{index:02d}": value for index, value in enumerate(differences)}
+
+
+def _brute_force_p(differences: list[int]) -> float:
+    """Independent reference: enumerate every sign vector, two-sided, |T*| >= |T_obs|."""
+
+    observed = abs(sum(differences))
+    hits = 0
+    for mask in range(1 << len(differences)):
+        total = sum(-d if (mask >> i) & 1 else d for i, d in enumerate(differences))
+        hits += abs(total) >= observed
+    return hits / (1 << len(differences))
+
+
 def test_exact_sign_flip_enumerates_all_sign_combinations() -> None:
-    result = MODULE["exact_sign_flip"]([1, 1])
+    result = MODULE["exact_sign_flip"](_components(1, 1))
 
     assert result.statistic_observed == 2
     assert result.permutations_considered == 4
     assert result.extreme_permutations == 2
     assert result.p_value_two_sided == 0.5
-    assert result.minimum_resolution == 0.5
+    assert result.theoretical_exact_resolution == 0.5
+    assert result.monte_carlo_minimum_p is None
     assert result.significance_below_005_possible is False
 
 
 def test_exact_sign_flip_keeps_zero_difference_components() -> None:
-    result = MODULE["exact_sign_flip"]([1, 0])
+    result = MODULE["exact_sign_flip"](_components(1, 0))
 
     assert result.component_count == 2
     assert result.permutations_considered == 4
@@ -132,8 +148,8 @@ def test_exact_sign_flip_keeps_zero_difference_components() -> None:
 
 def test_exact_sign_flip_is_symmetric_and_deterministic() -> None:
     fn = MODULE["exact_sign_flip"]
-    positive = fn([3, -2, 1])
-    negative = fn([-3, 2, -1])
+    positive = fn(_components(3, -2, 1))
+    negative = fn(_components(-3, 2, -1))
 
     assert positive.statistic_observed == -negative.statistic_observed
     assert positive.p_value_two_sided == negative.p_value_two_sided
@@ -141,26 +157,88 @@ def test_exact_sign_flip_is_symmetric_and_deterministic() -> None:
     assert positive.permutations_considered == negative.permutations_considered
 
 
-def test_exact_sign_flip_rejects_empty_and_non_integer_inputs() -> None:
+@pytest.mark.parametrize(
+    "differences",
+    [
+        [2, -1, 0, 3],
+        [1, 1, 1, 1, 1, 1],
+        [5, -4, 3, -2, 1, 0, 2],
+        [0, 0, 0],
+        [7, -7, 1, 2, -3, 4, 1, -1],
+    ],
+)
+def test_exact_sign_flip_matches_independent_enumeration(differences: list[int]) -> None:
+    result = MODULE["exact_sign_flip"](_components(*differences))
+
+    assert result.method == "exact"
+    assert result.p_value_two_sided == _brute_force_p(differences)
+    assert result.theoretical_exact_resolution == 2 / 2 ** len(differences)
+
+
+def test_exact_sign_flip_is_exact_up_to_k_20() -> None:
+    differences = [1, -1] * 9 + [3, 2]  # K = 20
+    result = MODULE["exact_sign_flip"](_components(*differences))
+
+    assert result.method == "exact"
+    assert result.component_count == 20
+    assert result.permutations_considered == 2**20
+    assert result.theoretical_exact_resolution == 2 / 2**20
+    assert result.monte_carlo_minimum_p is None
+
+
+def test_exact_sign_flip_does_not_depend_on_input_order() -> None:
+    fn = MODULE["exact_sign_flip"]
+    items = list(_components(4, -1, 2, 0, -3, 5, 1).items())
+    forward = fn(dict(items))
+    backward = fn(dict(reversed(items)))
+    shuffled = fn(dict(items[3:] + items[:3]))
+
+    assert forward == backward == shuffled
+    assert forward.component_ids == tuple(sorted(key for key, _ in items))
+
+
+def test_monte_carlo_sign_flip_does_not_depend_on_input_order_k_25() -> None:
+    fn = MODULE["exact_sign_flip"]
+    differences = [((index * 7) % 5) - 2 for index in range(25)]  # K = 25, mixed signs
+    items = list(_components(*differences).items())
+    forward = fn(dict(items))
+    backward = fn(dict(reversed(items)))
+    rotated = fn(dict(items[11:] + items[:11]))
+
+    assert forward.method == "monte_carlo"
+    assert forward.component_count == 25
+    assert forward == backward == rotated
+    assert forward.component_ids == tuple(sorted(key for key, _ in items))
+    assert forward.p_value_two_sided == (1 + forward.extreme_permutations) / 10_001
+    assert forward.theoretical_exact_resolution == 2 / 2**25
+    assert forward.monte_carlo_minimum_p == 1 / 10_001
+    assert forward.monte_carlo_minimum_p <= forward.p_value_two_sided <= 1
+
+
+def test_exact_sign_flip_rejects_invalid_inputs() -> None:
+    fn = MODULE["exact_sign_flip"]
     with pytest.raises(ValueError, match="at least one"):
-        MODULE["exact_sign_flip"]([])
+        fn({})
     with pytest.raises(ValueError, match="integers"):
-        MODULE["exact_sign_flip"]([1, True])
+        fn({"component:a": 1, "component:b": True})
+    with pytest.raises(ValueError, match="canonical"):
+        fn({" component:a": 1})
+    with pytest.raises(TypeError, match="map component IDs"):
+        fn([1, 2])
 
 
 def test_monte_carlo_sign_flip_uses_fixed_reproducible_pcg64() -> None:
     fn = MODULE["exact_sign_flip"]
-    first = fn([1] * 21)
-    second = fn([1] * 21)
+    first = fn(_components(*([1] * 21)))
+    second = fn(_components(*([1] * 21)))
 
     assert first == second
     assert first.method == "monte_carlo"
     assert first.seed == 20261003
     assert first.generator == "numpy.random.Generator(numpy.random.PCG64)"
     assert first.iterations == 10_000
-    assert first.permutations_considered == 10_000
-    assert first.p_value_two_sided == (1 + first.extreme_permutations) / 10_001
-    assert first.minimum_resolution == 2 / (2**21)
+    assert first.theoretical_exact_resolution == 2 / (2**21)
+    assert first.monte_carlo_minimum_p == 1 / 10_001
 
 
 def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> None:
