@@ -266,6 +266,23 @@ def test_development_partition_rejects_noncanonical_cited_article_id() -> None:
         )
 
 
+def test_development_pilot_validates_supplied_ids_before_rule_gap_exclusion() -> None:
+    case = _case("invalid-pilot-id", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = ["Article:2"]
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-pilot-id": "RULE_GAP"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+            pilot_mode=True,
+        )
+
+
 def test_hidden_partition_rejects_missing_bootstrap_cluster_id() -> None:
     case = _case("no-cluster", "O cancelamento será efetivado em até 2 dias.", CANCEL)
     case.pop("bootstrap_cluster_id")
