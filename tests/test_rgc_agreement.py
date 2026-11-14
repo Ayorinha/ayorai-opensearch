@@ -81,9 +81,12 @@ def test_unknown_label_is_rejected() -> None:
         AGREEMENT["compute_agreement"]({"a": "NOT_A_LABEL"}, {"a": "SUPPORTED"}, iterations=10)
 
 
-def test_bootstrap_iterations_must_be_positive() -> None:
+@pytest.mark.parametrize("iterations", [0, -1, True, 1.5])
+def test_bootstrap_iterations_must_be_positive_integer(iterations: object) -> None:
     with pytest.raises(ValueError, match="iterations must be positive"):
-        AGREEMENT["compute_agreement"]({"a": "SUPPORTED"}, {"a": "SUPPORTED"}, iterations=0)
+        AGREEMENT["compute_agreement"](
+            {"a": "SUPPORTED"}, {"a": "SUPPORTED"}, iterations=iterations
+        )
 
 
 def test_all_rule_gap_pairs_abort_instead_of_returning_a_kappa() -> None:
