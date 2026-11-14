@@ -142,8 +142,7 @@ def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> Non
     assert report["bootstrap"]["generator"] == "RGC-PRNG-1"
     assert report["bootstrap"]["percentile"] == "hyndman-fan-type-7"
     assert (
-        report["bootstrap"]["valid_replicates"]
-        + report["bootstrap"]["degenerate_replicates"]
+        report["bootstrap"]["valid_replicates"] + report["bootstrap"]["degenerate_replicates"]
         == 10_000
     )
     assert report["inputs"] == {
