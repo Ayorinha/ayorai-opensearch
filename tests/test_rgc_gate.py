@@ -139,7 +139,7 @@ def test_empty_inventory_fails_the_gate_without_fabricating_components() -> None
 def test_inventory_loader_accepts_only_the_two_d7_fields(tmp_path: Path) -> None:
     inventory = tmp_path / "inventory.jsonl"
     inventory.write_text(
-        json.dumps({"case_id": "a", "cited_article_ids": ["article-a"]}) + "\\n",
+        json.dumps({"case_id": "a", "cited_article_ids": ["article-a"]}) + "\n",
         encoding="utf-8",
     )
 
@@ -158,7 +158,7 @@ def test_inventory_loader_rejects_annotation_or_result_fields(tmp_path: Path) ->
                 "label": "SUPPORTED",
             }
         )
-        + "\\n",
+        + "\n",
         encoding="utf-8",
     )
 
@@ -174,7 +174,7 @@ def test_gate_cli_writes_minimal_record_and_returns_success_at_k_six(
     inventory.write_text(
         "".join(
             json.dumps({"case_id": f"case-{index}", "cited_article_ids": [f"article-{index}"]})
-            + "\\n"
+            + "\n"
             for index in range(6)
         ),
         encoding="utf-8",
@@ -196,7 +196,7 @@ def test_gate_cli_writes_blocked_record_and_returns_nonzero_below_k_six(
     inventory.write_text(
         "".join(
             json.dumps({"case_id": f"case-{index}", "cited_article_ids": [f"article-{index}"]})
-            + "\\n"
+            + "\n"
             for index in range(5)
         ),
         encoding="utf-8",
