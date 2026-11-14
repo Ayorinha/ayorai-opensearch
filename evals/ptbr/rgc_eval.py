@@ -52,10 +52,14 @@ from ayorai_attractor.verification.judge2 import adjudication
 from ayorai_attractor.verification.models import Claim, Evidence
 from ayorai_attractor.verification.stance import RuleStanceDetector
 
+if __package__ in (None, ""):  # run as a script: make the repository importable
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from evals.ptbr.rgc_ids import cluster_members, require_article_id  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.7.0"
+RUNNER_VERSION = "rgc-eval/0.8.0"
 SEED = 20261003
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
@@ -314,42 +318,56 @@ def case_rectified(case: Mapping[str, Any]) -> bool:
     return value
 
 
-def validate_cluster_citations(case: Mapping[str, Any], cluster_id: str, case_id: str) -> None:
-    """Check that a declared bootstrap cluster is supported by cited article IDs.
+def validate_cluster_citations(
+    case: Mapping[str, Any],
+    cluster_id: object,
+    case_id: str,
+    *,
+    require_citations: bool = True,
+    require_cluster: bool = True,
+) -> None:
+    """Validate every supplied canonical article ID and cluster/citation consistency.
 
-    DEC-019 requires cited_article_ids to preserve the complete citation list.
-    A bundle represents the subset jointly necessary when no single principal
-    article exists; it therefore must be contained in, not equal to, that list.
-    This check validates consistency only and cannot determine legal relevance
-    or whether a principal article was correctly selected.
+    Hidden evaluation requires both fields. Development evaluation may omit either,
+    but any supplied field is still checked against DEC-027, D1. A bundle is the
+    subset jointly necessary when no single principal article exists; it must be
+    contained in, not equal to, the complete citation list. This check cannot
+    determine legal relevance or whether a principal article was selected correctly.
     """
+    cited_ids: set[str] | None = None
     if "cited_article_ids" not in case:
-        raise ValueError(f"{case_id}: cited_article_ids is required for hidden partition cases")
-    cited = case["cited_article_ids"]
-    if (
-        not isinstance(cited, list)
-        or not cited
-        or any(
-            not isinstance(article_id, str) or not article_id or article_id != article_id.strip()
-            for article_id in cited
-        )
-        or len(cited) != len(set(cited))
-    ):
-        raise ValueError(
-            f"{case_id}: cited_article_ids must be a non-empty list of unique, "
-            "canonical, non-empty strings"
-        )
-    cited_ids = set(cited)
-    if cluster_id.startswith("bundle:"):
-        members = cluster_id.removeprefix("bundle:").split("+")
+        if require_citations:
+            raise ValueError(f"{case_id}: cited_article_ids is required for hidden partition cases")
+    else:
+        cited = case["cited_article_ids"]
+        if (
+            not isinstance(cited, list)
+            or not cited
+            or any(not isinstance(article_id, str) or not article_id for article_id in cited)
+            or len(cited) != len(set(cited))
+        ):
+            raise ValueError(
+                f"{case_id}: cited_article_ids must be a non-empty list of unique, "
+                "canonical, non-empty strings"
+            )
+        for article_id in cited:  # DEC-027, D1: one grammar for every article ID
+            require_article_id(article_id, f"{case_id}: cited_article_ids")
+        cited_ids = set(cited)
+
+    members = (
+        cluster_members(cluster_id, f"{case_id}: bootstrap_cluster_id") if require_cluster else None
+    )
+    if members is not None and cited_ids is not None:
         missing = sorted(set(members) - cited_ids)
         if missing:
+            if isinstance(cluster_id, str) and cluster_id.startswith("bundle:"):
+                raise ValueError(
+                    f"{case_id}: bundle bootstrap_cluster_id contains IDs absent "
+                    f"from cited_article_ids: {missing}"
+                )
             raise ValueError(
-                f"{case_id}: bundle bootstrap_cluster_id contains IDs absent "
-                f"from cited_article_ids: {missing}"
+                f"{case_id}: bootstrap_cluster_id must be present in cited_article_ids"
             )
-    elif cluster_id not in cited_ids:
-        raise ValueError(f"{case_id}: bootstrap_cluster_id must be present in cited_article_ids")
 
 
 def predict(
@@ -1067,30 +1085,23 @@ def evaluate(
         ):
             raise ValueError(f"{case_id}: invalid gold label {gold!r} for vocabulary {vocabulary}")
         _validate_rule_gap_policy(gold, pilot_mode=pilot_mode, partition=partition)
-        if gold in EXCLUSION_LABELS:
-            continue
         cluster_id = case.get("bootstrap_cluster_id")
         if partition == "hidden" and (not isinstance(cluster_id, str) or not cluster_id.strip()):
             raise ValueError(
                 f"{case_id}: missing or invalid bootstrap_cluster_id for hidden partition"
             )
-        if (
-            partition == "hidden"
-            and isinstance(cluster_id, str)
-            and cluster_id.startswith("bundle:")
-        ):
-            members = cluster_id.removeprefix("bundle:").split("+")
-            if (
-                len(members) < 2
-                or any(not member for member in members)
-                or members != sorted(set(members))
-            ):
-                raise ValueError(
-                    f"{case_id}: bundle bootstrap_cluster_id must contain at least two "
-                    "unique, sorted IDs"
-                )
-        if partition == "hidden" and isinstance(cluster_id, str):
-            validate_cluster_citations(case, cluster_id, case_id)
+        has_cluster_id = "bootstrap_cluster_id" in case
+        has_cited_article_ids = "cited_article_ids" in case
+        if partition == "hidden" or has_cluster_id or has_cited_article_ids:
+            validate_cluster_citations(
+                case,
+                cluster_id,
+                case_id,
+                require_citations=partition == "hidden",
+                require_cluster=partition == "hidden" or has_cluster_id,
+            )
+        if gold in EXCLUSION_LABELS:
+            continue
         claim = case.get("claim")
         if not isinstance(claim, str) or not claim.strip():
             raise ValueError(f"{case_id}: claim must be a non-empty string")

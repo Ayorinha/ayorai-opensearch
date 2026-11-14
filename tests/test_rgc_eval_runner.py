@@ -234,6 +234,116 @@ def test_article_cluster_bootstrap_is_deterministic_and_distinct_from_case_boots
     assert clustered["accuracy"] != case_level["accuracy"]
 
 
+@pytest.mark.parametrize(
+    "fields_to_remove",
+    [
+        ("bootstrap_cluster_id", "cited_article_ids"),
+        ("bootstrap_cluster_id",),
+        ("cited_article_ids",),
+    ],
+)
+def test_development_partition_allows_omitted_optional_id_fields(
+    fields_to_remove: tuple[str, ...],
+) -> None:
+    case = _case("optional-dev-ids", "O cliente fictício pode cancelar.", "Art. 2º")
+    for field in fields_to_remove:
+        case.pop(field)
+    result = RUNNER["evaluate"](
+        [case],
+        {"optional-dev-ids": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=10,
+    )
+    assert result["metrics"]["n"] == 1
+
+
+def test_development_partition_rejects_noncanonical_bootstrap_cluster_id() -> None:
+    case = _case("invalid-dev-cluster", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "Article:2"
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-dev-cluster": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_noncanonical_cited_article_id() -> None:
+    case = _case("invalid-dev-citation", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = ["Article:2"]
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-dev-citation": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_cluster_not_in_citations() -> None:
+    case = _case("dev-cluster-mismatch", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "synthetic:other"
+    case["cited_article_ids"] = ["synthetic:dev-cluster-mismatch"]
+    with pytest.raises(ValueError, match="must be present in cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"dev-cluster-mismatch": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_bundle_member_absent_from_citations() -> None:
+    case = _case("dev-bundle-mismatch", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "bundle:synthetic:a+synthetic:b"
+    case["cited_article_ids"] = ["synthetic:a"]
+    with pytest.raises(ValueError, match="absent from cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"dev-bundle-mismatch": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_pilot_validates_supplied_ids_before_rule_gap_exclusion() -> None:
+    case = _case("invalid-pilot-id", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = ["Article:2"]
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-pilot-id": "RULE_GAP"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+            pilot_mode=True,
+        )
+
+
 def test_hidden_partition_rejects_missing_bootstrap_cluster_id() -> None:
     case = _case("no-cluster", "O cancelamento será efetivado em até 2 dias.", CANCEL)
     case.pop("bootstrap_cluster_id")
@@ -876,7 +986,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     )
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
-    assert report["runner_version"] == "rgc-eval/0.7.0"
+    assert report["runner_version"] == "rgc-eval/0.8.0"
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
     assert report["protocol_freeze"]["runner_code_sha256"] == "e" * 64
@@ -1857,3 +1967,39 @@ def test_blank_protocol_freeze_template_is_rejected_by_validator(tmp_path: Path)
 
     with pytest.raises(ValueError, match="freeze manifest status must be FROZEN"):
         RUNNER["validate_protocol_freeze"](root=tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("cited", "cluster", "message"),
+    [
+        (["syn:a+syn:b"], "syn:a+syn:b", "not a canonical article ID"),
+        (["Syn:A"], "Syn:A", "not a canonical article ID"),
+        (["syn:a", "syn:b"], "bundle:syn:b+syn:a", "unique, sorted IDs"),
+        (["syn:a"], "component:syn:a", "not a canonical article ID"),
+    ],
+)
+def test_hidden_partition_enforces_the_article_id_grammar(
+    cited: list[str], cluster: str, message: str
+) -> None:
+    case = _case("grammar", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = cited
+    case["bootstrap_cluster_id"] = cluster
+    with pytest.raises(ValueError, match=message):
+        RUNNER["evaluate"](
+            [case],
+            {"grammar": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_runner_uses_the_shared_article_id_validator() -> None:
+    from evals.ptbr import rgc_ids
+
+    assert RUNNER["require_article_id"].__code__ is rgc_ids.require_article_id.__code__
+    assert RUNNER["cluster_members"].__code__ is rgc_ids.cluster_members.__code__
