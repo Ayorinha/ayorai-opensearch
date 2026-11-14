@@ -101,7 +101,9 @@ def main(argv: list[str] | None = None) -> int:
         required=True,
         help="JSONL with exactly case_id and cited_article_ids in each record",
     )
-    parser.add_argument("--out", type=Path, required=True, help="path for the minimal D7 JSON record")
+    parser.add_argument(
+        "--out", type=Path, required=True, help="path for the minimal D7 JSON record"
+    )
     args = parser.parse_args(argv)
     if args.inventory.resolve() == args.out.resolve():
         parser.error("--out must not overwrite --inventory")
