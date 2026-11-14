@@ -3,20 +3,35 @@
 The gate reads only case_id and cited_article_ids. It does not inspect annotation
 labels, predictions, benchmark results, or legacy bootstrap_cluster_id metadata.
 The public record is deliberately limited to K and component-size information.
+
+Exit codes: 0 = the inventory is valid and K >= 6 (annotation may proceed);
+3 = the inventory is valid but K < 6 (blocked by D7); 2 = invalid inventory or
+invalid invocation (nothing is written to --out).
+
+Usage (from the repository root, as a script or as a module):
+    python evals/ptbr/rgc_gate.py --inventory INVENTORY.jsonl --out GATE.json
+    python -m evals.ptbr.rgc_gate --inventory INVENTORY.jsonl --out GATE.json
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+import tempfile
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import NamedTuple
 
-from evals.ptbr.rgc_components import build_connected_article_components
+if __package__ in (None, ""):  # run as a script: make the repository importable
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from evals.ptbr.rgc_components import build_connected_article_components  # noqa: E402
 
 MINIMUM_COMPONENTS = 6
+EXIT_PROCEED = 0
+EXIT_INVALID = 2
+EXIT_BELOW_MINIMUM = 3
 
 
 class PreannotationGateResult(NamedTuple):
@@ -49,10 +64,13 @@ def evaluate_preannotation_gate(
 
     Component construction is delegated to the canonical DEC-023 implementation.
     The result contains no case IDs, article IDs, labels, predictions, or scores.
-    Missing, duplicate, malformed, or incomplete inventory data fails closed.
+    Missing, duplicate, malformed, incomplete, or empty inventory data fails closed.
     """
 
-    components = build_connected_article_components(cases)
+    records = list(cases)
+    if not records:
+        raise ValueError("empty inventory: D7 requires the complete case inventory")
+    components = build_connected_article_components(records)
     sizes = tuple(sorted((len(component.case_ids) for component in components), reverse=True))
     return PreannotationGateResult(
         component_count=len(components),
@@ -108,14 +126,25 @@ def main(argv: list[str] | None = None) -> int:
     if args.inventory.resolve() == args.out.resolve():
         parser.error("--out must not overwrite --inventory")
 
-    result = evaluate_preannotation_gate(load_preannotation_inventory(args.inventory))
+    try:
+        result = evaluate_preannotation_gate(load_preannotation_inventory(args.inventory))
+    except (OSError, ValueError) as exc:
+        sys.stderr.write(f"invalid D7 inventory: {exc}\n")
+        return EXIT_INVALID
+
+    record = json.dumps(result.public_record(), ensure_ascii=False, indent=2) + "\n"
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(
-        json.dumps(result.public_record(), ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    # Atomic replace: a reader never sees a partially written record.
+    descriptor, temporary = tempfile.mkstemp(dir=args.out.parent, prefix=".rgc-gate-")
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(record)
+        os.replace(temporary, args.out)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise
     sys.stdout.write(json.dumps(result.public_record(), ensure_ascii=False) + "\n")
-    return 0 if result.can_proceed else 1
+    return EXIT_PROCEED if result.can_proceed else EXIT_BELOW_MINIMUM
 
 
 if __name__ == "__main__":

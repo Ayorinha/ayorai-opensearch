@@ -122,18 +122,9 @@ def test_incomplete_or_noncanonical_inventory_fails_closed(
         MODULE["evaluate_preannotation_gate"](cases)
 
 
-def test_empty_inventory_fails_the_gate_without_fabricating_components() -> None:
-    result = MODULE["evaluate_preannotation_gate"]([])
-
-    assert result.component_count == 0
-    assert result.component_sizes == ()
-    assert result.largest_component_size == 0
-    assert result.can_proceed is False
-    assert result.public_record() == {
-        "K": 0,
-        "component_sizes": [],
-        "largest_component_size": 0,
-    }
+def test_empty_inventory_is_invalid_not_k_zero() -> None:
+    with pytest.raises(ValueError, match="empty inventory"):
+        MODULE["evaluate_preannotation_gate"]([])
 
 
 def test_inventory_loader_accepts_only_the_two_d7_fields(tmp_path: Path) -> None:
@@ -179,7 +170,7 @@ def test_inventory_loader_rejects_duplicate_json_keys(tmp_path: Path) -> None:
 
 def test_gate_cli_refuses_to_overwrite_inventory(tmp_path: Path) -> None:
     inventory = tmp_path / "inventory.jsonl"
-    original = json.dumps({"case_id": "a", "cited_article_ids": ["article-a"]}) + "\\n"
+    original = json.dumps({"case_id": "a", "cited_article_ids": ["article-a"]}) + "\n"
     inventory.write_text(original, encoding="utf-8")
 
     with pytest.raises(SystemExit, match="2"):
@@ -227,6 +218,74 @@ def test_gate_cli_writes_blocked_record_and_returns_nonzero_below_k_six(
     exit_code = MODULE["main"](["--inventory", str(inventory), "--out", str(output)])
 
     expected = {"K": 5, "component_sizes": [1, 1, 1, 1, 1], "largest_component_size": 1}
-    assert exit_code == 1
+    assert exit_code == 3
     assert json.loads(output.read_text(encoding="utf-8")) == expected
     assert json.loads(capsys.readouterr().out) == expected
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "",
+        "\n",
+        "{not json}\n",
+        '{"case_id": "c1", "cited_article_ids": ["Article-A"]}\n',
+        '{"case_id": "c1", "cited_article_ids": ["article-a"], "label": "SUPPORTED"}\n',
+    ],
+)
+def test_gate_cli_invalid_inventory_exits_2_and_writes_nothing(
+    tmp_path: Path, content: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    inventory = tmp_path / "inventory.jsonl"
+    output = tmp_path / "gate.json"
+    inventory.write_text(content, encoding="utf-8")
+
+    exit_code = MODULE["main"](["--inventory", str(inventory), "--out", str(output)])
+
+    assert exit_code == 2
+    assert not output.exists()
+    assert "invalid D7 inventory" in capsys.readouterr().err
+
+
+def test_gate_cli_missing_inventory_exits_2(tmp_path: Path) -> None:
+    output = tmp_path / "gate.json"
+    exit_code = MODULE["main"](
+        ["--inventory", str(tmp_path / "absent.jsonl"), "--out", str(output)]
+    )
+    assert exit_code == 2
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(("count", "expected_code"), [(6, 0), (5, 3)])
+def test_gate_runs_as_a_script_from_any_directory(
+    tmp_path: Path, count: int, expected_code: int
+) -> None:
+    import subprocess
+    import sys
+
+    inventory = tmp_path / "inventory.jsonl"
+    output = tmp_path / "gate.json"
+    inventory.write_text(
+        "".join(
+            json.dumps({"case_id": f"case-{index}", "cited_article_ids": [f"article-{index}"]})
+            + "\n"
+            for index in range(count)
+        ),
+        encoding="utf-8",
+    )
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "evals" / "ptbr" / "rgc_gate.py"),
+            "--inventory",
+            str(inventory),
+            "--out",
+            str(output),
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == expected_code, completed.stderr
+    assert json.loads(output.read_text(encoding="utf-8"))["K"] == count
