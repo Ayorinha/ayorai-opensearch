@@ -14,7 +14,9 @@ Two passage sets are kept apart:
 - the pool: union of the passages the evaluated variants cited, annotated blind to
   their stances and verdicts. Recall over the pool is conditional on the variants.
 - the independent universe: passages people mark as candidates for each claim by
-  reading the documents, before and without any run. Only this set measures recall.
+  reading the documents, before and without any run. Recall over it does not depend on
+  the variants, but it is recall over the annotated universe, not over every relevant
+  passage that may exist.
 
 Subcommands:
     pool    passages to annotate, from one or more runs, WITHOUT stances or verdicts
@@ -430,7 +432,7 @@ def _per_case(
 
 # name: (numerator, denominator) over summed per-case counts
 METRICS: dict[str, tuple[str, str]] = {
-    # retrieval, independent universe (absolute, the only recall that is not conditional)
+    # retrieval, independent annotated universe (not conditional on the variants)
     "recall_relevant_independent": ("universe_relevant_cited", "universe_relevant"),
     "retrieval_coverage_independent": ("universe_cases_covered", "universe_cases"),
     # retrieval, pool of cited passages (conditional on the evaluated variants)

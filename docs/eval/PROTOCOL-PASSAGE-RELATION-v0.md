@@ -4,7 +4,7 @@
 
 ## 1. Observação exploratória que motiva o protocolo
 
-**[FATO, exploratório]** Reproduzível com `python -m evals.passage_relation.exploratory_ptcp_dev` (somente o split DEV de `evals/pt-cp-audit`, já usado no desenvolvimento das regras; o TEST não é lido).
+**[FATO, exploratório]** Reproduzível com `python -m evals.passage_relation.exploratory_ptcp_dev` (somente o split DEV de `evals/pt-cp-audit`, já usado no desenvolvimento das regras). O script lê apenas os intervalos de bytes das linhas DEV listados em `evals/passage_relation/ptcp_dev_index.json`, conferindo o SHA-256 e o campo `split` de cada uma. Nenhum registro TEST é lido; um teste registra cada byte lido e o confirma.
 
 - Documento: texto vigente de todos os dispositivos da Parte Geral do Código Penal, um por linha.
 - Casos: os 70 casos DEV rotulados `supports` ou `contradicts`.
@@ -41,7 +41,7 @@ Cada variante entra em `evals/passage_relation/run_system.py` (`VARIANTS`) por u
 
 ## 4. Dois conjuntos de trechos, anotados sem ver resultados
 
-**Universo independente.** É o único conjunto que mede recall absoluto.
+**Universo independente.** Mede recall sem depender das variantes. Esse recall vale sobre o universo anotado, não sobre todos os trechos relevantes que possam existir: um trecho que as pessoas não marcaram fica fora da medida.
 - Para cada afirmação, pessoas leem os documentos e marcam todos os trechos candidatos, de qualquer relação, antes de existir qualquer *run* e sem consultar as variantes.
 - Quando o documento é curto, o universo pode ser formado por todas as unidades estruturais (artigos, parágrafos, incisos), anotadas uma a uma.
 - Toda afirmação precisa ter ao menos uma linha no universo; o harness recusa o arquivo se faltar alguma.
@@ -82,7 +82,7 @@ Os relatórios repetem a identidade completa de cada run.
 
 | Métrica | Conjunto | Definição |
 |---|---|---|
-| `recall_relevant_independent` | universo | unidades relevantes do universo sobrepostas por um trecho citado ÷ unidades relevantes do universo (relevante = relação ≠ `sem_relacao`; sobreposição ≥ 1 caractere no mesmo documento) |
+| `recall_relevant_independent` | universo | recall sobre o universo independente anotado: unidades relevantes do universo sobrepostas por um trecho citado ÷ unidades relevantes do universo (relevante = relação ≠ `sem_relacao`; sobreposição ≥ 1 caractere no mesmo documento) |
 | `retrieval_coverage_independent` | universo | afirmações com ao menos uma unidade relevante citada ÷ afirmações com unidade relevante |
 | `recall_relevant_in_pool` | pool | trechos relevantes do pool citados ÷ trechos relevantes do pool (condicionado às variantes) |
 | `relevance_precision_at_k` | pool | trechos citados relevantes ÷ trechos citados |

@@ -1,7 +1,9 @@
 """Reproduce the exploratory PT-CP DEV observation behind PROTOCOL-PASSAGE-RELATION-v0.
 
-EXPLORATORY ONLY. Reads the DEV split of evals/pt-cp-audit (already used to develop the
-stance rules) and never the TEST split. Its numbers motivate the protocol; they are not
+EXPLORATORY ONLY. Uses the DEV split of evals/pt-cp-audit (already used to develop the
+stance rules). TEST records are never read: the cases come from the byte ranges listed
+in ptcp_dev_index.json, each checked against its SHA-256 and its "split" field, and no
+other byte of cases.jsonl is read. Its numbers motivate the protocol; they are not
 evidence of any improvement and must not be used to tune or confirm a variant.
 
 Document: the current text of every Parte Geral provision, one per line. Cases: DEV
@@ -14,15 +16,18 @@ Usage:
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO
 
 from ayorai_attractor.verification.document_check import CheckDocumentInput, check_documents
 
 ROOT = Path(__file__).resolve().parents[2]
 AUDIT = ROOT / "evals" / "pt-cp-audit"
+DEV_INDEX = Path(__file__).resolve().parent / "ptcp_dev_index.json"
 # ADR-002 needs two independent support clusters for SUPPORTED; one document gives at
 # most PARTIALLY_SUPPORTED, which is the best attainable outcome here.
 BEST = {"supports": "partially_supported", "contradicts": "refuted"}
@@ -44,12 +49,32 @@ def _document() -> tuple[CheckDocumentInput, list[tuple[int, int, str]]]:
     return CheckDocumentInput(id="cp-parte-geral", text="\n".join(lines)), spans
 
 
+def dev_cases(
+    index_path: Path = DEV_INDEX, opener: Callable[[Path], BinaryIO] | None = None
+) -> list[dict[str, Any]]:
+    """Read only the indexed DEV byte ranges of cases.jsonl, verifying each one."""
+
+    index = json.loads(index_path.read_text("utf-8"))
+    source = ROOT / index["source"]
+    if source.stat().st_size != index["source_size"]:
+        raise RuntimeError(f"{index['source']} changed since the DEV index was built")
+    cases = []
+    with (opener or (lambda path: path.open("rb")))(source) as handle:
+        for entry in index["lines"]:
+            handle.seek(entry["offset"])
+            raw = handle.read(entry["length"])
+            if hashlib.sha256(raw).hexdigest() != entry["sha256"]:
+                raise RuntimeError(f"{entry['id']}: bytes differ from the DEV index")
+            case = json.loads(raw)
+            if case["id"] != entry["id"] or case["split"] != "dev" or case["label"] not in BEST:
+                raise RuntimeError(f"{entry['id']}: not a DEV supports/contradicts case")
+            cases.append(case)
+    return cases
+
+
 def measure() -> dict[str, Any]:
     document, spans = _document()
-    rows = [json.loads(line) for line in (AUDIT / "cases.jsonl").read_text("utf-8").splitlines()]
-    cases = [r for r in rows if r["split"] == "dev" and r["label"] in BEST]
-    if any(case["split"] != "dev" for case in cases):  # defensive: TEST is never read
-        raise RuntimeError("only the DEV split may be used")
+    cases = dev_cases()
     verdicts: Counter[str] = Counter()
     stance_gold: Counter[str] = Counter()
     stance_other: Counter[str] = Counter()

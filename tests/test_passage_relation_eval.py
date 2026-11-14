@@ -408,7 +408,64 @@ def test_cli_score_and_compare(files: dict[str, Path], capsys: pytest.CaptureFix
     )
 
 
-def test_exploratory_script_reads_only_the_dev_split() -> None:
+class _RecordingReader:
+    """Binary file wrapper that records every byte range read."""
+
+    def __init__(self, path: Path) -> None:
+        self._handle = path.open("rb")
+        self.ranges: list[tuple[int, int]] = []
+
+    def __enter__(self) -> _RecordingReader:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self._handle.close()
+
+    def seek(self, offset: int) -> int:
+        return self._handle.seek(offset)
+
+    def read(self, size: int = -1) -> bytes:
+        start = self._handle.tell()
+        data = self._handle.read(size)
+        self.ranges.append((start, start + len(data)))
+        return data
+
+
+def test_exploratory_script_never_reads_test_records() -> None:
+    from evals.passage_relation import exploratory_ptcp_dev
+
+    readers: list[_RecordingReader] = []
+
+    def opener(path: Path) -> Any:
+        readers.append(_RecordingReader(path))
+        return readers[-1]
+
+    cases = exploratory_ptcp_dev.dev_cases(opener=opener)
+    index = json.loads(exploratory_ptcp_dev.DEV_INDEX.read_text("utf-8"))
+    allowed = [(e["offset"], e["offset"] + e["length"]) for e in index["lines"]]
+    (reader,) = readers
+    # Every byte read lies inside an indexed DEV line, and nothing else was read.
+    assert reader.ranges == allowed
+    assert all(case["split"] == "dev" for case in cases)
+    assert {case["label"] for case in cases} == {"supports", "contradicts"}
+    assert len(cases) == 70
+    assert index["source_sha256"] == (
+        "3aa702bc7bd04185389d9201e619ca7637508a5fb1aac774bdf642bf4362382c"
+    )  # SHA-256 of cases.jsonl recorded in evals/pt-cp-audit/README.md
+
+
+def test_dev_index_rejects_bytes_that_changed(tmp_path: Path) -> None:
+    from evals.passage_relation import exploratory_ptcp_dev
+
+    index = json.loads(exploratory_ptcp_dev.DEV_INDEX.read_text("utf-8"))
+    index["lines"][0]["sha256"] = "0" * 64
+    tampered = tmp_path / "index.json"
+    tampered.write_text(json.dumps(index), "utf-8")
+    with pytest.raises(RuntimeError, match="bytes differ"):
+        exploratory_ptcp_dev.dev_cases(tampered)
+
+
+def test_exploratory_measurement_is_dev_only() -> None:
     from evals.passage_relation import exploratory_ptcp_dev
 
     report = exploratory_ptcp_dev.measure()
