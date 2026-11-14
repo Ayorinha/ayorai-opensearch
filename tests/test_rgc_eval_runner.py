@@ -34,6 +34,8 @@ def _write_agreement_report(path: Path, annotation_a: Path, annotation_b: Path) 
     }
     path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return report
+
+
 Document = RUNNER["Document"]
 Passage = RUNNER["Passage"]
 
@@ -249,6 +251,7 @@ def test_article_cluster_bootstrap_is_deterministic_and_distinct_from_case_boots
     assert clustered["accuracy"] == [0.0, 1.0]
     assert clustered["accuracy"] != case_level["accuracy"]
 
+
 @pytest.mark.parametrize("iterations", [0, -1, True, 1.5])
 def test_bootstrap_rejects_nonpositive_or_noninteger_iterations(iterations: object) -> None:
     with pytest.raises(ValueError, match="iterations must be positive"):
@@ -264,7 +267,6 @@ def test_case_bootstrap_rejects_mismatched_and_empty_inputs() -> None:
         RUNNER["bootstrap_ci"](["SUPPORTED"], [], iterations=10)
     with pytest.raises(ValueError, match="at least one case"):
         RUNNER["bootstrap_ci"]([], [], iterations=10)
-
 
 
 @pytest.mark.parametrize(
@@ -1108,10 +1110,7 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
     cases.write_text(
-        "\n".join(
-            json.dumps({"case_id": case_id}) for case_id in ("case-1", "case-2")
-        )
-        + "\n",
+        "\n".join(json.dumps({"case_id": case_id}) for case_id in ("case-1", "case-2")) + "\n",
         encoding="utf-8",
     )
     labels.write_text("{}\n", encoding="utf-8")
@@ -1197,7 +1196,7 @@ def test_annotation_approval_rejects_tampered_recomputed_statistics(tmp_path: Pa
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
     cases.write_text(
-        "\n".join(json.dumps({"case_id": case_id}) for case_id in ("a", "b")) + "\n",
+        "\n".join(json.dumps({"case_id": x}) for x in ("a", "b")) + "\n",
         encoding="utf-8",
     )
     labels.write_text("{}\n", encoding="utf-8")
@@ -1249,8 +1248,15 @@ def test_annotation_approval_rejects_tampered_recomputed_statistics(tmp_path: Pa
         approval.write_text(json.dumps(manifest), encoding="utf-8")
         with pytest.raises(ValueError, match="differs from canonical recomputation"):
             RUNNER["validate_annotation_approval"](
-                cases, labels, development_cases, development_labels,
-                annotation_a, annotation_b, agreement, approval, adjudication
+                cases,
+                labels,
+                development_cases,
+                development_labels,
+                annotation_a,
+                annotation_b,
+                agreement,
+                approval,
+                adjudication,
             )
 
 
