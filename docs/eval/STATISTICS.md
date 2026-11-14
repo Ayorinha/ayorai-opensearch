@@ -88,8 +88,8 @@ A ferramenta `evals/ptbr/rgc_agreement.py` calcula Cohen's kappa não ponderado 
 - Códigos de saída:
   - 0: `K ≥ 6`;
   - 3: `K < 6`;
-  - 2: inventário inválido ou vazio, sem gravar o registro.
-- `K ≥ 6` torna `p < 0,05` possível, mas não provável.
+  - 2: inventário inválido, vazio ou ausente, ou argumentos inválidos; nada é gravado.
+- `K ≥ 6` é condição necessária, não suficiente: componentes em que o sistema e a Baseline B empatam (`d_k = 0`) não contam para a significância atingível (ver **Resolução**, abaixo).
 
 ### Teste de H1 — DEC-021 (Emenda 11)
 
@@ -97,10 +97,10 @@ A ferramenta `evals/ptbr/rgc_agreement.py` calcula Cohen's kappa não ponderado 
 - **p-valor** (`sign_flip_by_component`):
   - `K ≤ 20`: enumeração das `2^K` combinações de sinais;
   - `K > 20`: 10.000 vetores de sinais do fluxo `dec021-sign-flip`, um sinal por componente na ordem dos IDs, com `p = (1 + E)/(1 + 10.000)`.
-- **Resolução.** O relatório traz `K`, a resolução teórica `2/2^K` e, no Monte Carlo, o p mínimo `1/10.001`. Com `K < 6`, `significance_below_005_possible` é falso e H1 não pode receber suporte.
+- **Resolução.** Componentes com `d_k = 0` não alteram nenhuma estatística permutada; o menor p exato atingível é `2/2^K′`, com `K′` = componentes com `d_k ≠ 0`. O relatório traz `K`, `K′` (`informative_component_count`), `minimum_attainable_p`, a resolução teórica da DEC-021 (`2/2^K`) e, no Monte Carlo, o p mínimo do estimador (`1/10.001`). Com `K′ < 6`, `significance_below_005_possible` é falso e H1 não pode receber suporte.
 - **Sensibilidades, nunca substitutos:**
   - McNemar exato por caso (`mcnemar.role = sensitivity`);
-  - teste de Obuchowski por componente (`obuchowski_sensitivity`), com `Var = K/(K−1)·Σ_k (x_k − y_k)²/N²` sob H0 e χ² com 1 grau de liberdade. A implementação reproduz o exemplo publicado PET/SPECT (21 clusters, variância 0,00484, χ² ≈ 2,857; 2,88 com as proporções arredondadas). Referências: [Obuchowski, 1998, *Statistics in Medicine* 17(13):1495–1507](https://doi.org/10.1002/(SICI)1097-0258(19980715)17:13%3C1495::AID-SIM863%3E3.0.CO;2-I); [PubMed PMID 9695194](https://pubmed.ncbi.nlm.nih.gov/9695194/).
+  - teste de Obuchowski por componente (`obuchowski_sensitivity`), com `Var = K/(K−1)·Σ_k (x_k − y_k)²/N²` sob H0 e χ² com 1 grau de liberdade. A implementação reproduz o exemplo publicado PET/SPECT (21 clusters, variância 0,00484, χ² ≈ 2,857; 2,88 com as proporções arredondadas). Os dados do teste coincidem com o conjunto `thyroids` do pacote R [`clust.bin.pair`](https://cran.r-project.org/package=clust.bin.pair), cujos testes registram 2,86 (Durkalski et al., 2003) e 2,88 (Obuchowski, 1998). Referências: [Obuchowski, 1998, *Statistics in Medicine* 17(13):1495–1507](https://doi.org/10.1002/(SICI)1097-0258(19980715)17:13%3C1495::AID-SIM863%3E3.0.CO;2-I); [PubMed PMID 9695194](https://pubmed.ncbi.nlm.nih.gov/9695194/).
 - **Hipótese de permutabilidade.** A validade do sign-flip depende da permutabilidade sistema/Baseline B dentro de cada componente sob H0. É uma hipótese metodológica: componentes por artigo não provam independência entre componentes.
 
 ### IC95% de acurácia de H1 — DEC-027 D5 (Emenda 11)
