@@ -474,3 +474,49 @@ def test_ascii_run_touching_a_non_ascii_digit_is_not_a_shorter_number(
 def test_number_is_never_a_prefix_of_a_longer_dotted_sequence(text: str) -> None:
     for value in ("1", "1.2", "1,5", "1.000"):
         assert check_field(text, FieldSpec("quantidade", "number", value)).outcome == "ausente"
+
+
+# field-check-4: a minus sign written right before a value belongs to it.
+
+
+@pytest.mark.parametrize(
+    ("field_type", "value", "text", "outcome", "found"),
+    [
+        ("number", "5", "Quantidade: -5", "divergente", "-5"),
+        ("number", "-5", "Quantidade: -5", "conforme", "-5"),
+        ("number", "-5", "Quantidade: −5", "conforme", "−5"),
+        ("number", "−5", "Quantidade: -5", "conforme", "-5"),
+        ("money", "100,00", "Valor: R$ -100,00", "divergente", "R$ -100,00"),
+        ("money", "-100,00", "Valor: R$ -100,00", "conforme", "R$ -100,00"),
+        ("money", "-100,00", "Valor: -R$ 100,00", "conforme", "-R$ 100,00"),
+        ("money", "R$ -100,00", "Valor: R$-100,00", "conforme", "R$-100,00"),
+        ("money", "100,00", "Valor: R$ 100,00", "conforme", "100,00"),
+    ],
+)
+def test_minus_sign_belongs_to_the_value(
+    field_type: str, value: str, text: str, outcome: str, found: str
+) -> None:
+    result = check_field(text, FieldSpec("campo", field_type, value, ("Quantidade", "Valor")))
+    assert (result.outcome, result.found) == (outcome, found)
+    assert result.start is not None and text[result.start : result.end] == found
+
+
+@pytest.mark.parametrize(
+    ("text", "values"),
+    [
+        ("Faixa: 10-12", ["10", "12"]),
+        ("art. 5-A", ["5"]),
+        ("Lote 2-3", ["2", "3"]),
+    ],
+)
+def test_hyphen_after_a_letter_or_digit_is_not_a_sign(text: str, values: list[str]) -> None:
+    from ayorai_attractor.verification.field_check import candidates
+
+    found = [item.normalized for item in candidates(text, FieldSpec("x", "number", "1"))]
+    assert found == values
+
+
+def test_negative_zero_and_double_sign() -> None:
+    assert check_field("Saldo: R$ 0,00", FieldSpec("saldo", "money", "-0,00")).outcome == "conforme"
+    assert _outcome(FieldSpec("valor", "money", "-R$ -10,00")) == "invalido"
+    assert _outcome(FieldSpec("quantidade", "number", "--5")) == "invalido"
