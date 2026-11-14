@@ -38,6 +38,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-022 | IC95% de Cohen's kappa por componentes | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
 | DEC-023 | Componentes conectados por artigos citados | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
 | DEC-024 | Limites de calibração e combinação de sinais no LLM-AggreFact | Aprovada pelo mantenedor (2026-11-08); opção B | Este arquivo |
+| DEC-027 | Reconciliação estatística do RGC (IDs, percentil, gerador, H1, validação, K) | Aprovada pelo mantenedor (2026-11-14), por delegação às recomendações conjuntas | Este arquivo |
 
 ## Decisões aprovadas
 
@@ -525,6 +526,95 @@ Reportar:
 - Não autoriza TEST, execução automática nem publicação de resultados; cada experimento continua exigindo pré-registro e autorização própria.
 - A opção A (até cinco parâmetros externos) só poderá ser reconsiderada por nova decisão, de preferência após esclarecimento formal dos mantenedores do dataset sobre os termos.
 - Esta classificação técnica não substitui interpretação jurídica dos termos.
+
+---
+
+
+## DEC-027 — Reconciliação estatística do RGC
+
+**Estado vigente:** Aprovada pelo mantenedor (2026-11-14).
+
+- **Data da decisão:** 14/11/2026
+- **Decisor:** Anderson Leon Ayora
+- **Forma da aprovação:** o mantenedor recebeu as recomendações conjuntas das duas revisões técnicas para D1, D2, D3, D4, D5, D6 e D7 e respondeu: "Quero que você escolha o que é melhor para o projeto". Ficam adotadas as recomendações abaixo. A D3(c) já tinha aprovação conceitual do mantenedor, condicionada à especificação formal, que está na seção D3.
+- **Relação com decisões anteriores:** não altera DEC-019, DEC-020, DEC-021, DEC-022 nem DEC-023. Especifica o que elas deixaram em aberto e mantém literais os formatos `bundle:` e `component:`.
+
+### D1 — Gramática dos IDs canônicos de artigo
+
+- Um ID canônico de artigo casa com `^[a-z0-9]+(?:-[a-z0-9]+)*(?::[a-z0-9]+(?:-[a-z0-9]+)*)*$`, tem no máximo 200 caracteres e não começa por `bundle:` nem por `component:`, prefixos reservados.
+- Exemplo: `planalto-lgpd-13709-2018:art-7`, `planalto-lgpd-13709-2018:art-5-a`.
+- O caractere `+` nunca ocorre num ID de artigo. Por isso `bundle:` (DEC-019) e `component:` (DEC-023), que unem IDs com `+`, são inequívocos e reversíveis.
+- A gramática vale para cada item de `cited_article_ids`, para o `bootstrap_cluster_id` de artigo único e para cada membro de um `bundle:`. Um único validador compartilhado é usado pelo executor e pelas ferramentas.
+- **Condição:** quem prepara os casos confirma que os IDs reais seguem a gramática. Um ID fora dela é recusado (falha fechada); o validador nunca o normaliza em silêncio.
+
+### D2 — Percentil dos intervalos bootstrap
+
+- Todos os IC95% percentis do RGC usam o quantil tipo 7 de Hyndman–Fan, definido por fórmula.
+- Valores válidos ordenados `x_1 ≤ … ≤ x_n`, `n ≥ 1`, e probabilidade `p ∈ {1/40, 39/40}`:
+  - `h = (n − 1) · p`, calculado em aritmética racional exata;
+  - `j = ⌊h⌋`, `g = h − j`;
+  - `Q(p) = x_(j+1) + g · (x_(j+2) − x_(j+1))`, índices a partir de 1;
+  - se `g = 0`, `Q(p) = x_(j+1)`.
+- Réplicas indefinidas são excluídas antes da ordenação e reportadas.
+
+### D3 — Gerador determinístico RGC-PRNG-1
+
+1. **Entradas.**
+   - `seed`: inteiro `0 ≤ seed < 2^64`; para o RGC, `20261003`.
+   - `label`: casa com `^[a-z0-9]+(?:-[a-z0-9]+)*$`, até 64 caracteres. Um fluxo por procedimento: `dec019-accuracy-bootstrap`, `dec021-sign-flip`, `dec022-kappa-bootstrap`.
+2. **Bloco `i`.**
+   - `SHA-256( "AYORAI-RGC-PRNG-1" ‖ 0x00 ‖ u32be(len(label)) ‖ label ‖ u64be(seed) ‖ u64be(i) )`.
+   - Inteiros sem sinal em big-endian; textos em bytes ASCII.
+   - O contador `i` começa em 0 e sobe 1 por bloco. Passar de `2^64 − 1` é erro.
+3. **Fluxo de palavras.**
+   - Cada bloco gera 8 palavras `u32` big-endian, consumidas em ordem.
+   - O cursor de palavras é contínuo em todo o procedimento, inclusive entre réplicas e iterações; não é reiniciado entre operações.
+4. **Inteiro uniforme em `[0, n)`, `1 ≤ n ≤ 2^32`.**
+   - `L = 2^32 − (2^32 mod n)`; ler a próxima palavra `w`.
+   - Se `w < L`, devolver `w mod n`.
+   - Se não, descartar `w` definitivamente e ler a próxima. O contador nunca volta.
+5. **Ordem de consumo.**
+   - Componentes em ordem lexical do ID canônico, por ponto de código. IDs que não estejam em NFC são recusados, nunca normalizados.
+   - Bootstrap: réplicas `r = 0 … B−1`; em cada réplica, `K` sorteios de `[0, K)`, cada um indicando uma posição da lista ordenada de componentes. A multiplicidade é preservada: um componente sorteado `m` vezes entra `m` vezes.
+   - Sign-flip de Monte Carlo: iterações `t = 0 … 9999`; em cada uma, um sorteio de `[0, 2)` por componente, na ordem; `0 → +1`, `1 → −1`.
+6. **Vetores de referência** (`seed = 20261003`), conferidos pelas duas revisões técnicas:
+   - prefixo antes do contador para `dec022-kappa-bootstrap`: `41594f5241492d5247432d50524e472d3100000000166465633032322d6b617070612d626f6f747374726170000000000135288b`;
+   - bloco 0 (`dec022-kappa-bootstrap`): `3f7b4515d60d21e0d80074db4286b9d2ff821ad0e67c8d2e2209fbae17bd2498`;
+   - 12 sorteios de `[0, 10)` (`dec022-kappa-bootstrap`): `1, 4, 1, 0, 4, 6, 8, 0, 6, 8, 1, 5`;
+   - 12 sorteios de `[0, 7)` (`dec019-accuracy-bootstrap`): `6, 3, 5, 4, 2, 4, 2, 2, 1, 4, 5, 6`;
+   - 16 sinais (`dec021-sign-flip`): `− + − − − + + − − − − − − + − −`;
+   - 3 sorteios de `[0, 2^31 + 1)`, `seed = 0`, `label = rejection-check`: `1182218569, 1800520938, 1786065899`. Rejeita as palavras `3518580100` e `4222768487` e usa um bloco.
+   - Os vetores viram testes automatizados na implementação.
+7. **Substituição.** RGC-PRNG-1 substitui `random.Random` e `numpy.random.PCG64` em todos os sorteios do RGC: executor, concordância e sign-flip.
+
+### D4 — Teste confirmatório de H1
+
+- O critério de H1 no pré-registro (§5) passa a ser o sign-flip bilateral por componente da DEC-021, por emenda datada.
+- McNemar exato e Obuchowski ficam como análises de sensibilidade.
+- Os demais critérios de H1 (≥ 10 p.p. sobre a baseline e limite inferior do IC acima da baseline) continuam.
+
+### D5 — Unidade do IC de acurácia de H1
+
+- A unidade primária é o componente conectado da DEC-023.
+- O IC por `bootstrap_cluster_id` da DEC-019 é reportado como sensibilidade.
+
+### D6 — `bootstrap_cluster_id` ausente ou inválido
+
+- Falha fechada: ausente, vazio, de tipo errado ou fora da gramática D1 gera erro explícito.
+- Nenhuma contagem parcial é aceita.
+
+### D7 — Gate prévio de resolução
+
+- Antes da anotação de veredito, calcula-se `K`, o número de componentes, sobre o inventário completo de `cited_article_ids`, sem ler rótulos, previsões ou resultados.
+- `K ≥ 6` é condição para seguir.
+- O registro publica só `K`, o tamanho de cada componente e o maior componente.
+- `K ≥ 6` torna `p < 0,05` possível, mas não o garante.
+
+### Limites
+
+- As mudanças de texto no pré-registro e no protocolo continuam exigindo emenda datada própria, que referencia esta decisão.
+- Não congela o protocolo. Não autoriza execução RGC, produção de métricas nem publicação.
+- A implementação segue por etapas (E1 a E4), cada uma em PR própria com revisão e autorização individual de merge.
 
 ---
 
