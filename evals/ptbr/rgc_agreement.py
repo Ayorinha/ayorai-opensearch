@@ -5,18 +5,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-try:  # run as part of the repository (tests, python -m)
-    from evals.ptbr.rgc_random import LABEL_CASE_KAPPA, RgcPrng, percentile_ci95
-except ModuleNotFoundError:  # run as a script: python evals/ptbr/rgc_agreement.py
-    from rgc_random import (  # type: ignore[no-redef]
-        LABEL_CASE_KAPPA,
-        RgcPrng,
-        percentile_ci95,
-    )
+if __package__ in (None, ""):  # run as a script: make the repository importable
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from evals.ptbr.rgc_random import LABEL_CASE_KAPPA, RgcPrng, percentile_ci95  # noqa: E402
 
 VOCABULARY = (
     "SUPPORTED",
