@@ -8,7 +8,7 @@
 
 **Leitura consolidada (2026-10-21)**
 
-Emendas vigentes para leitura conjunta: [Emenda 6 — baseline primária e descritiva](#emenda-6-2026-10-21--baseline-primária-e-descritiva-dec-014-aprovada-pelo-mantenedor), [Emenda 7 — registros ausentes e predições inválidas](#emenda-7-2026-10-21--registros-ausentes-e-predições-inválidas-dec-017-opção-a-aprovada), [Emenda 8 — escopo confirmatório de H1](#emenda-8-2026-10-21--escopo-confirmatório-de-h1-dec-018-opção-a-aprovada), [Emenda 9 — bootstrap por cluster de artigo](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a-aprovada) [Emenda 10 — concordância entre anotadores](#emenda-10-2026-10-21--concordância-entre-anotadores-dec-020-opção-a-aprovada) e [Emenda 11 — teste de H1 e IC por componente](#emenda-11-2026-11-14--teste-de-h1-e-ic-por-componente-dec-027-d4-e-d5). O estado do documento e do protocolo continua **[PROPOSTO]**; não estão congelados, e esta consolidação não autoriza execução RGC.
+Emendas vigentes para leitura conjunta: [Emenda 6 — baseline primária e descritiva](#emenda-6-2026-10-21--baseline-primária-e-descritiva-dec-014-aprovada-pelo-mantenedor), [Emenda 7 — registros ausentes e predições inválidas](#emenda-7-2026-10-21--registros-ausentes-e-predições-inválidas-dec-017-opção-a-aprovada), [Emenda 8 — escopo confirmatório de H1](#emenda-8-2026-10-21--escopo-confirmatório-de-h1-dec-018-opção-a-aprovada), [Emenda 9 — bootstrap por cluster de artigo](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a-aprovada), [Emenda 10 — concordância entre anotadores](#emenda-10-2026-10-21--concordância-entre-anotadores-dec-020-opção-a-aprovada) e [Emenda 11 — teste de H1 e IC por componente](#emenda-11-2026-11-14--teste-de-h1-e-ic-por-componente-dec-027-d4-e-d5). O estado do documento e do protocolo continua **[PROPOSTO]**; não estão congelados, e esta consolidação não autoriza execução RGC.
 
 **Registro histórico — nota de leitura vigente (2026-10-21):** os §§ 1, 4 (itens 6–7) e 5 deveriam ser lidos em conjunto com a Emenda 6. Esta nota foi superada pelo quadro “Leitura consolidada” acima.
 
@@ -238,7 +238,6 @@ Pela decisão do mantenedor registrada na DEC-020, opção A, aprovada em 2026-1
 4. `RULE_GAP` não é categoria do cálculo: excluir o par se qualquer anotador marcar `RULE_GAP` e reportar a contagem excluída e quantas dessas exclusões eram discordantes. Não excluir silenciosamente outros casos.
 5. Os arquivos das duas anotações devem ter exatamente os mesmos IDs e um rótulo válido por ID. ID ausente, ID extra, duplicado ou rótulo desconhecido interrompe o cálculo.
 6. A emenda não cria nem rotula casos, não calcula concordância real, não substitui a segunda anotação independente, não congela o protocolo e não autoriza execução do ATTRACTOR sobre casos RGC.
-
 
 ## Emenda 11 (2026-11-14) — teste de H1 e IC por componente (DEC-027, D4 e D5)
 
