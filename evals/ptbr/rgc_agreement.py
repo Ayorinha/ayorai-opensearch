@@ -172,14 +172,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--annotation-a", type=Path, required=True)
     parser.add_argument("--annotation-b", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--iterations", type=int, default=DEFAULT_ITERATIONS)
-    parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     args = parser.parse_args(argv)
+    # The protocol-facing CLI always uses DEC-020/DEC-027 canonical parameters.
+    # Custom values remain available only through the internal function for tests.
     result = compute_agreement(
         load_annotations(args.annotation_a),
         load_annotations(args.annotation_b),
-        iterations=args.iterations,
-        seed=args.seed,
     )
     result["inputs"] = {
         "annotation_a_sha256": hashlib.sha256(args.annotation_a.read_bytes()).hexdigest(),
