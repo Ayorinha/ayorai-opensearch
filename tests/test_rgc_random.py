@@ -102,10 +102,11 @@ def test_range_and_counter_limits() -> None:
     with pytest.raises(OverflowError):
         stream.block(2**64)
 
-    stream._counter = 2**64 - 1
-    assert len([stream.word() for _ in range(8)]) == 8
+    final_block = RgcPrng(SEED, "dec021-sign-flip")
+    final_block._counter = 2**64 - 1
+    assert len([final_block.word() for _ in range(8)]) == 8
     with pytest.raises(OverflowError, match="counter exhausted"):
-        stream.word()
+        final_block.word()
 
 
 def test_below_accepts_full_u32_range_without_changing_the_word() -> None:
