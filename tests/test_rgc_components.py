@@ -284,7 +284,6 @@ def test_monte_carlo_sign_flip_uses_rgc_prng_1() -> None:
     assert first.p_value_two_sided == 1 / 10_001
 
 
-
 def _accuracy_metric(gold: Sequence[str], pred: Sequence[str]) -> float:
     return sum(g == p for g, p in zip(gold, pred, strict=True)) / len(gold)
 
@@ -320,7 +319,6 @@ def test_accuracy_component_bootstrap_rejects_invalid_component_ids() -> None:
             {"a": "component-a"},
             {"accuracy": _accuracy_metric},
         )
-
 
 
 def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> None:
