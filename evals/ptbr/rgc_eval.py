@@ -56,6 +56,7 @@ if __package__ in (None, ""):  # run as a script: make the repository importable
 from evals.ptbr.rgc_random import (  # noqa: E402
     LABEL_CASE_ACCURACY,
     LABEL_CLUSTER_ACCURACY,
+    RGC_SEED,
     RgcPrng,
     percentile_ci95,
 )
@@ -64,7 +65,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
 RUNNER_VERSION = "rgc-eval/0.8.0"
-SEED = 20261003
+SEED = RGC_SEED
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
 BM25_K1 = 1.2
