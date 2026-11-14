@@ -92,6 +92,12 @@ def test_range_and_counter_limits() -> None:
         stream.word()
 
 
+def test_below_accepts_full_u32_range_without_changing_the_word() -> None:
+    expected = RgcPrng(SEED, "dec021-sign-flip").word()
+    actual = RgcPrng(SEED, "dec021-sign-flip").below(2**32)
+    assert actual == expected
+
+
 def test_quantile_type7_by_hand() -> None:
     values = [10.0, 20.0, 30.0, 40.0, 50.0]
     # h = 4 * 1/40 = 0.1 -> 10 + 0.1 * 10; h = 4 * 39/40 = 3.9 -> 40 + 0.9 * 10
