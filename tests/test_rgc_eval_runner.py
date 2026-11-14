@@ -876,7 +876,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     )
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
-    assert report["runner_version"] == "rgc-eval/0.7.0"
+    assert report["runner_version"] == "rgc-eval/0.8.0"
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
     assert report["protocol_freeze"]["runner_code_sha256"] == "e" * 64
@@ -1857,3 +1857,39 @@ def test_blank_protocol_freeze_template_is_rejected_by_validator(tmp_path: Path)
 
     with pytest.raises(ValueError, match="freeze manifest status must be FROZEN"):
         RUNNER["validate_protocol_freeze"](root=tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("cited", "cluster", "message"),
+    [
+        (["syn:a+syn:b"], "syn:a+syn:b", "not a canonical article ID"),
+        (["Syn:A"], "Syn:A", "not a canonical article ID"),
+        (["syn:a", "syn:b"], "bundle:syn:b+syn:a", "unique, sorted IDs"),
+        (["syn:a"], "component:syn:a", "not a canonical article ID"),
+    ],
+)
+def test_hidden_partition_enforces_the_article_id_grammar(
+    cited: list[str], cluster: str, message: str
+) -> None:
+    case = _case("grammar", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = cited
+    case["bootstrap_cluster_id"] = cluster
+    with pytest.raises(ValueError, match=message):
+        RUNNER["evaluate"](
+            [case],
+            {"grammar": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_runner_uses_the_shared_article_id_validator() -> None:
+    from evals.ptbr import rgc_ids
+
+    assert RUNNER["require_article_id"].__code__ is rgc_ids.require_article_id.__code__
+    assert RUNNER["cluster_members"].__code__ is rgc_ids.cluster_members.__code__

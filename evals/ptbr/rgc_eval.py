@@ -52,10 +52,15 @@ from ayorai_attractor.verification.judge2 import adjudication
 from ayorai_attractor.verification.models import Claim, Evidence
 from ayorai_attractor.verification.stance import RuleStanceDetector
 
+try:  # run as part of the repository (tests, python -m)
+    from evals.ptbr.rgc_ids import cluster_members, require_article_id
+except ModuleNotFoundError:  # run as a script: python evals/ptbr/rgc_eval.py
+    from rgc_ids import cluster_members, require_article_id  # type: ignore[no-redef]
+
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.7.0"
+RUNNER_VERSION = "rgc-eval/0.8.0"
 SEED = 20261003
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
@@ -329,19 +334,18 @@ def validate_cluster_citations(case: Mapping[str, Any], cluster_id: str, case_id
     if (
         not isinstance(cited, list)
         or not cited
-        or any(
-            not isinstance(article_id, str) or not article_id or article_id != article_id.strip()
-            for article_id in cited
-        )
+        or any(not isinstance(article_id, str) or not article_id for article_id in cited)
         or len(cited) != len(set(cited))
     ):
         raise ValueError(
             f"{case_id}: cited_article_ids must be a non-empty list of unique, "
             "canonical, non-empty strings"
         )
+    for article_id in cited:  # DEC-027, D1: one grammar for every article ID
+        require_article_id(article_id, f"{case_id}: cited_article_ids")
     cited_ids = set(cited)
+    members = cluster_members(cluster_id, f"{case_id}: bootstrap_cluster_id")
     if cluster_id.startswith("bundle:"):
-        members = cluster_id.removeprefix("bundle:").split("+")
         missing = sorted(set(members) - cited_ids)
         if missing:
             raise ValueError(
@@ -1074,21 +1078,6 @@ def evaluate(
             raise ValueError(
                 f"{case_id}: missing or invalid bootstrap_cluster_id for hidden partition"
             )
-        if (
-            partition == "hidden"
-            and isinstance(cluster_id, str)
-            and cluster_id.startswith("bundle:")
-        ):
-            members = cluster_id.removeprefix("bundle:").split("+")
-            if (
-                len(members) < 2
-                or any(not member for member in members)
-                or members != sorted(set(members))
-            ):
-                raise ValueError(
-                    f"{case_id}: bundle bootstrap_cluster_id must contain at least two "
-                    "unique, sorted IDs"
-                )
         if partition == "hidden" and isinstance(cluster_id, str):
             validate_cluster_citations(case, cluster_id, case_id)
         claim = case.get("claim")
