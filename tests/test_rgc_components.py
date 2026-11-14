@@ -22,6 +22,22 @@ def _build_article_components(cases: list[dict[str, object]]) -> Any:
     return MODULE["build_article_components"](prepared)
 
 
+def test_connected_inventory_uses_only_case_ids_and_citations() -> None:
+    cases = [
+        {"case_id": "case-a", "cited_article_ids": ["article:one"]},
+        {"case_id": "case-b", "cited_article_ids": ["article:one", "article:two"]},
+        {"case_id": "case-c", "cited_article_ids": ["article:three"]},
+    ]
+
+    components = MODULE["build_connected_article_components"](cases)
+
+    assert len(components) == 2
+    assert components[0].component_id == "component:article:one+article:two"
+    assert components[0].case_ids == ("case-a", "case-b")
+    assert components[1].component_id == "component:article:three"
+    assert components[1].case_ids == ("case-c",)
+
+
 def test_components_merge_transitively_and_keep_isolated_cases() -> None:
     cases = [
         {"case_id": "case-a", "cited_article_ids": ["art-1"], "bootstrap_cluster_id": "old-1"},

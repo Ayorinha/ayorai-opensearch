@@ -71,20 +71,18 @@ class _DisjointSet:
         self.size[root_left] += self.size[root_right]
 
 
-def build_article_components(
+def build_connected_article_components(
     cases: Iterable[Mapping[str, object]],
-) -> ComponentSummary:
-    """Build transitive case components from complete cited_article_ids lists.
+) -> tuple[ArticleComponent, ...]:
+    """Build components using only case_id and cited_article_ids.
 
-    Every case must have a unique non-empty case_id and a non-empty list of
-    unique canonical article IDs and a valid original bootstrap_cluster_id.
-    Component IDs use the literal DEC-023 representation from rgc_ids.
-    No input is modified.
+    This inventory primitive deliberately does not inspect labels, predictions,
+    results, or bootstrap_cluster_id. It can therefore be used by the pre-annotation
+    K gate without coupling that gate to legacy cluster metadata.
     """
     records = list(cases)
     case_ids: list[str] = []
     citations_by_case: dict[str, tuple[str, ...]] = {}
-    original_clusters: set[str] = set()
 
     for index, case in enumerate(records):
         case_id = case.get("case_id")
@@ -108,12 +106,6 @@ def build_article_components(
 
         case_ids.append(case_id)
         citations_by_case[case_id] = tuple(citations)
-
-        cluster_id = case.get("bootstrap_cluster_id")
-        if not isinstance(cluster_id, str):
-            raise ValueError(f"{case_id}: bootstrap_cluster_id must be a string")
-        cluster_members(cluster_id, f"{case_id}: bootstrap_cluster_id")
-        original_clusters.add(cluster_id)
 
     disjoint = _DisjointSet(case_ids)
     first_case_by_article: dict[str, str] = {}
@@ -146,12 +138,35 @@ def build_article_components(
         )
 
     components.sort(key=lambda component: component.component_id)
+    return tuple(components)
+
+
+def build_article_components(
+    cases: Iterable[Mapping[str, object]],
+) -> ComponentSummary:
+    """Build DEC-023 components and the complete original DEC-019 cluster count.
+
+    Every case must have a valid bootstrap_cluster_id. Missing, empty, wrong-type,
+    or noncanonical values fail closed; a partial original-cluster count is never
+    returned. The graph inventory itself reads only case_id and cited_article_ids.
+    """
+    records = list(cases)
+    original_clusters: set[str] = set()
+    for case in records:
+        case_id = case.get("case_id")
+        cluster_id = case.get("bootstrap_cluster_id")
+        if not isinstance(cluster_id, str):
+            raise ValueError(f"{case_id}: bootstrap_cluster_id must be a string")
+        cluster_members(cluster_id, f"{case_id}: bootstrap_cluster_id")
+        original_clusters.add(cluster_id)
+
+    components = build_connected_article_components(records)
     sizes = tuple(sorted((len(component.case_ids) for component in components), reverse=True))
     return ComponentSummary(
-        components=tuple(components),
+        components=components,
         original_cluster_count=len(original_clusters),
         component_count=len(components),
-        case_count=len(case_ids),
+        case_count=len(records),
         largest_component_size=sizes[0] if sizes else 0,
         component_sizes=sizes,
     )
