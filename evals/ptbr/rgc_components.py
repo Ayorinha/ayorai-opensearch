@@ -95,7 +95,7 @@ def build_article_components(
         citations: list[str] = []
         seen: set[str] = set()
         for article_id in raw_citations:
-            require_article_id(article_id, f"{case_id}: cited_article_ids")
+            article_id = require_article_id(article_id, f"{case_id}: cited_article_ids")
             if article_id in seen:
                 raise ValueError(f"{case_id}: duplicate article ID {article_id!r}")
             seen.add(article_id)
@@ -105,6 +105,8 @@ def build_article_components(
         citations_by_case[case_id] = tuple(citations)
 
         cluster_id = case.get("bootstrap_cluster_id")
+        if not isinstance(cluster_id, str):
+            raise ValueError(f"{case_id}: bootstrap_cluster_id must be a string")
         cluster_members(cluster_id, f"{case_id}: bootstrap_cluster_id")
         original_clusters.add(cluster_id)
 

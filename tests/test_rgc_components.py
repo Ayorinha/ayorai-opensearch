@@ -246,7 +246,7 @@ def test_sign_flip_by_component_rejects_invalid_inputs() -> None:
         fn([1, 2])
 
 
-def test_monte_carlo_sign_flip_uses_fixed_reproducible_pcg64() -> None:
+def test_monte_carlo_sign_flip_uses_rgc_prng_1() -> None:
     fn = MODULE["sign_flip_by_component"]
     first = fn(_components(*([1] * 21)))
     second = fn(_components(*([1] * 21)))
@@ -278,9 +278,9 @@ def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> No
     }
     components = {
         "a1": "component:a",
-        "a2": "component-a",
+        "a2": "component:a",
         "b1": "component:b",
-        "b2": "component-b",
+        "b2": "component:b",
         "excluded": "component:c",
     }
 
@@ -304,7 +304,7 @@ def test_component_kappa_bootstrap_reports_fully_undefined_interval() -> None:
     result = MODULE["bootstrap_cohen_kappa_by_component"](
         {"a": "SUPPORTED", "b": "SUPPORTED"},
         {"a": "SUPPORTED", "b": "SUPPORTED"},
-        {"a": "component-a", "b": "component-b"},
+        {"a": "component:a", "b": "component:b"},
     )
 
     assert result.kappa is None
@@ -328,5 +328,5 @@ def test_component_kappa_bootstrap_rejects_mismatched_case_ids() -> None:
         MODULE["bootstrap_cohen_kappa_by_component"](
             {"a": "SUPPORTED"},
             {"b": "SUPPORTED"},
-            {"a": "component-a"},
+            {"a": "component:a"},
         )
