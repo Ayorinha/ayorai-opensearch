@@ -1087,8 +1087,6 @@ def evaluate(
         ):
             raise ValueError(f"{case_id}: invalid gold label {gold!r} for vocabulary {vocabulary}")
         _validate_rule_gap_policy(gold, pilot_mode=pilot_mode, partition=partition)
-        if gold in EXCLUSION_LABELS:
-            continue
         cluster_id = case.get("bootstrap_cluster_id")
         if partition == "hidden" and (not isinstance(cluster_id, str) or not cluster_id.strip()):
             raise ValueError(
@@ -1104,6 +1102,8 @@ def evaluate(
                 require_citations=partition == "hidden",
                 require_cluster=partition == "hidden" or has_cluster_id,
             )
+        if gold in EXCLUSION_LABELS:
+            continue
         claim = case.get("claim")
         if not isinstance(claim, str) or not claim.strip():
             raise ValueError(f"{case_id}: claim must be a non-empty string")
