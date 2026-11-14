@@ -234,6 +234,23 @@ def test_article_cluster_bootstrap_is_deterministic_and_distinct_from_case_boots
     assert clustered["accuracy"] != case_level["accuracy"]
 
 
+@pytest.mark.parametrize("iterations", [0, -1, True, 1.5])
+def test_bootstrap_rejects_nonpositive_or_noninteger_iterations(iterations: object) -> None:
+    with pytest.raises(ValueError, match="iterations must be positive"):
+        RUNNER["bootstrap_ci"](["SUPPORTED"], ["SUPPORTED"], iterations=iterations)
+    with pytest.raises(ValueError, match="iterations must be positive"):
+        RUNNER["bootstrap_ci_by_cluster"](
+            ["SUPPORTED"], ["SUPPORTED"], ["art:1"], iterations=iterations
+        )
+
+
+def test_case_bootstrap_rejects_mismatched_and_empty_inputs() -> None:
+    with pytest.raises(ValueError, match="equal lengths"):
+        RUNNER["bootstrap_ci"](["SUPPORTED"], [], iterations=10)
+    with pytest.raises(ValueError, match="at least one case"):
+        RUNNER["bootstrap_ci"]([], [], iterations=10)
+
+
 def test_hidden_partition_rejects_missing_bootstrap_cluster_id() -> None:
     case = _case("no-cluster", "O cancelamento será efetivado em até 2 dias.", CANCEL)
     case.pop("bootstrap_cluster_id")
