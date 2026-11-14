@@ -35,6 +35,7 @@ import argparse
 import hashlib
 import json
 import math
+import platform
 import re
 import subprocess
 import sys
@@ -74,6 +75,17 @@ ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
 RUNNER_VERSION = "rgc-eval/0.9.0"
+FREEZE_SCHEMA_VERSION = 2
+RUN_MANIFEST_SCHEMA = "rgc-run-manifest/1"
+# Every module whose code decides an RGC number. The freeze binds all of them, so a
+# change to the components, the generator, the ID grammar or the agreement tool after
+# the freeze blocks the run exactly like a change to this file.
+RUNNER_DEPENDENCIES = (
+    "evals/ptbr/rgc_agreement.py",
+    "evals/ptbr/rgc_components.py",
+    "evals/ptbr/rgc_ids.py",
+    "evals/ptbr/rgc_random.py",
+)
 SEED = RGC_SEED
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
@@ -807,7 +819,7 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
+def validate_protocol_freeze(root: Path = ROOT) -> dict[str, Any]:
     """Require an explicit freeze decision bound to the exact protocol documents."""
     protocol_path = root / "docs" / "eval" / "PROTOCOL-GOLDEN-V1.md"
     preregistration_path = root / "docs" / "eval" / "PREREGISTRATION-RGC-v1.md"
@@ -852,16 +864,26 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
         "preregistration_sha256",
         "runner_spec_sha256",
         "runner_code_sha256",
+        "runner_dependencies_sha256",
         "runner_version",
     }
     if not isinstance(manifest, dict) or set(manifest) != required:
         raise ValueError("RGC evaluation blocked: freeze manifest has an invalid schema")
     if (
         type(manifest["schema_version"]) is not int
-        or manifest["schema_version"] != 1
+        or manifest["schema_version"] != FREEZE_SCHEMA_VERSION
         or manifest["status"] != "FROZEN"
     ):
-        raise ValueError("RGC evaluation blocked: freeze manifest status must be FROZEN")
+        raise ValueError(
+            f"RGC evaluation blocked: freeze manifest must be schema_version "
+            f"{FREEZE_SCHEMA_VERSION} with status FROZEN"
+        )
+    dependencies = manifest["runner_dependencies_sha256"]
+    if not isinstance(dependencies, dict) or set(dependencies) != set(RUNNER_DEPENDENCIES):
+        raise ValueError(
+            "RGC evaluation blocked: runner_dependencies_sha256 must list exactly "
+            f"{list(RUNNER_DEPENDENCIES)}"
+        )
     if not isinstance(manifest["approved_by"], str) or not manifest["approved_by"].strip():
         raise ValueError("RGC evaluation blocked: freeze approver is missing")
     if not isinstance(manifest["approved_at"], str):
@@ -884,12 +906,21 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
     for field, actual_hash in expected_hashes.items():
         if manifest[field] != actual_hash:
             raise ValueError(f"RGC evaluation blocked: {field} differs from freeze manifest")
+    dependency_hashes: dict[str, str] = {}
+    for relative in RUNNER_DEPENDENCIES:
+        try:
+            dependency_hashes[relative] = _sha256(root / relative)
+        except OSError as exc:
+            raise ValueError(f"RGC evaluation blocked: {relative} is missing") from exc
+        if dependencies[relative] != dependency_hashes[relative]:
+            raise ValueError(f"RGC evaluation blocked: {relative} differs from freeze manifest")
     if manifest["runner_version"] != RUNNER_VERSION:
         raise ValueError("RGC evaluation blocked: runner version differs from freeze manifest")
 
     return {
         "manifest_sha256": _sha256(manifest_path),
         **expected_hashes,
+        "runner_dependencies_sha256": dependency_hashes,
         "runner_version": RUNNER_VERSION,
         "approved_by": manifest["approved_by"],
         "approved_at": manifest["approved_at"],
@@ -1095,6 +1126,87 @@ def _git_commit() -> str | None:
     except (OSError, subprocess.CalledProcessError):
         return None
     return out.stdout.strip()
+
+
+def _worktree_clean() -> bool | None:
+    """True when tracked and untracked files match the commit; None if git is unavailable."""
+    try:
+        out = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return out.stdout.strip() == ""
+
+
+def _canonical_sha256(payload: object) -> str:
+    """SHA-256 of canonical JSON: sorted keys, compact separators, UTF-8."""
+    text = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def build_run_manifest(
+    report: Mapping[str, Any],
+    report_path: Path,
+    *,
+    worktree_clean: bool | None,
+    started_at: str,
+    finished_at: str,
+) -> dict[str, Any]:
+    """Technical record of one execution (E5). It binds the exact report bytes, the
+    inputs, the configuration, the code version and the approvals the run relied on.
+
+    It does not approve, freeze or publish anything: methodological approval lives in
+    the freeze and annotation manifests, and publication is a separate human decision.
+    """
+    freeze = report.get("protocol_freeze") or {}
+    approval = report.get("annotation_approval") or {}
+    return {
+        "schema": RUN_MANIFEST_SCHEMA,
+        "runner_version": report["runner_version"],
+        "git_commit": report["git_commit"],
+        "worktree_clean": worktree_clean,
+        "python": report["python"],
+        "python_implementation": platform.python_implementation(),
+        "package_version": _package_version(),
+        "partition": report["config"]["partition"],
+        "started_at": started_at,
+        "finished_at": finished_at,
+        "inputs": dict(report["inputs"]),
+        "config_sha256": _canonical_sha256(report["config"]),
+        "protocol_freeze_manifest_sha256": freeze.get("manifest_sha256"),
+        "runner_dependencies_sha256": freeze.get("runner_dependencies_sha256"),
+        "annotation_approval_manifest_sha256": approval.get("manifest_sha256"),
+        "report": {"file": report_path.name, "sha256": _sha256(report_path)},
+    }
+
+
+def _package_version() -> str:
+    from ayorai_attractor import __version__
+
+    return str(__version__)
+
+
+def verify_run_manifest(manifest_path: Path, report_path: Path) -> dict[str, Any]:
+    """Recompute what a run manifest binds; raise ValueError on any difference."""
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict) or manifest.get("schema") != RUN_MANIFEST_SCHEMA:
+        raise ValueError(f"run manifest schema must be {RUN_MANIFEST_SCHEMA}")
+    if manifest.get("report", {}).get("sha256") != _sha256(report_path):
+        raise ValueError("report bytes differ from the run manifest")
+    if manifest.get("config_sha256") != _canonical_sha256(report.get("config")):
+        raise ValueError("report configuration differs from the run manifest")
+    for field in ("runner_version", "git_commit", "python"):
+        if manifest.get(field) != report.get(field):
+            raise ValueError(f"{field} differs between report and run manifest")
+    if manifest.get("inputs") != report.get("inputs"):
+        raise ValueError("input hashes differ between report and run manifest")
+    return manifest
 
 
 def load_labels(path: Path, vocabulary: str) -> dict[str, str]:
@@ -1393,6 +1505,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(str(exc), file=sys.stderr)
         return 2
 
+    git_commit = _git_commit()
+    worktree_clean = _worktree_clean()
+    if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
+        # The single confirmatory run must be reproducible from a recorded commit.
+        print(
+            "RGC evaluation blocked: the hidden partition runs only from a clean git "
+            "checkout with a resolvable commit",
+            file=sys.stderr,
+        )
+        return 2
+    started_at = datetime.now(UTC).isoformat(timespec="seconds")
+
     development_cases = _read_jsonl(args.development_cases)
     development_labels = load_labels(args.development_labels, args.vocabulary)
     result = evaluate(
@@ -1412,7 +1536,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "protocol_freeze": protocol_freeze,
         "annotation_approval": annotation_approval,
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "git_commit": _git_commit(),
+        "git_commit": git_commit,
         "python": sys.version.split()[0],
         "inputs": {
             "cases": str(args.cases),
@@ -1455,6 +1579,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    manifest = build_run_manifest(
+        report,
+        args.out,
+        worktree_clean=worktree_clean,
+        started_at=started_at,
+        finished_at=datetime.now(UTC).isoformat(timespec="seconds"),
+    )
+    manifest_path = args.out.with_name(args.out.name + ".manifest.json")
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(f"run manifest {manifest_path} sha256={_sha256(manifest_path)}")
     m = result["metrics"]
     print(
         f"n={m['n']} accuracy={m['system']['accuracy']} "

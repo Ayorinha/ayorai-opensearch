@@ -890,6 +890,8 @@ def test_strict_corpus_export_is_accepted_by_golden_checker(tmp_path: Path) -> N
 def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # This test exercises report serialization with a synthetic freeze attestation;
     # the real repository protocol intentionally remains unfrozen.
+    monkeypatch.setitem(RUNNER["main"].__globals__, "_git_commit", lambda: "f" * 40)
+    monkeypatch.setitem(RUNNER["main"].__globals__, "_worktree_clean", lambda: True)
     monkeypatch.setitem(
         RUNNER["main"].__globals__,
         "validate_protocol_freeze",
@@ -899,6 +901,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
             "preregistration_sha256": "c" * 64,
             "runner_spec_sha256": "d" * 64,
             "runner_code_sha256": "e" * 64,
+            "runner_dependencies_sha256": {},
             "runner_version": RUNNER["RUNNER_VERSION"],
             "approved_by": "Synthetic test approver",
             "approved_at": "2026-10-21",
@@ -1056,6 +1059,24 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         report["config"]["bootstrap"]["primary_unit"]
         == report["metrics"]["bootstrap_provenance"]["primary_unit"]
     )
+    # E5: the run manifest binds the exact report bytes, inputs, config and approvals.
+    manifest_path = out.with_name(out.name + ".manifest.json")
+    manifest = RUNNER["verify_run_manifest"](manifest_path, out)
+    assert manifest["schema"] == "rgc-run-manifest/1"
+    assert (manifest["git_commit"], manifest["worktree_clean"]) == ("f" * 40, True)
+    assert manifest["partition"] == "hidden"
+    assert manifest["protocol_freeze_manifest_sha256"] == "a" * 64
+    assert (
+        manifest["annotation_approval_manifest_sha256"]
+        == (report["annotation_approval"]["manifest_sha256"])
+    )
+    assert manifest["report"]["sha256"] == RUNNER["_sha256"](out)
+    # Any change to the report after the run is detected.
+    tampered = json.loads(out.read_text(encoding="utf-8"))
+    tampered["metrics"]["system"]["accuracy"] = 0.5
+    out.write_text(json.dumps(tampered, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="report bytes differ"):
+        RUNNER["verify_run_manifest"](manifest_path, out)
     assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
     assert report["metrics"]["baseline_descriptive"]["label"] == "SUPPORTED"
     assert report["baseline_provenance"]["primary"] == "B"
@@ -1279,6 +1300,17 @@ def test_annotation_approval_rejects_tampered_recomputed_statistics(tmp_path: Pa
             )
 
 
+def _freeze_dependencies(root: Path) -> dict[str, str]:
+    """Write synthetic copies of every module the freeze binds and return their hashes."""
+    hashes: dict[str, str] = {}
+    for relative in RUNNER["RUNNER_DEPENDENCIES"]:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# synthetic {relative}\n", encoding="utf-8")
+        hashes[relative] = RUNNER["_sha256"](path)
+    return hashes
+
+
 def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Path) -> None:
     eval_dir = tmp_path / "docs" / "eval"
     eval_dir.mkdir(parents=True)
@@ -1298,7 +1330,7 @@ def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Pat
         RUNNER["validate_protocol_freeze"](tmp_path)
 
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "FROZEN",
         "approved_by": "Anderson Leon Ayora",
         "approved_at": "2026-10-21",
@@ -1306,6 +1338,7 @@ def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Pat
         "preregistration_sha256": RUNNER["_sha256"](preregistration),
         "runner_spec_sha256": RUNNER["_sha256"](runner_spec),
         "runner_code_sha256": RUNNER["_sha256"](runner_code),
+        "runner_dependencies_sha256": _freeze_dependencies(tmp_path),
         "runner_version": RUNNER["RUNNER_VERSION"],
     }
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
@@ -1336,7 +1369,7 @@ def test_protocol_freeze_rejects_stale_document_hash(tmp_path: Path) -> None:
     manifest_path.write_text(
         json.dumps(
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "status": "FROZEN",
                 "approved_by": "Anderson Leon Ayora",
                 "approved_at": "2026-10-21",
@@ -1344,6 +1377,7 @@ def test_protocol_freeze_rejects_stale_document_hash(tmp_path: Path) -> None:
                 "preregistration_sha256": RUNNER["_sha256"](preregistration),
                 "runner_spec_sha256": RUNNER["_sha256"](runner_spec),
                 "runner_code_sha256": "0" * 64,
+                "runner_dependencies_sha256": _freeze_dependencies(tmp_path),
                 "runner_version": RUNNER["RUNNER_VERSION"],
             }
         ),
@@ -1376,7 +1410,7 @@ def test_protocol_freeze_rejects_runner_artifact_drift(
     runner_spec.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
     runner_code.write_text(f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\n', encoding="utf-8")
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "FROZEN",
         "approved_by": "Anderson Leon Ayora",
         "approved_at": "2026-10-21",
@@ -1384,6 +1418,7 @@ def test_protocol_freeze_rejects_runner_artifact_drift(
         "preregistration_sha256": RUNNER["_sha256"](preregistration),
         "runner_spec_sha256": RUNNER["_sha256"](runner_spec),
         "runner_code_sha256": RUNNER["_sha256"](runner_code),
+        "runner_dependencies_sha256": _freeze_dependencies(tmp_path),
         "runner_version": RUNNER["RUNNER_VERSION"],
     }
     manifest[field] = bad_value
@@ -2085,7 +2120,7 @@ def test_blank_protocol_freeze_template_is_rejected_by_validator(tmp_path: Path)
     template_path = ROOT / "docs" / "eval" / "templates" / "PROTOCOL-FREEZE.template.json"
     manifest_path.write_text(template_path.read_text(encoding="utf-8"), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="freeze manifest status must be FROZEN"):
+    with pytest.raises(ValueError, match="schema_version 2 with status FROZEN"):
         RUNNER["validate_protocol_freeze"](root=tmp_path)
 
 
@@ -2225,3 +2260,156 @@ def test_hidden_components_join_cases_that_share_a_citation() -> None:
     )
     provenance = result["metrics"]["bootstrap_provenance"]
     assert (provenance["cluster_count"], provenance["component_count"]) == (2, 1)
+
+
+# --------------------------------------------------------------------------- E5
+
+
+def _frozen_root(tmp_path: Path) -> tuple[Path, dict[str, object]]:
+    eval_dir = tmp_path / "docs" / "eval"
+    eval_dir.mkdir(parents=True)
+    protocol = eval_dir / "PROTOCOL-GOLDEN-V1.md"
+    preregistration = eval_dir / "PREREGISTRATION-RGC-v1.md"
+    runner_spec = eval_dir / "RUNNER-RGC-v1.md"
+    runner_code = tmp_path / "evals" / "ptbr" / "rgc_eval.py"
+    runner_code.parent.mkdir(parents=True)
+    protocol.write_text("Status: CONGELADO\n", encoding="utf-8")
+    preregistration.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
+    runner_spec.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
+    runner_code.write_text("# synthetic runner\n", encoding="utf-8")
+    manifest: dict[str, object] = {
+        "schema_version": 2,
+        "status": "FROZEN",
+        "approved_by": "Synthetic approver",
+        "approved_at": "2026-11-14",
+        "protocol_sha256": RUNNER["_sha256"](protocol),
+        "preregistration_sha256": RUNNER["_sha256"](preregistration),
+        "runner_spec_sha256": RUNNER["_sha256"](runner_spec),
+        "runner_code_sha256": RUNNER["_sha256"](runner_code),
+        "runner_dependencies_sha256": _freeze_dependencies(tmp_path),
+        "runner_version": RUNNER["RUNNER_VERSION"],
+    }
+    (eval_dir / "PROTOCOL-FREEZE.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return tmp_path, manifest
+
+
+def test_freeze_binds_every_statistical_module(tmp_path: Path) -> None:
+    root, _ = _frozen_root(tmp_path)
+    result = RUNNER["validate_protocol_freeze"](root)
+    assert set(result["runner_dependencies_sha256"]) == set(RUNNER["RUNNER_DEPENDENCIES"])
+    # Editing a dependency after the freeze blocks the run, like editing rgc_eval.py.
+    (root / "evals" / "ptbr" / "rgc_components.py").write_text("# changed\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="rgc_components.py differs from freeze manifest"):
+        RUNNER["validate_protocol_freeze"](root)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        (lambda m: m.update(schema_version=1), "schema_version 2"),
+        (lambda m: m.pop("runner_dependencies_sha256"), "invalid schema"),
+        (lambda m: m.update(runner_dependencies_sha256={}), "must list exactly"),
+        (
+            lambda m: m["runner_dependencies_sha256"].pop("evals/ptbr/rgc_ids.py"),
+            "must list exactly",
+        ),
+    ],
+)
+def test_freeze_rejects_old_or_incomplete_dependency_records(
+    tmp_path: Path, mutation: Any, message: str
+) -> None:
+    root, manifest = _frozen_root(tmp_path)
+    mutation(manifest)
+    (root / "docs" / "eval" / "PROTOCOL-FREEZE.json").write_text(
+        json.dumps(manifest), encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match=message):
+        RUNNER["validate_protocol_freeze"](root)
+
+
+def test_freeze_dependency_list_matches_the_runner_imports() -> None:
+    source = (ROOT / "evals" / "ptbr" / "rgc_eval.py").read_text(encoding="utf-8")
+    imported = {
+        f"evals/ptbr/{name}.py"
+        for name in ("rgc_agreement", "rgc_components", "rgc_ids", "rgc_random")
+        if f"evals.ptbr.{name}" in source or f"from evals.ptbr import {name}" in source
+    }
+    assert imported == set(RUNNER["RUNNER_DEPENDENCIES"])
+
+
+@pytest.mark.parametrize(("commit", "clean"), [(None, True), ("f" * 40, False), ("f" * 40, None)])
+def test_hidden_run_requires_a_clean_resolvable_commit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    commit: str | None,
+    clean: bool | None,
+) -> None:
+    globals_ = RUNNER["main"].__globals__
+    monkeypatch.setitem(globals_, "validate_protocol_freeze", lambda: {"manifest_sha256": "a" * 64})
+    monkeypatch.setitem(globals_, "validate_annotation_approval", lambda *_: {})
+    monkeypatch.setitem(globals_, "_git_commit", lambda: commit)
+    monkeypatch.setitem(globals_, "_worktree_clean", lambda: clean)
+    paths = [str(tmp_path / name) for name in ("c", "l", "a", "b", "r", "m", "j", "dc", "dl")]
+    out = tmp_path / "report.json"
+    code = RUNNER["main"](
+        [
+            "run",
+            paths[0],
+            "--labels",
+            paths[1],
+            "--annotation-a",
+            paths[2],
+            "--annotation-b",
+            paths[3],
+            "--agreement-report",
+            paths[4],
+            "--annotation-approval",
+            paths[5],
+            "--adjudication-record",
+            paths[6],
+            "--development-cases",
+            paths[7],
+            "--development-labels",
+            paths[8],
+            "--mode",
+            "oracle",
+            "--partition",
+            "hidden",
+            "--out",
+            str(out),
+        ]
+    )
+    assert code == 2
+    assert "clean git checkout" in capsys.readouterr().err
+    assert not out.exists()
+
+
+def test_run_manifest_rejects_other_schema_and_config_drift(tmp_path: Path) -> None:
+    report = {
+        "runner_version": RUNNER["RUNNER_VERSION"],
+        "git_commit": "f" * 40,
+        "python": "3.13.0",
+        "inputs": {"cases_sha256": "1" * 64},
+        "config": {"partition": "hidden", "mode": "oracle"},
+        "protocol_freeze": {"manifest_sha256": "a" * 64, "runner_dependencies_sha256": {}},
+        "annotation_approval": {"manifest_sha256": "b" * 64},
+    }
+    report_path = tmp_path / "report.json"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    manifest = RUNNER["build_run_manifest"](
+        report, report_path, worktree_clean=True, started_at="s", finished_at="f"
+    )
+    manifest_path = tmp_path / "report.json.manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    assert RUNNER["verify_run_manifest"](manifest_path, report_path)["schema"] == (
+        "rgc-run-manifest/1"
+    )
+    manifest["config_sha256"] = "0" * 64
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="configuration differs"):
+        RUNNER["verify_run_manifest"](manifest_path, report_path)
+    manifest["schema"] = "other/1"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="schema"):
+        RUNNER["verify_run_manifest"](manifest_path, report_path)

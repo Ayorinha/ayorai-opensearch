@@ -19,7 +19,7 @@ O subcomando `run` agora falha fechado enquanto o protocolo estiver proposto ou 
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "status": "FROZEN",
   "approved_by": "Nome do mantenedor que aprovou",
   "approved_at": "AAAA-MM-DD",
@@ -27,13 +27,35 @@ O subcomando `run` agora falha fechado enquanto o protocolo estiver proposto ou 
   "preregistration_sha256": "SHA-256 exato de PREREGISTRATION-RGC-v1.md",
   "runner_spec_sha256": "SHA-256 exato de RUNNER-RGC-v1.md",
   "runner_code_sha256": "SHA-256 exato de evals/ptbr/rgc_eval.py",
+  "runner_dependencies_sha256": {
+    "evals/ptbr/rgc_agreement.py": "SHA-256 exato",
+    "evals/ptbr/rgc_components.py": "SHA-256 exato",
+    "evals/ptbr/rgc_ids.py": "SHA-256 exato",
+    "evals/ptbr/rgc_random.py": "SHA-256 exato"
+  },
   "runner_version": "rgc-eval/versão aprovada"
 }
 ```
 
+A partir de `schema_version` 2, o congelamento vincula também os módulos que decidem números do RGC: concordância, componentes, gramática de IDs e gerador. Antes, uma mudança nesses módulos depois do congelamento passava despercebida, porque só `rgc_eval.py` era conferido. Manifestos com `schema_version` 1 são recusados.
+
 O JSON acima é apenas um esquema ilustrativo, **não** um manifesto válido nem autorização para executar. O manifesto real só deve ser criado depois do piloto humano 02, da revisão dos achados e de uma decisão explícita de congelamento. O executor compara os hashes do manifesto com os arquivos atuais; qualquer alteração posterior no protocolo, pré-registro, especificação ou código do executor bloqueia a execução até nova aprovação e atualização auditável do manifesto.
 
-O relatório registra o hash do manifesto, os hashes dos quatro artefatos vinculados, a versão do executor, o responsável e a data declarados. Esse mecanismo detecta divergência de artefatos; não substitui a revisão humana nem prova, sozinho, a autenticidade da aprovação. `export-corpus` permanece disponível sem congelamento porque apenas exporta a fonte capturada e não executa o sistema sobre casos.
+O relatório registra o hash do manifesto, os hashes dos artefatos vinculados (incluindo os módulos dependentes), a versão do executor, o responsável e a data declarados. Esse mecanismo detecta divergência de artefatos; não substitui a revisão humana nem prova, sozinho, a autenticidade da aprovação. `export-corpus` permanece disponível sem congelamento porque apenas exporta a fonte capturada e não executa o sistema sobre casos.
+
+### 0.0.1 Manifesto de execução (E5)
+
+Cada `run` grava, ao lado do relatório, `<relatório>.manifest.json` (`rgc-run-manifest/1`, JSON com chaves ordenadas). O manifesto contém:
+- versão do executor, commit git, se a árvore de trabalho estava limpa, versão do Python e do pacote, partição e horários de início e fim;
+- os hashes das entradas;
+- o SHA-256 da configuração em JSON canônico;
+- os hashes dos manifestos de congelamento e de aprovação das anotações;
+- os hashes dos módulos dependentes;
+- o SHA-256 exato do relatório.
+
+`verify_run_manifest` recalcula o hash do relatório, da configuração e das entradas, e recusa qualquer diferença. Na partição oculta, a execução é recusada (código 2) se o commit não puder ser resolvido ou se a árvore de trabalho tiver alterações, porque a execução confirmatória única precisa ser reproduzível a partir de um commit registrado.
+
+O manifesto é registro técnico da execução. Ele não aprova, não congela e não publica nada: a aprovação metodológica está nos manifestos de congelamento e de anotação, e a publicação de resultados é decisão humana separada. O manifesto detecta alteração posterior dos arquivos que vincula; não prova, sozinho, quem executou nem a autenticidade das aprovações.
 
 ### 0.1 Gate de concordância e aprovação das anotações
 
