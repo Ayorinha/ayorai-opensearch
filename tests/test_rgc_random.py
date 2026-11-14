@@ -14,6 +14,16 @@ from evals.ptbr.rgc_random import RgcPrng, percentile_ci95, quantile_type7
 SEED = 20261003
 
 
+def test_dec027_procedure_labels_and_seed_are_canonical() -> None:
+    assert rgc_random.RGC_SEED == 20261003
+    assert rgc_random.LABEL_COMPONENT_ACCURACY == "dec023-accuracy-bootstrap"
+    assert rgc_random.LABEL_CLUSTER_ACCURACY == "dec019-accuracy-bootstrap"
+    assert rgc_random.LABEL_CASE_ACCURACY == "case-accuracy-bootstrap"
+    assert rgc_random.LABEL_SIGN_FLIP == "dec021-sign-flip"
+    assert rgc_random.LABEL_COMPONENT_KAPPA == "dec022-kappa-bootstrap"
+    assert rgc_random.LABEL_CASE_KAPPA == "case-kappa-bootstrap"
+
+
 def test_reference_prefix_and_block_zero() -> None:
     stream = RgcPrng(SEED, "dec022-kappa-bootstrap")
     assert stream.prefix.hex() == (
