@@ -88,6 +88,8 @@ A aprovação é uma declaração auditável, não prova criptográfica da ident
 
 ## 3. Parâmetros propostos para congelamento
 
+> **Aviso de migração — 2026-11-14:** a tabela abaixo descreve o comportamento legado ainda presente no executor durante a etapa E2; ela não representa a configuração confirmatória final exigida pela DEC-027. A E2 padroniza apenas o gerador e o quantil. A DEC-027, D4–D5, já determina sign-flip bilateral por componente e IC95% primário por componente conectado, com bootstrap por cluster de artigo como sensibilidade. Essas mudanças dependem da E3: emenda datada do pré-registro e ligação dos métodos ao executor. Até a conclusão e aprovação dessa emenda, o protocolo permanece [PROPOSTO] e nenhuma saída desta implementação pode ser tratada como resultado confirmatório H1.
+
 | Parâmetro | Valor proposto | Observação |
 |---|---|---|
 | Modo da avaliação principal | `retrieval` | `oracle` reportado ao lado, como análise secundária |
