@@ -474,3 +474,115 @@ def test_ascii_run_touching_a_non_ascii_digit_is_not_a_shorter_number(
 def test_number_is_never_a_prefix_of_a_longer_dotted_sequence(text: str) -> None:
     for value in ("1", "1.2", "1,5", "1.000"):
         assert check_field(text, FieldSpec("quantidade", "number", value)).outcome == "ausente"
+
+
+# field-check-4: a minus sign written right before a value belongs to it.
+
+
+@pytest.mark.parametrize(
+    ("field_type", "value", "text", "outcome", "found"),
+    [
+        ("number", "5", "Quantidade: -5", "divergente", "-5"),
+        ("number", "-5", "Quantidade: -5", "conforme", "-5"),
+        ("number", "-5", "Quantidade: −5", "conforme", "−5"),
+        ("number", "−5", "Quantidade: -5", "conforme", "-5"),
+        ("money", "100,00", "Valor: R$ -100,00", "divergente", "R$ -100,00"),
+        ("money", "-100,00", "Valor: R$ -100,00", "conforme", "R$ -100,00"),
+        ("money", "-100,00", "Valor: -R$ 100,00", "conforme", "-R$ 100,00"),
+        ("money", "R$ -100,00", "Valor: R$-100,00", "conforme", "R$-100,00"),
+        ("money", "100,00", "Valor: R$ 100,00", "conforme", "100,00"),
+    ],
+)
+def test_minus_sign_belongs_to_the_value(
+    field_type: str, value: str, text: str, outcome: str, found: str
+) -> None:
+    result = check_field(text, FieldSpec("campo", field_type, value, ("Quantidade", "Valor")))
+    assert (result.outcome, result.found) == (outcome, found)
+    assert result.start is not None and text[result.start : result.end] == found
+
+
+@pytest.mark.parametrize(
+    ("text", "values"),
+    [
+        ("Faixa: 10-12", ["10", "12"]),
+        ("art. 5-A", ["5"]),
+        ("Lote 2-3", ["2", "3"]),
+    ],
+)
+def test_hyphen_after_a_letter_or_digit_is_not_a_sign(text: str, values: list[str]) -> None:
+    from ayorai_attractor.verification.field_check import candidates
+
+    found = [item.normalized for item in candidates(text, FieldSpec("x", "number", "1"))]
+    assert found == values
+
+
+def test_negative_zero_and_double_sign() -> None:
+    assert check_field("Saldo: R$ 0,00", FieldSpec("saldo", "money", "-0,00")).outcome == "conforme"
+    assert _outcome(FieldSpec("valor", "money", "-R$ -10,00")) == "invalido"
+    assert _outcome(FieldSpec("quantidade", "number", "--5")) == "invalido"
+
+
+@pytest.mark.parametrize(
+    ("field_type", "value", "text", "outcome", "found"),
+    [
+        # positive expected against negative document and the reverse
+        ("money", "R$ 100,00", "Valor: R$ -100,00", "divergente", "R$ -100,00"),
+        ("money", "R$ -100,00", "Valor: R$ 100,00", "divergente", "100,00"),
+        # line breaks and punctuation around the sign
+        ("money", "-100,00", "Valor:\n-100,00", "conforme", "-100,00"),
+        ("money", "-100,00", "Valor: R$\n-100,00", "conforme", "-100,00"),
+        ("number", "-5", "Saldo (-5)", "conforme", "-5"),
+        ("number", "-5", "Saldo;-5.", "conforme", "-5"),
+        ("money", "-5,00", "Valor: em aberto -R$ 5,00", "conforme", "-R$ 5,00"),
+        ("number", "5", "Total: 3.-5", "divergente", "3"),
+    ],
+)
+def test_sign_with_line_breaks_and_punctuation(
+    field_type: str, value: str, text: str, outcome: str, found: str
+) -> None:
+    result = check_field(text, FieldSpec("campo", field_type, value, ("Valor", "Saldo", "Total")))
+    assert (result.outcome, result.found) == (outcome, found)
+
+
+@pytest.mark.parametrize("text", ["Faixa: 10-12", "Faixa: 10 - 12", "Faixa: 10 -- 12"])
+def test_ranges_never_produce_negative_values(text: str) -> None:
+    from ayorai_attractor.verification.field_check import candidates
+
+    found = [item.normalized for item in candidates(text, FieldSpec("x", "number", "1"))]
+    assert found[0] == "10"
+    assert all(not value.startswith("-") for value in found)
+
+
+@pytest.mark.parametrize(
+    ("field_type", "text"),
+    [
+        ("money", "Valor: -R$ -100,00"),
+        ("number", "Valor: --5"),
+        ("number", "Valor: - -5"),
+    ],
+)
+def test_two_signs_in_the_document_are_ambiguous(field_type: str, text: str) -> None:
+    for value in ("100,00", "-100,00") if field_type == "money" else ("5", "-5"):
+        assert check_field(text, FieldSpec("valor", field_type, value, ("Valor",))).outcome == (
+            "ausente"
+        )
+
+
+def test_documented_limit_spaced_hyphen_before_a_number_is_a_sign() -> None:
+    # Documented limit: "3 -5" reads -5 (hyphen glued to the digit, space before it).
+    from ayorai_attractor.verification.field_check import candidates
+
+    found = candidates("Temperatura: de 3 -5 graus", FieldSpec("t", "number", "1"))
+    assert [(item.raw, item.normalized) for item in found] == [("3", "3"), ("-5", "-5")]
+
+
+@pytest.mark.parametrize("text", ["Valor: (100,00)", "Valor: R$ (100,00)"])
+def test_documented_limit_parentheses_do_not_make_an_amount_negative(text: str) -> None:
+    # Documented limit: accounting parentheses are not read as a negative amount.
+    spec = FieldSpec("valor", "money", "100,00", ("Valor",))
+    assert (check_field(text, spec).outcome, check_field(text, spec).found_normalized) == (
+        "conforme",
+        "100.00",
+    )
+    negative = FieldSpec("valor", "money", "-100,00", ("Valor",))
+    assert check_field(text, negative).outcome == "divergente"

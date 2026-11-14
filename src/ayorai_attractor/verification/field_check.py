@@ -34,7 +34,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-FIELD_CHECK_VERSION = "field-check-3"
+FIELD_CHECK_VERSION = "field-check-4"
 FIELD_TYPES = ("money", "date", "cpf_cnpj", "number", "text")
 LABEL_WINDOW = 80  # characters before a candidate searched for a label
 
@@ -90,8 +90,20 @@ def _fold(text: str) -> str:
     return "".join(char for char in decomposed if not unicodedata.combining(char))
 
 
+_MINUS = "-\u2212"  # hyphen-minus and the Unicode minus sign
+_SIGNED_MONEY_RE = re.compile(rf"([{_MINUS}]?)\s*(?:R\$)?\s*([{_MINUS}]?)(.*)", re.DOTALL)
+
+
+def _signed(value: Decimal, negative: bool) -> Decimal:
+    return -value if negative and value != 0 else value
+
+
 def normalize_money(raw: str) -> str | None:
-    value = raw.replace("R$", "").strip()
+    signed = _SIGNED_MONEY_RE.fullmatch(raw.strip())
+    if signed is None or (signed.group(1) and signed.group(2)):
+        return None
+    negative = bool(signed.group(1) or signed.group(2))
+    value = signed.group(3).replace("R$", "").strip()
     if re.fullmatch(r"[0-9]{1,3}(?:\.[0-9]{3})+,[0-9]{2}|[0-9]+,[0-9]{2}", value):
         value = value.replace(".", "").replace(",", ".")
     elif re.fullmatch(r"[0-9]{1,3}(?:,[0-9]{3})+\.[0-9]{2}", value):
@@ -101,7 +113,7 @@ def normalize_money(raw: str) -> str | None:
     elif not re.fullmatch(r"[0-9]+(?:\.[0-9]{1,2})?", value):
         return None
     try:
-        return f"{Decimal(value):.2f}"
+        return f"{_signed(Decimal(value), negative):.2f}"
     except InvalidOperation:
         return None
 
@@ -156,7 +168,7 @@ def normalize_cpf_cnpj(raw: str) -> str | None:
     return digits if len(digits) in (11, 14) else None
 
 
-_PLAIN_NUMBER_RE = re.compile(r"[+-]?(?:[0-9]+(?:[.,][0-9]*)?|[.,][0-9]+)")
+_PLAIN_NUMBER_RE = re.compile(r"[+\-\u2212]?(?:[0-9]+(?:[.,][0-9]*)?|[.,][0-9]+)")
 
 
 def normalize_number(raw: str) -> str | None:
@@ -166,9 +178,10 @@ def normalize_number(raw: str) -> str | None:
     value = raw.strip()
     if not _PLAIN_NUMBER_RE.fullmatch(value):
         return None
-    value = value.replace(",", ".")
+    negative = value[0] in _MINUS
+    value = value.lstrip("+" + _MINUS).replace(",", ".")
     try:
-        return format(Decimal(value).normalize(), "f")
+        return format(_signed(Decimal(value), negative).normalize(), "f")
     except InvalidOperation:
         return None
 
@@ -258,12 +271,43 @@ def candidates(text: str, spec: FieldSpec) -> list[Candidate]:
     normalizer = NORMALIZERS[spec.type]
     for match in pattern.finditer(text):
         group = (1 if match.group(1) else 2) if spec.type == "money" else 0
-        raw = match.group(group)
         start, end = match.start(group), match.end(group)
+        if spec.type in ("money", "number"):
+            signed_start = _sign_start(text, start, money=spec.type == "money")
+            if signed_start is None:
+                continue
+            start = signed_start
+        raw = text[start:end]
         normalized = normalizer(raw)
         if normalized is not None:
             found.append(Candidate(start, end, raw, normalized, False))
     return _mark_labelled(text, found, spec.labels) if spec.labels else found
+
+
+_SIGN_BEFORE_RE = re.compile(
+    rf"(?:([{_MINUS}])[ \t]*R\$[ \t]*|R\$[ \t]*([{_MINUS}])|([{_MINUS}]))$"
+)
+
+
+def _sign_start(text: str, start: int, *, money: bool) -> int | None:
+    """Start of the value including a minus sign written right before it ("-5",
+    "R$ -100,00", "-R$ 100,00"), so "-5" is never read as 5. A hyphen after a
+    letter, digit or separator ("10-12", "art. 5-A") is not a sign. Two signs
+    ("--5", "-R$ -100,00") are ambiguous: None, the value is not a candidate."""
+
+    window = text[max(0, start - 8) : start]
+    match = _SIGN_BEFORE_RE.search(window)
+    if match is None or (not money and match.group(3) is None):
+        return start
+    offset = start - len(window)
+    sign_at = offset + match.start(next(group for group in (1, 2, 3) if match.group(group)))
+    before = text[sign_at - 1] if sign_at > 0 else ""
+    if before and (before.isalnum() or before in ".,"):
+        return start
+    before_value = text[: offset + match.start()].rstrip(" \t")[-1:]
+    if before in _MINUS or (before_value and before_value in _MINUS):
+        return None
+    return offset + match.start()
 
 
 def labelled_text_values(text: str, labels: Sequence[str]) -> list[tuple[int, int, str, bool]]:
