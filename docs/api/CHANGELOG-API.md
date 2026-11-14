@@ -6,7 +6,8 @@ All public API contract changes are additive unless explicitly identified otherw
 
 - Expected `number` values must be plain decimals written with ASCII digits (optional sign, `.` or `,` as the decimal mark). `NaN`, `Infinity`, exponents (`1e3`), underscores (`1_000`) and non-ASCII digits now return `invalido` instead of being normalised.
 - Expected `money`, `date` and `cpf_cnpj` values with non-ASCII digits (for example full-width `１２`) return `invalido`; an expected CPF/CNPJ may contain only ASCII digits, `.`, `/`, `-` and spaces.
-- Document values written with non-ASCII digits are no longer candidates, so the field is `ausente` (abstention) rather than compared through a look-alike value.
+- Document values written with non-ASCII digits are no longer candidates, so the field is `ausente` (abstention) rather than compared through a look-alike value. An ASCII run touching a non-ASCII digit (`１２3`) is not read as a shorter number (`3`).
+- A `number` is never taken as the prefix of a longer dotted or comma sequence (`1.2.3`, `1.000.000`, `1,5.2`); previously `1.2` or `1.000` was extracted from such a sequence. The field is `ausente` instead.
 - The response engine metadata reports `field-check-3`. No request or response fields were added or removed.
 
 ## 2026-11-11 — `/v1/fields` trace identity v2 (semantics clarified)

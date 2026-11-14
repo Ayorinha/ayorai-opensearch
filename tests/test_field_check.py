@@ -442,3 +442,35 @@ def test_ascii_values_keep_matching_after_the_change() -> None:
     assert (
         _outcome(FieldSpec("sacado", "cpf_cnpj", "45.723.174/0001-10", ("Sacado",))) == "conforme"
     )
+
+
+@pytest.mark.parametrize(
+    ("field_type", "value", "text"),
+    [
+        ("number", "3", "Quantidade: １２3"),
+        ("number", "3", "Quantidade: 3１"),
+        ("number", "3", "Quantidade: 3.0１0"),
+        ("number", "5", "Quantidade: １.5"),
+        ("money", "3,00", "Valor: R$ １２3,00"),
+        ("money", "3,00", "Valor: R$ 3,00１"),
+        ("money", "3", "Valor: R$ 3,0０"),
+        ("date", "1/03/2026", "Vencimento: １1/03/2026"),
+        ("date", "10/03/2026", "Vencimento: 10/03/2026１"),
+        ("cpf_cnpj", "45.723.174/0001-10", "CNPJ ４45.723.174/0001-10"),
+        ("cpf_cnpj", "45.723.174/0001-10", "CNPJ 45.723.174/0001-10٣"),
+    ],
+)
+def test_ascii_run_touching_a_non_ascii_digit_is_not_a_shorter_number(
+    field_type: str, value: str, text: str
+) -> None:
+    # "１２3" must not be read as "3": the whole run is one number the checker cannot
+    # read, so the field is ausente instead of a false conforme.
+    assert check_field(text, FieldSpec("campo", field_type, value)).outcome == "ausente"
+
+
+@pytest.mark.parametrize(
+    "text", ["Quantidade: 1.2.3", "Quantidade: 1,5.2", "Quantidade: 1.000.000"]
+)
+def test_number_is_never_a_prefix_of_a_longer_dotted_sequence(text: str) -> None:
+    for value in ("1", "1.2", "1,5", "1.000"):
+        assert check_field(text, FieldSpec("quantidade", "number", value)).outcome == "ausente"
