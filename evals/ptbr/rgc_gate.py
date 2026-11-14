@@ -72,10 +72,18 @@ def load_preannotation_inventory(path: Path) -> list[dict[str, object]]:
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if not line.strip():
             raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
+        def reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+            row: dict[str, object] = {}
+            for key, value in pairs:
+                if key in row:
+                    raise ValueError(f"duplicate JSON key {key!r}")
+                row[key] = value
+            return row
+
         try:
-            row = json.loads(line)
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+            row = json.loads(line, object_pairs_hook=reject_duplicate_keys)
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ValueError(f"{path}:{line_number}: invalid inventory JSON: {exc}") from exc
         if not isinstance(row, dict) or set(row) != {"case_id", "cited_article_ids"}:
             raise ValueError(
                 f"{path}:{line_number}: expected exactly case_id and cited_article_ids"
