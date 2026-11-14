@@ -1,3 +1,1048 @@
+"""RGC evaluation runner — synthetic fixtures only.
+
+No benchmark or pilot case is used here; the only real file read is the
+document corpus, to check segmentation offsets and the strict corpus export.
+"""
+
+from __future__ import annotations
+
+import ast
+import json
+import runpy
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+RUNNER = runpy.run_path(str(ROOT / "evals" / "ptbr" / "rgc_eval.py"))
+CHECKER = runpy.run_path(str(ROOT / "scripts" / "check_golden_pt.py"))
+AGREEMENT = runpy.run_path(str(ROOT / "evals" / "ptbr" / "rgc_agreement.py"))
+
+
+def _write_agreement_report(path: Path, annotation_a: Path, annotation_b: Path) -> dict[str, Any]:
+    report = AGREEMENT["compute_agreement"](
+        AGREEMENT["load_annotations"](annotation_a),
+        AGREEMENT["load_annotations"](annotation_b),
+        iterations=AGREEMENT["DEFAULT_ITERATIONS"],
+        seed=AGREEMENT["DEFAULT_SEED"],
+    )
+    report["inputs"] = {
+        "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+        "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+    }
+    path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return report
+Document = RUNNER["Document"]
+Passage = RUNNER["Passage"]
+
+TEXT = (
+    "Preâmbulo sintético.\n"
+    "Art. 1º A Operadora Fictícia deverá responder reclamações:\n"
+    "I - no prazo máximo de 5 (cinco) dias úteis; e,\n"
+    "II - por meio eletrônico.\n"
+    "Art. 2º O cliente fictício tem direito a cancelar o plano sem multa.\n"
+    "§ 1º O cancelamento será efetivado em até 2 (dois) dias.\n"
+    "Parágrafo único. A cobrança indevida será devolvida em dobro.\n"
+)
+DOCS = {
+    "sint-1": Document(
+        "sint-1", "https://example.test/sint-1", "2026-10-13T00:00:00Z", TEXT, "sintético"
+    )
+}
+DEV_CASES = [{"case_id": "dev-1"}, {"case_id": "dev-2"}, {"case_id": "dev-3"}]
+DEV_LABELS = {"dev-1": "SUPPORTED", "dev-2": "SUPPORTED", "dev-3": "REFUTED"}
+
+
+def _passage_text(passage: Any) -> str:
+    return TEXT[passage.start : passage.end]
+
+
+def _case(case_id: str, claim: str, excerpt: str) -> dict[str, Any]:
+    start = TEXT.index(excerpt)
+    return {
+        "case_id": case_id,
+        "claim": claim,
+        "bootstrap_cluster_id": f"synthetic:{case_id}",
+        "cited_article_ids": [f"synthetic:{case_id}"],
+        "evidence": [
+            {
+                "document_id": "sint-1",
+                "excerpt": excerpt,
+                "start_offset": start,
+                "end_offset": start + len(excerpt),
+            }
+        ],
+    }
+
+
+def test_segment_by_dispositivo_keeps_exact_offsets() -> None:
+    passages = RUNNER["segment"](DOCS["sint-1"])
+    texts = [_passage_text(p) for p in passages]
+    assert texts == [
+        "Preâmbulo sintético.",
+        "Art. 1º A Operadora Fictícia deverá responder reclamações:",
+        "I - no prazo máximo de 5 (cinco) dias úteis; e,",
+        "II - por meio eletrônico.",
+        "Art. 2º O cliente fictício tem direito a cancelar o plano sem multa.",
+        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        "Parágrafo único. A cobrança indevida será devolvida em dobro.",
+    ]
+    articles = RUNNER["segment"](DOCS["sint-1"], "artigo")
+    assert [_passage_text(p).split("\n")[0] for p in articles] == [
+        "Preâmbulo sintético.",
+        "Art. 1º A Operadora Fictícia deverá responder reclamações:",
+        "Art. 2º O cliente fictício tem direito a cancelar o plano sem multa.",
+    ]
+
+
+def test_segment_real_corpus_is_ordered_and_in_bounds() -> None:
+    for document in RUNNER["load_documents"]().values():
+        passages = RUNNER["segment"](document)
+        assert len(passages) > 1
+        previous_end = 0
+        for passage in passages:
+            assert previous_end <= passage.start < passage.end <= len(document.text)
+            assert not document.text[passage.end - 1].isspace()
+            previous_end = passage.end
+
+
+def test_segmentation_loses_no_text_in_real_corpus() -> None:
+    # Between consecutive passages (and before/after) only whitespace may remain.
+    for document in RUNNER["load_documents"]().values():
+        cursor = 0
+        for passage in RUNNER["segment"](document):
+            assert document.text[cursor : passage.start].strip() == ""
+            cursor = passage.end
+        assert document.text[cursor:].strip() == ""
+
+
+def test_bm25_is_deterministic_and_ranks_relevant_passage_first() -> None:
+    passages = RUNNER["segment"](DOCS["sint-1"])
+    index = RUNNER["BM25Index"](passages, DOCS)
+    hits = index.search("O cancelamento será efetivado em até 2 dias.", 2)
+    assert _passage_text(hits[0][0]).startswith("§ 1º O cancelamento")
+    assert hits == index.search("O cancelamento será efetivado em até 2 dias.", 2)
+    assert index.search("Marte vermelho", 3) == []
+
+
+def test_tokenizer_keeps_numbers_and_drops_function_words() -> None:
+    assert RUNNER["tokenize"]("Em até 5 dias para o Consumidor") == ["5", "dias", "consumidor"]
+
+
+@pytest.mark.parametrize(
+    ("claim", "excerpt", "verdict"),
+    [
+        (
+            "O cancelamento será efetivado em até 2 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+            "SUPPORTED",
+        ),
+        (
+            "O cancelamento será efetivado em até 9 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+            "REFUTED",
+        ),
+        (
+            "O cliente tem direito a reembolso por satélite.",
+            "II - por meio eletrônico.",
+            "UNVERIFIED",
+        ),
+    ],
+)
+def test_oracle_prediction_goes_through_judge2(claim: str, excerpt: str, verdict: str) -> None:
+    case = _case("s1", claim, excerpt)
+    prediction = RUNNER["predict"](claim, RUNNER["oracle_passages"](case, DOCS), DOCS)
+    assert prediction["decision_state"] == "DECIDED"
+    assert prediction["judge_verdict"] == verdict
+    assert len(prediction["output_sha256"]) == 64
+
+
+def test_oracle_rejects_excerpt_that_does_not_match_offsets() -> None:
+    case = _case("s1", "x", "II - por meio eletrônico.")
+    case["evidence"][0]["start_offset"] += 1
+    with pytest.raises(ValueError, match="excerpt does not match"):
+        RUNNER["oracle_passages"](case, DOCS)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda item: item.update(start_offset="1"), "offsets must be integers"),
+        (lambda item: item.update(end_offset=True), "offsets must be integers"),
+        (lambda item: item.update(document_id="missing-doc"), "unknown evidence document_id"),
+        (lambda item: item.update(excerpt=" "), "excerpt must be a non-empty string"),
+    ],
+)
+def test_oracle_rejects_malformed_evidence_metadata(
+    mutate: Callable[[dict[str, Any]], None], message: str
+) -> None:
+    case = _case("bad-evidence", "x", "II - por meio eletrônico.")
+    mutate(case["evidence"][0])
+    with pytest.raises(ValueError, match=message):
+        RUNNER["oracle_passages"](case, DOCS)
+
+
+def test_oracle_rejects_non_object_evidence_item() -> None:
+    case = _case("bad-evidence-item", "x", "II - por meio eletrônico.")
+    case["evidence"] = [None]
+    with pytest.raises(ValueError, match="each evidence item must be an object"):
+        RUNNER["oracle_passages"](case, DOCS)
+
+
+def test_oracle_rejects_empty_evidence_list() -> None:
+    case = _case("empty-evidence", "x", "II - por meio eletrônico.")
+    case["evidence"] = []
+    with pytest.raises(ValueError, match="evidence must be a non-empty list"):
+        RUNNER["oracle_passages"](case, DOCS)
+
+
+def test_retrieval_failure_abstains_as_unverified() -> None:
+    prediction = RUNNER["predict"]("Marte é vermelho.", [], DOCS, retrieval_succeeded=False)
+    assert prediction["decision_state"] == "ABSTAINED"
+    assert RUNNER["to_label"](prediction, "judge2") == "UNVERIFIED"
+
+
+def test_label_mapping() -> None:
+    to_label = RUNNER["to_label"]
+    supported_r3 = {"decision_state": "DECIDED", "judge_verdict": "SUPPORTED", "robustness": "R3"}
+    assert to_label(supported_r3, "judge2") == "SUPPORTED"
+    assert to_label(supported_r3, "adr002") == "VERIFIED"
+    assert to_label({**supported_r3, "robustness": "R1"}, "adr002") == "SUPPORTED"
+    invalid = {"decision_state": "INVALID_INPUT", "judge_verdict": None, "robustness": "R0"}
+    assert to_label(invalid, "judge2") == RUNNER["INVALID"]
+
+
+def test_missing_label_vs_present_invalid_prediction_synthetic() -> None:
+    """Verify DEC-017 mechanics with synthetic data only; no RGC cases are evaluated."""
+    case = _case("synthetic-missing-label", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    with pytest.raises(ValueError, match="without a label"):
+        RUNNER["evaluate"](
+            [case],
+            {},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+        )
+    invalid = {"decision_state": "INVALID_INPUT", "judge_verdict": None, "robustness": "R0"}
+    assert RUNNER["to_label"](invalid, "judge2") == "INVALID_PREDICTION"
+    metrics = RUNNER["compute_metrics"](
+        ["SUPPORTED"], ["INVALID_PREDICTION"], "judge2", baseline_label="SUPPORTED", iterations=20
+    )
+    assert metrics["n"] == 1
+    assert metrics["invalid_predictions"] == 1
+    assert metrics["system"]["accuracy"] == 0.0
+
+
+def test_article_cluster_bootstrap_is_deterministic_and_distinct_from_case_bootstrap() -> None:
+    gold = ["SUPPORTED"] * 4 + ["REFUTED"] * 4
+    predicted = ["SUPPORTED"] * 8
+    clusters = ["art:1"] * 4 + ["art:2"] * 4
+    clustered = RUNNER["bootstrap_ci_by_cluster"](gold, predicted, clusters, iterations=500)
+    repeated = RUNNER["bootstrap_ci_by_cluster"](gold, predicted, clusters, iterations=500)
+    case_level = RUNNER["bootstrap_ci"](gold, predicted, iterations=500)
+    assert clustered == repeated
+    assert clustered["accuracy"] == [0.0, 1.0]
+    assert clustered["accuracy"] != case_level["accuracy"]
+
+@pytest.mark.parametrize("iterations", [0, -1, True, 1.5])
+def test_bootstrap_rejects_nonpositive_or_noninteger_iterations(iterations: object) -> None:
+    with pytest.raises(ValueError, match="iterations must be positive"):
+        RUNNER["bootstrap_ci"](["SUPPORTED"], ["SUPPORTED"], iterations=iterations)
+    with pytest.raises(ValueError, match="iterations must be positive"):
+        RUNNER["bootstrap_ci_by_cluster"](
+            ["SUPPORTED"], ["SUPPORTED"], ["art:1"], iterations=iterations
+        )
+
+
+def test_case_bootstrap_rejects_mismatched_and_empty_inputs() -> None:
+    with pytest.raises(ValueError, match="equal lengths"):
+        RUNNER["bootstrap_ci"](["SUPPORTED"], [], iterations=10)
+    with pytest.raises(ValueError, match="at least one case"):
+        RUNNER["bootstrap_ci"]([], [], iterations=10)
+
+
+
+@pytest.mark.parametrize(
+    "fields_to_remove",
+    [
+        ("bootstrap_cluster_id", "cited_article_ids"),
+        ("bootstrap_cluster_id",),
+        ("cited_article_ids",),
+    ],
+)
+def test_development_partition_allows_omitted_optional_id_fields(
+    fields_to_remove: tuple[str, ...],
+) -> None:
+    case = _case("optional-dev-ids", "O cliente fictício pode cancelar.", "Art. 2º")
+    for field in fields_to_remove:
+        case.pop(field)
+    result = RUNNER["evaluate"](
+        [case],
+        {"optional-dev-ids": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=10,
+    )
+    assert result["metrics"]["n"] == 1
+
+
+def test_development_partition_rejects_noncanonical_bootstrap_cluster_id() -> None:
+    case = _case("invalid-dev-cluster", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "Article:2"
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-dev-cluster": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_noncanonical_cited_article_id() -> None:
+    case = _case("invalid-dev-citation", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = ["Article:2"]
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-dev-citation": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_cluster_not_in_citations() -> None:
+    case = _case("dev-cluster-mismatch", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "synthetic:other"
+    case["cited_article_ids"] = ["synthetic:dev-cluster-mismatch"]
+    with pytest.raises(ValueError, match="must be present in cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"dev-cluster-mismatch": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_bundle_member_absent_from_citations() -> None:
+    case = _case("dev-bundle-mismatch", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "bundle:synthetic:a+synthetic:b"
+    case["cited_article_ids"] = ["synthetic:a"]
+    with pytest.raises(ValueError, match="absent from cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"dev-bundle-mismatch": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_pilot_validates_supplied_ids_before_rule_gap_exclusion() -> None:
+    case = _case("invalid-pilot-id", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = ["Article:2"]
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-pilot-id": "RULE_GAP"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+            pilot_mode=True,
+        )
+
+
+def test_hidden_partition_rejects_missing_bootstrap_cluster_id() -> None:
+    case = _case("no-cluster", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    case.pop("bootstrap_cluster_id")
+    with pytest.raises(ValueError, match="bootstrap_cluster_id"):
+        RUNNER["evaluate"](
+            [case],
+            {"no-cluster": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_hidden_partition_rejects_noncanonical_multi_article_bundle() -> None:
+    case = _case("bad-bundle", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "bundle:art-2+art-1"
+    with pytest.raises(ValueError, match="unique, sorted IDs"):
+        RUNNER["evaluate"](
+            [case],
+            {"bad-bundle": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_hidden_partition_rejects_missing_cited_article_ids() -> None:
+    case = _case("missing-citations", "O cliente fictício pode cancelar.", "Art. 2º")
+    case.pop("cited_article_ids")
+    with pytest.raises(ValueError, match="cited_article_ids is required"):
+        RUNNER["evaluate"](
+            [case],
+            {"missing-citations": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_hidden_partition_rejects_cluster_not_in_cited_article_ids() -> None:
+    case = _case("cluster-not-cited", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "art:principal"
+    case["cited_article_ids"] = ["art:other"]
+    with pytest.raises(ValueError, match="must be present in cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"cluster-not-cited": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_hidden_partition_rejects_bundle_member_not_cited() -> None:
+    case = _case("bundle-not-cited", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "bundle:art-1+art-2"
+    case["cited_article_ids"] = ["art-1", "art-3"]
+    with pytest.raises(ValueError, match="absent from cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"bundle-not-cited": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_hidden_partition_allows_bundle_subset_of_complete_citation_list() -> None:
+    case = _case("bundle-citation-subset", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "bundle:art-1+art-2"
+    case["cited_article_ids"] = ["art-1", "art-2", "art-3"]
+    result = RUNNER["evaluate"](
+        [case],
+        {"bundle-citation-subset": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+        partition="hidden",
+    )
+    assert result["metrics"]["bootstrap_provenance"]["cluster_count"] == 1
+
+
+@pytest.mark.parametrize(
+    "cited_article_ids",
+    [
+        "art-1",
+        [],
+        ["art-1", "art-1"],
+        ["art-1", ""],
+        ["art-1", 2],
+    ],
+)
+def test_hidden_partition_rejects_malformed_cited_article_ids(
+    cited_article_ids: Any,
+) -> None:
+    case = _case("malformed-citations", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "art-1"
+    case["cited_article_ids"] = cited_article_ids
+    with pytest.raises(ValueError, match="cited_article_ids must be"):
+        RUNNER["evaluate"](
+            [case],
+            {"malformed-citations": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_hidden_partition_reports_cluster_primary_and_case_sensitivity_ci() -> None:
+    first = _case("cluster-case-1", "A Operadora Fictícia deverá responder.", "Art. 1º")
+    second = _case("cluster-case-2", "O cliente fictício pode cancelar.", "Art. 2º")
+    first["bootstrap_cluster_id"] = "art:regra-1"
+    second["bootstrap_cluster_id"] = "art:regra-1"
+    first["cited_article_ids"] = ["art:regra-1"]
+    second["cited_article_ids"] = ["art:regra-1"]
+    result = RUNNER["evaluate"](
+        [first, second],
+        {"cluster-case-1": "SUPPORTED", "cluster-case-2": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+        partition="hidden",
+    )
+    metrics = result["metrics"]
+    assert metrics["bootstrap_provenance"]["primary_unit"] == "article_cluster"
+    assert metrics["bootstrap_provenance"]["cluster_count"] == 1
+    assert "system_ci95_case_bootstrap" in metrics
+
+
+def test_metrics_match_hand_computation() -> None:
+    gold = ["SUPPORTED", "SUPPORTED", "SUPPORTED", "REFUTED", "UNVERIFIED"]
+    pred = ["SUPPORTED", "SUPPORTED", "REFUTED", "REFUTED", RUNNER["INVALID"]]
+    assert RUNNER["accuracy"](gold, pred) == pytest.approx(3 / 5)
+    assert RUNNER["balanced_accuracy"](gold, pred) == pytest.approx((2 / 3 + 1 + 0) / 3)
+    # F1: SUPPORTED 0.8, REFUTED 2/3, UNVERIFIED 0, INVALID_PREDICTION 0.
+    assert RUNNER["macro_f1"](gold, pred) == pytest.approx((0.8 + 2 / 3 + 0 + 0) / 4)
+    metrics = RUNNER["compute_metrics"](
+        gold, pred, "judge2", baseline_label="SUPPORTED", iterations=200
+    )
+    assert metrics["baseline_primary"]["label"] == "SUPPORTED"
+    assert metrics["baseline_primary"]["accuracy"] == pytest.approx(0.6)
+    assert metrics["invalid_predictions"] == 1
+    assert metrics["absent_gold_states"] == ["PARTIALLY_SUPPORTED", "CONFLICTING"]
+    assert metrics["mcnemar"]["system_right_baseline_wrong"] == 1
+    assert metrics["mcnemar"]["system_wrong_baseline_right"] == 1
+    assert metrics["primary_criterion"]["h1_supported"] is False
+    low, high = metrics["system_ci95"]["accuracy"]
+    assert 0.0 <= low <= 0.6 <= high <= 1.0
+    assert metrics == RUNNER["compute_metrics"](
+        gold, pred, "judge2", baseline_label="SUPPORTED", iterations=200
+    )
+
+
+def test_h1_decision_uses_unrounded_values() -> None:
+    # 7 of 10 right vs a 6-of-10 baseline: margin is exactly 10 pp, which binary
+    # floating point represents as 0.0999...; it must still count as >= 10 pp.
+    gold = ["SUPPORTED"] * 6 + ["REFUTED"] * 4
+    pred = ["SUPPORTED"] * 6 + ["REFUTED"] + ["SUPPORTED"] * 3
+    metrics = RUNNER["compute_metrics"](
+        gold, pred, "judge2", baseline_label="SUPPORTED", iterations=50
+    )
+    assert metrics["primary_criterion"]["margin_at_least_10pp"] is True
+    # A margin of 9.999995 pp rounds to 0.1 at 6 decimals but must not pass.
+    gold = ["SUPPORTED"] * 6 + ["REFUTED"] * 4
+    compute = RUNNER["compute_metrics"]
+    original = RUNNER["METRICS"]["accuracy"]
+    try:
+        RUNNER["METRICS"]["accuracy"] = lambda g, p: 0.6 if len(set(p)) == 1 else 0.69999995
+        metrics = compute(gold, pred, "judge2", baseline_label="SUPPORTED", iterations=10)
+    finally:
+        RUNNER["METRICS"]["accuracy"] = original
+    assert metrics["system"]["accuracy"] == 0.7
+    assert metrics["primary_criterion"]["margin_at_least_10pp"] is False
+
+
+def test_primary_baseline_b_uses_development_partition_not_evaluation_gold() -> None:
+    gold = ["REFUTED", "REFUTED", "SUPPORTED"]
+    pred = ["SUPPORTED", "SUPPORTED", "SUPPORTED"]
+    metrics = RUNNER["compute_metrics"](
+        gold, pred, "judge2", baseline_label="SUPPORTED", iterations=20
+    )
+    assert metrics["baseline_primary"]["name"] == "B"
+    assert metrics["baseline_primary"]["label"] == "SUPPORTED"
+    assert metrics["baseline_primary"]["accuracy"] == pytest.approx(1 / 3)
+    assert metrics["baseline_descriptive"]["name"] == "A"
+    assert metrics["baseline_descriptive"]["label"] == "REFUTED"
+    assert metrics["baseline_descriptive"]["accuracy"] == pytest.approx(2 / 3)
+    assert metrics["primary_criterion"]["baseline"] == "B"
+    assert metrics["mcnemar"]["baseline"] == "B"
+
+
+def test_evaluate_derives_baseline_b_from_development_partition() -> None:
+    cases = [
+        _case(
+            "eval-1",
+            "O cancelamento será efetivado em até 2 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        ),
+        _case(
+            "eval-2",
+            "O cliente tem direito a cancelar o plano sem multa.",
+            "Art. 2º O cliente fictício tem direito a cancelar o plano sem multa.",
+        ),
+        _case(
+            "eval-3",
+            "O cancelamento será efetivado em até 9 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        ),
+    ]
+    labels = {"eval-1": "SUPPORTED", "eval-2": "SUPPORTED", "eval-3": "REFUTED"}
+    development_labels = {
+        "dev-a": "REFUTED",
+        "dev-b": "REFUTED",
+        "dev-c": "SUPPORTED",
+    }
+    result = RUNNER["evaluate"](
+        cases,
+        labels,
+        DOCS,
+        development_cases=[
+            {"case_id": "dev-a"},
+            {"case_id": "dev-b"},
+            {"case_id": "dev-c"},
+        ],
+        development_labels=development_labels,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+    )
+    assert result["metrics"]["baseline_primary"]["label"] == "REFUTED"
+    assert result["metrics"]["baseline_primary"]["accuracy"] == pytest.approx(1 / 3)
+    assert result["metrics"]["baseline_descriptive"]["label"] == "SUPPORTED"
+    assert result["metrics"]["baseline_descriptive"]["accuracy"] == pytest.approx(2 / 3)
+
+
+def test_development_baseline_rejects_empty_and_invalid_labels() -> None:
+    with pytest.raises(ValueError, match="must not be empty"):
+        RUNNER["development_baseline_label"]({}, "judge2")
+    with pytest.raises(ValueError, match="outside vocabulary"):
+        RUNNER["development_baseline_label"]({"dev-1": "RULE_GAP"}, "judge2")
+
+
+def test_evaluate_requires_complete_development_labels() -> None:
+    case = _case(
+        "eval-1",
+        "O cancelamento será efetivado em até 2 dias.",
+        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+    )
+    with pytest.raises(ValueError, match="cases/labels mismatch"):
+        RUNNER["evaluate"](
+            [case],
+            {"eval-1": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels={"dev-1": "SUPPORTED", "dev-2": "SUPPORTED"},
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_evaluate_rejects_duplicate_development_case_ids() -> None:
+    case = _case(
+        "eval-1",
+        "O cancelamento será efetivado em até 2 dias.",
+        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+    )
+    with pytest.raises(ValueError, match="duplicate case in development partition"):
+        RUNNER["evaluate"](
+            [case],
+            {"eval-1": "SUPPORTED"},
+            DOCS,
+            development_cases=[
+                {"case_id": "dev-1"},
+                {"case_id": "dev-1"},
+            ],
+            development_labels={"dev-1": "SUPPORTED"},
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_evaluate_rejects_labels_without_development_cases() -> None:
+    case = _case(
+        "eval-1",
+        "O cancelamento será efetivado em até 2 dias.",
+        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+    )
+    with pytest.raises(ValueError, match="cases/labels mismatch"):
+        RUNNER["evaluate"](
+            [case],
+            {"eval-1": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels={**DEV_LABELS, "dev-extra": "REFUTED"},
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_evaluate_rejects_development_evaluation_overlap() -> None:
+    case = _case(
+        "dev-1",
+        "O cancelamento será efetivado em até 2 dias.",
+        "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+    )
+    with pytest.raises(ValueError, match="partition overlap"):
+        RUNNER["evaluate"](
+            [case],
+            {"dev-1": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_majority_tie_breaks_by_vocabulary_order() -> None:
+    assert RUNNER["majority_label"](["REFUTED", "SUPPORTED"], "judge2") == "SUPPORTED"
+
+
+def test_evaluate_requires_complete_labels_without_rule_gap() -> None:
+    cases = [
+        _case(
+            "s1",
+            "O cancelamento será efetivado em até 2 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        ),
+        _case(
+            "s2",
+            "O cancelamento será efetivado em até 9 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        ),
+    ]
+    labels = {"s1": "SUPPORTED", "s2": "REFUTED"}
+    for mode in ("oracle", "retrieval"):
+        result = RUNNER["evaluate"](
+            cases,
+            labels,
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode=mode,
+            vocabulary="judge2",
+            iterations=100,
+        )
+        assert result["excluded"] == []
+        assert [row["predicted"] for row in result["cases"]] == ["SUPPORTED", "REFUTED"]
+        assert result["decision_states"] == {"DECIDED": 2}
+    with pytest.raises(ValueError, match="unknown cases"):
+        RUNNER["evaluate"](
+            cases,
+            {**labels, "s9": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+    with pytest.raises(ValueError, match="duplicate case"):
+        RUNNER["evaluate"](
+            [*cases, cases[0]],
+            labels,
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+    with pytest.raises(ValueError, match="without a label"):
+        RUNNER["evaluate"](
+            cases,
+            {"s1": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+@pytest.mark.parametrize("partition", ["development", "hidden"])
+def test_evaluate_rejects_rule_gap_in_every_definitive_partition(partition: str) -> None:
+    case = _case("definitive-rule-gap", "O cancelamento será efetivado em até 2 dias.", CANCEL)
+    with pytest.raises(ValueError, match="RULE_GAP is prohibited in every definitive partition"):
+        RUNNER["evaluate"](
+            [case],
+            {"definitive-rule-gap": "RULE_GAP"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+            partition=partition,
+        )
+
+
+def test_rule_gap_policy_requires_explicit_pilot_mode() -> None:
+    validate = RUNNER["_validate_rule_gap_policy"]
+    validate("RULE_GAP", pilot_mode=True, partition="development")
+    for pilot_mode, partition in (
+        (False, "development"),
+        (False, "hidden"),
+        (True, "hidden"),
+    ):
+        with pytest.raises(ValueError, match="only in explicit pilot mode"):
+            validate("RULE_GAP", pilot_mode=pilot_mode, partition=partition)
+
+
+def test_evaluate_reports_abstentions_mapped_to_unverified() -> None:
+    cases = [
+        _case(
+            "s1",
+            "O cancelamento será efetivado em até 2 dias.",
+            "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+        )
+    ]
+    module_globals = RUNNER["evaluate"].__globals__
+    original = module_globals["predict"]
+
+    def abstaining_predict(*args: object, **kwargs: object) -> dict[str, object]:
+        prediction = dict(original(*args, **kwargs))
+        prediction.update(decision_state="ABSTAINED", verdict=None)
+        return prediction
+
+    module_globals["predict"] = abstaining_predict
+    try:
+        result = RUNNER["evaluate"](
+            cases,
+            {"s1": "UNVERIFIED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+    finally:
+        module_globals["predict"] = original
+    assert result["decision_states"] == {"ABSTAINED": 1}
+    assert result["cases"][0]["predicted"] == "UNVERIFIED"
+
+
+def test_labels_outside_vocabulary_are_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "labels.jsonl"
+    path.write_text(json.dumps({"case_id": "s1", "verdict": "VERIFIED"}) + "\n")
+    with pytest.raises(ValueError, match="not in vocabulary"):
+        RUNNER["load_labels"](path, "judge2")
+    assert RUNNER["load_labels"](path, "adr002") == {"s1": "VERIFIED"}
+
+
+def test_strict_corpus_export_is_accepted_by_golden_checker(tmp_path: Path) -> None:
+    out = tmp_path / "corpus.jsonl"
+    assert RUNNER["main"](["export-corpus", "--out", str(out)]) == 0
+    corpus, errors = CHECKER["_read_corpus"](out)
+    assert errors == []
+    assert set(corpus) == set(RUNNER["load_documents"]())
+
+
+def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # This test exercises report serialization with a synthetic freeze attestation;
+    # the real repository protocol intentionally remains unfrozen.
+    monkeypatch.setitem(
+        RUNNER["main"].__globals__,
+        "validate_protocol_freeze",
+        lambda: {
+            "manifest_sha256": "a" * 64,
+            "protocol_sha256": "b" * 64,
+            "preregistration_sha256": "c" * 64,
+            "runner_spec_sha256": "d" * 64,
+            "runner_code_sha256": "e" * 64,
+            "runner_version": RUNNER["RUNNER_VERSION"],
+            "approved_by": "Synthetic test approver",
+            "approved_at": "2026-10-21",
+        },
+    )
+    documents = tmp_path / "docs.jsonl"
+    documents.write_text(
+        json.dumps(
+            {
+                "source_id": "sint-1",
+                "source_url": "https://example.test/sint-1",
+                "source_license": "sintético",
+                "retrieved_at": "2026-10-13T00:00:00Z",
+                "text": TEXT,
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    cases = tmp_path / "cases.jsonl"
+    cases.write_text(
+        "\n".join(
+            json.dumps(case, ensure_ascii=False)
+            for case in (
+                _case(
+                    "s1",
+                    "O cancelamento será efetivado em até 2 dias.",
+                    "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+                ),
+                _case(
+                    "s2",
+                    "A Operadora deve responder em até 9 dias úteis.",
+                    "I - no prazo máximo de 5 (cinco) dias úteis;",
+                ),
+            )
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    labels = tmp_path / "labels.jsonl"
+    labels.write_text(
+        "\n".join(
+            json.dumps(row)
+            for row in (
+                {"case_id": "s1", "verdict": "SUPPORTED"},
+                {"case_id": "s2", "verdict": "REFUTED"},
+            )
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    annotation_rows = (
+        {"case_id": "s1", "label": "SUPPORTED"},
+        {"case_id": "s2", "label": "REFUTED"},
+    )
+    annotation_a.write_text(
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8"
+    )
+    annotation_b.write_text(
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8"
+    )
+    agreement_report = tmp_path / "agreement.json"
+    _write_agreement_report(agreement_report, annotation_a, annotation_b)
+    adjudication_record = tmp_path / "adjudication.md"
+    adjudication_record.write_text("Synthetic test only; no real annotations.\n", encoding="utf-8")
+    annotation_approval = tmp_path / "annotation-approval.json"
+    annotation_approval.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "status": "APPROVED",
+                "approved_by": "Synthetic test approver",
+                "approved_at": "2026-10-21",
+                "cases_sha256": RUNNER["_sha256"](cases),
+                "labels_sha256": RUNNER["_sha256"](labels),
+                "agreement_report_sha256": RUNNER["_sha256"](agreement_report),
+                "adjudication_record_sha256": RUNNER["_sha256"](adjudication_record),
+                "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+                "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+                "cohen_kappa": 1.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    development_cases = tmp_path / "development-cases.jsonl"
+    development_cases.write_text(
+        "\n".join(json.dumps({"case_id": case_id}) for case_id in ("dev-1", "dev-2", "dev-3"))
+        + "\n"
+    )
+    development_labels = tmp_path / "development-labels.jsonl"
+    development_labels.write_text(
+        "\n".join(
+            json.dumps(row)
+            for row in (
+                {"case_id": "dev-1", "verdict": "SUPPORTED"},
+                {"case_id": "dev-2", "verdict": "SUPPORTED"},
+                {"case_id": "dev-3", "verdict": "REFUTED"},
+            )
+        )
+        + "\n"
+    )
+    approval_data = json.loads(annotation_approval.read_text(encoding="utf-8"))
+    approval_data["development_cases_sha256"] = RUNNER["_sha256"](development_cases)
+    approval_data["development_labels_sha256"] = RUNNER["_sha256"](development_labels)
+    annotation_approval.write_text(json.dumps(approval_data), encoding="utf-8")
+    out = tmp_path / "report.json"
+    code = RUNNER["main"](
+        [
+            "run",
+            str(cases),
+            "--labels",
+            str(labels),
+            "--annotation-a",
+            str(annotation_a),
+            "--annotation-b",
+            str(annotation_b),
+            "--agreement-report",
+            str(agreement_report),
+            "--annotation-approval",
+            str(annotation_approval),
+            "--adjudication-record",
+            str(adjudication_record),
+            "--development-cases",
+            str(development_cases),
+            "--development-labels",
+            str(development_labels),
+            "--documents",
+            str(documents),
+            "--mode",
+            "retrieval",
+            "--partition",
+            "hidden",
+            "--out",
+            str(out),
+        ]
+    )
+    assert code == 0
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert report["runner_version"] == "rgc-eval/0.8.0"
+    assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
+    assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
+    assert report["protocol_freeze"]["runner_code_sha256"] == "e" * 64
+    assert report["annotation_approval"]["approved_by"] == "Synthetic test approver"
+    assert report["annotation_approval"]["cohen_kappa"] == 1.0
+    assert report["metrics"]["system"]["accuracy"] == 1.0
+    assert report["config"]["mode"] == "retrieval"
+    assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
+    assert report["metrics"]["baseline_descriptive"]["label"] == "SUPPORTED"
+    assert report["baseline_provenance"]["primary"] == "B"
+    assert len(report["inputs"]["cases_sha256"]) == 64
+    assert len(report["inputs"]["development_cases_sha256"]) == 64
+    assert len(report["inputs"]["development_labels_sha256"]) == 64
+
+
 def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> None:
     cases = tmp_path / "cases.jsonl"
     labels = tmp_path / "labels.jsonl"
@@ -8,13 +1053,12 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
     adjudication = tmp_path / "adjudication.md"
     cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
     labels.write_text("{}\n", encoding="utf-8")
-    annotation_rows = (
-        {"case_id": "case-1", "label": "SUPPORTED"},
-        {"case_id": "case-2", "label": "REFUTED"},
+    annotation_a.write_text(
+        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
     )
-    annotation_a.write_text("\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8")
-    annotation_b.write_text("\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8")
-    agreement_data = _write_agreement_report(agreement, annotation_a, annotation_b)
+    annotation_b.write_text(
+        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+    )
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
     development_cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
@@ -65,31 +1109,18 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     adjudication = tmp_path / "adjudication.md"
     cases.write_text("\n".join(json.dumps({"case_id": case_id}) for case_id in ("case-1", "case-2")) + "\n", encoding="utf-8")
     labels.write_text("{}\n", encoding="utf-8")
-    annotation_a.write_text(
-        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+    annotation_rows = (
+        {"case_id": "case-1", "label": "SUPPORTED"},
+        {"case_id": "case-2", "label": "REFUTED"},
     )
-    annotation_b.write_text(
-        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
-    )
+    annotation_a.write_text("\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8")
+    annotation_b.write_text("\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8")
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
     development_cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
     development_labels.write_text("{}\n", encoding="utf-8")
     adjudication.write_text("synthetic only\n", encoding="utf-8")
-    agreement.write_text(
-        json.dumps(
-            {
-                "method": "cohen_kappa_unweighted",
-                "cohen_kappa": 1.0,
-                "gate_passed": True,
-                "inputs": {
-                    "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
-                    "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
+    _write_agreement_report(agreement, annotation_a, annotation_b)
     approval.write_text(
         json.dumps(
             {
