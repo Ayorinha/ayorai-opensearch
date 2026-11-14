@@ -18,6 +18,24 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = runpy.run_path(str(ROOT / "evals" / "ptbr" / "rgc_eval.py"))
 CHECKER = runpy.run_path(str(ROOT / "scripts" / "check_golden_pt.py"))
+AGREEMENT = runpy.run_path(str(ROOT / "evals" / "ptbr" / "rgc_agreement.py"))
+
+
+def _write_agreement_report(path: Path, annotation_a: Path, annotation_b: Path) -> dict[str, Any]:
+    report = AGREEMENT["compute_agreement"](
+        AGREEMENT["load_annotations"](annotation_a),
+        AGREEMENT["load_annotations"](annotation_b),
+        iterations=AGREEMENT["DEFAULT_ITERATIONS"],
+        seed=AGREEMENT["DEFAULT_SEED"],
+    )
+    report["inputs"] = {
+        "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+        "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+    }
+    path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return report
+
+
 Document = RUNNER["Document"]
 Passage = RUNNER["Passage"]
 
@@ -232,6 +250,133 @@ def test_article_cluster_bootstrap_is_deterministic_and_distinct_from_case_boots
     assert clustered == repeated
     assert clustered["accuracy"] == [0.0, 1.0]
     assert clustered["accuracy"] != case_level["accuracy"]
+
+
+@pytest.mark.parametrize("iterations", [0, -1, True, 1.5])
+def test_bootstrap_rejects_nonpositive_or_noninteger_iterations(iterations: object) -> None:
+    with pytest.raises(ValueError, match="iterations must be positive"):
+        RUNNER["bootstrap_ci"](["SUPPORTED"], ["SUPPORTED"], iterations=iterations)
+    with pytest.raises(ValueError, match="iterations must be positive"):
+        RUNNER["bootstrap_ci_by_cluster"](
+            ["SUPPORTED"], ["SUPPORTED"], ["art:1"], iterations=iterations
+        )
+
+
+def test_case_bootstrap_rejects_mismatched_and_empty_inputs() -> None:
+    with pytest.raises(ValueError, match="equal lengths"):
+        RUNNER["bootstrap_ci"](["SUPPORTED"], [], iterations=10)
+    with pytest.raises(ValueError, match="at least one case"):
+        RUNNER["bootstrap_ci"]([], [], iterations=10)
+
+
+@pytest.mark.parametrize(
+    "fields_to_remove",
+    [
+        ("bootstrap_cluster_id", "cited_article_ids"),
+        ("bootstrap_cluster_id",),
+        ("cited_article_ids",),
+    ],
+)
+def test_development_partition_allows_omitted_optional_id_fields(
+    fields_to_remove: tuple[str, ...],
+) -> None:
+    case = _case("optional-dev-ids", "O cliente fictício pode cancelar.", "Art. 2º")
+    for field in fields_to_remove:
+        case.pop(field)
+    result = RUNNER["evaluate"](
+        [case],
+        {"optional-dev-ids": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=10,
+    )
+    assert result["metrics"]["n"] == 1
+
+
+def test_development_partition_rejects_noncanonical_bootstrap_cluster_id() -> None:
+    case = _case("invalid-dev-cluster", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "Article:2"
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-dev-cluster": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_noncanonical_cited_article_id() -> None:
+    case = _case("invalid-dev-citation", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = ["Article:2"]
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-dev-citation": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_cluster_not_in_citations() -> None:
+    case = _case("dev-cluster-mismatch", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "synthetic:other"
+    case["cited_article_ids"] = ["synthetic:dev-cluster-mismatch"]
+    with pytest.raises(ValueError, match="must be present in cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"dev-cluster-mismatch": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_bundle_member_absent_from_citations() -> None:
+    case = _case("dev-bundle-mismatch", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "bundle:synthetic:a+synthetic:b"
+    case["cited_article_ids"] = ["synthetic:a"]
+    with pytest.raises(ValueError, match="absent from cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"dev-bundle-mismatch": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_pilot_validates_supplied_ids_before_rule_gap_exclusion() -> None:
+    case = _case("invalid-pilot-id", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = ["Article:2"]
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-pilot-id": "RULE_GAP"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+            pilot_mode=True,
+        )
 
 
 def test_hidden_partition_rejects_missing_bootstrap_cluster_id() -> None:
@@ -765,42 +910,50 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     )
     cases = tmp_path / "cases.jsonl"
     cases.write_text(
-        json.dumps(
-            _case(
-                "s1",
-                "O cancelamento será efetivado em até 2 dias.",
-                "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
-            ),
-            ensure_ascii=False,
+        "\n".join(
+            json.dumps(case, ensure_ascii=False)
+            for case in (
+                _case(
+                    "s1",
+                    "O cancelamento será efetivado em até 2 dias.",
+                    "§ 1º O cancelamento será efetivado em até 2 (dois) dias.",
+                ),
+                _case(
+                    "s2",
+                    "A Operadora deve responder em até 9 dias úteis.",
+                    "I - no prazo máximo de 5 (cinco) dias úteis;",
+                ),
+            )
         )
         + "\n",
         encoding="utf-8",
     )
     labels = tmp_path / "labels.jsonl"
-    labels.write_text(json.dumps({"case_id": "s1", "verdict": "SUPPORTED"}) + "\n")
-    annotation_a = tmp_path / "annotation-a.jsonl"
-    annotation_b = tmp_path / "annotation-b.jsonl"
-    annotation_a.write_text(
-        json.dumps({"case_id": "s1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
-    )
-    annotation_b.write_text(
-        json.dumps({"case_id": "s1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
-    )
-    agreement_report = tmp_path / "agreement.json"
-    agreement_report.write_text(
-        json.dumps(
-            {
-                "method": "cohen_kappa_unweighted",
-                "cohen_kappa": 0.8,
-                "gate_passed": True,
-                "inputs": {
-                    "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
-                    "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
-                },
-            }
-        ),
+    labels.write_text(
+        "\n".join(
+            json.dumps(row)
+            for row in (
+                {"case_id": "s1", "verdict": "SUPPORTED"},
+                {"case_id": "s2", "verdict": "REFUTED"},
+            )
+        )
+        + "\n",
         encoding="utf-8",
     )
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    annotation_rows = (
+        {"case_id": "s1", "label": "SUPPORTED"},
+        {"case_id": "s2", "label": "REFUTED"},
+    )
+    annotation_a.write_text(
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8"
+    )
+    annotation_b.write_text(
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8"
+    )
+    agreement_report = tmp_path / "agreement.json"
+    _write_agreement_report(agreement_report, annotation_a, annotation_b)
     adjudication_record = tmp_path / "adjudication.md"
     adjudication_record.write_text("Synthetic test only; no real annotations.\n", encoding="utf-8")
     annotation_approval = tmp_path / "annotation-approval.json"
@@ -817,7 +970,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
                 "adjudication_record_sha256": RUNNER["_sha256"](adjudication_record),
                 "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
                 "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
-                "cohen_kappa": 0.8,
+                "cohen_kappa": 1.0,
             }
         ),
         encoding="utf-8",
@@ -876,12 +1029,12 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     )
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
-    assert report["runner_version"] == "rgc-eval/0.7.0"
+    assert report["runner_version"] == "rgc-eval/0.8.0"
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
     assert report["protocol_freeze"]["runner_code_sha256"] == "e" * 64
     assert report["annotation_approval"]["approved_by"] == "Synthetic test approver"
-    assert report["annotation_approval"]["cohen_kappa"] == 0.8
+    assert report["annotation_approval"]["cohen_kappa"] == 1.0
     assert report["metrics"]["system"]["accuracy"] == 1.0
     assert report["config"]["mode"] == "retrieval"
     assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
@@ -913,20 +1066,7 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
     development_cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
     development_labels.write_text("{}\n", encoding="utf-8")
     adjudication.write_text("synthetic only\n", encoding="utf-8")
-    agreement.write_text(
-        json.dumps(
-            {
-                "method": "cohen_kappa_unweighted",
-                "cohen_kappa": 0.4,
-                "gate_passed": False,
-                "inputs": {
-                    "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
-                    "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
+    agreement_data = _write_agreement_report(agreement, annotation_a, annotation_b)
     approval.write_text(
         json.dumps(
             {
@@ -942,7 +1082,7 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
                 "adjudication_record_sha256": "0" * 64,
                 "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
                 "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
-                "cohen_kappa": 0.4,
+                "cohen_kappa": agreement_data["cohen_kappa"],
             }
         ),
         encoding="utf-8",
@@ -969,33 +1109,29 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     agreement = tmp_path / "agreement.json"
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
-    cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
+    cases.write_text(
+        "\n".join(json.dumps({"case_id": case_id}) for case_id in ("case-1", "case-2")) + "\n",
+        encoding="utf-8",
+    )
     labels.write_text("{}\n", encoding="utf-8")
+    annotation_rows = (
+        {"case_id": "case-1", "label": "SUPPORTED"},
+        {"case_id": "case-2", "label": "REFUTED"},
+    )
     annotation_a.write_text(
-        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n",
+        encoding="utf-8",
     )
     annotation_b.write_text(
-        json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n",
+        encoding="utf-8",
     )
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
     development_cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
     development_labels.write_text("{}\n", encoding="utf-8")
     adjudication.write_text("synthetic only\n", encoding="utf-8")
-    agreement.write_text(
-        json.dumps(
-            {
-                "method": "cohen_kappa_unweighted",
-                "cohen_kappa": 0.8,
-                "gate_passed": True,
-                "inputs": {
-                    "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
-                    "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
+    _write_agreement_report(agreement, annotation_a, annotation_b)
     approval.write_text(
         json.dumps(
             {
@@ -1011,7 +1147,7 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
                 "adjudication_record_sha256": RUNNER["_sha256"](adjudication),
                 "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
                 "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
-                "cohen_kappa": 0.8,
+                "cohen_kappa": 1.0,
             }
         ),
         encoding="utf-8",
@@ -1047,6 +1183,81 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
             approval,
             adjudication,
         )
+
+
+def test_annotation_approval_rejects_tampered_recomputed_statistics(tmp_path: Path) -> None:
+    cases = tmp_path / "cases.jsonl"
+    labels = tmp_path / "labels.jsonl"
+    development_cases = tmp_path / "development-cases.jsonl"
+    development_labels = tmp_path / "development-labels.jsonl"
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    agreement = tmp_path / "agreement.json"
+    approval = tmp_path / "approval.json"
+    adjudication = tmp_path / "adjudication.md"
+    cases.write_text(
+        "\n".join(json.dumps({"case_id": x}) for x in ("a", "b")) + "\n",
+        encoding="utf-8",
+    )
+    labels.write_text("{}\n", encoding="utf-8")
+    development_cases.write_text("{}\n", encoding="utf-8")
+    development_labels.write_text("{}\n", encoding="utf-8")
+    adjudication.write_text("synthetic only\n", encoding="utf-8")
+    annotation_rows = (
+        {"case_id": "a", "label": "SUPPORTED"},
+        {"case_id": "b", "label": "REFUTED"},
+    )
+    annotation_a.write_text(
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n",
+        encoding="utf-8",
+    )
+    annotation_b.write_text(
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n",
+        encoding="utf-8",
+    )
+    canonical = _write_agreement_report(agreement, annotation_a, annotation_b)
+    manifest = {
+        "schema_version": 1,
+        "status": "APPROVED",
+        "approved_by": "Synthetic approver",
+        "approved_at": "2026-10-21",
+        "cases_sha256": RUNNER["_sha256"](cases),
+        "labels_sha256": RUNNER["_sha256"](labels),
+        "development_cases_sha256": RUNNER["_sha256"](development_cases),
+        "development_labels_sha256": RUNNER["_sha256"](development_labels),
+        "agreement_report_sha256": RUNNER["_sha256"](agreement),
+        "adjudication_record_sha256": RUNNER["_sha256"](adjudication),
+        "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
+        "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+        "cohen_kappa": canonical["cohen_kappa"],
+    }
+    mutations = (
+        lambda report: report["bootstrap"].update(iterations=10),
+        lambda report: report["bootstrap"].update(seed=17),
+        lambda report: report["bootstrap"].update(generator="legacy-random"),
+        lambda report: report["bootstrap"].update(percentile="legacy-order-statistic"),
+        lambda report: report["ci95_case_bootstrap"].__setitem__(0, -0.5),
+        lambda report: report.update(cohen_kappa=0.9),
+    )
+    for mutate in mutations:
+        report = json.loads(json.dumps(canonical))
+        mutate(report)
+        agreement.write_text(json.dumps(report), encoding="utf-8")
+        manifest["agreement_report_sha256"] = RUNNER["_sha256"](agreement)
+        manifest["cohen_kappa"] = report["cohen_kappa"]
+        approval.write_text(json.dumps(manifest), encoding="utf-8")
+        with pytest.raises(ValueError, match="differs from canonical recomputation"):
+            RUNNER["validate_annotation_approval"](
+                cases,
+                labels,
+                development_cases,
+                development_labels,
+                annotation_a,
+                annotation_b,
+                agreement,
+                approval,
+                adjudication,
+            )
 
 
 def test_protocol_freeze_requires_status_manifest_and_exact_hashes(tmp_path: Path) -> None:
@@ -1857,3 +2068,39 @@ def test_blank_protocol_freeze_template_is_rejected_by_validator(tmp_path: Path)
 
     with pytest.raises(ValueError, match="freeze manifest status must be FROZEN"):
         RUNNER["validate_protocol_freeze"](root=tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("cited", "cluster", "message"),
+    [
+        (["syn:a+syn:b"], "syn:a+syn:b", "not a canonical article ID"),
+        (["Syn:A"], "Syn:A", "not a canonical article ID"),
+        (["syn:a", "syn:b"], "bundle:syn:b+syn:a", "unique, sorted IDs"),
+        (["syn:a"], "component:syn:a", "not a canonical article ID"),
+    ],
+)
+def test_hidden_partition_enforces_the_article_id_grammar(
+    cited: list[str], cluster: str, message: str
+) -> None:
+    case = _case("grammar", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = cited
+    case["bootstrap_cluster_id"] = cluster
+    with pytest.raises(ValueError, match=message):
+        RUNNER["evaluate"](
+            [case],
+            {"grammar": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=20,
+            partition="hidden",
+        )
+
+
+def test_runner_uses_the_shared_article_id_validator() -> None:
+    from evals.ptbr import rgc_ids
+
+    assert RUNNER["require_article_id"].__code__ is rgc_ids.require_article_id.__code__
+    assert RUNNER["cluster_members"].__code__ is rgc_ids.cluster_members.__code__

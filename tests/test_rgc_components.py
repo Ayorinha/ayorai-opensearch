@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import runpy
 from pathlib import Path
@@ -12,6 +11,14 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE: dict[str, Any] = runpy.run_path(str(ROOT / "evals" / "ptbr" / "rgc_components.py"))
+
+def _build_article_components(cases: list[dict[str, object]]) -> Any:
+    prepared = []
+    for index, case in enumerate(cases):
+        record = dict(case)
+        record.setdefault("bootstrap_cluster_id", f"synthetic-cluster-{index}")
+        prepared.append(record)
+    return MODULE["build_article_components"](prepared)
 
 
 def test_components_merge_transitively_and_keep_isolated_cases() -> None:
@@ -34,12 +41,12 @@ def test_components_merge_transitively_and_keep_isolated_cases() -> None:
     assert result.largest_component_size == 3
     assert result.component_sizes == (3, 1)
     expected_json = json.dumps(["art-1", "art-2"], ensure_ascii=False, separators=(",", ":"))
-    expected_hash = hashlib.sha256(expected_json.encode("utf-8")).hexdigest()
-    assert result.components[0].component_id == f"component:sha256:{expected_hash}"
+    assert result.components[0].component_id == "component:art-1+art-2"
     assert result.components[0].canonical_article_ids_json == expected_json
     assert result.components[0].case_ids == ("case-a", "case-b", "case-c")
     assert result.components[1].article_ids == ("art-9",)
     assert result.components[1].canonical_article_ids_json == '["art-9"]'
+    assert result.components[1].component_id == "component:art-9"
 
 
 def test_component_output_is_independent_of_input_order() -> None:
@@ -88,17 +95,29 @@ def test_invalid_component_inputs_fail_closed(cases: list[dict[str, object]], me
         MODULE["build_article_components"](cases)
 
 
-def test_plus_is_safe_inside_article_ids_under_json_hash_serialization() -> None:
-    result = MODULE["build_article_components"]([{"case_id": "a", "cited_article_ids": ["x+y"]}])
-
-    assert result.components[0].article_ids == ("x+y",)
-    assert result.components[0].canonical_article_ids_json == '["x+y"]'
-    assert result.components[0].component_id.startswith("component:sha256:")
+def test_plus_is_rejected_inside_article_ids() -> None:
+    with pytest.raises(ValueError, match="canonical article ID"):
+        _build_article_components([{"case_id": "a", "cited_article_ids": ["x+y"]}])
 
 
-def test_non_nfc_article_ids_are_rejected() -> None:
-    with pytest.raises(ValueError, match="NFC"):
-        MODULE["build_article_components"]([{"case_id": "a", "cited_article_ids": ["e\u0301"]}])
+def test_non_ascii_article_ids_are_rejected() -> None:
+    with pytest.raises(ValueError, match="canonical article ID"):
+        _build_article_components([{"case_id": "a", "cited_article_ids": ["ação"]}])
+
+
+@pytest.mark.parametrize("cluster_id", [None, "", 7, "bundle:bad+bad"])
+def test_invalid_original_cluster_id_fails_closed(cluster_id: object) -> None:
+    with pytest.raises(ValueError):
+        MODULE["build_article_components"](
+            [{"case_id": "a", "cited_article_ids": ["article:a"], "bootstrap_cluster_id": cluster_id}]
+        )
+
+
+def test_missing_original_cluster_id_fails_closed() -> None:
+    with pytest.raises(ValueError):
+        MODULE["build_article_components"](
+            [{"case_id": "a", "cited_article_ids": ["article:a"]}]
+        )
 
 
 def test_empty_input_has_a_well_formed_empty_summary() -> None:
@@ -126,8 +145,8 @@ def _brute_force_p(differences: list[int]) -> float:
     return hits / (1 << len(differences))
 
 
-def test_exact_sign_flip_enumerates_all_sign_combinations() -> None:
-    result = MODULE["exact_sign_flip"](_components(1, 1))
+def test_sign_flip_by_component_enumerates_all_sign_combinations() -> None:
+    result = MODULE["sign_flip_by_component"](_components(1, 1))
 
     assert result.statistic_observed == 2
     assert result.permutations_considered == 4
@@ -138,16 +157,16 @@ def test_exact_sign_flip_enumerates_all_sign_combinations() -> None:
     assert result.significance_below_005_possible is False
 
 
-def test_exact_sign_flip_keeps_zero_difference_components() -> None:
-    result = MODULE["exact_sign_flip"](_components(1, 0))
+def test_sign_flip_by_component_keeps_zero_difference_components() -> None:
+    result = MODULE["sign_flip_by_component"](_components(1, 0))
 
     assert result.component_count == 2
     assert result.permutations_considered == 4
     assert result.p_value_two_sided == 1.0
 
 
-def test_exact_sign_flip_is_symmetric_and_deterministic() -> None:
-    fn = MODULE["exact_sign_flip"]
+def test_sign_flip_by_component_is_symmetric_and_deterministic() -> None:
+    fn = MODULE["sign_flip_by_component"]
     positive = fn(_components(3, -2, 1))
     negative = fn(_components(-3, 2, -1))
 
@@ -167,17 +186,17 @@ def test_exact_sign_flip_is_symmetric_and_deterministic() -> None:
         [7, -7, 1, 2, -3, 4, 1, -1],
     ],
 )
-def test_exact_sign_flip_matches_independent_enumeration(differences: list[int]) -> None:
-    result = MODULE["exact_sign_flip"](_components(*differences))
+def test_sign_flip_by_component_matches_independent_enumeration(differences: list[int]) -> None:
+    result = MODULE["sign_flip_by_component"](_components(*differences))
 
     assert result.method == "exact"
     assert result.p_value_two_sided == _brute_force_p(differences)
     assert result.theoretical_exact_resolution == 2 / 2 ** len(differences)
 
 
-def test_exact_sign_flip_is_exact_up_to_k_20() -> None:
+def test_sign_flip_by_component_is_exact_up_to_k_20() -> None:
     differences = [1, -1] * 9 + [3, 2]  # K = 20
-    result = MODULE["exact_sign_flip"](_components(*differences))
+    result = MODULE["sign_flip_by_component"](_components(*differences))
 
     assert result.method == "exact"
     assert result.component_count == 20
@@ -186,8 +205,8 @@ def test_exact_sign_flip_is_exact_up_to_k_20() -> None:
     assert result.monte_carlo_minimum_p is None
 
 
-def test_exact_sign_flip_does_not_depend_on_input_order() -> None:
-    fn = MODULE["exact_sign_flip"]
+def test_sign_flip_by_component_does_not_depend_on_input_order() -> None:
+    fn = MODULE["sign_flip_by_component"]
     items = list(_components(4, -1, 2, 0, -3, 5, 1).items())
     forward = fn(dict(items))
     backward = fn(dict(reversed(items)))
@@ -198,7 +217,7 @@ def test_exact_sign_flip_does_not_depend_on_input_order() -> None:
 
 
 def test_monte_carlo_sign_flip_does_not_depend_on_input_order_k_25() -> None:
-    fn = MODULE["exact_sign_flip"]
+    fn = MODULE["sign_flip_by_component"]
     differences = [((index * 7) % 5) - 2 for index in range(25)]  # K = 25, mixed signs
     items = list(_components(*differences).items())
     forward = fn(dict(items))
@@ -215,27 +234,27 @@ def test_monte_carlo_sign_flip_does_not_depend_on_input_order_k_25() -> None:
     assert forward.monte_carlo_minimum_p <= forward.p_value_two_sided <= 1
 
 
-def test_exact_sign_flip_rejects_invalid_inputs() -> None:
-    fn = MODULE["exact_sign_flip"]
+def test_sign_flip_by_component_rejects_invalid_inputs() -> None:
+    fn = MODULE["sign_flip_by_component"]
     with pytest.raises(ValueError, match="at least one"):
         fn({})
     with pytest.raises(ValueError, match="integers"):
         fn({"component:a": 1, "component:b": True})
-    with pytest.raises(ValueError, match="canonical"):
+    with pytest.raises(ValueError, match="component:"):
         fn({" component:a": 1})
     with pytest.raises(TypeError, match="map component IDs"):
         fn([1, 2])
 
 
 def test_monte_carlo_sign_flip_uses_fixed_reproducible_pcg64() -> None:
-    fn = MODULE["exact_sign_flip"]
+    fn = MODULE["sign_flip_by_component"]
     first = fn(_components(*([1] * 21)))
     second = fn(_components(*([1] * 21)))
 
     assert first == second
     assert first.method == "monte_carlo"
     assert first.seed == 20261003
-    assert first.generator == "numpy.random.Generator(numpy.random.PCG64)"
+    assert first.generator == "RGC-PRNG-1"
     assert first.iterations == 10_000
     assert first.theoretical_exact_resolution == 2 / (2**21)
     assert first.monte_carlo_minimum_p == 1 / 10_001
@@ -258,11 +277,11 @@ def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> No
         "excluded": "SUPPORTED",
     }
     components = {
-        "a1": "component-a",
+        "a1": "component:a",
         "a2": "component-a",
-        "b1": "component-b",
+        "b1": "component:b",
         "b2": "component-b",
-        "excluded": "component-c",
+        "excluded": "component:c",
     }
 
     first = fn(annotations_a, annotations_b, components)
@@ -275,7 +294,7 @@ def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> No
     assert first.rule_gap_excluded_disagreements == 1
     assert first.iterations == 10_000
     assert first.seed == 20261003
-    assert first.generator == "numpy.random.Generator(numpy.random.PCG64)"
+    assert first.generator == "RGC-PRNG-1"
     assert first.valid_replicates + first.undefined_replicates == 10_000
     assert first.ci95 is not None
     assert first.unstable == (first.undefined_fraction > 0.05)
@@ -293,6 +312,15 @@ def test_component_kappa_bootstrap_reports_fully_undefined_interval() -> None:
     assert result.undefined_replicates == 10_000
     assert result.undefined_fraction == 1.0
     assert result.unstable is True
+
+
+def test_component_kappa_bootstrap_rejects_noncanonical_component_id() -> None:
+    with pytest.raises(ValueError, match="component:"):
+        MODULE["bootstrap_cohen_kappa_by_component"](
+            {"a": "SUPPORTED"},
+            {"a": "SUPPORTED"},
+            {"a": "component-a"},
+        )
 
 
 def test_component_kappa_bootstrap_rejects_mismatched_case_ids() -> None:

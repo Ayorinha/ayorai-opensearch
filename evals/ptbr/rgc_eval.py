@@ -43,7 +43,6 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from random import Random
 from typing import Any
 
 from ayorai_attractor.evaluation.stats import mcnemar_exact_pvalue
@@ -52,11 +51,23 @@ from ayorai_attractor.verification.judge2 import adjudication
 from ayorai_attractor.verification.models import Claim, Evidence
 from ayorai_attractor.verification.stance import RuleStanceDetector
 
+if __package__ in (None, ""):  # run as a script: make the repository importable
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from evals.ptbr import rgc_agreement  # noqa: E402
+from evals.ptbr.rgc_ids import cluster_members, require_article_id  # noqa: E402
+from evals.ptbr.rgc_random import (  # noqa: E402
+    LABEL_CASE_ACCURACY,
+    LABEL_CLUSTER_ACCURACY,
+    RGC_SEED,
+    RgcPrng,
+    percentile_ci95,
+)
+
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.7.0"
-SEED = 20261003
+RUNNER_VERSION = "rgc-eval/0.8.0"
+SEED = RGC_SEED
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
 BM25_K1 = 1.2
@@ -314,42 +325,56 @@ def case_rectified(case: Mapping[str, Any]) -> bool:
     return value
 
 
-def validate_cluster_citations(case: Mapping[str, Any], cluster_id: str, case_id: str) -> None:
-    """Check that a declared bootstrap cluster is supported by cited article IDs.
+def validate_cluster_citations(
+    case: Mapping[str, Any],
+    cluster_id: object,
+    case_id: str,
+    *,
+    require_citations: bool = True,
+    require_cluster: bool = True,
+) -> None:
+    """Validate every supplied canonical article ID and cluster/citation consistency.
 
-    DEC-019 requires cited_article_ids to preserve the complete citation list.
-    A bundle represents the subset jointly necessary when no single principal
-    article exists; it therefore must be contained in, not equal to, that list.
-    This check validates consistency only and cannot determine legal relevance
-    or whether a principal article was correctly selected.
+    Hidden evaluation requires both fields. Development evaluation may omit either,
+    but any supplied field is still checked against DEC-027, D1. A bundle is the
+    subset jointly necessary when no single principal article exists; it must be
+    contained in, not equal to, the complete citation list. This check cannot
+    determine legal relevance or whether a principal article was selected correctly.
     """
+    cited_ids: set[str] | None = None
     if "cited_article_ids" not in case:
-        raise ValueError(f"{case_id}: cited_article_ids is required for hidden partition cases")
-    cited = case["cited_article_ids"]
-    if (
-        not isinstance(cited, list)
-        or not cited
-        or any(
-            not isinstance(article_id, str) or not article_id or article_id != article_id.strip()
-            for article_id in cited
-        )
-        or len(cited) != len(set(cited))
-    ):
-        raise ValueError(
-            f"{case_id}: cited_article_ids must be a non-empty list of unique, "
-            "canonical, non-empty strings"
-        )
-    cited_ids = set(cited)
-    if cluster_id.startswith("bundle:"):
-        members = cluster_id.removeprefix("bundle:").split("+")
+        if require_citations:
+            raise ValueError(f"{case_id}: cited_article_ids is required for hidden partition cases")
+    else:
+        cited = case["cited_article_ids"]
+        if (
+            not isinstance(cited, list)
+            or not cited
+            or any(not isinstance(article_id, str) or not article_id for article_id in cited)
+            or len(cited) != len(set(cited))
+        ):
+            raise ValueError(
+                f"{case_id}: cited_article_ids must be a non-empty list of unique, "
+                "canonical, non-empty strings"
+            )
+        for article_id in cited:  # DEC-027, D1: one grammar for every article ID
+            require_article_id(article_id, f"{case_id}: cited_article_ids")
+        cited_ids = set(cited)
+
+    members = (
+        cluster_members(cluster_id, f"{case_id}: bootstrap_cluster_id") if require_cluster else None
+    )
+    if members is not None and cited_ids is not None:
         missing = sorted(set(members) - cited_ids)
         if missing:
+            if isinstance(cluster_id, str) and cluster_id.startswith("bundle:"):
+                raise ValueError(
+                    f"{case_id}: bundle bootstrap_cluster_id contains IDs absent "
+                    f"from cited_article_ids: {missing}"
+                )
             raise ValueError(
-                f"{case_id}: bundle bootstrap_cluster_id contains IDs absent "
-                f"from cited_article_ids: {missing}"
+                f"{case_id}: bootstrap_cluster_id must be present in cited_article_ids"
             )
-    elif cluster_id not in cited_ids:
-        raise ValueError(f"{case_id}: bootstrap_cluster_id must be present in cited_article_ids")
 
 
 def predict(
@@ -485,28 +510,37 @@ def macro_f1(gold: Sequence[str], pred: Sequence[str]) -> float:
 METRICS = {"accuracy": accuracy, "balanced_accuracy": balanced_accuracy, "macro_f1": macro_f1}
 
 
+def _ci95(samples: Mapping[str, list[float]]) -> dict[str, list[float]]:
+    """Type-7 percentile interval of each metric (DEC-027, D2)."""
+    out: dict[str, list[float]] = {}
+    for name, values in samples.items():
+        interval = percentile_ci95(values)
+        if interval is None:
+            raise ValueError("bootstrap produced no replicates")
+        out[name] = interval
+    return out
+
+
 def bootstrap_ci(
     gold: Sequence[str], pred: Sequence[str], *, iterations: int = BOOTSTRAP_ITERATIONS
 ) -> dict[str, list[float]]:
-    """Percentile 95% CI; one shared resample sequence for all metrics."""
-    # B311 suppression: seeded bootstrap resampling is statistical, not security-sensitive.
-    rng = Random(SEED)  # nosec B311
+    """Percentile 95% CI by case; one shared RGC-PRNG-1 stream for all metrics."""
+    if len(gold) != len(pred):
+        raise ValueError("gold and predictions must have equal lengths")
+    if not gold:
+        raise ValueError("case bootstrap requires at least one case")
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("iterations must be positive")
+    rng = RgcPrng(SEED, LABEL_CASE_ACCURACY)
     n = len(gold)
     samples: dict[str, list[float]] = {name: [] for name in METRICS}
     for _ in range(iterations):
-        idx = [rng.randrange(n) for _ in range(n)]
+        idx = [rng.below(n) for _ in range(n)]
         g = [gold[i] for i in idx]
         p = [pred[i] for i in idx]
         for name, fn in METRICS.items():
             samples[name].append(fn(g, p))
-    out = {}
-    for name, values in samples.items():
-        values.sort()
-        out[name] = [
-            values[int(0.025 * (iterations - 1))],
-            values[int(0.975 * (iterations - 1))],
-        ]
-    return out
+    return _ci95(samples)
 
 
 def bootstrap_ci_by_cluster(
@@ -521,30 +555,24 @@ def bootstrap_ci_by_cluster(
         raise ValueError("gold, predictions, and cluster IDs must have equal lengths")
     if not gold:
         raise ValueError("cluster bootstrap requires at least one case")
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("iterations must be positive")
     if any(not isinstance(cluster, str) or not cluster.strip() for cluster in cluster_ids):
         raise ValueError("bootstrap_cluster_id must be a non-empty string")
     groups: dict[str, list[int]] = {}
     for index, cluster in enumerate(cluster_ids):
         groups.setdefault(cluster, []).append(index)
-    keys = sorted(groups)
-    # B311 suppression: seeded bootstrap resampling is statistical, not security-sensitive.
-    rng = Random(SEED)  # nosec B311
+    keys = sorted(groups)  # lexical order of the cluster IDs (DEC-027, D3)
+    rng = RgcPrng(SEED, LABEL_CLUSTER_ACCURACY)
     samples: dict[str, list[float]] = {name: [] for name in METRICS}
     for _ in range(iterations):
-        selected = [keys[rng.randrange(len(keys))] for _ in keys]
+        selected = [keys[rng.below(len(keys))] for _ in keys]
         indices = [index for cluster in selected for index in groups[cluster]]
         sampled_gold = [gold[index] for index in indices]
         sampled_pred = [pred[index] for index in indices]
         for name, fn in METRICS.items():
             samples[name].append(fn(sampled_gold, sampled_pred))
-    out: dict[str, list[float]] = {}
-    for name, values in samples.items():
-        values.sort()
-        out[name] = [
-            values[int(0.025 * (iterations - 1))],
-            values[int(0.975 * (iterations - 1))],
-        ]
-    return out
+    return _ci95(samples)
 
 
 def majority_label(gold: Sequence[str], vocabulary: str) -> str:
@@ -642,6 +670,8 @@ def compute_metrics(
             "cluster_count": len(set(cluster_ids)) if cluster_ids is not None else None,
             "iterations": iterations,
             "seed": SEED,
+            "generator": "RGC-PRNG-1",
+            "percentile": "hyndman-fan-type-7",
         },
         "baseline_primary": {
             "name": "B",
@@ -961,6 +991,25 @@ def validate_annotation_approval(
             "RGC evaluation blocked: an approved annotation artifact is missing"
         ) from exc
 
+    if set(inputs) != {"annotation_a_sha256", "annotation_b_sha256"}:
+        raise ValueError("RGC evaluation blocked: agreement report input schema is invalid")
+    try:
+        canonical_agreement = rgc_agreement.compute_agreement(
+            rgc_agreement.load_annotations(annotation_a_path),
+            rgc_agreement.load_annotations(annotation_b_path),
+            iterations=rgc_agreement.DEFAULT_ITERATIONS,
+            seed=rgc_agreement.DEFAULT_SEED,
+        )
+    except (OSError, ValueError) as exc:
+        raise ValueError(
+            "RGC evaluation blocked: canonical annotator agreement could not be recomputed"
+        ) from exc
+    report_without_inputs = {key: value for key, value in report.items() if key != "inputs"}
+    if report_without_inputs != canonical_agreement:
+        raise ValueError(
+            "RGC evaluation blocked: agreement report differs from canonical recomputation"
+        )
+
     return {
         "manifest_sha256": _sha256(approval_manifest_path),
         **expected_hashes,
@@ -1067,30 +1116,23 @@ def evaluate(
         ):
             raise ValueError(f"{case_id}: invalid gold label {gold!r} for vocabulary {vocabulary}")
         _validate_rule_gap_policy(gold, pilot_mode=pilot_mode, partition=partition)
-        if gold in EXCLUSION_LABELS:
-            continue
         cluster_id = case.get("bootstrap_cluster_id")
         if partition == "hidden" and (not isinstance(cluster_id, str) or not cluster_id.strip()):
             raise ValueError(
                 f"{case_id}: missing or invalid bootstrap_cluster_id for hidden partition"
             )
-        if (
-            partition == "hidden"
-            and isinstance(cluster_id, str)
-            and cluster_id.startswith("bundle:")
-        ):
-            members = cluster_id.removeprefix("bundle:").split("+")
-            if (
-                len(members) < 2
-                or any(not member for member in members)
-                or members != sorted(set(members))
-            ):
-                raise ValueError(
-                    f"{case_id}: bundle bootstrap_cluster_id must contain at least two "
-                    "unique, sorted IDs"
-                )
-        if partition == "hidden" and isinstance(cluster_id, str):
-            validate_cluster_citations(case, cluster_id, case_id)
+        has_cluster_id = "bootstrap_cluster_id" in case
+        has_cited_article_ids = "cited_article_ids" in case
+        if partition == "hidden" or has_cluster_id or has_cited_article_ids:
+            validate_cluster_citations(
+                case,
+                cluster_id,
+                case_id,
+                require_citations=partition == "hidden",
+                require_cluster=partition == "hidden" or has_cluster_id,
+            )
+        if gold in EXCLUSION_LABELS:
+            continue
         claim = case.get("claim")
         if not isinstance(claim, str) or not claim.strip():
             raise ValueError(f"{case_id}: claim must be a non-empty string")
@@ -1304,6 +1346,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             "bootstrap": {
                 "iterations": BOOTSTRAP_ITERATIONS,
                 "seed": SEED,
+                "generator": "RGC-PRNG-1",
+                "percentile": "hyndman-fan-type-7",
                 "primary_unit": "article_cluster" if args.partition == "hidden" else "case",
                 "sensitivity_unit": "case" if args.partition == "hidden" else None,
             },

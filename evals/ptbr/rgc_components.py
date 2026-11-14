@@ -7,12 +7,19 @@ case records explicitly. It implements the graph unit specified by DEC-023.
 
 from __future__ import annotations
 
-import hashlib
 import json
-import unicodedata
 from collections.abc import Iterable, Mapping
 from itertools import product
 from typing import NamedTuple
+
+from evals.ptbr.rgc_ids import cluster_members, component_id, parse_component_id, require_article_id
+from evals.ptbr.rgc_random import (
+    LABEL_COMPONENT_KAPPA,
+    LABEL_SIGN_FLIP,
+    RGC_SEED,
+    RgcPrng,
+    percentile_ci95,
+)
 
 
 class ArticleComponent(NamedTuple):
@@ -65,8 +72,8 @@ def build_article_components(
     """Build transitive case components from complete cited_article_ids lists.
 
     Every case must have a unique non-empty case_id and a non-empty list of
-    unique, trimmed, NFC-normalized article IDs. Component IDs are SHA-256
-    commitments to the canonical compact JSON array required by DEC-023.
+    unique canonical article IDs and a valid original bootstrap_cluster_id.
+    Component IDs use the literal DEC-023 representation from rgc_ids.
     No input is modified.
     """
     records = list(cases)
@@ -88,13 +95,7 @@ def build_article_components(
         citations: list[str] = []
         seen: set[str] = set()
         for article_id in raw_citations:
-            if (
-                not isinstance(article_id, str)
-                or not article_id
-                or article_id != article_id.strip()
-                or article_id != unicodedata.normalize("NFC", article_id)
-            ):
-                raise ValueError(f"{case_id}: article IDs must be canonical non-empty NFC strings")
+            require_article_id(article_id, f"{case_id}: cited_article_ids")
             if article_id in seen:
                 raise ValueError(f"{case_id}: duplicate article ID {article_id!r}")
             seen.add(article_id)
@@ -104,8 +105,8 @@ def build_article_components(
         citations_by_case[case_id] = tuple(citations)
 
         cluster_id = case.get("bootstrap_cluster_id")
-        if isinstance(cluster_id, str) and cluster_id:
-            original_clusters.add(cluster_id)
+        cluster_members(cluster_id, f"{case_id}: bootstrap_cluster_id")
+        original_clusters.add(cluster_id)
 
     disjoint = _DisjointSet(case_ids)
     first_case_by_article: dict[str, str] = {}
@@ -127,11 +128,10 @@ def build_article_components(
             )
         )
         canonical_json = json.dumps(list(article_ids), ensure_ascii=False, separators=(",", ":"))
-        digest = hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
-        component_id = f"component:sha256:{digest}"
+        canonical_id = component_id(article_ids, where="connected component")
         components.append(
             ArticleComponent(
-                component_id=component_id,
+                component_id=canonical_id,
                 case_ids=member_ids,
                 article_ids=article_ids,
                 canonical_article_ids_json=canonical_json,
@@ -185,20 +185,15 @@ def _ordered_differences(
     if not component_differences:
         raise ValueError("at least one component difference is required")
     for component_id, value in component_differences.items():
-        if (
-            not isinstance(component_id, str)
-            or not component_id
-            or component_id != component_id.strip()
-        ):
-            raise ValueError("component IDs must be canonical non-empty strings")
+        parse_component_id(component_id, "sign-flip component ID")
         if type(value) is not int:
             raise ValueError("component differences must be integers")
     component_ids = tuple(sorted(component_differences))
     return component_ids, tuple(component_differences[cid] for cid in component_ids)
 
 
-def exact_sign_flip(component_differences: Mapping[str, int]) -> SignFlipResult:
-    """Run DEC-021 exactly for K <= 20 and with its fixed PCG64 for K > 20.
+def sign_flip_by_component(component_differences: Mapping[str, int]) -> SignFlipResult:
+    """Run DEC-021 exactly for K <= 20 and with RGC-PRNG-1 for K > 20.
 
     The input maps each component ID to its paired difference a_k - b_k. Components are
     consumed in lexical order of their IDs, so the result does not depend on the order
@@ -235,20 +230,12 @@ def exact_sign_flip(component_differences: Mapping[str, int]) -> SignFlipResult:
             iterations=0,
         )
 
-    import numpy as np
-
-    if np.__version__ != "2.3.3":
-        raise RuntimeError(
-            f"DEC-021 Monte Carlo requires numpy==2.3.3; found numpy=={np.__version__}"
-        )
-    seed = 20261003
+    seed = RGC_SEED
     iterations = 10_000
-    rng = np.random.Generator(np.random.PCG64(seed))
+    rng = RgcPrng(seed, LABEL_SIGN_FLIP)
     extreme = 0
-    difference_array = np.asarray(differences, dtype=np.int64)
     for _ in range(iterations):
-        random_signs = rng.choice([-1, +1], size=component_count, replace=True)
-        permuted = int(np.sum(random_signs * difference_array))
+        permuted = sum(rng.sign() * difference for difference in differences)
         if abs(permuted) >= abs(observed):
             extreme += 1
 
@@ -264,7 +251,7 @@ def exact_sign_flip(component_differences: Mapping[str, int]) -> SignFlipResult:
         significance_below_005_possible=component_count >= 6,
         method="monte_carlo",
         seed=seed,
-        generator="numpy.random.Generator(numpy.random.PCG64)",
+        generator="RGC-PRNG-1",
         iterations=iterations,
     )
 
@@ -319,18 +306,16 @@ def bootstrap_cohen_kappa_by_component(
         )
         if invalid:
             raise ValueError(f"annotator {name} has invalid labels: {invalid}")
-    if any(
-        not isinstance(component, str) or not component or component != component.strip()
-        for component in component_by_case.values()
-    ):
-        raise ValueError("component IDs must be canonical non-empty strings")
+    for component in component_by_case.values():
+        parse_component_id(component, "kappa component ID")
 
     excluded = [
         case_id
         for case_id in sorted(ids)
         if annotations_a[case_id] == "RULE_GAP" or annotations_b[case_id] == "RULE_GAP"
     ]
-    eligible = [case_id for case_id in sorted(ids) if case_id not in set(excluded)]
+    excluded_set = set(excluded)
+    eligible = [case_id for case_id in sorted(ids) if case_id not in excluded_set]
     if not eligible:
         raise ValueError("no eligible cases remain after excluding RULE_GAP pairs")
 
@@ -357,23 +342,17 @@ def bootstrap_cohen_kappa_by_component(
     all_case_ids = [case_id for component in component_ids for case_id in groups[component]]
     point = kappa_for(all_case_ids)
 
-    import numpy as np
-
-    if np.__version__ != "2.3.3":
-        raise RuntimeError(
-            f"DEC-022 bootstrap requires numpy==2.3.3; found numpy=={np.__version__}"
-        )
-    seed = 20261003
+    seed = RGC_SEED
     iterations = 10_000
-    rng = np.random.Generator(np.random.PCG64(seed))
+    rng = RgcPrng(seed, LABEL_COMPONENT_KAPPA)
     bootstrap_values: list[float] = []
     undefined = 0
     for _ in range(iterations):
-        selected = rng.integers(0, component_count, size=component_count)
+        selected = [rng.below(component_count) for _ in range(component_count)]
         sampled_case_ids = [
             case_id
             for selected_index in selected
-            for case_id in groups[component_ids[int(selected_index)]]
+            for case_id in groups[component_ids[selected_index]]
         ]
         value = kappa_for(sampled_case_ids)
         if value is None:
@@ -381,10 +360,8 @@ def bootstrap_cohen_kappa_by_component(
         else:
             bootstrap_values.append(value)
 
-    ci95 = None
-    if bootstrap_values:
-        limits = np.quantile(bootstrap_values, (0.025, 0.975), method="linear")
-        ci95 = (float(limits[0]), float(limits[1]))
+    limits = percentile_ci95(bootstrap_values)
+    ci95 = tuple(limits) if limits is not None else None
     undefined_fraction = undefined / iterations
     return KappaBootstrapResult(
         kappa=point,
@@ -393,7 +370,7 @@ def bootstrap_cohen_kappa_by_component(
         case_count=len(eligible),
         iterations=iterations,
         seed=seed,
-        generator="numpy.random.Generator(numpy.random.PCG64)",
+        generator="RGC-PRNG-1",
         valid_replicates=len(bootstrap_values),
         undefined_replicates=undefined,
         undefined_fraction=undefined_fraction,
