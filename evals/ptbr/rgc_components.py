@@ -544,6 +544,8 @@ def obuchowski_clustered_test(
 ) -> ObuchowskiResult:
     """Sensitivity analysis only (DEC-021; Emenda 11 of the pre-registration).
 
+    Units are DEC-023 connected components; each ID must be a canonical component ID.
+
     For K units with n_k cases, x_k system hits and y_k baseline hits, N = sum n_k:
     Var(p1 - p2) = K / (K - 1) * (1 / N^2) * sum_k (x_k - y_k)^2, the variance under
     H0 (with p_bar = (p1 + p2) / 2, (x_k - n_k p_bar) - (y_k - n_k p_bar) = x_k - y_k);
@@ -557,6 +559,7 @@ def obuchowski_clustered_test(
         raise ValueError("at least one case is required")
     units: dict[str, list[int]] = {}
     for g, p, b, unit in zip(gold, pred, baseline, unit_ids, strict=True):
+        parse_component_id(unit, "Obuchowski component ID")
         counts = units.setdefault(unit, [0, 0, 0])
         counts[0] += 1
         counts[1] += p == g

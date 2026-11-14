@@ -440,8 +440,33 @@ def test_obuchowski_is_undefined_with_one_unit_or_zero_variance() -> None:
     test = MODULE["obuchowski_clustered_test"]
     one = test(["SUPPORTED"], ["SUPPORTED"], ["REFUTED"], ["component:syn:a"])
     assert one.chi_square is None and one.p_value is None and one.variance is None
-    tie = test(["SUPPORTED"] * 2, ["SUPPORTED"] * 2, ["SUPPORTED"] * 2, ["c1", "c2"])
+    tie = test(
+        ["SUPPORTED"] * 2,
+        ["SUPPORTED"] * 2,
+        ["SUPPORTED"] * 2,
+        ["component:syn:a", "component:syn:b"],
+    )
     assert tie.variance == 0 and tie.chi_square is None
+
+
+@pytest.mark.parametrize(
+    "unit", ["c1", "syn:a", "component:syn:b+syn:a", "component:Syn:A", "", "component:"]
+)
+def test_obuchowski_rejects_noncanonical_component_ids(unit: str) -> None:
+    with pytest.raises(ValueError):
+        MODULE["obuchowski_clustered_test"](
+            ["SUPPORTED", "SUPPORTED"],
+            ["SUPPORTED", "REFUTED"],
+            ["REFUTED", "SUPPORTED"],
+            ["component:syn:a", unit],
+        )
+
+
+def test_obuchowski_rejects_mismatched_lengths_and_empty_input() -> None:
+    with pytest.raises(ValueError, match="equal lengths"):
+        MODULE["obuchowski_clustered_test"](["SUPPORTED"], [], [], [])
+    with pytest.raises(ValueError, match="at least one"):
+        MODULE["obuchowski_clustered_test"]([], [], [], [])
 
 
 def test_component_bootstrap_iterations_are_explicit() -> None:
