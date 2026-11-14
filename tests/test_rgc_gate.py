@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import runpy
 from collections.abc import Iterator, Mapping
 from pathlib import Path
@@ -133,3 +134,77 @@ def test_empty_inventory_fails_the_gate_without_fabricating_components() -> None
         "component_sizes": [],
         "largest_component_size": 0,
     }
+
+
+def test_inventory_loader_accepts_only_the_two_d7_fields(tmp_path: Path) -> None:
+    inventory = tmp_path / "inventory.jsonl"
+    inventory.write_text(
+        json.dumps({"case_id": "a", "cited_article_ids": ["article-a"]}) + "\\n",
+        encoding="utf-8",
+    )
+
+    records = MODULE["load_preannotation_inventory"](inventory)
+
+    assert records == [{"case_id": "a", "cited_article_ids": ["article-a"]}]
+
+
+def test_inventory_loader_rejects_annotation_or_result_fields(tmp_path: Path) -> None:
+    inventory = tmp_path / "inventory.jsonl"
+    inventory.write_text(
+        json.dumps(
+            {
+                "case_id": "a",
+                "cited_article_ids": ["article-a"],
+                "label": "SUPPORTED",
+            }
+        )
+        + "\\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="expected exactly"):
+        MODULE["load_preannotation_inventory"](inventory)
+
+
+def test_gate_cli_writes_minimal_record_and_returns_success_at_k_six(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    inventory = tmp_path / "inventory.jsonl"
+    output = tmp_path / "gate.json"
+    inventory.write_text(
+        "".join(
+            json.dumps({"case_id": f"case-{index}", "cited_article_ids": [f"article-{index}"]})
+            + "\\n"
+            for index in range(6)
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = MODULE["main"](["--inventory", str(inventory), "--out", str(output)])
+
+    expected = {"K": 6, "component_sizes": [1, 1, 1, 1, 1, 1], "largest_component_size": 1}
+    assert exit_code == 0
+    assert json.loads(output.read_text(encoding="utf-8")) == expected
+    assert json.loads(capsys.readouterr().out) == expected
+
+
+def test_gate_cli_writes_blocked_record_and_returns_nonzero_below_k_six(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    inventory = tmp_path / "inventory.jsonl"
+    output = tmp_path / "gate.json"
+    inventory.write_text(
+        "".join(
+            json.dumps({"case_id": f"case-{index}", "cited_article_ids": [f"article-{index}"]})
+            + "\\n"
+            for index in range(5)
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = MODULE["main"](["--inventory", str(inventory), "--out", str(output)])
+
+    expected = {"K": 5, "component_sizes": [1, 1, 1, 1, 1], "largest_component_size": 1}
+    assert exit_code == 1
+    assert json.loads(output.read_text(encoding="utf-8")) == expected
+    assert json.loads(capsys.readouterr().out) == expected
