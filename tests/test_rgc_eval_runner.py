@@ -1087,17 +1087,34 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     out.write_text(json.dumps(tampered, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="report bytes differ"):
         RUNNER["verify_run_manifest"](manifest_path, out)
-    # A run whose manifest cannot be written is incomplete: exit 2 and no manifest, so
-    # the earlier manifest can never be paired with the new report.
-    assert manifest_path.exists()
+    # Never overwrite: a second run to the same --out is refused and nothing changes.
+    before = (out.read_bytes(), manifest_path.read_bytes())
+    assert RUNNER["main"](argv) == 2
+    assert (out.read_bytes(), manifest_path.read_bytes()) == before
+    # A run whose manifest cannot be written leaves neither report nor manifest behind.
+    failed_out = tmp_path / "failed.json"
+    failed_argv = [*argv[:-1], str(failed_out)]
 
     def failing_manifest(*_: object, **__: object) -> dict[str, object]:
         raise ValueError("synthetic manifest failure")
 
     monkeypatch.setitem(RUNNER["main"].__globals__, "build_run_manifest", failing_manifest)
-    assert RUNNER["main"](argv) == 2
-    assert not manifest_path.exists()
-    assert not list(tmp_path.glob(".report.json*"))
+    assert RUNNER["main"](failed_argv) == 2
+    assert not failed_out.exists()
+    assert not failed_out.with_name("failed.json.manifest.json").exists()
+    assert not list(tmp_path.glob(".failed.json*"))
+    # The same holds when the manifest is written but fails its own verification.
+    monkeypatch.setitem(
+        RUNNER["main"].__globals__, "build_run_manifest", RUNNER["build_run_manifest"]
+    )
+
+    def failing_verification(*_: object, **__: object) -> dict[str, object]:
+        raise ValueError("synthetic verification failure")
+
+    monkeypatch.setitem(RUNNER["main"].__globals__, "verify_run_manifest", failing_verification)
+    assert RUNNER["main"](failed_argv) == 2
+    assert not failed_out.exists()
+    assert not failed_out.with_name("failed.json.manifest.json").exists()
     assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
     assert report["metrics"]["baseline_descriptive"]["label"] == "SUPPORTED"
     assert report["baseline_provenance"]["primary"] == "B"
@@ -2635,3 +2652,18 @@ def test_report_missing_a_bound_field_is_rejected(tmp_path: Path) -> None:
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     with pytest.raises(ValueError, match="report lacks a field"):
         RUNNER["verify_run_manifest"](manifest_path, report_path)
+
+
+def test_publish_refuses_a_stale_manifest_without_its_report(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _, _, _, report = _synthetic_run(tmp_path)
+    out = tmp_path / "new.json"
+    stale = tmp_path / "new.json.manifest.json"
+    stale.write_text("{}", encoding="utf-8")
+    assert RUNNER["_publish_run"](report, out, stale) == 2
+    assert "already exists" in capsys.readouterr().err
+    assert not out.exists() and stale.read_text(encoding="utf-8") == "{}"
+    stale.unlink()
+    assert RUNNER["_publish_run"](report, out, stale) == 0
+    assert RUNNER["verify_run_manifest"](stale, out)["report"]["file"] == "new.json"

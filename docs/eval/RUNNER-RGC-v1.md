@@ -65,7 +65,7 @@ Exceto `finished_at` e o próprio hash do relatório, todos esses campos também
 - com `input_files`, o hash de cada arquivo de entrada informado é recalculado;
 - com `root`, o executor e os quatro módulos estatísticos do checkout são recalculados e comparados com os hashes congelados registrados no relatório.
 
-**Gravação.** Relatório e manifesto são gravados por arquivo temporário e substituição atômica. Um manifesto anterior com o mesmo nome é removido antes da gravação, e o manifesto recém-gravado é verificado em seguida. Se qualquer passo falhar, o manifesto é removido e a execução termina com código 2 ("RGC run incomplete"). Relatório sem manifesto verificável não é execução concluída.
+**Gravação.** O executor nunca sobrescreve: se o relatório ou o manifesto já existir, a execução é recusada (código 2) e nada muda. Relatório e manifesto são gravados por arquivo temporário e substituição atômica, e o manifesto é verificado logo depois. Se qualquer passo falhar, os arquivos gravados por essa execução (relatório e manifesto) são removidos e a execução termina com código 2 ("RGC run incomplete"). Uma queda do processo entre as duas substituições ainda pode deixar relatório sem manifesto; `verify_run_manifest` o recusa. Relatório sem manifesto verificável não é execução concluída.
 
 Na partição oculta, a execução é recusada (código 2) se o commit não puder ser resolvido ou se a árvore de trabalho tiver alterações, porque a execução confirmatória única precisa ser reproduzível a partir de um commit registrado.
 

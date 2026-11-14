@@ -1411,6 +1411,45 @@ def _atomic_write_text(path: Path, text: str) -> None:
         raise
 
 
+def _publish_run(report: Mapping[str, Any], out: Path, manifest_path: Path) -> int:
+    """Write a report and its run manifest as one unit; return 0 or exit code 2.
+
+    Never overwrites: an existing report or manifest is refused, so an earlier file can
+    never be paired with this run. Both files are written to temporaries and checked
+    before either becomes visible. If anything fails after the report is in place, the
+    report and the manifest written by this call are removed, so a failed run leaves no
+    report that looks complete. A crash between the two final renames can still leave a
+    report without a manifest; verify_run_manifest then refuses it.
+    """
+    if out.exists() or manifest_path.exists():
+        print(
+            f"RGC run refused: {out} or {manifest_path} already exists; choose a new --out",
+            file=sys.stderr,
+        )
+        return 2
+    out.parent.mkdir(parents=True, exist_ok=True)
+    report_text = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+    published: list[Path] = []
+    try:
+        _atomic_write_text(out, report_text)
+        published.append(out)
+        manifest = build_run_manifest(
+            report, out, finished_at=datetime.now(UTC).isoformat(timespec="seconds")
+        )
+        _atomic_write_text(
+            manifest_path,
+            json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        )
+        published.append(manifest_path)
+        verify_run_manifest(manifest_path, out)
+    except (OSError, ValueError) as exc:
+        for path in published:
+            path.unlink(missing_ok=True)
+        print(f"RGC run incomplete: no report or manifest was kept ({exc})", file=sys.stderr)
+        return 2
+    return 0
+
+
 def load_labels(path: Path, vocabulary: str) -> dict[str, str]:
     """Load strict JSONL gold labels without coercing malformed input."""
     allowed = set(VOCABULARIES[vocabulary]) | EXCLUSION_LABELS
@@ -1783,24 +1822,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         },
         **result,
     }
-    args.out.parent.mkdir(parents=True, exist_ok=True)
     manifest_path = args.out.with_name(args.out.name + ".manifest.json")
-    # A report without a verifiable manifest is not a completed run. Remove any earlier
-    # manifest first, so it can never be paired with this run's report.
-    manifest_path.unlink(missing_ok=True)
-    try:
-        _atomic_write_text(args.out, json.dumps(report, ensure_ascii=False, indent=2) + "\n")
-        manifest = build_run_manifest(
-            report, args.out, finished_at=datetime.now(UTC).isoformat(timespec="seconds")
-        )
-        _atomic_write_text(
-            manifest_path, json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-        )
-        verify_run_manifest(manifest_path, args.out)
-    except (OSError, ValueError) as exc:
-        manifest_path.unlink(missing_ok=True)
-        print(f"RGC run incomplete: no valid run manifest was written ({exc})", file=sys.stderr)
-        return 2
+    status = _publish_run(report, args.out, manifest_path)
+    if status != 0:
+        return status
     print(f"run manifest {manifest_path} sha256={_sha256(manifest_path)}")
     m = result["metrics"]
     print(
