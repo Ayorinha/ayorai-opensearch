@@ -83,6 +83,12 @@ def test_bundle_and_component_serializers_round_trip_for_generated_ids(
     assert component_id(reversed(article_ids)) == component
 
 
+@pytest.mark.parametrize("builder", [bundle_id, component_id])
+def test_id_builders_reject_scalar_string_instead_of_iterating_characters(builder: Any) -> None:
+    with pytest.raises(ValueError, match="iterable of article IDs"):
+        builder("abc")
+
+
 def test_bundle_round_trip_and_canonical_order() -> None:
     assert bundle_id(["syn:b", "syn:a", "syn:b"]) == "bundle:syn:a+syn:b"
     assert parse_bundle_id("bundle:syn:a+syn:b") == ("syn:a", "syn:b")
