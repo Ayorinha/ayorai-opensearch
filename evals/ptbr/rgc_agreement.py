@@ -12,7 +12,7 @@ from typing import Any
 
 if __package__ in (None, ""):  # run as a script: make the repository importable
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from evals.ptbr.rgc_random import LABEL_CASE_KAPPA, RgcPrng, percentile_ci95  # noqa: E402
+from evals.ptbr.rgc_random import LABEL_CASE_KAPPA, RGC_SEED, RgcPrng, percentile_ci95  # noqa: E402
 
 VOCABULARY = (
     "SUPPORTED",
@@ -24,7 +24,7 @@ VOCABULARY = (
 RULE_GAP = "RULE_GAP"
 ALLOWED_LABELS = frozenset((*VOCABULARY, RULE_GAP))
 DEFAULT_ITERATIONS = 10_000
-DEFAULT_SEED = 20261003
+DEFAULT_SEED = RGC_SEED
 GATE_THRESHOLD = 0.6
 
 
