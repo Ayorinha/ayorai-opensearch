@@ -441,14 +441,17 @@ def bootstrap_cohen_kappa_by_component(
         for case_id in case_ids:
             matrix[annotations_a[case_id]][annotations_b[case_id]] += 1
         n = len(case_ids)
-        observed = sum(matrix[label][label] for label in vocabulary) / n
+        observed_agreements = sum(matrix[label][label] for label in vocabulary)
         rows = {label: sum(matrix[label].values()) for label in vocabulary}
         columns = {label: sum(matrix[row][label] for row in vocabulary) for label in vocabulary}
-        expected = sum(rows[label] * columns[label] for label in vocabulary) / (n * n)
-        denominator = 1.0 - expected
-        if abs(denominator) <= 1e-12:
+        expected_numerator = sum(rows[label] * columns[label] for label in vocabulary)
+
+        # Keep the degeneracy check and algebra exact until the final division.
+        denominator = n * n - expected_numerator
+        if denominator == 0:
             return None
-        return (observed - expected) / denominator
+        numerator = observed_agreements * n - expected_numerator
+        return numerator / denominator
 
     all_case_ids = [case_id for component in component_ids for case_id in groups[component]]
     point = kappa_for(all_case_ids)
