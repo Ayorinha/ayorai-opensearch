@@ -61,6 +61,12 @@ from evals.ptbr.rgc_random import (  # noqa: E402
     RgcPrng,
     percentile_ci95,
 )
+from evals.ptbr.rgc_agreement import (  # noqa: E402
+    DEFAULT_ITERATIONS as AGREEMENT_DEFAULT_ITERATIONS,
+    DEFAULT_SEED as AGREEMENT_DEFAULT_SEED,
+    compute_agreement,
+    load_annotations,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
@@ -989,6 +995,25 @@ def validate_annotation_approval(
         raise ValueError(
             "RGC evaluation blocked: an approved annotation artifact is missing"
         ) from exc
+
+    if set(inputs) != {"annotation_a_sha256", "annotation_b_sha256"}:
+        raise ValueError("RGC evaluation blocked: agreement report input schema is invalid")
+    try:
+        canonical_agreement = compute_agreement(
+            load_annotations(annotation_a_path),
+            load_annotations(annotation_b_path),
+            iterations=AGREEMENT_DEFAULT_ITERATIONS,
+            seed=AGREEMENT_DEFAULT_SEED,
+        )
+    except (OSError, ValueError) as exc:
+        raise ValueError(
+            "RGC evaluation blocked: canonical annotator agreement could not be recomputed"
+        ) from exc
+    report_without_inputs = {key: value for key, value in report.items() if key != "inputs"}
+    if report_without_inputs != canonical_agreement:
+        raise ValueError(
+            "RGC evaluation blocked: agreement report differs from canonical recomputation"
+        )
 
     return {
         "manifest_sha256": _sha256(approval_manifest_path),
