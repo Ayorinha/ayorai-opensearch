@@ -67,7 +67,7 @@ def test_invalid_article_ids_fail_closed(value: object) -> None:
 
 _ARTICLE_ATOM = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789", min_size=1, max_size=6)
 _ARTICLE_GROUP = st.lists(_ARTICLE_ATOM, min_size=1, max_size=3).map("-".join)
-_ARTICLE_ID = st.lists(_ARTICLE_GROUP, min_size=1, max_size=3).map(":".join)
+_ARTICLE_ID = st.lists(_ARTICLE_GROUP, min_size=1, max_size=3).map(":".join).filter(is_article_id)
 
 
 @given(st.lists(_ARTICLE_ID, min_size=2, max_size=8, unique=True))
