@@ -54,6 +54,13 @@ from ayorai_attractor.verification.stance import RuleStanceDetector
 if __package__ in (None, ""):  # run as a script: make the repository importable
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from evals.ptbr import rgc_agreement  # noqa: E402
+from evals.ptbr.rgc_components import (  # noqa: E402
+    bootstrap_metrics_by_component,
+    build_article_components,
+    component_differences,
+    obuchowski_clustered_test,
+    sign_flip_by_component,
+)
 from evals.ptbr.rgc_ids import cluster_members, require_article_id  # noqa: E402
 from evals.ptbr.rgc_random import (  # noqa: E402
     LABEL_CASE_ACCURACY,
@@ -66,7 +73,7 @@ from evals.ptbr.rgc_random import (  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.8.0"
+RUNNER_VERSION = "rgc-eval/0.9.0"
 SEED = RGC_SEED
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
@@ -607,8 +614,17 @@ def compute_metrics(
     baseline_label: str,
     iterations: int,
     cluster_ids: Sequence[str] | None = None,
+    component_ids: Sequence[str] | None = None,
 ) -> dict[str, Any]:
-    """Score H1 against baseline B; report baseline A as descriptive only."""
+    """Score H1 against baseline B; report baseline A as descriptive only.
+
+    Hidden partition (DEC-027 D4-D5; Emenda 11): the primary interval resamples DEC-023
+    connected components and the primary test is the DEC-021 sign-flip by component.
+    The DEC-019 cluster interval, the case interval, exact McNemar and Obuchowski's
+    clustered test are sensitivity analyses only and never decide H1.
+    """
+    if (cluster_ids is None) != (component_ids is None):
+        raise ValueError("cluster and component IDs are required together")
     if baseline_label not in VOCABULARIES[vocabulary]:
         raise ValueError(f"baseline B label {baseline_label!r} is outside vocabulary {vocabulary}")
 
@@ -624,29 +640,53 @@ def compute_metrics(
     base_b = {name: fn(gold, baseline_b) for name, fn in METRICS.items()}
     base_a = {name: fn(gold, baseline_a) for name, fn in METRICS.items()}
     ci_case = bootstrap_ci(gold, pred, iterations=iterations)
-    ci = (
-        bootstrap_ci_by_cluster(gold, pred, cluster_ids, iterations=iterations)
-        if cluster_ids is not None
-        else ci_case
-    )
+    ci_cluster: dict[str, list[float]] | None = None
+    ci = ci_case
+    if cluster_ids is not None and component_ids is not None:
+        ci_cluster = bootstrap_ci_by_cluster(gold, pred, cluster_ids, iterations=iterations)
+        keys = [f"{index:06d}" for index in range(len(gold))]
+        component_ci = bootstrap_metrics_by_component(
+            dict(zip(keys, gold, strict=True)),
+            dict(zip(keys, pred, strict=True)),
+            dict(zip(keys, component_ids, strict=True)),
+            METRICS,
+            iterations=iterations,
+        )
+        ci = {name: list(pair) for name, pair in component_ci.ci95.items()}
     margin = system["accuracy"] - base_b["accuracy"]
     discordant_system = sum(
         p == g and b != g for g, p, b in zip(gold, pred, baseline_b, strict=True)
     )
     discordant_base = sum(p != g and b == g for g, p, b in zip(gold, pred, baseline_b, strict=True))
     p_value = mcnemar_exact_pvalue(gold, pred, baseline_b)
-    primary = {
+    sign_flip = (
+        sign_flip_by_component(component_differences(gold, pred, baseline_b, component_ids))
+        if component_ids is not None
+        else None
+    )
+    obuchowski = (
+        obuchowski_clustered_test(gold, pred, baseline_b, component_ids)
+        if component_ids is not None
+        else None
+    )
+    primary: dict[str, Any] = {
         "baseline": "B",
-        "ci_method": "article_cluster_bootstrap" if cluster_ids is not None else "case_bootstrap",
+        "ci_method": "component_bootstrap" if component_ids is not None else "case_bootstrap",
+        "test": "sign_flip_by_component" if sign_flip is not None else "mcnemar_exact",
         "accuracy_margin_pp": round(100 * margin, 4),
         # Tolerance only absorbs binary floating-point error (e.g. 0.7 - 0.6).
         "margin_at_least_10pp": margin >= 0.10 - 1e-12,
         "ci_lower_above_baseline": ci["accuracy"][0] > base_b["accuracy"],
-        "mcnemar_p_below_0_05": p_value < 0.05,
     }
+    if sign_flip is not None:
+        primary["sign_flip_p_below_0_05"] = sign_flip.p_value_two_sided < 0.05
+        primary["significance_below_005_possible"] = sign_flip.significance_below_005_possible
+        test_key = "sign_flip_p_below_0_05"
+    else:
+        primary["mcnemar_p_below_0_05"] = p_value < 0.05
+        test_key = "mcnemar_p_below_0_05"
     primary["h1_supported"] = all(
-        primary[k]
-        for k in ("margin_at_least_10pp", "ci_lower_above_baseline", "mcnemar_p_below_0_05")
+        primary[k] for k in ("margin_at_least_10pp", "ci_lower_above_baseline", test_key)
     )
     return {
         "n": len(gold),
@@ -657,17 +697,21 @@ def compute_metrics(
         "system_ci95": {name: [round(v, 6) for v in pair] for name, pair in ci.items()},
         **(
             {
+                "system_ci95_article_cluster": {
+                    name: [round(v, 6) for v in pair] for name, pair in ci_cluster.items()
+                },
                 "system_ci95_case_bootstrap": {
                     name: [round(v, 6) for v in pair] for name, pair in ci_case.items()
-                }
+                },
             }
-            if cluster_ids is not None
+            if ci_cluster is not None
             else {}
         ),
         "bootstrap_provenance": {
-            "primary_unit": "article_cluster" if cluster_ids is not None else "case",
-            "sensitivity_unit": "case" if cluster_ids is not None else None,
+            "primary_unit": "component" if component_ids is not None else "case",
+            "sensitivity_units": ["article_cluster", "case"] if component_ids is not None else [],
             "cluster_count": len(set(cluster_ids)) if cluster_ids is not None else None,
+            "component_count": len(set(component_ids)) if component_ids is not None else None,
             "iterations": iterations,
             "seed": SEED,
             "generator": "RGC-PRNG-1",
@@ -683,7 +727,29 @@ def compute_metrics(
             "label": baseline_a_label,
             **{name: round(value, 6) for name, value in base_a.items()},
         },
+        **(
+            {
+                "sign_flip": {
+                    "baseline": "B",
+                    "statistic_observed": sign_flip.statistic_observed,
+                    "p_value_two_sided": round(sign_flip.p_value_two_sided, 8),
+                    "method": sign_flip.method,
+                    "component_count": sign_flip.component_count,
+                    "extreme_permutations": sign_flip.extreme_permutations,
+                    "permutations_considered": sign_flip.permutations_considered,
+                    "theoretical_exact_resolution": sign_flip.theoretical_exact_resolution,
+                    "monte_carlo_minimum_p": sign_flip.monte_carlo_minimum_p,
+                    "significance_below_005_possible": sign_flip.significance_below_005_possible,
+                    "seed": sign_flip.seed,
+                    "generator": sign_flip.generator,
+                },
+                "obuchowski_sensitivity": obuchowski._asdict() if obuchowski else None,
+            }
+            if sign_flip is not None
+            else {}
+        ),
         "mcnemar": {
+            "role": "sensitivity" if sign_flip is not None else "primary",
             "baseline": "B",
             "system_right_baseline_wrong": discordant_system,
             "system_wrong_baseline_right": discordant_base,
@@ -1205,6 +1271,26 @@ def evaluate(
     cluster_ids = (
         [str(row["bootstrap_cluster_id"]) for row in rows] if partition == "hidden" else None
     )
+    component_ids: list[str] | None = None
+    if partition == "hidden":
+        # DEC-023 components over the evaluated cases, from their full citations.
+        case_by_id = {str(case["case_id"]): case for case in cases}
+        summary = build_article_components(
+            [
+                {
+                    "case_id": str(row["case_id"]),
+                    "cited_article_ids": case_by_id[str(row["case_id"])]["cited_article_ids"],
+                    "bootstrap_cluster_id": row["bootstrap_cluster_id"],
+                }
+                for row in rows
+            ]
+        )
+        component_of = {
+            case_id: component.component_id
+            for component in summary.components
+            for case_id in component.case_ids
+        }
+        component_ids = [component_of[str(row["case_id"])] for row in rows]
     metrics = compute_metrics(
         gold_labels,
         predicted,
@@ -1212,6 +1298,7 @@ def evaluate(
         baseline_label=baseline_label,
         iterations=iterations,
         cluster_ids=cluster_ids,
+        component_ids=component_ids,
     )
     if partition == "development":
         metrics["primary_criterion"] = {

@@ -8,7 +8,7 @@
 
 **Leitura consolidada (2026-10-21)**
 
-Emendas vigentes para leitura conjunta: [Emenda 6 — baseline primária e descritiva](#emenda-6-2026-10-21--baseline-primária-e-descritiva-dec-014-aprovada-pelo-mantenedor), [Emenda 7 — registros ausentes e predições inválidas](#emenda-7-2026-10-21--registros-ausentes-e-predições-inválidas-dec-017-opção-a-aprovada), [Emenda 8 — escopo confirmatório de H1](#emenda-8-2026-10-21--escopo-confirmatório-de-h1-dec-018-opção-a-aprovada), [Emenda 9 — bootstrap por cluster de artigo](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a-aprovada) e [Emenda 10 — concordância entre anotadores](#emenda-10-2026-10-21--concordância-entre-anotadores-dec-020-opção-a-aprovada). O estado do documento e do protocolo continua **[PROPOSTO]**; não estão congelados, e esta consolidação não autoriza execução RGC.
+Emendas vigentes para leitura conjunta: [Emenda 6 — baseline primária e descritiva](#emenda-6-2026-10-21--baseline-primária-e-descritiva-dec-014-aprovada-pelo-mantenedor), [Emenda 7 — registros ausentes e predições inválidas](#emenda-7-2026-10-21--registros-ausentes-e-predições-inválidas-dec-017-opção-a-aprovada), [Emenda 8 — escopo confirmatório de H1](#emenda-8-2026-10-21--escopo-confirmatório-de-h1-dec-018-opção-a-aprovada), [Emenda 9 — bootstrap por cluster de artigo](#emenda-9-2026-10-21--bootstrap-por-cluster-de-artigo-dec-019-opção-a-aprovada) [Emenda 10 — concordância entre anotadores](#emenda-10-2026-10-21--concordância-entre-anotadores-dec-020-opção-a-aprovada) e [Emenda 11 — teste de H1 e IC por componente](#emenda-11-2026-11-14--teste-de-h1-e-ic-por-componente-dec-027-d4-e-d5). O estado do documento e do protocolo continua **[PROPOSTO]**; não estão congelados, e esta consolidação não autoriza execução RGC.
 
 **Registro histórico — nota de leitura vigente (2026-10-21):** os §§ 1, 4 (itens 6–7) e 5 deveriam ser lidos em conjunto com a Emenda 6. Esta nota foi superada pelo quadro “Leitura consolidada” acima.
 
@@ -238,3 +238,17 @@ Pela decisão do mantenedor registrada na DEC-020, opção A, aprovada em 2026-1
 4. `RULE_GAP` não é categoria do cálculo: excluir o par se qualquer anotador marcar `RULE_GAP` e reportar a contagem excluída e quantas dessas exclusões eram discordantes. Não excluir silenciosamente outros casos.
 5. Os arquivos das duas anotações devem ter exatamente os mesmos IDs e um rótulo válido por ID. ID ausente, ID extra, duplicado ou rótulo desconhecido interrompe o cálculo.
 6. A emenda não cria nem rotula casos, não calcula concordância real, não substitui a segunda anotação independente, não congela o protocolo e não autoriza execução do ATTRACTOR sobre casos RGC.
+
+
+## Emenda 11 (2026-11-14) — teste de H1 e IC por componente (DEC-027, D4 e D5)
+
+Pela decisão do mantenedor registrada na DEC-027 (aprovada em 2026-11-14), que aplica DEC-021 e DEC-023:
+
+1. **Teste primário de H1.** A terceira condição do §5 ("teste exato de McNemar bilateral contra a baseline com p < 0,05") passa a ser o teste sign-flip bilateral por componente da DEC-021, com p < 0,05.
+   - A estatística é T = Σ_k d_k, com d_k = a_k − b_k: a_k são os casos do componente k (DEC-023) em que o sistema acerta e a baseline B erra, b_k o inverso.
+   - Para K ≤ 20, enumeração completa. Para K > 20, 10.000 vetores de sinais do RGC-PRNG-1 (fluxo `dec021-sign-flip`), em ordem lexical dos IDs de componente, com p = (1 + extremos)/(1 + 10.000).
+2. **IC95% primário.** O limite inferior exigido pelo §5 vem do bootstrap percentil por componente conectado da DEC-023 (fluxo `dec023-accuracy-bootstrap`, quantil tipo 7, 10.000 reamostragens, seed `20261003`). O bootstrap por cluster de artigo da Emenda 9 (DEC-019) e o bootstrap por caso passam a ser análises de sensibilidade.
+3. **Sensibilidade do teste.** O McNemar exato bilateral e o teste de Obuchowski (1998) por componente são sempre reportados, apenas como sensibilidade. Nunca substituem o teste primário nem são escolhidos pelo resultado.
+4. **Resolução.** Com K < 6 componentes, o p mínimo exato é 2/2^K > 0,05, então H1 não pode receber suporte. O relatório informa `significance_below_005_possible`. O gate prévio da DEC-027, D7 (K ≥ 6 pelo inventário de citações, antes da anotação de veredito), continua obrigatório.
+5. **Preservação.** A condição de margem (≥ 10 p.p. sobre a baseline B) não muda. A redação original do §5 continua acima, como registro histórico.
+6. **Limites.** Esta emenda não congela o protocolo, não cria nem rotula casos, não executa o ATTRACTOR sobre casos RGC e não produz métricas. O executor que a implementa é `rgc-eval/0.9.0`.

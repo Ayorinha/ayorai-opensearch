@@ -514,7 +514,7 @@ def test_hidden_partition_rejects_malformed_cited_article_ids(
         )
 
 
-def test_hidden_partition_reports_cluster_primary_and_case_sensitivity_ci() -> None:
+def test_hidden_partition_reports_component_primary_and_sensitivity_ci() -> None:
     first = _case("cluster-case-1", "A Operadora Fictícia deverá responder.", "Art. 1º")
     second = _case("cluster-case-2", "O cliente fictício pode cancelar.", "Art. 2º")
     first["bootstrap_cluster_id"] = "art:regra-1"
@@ -533,9 +533,20 @@ def test_hidden_partition_reports_cluster_primary_and_case_sensitivity_ci() -> N
         partition="hidden",
     )
     metrics = result["metrics"]
-    assert metrics["bootstrap_provenance"]["primary_unit"] == "article_cluster"
+    assert metrics["bootstrap_provenance"]["primary_unit"] == "component"
+    assert metrics["bootstrap_provenance"]["sensitivity_units"] == ["article_cluster", "case"]
     assert metrics["bootstrap_provenance"]["cluster_count"] == 1
+    assert metrics["bootstrap_provenance"]["component_count"] == 1
+    assert "system_ci95_article_cluster" in metrics
     assert "system_ci95_case_bootstrap" in metrics
+    primary = metrics["primary_criterion"]
+    assert primary["test"] == "sign_flip_by_component"
+    assert primary["ci_method"] == "component_bootstrap"
+    assert "mcnemar_p_below_0_05" not in primary
+    assert primary["significance_below_005_possible"] is False  # K = 1
+    assert primary["h1_supported"] is False
+    assert metrics["sign_flip"]["component_count"] == 1
+    assert metrics["mcnemar"]["role"] == "sensitivity"
 
 
 def test_metrics_match_hand_computation() -> None:
@@ -1029,7 +1040,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     )
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
-    assert report["runner_version"] == "rgc-eval/0.8.0"
+    assert report["runner_version"] == "rgc-eval/0.9.0"
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
     assert report["protocol_freeze"]["runner_code_sha256"] == "e" * 64
@@ -2104,3 +2115,105 @@ def test_runner_uses_the_shared_article_id_validator() -> None:
 
     assert RUNNER["require_article_id"].__code__ is rgc_ids.require_article_id.__code__
     assert RUNNER["cluster_members"].__code__ is rgc_ids.cluster_members.__code__
+
+
+# --------------------------------------------------------------------------- DEC-027 D4-D5
+
+
+def test_hidden_h1_uses_the_component_sign_flip() -> None:
+    # Seven single-case components, the system right and baseline B wrong in each:
+    # T = 7, exact p = 2 / 2^7 < 0.05, margin 100 pp, component CI lower bound 1.0.
+    gold = ["REFUTED"] * 7
+    clusters = [f"syn:a{i}" for i in range(7)]
+    components = [f"component:syn:a{i}" for i in range(7)]
+    metrics = RUNNER["compute_metrics"](
+        gold,
+        list(gold),
+        "judge2",
+        baseline_label="SUPPORTED",
+        iterations=50,
+        cluster_ids=clusters,
+        component_ids=components,
+    )
+    primary = metrics["primary_criterion"]
+    assert metrics["sign_flip"]["statistic_observed"] == 7
+    assert metrics["sign_flip"]["p_value_two_sided"] == pytest.approx(2 / 2**7)
+    assert primary["sign_flip_p_below_0_05"] is True
+    assert primary["significance_below_005_possible"] is True
+    assert primary["h1_supported"] is True
+    assert metrics["system_ci95"]["accuracy"] == [1.0, 1.0]
+    # Five components cannot reach p < 0.05 even when every one favours the system.
+    small = RUNNER["compute_metrics"](
+        gold[:5],
+        list(gold[:5]),
+        "judge2",
+        baseline_label="SUPPORTED",
+        iterations=50,
+        cluster_ids=clusters[:5],
+        component_ids=components[:5],
+    )
+    assert small["primary_criterion"]["significance_below_005_possible"] is False
+    assert small["primary_criterion"]["h1_supported"] is False
+
+
+def test_primary_interval_is_the_component_bootstrap() -> None:
+    from evals.ptbr.rgc_components import bootstrap_metrics_by_component
+
+    gold = ["SUPPORTED", "REFUTED", "SUPPORTED", "REFUTED", "SUPPORTED", "REFUTED"]
+    pred = ["SUPPORTED", "SUPPORTED", "SUPPORTED", "REFUTED", "REFUTED", "REFUTED"]
+    clusters = ["syn:a", "syn:a", "syn:b", "syn:b", "syn:c", "syn:c"]
+    components = [f"component:{c}" for c in clusters]
+    metrics = RUNNER["compute_metrics"](
+        gold,
+        pred,
+        "judge2",
+        baseline_label="SUPPORTED",
+        iterations=200,
+        cluster_ids=clusters,
+        component_ids=components,
+    )
+    keys = [f"{i:06d}" for i in range(6)]
+    expected = bootstrap_metrics_by_component(
+        dict(zip(keys, gold, strict=True)),
+        dict(zip(keys, pred, strict=True)),
+        dict(zip(keys, components, strict=True)),
+        RUNNER["METRICS"],
+        iterations=200,
+    )
+    for name, (low, high) in expected.ci95.items():
+        assert metrics["system_ci95"][name] == [round(low, 6), round(high, 6)]
+    assert metrics["system_ci95_article_cluster"] != {}  # sensitivity reported separately
+
+
+def test_cluster_and_component_ids_are_required_together() -> None:
+    with pytest.raises(ValueError, match="together"):
+        RUNNER["compute_metrics"](
+            ["SUPPORTED"],
+            ["SUPPORTED"],
+            "judge2",
+            baseline_label="SUPPORTED",
+            iterations=10,
+            cluster_ids=["syn:a"],
+        )
+
+
+def test_hidden_components_join_cases_that_share_a_citation() -> None:
+    first = _case("join-1", "A Operadora Fictícia deverá responder.", "Art. 1º")
+    second = _case("join-2", "O cliente fictício pode cancelar.", "Art. 2º")
+    first["cited_article_ids"] = ["syn:a", "syn:shared"]
+    first["bootstrap_cluster_id"] = "syn:a"
+    second["cited_article_ids"] = ["syn:b", "syn:shared"]
+    second["bootstrap_cluster_id"] = "syn:b"
+    result = RUNNER["evaluate"](
+        [first, second],
+        {"join-1": "SUPPORTED", "join-2": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=20,
+        partition="hidden",
+    )
+    provenance = result["metrics"]["bootstrap_provenance"]
+    assert (provenance["cluster_count"], provenance["component_count"]) == (2, 1)

@@ -88,7 +88,7 @@ A aprovação é uma declaração auditável, não prova criptográfica da ident
 
 ## 3. Parâmetros propostos para congelamento
 
-> **Aviso de migração — 2026-11-14:** a tabela abaixo descreve o comportamento legado ainda presente no executor durante a etapa E2; ela não representa a configuração confirmatória final exigida pela DEC-027. A E2 padroniza apenas o gerador e o quantil. A DEC-027, D4–D5, já determina sign-flip bilateral por componente e IC95% primário por componente conectado, com bootstrap por cluster de artigo como sensibilidade. Essas mudanças dependem da E3: emenda datada do pré-registro e ligação dos métodos ao executor. Até a conclusão e aprovação dessa emenda, o protocolo permanece [PROPOSTO] e nenhuma saída desta implementação pode ser tratada como resultado confirmatório H1.
+> **Atualização — 2026-11-14 (Emenda 11, `rgc-eval/0.9.0`):** a tabela reflete a DEC-027. O IC95% primário e o teste de H1 são por componente conectado (DEC-023); o cluster de artigo da DEC-019 e o caso passam a ser sensibilidade. O protocolo continua [PROPOSTO], e nenhuma saída do executor é resultado confirmatório enquanto o protocolo não for congelado e a execução única não for autorizada.
 
 | Parâmetro | Valor proposto | Observação |
 |---|---|---|
@@ -99,11 +99,11 @@ A aprovação é uma declaração auditável, não prova criptográfica da ident
 | Vocabulário | `judge2` (5 estados) | DEC-007 aprovada (5 estados); `adr002` (6 estados) permanece apenas como vocabulário histórico alternativo, não usado no RGC |
 | Macro-F1 | média sobre a união dos estados de referência e previstos, **incluindo** `INVALID_PREDICTION` (F1 = 0, escolha conservadora) | |
 | Acurácia balanceada | média das revocações dos estados presentes na referência | |
-| IC95% primário | bootstrap percentil por cluster de artigo, 10.000 reamostragens, seed `20261003`; casos multiartigo usam `bootstrap_cluster_id` canônico conforme DEC-019/Emenda 9 | DEC-019; `docs/eval/STATISTICS.md` |
-| IC95% de sensibilidade | bootstrap percentil por caso, 10.000 reamostragens, seed `20261003` | Reportar separadamente do intervalo primário por cluster |
+| IC95% primário | bootstrap percentil por componente conectado (DEC-023), 10.000 reamostragens, seed `20261003`, RGC-PRNG-1 `dec023-accuracy-bootstrap`, quantil tipo 7 | DEC-027 D5; Emenda 11 |
+| IC95% de sensibilidade | bootstrap por cluster de artigo (DEC-019, `dec019-accuracy-bootstrap`) e por caso (`case-accuracy-bootstrap`) | Reportados separadamente; nunca substituem o primário |
 | Baseline B primária | classe majoritária dos rótulos humanos da partição pública de desenvolvimento (70%); aplicada sem alteração à avaliação; empate resolvido pela ordem fixa de `VOCABULARIES["judge2"]` | DEC-014/Emenda 6; `majority_label` em `evals/ptbr/rgc_eval.py`; registrar rótulos, contagens e SHA-256 no relatório |
 | Baseline A descritiva | classe majoritária da própria partição avaliada; empate desfeito pela ordem do vocabulário | somente prevalência observada; excluída de H1 |
-| Comparação | McNemar exato bilateral (`ayorai_attractor.evaluation.stats`) | |
+| Comparação | sign-flip bilateral por componente (DEC-021): enumeração completa para K ≤ 20; para K > 20, 10.000 sorteios RGC-PRNG-1 `dec021-sign-flip` | DEC-027 D4; Emenda 11. McNemar exato e Obuchowski por componente só como sensibilidade |
 | Precisão das decisões | as três condições de H1 usam valores **não arredondados**; o arredondamento (6 casas) vale só para o relatório | |
 
 Depois de congelados, qualquer mudança nesses valores exige emenda datada antes de nova execução, conforme o pré-registro §5.

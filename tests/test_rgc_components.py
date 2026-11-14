@@ -396,3 +396,68 @@ def test_component_kappa_bootstrap_rejects_mismatched_case_ids() -> None:
             {"b": "SUPPORTED"},
             {"a": "component:a"},
         )
+
+
+# --------------------------------------------------------------------------- D4 helpers
+
+
+def test_component_differences_sum_system_minus_baseline_hits() -> None:
+    gold = ["SUPPORTED", "REFUTED", "SUPPORTED", "REFUTED"]
+    pred = ["SUPPORTED", "REFUTED", "REFUTED", "REFUTED"]
+    base = ["SUPPORTED"] * 4
+    units = ["component:syn:a", "component:syn:a", "component:syn:b", "component:syn:b"]
+    differences = MODULE["component_differences"](gold, pred, base, units)
+    assert differences == {"component:syn:a": 1, "component:syn:b": 0}
+    with pytest.raises(ValueError):
+        MODULE["component_differences"](gold, pred, base, ["syn:a"] * 4)
+
+
+def test_obuchowski_reproduces_the_published_clustered_example() -> None:
+    # PET/SPECT clustered matched-pair example (21 clusters, 51 units): X^2 about 2.857
+    # (2.88 with the proportions rounded to three decimals), p about 0.091.
+    n = [3, 3, 3, 1, 3, 4, 3, 2, 2, 1, 3, 2, 3, 2, 2, 3, 3, 3, 2, 1, 2]
+    pet = [0, 2, 3, 1, 2, 4, 3, 2, 2, 1, 2, 2, 3, 2, 0, 2, 2, 2, 2, 1, 2]
+    spect = [2, 3, 3, 1, 3, 4, 3, 2, 1, 1, 2, 2, 3, 2, 2, 2, 2, 3, 2, 1, 2]
+    gold: list[str] = []
+    first: list[str] = []
+    second: list[str] = []
+    units: list[str] = []
+    for k, (size, x, y) in enumerate(zip(n, pet, spect, strict=True)):
+        for unit in range(size):
+            gold.append("SUPPORTED")
+            first.append("SUPPORTED" if unit < x else "REFUTED")
+            second.append("SUPPORTED" if unit < y else "REFUTED")
+            units.append(f"component:syn:k{k:02d}")
+    result = MODULE["obuchowski_clustered_test"](gold, first, second, units)
+    assert (result.units, result.cases) == (21, 51)
+    assert result.variance == pytest.approx(0.00484429, abs=1e-7)
+    assert result.chi_square == pytest.approx(2.85714, abs=1e-4)
+    assert result.p_value == pytest.approx(0.0909, abs=1e-3)
+    assert (0.784 - 0.902) ** 2 / result.variance == pytest.approx(2.88, abs=0.01)
+
+
+def test_obuchowski_is_undefined_with_one_unit_or_zero_variance() -> None:
+    test = MODULE["obuchowski_clustered_test"]
+    one = test(["SUPPORTED"], ["SUPPORTED"], ["REFUTED"], ["component:syn:a"])
+    assert one.chi_square is None and one.p_value is None and one.variance is None
+    tie = test(["SUPPORTED"] * 2, ["SUPPORTED"] * 2, ["SUPPORTED"] * 2, ["c1", "c2"])
+    assert tie.variance == 0 and tie.chi_square is None
+
+
+def test_component_bootstrap_iterations_are_explicit() -> None:
+    result = MODULE["bootstrap_metrics_by_component"](
+        {"a": "SUPPORTED"},
+        {"a": "SUPPORTED"},
+        {"a": "component:syn:a"},
+        {"accuracy": lambda g, p: float(g == p)},
+        iterations=7,
+    )
+    assert result.iterations == 7
+    with pytest.raises(ValueError, match="iterations"):
+        MODULE["bootstrap_metrics_by_component"](
+            {"a": "SUPPORTED"},
+            {"a": "SUPPORTED"},
+            {"a": "component:syn:a"},
+            {"accuracy": lambda g, p: float(g == p)},
+            iterations=0,
+        )
