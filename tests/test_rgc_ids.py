@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from hypothesis import given, settings, strategies as st
 
 from evals.ptbr.rgc_ids import (
     bundle_id,
@@ -59,6 +60,26 @@ def test_invalid_article_ids_fail_closed(value: object) -> None:
     assert not is_article_id(value)
     with pytest.raises(ValueError, match="not a canonical article ID"):
         require_article_id(value, "t")
+
+
+_ARTICLE_ATOM = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789", min_size=1, max_size=6)
+_ARTICLE_GROUP = st.lists(_ARTICLE_ATOM, min_size=1, max_size=3).map("-".join)
+_ARTICLE_ID = st.lists(_ARTICLE_GROUP, min_size=1, max_size=3).map(":".join)
+
+
+@given(st.lists(_ARTICLE_ID, min_size=2, max_size=8, unique=True))
+@settings(max_examples=100, deadline=None)
+def test_bundle_and_component_serializers_round_trip_for_generated_ids(
+    article_ids: list[str],
+) -> None:
+    expected = tuple(sorted(article_ids))
+    bundle = bundle_id(article_ids)
+    component = component_id(article_ids)
+
+    assert parse_bundle_id(bundle) == expected
+    assert parse_component_id(component) == expected
+    assert bundle_id(reversed(article_ids)) == bundle
+    assert component_id(reversed(article_ids)) == component
 
 
 def test_bundle_round_trip_and_canonical_order() -> None:
