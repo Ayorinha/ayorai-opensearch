@@ -139,3 +139,53 @@ Este adendo atualiza a fotografia do repositório após a auditoria original. É
 5. Concluir os gates humanos do piloto 02, segunda anotação, adjudicação, F-01, proveniência e isolamento antes de qualquer decisão separada sobre congelamento.
 
 **Conclusão:** a revisão antiga da #269 não precisa ser reiniciada. A `main` atual passou nos 13 check-runs consultados, mas os conflitos metodológicos RGC permanecem. #531 é documental e propõe correções relevantes; #532 continua bloqueada por divergência com DEC-023 e reconciliação normativa pendente; #539 recebe apenas esta atualização de continuidade. Nenhuma PR foi aprovada ou mesclada, o protocolo não foi congelado, nenhum caso foi criado/rotulado por IA, nenhum piloto foi executado e nenhuma validação externa é alegada.
+
+## Adendo 2 — achados adicionais de revisão independente (2026-11-14)
+
+Revisão independente sobre a `main` `ec7b8243fb8b87c433950dfb269ada795e763e3c` e a #532 no head `0d92f37d29e36e475a5c88977438c69d7f07bb39`. Só leitura de código e documentos, mais execução local com IDs sintéticos (`syn:*`). Nenhum caso real foi acessado, criado ou rotulado; nenhuma métrica RGC foi calculada.
+
+### A. Causa comum da ambiguidade: não existe gramática de ID canônico de artigo
+
+- **[FATO]** DEC-019, `PROTOCOL-GOLDEN-V1.md` (Emenda 9, item 3) e DEC-023 falam em "IDs canônicos", mas nenhum documento define o formato. O validador da `main` (`evals/ptbr/rgc_eval.py`, `validate_cluster_citations`, linhas 326–352) só exige strings não vazias, sem espaços nas pontas e sem duplicatas. O helper da #532 acrescenta NFC, mas também aceita `+`.
+- **[FATO] O defeito já existe na `main`, na DEC-019, não só na DEC-023.** Com IDs sintéticos, `validate_cluster_citations`:
+  - aceita `syn:a+syn:b` como artigo principal;
+  - rejeita, indevidamente, `bundle:syn:a+syn:b` quando esse é um único ID citado (o `split("+")` da linha 344 o divide em dois);
+  - aceita o mesmo `bundle:` para dois IDs distintos `syn:a` e `syn:b`.
+  O mesmo `split("+")` aparece na linha 1082. Na DEC-023, `{syn:a+syn:b}` e `{syn:a, syn:b}` produzem o mesmo `component:syn:a+syn:b`.
+- **[INFERÊNCIA]** Definir uma gramática de ID canônico que proíba `+` torna inequívocos os formatos já aprovados da DEC-019 (`bundle:` + `+`) e da DEC-023 (`component:` + `+`), sem alterar nenhuma das duas decisões. A troca por JSON + SHA-256 resolve só a DEC-023 e deixa o `bundle:` da DEC-019 ambíguo.
+- **Alternativas para decisão humana** (nenhuma escolhida aqui):
+  - (a) gramática de ID canônico sem `+`, mantendo DEC-019 e DEC-023 literais;
+  - (b) emenda da DEC-023 para JSON canônico + SHA-256, mais uma correção separada para o `bundle:` da DEC-019;
+  - (c) ambas.
+
+### B. A ordem dos componentes afeta o p-valor de Monte Carlo
+
+- **[FATO]** A #532 ordena os componentes por `component_id` (`rgc_components.py`, `components.sort`), e o sign-flip consome um sinal por componente nessa ordem quando `K > 20`.
+- **[INFERÊNCIA]** Com seed fixa, a escolha do formato do ID muda a ordem dos componentes e, portanto, os sinais sorteados e o p-valor de Monte Carlo. A decisão sobre a identidade da DEC-023 é também uma decisão de reprodutibilidade numérica. Para `K ≤ 20`, a enumeração completa não depende da ordem.
+
+### C. Duas convenções de percentil no mesmo estudo
+
+- **[FATO]** O executor da `main` calcula o IC bootstrap da DEC-019 por estatística de ordem, sem interpolação: `values[int(0.025 * (iterations - 1))]` e `values[int(0.975 * (iterations - 1))]` (`evals/ptbr/rgc_eval.py`, linhas 506–507 e 544). O `docs/eval/STATISTICS.md` descreve o IC de kappa da DEC-022 com `numpy.quantile(..., method="linear")`, implementado na #532.
+- **Decisão humana:** uma única convenção de percentil para todos os ICs do RGC, ou a coexistência justificada e registrada.
+
+### D. Contagem silenciosa de `bootstrap_cluster_id` diverge do executor
+
+- **[FATO]** O executor da `main` interrompe quando `bootstrap_cluster_id` está ausente ou inválido na partição oculta (`rgc_eval.py`, linha 1075). O helper da #532 ignora esses casos em silêncio ao contar `original_cluster_count` (`rgc_components.py`, linhas 106–108), o que pode subcontar as unidades exigidas no relatório da DEC-023.
+- **Recomendação:** reutilizar a mesma validação do executor (falha fechada) em vez de manter dois validadores com regras diferentes (o NFC só existe na #532).
+
+### E. Pergunta não registrada: qual unidade usar no IC de acurácia de H1
+
+- **[FATO]** O §5 do pré-registro exige o "limite inferior do IC95% da acurácia do sistema" acima da baseline. A Emenda 9 / DEC-019 define esse IC por cluster de `bootstrap_cluster_id`. A DEC-023 diz que os componentes são a "unidade de reamostragem ou permutação" dos métodos documentados, sem dizer se substituem os clusters da DEC-019 no IC de acurácia.
+- **Decisão humana:** IC de acurácia de H1 por cluster da DEC-019 ou por componente da DEC-023.
+
+### F. Verificação de viabilidade sem olhar resultados
+
+- **[INFERÊNCIA]** `K` depende só de `cited_article_ids`, não de rótulos nem de predições. Pode ser calculado sobre os metadados de desenho da partição oculta antes da anotação de veredito e da execução, sem expor resultados. Isso permite verificar, como gate prévio e documentado, se `K ≥ 6`. Abaixo disso, a DEC-021 torna impossível `p < 0,05`, e o desenho teria de ser revisto antes do congelamento, não depois.
+- **Decisão humana:** adotar ou não esse gate e quem o executa, sem acesso a rótulos.
+
+### G. Observações menores na #532
+
+- `minimum_resolution` é sempre `2 / 2^K`, inclusive no modo Monte Carlo, em que a resolução efetiva é `1 / (1 + 10.000)`. Reportar a resolução do método usado.
+- A #532 está em conflito com a `main` em `.github/workflows/nli-dependency-smoke.yml` (`mergeable_state: dirty`). Depois da #536, a linha `pip install --no-deps "numpy==2.3.3"` que a #532 acrescenta deixa de ser necessária.
+
+**Estado:** protocolo **[PROPOSTO]**; nenhuma decisão foi tomada por este adendo; #532 continua bloqueada.
