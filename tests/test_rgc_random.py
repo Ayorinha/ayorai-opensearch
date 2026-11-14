@@ -109,5 +109,9 @@ def test_percentile_interval_and_invalid_inputs() -> None:
         quantile_type7([], Fraction(1, 40))
     with pytest.raises(ValueError, match="Fraction"):
         quantile_type7([1.0], 0.025)  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="NaN"):
+    with pytest.raises(ValueError, match="finite"):
         quantile_type7([1.0, float("nan")], Fraction(1, 2))
+    with pytest.raises(ValueError, match="finite"):
+        quantile_type7([1.0, float("inf")], Fraction(1, 2))
+    with pytest.raises(ValueError, match="finite"):
+        quantile_type7([float("-inf"), 1.0], Fraction(1, 2))
