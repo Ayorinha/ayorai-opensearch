@@ -45,17 +45,31 @@ O relatório registra o hash do manifesto, os hashes dos artefatos vinculados (i
 
 ### 0.0.1 Manifesto de execução (E5)
 
-Cada `run` grava, ao lado do relatório, `<relatório>.manifest.json` (`rgc-run-manifest/1`, JSON com chaves ordenadas). O manifesto contém:
-- versão do executor, commit git, se a árvore de trabalho estava limpa, versão do Python e do pacote, partição e horários de início e fim;
+Cada `run` grava, ao lado do relatório, `<relatório>.manifest.json` (`rgc-run-manifest/1`, JSON com chaves ordenadas). O manifesto contém exatamente:
+- versão do executor, commit git, se a árvore de trabalho estava limpa, versão e implementação do Python, versão do pacote, partição e horários de início e fim;
 - os hashes das entradas;
 - o SHA-256 da configuração em JSON canônico;
 - os hashes dos manifestos de congelamento e de aprovação das anotações;
-- os hashes dos módulos dependentes;
-- o SHA-256 exato do relatório.
+- os hashes do executor e dos módulos dependentes;
+- o nome e o SHA-256 exato do relatório.
 
-`verify_run_manifest` recalcula o hash do relatório, da configuração e das entradas, e recusa qualquer diferença. Na partição oculta, a execução é recusada (código 2) se o commit não puder ser resolvido ou se a árvore de trabalho tiver alterações, porque a execução confirmatória única precisa ser reproduzível a partir de um commit registrado.
+Exceto `finished_at` e o próprio hash do relatório, todos esses campos também estão gravados no relatório, cujos bytes o manifesto fixa.
 
-O manifesto é registro técnico da execução. Ele não aprova, não congela e não publica nada: a aprovação metodológica está nos manifestos de congelamento e de anotação, e a publicação de resultados é decisão humana separada. O manifesto detecta alteração posterior dos arquivos que vincula; não prova, sozinho, quem executou nem a autenticidade das aprovações.
+**Verificação** (`verify_run_manifest(manifesto, relatório, root=None, input_files=None)`). Recusa, com `ValueError`, qualquer diferença:
+- arquivo ausente, ilegível, JSON inválido ou com chave duplicada; schema desconhecido; campo ausente ou a mais;
+- tipos e formatos: SHA-256 em 64 hexadecimais minúsculos, commit em 40, `worktree_clean` booleano ou nulo, partição `hidden` ou `development`, horários ISO 8601 em UTC;
+- nome e SHA-256 do relatório;
+- cada campo gravado no relatório, recalculado e comparado (inclusive o JSON canônico da configuração e os hashes de congelamento, dependências e aprovação);
+- partição oculta sem commit ou com árvore alterada, mesmo que manifesto e relatório concordem;
+- ordem `started_at ≤ generated_at ≤ finished_at`;
+- com `input_files`, o hash de cada arquivo de entrada informado é recalculado;
+- com `root`, o executor e os quatro módulos estatísticos do checkout são recalculados e comparados com os hashes congelados registrados no relatório.
+
+**Gravação.** Relatório e manifesto são gravados por arquivo temporário e substituição atômica. Um manifesto anterior com o mesmo nome é removido antes da gravação, e o manifesto recém-gravado é verificado em seguida. Se qualquer passo falhar, o manifesto é removido e a execução termina com código 2 ("RGC run incomplete"). Relatório sem manifesto verificável não é execução concluída.
+
+Na partição oculta, a execução é recusada (código 2) se o commit não puder ser resolvido ou se a árvore de trabalho tiver alterações, porque a execução confirmatória única precisa ser reproduzível a partir de um commit registrado.
+
+**Limites.** O manifesto é registro técnico da execução. Ele não aprova, não congela e não publica nada: a aprovação metodológica está nos manifestos de congelamento e de anotação, e a publicação de resultados é decisão humana separada. SHA-256 dá integridade, não autenticidade: não há assinatura digital, e quem puder reescrever os dois arquivos consegue produzir um par coerente. `finished_at` só é verificado em formato e ordem. O commit é verificado em formato, não em existência num repositório. O manifesto não prova quem executou nem a autenticidade das aprovações.
 
 ### 0.1 Gate de concordância e aprovação das anotações
 

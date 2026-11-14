@@ -35,10 +35,12 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import platform
 import re
 import subprocess
 import sys
+import tempfile
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -1151,13 +1153,100 @@ def _canonical_sha256(payload: object) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+_SHA256_RE = re.compile(r"[0-9a-f]{64}")
+_COMMIT_RE = re.compile(r"[0-9a-f]{40}")
+RUN_MANIFEST_FIELDS = frozenset(
+    {
+        "schema",
+        "runner_version",
+        "git_commit",
+        "worktree_clean",
+        "python",
+        "python_implementation",
+        "package_version",
+        "partition",
+        "started_at",
+        "finished_at",
+        "inputs",
+        "config_sha256",
+        "protocol_freeze_manifest_sha256",
+        "runner_dependencies_sha256",
+        "annotation_approval_manifest_sha256",
+        "report",
+    }
+)
+
+
+def _is_sha256(value: object) -> bool:
+    return isinstance(value, str) and _SHA256_RE.fullmatch(value) is not None
+
+
+def _utc_timestamp(value: object, field: str) -> datetime:
+    """Parse an ISO 8601 timestamp that must carry a zero UTC offset."""
+    if not isinstance(value, str):
+        raise ValueError(f"{field} must be an ISO 8601 string")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(f"{field} must be an ISO 8601 timestamp") from exc
+    offset = parsed.utcoffset()
+    if offset is None or offset.total_seconds() != 0:
+        raise ValueError(f"{field} must be in UTC")
+    return parsed
+
+
+def _load_strict_json(path: Path, what: str) -> Any:
+    """Read JSON, rejecting unreadable files, invalid JSON and duplicate keys."""
+
+    def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"{what} has a duplicate JSON key {key!r}")
+            result[key] = value
+        return result
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ValueError(f"{what} cannot be read: {path}") from exc
+    try:
+        return json.loads(text, object_pairs_hook=reject_duplicates)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{what} is not valid JSON: {path}") from exc
+
+
+def _manifest_fields_from_report(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Every run-manifest field that the report itself records.
+
+    The report bytes are bound by their SHA-256, so each of these fields is bound too;
+    only ``finished_at`` (written after the report) and the report digest are not.
+    """
+    try:
+        freeze = report["protocol_freeze"]
+        approval = report["annotation_approval"]
+        return {
+            "schema": RUN_MANIFEST_SCHEMA,
+            "runner_version": report["runner_version"],
+            "git_commit": report["git_commit"],
+            "worktree_clean": report["worktree_clean"],
+            "python": report["python"],
+            "python_implementation": report["python_implementation"],
+            "package_version": report["package_version"],
+            "partition": report["config"]["partition"],
+            "started_at": report["started_at"],
+            "inputs": report["inputs"],
+            "config_sha256": _canonical_sha256(report["config"]),
+            "protocol_freeze_manifest_sha256": freeze["manifest_sha256"],
+            "runner_dependencies_sha256": freeze["runner_dependencies_sha256"],
+            "annotation_approval_manifest_sha256": approval["manifest_sha256"],
+        }
+    except (KeyError, TypeError) as exc:
+        raise ValueError(f"report lacks a field the run manifest binds: {exc}") from exc
+
+
 def build_run_manifest(
-    report: Mapping[str, Any],
-    report_path: Path,
-    *,
-    worktree_clean: bool | None,
-    started_at: str,
-    finished_at: str,
+    report: Mapping[str, Any], report_path: Path, *, finished_at: str
 ) -> dict[str, Any]:
     """Technical record of one execution (E5). It binds the exact report bytes, the
     inputs, the configuration, the code version and the approvals the run relied on.
@@ -1165,24 +1254,9 @@ def build_run_manifest(
     It does not approve, freeze or publish anything: methodological approval lives in
     the freeze and annotation manifests, and publication is a separate human decision.
     """
-    freeze = report.get("protocol_freeze") or {}
-    approval = report.get("annotation_approval") or {}
     return {
-        "schema": RUN_MANIFEST_SCHEMA,
-        "runner_version": report["runner_version"],
-        "git_commit": report["git_commit"],
-        "worktree_clean": worktree_clean,
-        "python": report["python"],
-        "python_implementation": platform.python_implementation(),
-        "package_version": _package_version(),
-        "partition": report["config"]["partition"],
-        "started_at": started_at,
+        **_manifest_fields_from_report(report),
         "finished_at": finished_at,
-        "inputs": dict(report["inputs"]),
-        "config_sha256": _canonical_sha256(report["config"]),
-        "protocol_freeze_manifest_sha256": freeze.get("manifest_sha256"),
-        "runner_dependencies_sha256": freeze.get("runner_dependencies_sha256"),
-        "annotation_approval_manifest_sha256": approval.get("manifest_sha256"),
         "report": {"file": report_path.name, "sha256": _sha256(report_path)},
     }
 
@@ -1193,22 +1267,148 @@ def _package_version() -> str:
     return str(__version__)
 
 
-def verify_run_manifest(manifest_path: Path, report_path: Path) -> dict[str, Any]:
-    """Recompute what a run manifest binds; raise ValueError on any difference."""
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    report = json.loads(report_path.read_text(encoding="utf-8"))
-    if not isinstance(manifest, dict) or manifest.get("schema") != RUN_MANIFEST_SCHEMA:
+def verify_run_manifest(
+    manifest_path: Path,
+    report_path: Path,
+    *,
+    root: Path | None = None,
+    input_files: Mapping[str, Path] | None = None,
+) -> dict[str, Any]:
+    """Check every field of a run manifest; raise ValueError on any difference.
+
+    Checked: the schema and the exact field set, field types and digest formats, the
+    report file name and SHA-256, every field recorded in the report (runner, commit,
+    clean worktree, Python, package, partition, start time, inputs, canonical config,
+    freeze, dependency and approval digests), the hidden-partition requirement of a
+    resolvable commit and a clean worktree, and started_at <= generated_at <=
+    finished_at. Optionally, ``input_files`` maps input digest fields (for example
+    ``cases_sha256``) to files whose bytes are hashed again, and ``root`` is a checkout
+    whose runner code and statistical dependencies are hashed again and compared with
+    the frozen digests recorded in the report.
+
+    Limits: SHA-256 gives integrity, not authenticity. Anyone able to rewrite both
+    files can produce a consistent pair; there is no signature. ``finished_at`` is only
+    checked for format and order. The commit is checked for format, not for existence
+    in a repository.
+    """
+    if not manifest_path.is_file():
+        raise ValueError(f"run manifest is missing: {manifest_path}")
+    if not report_path.is_file():
+        raise ValueError(f"report is missing: {report_path}")
+    manifest = _load_strict_json(manifest_path, "run manifest")
+    report = _load_strict_json(report_path, "report")
+    if not isinstance(manifest, dict):
+        raise ValueError("run manifest must be a JSON object")
+    if manifest.get("schema") != RUN_MANIFEST_SCHEMA:
         raise ValueError(f"run manifest schema must be {RUN_MANIFEST_SCHEMA}")
-    if manifest.get("report", {}).get("sha256") != _sha256(report_path):
+    if set(manifest) != RUN_MANIFEST_FIELDS:
+        missing = sorted(RUN_MANIFEST_FIELDS - set(manifest))
+        extra = sorted(set(manifest) - RUN_MANIFEST_FIELDS)
+        raise ValueError(f"run manifest fields differ: missing={missing} extra={extra}")
+    if not isinstance(report, dict):
+        raise ValueError("report must be a JSON object")
+
+    bound = manifest["report"]
+    if not isinstance(bound, dict) or set(bound) != {"file", "sha256"}:
+        raise ValueError("run manifest report entry must have exactly file and sha256")
+    if not _is_sha256(bound["sha256"]):
+        raise ValueError("report.sha256 is not a SHA-256 hex digest")
+    if bound["file"] != report_path.name:
+        raise ValueError("report.file does not name the report being verified")
+    if bound["sha256"] != _sha256(report_path):
         raise ValueError("report bytes differ from the run manifest")
-    if manifest.get("config_sha256") != _canonical_sha256(report.get("config")):
-        raise ValueError("report configuration differs from the run manifest")
-    for field in ("runner_version", "git_commit", "python"):
-        if manifest.get(field) != report.get(field):
+
+    for field in (
+        "config_sha256",
+        "protocol_freeze_manifest_sha256",
+        "annotation_approval_manifest_sha256",
+    ):
+        if not _is_sha256(manifest[field]):
+            raise ValueError(f"{field} is not a SHA-256 hex digest")
+    dependencies = manifest["runner_dependencies_sha256"]
+    if (
+        not isinstance(dependencies, dict)
+        or set(dependencies) != set(RUNNER_DEPENDENCIES)
+        or not all(_is_sha256(value) for value in dependencies.values())
+    ):
+        raise ValueError(
+            f"runner_dependencies_sha256 must map exactly {list(RUNNER_DEPENDENCIES)} "
+            "to SHA-256 hex digests"
+        )
+    inputs = manifest["inputs"]
+    if not isinstance(inputs, dict) or not any(key.endswith("_sha256") for key in inputs):
+        raise ValueError("inputs must be an object with input digests")
+    for key, value in inputs.items():
+        if key.endswith("_sha256") and not _is_sha256(value):
+            raise ValueError(f"inputs.{key} is not a SHA-256 hex digest")
+    for field in ("runner_version", "python", "python_implementation", "package_version"):
+        if not isinstance(manifest[field], str) or not manifest[field]:
+            raise ValueError(f"{field} must be a non-empty string")
+    commit = manifest["git_commit"]
+    if commit is not None and (not isinstance(commit, str) or not _COMMIT_RE.fullmatch(commit)):
+        raise ValueError("git_commit must be a 40-character lowercase hex SHA-1 or null")
+    if manifest["worktree_clean"] is not None and type(manifest["worktree_clean"]) is not bool:
+        raise ValueError("worktree_clean must be true, false or null")
+    if manifest["partition"] not in ("hidden", "development"):
+        raise ValueError("partition must be hidden or development")
+
+    expected = _manifest_fields_from_report(report)
+    for field, value in expected.items():
+        # bool is a subclass of int in Python; compare JSON types exactly.
+        if manifest[field] != value or type(manifest[field]) is not type(value):
             raise ValueError(f"{field} differs between report and run manifest")
-    if manifest.get("inputs") != report.get("inputs"):
-        raise ValueError("input hashes differ between report and run manifest")
+
+    if manifest["partition"] == "hidden" and (
+        commit is None or manifest["worktree_clean"] is not True
+    ):
+        raise ValueError(
+            "hidden-partition run must record a resolvable commit and a clean worktree"
+        )
+
+    started = _utc_timestamp(manifest["started_at"], "started_at")
+    generated = _utc_timestamp(report.get("generated_at"), "generated_at")
+    finished = _utc_timestamp(manifest["finished_at"], "finished_at")
+    if not started <= generated <= finished:
+        raise ValueError("timestamps must satisfy started_at <= generated_at <= finished_at")
+
+    for key, path in (input_files or {}).items():
+        if not key.endswith("_sha256") or key not in inputs:
+            raise ValueError(f"inputs has no digest field {key!r}")
+        try:
+            actual = _sha256(path)
+        except OSError as exc:
+            raise ValueError(f"input file for {key} cannot be read: {path}") from exc
+        if inputs[key] != actual:
+            raise ValueError(f"inputs.{key} differs from {path}")
+
+    if root is not None:
+        freeze = report["protocol_freeze"]
+        frozen = {
+            "evals/ptbr/rgc_eval.py": freeze.get("runner_code_sha256"),
+            **freeze["runner_dependencies_sha256"],
+        }
+        for relative, digest in frozen.items():
+            try:
+                actual = _sha256(root / relative)
+            except OSError as exc:
+                raise ValueError(f"{relative} is missing under {root}") from exc
+            if actual != digest:
+                raise ValueError(
+                    f"{relative} differs from the frozen code that produced the report"
+                )
     return manifest
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Write through a temporary file in the same directory and an atomic replace."""
+    descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        os.replace(temporary, path)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise
 
 
 def load_labels(path: Path, vocabulary: str) -> dict[str, str]:
@@ -1537,9 +1737,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         "runner_version": RUNNER_VERSION,
         "protocol_freeze": protocol_freeze,
         "annotation_approval": annotation_approval,
+        "started_at": started_at,
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_commit": git_commit,
+        "worktree_clean": worktree_clean,
         "python": sys.version.split()[0],
+        "python_implementation": platform.python_implementation(),
+        "package_version": _package_version(),
         "inputs": {
             "cases": str(args.cases),
             "cases_sha256": _sha256(args.cases),
@@ -1580,19 +1784,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         **result,
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    manifest = build_run_manifest(
-        report,
-        args.out,
-        worktree_clean=worktree_clean,
-        started_at=started_at,
-        finished_at=datetime.now(UTC).isoformat(timespec="seconds"),
-    )
     manifest_path = args.out.with_name(args.out.name + ".manifest.json")
-    manifest_path.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    # A report without a verifiable manifest is not a completed run. Remove any earlier
+    # manifest first, so it can never be paired with this run's report.
+    manifest_path.unlink(missing_ok=True)
+    try:
+        _atomic_write_text(args.out, json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        manifest = build_run_manifest(
+            report, args.out, finished_at=datetime.now(UTC).isoformat(timespec="seconds")
+        )
+        _atomic_write_text(
+            manifest_path, json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+        )
+        verify_run_manifest(manifest_path, args.out)
+    except (OSError, ValueError) as exc:
+        manifest_path.unlink(missing_ok=True)
+        print(f"RGC run incomplete: no valid run manifest was written ({exc})", file=sys.stderr)
+        return 2
     print(f"run manifest {manifest_path} sha256={_sha256(manifest_path)}")
     m = result["metrics"]
     print(

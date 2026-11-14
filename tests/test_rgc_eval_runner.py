@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 import runpy
 from collections.abc import Callable
 from pathlib import Path
@@ -901,7 +902,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
             "preregistration_sha256": "c" * 64,
             "runner_spec_sha256": "d" * 64,
             "runner_code_sha256": "e" * 64,
-            "runner_dependencies_sha256": {},
+            "runner_dependencies_sha256": dict.fromkeys(RUNNER["RUNNER_DEPENDENCIES"], "1" * 64),
             "runner_version": RUNNER["RUNNER_VERSION"],
             "approved_by": "Synthetic test approver",
             "approved_at": "2026-10-21",
@@ -1011,36 +1012,35 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     approval_data["development_labels_sha256"] = RUNNER["_sha256"](development_labels)
     annotation_approval.write_text(json.dumps(approval_data), encoding="utf-8")
     out = tmp_path / "report.json"
-    code = RUNNER["main"](
-        [
-            "run",
-            str(cases),
-            "--labels",
-            str(labels),
-            "--annotation-a",
-            str(annotation_a),
-            "--annotation-b",
-            str(annotation_b),
-            "--agreement-report",
-            str(agreement_report),
-            "--annotation-approval",
-            str(annotation_approval),
-            "--adjudication-record",
-            str(adjudication_record),
-            "--development-cases",
-            str(development_cases),
-            "--development-labels",
-            str(development_labels),
-            "--documents",
-            str(documents),
-            "--mode",
-            "retrieval",
-            "--partition",
-            "hidden",
-            "--out",
-            str(out),
-        ]
-    )
+    argv = [
+        "run",
+        str(cases),
+        "--labels",
+        str(labels),
+        "--annotation-a",
+        str(annotation_a),
+        "--annotation-b",
+        str(annotation_b),
+        "--agreement-report",
+        str(agreement_report),
+        "--annotation-approval",
+        str(annotation_approval),
+        "--adjudication-record",
+        str(adjudication_record),
+        "--development-cases",
+        str(development_cases),
+        "--development-labels",
+        str(development_labels),
+        "--documents",
+        str(documents),
+        "--mode",
+        "retrieval",
+        "--partition",
+        "hidden",
+        "--out",
+        str(out),
+    ]
+    code = RUNNER["main"](argv)
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
     assert report["runner_version"] == "rgc-eval/0.9.0"
@@ -1061,7 +1061,17 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     )
     # E5: the run manifest binds the exact report bytes, inputs, config and approvals.
     manifest_path = out.with_name(out.name + ".manifest.json")
-    manifest = RUNNER["verify_run_manifest"](manifest_path, out)
+    manifest = RUNNER["verify_run_manifest"](
+        manifest_path,
+        out,
+        input_files={
+            "cases_sha256": cases,
+            "labels_sha256": labels,
+            "development_cases_sha256": development_cases,
+            "development_labels_sha256": development_labels,
+            "documents_sha256": documents,
+        },
+    )
     assert manifest["schema"] == "rgc-run-manifest/1"
     assert (manifest["git_commit"], manifest["worktree_clean"]) == ("f" * 40, True)
     assert manifest["partition"] == "hidden"
@@ -1077,6 +1087,17 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     out.write_text(json.dumps(tampered, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="report bytes differ"):
         RUNNER["verify_run_manifest"](manifest_path, out)
+    # A run whose manifest cannot be written is incomplete: exit 2 and no manifest, so
+    # the earlier manifest can never be paired with the new report.
+    assert manifest_path.exists()
+
+    def failing_manifest(*_: object, **__: object) -> dict[str, object]:
+        raise ValueError("synthetic manifest failure")
+
+    monkeypatch.setitem(RUNNER["main"].__globals__, "build_run_manifest", failing_manifest)
+    assert RUNNER["main"](argv) == 2
+    assert not manifest_path.exists()
+    assert not list(tmp_path.glob(".report.json*"))
     assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
     assert report["metrics"]["baseline_descriptive"]["label"] == "SUPPORTED"
     assert report["baseline_provenance"]["primary"] == "B"
@@ -2402,31 +2423,215 @@ def test_hidden_run_requires_a_clean_resolvable_commit(
     assert not out.exists()
 
 
-def test_run_manifest_rejects_other_schema_and_config_drift(tmp_path: Path) -> None:
-    report = {
+def _synthetic_run(
+    tmp_path: Path, *, partition: str = "hidden"
+) -> tuple[Path, Path, dict[str, Any], dict[str, Any]]:
+    """A synthetic report and its run manifest; no RGC case, label or result."""
+    code_root = tmp_path / "checkout"
+    (code_root / "evals" / "ptbr").mkdir(parents=True)
+    for relative in ("evals/ptbr/rgc_eval.py", *RUNNER["RUNNER_DEPENDENCIES"]):
+        (code_root / relative).write_text(f"# synthetic {relative}\n", encoding="utf-8")
+    cases = tmp_path / "cases.jsonl"
+    cases.write_text('{"case_id": "syn-1"}\n', encoding="utf-8")
+    report: dict[str, Any] = {
         "runner_version": RUNNER["RUNNER_VERSION"],
-        "git_commit": "f" * 40,
-        "python": "3.13.0",
-        "inputs": {"cases_sha256": "1" * 64},
-        "config": {"partition": "hidden", "mode": "oracle"},
-        "protocol_freeze": {"manifest_sha256": "a" * 64, "runner_dependencies_sha256": {}},
+        "protocol_freeze": {
+            "manifest_sha256": "a" * 64,
+            "runner_code_sha256": RUNNER["_sha256"](code_root / "evals" / "ptbr" / "rgc_eval.py"),
+            "runner_dependencies_sha256": {
+                relative: RUNNER["_sha256"](code_root / relative)
+                for relative in RUNNER["RUNNER_DEPENDENCIES"]
+            },
+        },
         "annotation_approval": {"manifest_sha256": "b" * 64},
+        "started_at": "2026-11-14T20:00:00+00:00",
+        "generated_at": "2026-11-14T20:00:05+00:00",
+        "git_commit": "f" * 40,
+        "worktree_clean": True,
+        "python": "3.13.0",
+        "python_implementation": "CPython",
+        "package_version": "0.0.0-synthetic",
+        "inputs": {"cases": str(cases), "cases_sha256": RUNNER["_sha256"](cases)},
+        "config": {"partition": partition, "mode": "oracle"},
     }
     report_path = tmp_path / "report.json"
-    report_path.write_text(json.dumps(report), encoding="utf-8")
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     manifest = RUNNER["build_run_manifest"](
-        report, report_path, worktree_clean=True, started_at="s", finished_at="f"
+        report, report_path, finished_at="2026-11-14T20:00:06+00:00"
     )
     manifest_path = tmp_path / "report.json.manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-    assert RUNNER["verify_run_manifest"](manifest_path, report_path)["schema"] == (
-        "rgc-run-manifest/1"
+    return manifest_path, report_path, manifest, report
+
+
+def test_run_manifest_binds_every_field_and_verifies(tmp_path: Path) -> None:
+    manifest_path, report_path, manifest, _ = _synthetic_run(tmp_path)
+    assert set(manifest) == RUNNER["RUN_MANIFEST_FIELDS"]
+    verified = RUNNER["verify_run_manifest"](
+        manifest_path,
+        report_path,
+        root=tmp_path / "checkout",
+        input_files={"cases_sha256": tmp_path / "cases.jsonl"},
     )
-    manifest["config_sha256"] = "0" * 64
+    assert verified == manifest
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("protocol_freeze_manifest_sha256", "c" * 64, "protocol_freeze_manifest_sha256 differs"),
+        (
+            "annotation_approval_manifest_sha256",
+            "c" * 64,
+            "annotation_approval_manifest_sha256 differs",
+        ),
+        ("partition", "development", "partition differs"),
+        ("git_commit", "0" * 40, "git_commit differs"),
+        ("worktree_clean", False, "worktree_clean differs"),
+        ("worktree_clean", None, "worktree_clean differs"),
+        ("started_at", "2026-11-14T19:59:00+00:00", "started_at differs"),
+        ("config_sha256", "0" * 64, "config_sha256 differs"),
+        ("runner_version", "rgc-eval/0.0.0", "runner_version differs"),
+        ("python", "3.11.0", "python differs"),
+        ("python_implementation", "PyPy", "python_implementation differs"),
+        ("package_version", "9.9.9", "package_version differs"),
+        ("finished_at", "2026-11-14T20:00:04+00:00", "started_at <= generated_at <= finished_at"),
+        ("finished_at", "2026-11-14T17:00:06-03:00", "must be in UTC"),
+        ("finished_at", "yesterday", "ISO 8601"),
+        ("finished_at", 1, "ISO 8601"),
+    ],
+)
+def test_run_manifest_rejects_each_tampered_field(
+    tmp_path: Path, field: str, value: object, message: str
+) -> None:
+    manifest_path, report_path, manifest, _ = _synthetic_run(tmp_path)
+    manifest[field] = value
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-    with pytest.raises(ValueError, match="configuration differs"):
+    with pytest.raises(ValueError, match=re.escape(message)):
         RUNNER["verify_run_manifest"](manifest_path, report_path)
-    manifest["schema"] = "other/1"
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (
+            lambda m: m["runner_dependencies_sha256"].update({"evals/ptbr/rgc_ids.py": "0" * 64}),
+            "runner_dependencies_sha256 differs",
+        ),
+        (
+            lambda m: m["runner_dependencies_sha256"].pop("evals/ptbr/rgc_random.py"),
+            "runner_dependencies_sha256 must map exactly",
+        ),
+        (
+            lambda m: m["runner_dependencies_sha256"].update({"evals/ptbr/rgc_ids.py": "XYZ"}),
+            "runner_dependencies_sha256 must map exactly",
+        ),
+        (lambda m: m["inputs"].update(cases_sha256="0" * 64), "inputs differs"),
+        (lambda m: m["inputs"].update(cases_sha256="0" * 63), "inputs.cases_sha256 is not"),
+        (lambda m: m["inputs"].update(cases="elsewhere.jsonl"), "inputs differs"),
+        (lambda m: m["report"].update(file="other.json"), "report.file does not name"),
+        (lambda m: m["report"].update(sha256="F" * 64), "report.sha256 is not"),
+        (lambda m: m["report"].update(extra=1), "exactly file and sha256"),
+        (lambda m: m.update(git_commit="F" * 40), "git_commit must be"),
+        (lambda m: m.update(git_commit="f" * 39), "git_commit must be"),
+        (lambda m: m.update(worktree_clean=1), "worktree_clean must be"),
+        (lambda m: m.update(worktree_clean="true"), "worktree_clean must be"),
+        (lambda m: m.update(config_sha256="0" * 64 + "0"), "config_sha256 is not"),
+        (lambda m: m.update(partition="test"), "partition must be"),
+        (lambda m: m.update(python=3.13), "python must be"),
+        (lambda m: m.pop("finished_at"), "missing=['finished_at']"),
+        (lambda m: m.update(signature="none"), "extra=['signature']"),
+        (lambda m: m.update(schema="rgc-run-manifest/2"), "schema must be"),
+    ],
+)
+def test_run_manifest_rejects_malformed_fields(tmp_path: Path, mutate: Any, message: str) -> None:
+    manifest_path, report_path, manifest, _ = _synthetic_run(tmp_path)
+    mutate(manifest)
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-    with pytest.raises(ValueError, match="schema"):
+    with pytest.raises(ValueError, match=re.escape(message)):
+        RUNNER["verify_run_manifest"](manifest_path, report_path)
+
+
+def test_run_manifest_rejects_unreadable_or_absent_files(tmp_path: Path) -> None:
+    manifest_path, report_path, _, _ = _synthetic_run(tmp_path)
+    verify = RUNNER["verify_run_manifest"]
+    with pytest.raises(ValueError, match="run manifest is missing"):
+        verify(tmp_path / "absent.manifest.json", report_path)
+    with pytest.raises(ValueError, match="report is missing"):
+        verify(manifest_path, tmp_path / "absent.json")
+    original = manifest_path.read_text(encoding="utf-8")
+    manifest_path.write_text(original[:-5], encoding="utf-8")
+    with pytest.raises(ValueError, match="run manifest is not valid JSON"):
+        verify(manifest_path, report_path)
+    manifest_path.write_text('{"schema": "rgc-run-manifest/1", "schema": "x"}', encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate JSON key 'schema'"):
+        verify(manifest_path, report_path)
+    manifest_path.write_text("[]", encoding="utf-8")
+    with pytest.raises(ValueError, match="must be a JSON object"):
+        verify(manifest_path, report_path)
+
+
+def test_run_manifest_detects_a_tampered_report(tmp_path: Path) -> None:
+    manifest_path, report_path, _, report = _synthetic_run(tmp_path)
+    report["config"]["mode"] = "retrieval"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="report bytes differ"):
+        RUNNER["verify_run_manifest"](manifest_path, report_path)
+
+
+def test_hidden_run_manifest_requires_clean_commit_even_when_consistent(tmp_path: Path) -> None:
+    manifest_path, report_path, _, report = _synthetic_run(tmp_path)
+    report["worktree_clean"] = False
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    manifest = RUNNER["build_run_manifest"](
+        report, report_path, finished_at="2026-11-14T20:00:06+00:00"
+    )
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="clean worktree"):
+        RUNNER["verify_run_manifest"](manifest_path, report_path)
+    # A development run may come from a dirty worktree; it is descriptive only.
+    dev_manifest, dev_report, _, dev = _synthetic_run(tmp_path / "dev", partition="development")
+    dev["worktree_clean"] = False
+    dev_report.write_text(json.dumps(dev), encoding="utf-8")
+    dev_manifest.write_text(
+        json.dumps(
+            RUNNER["build_run_manifest"](dev, dev_report, finished_at="2026-11-14T20:00:06+00:00")
+        ),
+        encoding="utf-8",
+    )
+    assert RUNNER["verify_run_manifest"](dev_manifest, dev_report)["worktree_clean"] is False
+
+
+def test_run_manifest_detects_statistical_code_changed_after_the_run(tmp_path: Path) -> None:
+    manifest_path, report_path, _, _ = _synthetic_run(tmp_path)
+    checkout = tmp_path / "checkout"
+    (checkout / "evals" / "ptbr" / "rgc_components.py").write_text("# changed\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="rgc_components.py differs from the frozen code"):
+        RUNNER["verify_run_manifest"](manifest_path, report_path, root=checkout)
+    (checkout / "evals" / "ptbr" / "rgc_components.py").unlink()
+    with pytest.raises(ValueError, match="rgc_components.py is missing"):
+        RUNNER["verify_run_manifest"](manifest_path, report_path, root=checkout)
+
+
+def test_run_manifest_rehashes_input_files_on_request(tmp_path: Path) -> None:
+    manifest_path, report_path, _, _ = _synthetic_run(tmp_path)
+    cases = tmp_path / "cases.jsonl"
+    cases.write_text('{"case_id": "syn-2"}\n', encoding="utf-8")
+    verify = RUNNER["verify_run_manifest"]
+    with pytest.raises(ValueError, match="inputs.cases_sha256 differs"):
+        verify(manifest_path, report_path, input_files={"cases_sha256": cases})
+    with pytest.raises(ValueError, match="no digest field 'labels_sha256'"):
+        verify(manifest_path, report_path, input_files={"labels_sha256": cases})
+    with pytest.raises(ValueError, match="cannot be read"):
+        verify(manifest_path, report_path, input_files={"cases_sha256": tmp_path / "gone"})
+
+
+def test_report_missing_a_bound_field_is_rejected(tmp_path: Path) -> None:
+    manifest_path, report_path, _, report = _synthetic_run(tmp_path)
+    del report["package_version"]
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["report"]["sha256"] = RUNNER["_sha256"](report_path)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="report lacks a field"):
         RUNNER["verify_run_manifest"](manifest_path, report_path)
