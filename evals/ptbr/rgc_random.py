@@ -6,6 +6,11 @@ byte for byte in DEC-027 (docs/DECISIONS-PENDING.md) and depends only on SHA-256
 third party can reproduce every draw from the text, without Python's random module or
 NumPy, whose streams are not guaranteed across versions.
 
+This is a deterministic pseudorandom stream for statistical reproducibility only. It is
+not a cryptographic DRBG and must never be used for secrets, keys, tokens, nonces or
+security-sensitive randomness. It has no entropy input, reseeding or prediction-resistance
+mechanism and has not been validated under NIST SP 800-90A.
+
 Block i = SHA-256("AYORAI-RGC-PRNG-1" || 0x00 || u32be(len(label)) || label
                   || u64be(seed) || u64be(i)); each block yields eight big-endian u32
 words, consumed in order with one continuous cursor per stream. A uniform integer in
@@ -109,8 +114,8 @@ def quantile_type7(values: Sequence[float], p: Fraction) -> float:
     if not isinstance(p, Fraction) or not 0 <= p <= 1:
         raise ValueError("p must be a Fraction in [0, 1]")
     ordered = sorted(values)
-    if any(math.isnan(value) for value in ordered):
-        raise ValueError("values must not contain NaN")
+    if any(not math.isfinite(value) for value in ordered):
+        raise ValueError("values must be finite")
     h = (len(ordered) - 1) * p
     j = math.floor(h)
     g = h - j
