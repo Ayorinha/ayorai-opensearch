@@ -369,3 +369,108 @@ def test_api_fields_rejects_blank_expected_values_and_labels() -> None:
             },
         )
         assert response.status_code == 422, response.text
+
+
+# field-check-3: only plain ASCII decimals and ASCII digits count. Decimal() and the
+# Unicode-aware \d would otherwise accept values no document candidate can ever have.
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["NaN", "nan", "Infinity", "-inf", "sNaN", "1e3", "1E3", "1_000", "１２", "١٢", "1 000", "--1"],
+)
+def test_number_expected_value_must_be_a_plain_ascii_decimal(value: str) -> None:
+    spec = FieldSpec("quantidade", "number", value)
+    assert _outcome(spec) == "invalido"
+
+
+@pytest.mark.parametrize(
+    ("value", "normalized"),
+    [
+        ("12", "12"),
+        ("+12", "12"),
+        ("-3", "-3"),
+        ("1,5", "1.5"),
+        ("1.50", "1.5"),
+        (",5", "0.5"),
+        ("77.", "77"),
+    ],
+)
+def test_plain_numbers_still_normalize(value: str, normalized: str) -> None:
+    result = check_field("Quantidade: 99", FieldSpec("quantidade", "number", value))
+    assert result.outcome != "invalido"
+    assert result.expected_normalized == normalized
+
+
+@pytest.mark.parametrize(
+    ("field_type", "value"),
+    [
+        ("money", "R$ １.２５０,００"),
+        ("date", "１０/０３/２０２６"),
+        ("cpf_cnpj", "４５.７２３.１７４/０００１-１０"),
+        ("cpf_cnpj", "abc45723174000110"),
+    ],
+)
+def test_non_ascii_or_noisy_expected_values_are_invalid(field_type: str, value: str) -> None:
+    assert _outcome(FieldSpec("campo", field_type, value)) == "invalido"
+
+
+def test_cpf_cnpj_check_digits_need_ascii_digits() -> None:
+    assert cpf_cnpj_is_valid("45723174000110")
+    assert not cpf_cnpj_is_valid("４５７２３１７４０００１１０")
+
+
+@pytest.mark.parametrize(
+    ("field_type", "value", "text"),
+    [
+        ("money", "1250,00", "Valor: R$ １.２５０,００"),
+        ("date", "10/03/2026", "Vencimento: １０/０３/２０２６"),
+        ("cpf_cnpj", "45.723.174/0001-10", "CNPJ ４５.７２３.１７４/０００１-１０"),
+        ("number", "12", "Quantidade: １２"),
+    ],
+)
+def test_non_ascii_digits_in_the_document_are_not_candidates(
+    field_type: str, value: str, text: str
+) -> None:
+    # Abstain instead of reading a look-alike value the offsets would not reproduce.
+    assert check_field(text, FieldSpec("campo", field_type, value)).outcome == "ausente"
+
+
+def test_ascii_values_keep_matching_after_the_change() -> None:
+    assert _outcome(FieldSpec("valor", "money", "1250,00", ("Valor",))) == "conforme"
+    assert _outcome(FieldSpec("vencimento", "date", "2026-03-10", ("Vencimento",))) == "conforme"
+    assert (
+        _outcome(FieldSpec("sacado", "cpf_cnpj", "45.723.174/0001-10", ("Sacado",))) == "conforme"
+    )
+
+
+@pytest.mark.parametrize(
+    ("field_type", "value", "text"),
+    [
+        ("number", "3", "Quantidade: １２3"),
+        ("number", "3", "Quantidade: 3１"),
+        ("number", "3", "Quantidade: 3.0１0"),
+        ("number", "5", "Quantidade: １.5"),
+        ("money", "3,00", "Valor: R$ １２3,00"),
+        ("money", "3,00", "Valor: R$ 3,00１"),
+        ("money", "3", "Valor: R$ 3,0０"),
+        ("date", "1/03/2026", "Vencimento: １1/03/2026"),
+        ("date", "10/03/2026", "Vencimento: 10/03/2026１"),
+        ("cpf_cnpj", "45.723.174/0001-10", "CNPJ ４45.723.174/0001-10"),
+        ("cpf_cnpj", "45.723.174/0001-10", "CNPJ 45.723.174/0001-10٣"),
+    ],
+)
+def test_ascii_run_touching_a_non_ascii_digit_is_not_a_shorter_number(
+    field_type: str, value: str, text: str
+) -> None:
+    # "１２3" must not be read as "3": the whole run is one number the checker cannot
+    # read, so the field is ausente instead of a false conforme.
+    assert check_field(text, FieldSpec("campo", field_type, value)).outcome == "ausente"
+
+
+@pytest.mark.parametrize(
+    "text", ["Quantidade: 1.2.3", "Quantidade: 1,5.2", "Quantidade: 1.000.000"]
+)
+def test_number_is_never_a_prefix_of_a_longer_dotted_sequence(text: str) -> None:
+    for value in ("1", "1.2", "1,5", "1.000"):
+        assert check_field(text, FieldSpec("quantidade", "number", value)).outcome == "ausente"
