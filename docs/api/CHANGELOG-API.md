@@ -2,6 +2,13 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## 2026-11-14 — `/v1/fields` strict digits (field-check-3)
+
+- Expected `number` values must be plain decimals written with ASCII digits (optional sign, `.` or `,` as the decimal mark). `NaN`, `Infinity`, exponents (`1e3`), underscores (`1_000`) and non-ASCII digits now return `invalido` instead of being normalised.
+- Expected `money`, `date` and `cpf_cnpj` values with non-ASCII digits (for example full-width `１２`) return `invalido`; an expected CPF/CNPJ may contain only ASCII digits, `.`, `/`, `-` and spaces.
+- Document values written with non-ASCII digits are no longer candidates, so the field is `ausente` (abstention) rather than compared through a look-alike value.
+- The response engine metadata reports `field-check-3`. No request or response fields were added or removed.
+
 ## 2026-11-11 — `/v1/fields` trace identity v2 (semantics clarified)
 
 - The deterministic `trace_id` now binds the caller document ID, media type, extracted-text SHA-256, original-source SHA-256 and page boundaries, in addition to the submitted field specification.

@@ -34,21 +34,21 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-FIELD_CHECK_VERSION = "field-check-2"
+FIELD_CHECK_VERSION = "field-check-3"
 FIELD_TYPES = ("money", "date", "cpf_cnpj", "number", "text")
 LABEL_WINDOW = 80  # characters before a candidate searched for a label
 
 _MONEY_RE = re.compile(
-    r"(?:R\$\s*)?(?<![\d.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2}|\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})(?![\d])"
-    r"|R\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?![\d.,]*\d)"
+    r"(?:R\$\s*)?(?<![0-9.,])([0-9]{1,3}(?:\.[0-9]{3})+,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]{1,3}(?:,[0-9]{3})+\.[0-9]{2}|[0-9]+\.[0-9]{2})(?![0-9])"
+    r"|R\$\s*([0-9]{1,3}(?:\.[0-9]{3})+|[0-9]+)(?![0-9.,]*[0-9])"
 )
 _DATE_RE = re.compile(
-    r"(?<!\d)(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?!\d)|(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)"
+    r"(?<![0-9])([0-9]{1,2})[/.-]([0-9]{1,2})[/.-]([0-9]{4})(?![0-9])|(?<![0-9])([0-9]{4})-([0-9]{2})-([0-9]{2})(?![0-9])"
 )
 _DOC_RE = re.compile(
-    r"(?<!\d)(\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2})(?!\d)"
+    r"(?<![0-9])([0-9]{3}\.?[0-9]{3}\.?[0-9]{3}-?[0-9]{2}|[0-9]{2}\.?[0-9]{3}\.?[0-9]{3}/?[0-9]{4}-?[0-9]{2})(?![0-9])"
 )
-_NUMBER_RE = re.compile(r"(?<![\d.,])\d+(?:[.,]\d+)?(?![\d])")
+_NUMBER_RE = re.compile(r"(?<![0-9.,])[0-9]+(?:[.,][0-9]+)?(?![0-9])")
 
 
 @dataclass(frozen=True)
@@ -90,13 +90,13 @@ def _fold(text: str) -> str:
 
 def normalize_money(raw: str) -> str | None:
     value = raw.replace("R$", "").strip()
-    if re.fullmatch(r"\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2}", value):
+    if re.fullmatch(r"[0-9]{1,3}(?:\.[0-9]{3})+,[0-9]{2}|[0-9]+,[0-9]{2}", value):
         value = value.replace(".", "").replace(",", ".")
-    elif re.fullmatch(r"\d{1,3}(?:,\d{3})+\.\d{2}", value):
+    elif re.fullmatch(r"[0-9]{1,3}(?:,[0-9]{3})+\.[0-9]{2}", value):
         value = value.replace(",", "")
-    elif re.fullmatch(r"\d{1,3}(?:\.\d{3})+", value):  # 1.250 (Brazilian thousands)
+    elif re.fullmatch(r"[0-9]{1,3}(?:\.[0-9]{3})+", value):  # 1.250 (Brazilian thousands)
         value = value.replace(".", "")
-    elif not re.fullmatch(r"\d+(?:\.\d{1,2})?", value):
+    elif not re.fullmatch(r"[0-9]+(?:\.[0-9]{1,2})?", value):
         return None
     try:
         return f"{Decimal(value):.2f}"
@@ -119,10 +119,12 @@ def normalize_date(raw: str) -> str | None:
 
 
 def _digits(raw: str) -> str:
-    return re.sub(r"\D", "", raw)
+    return re.sub(r"[^0-9]", "", raw)
 
 
 def cpf_cnpj_is_valid(digits: str) -> bool:
+    if not re.fullmatch(r"[0-9]+", digits):
+        return False
     if len(digits) == 11 and len(set(digits)) > 1:
         for size in (9, 10):
             total = sum(int(digits[i]) * (size + 1 - i) for i in range(size))
@@ -144,12 +146,25 @@ def cpf_cnpj_is_valid(digits: str) -> bool:
 
 
 def normalize_cpf_cnpj(raw: str) -> str | None:
+    # Only ASCII digits and the usual punctuation: "abc123..." or full-width digits are
+    # malformed, not a document number with noise to strip.
+    if not re.fullmatch(r"[0-9./\s-]+", raw.strip()):
+        return None
     digits = _digits(raw)
     return digits if len(digits) in (11, 14) else None
 
 
+_PLAIN_NUMBER_RE = re.compile(r"[+-]?(?:[0-9]+(?:[.,][0-9]*)?|[.,][0-9]+)")
+
+
 def normalize_number(raw: str) -> str | None:
-    value = raw.strip().replace(",", ".")
+    # A plain decimal written with ASCII digits only. Decimal() alone would also accept
+    # "NaN", "Infinity", "1e3", "1_000" and non-ASCII digits, none of which can appear
+    # as a document candidate, so they are malformed expected values.
+    value = raw.strip()
+    if not _PLAIN_NUMBER_RE.fullmatch(value):
+        return None
+    value = value.replace(",", ".")
     try:
         return format(Decimal(value).normalize(), "f")
     except InvalidOperation:
