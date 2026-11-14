@@ -566,3 +566,23 @@ def test_two_signs_in_the_document_are_ambiguous(field_type: str, text: str) -> 
         assert check_field(text, FieldSpec("valor", field_type, value, ("Valor",))).outcome == (
             "ausente"
         )
+
+
+def test_documented_limit_spaced_hyphen_before_a_number_is_a_sign() -> None:
+    # Documented limit: "3 -5" reads -5 (hyphen glued to the digit, space before it).
+    from ayorai_attractor.verification.field_check import candidates
+
+    found = candidates("Temperatura: de 3 -5 graus", FieldSpec("t", "number", "1"))
+    assert [(item.raw, item.normalized) for item in found] == [("3", "3"), ("-5", "-5")]
+
+
+@pytest.mark.parametrize("text", ["Valor: (100,00)", "Valor: R$ (100,00)"])
+def test_documented_limit_parentheses_do_not_make_an_amount_negative(text: str) -> None:
+    # Documented limit: accounting parentheses are not read as a negative amount.
+    spec = FieldSpec("valor", "money", "100,00", ("Valor",))
+    assert (check_field(text, spec).outcome, check_field(text, spec).found_normalized) == (
+        "conforme",
+        "100.00",
+    )
+    negative = FieldSpec("valor", "money", "-100,00", ("Valor",))
+    assert check_field(text, negative).outcome == "divergente"
