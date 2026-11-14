@@ -95,9 +95,16 @@ def load_preannotation_inventory(path: Path) -> list[dict[str, object]]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--inventory", type=Path, required=True)
-    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--inventory",
+        type=Path,
+        required=True,
+        help="JSONL with exactly case_id and cited_article_ids in each record",
+    )
+    parser.add_argument("--out", type=Path, required=True, help="path for the minimal D7 JSON record")
     args = parser.parse_args(argv)
+    if args.inventory.resolve() == args.out.resolve():
+        parser.error("--out must not overwrite --inventory")
 
     result = evaluate_preannotation_gate(load_preannotation_inventory(args.inventory))
     args.out.parent.mkdir(parents=True, exist_ok=True)
