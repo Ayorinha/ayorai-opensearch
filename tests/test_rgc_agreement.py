@@ -136,6 +136,15 @@ def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> Non
     )
     report = json.loads(output.read_text(encoding="utf-8"))
     assert report["gate_passed"] is True
+    assert report["bootstrap"] == {
+        "method": "percentile_case_bootstrap",
+        "iterations": 10_000,
+        "seed": 20261003,
+        "generator": "RGC-PRNG-1",
+        "percentile": "hyndman-fan-type-7",
+        "valid_replicates": 10_000,
+        "degenerate_replicates": 0,
+    }
     assert report["inputs"] == {
         "annotation_a_sha256": hashlib.sha256(annotation_a.read_bytes()).hexdigest(),
         "annotation_b_sha256": hashlib.sha256(annotation_b.read_bytes()).hexdigest(),
@@ -147,7 +156,7 @@ def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> Non
     [("--iterations", "20"), ("--seed", "17")],
 )
 def test_protocol_cli_rejects_noncanonical_bootstrap_overrides(
-    tmp_path: Path, option: str, value: str
+    tmp_path: Path, option: str, value: str, capsys: pytest.CaptureFixture[str]
 ) -> None:
     annotation = tmp_path / "annotations.jsonl"
     annotation.write_text('{"case_id":"a","label":"SUPPORTED"}\\n', encoding="utf-8")
@@ -164,6 +173,7 @@ def test_protocol_cli_rejects_noncanonical_bootstrap_overrides(
                 value,
             ]
         )
+    assert "unrecognized arguments" in capsys.readouterr().err
 
 
 def test_bootstrap_uses_rgc_prng_and_type7_percentile() -> None:
