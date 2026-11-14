@@ -41,6 +41,8 @@ def require_article_id(value: object, where: str) -> str:
 
 
 def _join(prefix: str, article_ids: Iterable[str], where: str, *, minimum: int) -> str:
+    if isinstance(article_ids, str):
+        raise ValueError(f"{where}: expected an iterable of article IDs, not one string")
     members = sorted({require_article_id(item, where) for item in article_ids})
     if len(members) < minimum:
         raise ValueError(f"{where}: {prefix} needs at least {minimum} distinct article IDs")
