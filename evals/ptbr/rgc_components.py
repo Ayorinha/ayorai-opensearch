@@ -12,7 +12,12 @@ from collections.abc import Iterable, Mapping
 from itertools import product
 from typing import NamedTuple
 
-from evals.ptbr.rgc_ids import cluster_members, component_id, parse_component_id, require_article_id
+from evals.ptbr.rgc_ids import (
+    cluster_members,
+    component_id,
+    parse_component_id,
+    require_article_id,
+)
 from evals.ptbr.rgc_random import (
     LABEL_COMPONENT_KAPPA,
     LABEL_SIGN_FLIP,

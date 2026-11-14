@@ -12,6 +12,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 MODULE: dict[str, Any] = runpy.run_path(str(ROOT / "evals" / "ptbr" / "rgc_components.py"))
 
+
 def _build_article_components(cases: list[dict[str, object]]) -> Any:
     prepared = []
     for index, case in enumerate(cases):
@@ -56,8 +57,8 @@ def test_component_output_is_independent_of_input_order() -> None:
         {"case_id": "c", "cited_article_ids": ["q"]},
     ]
 
-    forward = MODULE["build_article_components"](cases)
-    reverse = MODULE["build_article_components"](list(reversed(cases)))
+    forward = _build_article_components(cases)
+    reverse = _build_article_components(list(reversed(cases)))
 
     assert forward == reverse
 
@@ -92,7 +93,7 @@ def test_shared_article_joins_multiple_cases_even_with_different_old_clusters() 
 )
 def test_invalid_component_inputs_fail_closed(cases: list[dict[str, object]], message: str) -> None:
     with pytest.raises(ValueError, match=message):
-        MODULE["build_article_components"](cases)
+        _build_article_components(cases)
 
 
 def test_plus_is_rejected_inside_article_ids() -> None:
@@ -109,7 +110,13 @@ def test_non_ascii_article_ids_are_rejected() -> None:
 def test_invalid_original_cluster_id_fails_closed(cluster_id: object) -> None:
     with pytest.raises(ValueError):
         MODULE["build_article_components"](
-            [{"case_id": "a", "cited_article_ids": ["article:a"], "bootstrap_cluster_id": cluster_id}]
+            [
+                {
+                    "case_id": "a",
+                    "cited_article_ids": ["article:a"],
+                    "bootstrap_cluster_id": cluster_id,
+                }
+            ]
         )
 
 
