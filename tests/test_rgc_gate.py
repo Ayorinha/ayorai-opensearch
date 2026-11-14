@@ -169,7 +169,7 @@ def test_inventory_loader_rejects_annotation_or_result_fields(tmp_path: Path) ->
 def test_inventory_loader_rejects_duplicate_json_keys(tmp_path: Path) -> None:
     inventory = tmp_path / "inventory.jsonl"
     inventory.write_text(
-        '{"case_id":"a","case_id":"b","cited_article_ids":["article-a"]}\\n',
+        '{"case_id":"a","case_id":"b","cited_article_ids":["article-a"]}\n',
         encoding="utf-8",
     )
 
