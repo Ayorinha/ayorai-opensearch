@@ -561,7 +561,7 @@ Reportar:
 
 1. **Entradas.**
    - `seed`: inteiro `0 ≤ seed < 2^64`; para o RGC, `20261003`.
-   - `label`: casa com `^[a-z0-9]+(?:-[a-z0-9]+)*$`, até 64 caracteres. Um fluxo por procedimento: `dec019-accuracy-bootstrap`, `dec021-sign-flip`, `dec022-kappa-bootstrap`.
+   - `label`: casa com `^[a-z0-9]+(?:-[a-z0-9]+)*$`, até 64 caracteres. Um fluxo por procedimento: `dec023-accuracy-bootstrap` (IC primário de acurácia por componente, D5), `dec019-accuracy-bootstrap` (sensibilidade por cluster), `case-accuracy-bootstrap` (sensibilidade por caso), `dec021-sign-flip`, `dec022-kappa-bootstrap` (kappa por componente) e `case-kappa-bootstrap` (kappa por caso, sensibilidade).
 2. **Bloco `i`.**
    - `SHA-256( "AYORAI-RGC-PRNG-1" ‖ 0x00 ‖ u32be(len(label)) ‖ label ‖ u64be(seed) ‖ u64be(i) )`.
    - Inteiros sem sinal em big-endian; textos em bytes ASCII.
