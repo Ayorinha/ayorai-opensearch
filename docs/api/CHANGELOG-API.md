@@ -2,6 +2,23 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## 2026-11-14 — `/v1/fields` negative values (field-check-4)
+
+- A minus sign (`-` or `−`) written right before a `number` or `money` value in the document belongs to it: `-5`, `R$ -100,00`, `R$-100,00` and `-R$ 100,00` are negative. Previously the sign was ignored, so an expected `5` matched a document `-5` (false `conforme`).
+- A hyphen right after a letter, digit, `.` or `,` is not a sign (`10-12`, `art. 5-A`), and a spaced hyphen is not a sign (`10 - 12`). The sign and the amount must be on the same line as `R$` when `R$` sits between them.
+- Two signs in the document (`--5`, `- -5`, `-R$ -100,00`) are ambiguous: the value is not a candidate and the field is `ausente`.
+- Expected `money` values may carry the same sign forms; two signs (`-R$ -10,00`) are `invalido`. Negative zero is zero.
+- The reported `found`, `start` and `end` include the sign (and the `R$` between the sign and the amount).
+- The response engine metadata reports `field-check-4`. No request or response fields were added or removed.
+
+## 2026-11-14 — `/v1/fields` strict digits (field-check-3)
+
+- Expected `number` values must be plain decimals written with ASCII digits (optional sign, `.` or `,` as the decimal mark). `NaN`, `Infinity`, exponents (`1e3`), underscores (`1_000`) and non-ASCII digits now return `invalido` instead of being normalised.
+- Expected `money`, `date` and `cpf_cnpj` values with non-ASCII digits (for example full-width `１２`) return `invalido`; an expected CPF/CNPJ may contain only ASCII digits, `.`, `/`, `-` and spaces.
+- Document values written with non-ASCII digits are no longer candidates, so the field is `ausente` (abstention) rather than compared through a look-alike value. An ASCII run touching a non-ASCII digit (`１２3`) is not read as a shorter number (`3`).
+- A `number` is never taken as the prefix of a longer dotted or comma sequence (`1.2.3`, `1.000.000`, `1,5.2`); previously `1.2` or `1.000` was extracted from such a sequence. The field is `ausente` instead.
+- The response engine metadata reports `field-check-3`. No request or response fields were added or removed.
+
 ## 2026-11-11 — `/v1/fields` trace identity v2 (semantics clarified)
 
 - The deterministic `trace_id` now binds the caller document ID, media type, extracted-text SHA-256, original-source SHA-256 and page boundaries, in addition to the submitted field specification.
