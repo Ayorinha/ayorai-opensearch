@@ -160,7 +160,7 @@ def test_protocol_cli_rejects_noncanonical_bootstrap_overrides(
     tmp_path: Path, option: str, value: str, capsys: pytest.CaptureFixture[str]
 ) -> None:
     annotation = tmp_path / "annotations.jsonl"
-    annotation.write_text('{"case_id":"a","label":"SUPPORTED"}\\n', encoding="utf-8")
+    annotation.write_text('{"case_id":"a","label":"SUPPORTED"}\n', encoding="utf-8")
     with pytest.raises(SystemExit, match="2"):
         AGREEMENT["main"](
             [
