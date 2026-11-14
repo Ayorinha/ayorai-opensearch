@@ -258,7 +258,7 @@ def test_development_partition_allows_omitted_optional_id_fields(
         vocabulary="judge2",
         iterations=10,
     )
-    assert result["metrics"]["case_count"] == 1
+    assert result["metrics"]["n"] == 1
 
 
 def test_development_partition_rejects_noncanonical_bootstrap_cluster_id() -> None:
