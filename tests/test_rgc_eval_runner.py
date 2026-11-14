@@ -293,6 +293,40 @@ def test_development_partition_rejects_noncanonical_cited_article_id() -> None:
         )
 
 
+def test_development_partition_rejects_cluster_not_in_citations() -> None:
+    case = _case("dev-cluster-mismatch", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "synthetic:other"
+    case["cited_article_ids"] = ["synthetic:dev-cluster-mismatch"]
+    with pytest.raises(ValueError, match="must be present in cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"dev-cluster-mismatch": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_bundle_member_absent_from_citations() -> None:
+    case = _case("dev-bundle-mismatch", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "bundle:synthetic:a+synthetic:b"
+    case["cited_article_ids"] = ["synthetic:a"]
+    with pytest.raises(ValueError, match="absent from cited_article_ids"):
+        RUNNER["evaluate"](
+            [case],
+            {"dev-bundle-mismatch": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
 def test_development_pilot_validates_supplied_ids_before_rule_gap_exclusion() -> None:
     case = _case("invalid-pilot-id", "O cliente fictício pode cancelar.", "Art. 2º")
     case["cited_article_ids"] = ["Article:2"]
