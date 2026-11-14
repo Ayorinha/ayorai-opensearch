@@ -234,6 +234,33 @@ def test_article_cluster_bootstrap_is_deterministic_and_distinct_from_case_boots
     assert clustered["accuracy"] != case_level["accuracy"]
 
 
+@pytest.mark.parametrize(
+    "fields_to_remove",
+    [
+        ("bootstrap_cluster_id", "cited_article_ids"),
+        ("bootstrap_cluster_id",),
+        ("cited_article_ids",),
+    ],
+)
+def test_development_partition_allows_omitted_optional_id_fields(
+    fields_to_remove: tuple[str, ...],
+) -> None:
+    case = _case("optional-dev-ids", "O cliente fictício pode cancelar.", "Art. 2º")
+    for field in fields_to_remove:
+        case.pop(field)
+    result = RUNNER["evaluate"](
+        [case],
+        {"optional-dev-ids": "SUPPORTED"},
+        DOCS,
+        development_cases=DEV_CASES,
+        development_labels=DEV_LABELS,
+        mode="oracle",
+        vocabulary="judge2",
+        iterations=10,
+    )
+    assert result["metrics"]["case_count"] == 1
+
+
 def test_development_partition_rejects_noncanonical_bootstrap_cluster_id() -> None:
     case = _case("invalid-dev-cluster", "O cliente fictício pode cancelar.", "Art. 2º")
     case["bootstrap_cluster_id"] = "Article:2"
