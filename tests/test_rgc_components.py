@@ -265,6 +265,8 @@ def test_monte_carlo_sign_flip_uses_rgc_prng_1() -> None:
     assert first.iterations == 10_000
     assert first.theoretical_exact_resolution == 2 / (2**21)
     assert first.monte_carlo_minimum_p == 1 / 10_001
+    assert first.extreme_permutations == 0
+    assert first.p_value_two_sided == 1 / 10_001
 
 
 def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> None:
@@ -303,8 +305,11 @@ def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> No
     assert first.seed == 20261003
     assert first.generator == "RGC-PRNG-1"
     assert first.valid_replicates + first.undefined_replicates == 10_000
-    assert first.ci95 is not None
-    assert first.unstable == (first.undefined_fraction > 0.05)
+    assert first.kappa == pytest.approx(1 / 3)
+    assert first.ci95 == (-1.0, 1.0)
+    assert first.valid_replicates == 10_000
+    assert first.undefined_replicates == 0
+    assert first.unstable is False
 
 
 def test_component_kappa_bootstrap_reports_fully_undefined_interval() -> None:
