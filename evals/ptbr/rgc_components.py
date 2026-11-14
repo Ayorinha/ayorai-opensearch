@@ -210,7 +210,10 @@ def bootstrap_metrics_by_component(
         raise ValueError("iterations must be a positive integer")
     if not metrics:
         raise ValueError("at least one metric is required")
-    if any(not isinstance(name, str) or not name or not callable(fn) for name, fn in metrics.items()):
+    if any(
+        not isinstance(name, str) or not name or not callable(fn)
+        for name, fn in metrics.items()
+    ):
         raise ValueError("metric names must be non-empty strings and values must be callable")
     if any(
         not isinstance(case_id, str) or not case_id or case_id != case_id.strip()
