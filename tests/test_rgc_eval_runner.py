@@ -2197,6 +2197,23 @@ def test_hidden_h1_uses_the_component_sign_flip() -> None:
     )
     assert small["primary_criterion"]["significance_below_005_possible"] is False
     assert small["primary_criterion"]["h1_supported"] is False
+    assert metrics["sign_flip"]["informative_component_count"] == 7
+    assert metrics["sign_flip"]["minimum_attainable_p"] == 2 / 2**7
+    # A seventh component on which system and baseline B tie (d_k = 0) adds to K but not
+    # to the attainable significance: six informative components still reach 2 / 2^6.
+    tied = RUNNER["compute_metrics"](
+        ["REFUTED"] * 5 + ["SUPPORTED"],
+        ["REFUTED"] * 5 + ["SUPPORTED"],
+        "judge2",
+        baseline_label="SUPPORTED",
+        iterations=50,
+        cluster_ids=clusters[:6],
+        component_ids=components[:6],
+    )
+    assert tied["sign_flip"]["component_count"] == 6
+    assert tied["sign_flip"]["informative_component_count"] == 5
+    assert tied["primary_criterion"]["significance_below_005_possible"] is False
+    assert tied["primary_criterion"]["h1_supported"] is False
 
 
 def test_primary_interval_is_the_component_bootstrap() -> None:

@@ -747,6 +747,8 @@ def compute_metrics(
                     "p_value_two_sided": round(sign_flip.p_value_two_sided, 8),
                     "method": sign_flip.method,
                     "component_count": sign_flip.component_count,
+                    "informative_component_count": sign_flip.informative_component_count,
+                    "minimum_attainable_p": sign_flip.minimum_attainable_p,
                     "extreme_permutations": sign_flip.extreme_permutations,
                     "permutations_considered": sign_flip.permutations_considered,
                     "theoretical_exact_resolution": sign_flip.theoretical_exact_resolution,
