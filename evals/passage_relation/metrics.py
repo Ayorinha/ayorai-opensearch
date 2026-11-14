@@ -5,20 +5,28 @@ turn true claims into REFUTED or CONFLICTING, and does a candidate variant reduc
 without losing legitimate contradictions (exceptions, restrictions, definitions,
 cross-references)?
 
-Inputs are files written by people (cases and passage annotations) and by the system
-(runs). This module never writes, completes or labels a case. It refuses to score a run
-against a case set that is not fully adjudicated, or whose hash differs from the one
-recorded in the run.
+Inputs are files written by people (cases, pooled-passage annotations and the
+independent passage universe) and by the system (runs). This module never writes,
+completes or labels a case. Every input is bound by SHA-256: a run to its case and
+document files, each annotated passage to the exact document text it covers.
+
+Two passage sets are kept apart:
+- the pool: union of the passages the evaluated variants cited, annotated blind to
+  their stances and verdicts. Recall over the pool is conditional on the variants.
+- the independent universe: passages people mark as candidates for each claim by
+  reading the documents, before and without any run. Only this set measures recall.
 
 Subcommands:
     pool    passages to annotate, from one or more runs, WITHOUT stances or verdicts
     score   metrics of one run, with cluster-bootstrap intervals
-    compare paired comparison of two runs on the same cases
+    compare paired comparison of two runs on the same cases and documents
 
 Usage:
     python -m evals.passage_relation.metrics pool --cases C --documents D --runs R1 R2 --out P
-    python -m evals.passage_relation.metrics score --cases C --pairs P --run R
-    python -m evals.passage_relation.metrics compare --cases C --pairs P --run R1 --run R2
+    python -m evals.passage_relation.metrics score --cases C --documents D --pairs P \
+        [--universe U] --run R
+    python -m evals.passage_relation.metrics compare --cases C --documents D --pairs P \
+        [--universe U] --run R1 --run R2
 """
 
 from __future__ import annotations
@@ -27,6 +35,7 @@ import argparse
 import hashlib
 import json
 import random
+import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -47,6 +56,7 @@ ABSTENTION = {None, "unverified"}
 CONTRADICTION_VERDICTS = {"refuted", "conflicting"}
 DEFAULT_ITERATIONS = 10_000
 DEFAULT_SEED = 20261003
+_COMMIT_RE = re.compile(r"[0-9a-f]{40}")
 
 Key = tuple[str, str, int, int]  # case_id, document_id, start, end
 
@@ -61,6 +71,12 @@ class Case:
     cluster_id: str
     claim: str
     label: str
+
+
+@dataclass(frozen=True)
+class Documents:
+    texts: Mapping[str, str]
+    sha256: str
 
 
 @dataclass(frozen=True)
@@ -90,13 +106,27 @@ class ClaimRun:
 @dataclass(frozen=True)
 class Run:
     variant: str
+    commit: str
+    worktree_clean: bool
     cases_sha256: str
+    documents_sha256: str
     engine: Mapping[str, str]
     results: Mapping[str, ClaimRun]
 
 
+# --------------------------------------------------------------------------- loading
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
 def sha256_file(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return sha256_bytes(path.read_bytes())
+
+
+def passage_sha256(text: str) -> str:
+    return sha256_bytes(text.encode("utf-8"))
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -135,11 +165,14 @@ def _offset(row: Mapping[str, Any], field: str, where: str) -> int:
     return value
 
 
-def _key(row: Mapping[str, Any], case_id: str, where: str) -> Key:
+def _key(row: Mapping[str, Any], case_id: str, documents: Documents, where: str) -> Key:
+    document_id = _text(row, "document_id", where)
     start, end = _offset(row, "start", where), _offset(row, "end", where)
-    if end <= start:
-        raise EvaluationInputError(f"{where}: end must be greater than start")
-    return case_id, _text(row, "document_id", where), start, end
+    if document_id not in documents.texts:
+        raise EvaluationInputError(f"{where}: unknown document_id {document_id!r}")
+    if not start < end <= len(documents.texts[document_id]):
+        raise EvaluationInputError(f"{where}: offsets outside document {document_id!r}")
+    return case_id, document_id, start, end
 
 
 def load_cases(path: Path) -> dict[str, Case]:
@@ -164,20 +197,43 @@ def load_cases(path: Path) -> dict[str, Case]:
     return cases
 
 
-def load_pairs(path: Path, cases: Mapping[str, Case]) -> dict[Key, PairAnnotation]:
-    """Two independent annotations per pooled passage plus the adjudicated value."""
+def load_documents(path: Path) -> Documents:
+    texts: dict[str, str] = {}
+    for index, row in enumerate(read_jsonl(path), start=1):
+        where = f"{path.name} document {index}"
+        document_id = _text(row, "document_id", where)
+        text = row.get("text")
+        if not isinstance(text, str) or not text:
+            raise EvaluationInputError(f"{where}: text must be a non-empty string")
+        if document_id in texts:
+            raise EvaluationInputError(f"{where}: duplicate document_id {document_id!r}")
+        texts[document_id] = text
+    if not texts:
+        raise EvaluationInputError(f"{path.name}: no documents")
+    return Documents(texts, sha256_file(path))
+
+
+def load_annotations(
+    path: Path, cases: Mapping[str, Case], documents: Documents, *, every_case: bool = False
+) -> dict[Key, PairAnnotation]:
+    """Two independent annotations per passage plus the adjudicated value. Each row
+    carries passage_sha256 of the exact text it covers; a mismatch means the passage
+    was annotated on other document text and the file is refused."""
 
     pairs: dict[Key, PairAnnotation] = {}
     for index, row in enumerate(read_jsonl(path), start=1):
-        where = f"{path.name} pair {index}"
+        where = f"{path.name} passage {index}"
         case_id = _text(row, "case_id", where)
         if case_id not in cases:
             raise EvaluationInputError(f"{where}: unknown case_id {case_id!r}")
         if row.get("adjudicated") is not True:
-            raise EvaluationInputError(f"{where}: pair is not adjudicated")
-        key = _key(row, case_id, where)
+            raise EvaluationInputError(f"{where}: passage is not adjudicated")
+        key = _key(row, case_id, documents, where)
         if key in pairs:
             raise EvaluationInputError(f"{where}: duplicate passage for case {case_id}")
+        _, document_id, start, end = key
+        if row.get("passage_sha256") != passage_sha256(documents.texts[document_id][start:end]):
+            raise EvaluationInputError(f"{where}: passage_sha256 does not match the documents")
         pairs[key] = PairAnnotation(
             key=key,
             relation=_choice(row, "relation", RELATIONS, where),
@@ -187,27 +243,46 @@ def load_pairs(path: Path, cases: Mapping[str, Case]) -> dict[Key, PairAnnotatio
             stance_a=_choice(row, "stance_a", STANCES, where),
             stance_b=_choice(row, "stance_b", STANCES, where),
         )
+    if every_case:
+        missing = sorted(set(cases) - {key[0] for key in pairs})
+        if missing:
+            raise EvaluationInputError(
+                f"{path.name}: the independent universe has no passage for {missing[:5]}"
+            )
     return pairs
 
 
-def load_run(path: Path, cases: Mapping[str, Case], cases_sha256: str) -> Run:
+def load_run(path: Path, cases: Mapping[str, Case], cases_sha256: str, documents: Documents) -> Run:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict) or raw.get("schema") != SCHEMA:
         raise EvaluationInputError(f"{path.name}: schema must be {SCHEMA!r}")
     meta = raw.get("meta")
     if not isinstance(meta, dict):
         raise EvaluationInputError(f"{path.name}: meta is required")
-    variant = _text(meta, "variant", f"{path.name} meta")
+    where = f"{path.name} meta"
+    variant = _text(meta, "variant", where)
     if meta.get("cases_sha256") != cases_sha256:
         raise EvaluationInputError(
             f"{path.name}: run was produced for another case file "
             f"({meta.get('cases_sha256')!r} != {cases_sha256!r})"
         )
+    if meta.get("documents_sha256") != documents.sha256:
+        raise EvaluationInputError(
+            f"{path.name}: run was produced for another document file "
+            f"({meta.get('documents_sha256')!r} != {documents.sha256!r})"
+        )
+    commit = meta.get("commit")
+    if not isinstance(commit, str) or not _COMMIT_RE.fullmatch(commit):
+        raise EvaluationInputError(f"{where}: commit must be a full 40-character SHA-1")
+    if not isinstance(meta.get("worktree_clean"), bool):
+        raise EvaluationInputError(f"{where}: worktree_clean must be a boolean")
     engine = meta.get("engine")
-    if not isinstance(engine, dict) or not all(
-        isinstance(k, str) and isinstance(v, str) for k, v in engine.items()
+    if (
+        not isinstance(engine, dict)
+        or not engine
+        or not all(isinstance(k, str) and isinstance(v, str) for k, v in engine.items())
     ):
-        raise EvaluationInputError(f"{path.name}: meta.engine must map strings to strings")
+        raise EvaluationInputError(f"{where}: engine must map strings to strings")
     results: dict[str, ClaimRun] = {}
     for index, row in enumerate(raw.get("results") or [], start=1):
         where = f"{path.name} result {index}"
@@ -226,39 +301,64 @@ def load_run(path: Path, cases: Mapping[str, Case], cases_sha256: str) -> Run:
             if not isinstance(item, dict):
                 raise EvaluationInputError(f"{where}: evidence items must be objects")
             evidence.append(
-                EvidenceItem(_key(item, case_id, where), _choice(item, "stance", STANCES, where))
+                EvidenceItem(
+                    _key(item, case_id, documents, where),
+                    _choice(item, "stance", STANCES, where),
+                )
             )
         results[case_id] = ClaimRun(case_id, verdict.lower() if verdict else None, tuple(evidence))
     missing = sorted(set(cases) - set(results))
     if missing:
         raise EvaluationInputError(f"{path.name}: missing results for {missing[:5]}")
-    return Run(variant, cases_sha256, dict(engine), results)
+    return Run(
+        variant=variant,
+        commit=commit,
+        worktree_clean=meta["worktree_clean"],
+        cases_sha256=cases_sha256,
+        documents_sha256=documents.sha256,
+        engine=dict(engine),
+        results=results,
+    )
+
+
+def run_identity(run: Run) -> dict[str, Any]:
+    return {
+        "variant": run.variant,
+        "commit": run.commit,
+        "worktree_clean": run.worktree_clean,
+        "cases_sha256": run.cases_sha256,
+        "documents_sha256": run.documents_sha256,
+        "engine": dict(run.engine),
+    }
 
 
 # --------------------------------------------------------------------------- pooling
 
 
 def pool(
-    cases: Mapping[str, Case], runs: Iterable[Run], documents: Mapping[str, str]
+    cases: Mapping[str, Case], runs: Iterable[Run], documents: Documents
 ) -> list[dict[str, Any]]:
-    """Union of retrieved passages, blind: claim and passage text only, sorted."""
+    """Union of cited passages, blind: claim and passage text only, sorted."""
 
     keys: set[Key] = set()
     for run in runs:
+        if run.documents_sha256 != documents.sha256:
+            raise EvaluationInputError(f"run {run.variant} used other documents")
         for result in run.results.values():
             keys.update(item.key for item in result.evidence)
     rows = []
     for case_id, document_id, start, end in sorted(keys):
-        if document_id not in documents:
-            raise EvaluationInputError(f"unknown document_id {document_id!r}")
+        passage = documents.texts[document_id][start:end]
         rows.append(
             {
                 "case_id": case_id,
                 "claim": cases[case_id].claim,
                 "document_id": document_id,
+                "documents_sha256": documents.sha256,
                 "start": start,
                 "end": end,
-                "passage": documents[document_id][start:end],
+                "passage": passage,
+                "passage_sha256": passage_sha256(passage),
             }
         )
     return rows
@@ -267,64 +367,87 @@ def pool(
 # --------------------------------------------------------------------------- metrics
 
 
-def _ratio(numerator: int, denominator: int) -> float | None:
-    return numerator / denominator if denominator else None
+def _overlaps(left: Key, right: Key) -> bool:
+    return left[1] == right[1] and left[2] < right[3] and right[2] < left[3]
 
 
-def _per_case(run: Run, pairs: Mapping[Key, PairAnnotation], case: Case) -> dict[str, int]:
+def _per_case(
+    run: Run,
+    pairs: Mapping[Key, PairAnnotation],
+    universe: Mapping[Key, PairAnnotation] | None,
+    case: Case,
+) -> dict[str, int]:
     """Counts for one claim; metrics are ratios of sums, so they bootstrap by cluster."""
 
     result = run.results[case.case_id]
-    pooled = [pair for key, pair in pairs.items() if key[0] == case.case_id]
-    relevant_pool = {pair.key for pair in pooled if pair.relation != "sem_relacao"}
     counts: Counter[str] = Counter()
-    retrieved_relevant = 0
+    cited = [item.key for item in result.evidence]
     for item in result.evidence:
         pair = pairs.get(item.key)
         if pair is None:
             counts["unannotated_evidence"] += 1
             continue
+        system_contradicts = item.stance == "contradicts"
+        human_contradicts = pair.stance == "contradicts"
         counts["retrieved"] += 1
-        related = pair.relation != "sem_relacao"
-        retrieved_relevant += related
+        counts["retrieved_relevant"] += pair.relation != "sem_relacao"
         if pair.relation == "sem_relacao":
             counts["unrelated_retrieved"] += 1
-            counts["unrelated_false_contradicts"] += item.stance == "contradicts"
-        counts[f"system_contradicts_{pair.relation}"] += item.stance == "contradicts"
-        counts[f"human_contradicts_{pair.relation}"] += pair.stance == "contradicts"
-        counts[f"both_contradicts_{pair.relation}"] += (
-            item.stance == "contradicts" and pair.stance == "contradicts"
-        )
-        counts["system_contradicts"] += item.stance == "contradicts"
-        counts["both_contradicts"] += item.stance == "contradicts" and pair.stance == "contradicts"
-        counts["retrieved_human_contradicts"] += pair.stance == "contradicts"
-    counts["retrieved_relevant"] = retrieved_relevant
-    if relevant_pool:
-        counts["cases_with_relevant_pool"] = 1
-        counts["relevant_pool"] = len(relevant_pool)
-        counts["relevant_found"] = len(relevant_pool & {item.key for item in result.evidence})
+            counts["unrelated_false_contradicts"] += system_contradicts
+        for suffix in ("", f"_{pair.relation}"):
+            counts[f"system_contradicts{suffix}"] += system_contradicts
+            counts[f"human_contradicts{suffix}"] += human_contradicts
+            counts[f"both_contradicts{suffix}"] += system_contradicts and human_contradicts
+
+    relevant_pool = {key for key, pair in pairs.items() if key[0] == case.case_id}
+    relevant_pool = {key for key in relevant_pool if pairs[key].relation != "sem_relacao"}
+    counts["pool_relevant"] = len(relevant_pool)
+    counts["pool_relevant_cited"] = len(relevant_pool & set(cited))
+
+    if universe is not None:
+        units = [
+            key
+            for key, unit in universe.items()
+            if key[0] == case.case_id and unit.relation != "sem_relacao"
+        ]
+        hit = sum(any(_overlaps(unit, key) for key in cited) for unit in units)
+        counts["universe_relevant"] = len(units)
+        counts["universe_relevant_cited"] = hit
+        counts["universe_cases"] = bool(units)
+        counts["universe_cases_covered"] = bool(units) and hit > 0
+
     verdict = result.verdict
     counts[f"label_{case.label}"] = 1
     counts["abstained"] = verdict in ABSTENTION
     if case.label == "supports":
-        counts["supports_false_contradiction_verdict"] = verdict in CONTRADICTION_VERDICTS
+        counts["supports_contradictory_verdict"] = verdict in CONTRADICTION_VERDICTS
     if case.label == "contradicts":
         counts["contradicts_detected"] = verdict in CONTRADICTION_VERDICTS
+        counts["contradicts_refuted"] = verdict == "refuted"
+        counts["contradicts_conflicting"] = verdict == "conflicting"
     return dict(counts)
 
 
+# name: (numerator, denominator) over summed per-case counts
 METRICS: dict[str, tuple[str, str]] = {
-    # name: (numerator, denominator) over summed per-case counts
-    "recall_relevant_at_k": ("relevant_found", "relevant_pool"),
+    # retrieval, independent universe (absolute, the only recall that is not conditional)
+    "recall_relevant_independent": ("universe_relevant_cited", "universe_relevant"),
+    "retrieval_coverage_independent": ("universe_cases_covered", "universe_cases"),
+    # retrieval, pool of cited passages (conditional on the evaluated variants)
+    "recall_relevant_in_pool": ("pool_relevant_cited", "pool_relevant"),
     "relevance_precision_at_k": ("retrieved_relevant", "retrieved"),
+    # passage stances
     "false_contradicts_on_unrelated": ("unrelated_false_contradicts", "unrelated_retrieved"),
     "contradicts_precision": ("both_contradicts", "system_contradicts"),
-    "contradicts_recall": ("both_contradicts", "retrieved_human_contradicts"),
+    "contradicts_recall": ("both_contradicts", "human_contradicts"),
+    # claim verdicts
     "false_refuted_or_conflicting_on_supports": (
-        "supports_false_contradiction_verdict",
+        "supports_contradictory_verdict",
         "label_supports",
     ),
     "contradiction_detected_on_contradicts": ("contradicts_detected", "label_contradicts"),
+    "decisive_refutation_on_contradicts": ("contradicts_refuted", "label_contradicts"),
+    "conflicting_on_contradicts": ("contradicts_conflicting", "label_contradicts"),
     "abstention_rate": ("abstained", "cases"),
 }
 for _relation in RELATIONS:
@@ -336,6 +459,11 @@ for _relation in RELATIONS:
         f"both_contradicts_{_relation}",
         f"human_contradicts_{_relation}",
     )
+INDEPENDENT_METRICS = ("recall_relevant_independent", "retrieval_coverage_independent")
+
+
+def _ratio(numerator: int, denominator: int) -> float | None:
+    return numerator / denominator if denominator else None
 
 
 def _value(totals: Mapping[str, int], name: str) -> float | None:
@@ -361,7 +489,7 @@ def _percentile_interval(values: list[float]) -> tuple[float, float] | None:
 
 
 def cluster_bootstrap(
-    per_case: Mapping[str, Mapping[str, Any]],
+    case_ids: Iterable[str],
     cases: Mapping[str, Case],
     statistic: Callable[[list[str]], float | None],
     *,
@@ -372,7 +500,7 @@ def cluster_bootstrap(
     per cluster); undefined replicates are excluded and reported."""
 
     clusters: dict[str, list[str]] = defaultdict(list)
-    for case_id in sorted(per_case):
+    for case_id in sorted(case_ids):
         clusters[cases[case_id].cluster_id].append(case_id)
     names = sorted(clusters)
     rng = random.Random(seed)
@@ -390,23 +518,38 @@ def cluster_bootstrap(
     }
 
 
+def _check_annotated(*tables: Mapping[str, Mapping[str, int]]) -> None:
+    missing = sum(row.get("unannotated_evidence", 0) for table in tables for row in table.values())
+    if missing:
+        raise EvaluationInputError(
+            f"{missing} cited passages are not annotated; pool every run before annotation"
+        )
+
+
+def _not_measured(name: str, universe: Mapping[Key, PairAnnotation] | None) -> str | None:
+    if universe is None and name in INDEPENDENT_METRICS:
+        return "not measured: no independent universe was provided"
+    return None
+
+
 def score(
     run: Run,
     cases: Mapping[str, Case],
     pairs: Mapping[Key, PairAnnotation],
+    universe: Mapping[Key, PairAnnotation] | None = None,
     *,
     iterations: int = DEFAULT_ITERATIONS,
     seed: int = DEFAULT_SEED,
 ) -> dict[str, Any]:
-    per_case = {case_id: _per_case(run, pairs, case) for case_id, case in cases.items()}
+    per_case = {cid: _per_case(run, pairs, universe, case) for cid, case in cases.items()}
+    _check_annotated(per_case)
     totals = _sum(per_case.values())
-    if totals.get("unannotated_evidence"):
-        raise EvaluationInputError(
-            f"{totals['unannotated_evidence']} retrieved passages are not annotated; "
-            "pool every run before annotation"
-        )
     metrics: dict[str, Any] = {}
     for name in METRICS:
+        reason = _not_measured(name, universe)
+        if reason:
+            metrics[name] = {"value": None, "status": reason}
+            continue
         point = _value(totals, name)
 
         def statistic(sample: list[str], name: str = name) -> float | None:
@@ -417,19 +560,20 @@ def score(
             "numerator": totals.get(METRICS[name][0], 0),
             "denominator": totals.get(METRICS[name][1], 0),
             **(
-                cluster_bootstrap(per_case, cases, statistic, iterations=iterations, seed=seed)
+                cluster_bootstrap(cases, cases, statistic, iterations=iterations, seed=seed)
                 if point is not None
                 else {"ci95": None}
             ),
         }
     return {
         "schema": SCHEMA,
-        "variant": run.variant,
-        "engine": dict(run.engine),
-        "cases_sha256": run.cases_sha256,
+        "run": run_identity(run),
         "cases": len(cases),
         "bootstrap": {"iterations": iterations, "seed": seed, "unit": "cluster_id"},
-        "agreement": agreement(pairs),
+        "agreement": {
+            "pool": agreement(pairs),
+            "independent_universe": agreement(universe) if universe is not None else None,
+        },
         "metrics": metrics,
     }
 
@@ -439,6 +583,7 @@ def compare(
     second: Run,
     cases: Mapping[str, Case],
     pairs: Mapping[Key, PairAnnotation],
+    universe: Mapping[Key, PairAnnotation] | None = None,
     *,
     iterations: int = DEFAULT_ITERATIONS,
     seed: int = DEFAULT_SEED,
@@ -449,12 +594,17 @@ def compare(
 
     if first.cases_sha256 != second.cases_sha256:
         raise EvaluationInputError("runs were produced for different case files")
-    a = {case_id: _per_case(first, pairs, case) for case_id, case in cases.items()}
-    b = {case_id: _per_case(second, pairs, case) for case_id, case in cases.items()}
-    if _sum(a.values()).get("unannotated_evidence") or _sum(b.values()).get("unannotated_evidence"):
-        raise EvaluationInputError("retrieved passages are not annotated; pool both runs")
+    if first.documents_sha256 != second.documents_sha256:
+        raise EvaluationInputError("runs were produced for different document files")
+    a = {cid: _per_case(first, pairs, universe, case) for cid, case in cases.items()}
+    b = {cid: _per_case(second, pairs, universe, case) for cid, case in cases.items()}
+    _check_annotated(a, b)
     differences: dict[str, Any] = {}
     for name in METRICS:
+        reason = _not_measured(name, universe)
+        if reason:
+            differences[name] = {"difference": None, "status": reason}
+            continue
 
         def statistic(sample: list[str], name: str = name) -> float | None:
             left = _value(_sum(a[c] for c in sample), name)
@@ -467,21 +617,25 @@ def compare(
             "second": _value(_sum(b.values()), name),
             "difference": point,
             **(
-                cluster_bootstrap(a, cases, statistic, iterations=iterations, seed=seed)
+                cluster_bootstrap(cases, cases, statistic, iterations=iterations, seed=seed)
                 if point is not None
                 else {"ci95": None}
             ),
         }
     discordant: dict[str, dict[str, int]] = {}
-    for field in ("supports_false_contradiction_verdict", "contradicts_detected", "abstained"):
+    for field in (
+        "supports_contradictory_verdict",
+        "contradicts_detected",
+        "contradicts_refuted",
+        "abstained",
+    ):
         only_first = sum(bool(a[c].get(field)) and not b[c].get(field) for c in cases)
         only_second = sum(bool(b[c].get(field)) and not a[c].get(field) for c in cases)
         discordant[field] = {"only_first": only_first, "only_second": only_second}
     return {
         "schema": SCHEMA,
-        "first": {"variant": first.variant, "engine": dict(first.engine)},
-        "second": {"variant": second.variant, "engine": dict(second.engine)},
-        "cases_sha256": first.cases_sha256,
+        "first": run_identity(first),
+        "second": run_identity(second),
         "bootstrap": {"iterations": iterations, "seed": seed, "unit": "cluster_id"},
         "differences": differences,
         "discordant_claims": discordant,
@@ -501,7 +655,7 @@ def cohen_kappa(left: Sequence[str], right: Sequence[str]) -> float | None:
 def agreement(pairs: Mapping[Key, PairAnnotation]) -> dict[str, Any]:
     items = list(pairs.values())
     return {
-        "pairs": len(items),
+        "passages": len(items),
         "relation_kappa": cohen_kappa([p.relation_a for p in items], [p.relation_b for p in items]),
         "stance_kappa": cohen_kappa([p.stance_a for p in items], [p.stance_b for p in items]),
     }
@@ -510,22 +664,8 @@ def agreement(pairs: Mapping[Key, PairAnnotation]) -> dict[str, Any]:
 # --------------------------------------------------------------------------- CLI
 
 
-def load_documents(path: Path) -> dict[str, str]:
-    documents: dict[str, str] = {}
-    for index, row in enumerate(read_jsonl(path), start=1):
-        where = f"{path.name} document {index}"
-        document_id = _text(row, "document_id", where)
-        text = row.get("text")
-        if not isinstance(text, str) or not text:
-            raise EvaluationInputError(f"{where}: text must be a non-empty string")
-        if document_id in documents:
-            raise EvaluationInputError(f"{where}: duplicate document_id {document_id!r}")
-        documents[document_id] = text
-    return documents
-
-
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
     pool_cmd = sub.add_parser("pool")
     pool_cmd.add_argument("--cases", type=Path, required=True)
@@ -535,7 +675,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     for name in ("score", "compare"):
         command = sub.add_parser(name)
         command.add_argument("--cases", type=Path, required=True)
+        command.add_argument("--documents", type=Path, required=True)
         command.add_argument("--pairs", type=Path, required=True)
+        command.add_argument("--universe", type=Path)
         command.add_argument("--run", type=Path, action="append", required=True, dest="runs")
         command.add_argument("--iterations", type=int, default=DEFAULT_ITERATIONS)
         command.add_argument("--seed", type=int, default=DEFAULT_SEED)
@@ -543,24 +685,32 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     cases = load_cases(args.cases)
+    documents = load_documents(args.documents)
     digest = sha256_file(args.cases)
-    runs = [load_run(path, cases, digest) for path in args.runs]
+    runs = [load_run(path, cases, digest, documents) for path in args.runs]
     if args.command == "pool":
-        rows = pool(cases, runs, load_documents(args.documents))
+        rows = pool(cases, runs, documents)
         args.out.write_text(
             "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8"
         )
         print(f"{len(rows)} passages to annotate -> {args.out}")
         return 0
-    pairs = load_pairs(args.pairs, cases)
+    pairs = load_annotations(args.pairs, cases, documents)
+    universe = (
+        load_annotations(args.universe, cases, documents, every_case=True)
+        if args.universe
+        else None
+    )
     if args.command == "score":
         if len(runs) != 1:
             parser.error("score takes exactly one --run")
-        report = score(runs[0], cases, pairs, iterations=args.iterations, seed=args.seed)
+        report = score(runs[0], cases, pairs, universe, iterations=args.iterations, seed=args.seed)
     else:
         if len(runs) != 2:
             parser.error("compare takes exactly two --run")
-        report = compare(runs[0], runs[1], cases, pairs, iterations=args.iterations, seed=args.seed)
+        report = compare(
+            runs[0], runs[1], cases, pairs, universe, iterations=args.iterations, seed=args.seed
+        )
     text = json.dumps(report, indent=2, ensure_ascii=False) + "\n"
     if args.out:
         args.out.write_text(text, encoding="utf-8")

@@ -13,7 +13,7 @@
   - Afirmações falsas (`contradicts`): 33/36 terminam `REFUTED`.
   - Afirmações verdadeiras (`supports`): 13/34 terminam `PARTIALLY_SUPPORTED`, que é o máximo possível com um único documento sob o ADR-002 (que exige duas fontes independentes para `SUPPORTED`). Outras 17 terminam `REFUTED` (10) ou `CONFLICTING` (7).
   - Entre os trechos de outros dispositivos citados para afirmações verdadeiras, 20 recebem `contradicts`.
-  - Nenhum trecho citado abrange mais de um dispositivo, então o efeito não vem de trechos misturados.
+  - Nenhum trecho citado abrange mais de um dispositivo (0/210). Isso é exploratório: exclui trechos misturados como causa neste conjunto, mas não prova que os trechos de outros dispositivos sejam juridicamente irrelevantes.
 
 **[HIPÓTESE]** Trechos sem relação material com a afirmação produzem contradições indevidas que derrubam afirmações verdadeiras.
 
@@ -39,30 +39,64 @@ Cada variante entra em `evals/passage_relation/run_system.py` (`VARIANTS`) por u
   - `label` é o rótulo da afirmação em relação aos documentos.
 - **Reserva:** os casos de avaliação ficam fora do repositório público até a execução única autorizada.
 
-## 4. Anotação de trechos (cega aos resultados)
+## 4. Dois conjuntos de trechos, anotados sem ver resultados
 
-1. Cada variante congelada produz um *run*. `metrics.py pool` reúne a união dos trechos citados por todas as variantes. O arquivo resultante contém só afirmação e texto do trecho, sem stance nem veredito.
-2. Dois anotadores independentes classificam cada par afirmação–trecho:
+**Universo independente.** É o único conjunto que mede recall absoluto.
+- Para cada afirmação, pessoas leem os documentos e marcam todos os trechos candidatos, de qualquer relação, antes de existir qualquer *run* e sem consultar as variantes.
+- Quando o documento é curto, o universo pode ser formado por todas as unidades estruturais (artigos, parágrafos, incisos), anotadas uma a uma.
+- Toda afirmação precisa ter ao menos uma linha no universo; o harness recusa o arquivo se faltar alguma.
+
+**Pool das variantes.** Serve à comparação relativa.
+- `metrics.py pool` reúne a união dos trechos citados pelas variantes congeladas.
+- O arquivo contém só afirmação, texto do trecho, offsets, `passage_sha256` e `documents_sha256`, sem stance nem veredito.
+- Recall sobre o pool é condicionado às variantes e nunca é apresentado como recall absoluto.
+
+**Anotação, igual para os dois conjuntos:**
+1. Dois anotadores independentes classificam cada par afirmação–trecho:
    - **relação:** `direta`, `excecao_restricao`, `definicao_abrangencia`, `remissao` ou `sem_relacao`;
    - **efeito:** `supports`, `contradicts` ou `neutral`.
-3. Divergências são resolvidas por adjudicação humana antes de qualquer resultado do sistema ser revelado. A concordância (kappa de Cohen da relação e do efeito) é reportada.
-4. Cada par guarda `relation_a`, `relation_b`, `stance_a`, `stance_b`, os valores adjudicados `relation` e `stance`, e `adjudicated: true`.
-   - O harness recusa caso ou par não adjudicado.
-   - O harness recusa trecho citado que não foi anotado.
+2. Divergências são resolvidas por adjudicação humana antes de qualquer resultado do sistema ser revelado. O kappa de Cohen da relação e do efeito é reportado separadamente por conjunto.
+3. Cada linha guarda `relation_a`, `relation_b`, `stance_a`, `stance_b`, os valores adjudicados `relation` e `stance`, `adjudicated: true` e `passage_sha256`.
+4. O harness recusa:
+   - linha não adjudicada;
+   - `passage_sha256` diferente do texto nos documentos;
+   - offsets fora do documento;
+   - trecho citado por um run que não foi anotado no pool.
 
-## 5. Métricas (`metrics.py score` e `compare`)
+## 5. Rastreabilidade
 
-| Métrica | Definição |
-|---|---|
-| `recall_relevant_at_k` | trechos relevantes do pool citados ÷ trechos relevantes do pool (relevante = relação ≠ `sem_relacao`) |
-| `relevance_precision_at_k` | trechos citados relevantes ÷ trechos citados |
-| `false_contradicts_on_unrelated` | trechos `sem_relacao` com stance `contradicts` ÷ trechos `sem_relacao` citados |
-| `contradicts_precision` / `contradicts_recall` | stance `contradicts` do sistema contra o efeito humano adjudicado, por trecho citado |
-| `false_refuted_or_conflicting_on_supports` | afirmações `supports` com veredito `REFUTED` ou `CONFLICTING` ÷ afirmações `supports` |
-| `contradiction_detected_on_contradicts` | afirmações `contradicts` com veredito `REFUTED` ou `CONFLICTING` ÷ afirmações `contradicts` |
-| `abstention_rate` | veredito ausente ou `UNVERIFIED` ÷ afirmações |
-| `contradicts_precision_<relação>` / `contradicts_recall_<relação>` | as mesmas medidas separadas por categoria de relação |
+Cada run registra:
+- variante e commit completo (40 caracteres), e se a árvore de trabalho estava limpa (uma árvore suja é recusada, salvo uso explícito de desenvolvimento, que fica registrado);
+- metadados da engine;
+- SHA-256 do arquivo de casos e do arquivo de documentos;
+- documento e offsets de cada trecho citado.
 
+O harness recusa:
+- run produzido para outros casos ou outros documentos;
+- comparação entre runs com documentos diferentes;
+- anotação cujo trecho não corresponda byte a byte ao documento usado.
+
+Os relatórios repetem a identidade completa de cada run.
+
+## 6. Métricas (`metrics.py score` e `compare`)
+
+| Métrica | Conjunto | Definição |
+|---|---|---|
+| `recall_relevant_independent` | universo | unidades relevantes do universo sobrepostas por um trecho citado ÷ unidades relevantes do universo (relevante = relação ≠ `sem_relacao`; sobreposição ≥ 1 caractere no mesmo documento) |
+| `retrieval_coverage_independent` | universo | afirmações com ao menos uma unidade relevante citada ÷ afirmações com unidade relevante |
+| `recall_relevant_in_pool` | pool | trechos relevantes do pool citados ÷ trechos relevantes do pool (condicionado às variantes) |
+| `relevance_precision_at_k` | pool | trechos citados relevantes ÷ trechos citados |
+| `false_contradicts_on_unrelated` | pool | trechos `sem_relacao` com stance `contradicts` ÷ trechos `sem_relacao` citados |
+| `contradicts_precision` / `contradicts_recall` | pool | stance `contradicts` do sistema contra o efeito humano adjudicado, total e por relação (`_<relação>`) |
+| `false_refuted_or_conflicting_on_supports` | afirmações | afirmações `supports` com `REFUTED` ou `CONFLICTING` ÷ afirmações `supports` |
+| `contradiction_detected_on_contradicts` (A) | afirmações | afirmações `contradicts` com `REFUTED` ou `CONFLICTING` ÷ afirmações `contradicts` |
+| `decisive_refutation_on_contradicts` (B) | afirmações | afirmações `contradicts` com `REFUTED` ÷ afirmações `contradicts` |
+| `conflicting_on_contradicts` | afirmações | afirmações `contradicts` com `CONFLICTING` ÷ afirmações `contradicts` |
+| `abstention_rate` | afirmações | veredito ausente ou `UNVERIFIED` ÷ afirmações |
+
+- **Desfecho para afirmações verdadeiras:** `REFUTED` e `CONFLICTING` contam juntos como resultado contraditório.
+- **Afirmações falsas:** detecção (A) e refutação decisiva (B) são reportadas separadamente. `REFUTED` e `CONFLICTING` não são tratados como equivalentes em qualidade.
+- **Sem universo independente:** as métricas de universo saem como "não medidas", nunca estimadas pelo pool.
 - **Intervalos:**
   - IC95% por bootstrap percentil reamostrando `cluster_id` inteiros;
   - 10.000 réplicas e seed 20261003 por padrão;
@@ -70,20 +104,20 @@ Cada variante entra em `evals/passage_relation/run_system.py` (`VARIANTS`) por u
   - réplicas indefinidas são excluídas e contadas.
 - **Comparação pareada (`compare`):**
   - diferença por métrica (segunda − primeira) com IC por cluster;
-  - contagens discordantes por afirmação para veredito contraditório em `supports`, contradição detectada em `contradicts` e abstenção.
+  - contagens discordantes por afirmação para veredito contraditório em `supports`, detecção e refutação decisiva em `contradicts`, e abstenção.
 
-## 6. Regra de decisão (a definir pelo mantenedor antes do congelamento)
+## 7. Regra de decisão (a definir pelo mantenedor antes do congelamento)
 
 A melhoria só é real se reduzir contradições indevidas sem eliminar contradições juridicamente legítimas. Antes de qualquer execução, o mantenedor registra:
 
-1. o desfecho primário (proposta: `false_refuted_or_conflicting_on_supports`);
-2. a condição de não inferioridade sobre `contradiction_detected_on_contradicts` e `contradicts_recall_excecao_restricao`, com sua margem;
+1. o desfecho primário (proposta: `false_refuted_or_conflicting_on_supports`, com `REFUTED` e `CONFLICTING` contando como resultado contraditório);
+2. a condição de não inferioridade sobre `decisive_refutation_on_contradicts`, `contradiction_detected_on_contradicts`, `contradicts_recall_excecao_restricao` e `recall_relevant_independent`, com suas margens;
 3. o tamanho mínimo do conjunto e de `cluster_id` distintos;
 4. o tratamento de abstenções.
 
 Este documento não escolhe esses valores.
 
-## 7. Proibições
+## 8. Proibições
 
 - Não executar nenhuma variante sobre o TEST do PT-CP. Não reutilizar os 70 casos DEV como confirmação.
 - Não criar, completar, visualizar ou rotular casos do Piloto 02 ou do conjunto definitivo do RGC.
