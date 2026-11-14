@@ -88,6 +88,8 @@ A aprovação é uma declaração auditável, não prova criptográfica da ident
 
 ## 3. Parâmetros propostos para congelamento
 
+> **Aviso de migração — 2026-11-14:** a tabela abaixo descreve o comportamento legado ainda presente no executor durante a etapa E2; ela não representa a configuração confirmatória final exigida pela DEC-027. A E2 padroniza apenas o gerador e o quantil. A DEC-027, D4–D5, já determina sign-flip bilateral por componente e IC95% primário por componente conectado, com bootstrap por cluster de artigo como sensibilidade. Essas mudanças dependem da E3: emenda datada do pré-registro e ligação dos métodos ao executor. Até a conclusão e aprovação dessa emenda, o protocolo permanece [PROPOSTO] e nenhuma saída desta implementação pode ser tratada como resultado confirmatório H1.
+
 | Parâmetro | Valor proposto | Observação |
 |---|---|---|
 | Modo da avaliação principal | `retrieval` | `oracle` reportado ao lado, como análise secundária |
@@ -155,6 +157,10 @@ Este executor não afirma validação, parceria ou endosso da Anatel ou de qualq
 Para cada caso elegível na partição oculta, `bootstrap_cluster_id` deve ser uma string não vazia e estável. Use o ID canônico do artigo que contém a regra principal que decide a afirmação. Se a afirmação depender conjuntamente de vários artigos sem um principal único, use `bundle:` seguido dos IDs canônicos únicos ordenados lexicalmente e unidos por `+`. `cited_article_ids` preserva a lista completa de artigos citados quando aplicável. Casos com a mesma chave são reamostrados juntos; bundles são clusters próprios. A execução confirmatória interrompe se o campo estiver ausente ou inválido.
 
 O relatório publica `system_ci95` como intervalo primário por cluster de artigo e `system_ci95_case_bootstrap` como sensibilidade por caso, além do número de clusters e da unidade de reamostragem. Ambos usam 10.000 iterações e seed `20261003`. Nenhum bootstrap real ou métrica RGC foi produzido por esta alteração.
+
+**Gerador e percentil — executor `rgc-eval/0.8.0` (DEC-027, D2 e D3):** todos os sorteios do executor e da ferramenta de concordância vêm de RGC-PRNG-1 (`evals/ptbr/rgc_random.py`), com um fluxo por procedimento: `dec019-accuracy-bootstrap` (cluster), `case-accuracy-bootstrap` (caso) e `case-kappa-bootstrap` (concordância por caso). Os limites do IC95% usam o quantil tipo 7 de Hyndman–Fan, calculado por fórmula. Antes, os sorteios usavam `random.Random` e os limites, estatística de ordem sem interpolação; por isso, intervalos calculados pela versão `0.7.0` não são comparáveis número a número. Os relatórios registram `generator` e `percentile`. Nenhum bootstrap real ou métrica RGC foi produzido por esta alteração.
+
+**Limite de segurança do RGC-PRNG-1:** o gerador é determinístico e destinado exclusivamente à reprodutibilidade estatística do bootstrap e do sign-flip. Não implementa um mecanismo DRBG especificado/validado pela [NIST SP 800-90A](https://csrc.nist.gov/pubs/sp/800/90/a/r1/final), não recebe entropia nem oferece reseed/prediction resistance e não deve ser usado para chaves, tokens, nonces ou qualquer finalidade de segurança.
 
 
 **Nota de consistência (2026-10-21):** DEC-017 e DEC-018 estão aprovadas pelo mantenedor (opção A); as propostas históricas correspondentes não representam estado pendente. O protocolo permanece **[PROPOSTO]** e não congelado.
