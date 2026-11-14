@@ -1048,6 +1048,14 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert report["annotation_approval"]["cohen_kappa"] == 1.0
     assert report["metrics"]["system"]["accuracy"] == 1.0
     assert report["config"]["mode"] == "retrieval"
+    # The recorded configuration must describe the methods actually used (Emenda 11).
+    assert report["config"]["bootstrap"]["primary_unit"] == "component"
+    assert report["config"]["bootstrap"]["sensitivity_units"] == ["article_cluster", "case"]
+    assert report["config"]["h1_test"] == "sign_flip_by_component"
+    assert (
+        report["config"]["bootstrap"]["primary_unit"]
+        == report["metrics"]["bootstrap_provenance"]["primary_unit"]
+    )
     assert report["metrics"]["baseline_primary"]["label"] == "SUPPORTED"
     assert report["metrics"]["baseline_descriptive"]["label"] == "SUPPORTED"
     assert report["baseline_provenance"]["primary"] == "B"

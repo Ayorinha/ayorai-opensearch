@@ -1435,9 +1435,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "seed": SEED,
                 "generator": "RGC-PRNG-1",
                 "percentile": "hyndman-fan-type-7",
-                "primary_unit": "article_cluster" if args.partition == "hidden" else "case",
-                "sensitivity_unit": "case" if args.partition == "hidden" else None,
+                "primary_unit": "component" if args.partition == "hidden" else "case",
+                "sensitivity_units": (
+                    ["article_cluster", "case"] if args.partition == "hidden" else []
+                ),
             },
+            "h1_test": ("sign_flip_by_component" if args.partition == "hidden" else "not_tested"),
             "baseline_primary": {
                 "name": "B",
                 "development_label_count": len(development_labels),
