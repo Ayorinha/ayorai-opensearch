@@ -509,6 +509,12 @@ def bootstrap_ci(
     gold: Sequence[str], pred: Sequence[str], *, iterations: int = BOOTSTRAP_ITERATIONS
 ) -> dict[str, list[float]]:
     """Percentile 95% CI by case; one shared RGC-PRNG-1 stream for all metrics."""
+    if len(gold) != len(pred):
+        raise ValueError("gold and predictions must have equal lengths")
+    if not gold:
+        raise ValueError("case bootstrap requires at least one case")
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("iterations must be positive")
     rng = RgcPrng(SEED, LABEL_CASE_ACCURACY)
     n = len(gold)
     samples: dict[str, list[float]] = {name: [] for name in METRICS}
@@ -533,6 +539,8 @@ def bootstrap_ci_by_cluster(
         raise ValueError("gold, predictions, and cluster IDs must have equal lengths")
     if not gold:
         raise ValueError("cluster bootstrap requires at least one case")
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("iterations must be positive")
     if any(not isinstance(cluster, str) or not cluster.strip() for cluster in cluster_ids):
         raise ValueError("bootstrap_cluster_id must be a non-empty string")
     groups: dict[str, list[int]] = {}
