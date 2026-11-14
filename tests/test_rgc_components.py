@@ -187,6 +187,49 @@ def test_sign_flip_by_component_keeps_zero_difference_components() -> None:
     assert result.p_value_two_sided == 1.0
 
 
+def test_zero_difference_components_do_not_count_toward_attainable_significance() -> None:
+    # K = 6, but one component has d_k = 0: every sign vector of the five informative
+    # components appears twice, so the smallest attainable p is 2 / 2^5 = 0.0625.
+    result = MODULE["sign_flip_by_component"](_components(1, 1, 1, 1, 1, 0))
+
+    assert result.component_count == 6
+    assert result.informative_component_count == 5
+    assert result.p_value_two_sided == result.minimum_attainable_p == 2 / 2**5
+    assert result.theoretical_exact_resolution == 2 / 2**6
+    assert result.significance_below_005_possible is False
+
+    six = MODULE["sign_flip_by_component"](_components(1, 1, 1, 1, 1, 1, 0))
+    assert six.informative_component_count == 6
+    assert six.p_value_two_sided == six.minimum_attainable_p == 2 / 2**6
+    assert six.significance_below_005_possible is True
+
+
+@pytest.mark.parametrize(
+    "differences",
+    [[0], [0, 0, 0], [2, -1, 0, 3], [1, 1, 1, 1, 1, 1], [3, 0, -2, 0, 1, 1, 0, 2]],
+)
+def test_minimum_attainable_p_is_the_smallest_p_of_the_exact_null(differences: list[int]) -> None:
+    from itertools import product
+
+    result = MODULE["sign_flip_by_component"](_components(*differences))
+    totals = [
+        abs(sum(s * d for s, d in zip(signs, differences, strict=True)))
+        for signs in product((-1, 1), repeat=len(differences))
+    ]
+    smallest = sum(t >= max(totals) for t in totals) / len(totals)
+    assert result.minimum_attainable_p == smallest
+    assert result.significance_below_005_possible is (smallest < 0.05)
+
+
+def test_monte_carlo_attainable_significance_uses_informative_components() -> None:
+    result = MODULE["sign_flip_by_component"](_components(*([1] * 5 + [0] * 20)))
+
+    assert result.method == "monte_carlo"
+    assert (result.component_count, result.informative_component_count) == (25, 5)
+    assert result.minimum_attainable_p == 2 / 2**5
+    assert result.significance_below_005_possible is False
+
+
 def test_sign_flip_by_component_is_symmetric_and_deterministic() -> None:
     fn = MODULE["sign_flip_by_component"]
     positive = fn(_components(3, -2, 1))

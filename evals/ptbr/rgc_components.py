@@ -272,6 +272,9 @@ class SignFlipResult(NamedTuple):
     ``theoretical_exact_resolution`` is DEC-021's minimum attainable two-sided p of the
     exact test, 2 / 2**K; ``monte_carlo_minimum_p`` is the smallest p the Monte Carlo
     estimator can return, 1 / (1 + iterations), and is None for the exact test.
+    Components with d_k = 0 do not change any permuted statistic, so the smallest
+    attainable two-sided p is 2 / 2**K', with K' = ``informative_component_count``
+    (components with d_k != 0); ``significance_below_005_possible`` uses K', not K.
     """
 
     statistic_observed: int
@@ -281,6 +284,8 @@ class SignFlipResult(NamedTuple):
     theoretical_exact_resolution: float
     monte_carlo_minimum_p: float | None
     component_count: int
+    informative_component_count: int
+    minimum_attainable_p: float
     component_ids: tuple[str, ...]
     significance_below_005_possible: bool
     method: str
@@ -319,6 +324,8 @@ def sign_flip_by_component(component_differences: Mapping[str, int]) -> SignFlip
     observed = sum(differences)
     total = 1 << component_count
     theoretical_exact_resolution = 2 / total
+    informative = sum(1 for difference in differences if difference != 0)
+    minimum_attainable_p = min(1.0, 2 / (1 << informative))
 
     if component_count <= 20:
         extreme = 0
@@ -336,8 +343,10 @@ def sign_flip_by_component(component_differences: Mapping[str, int]) -> SignFlip
             theoretical_exact_resolution=theoretical_exact_resolution,
             monte_carlo_minimum_p=None,
             component_count=component_count,
+            informative_component_count=informative,
+            minimum_attainable_p=minimum_attainable_p,
             component_ids=component_ids,
-            significance_below_005_possible=component_count >= 6,
+            significance_below_005_possible=minimum_attainable_p < 0.05,
             method="exact",
             seed=None,
             generator=None,
@@ -361,8 +370,10 @@ def sign_flip_by_component(component_differences: Mapping[str, int]) -> SignFlip
         theoretical_exact_resolution=theoretical_exact_resolution,
         monte_carlo_minimum_p=1 / (1 + iterations),
         component_count=component_count,
+        informative_component_count=informative,
+        minimum_attainable_p=minimum_attainable_p,
         component_ids=component_ids,
-        significance_below_005_possible=component_count >= 6,
+        significance_below_005_possible=minimum_attainable_p < 0.05,
         method="monte_carlo",
         seed=seed,
         generator="RGC-PRNG-1",
