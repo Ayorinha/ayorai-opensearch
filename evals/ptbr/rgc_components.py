@@ -28,6 +28,9 @@ from evals.ptbr.rgc_random import (
 )
 
 
+BOOTSTRAP_ITERATIONS = 10_000
+
+
 class ArticleComponent(NamedTuple):
     """One connected component of cases linked by shared cited article IDs."""
 
@@ -191,8 +194,6 @@ def bootstrap_metrics_by_component(
     pred_by_case: Mapping[str, str],
     component_by_case: Mapping[str, str],
     metrics: Mapping[str, Callable[[Sequence[str], Sequence[str]], float]],
-    *,
-    iterations: int = 10_000,
 ) -> ComponentMetricBootstrapResult:
     """Bootstrap all cases within sampled connected components (DEC-027 D5).
 
@@ -206,8 +207,6 @@ def bootstrap_metrics_by_component(
         raise ValueError("gold, prediction, and component case IDs must match exactly")
     if not case_ids:
         raise ValueError("at least one case is required for component bootstrap")
-    if type(iterations) is not int or iterations < 1:
-        raise ValueError("iterations must be a positive integer")
     if not metrics:
         raise ValueError("at least one metric is required")
     if any(
@@ -230,7 +229,7 @@ def bootstrap_metrics_by_component(
     samples: dict[str, list[float]] = {name: [] for name in metrics}
     rng = RgcPrng(RGC_SEED, LABEL_COMPONENT_ACCURACY)
 
-    for _ in range(iterations):
+    for _ in range(BOOTSTRAP_ITERATIONS):
         selected = [rng.below(component_count) for _ in range(component_count)]
         sampled_case_ids = [
             case_id
@@ -254,7 +253,7 @@ def bootstrap_metrics_by_component(
         component_count=component_count,
         case_count=len(case_ids),
         method="percentile_component_bootstrap",
-        iterations=iterations,
+        iterations=BOOTSTRAP_ITERATIONS,
         seed=RGC_SEED,
         generator="RGC-PRNG-1",
         percentile="hyndman-fan-type-7",
