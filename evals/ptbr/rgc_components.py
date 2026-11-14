@@ -270,9 +270,11 @@ class KappaBootstrapResult(NamedTuple):
     ci95: tuple[float, float] | None
     component_count: int
     case_count: int
+    method: str
     iterations: int
     seed: int
     generator: str
+    percentile: str
     valid_replicates: int
     undefined_replicates: int
     undefined_fraction: float
@@ -375,9 +377,11 @@ def bootstrap_cohen_kappa_by_component(
         ci95=ci95,
         component_count=component_count,
         case_count=len(eligible),
+        method="percentile_component_bootstrap",
         iterations=iterations,
         seed=seed,
         generator="RGC-PRNG-1",
+        percentile="hyndman-fan-type-7",
         valid_replicates=len(bootstrap_values),
         undefined_replicates=undefined,
         undefined_fraction=undefined_fraction,

@@ -122,9 +122,7 @@ def test_invalid_original_cluster_id_fails_closed(cluster_id: object) -> None:
 
 def test_missing_original_cluster_id_fails_closed() -> None:
     with pytest.raises(ValueError):
-        MODULE["build_article_components"](
-            [{"case_id": "a", "cited_article_ids": ["article:a"]}]
-        )
+        MODULE["build_article_components"]([{"case_id": "a", "cited_article_ids": ["article:a"]}])
 
 
 def test_empty_input_has_a_well_formed_empty_summary() -> None:
@@ -301,9 +299,11 @@ def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> No
     assert first.case_count == 4
     assert first.rule_gap_excluded_count == 1
     assert first.rule_gap_excluded_disagreements == 1
+    assert first.method == "percentile_component_bootstrap"
     assert first.iterations == 10_000
     assert first.seed == 20261003
     assert first.generator == "RGC-PRNG-1"
+    assert first.percentile == "hyndman-fan-type-7"
     assert first.valid_replicates + first.undefined_replicates == 10_000
     assert first.kappa == pytest.approx(1 / 3)
     assert first.ci95 == (-1.0, 1.0)
