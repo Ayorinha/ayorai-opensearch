@@ -1107,14 +1107,26 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     agreement = tmp_path / "agreement.json"
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
-    cases.write_text("\n".join(json.dumps({"case_id": case_id}) for case_id in ("case-1", "case-2")) + "\n", encoding="utf-8")
+    cases.write_text(
+        "\n".join(
+            json.dumps({"case_id": case_id}) for case_id in ("case-1", "case-2")
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     labels.write_text("{}\n", encoding="utf-8")
     annotation_rows = (
         {"case_id": "case-1", "label": "SUPPORTED"},
         {"case_id": "case-2", "label": "REFUTED"},
     )
-    annotation_a.write_text("\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8")
-    annotation_b.write_text("\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8")
+    annotation_a.write_text(
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n",
+        encoding="utf-8",
+    )
+    annotation_b.write_text(
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n",
+        encoding="utf-8",
+    )
     development_cases = tmp_path / "development-cases.jsonl"
     development_labels = tmp_path / "development-labels.jsonl"
     development_cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
@@ -1184,7 +1196,10 @@ def test_annotation_approval_rejects_tampered_recomputed_statistics(tmp_path: Pa
     agreement = tmp_path / "agreement.json"
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
-    cases.write_text("\n".join(json.dumps({"case_id": x}) for x in ("a", "b")) + "\n", encoding="utf-8")
+    cases.write_text(
+        "\n".join(json.dumps({"case_id": case_id}) for case_id in ("a", "b")) + "\n",
+        encoding="utf-8",
+    )
     labels.write_text("{}\n", encoding="utf-8")
     development_cases.write_text("{}\n", encoding="utf-8")
     development_labels.write_text("{}\n", encoding="utf-8")
@@ -1193,8 +1208,14 @@ def test_annotation_approval_rejects_tampered_recomputed_statistics(tmp_path: Pa
         {"case_id": "a", "label": "SUPPORTED"},
         {"case_id": "b", "label": "REFUTED"},
     )
-    annotation_a.write_text("\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8")
-    annotation_b.write_text("\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8")
+    annotation_a.write_text(
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n",
+        encoding="utf-8",
+    )
+    annotation_b.write_text(
+        "\n".join(json.dumps(row) for row in annotation_rows) + "\n",
+        encoding="utf-8",
+    )
     canonical = _write_agreement_report(agreement, annotation_a, annotation_b)
     manifest = {
         "schema_version": 1,
