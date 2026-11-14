@@ -27,7 +27,6 @@ from evals.ptbr.rgc_random import (
     percentile_ci95,
 )
 
-
 BOOTSTRAP_ITERATIONS = 10_000
 
 
