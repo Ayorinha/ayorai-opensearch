@@ -84,7 +84,7 @@ def compute_agreement(
     seed: int = DEFAULT_SEED,
 ) -> dict[str, Any]:
     """Report unweighted Cohen's kappa; RULE_GAP pairs are excluded by prior rule."""
-    if iterations < 1:
+    if type(iterations) is not int or iterations < 1:
         raise ValueError("iterations must be positive")
     ids_a, ids_b = set(annotations_a), set(annotations_b)
     if ids_a != ids_b:
