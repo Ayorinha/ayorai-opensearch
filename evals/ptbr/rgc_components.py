@@ -370,7 +370,7 @@ def bootstrap_cohen_kappa_by_component(
             bootstrap_values.append(value)
 
     limits = percentile_ci95(bootstrap_values)
-    ci95 = tuple(limits) if limits is not None else None
+    ci95 = None if limits is None else (limits[0], limits[1])
     undefined_fraction = undefined / iterations
     return KappaBootstrapResult(
         kappa=point,
