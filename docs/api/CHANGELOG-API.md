@@ -5,7 +5,8 @@ All public API contract changes are additive unless explicitly identified otherw
 ## 2026-11-14 — `/v1/fields` negative values (field-check-4)
 
 - A minus sign (`-` or `−`) written right before a `number` or `money` value in the document belongs to it: `-5`, `R$ -100,00`, `R$-100,00` and `-R$ 100,00` are negative. Previously the sign was ignored, so an expected `5` matched a document `-5` (false `conforme`).
-- A hyphen right after a letter, digit, `.` or `,` is not a sign (`10-12`, `art. 5-A`).
+- A hyphen right after a letter, digit, `.` or `,` is not a sign (`10-12`, `art. 5-A`), and a spaced hyphen is not a sign (`10 - 12`). The sign and the amount must be on the same line as `R$` when `R$` sits between them.
+- Two signs in the document (`--5`, `- -5`, `-R$ -100,00`) are ambiguous: the value is not a candidate and the field is `ausente`.
 - Expected `money` values may carry the same sign forms; two signs (`-R$ -10,00`) are `invalido`. Negative zero is zero.
 - The reported `found`, `start` and `end` include the sign (and the `R$` between the sign and the amount).
 - The response engine metadata reports `field-check-4`. No request or response fields were added or removed.

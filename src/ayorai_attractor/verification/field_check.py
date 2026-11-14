@@ -273,7 +273,10 @@ def candidates(text: str, spec: FieldSpec) -> list[Candidate]:
         group = (1 if match.group(1) else 2) if spec.type == "money" else 0
         start, end = match.start(group), match.end(group)
         if spec.type in ("money", "number"):
-            start = _sign_start(text, start, money=spec.type == "money")
+            signed_start = _sign_start(text, start, money=spec.type == "money")
+            if signed_start is None:
+                continue
+            start = signed_start
         raw = text[start:end]
         normalized = normalizer(raw)
         if normalized is not None:
@@ -281,23 +284,30 @@ def candidates(text: str, spec: FieldSpec) -> list[Candidate]:
     return _mark_labelled(text, found, spec.labels) if spec.labels else found
 
 
-_SIGN_BEFORE_RE = re.compile(rf"(?:([{_MINUS}])\s*R\$\s*|R\$\s*([{_MINUS}])|([{_MINUS}]))$")
+_SIGN_BEFORE_RE = re.compile(
+    rf"(?:([{_MINUS}])[ \t]*R\$[ \t]*|R\$[ \t]*([{_MINUS}])|([{_MINUS}]))$"
+)
 
 
-def _sign_start(text: str, start: int, *, money: bool) -> int:
+def _sign_start(text: str, start: int, *, money: bool) -> int | None:
     """Start of the value including a minus sign written right before it ("-5",
     "R$ -100,00", "-R$ 100,00"), so "-5" is never read as 5. A hyphen after a
-    letter, digit or separator ("10-12", "art. 5-A") is not a sign."""
+    letter, digit or separator ("10-12", "art. 5-A") is not a sign. Two signs
+    ("--5", "-R$ -100,00") are ambiguous: None, the value is not a candidate."""
 
     window = text[max(0, start - 8) : start]
     match = _SIGN_BEFORE_RE.search(window)
     if match is None or (not money and match.group(3) is None):
         return start
-    sign_at = start - len(window) + match.start(next(g for g in (1, 2, 3) if match.group(g)))
+    offset = start - len(window)
+    sign_at = offset + match.start(next(group for group in (1, 2, 3) if match.group(group)))
     before = text[sign_at - 1] if sign_at > 0 else ""
     if before and (before.isalnum() or before in ".,"):
         return start
-    return start - len(window) + match.start()
+    before_value = text[: offset + match.start()].rstrip(" \t")[-1:]
+    if before in _MINUS or (before_value and before_value in _MINUS):
+        return None
+    return offset + match.start()
 
 
 def labelled_text_values(text: str, labels: Sequence[str]) -> list[tuple[int, int, str, bool]]:
