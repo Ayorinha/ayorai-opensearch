@@ -283,6 +283,45 @@ def test_monte_carlo_sign_flip_uses_rgc_prng_1() -> None:
     assert first.p_value_two_sided == 1 / 10_001
 
 
+
+def _accuracy_metric(gold: Sequence[str], pred: Sequence[str]) -> float:
+    return sum(g == p for g, p in zip(gold, pred, strict=True)) / len(gold)
+
+
+def test_accuracy_interval_bootstraps_complete_connected_components() -> None:
+    result = MODULE["bootstrap_metrics_by_component"](
+        {"a1": "SUPPORTED", "a2": "REFUTED", "b1": "SUPPORTED", "b2": "REFUTED"},
+        {"a1": "SUPPORTED", "a2": "REFUTED", "b1": "REFUTED", "b2": "SUPPORTED"},
+        {
+            "a1": "component:a",
+            "a2": "component:a",
+            "b1": "component:b",
+            "b2": "component:b",
+        },
+        {"accuracy": _accuracy_metric},
+    )
+
+    assert result.ci95 == {"accuracy": (0.0, 1.0)}
+    assert result.component_count == 2
+    assert result.case_count == 4
+    assert result.method == "percentile_component_bootstrap"
+    assert result.iterations == 10_000
+    assert result.seed == 20261003
+    assert result.generator == "RGC-PRNG-1"
+    assert result.percentile == "hyndman-fan-type-7"
+
+
+def test_accuracy_component_bootstrap_rejects_invalid_component_ids() -> None:
+    with pytest.raises(ValueError, match="component:"):
+        MODULE["bootstrap_metrics_by_component"](
+            {"a": "SUPPORTED"},
+            {"a": "SUPPORTED"},
+            {"a": "component-a"},
+            {"accuracy": _accuracy_metric},
+        )
+
+
+
 def test_component_kappa_bootstrap_excludes_rule_gap_and_is_reproducible() -> None:
     fn = MODULE["bootstrap_cohen_kappa_by_component"]
     annotations_a = {

@@ -8,7 +8,7 @@ case records explicitly. It implements the graph unit specified by DEC-023.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from itertools import product
 from typing import NamedTuple
 
@@ -19,6 +19,7 @@ from evals.ptbr.rgc_ids import (
     require_article_id,
 )
 from evals.ptbr.rgc_random import (
+    LABEL_COMPONENT_ACCURACY,
     LABEL_COMPONENT_KAPPA,
     LABEL_SIGN_FLIP,
     RGC_SEED,
@@ -169,6 +170,92 @@ def build_article_components(
         case_count=len(records),
         largest_component_size=sizes[0] if sizes else 0,
         component_sizes=sizes,
+    )
+
+
+class ComponentMetricBootstrapResult(NamedTuple):
+    """DEC-027 D5 component bootstrap intervals and reproducibility metadata."""
+
+    ci95: dict[str, tuple[float, float]]
+    component_count: int
+    case_count: int
+    method: str
+    iterations: int
+    seed: int
+    generator: str
+    percentile: str
+
+
+def bootstrap_metrics_by_component(
+    gold_by_case: Mapping[str, str],
+    pred_by_case: Mapping[str, str],
+    component_by_case: Mapping[str, str],
+    metrics: Mapping[str, Callable[[Sequence[str], Sequence[str]], float]],
+    *,
+    iterations: int = 10_000,
+) -> ComponentMetricBootstrapResult:
+    """Bootstrap all cases within sampled connected components (DEC-027 D5).
+
+    Components are sampled with replacement in canonical lexical order. Every case in
+    a selected component is carried into the replicate, including repeated components.
+    The function uses only the supplied reference/prediction mappings and component IDs;
+    it does not load benchmark files or inspect external state.
+    """
+    case_ids = set(gold_by_case)
+    if case_ids != set(pred_by_case) or case_ids != set(component_by_case):
+        raise ValueError("gold, prediction, and component case IDs must match exactly")
+    if not case_ids:
+        raise ValueError("at least one case is required for component bootstrap")
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("iterations must be a positive integer")
+    if not metrics:
+        raise ValueError("at least one metric is required")
+    if any(not isinstance(name, str) or not name or not callable(fn) for name, fn in metrics.items()):
+        raise ValueError("metric names must be non-empty strings and values must be callable")
+    if any(
+        not isinstance(case_id, str) or not case_id or case_id != case_id.strip()
+        for case_id in case_ids
+    ):
+        raise ValueError("case IDs must be canonical non-empty strings")
+    for component in component_by_case.values():
+        parse_component_id(component, "accuracy component ID")
+
+    groups: dict[str, list[str]] = {}
+    for case_id in sorted(case_ids):
+        groups.setdefault(component_by_case[case_id], []).append(case_id)
+    component_ids = sorted(groups)
+    component_count = len(component_ids)
+    samples: dict[str, list[float]] = {name: [] for name in metrics}
+    rng = RgcPrng(RGC_SEED, LABEL_COMPONENT_ACCURACY)
+
+    for _ in range(iterations):
+        selected = [rng.below(component_count) for _ in range(component_count)]
+        sampled_case_ids = [
+            case_id
+            for selected_index in selected
+            for case_id in groups[component_ids[selected_index]]
+        ]
+        sampled_gold = [gold_by_case[case_id] for case_id in sampled_case_ids]
+        sampled_pred = [pred_by_case[case_id] for case_id in sampled_case_ids]
+        for name, metric in metrics.items():
+            samples[name].append(float(metric(sampled_gold, sampled_pred)))
+
+    intervals: dict[str, tuple[float, float]] = {}
+    for name, values in samples.items():
+        limits = percentile_ci95(values)
+        if limits is None:
+            raise ValueError(f"component bootstrap produced no replicates for metric {name!r}")
+        intervals[name] = (limits[0], limits[1])
+
+    return ComponentMetricBootstrapResult(
+        ci95=intervals,
+        component_count=component_count,
+        case_count=len(case_ids),
+        method="percentile_component_bootstrap",
+        iterations=iterations,
+        seed=RGC_SEED,
+        generator="RGC-PRNG-1",
+        percentile="hyndman-fan-type-7",
     )
 
 
