@@ -68,7 +68,7 @@ _ARTICLE_ID = st.lists(_ARTICLE_GROUP, min_size=1, max_size=3).map(":".join)
 
 
 @given(st.lists(_ARTICLE_ID, min_size=2, max_size=8, unique=True))
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=100, deadline=None, derandomize=True)
 def test_bundle_and_component_serializers_round_trip_for_generated_ids(
     article_ids: list[str],
 ) -> None:
