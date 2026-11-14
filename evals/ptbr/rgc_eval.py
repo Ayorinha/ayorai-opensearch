@@ -52,10 +52,9 @@ from ayorai_attractor.verification.judge2 import adjudication
 from ayorai_attractor.verification.models import Claim, Evidence
 from ayorai_attractor.verification.stance import RuleStanceDetector
 
-try:  # run as part of the repository (tests, python -m)
-    from evals.ptbr.rgc_ids import cluster_members, require_article_id
-except ModuleNotFoundError:  # run as a script: python evals/ptbr/rgc_eval.py
-    from rgc_ids import cluster_members, require_article_id  # type: ignore[no-redef]
+if __package__ in (None, ""):  # run as a script: make the repository importable
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from evals.ptbr.rgc_ids import cluster_members, require_article_id  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
