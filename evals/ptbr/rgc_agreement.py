@@ -174,7 +174,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     # The protocol-facing CLI always uses DEC-020/DEC-027 canonical parameters.
-    # Custom values remain available only through the internal function for tests.
+    # Custom values remain available through the Python API for isolated tests/diagnostics.
     result = compute_agreement(
         load_annotations(args.annotation_a),
         load_annotations(args.annotation_b),
