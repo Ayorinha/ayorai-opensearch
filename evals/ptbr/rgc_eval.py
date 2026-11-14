@@ -53,6 +53,7 @@ from ayorai_attractor.verification.stance import RuleStanceDetector
 
 if __package__ in (None, ""):  # run as a script: make the repository importable
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from evals.ptbr import rgc_agreement  # noqa: E402
 from evals.ptbr.rgc_ids import cluster_members, require_article_id  # noqa: E402
 from evals.ptbr.rgc_random import (  # noqa: E402
     LABEL_CASE_ACCURACY,
@@ -60,12 +61,6 @@ from evals.ptbr.rgc_random import (  # noqa: E402
     RGC_SEED,
     RgcPrng,
     percentile_ci95,
-)
-from evals.ptbr.rgc_agreement import (  # noqa: E402
-    DEFAULT_ITERATIONS as AGREEMENT_DEFAULT_ITERATIONS,
-    DEFAULT_SEED as AGREEMENT_DEFAULT_SEED,
-    compute_agreement,
-    load_annotations,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -999,11 +994,11 @@ def validate_annotation_approval(
     if set(inputs) != {"annotation_a_sha256", "annotation_b_sha256"}:
         raise ValueError("RGC evaluation blocked: agreement report input schema is invalid")
     try:
-        canonical_agreement = compute_agreement(
-            load_annotations(annotation_a_path),
-            load_annotations(annotation_b_path),
-            iterations=AGREEMENT_DEFAULT_ITERATIONS,
-            seed=AGREEMENT_DEFAULT_SEED,
+        canonical_agreement = rgc_agreement.compute_agreement(
+            rgc_agreement.load_annotations(annotation_a_path),
+            rgc_agreement.load_annotations(annotation_b_path),
+            iterations=rgc_agreement.DEFAULT_ITERATIONS,
+            seed=rgc_agreement.DEFAULT_SEED,
         )
     except (OSError, ValueError) as exc:
         raise ValueError(
