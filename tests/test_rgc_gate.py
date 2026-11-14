@@ -177,6 +177,17 @@ def test_inventory_loader_rejects_duplicate_json_keys(tmp_path: Path) -> None:
         MODULE["load_preannotation_inventory"](inventory)
 
 
+def test_gate_cli_refuses_to_overwrite_inventory(tmp_path: Path) -> None:
+    inventory = tmp_path / "inventory.jsonl"
+    original = json.dumps({"case_id": "a", "cited_article_ids": ["article-a"]}) + "\\n"
+    inventory.write_text(original, encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="2"):
+        MODULE["main"](["--inventory", str(inventory), "--out", str(inventory)])
+
+    assert inventory.read_text(encoding="utf-8") == original
+
+
 def test_gate_cli_writes_minimal_record_and_returns_success_at_k_six(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
