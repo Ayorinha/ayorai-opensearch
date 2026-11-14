@@ -86,6 +86,11 @@ def test_range_and_counter_limits() -> None:
     with pytest.raises(OverflowError):
         stream.block(2**64)
 
+    stream._counter = 2**64 - 1
+    assert len([stream.word() for _ in range(8)]) == 8
+    with pytest.raises(OverflowError, match="counter exhausted"):
+        stream.word()
+
 
 def test_quantile_type7_by_hand() -> None:
     values = [10.0, 20.0, 30.0, 40.0, 50.0]
