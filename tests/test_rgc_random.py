@@ -45,6 +45,18 @@ def test_reference_draws() -> None:
     flips = RgcPrng(SEED, "dec021-sign-flip")
     signs = "".join("+" if flips.sign() == 1 else "-" for _ in range(16))
     assert signs == "-+---++------+--"
+    component_accuracy = RgcPrng(SEED, rgc_random.LABEL_COMPONENT_ACCURACY)
+    assert [component_accuracy.below(10) for _ in range(12)] == [
+        3, 7, 8, 8, 6, 5, 7, 5, 7, 0, 8, 2
+    ]
+    case_accuracy = RgcPrng(SEED, rgc_random.LABEL_CASE_ACCURACY)
+    assert [case_accuracy.below(10) for _ in range(12)] == [
+        9, 6, 2, 5, 3, 5, 0, 1, 6, 9, 4, 2
+    ]
+    case_kappa = RgcPrng(SEED, rgc_random.LABEL_CASE_KAPPA)
+    assert [case_kappa.below(10) for _ in range(12)] == [
+        4, 5, 6, 1, 5, 2, 4, 5, 4, 4, 9, 9
+    ]
 
 
 def test_rejection_discards_words_without_reusing_them() -> None:
