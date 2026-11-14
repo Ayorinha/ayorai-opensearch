@@ -234,6 +234,38 @@ def test_article_cluster_bootstrap_is_deterministic_and_distinct_from_case_boots
     assert clustered["accuracy"] != case_level["accuracy"]
 
 
+def test_development_partition_rejects_noncanonical_bootstrap_cluster_id() -> None:
+    case = _case("invalid-dev-cluster", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["bootstrap_cluster_id"] = "Article:2"
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-dev-cluster": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
+def test_development_partition_rejects_noncanonical_cited_article_id() -> None:
+    case = _case("invalid-dev-citation", "O cliente fictício pode cancelar.", "Art. 2º")
+    case["cited_article_ids"] = ["Article:2"]
+    with pytest.raises(ValueError, match="canonical article ID"):
+        RUNNER["evaluate"](
+            [case],
+            {"invalid-dev-citation": "SUPPORTED"},
+            DOCS,
+            development_cases=DEV_CASES,
+            development_labels=DEV_LABELS,
+            mode="oracle",
+            vocabulary="judge2",
+            iterations=10,
+        )
+
+
 def test_hidden_partition_rejects_missing_bootstrap_cluster_id() -> None:
     case = _case("no-cluster", "O cancelamento será efetivado em até 2 dias.", CANCEL)
     case.pop("bootstrap_cluster_id")
