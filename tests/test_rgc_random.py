@@ -105,6 +105,7 @@ def test_range_and_counter_limits() -> None:
     final_block = RgcPrng(SEED, "dec021-sign-flip")
     final_block._counter = 2**64 - 1
     assert len([final_block.word() for _ in range(8)]) == 8
+    assert final_block.blocks_used == 2**64
     with pytest.raises(OverflowError, match="counter exhausted"):
         final_block.word()
 
