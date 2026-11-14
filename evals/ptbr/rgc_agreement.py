@@ -5,10 +5,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from random import Random
 from typing import Any
+
+if __package__ in (None, ""):  # run as a script: make the repository importable
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from evals.ptbr.rgc_random import LABEL_CASE_KAPPA, RGC_SEED, RgcPrng, percentile_ci95  # noqa: E402
 
 VOCABULARY = (
     "SUPPORTED",
@@ -20,7 +24,7 @@ VOCABULARY = (
 RULE_GAP = "RULE_GAP"
 ALLOWED_LABELS = frozenset((*VOCABULARY, RULE_GAP))
 DEFAULT_ITERATIONS = 10_000
-DEFAULT_SEED = 20261003
+DEFAULT_SEED = RGC_SEED
 GATE_THRESHOLD = 0.6
 
 
@@ -80,7 +84,7 @@ def compute_agreement(
     seed: int = DEFAULT_SEED,
 ) -> dict[str, Any]:
     """Report unweighted Cohen's kappa; RULE_GAP pairs are excluded by prior rule."""
-    if iterations < 1:
+    if type(iterations) is not int or iterations < 1:
         raise ValueError("iterations must be positive")
     ids_a, ids_b = set(annotations_a), set(annotations_b)
     if ids_a != ids_b:
@@ -111,12 +115,12 @@ def compute_agreement(
     labels_b = [annotations_b[case_id] for case_id in eligible_ids]
     kappa, observed, matrix = _cohen_kappa(labels_a, labels_b)
 
-    rng = Random(seed)
+    rng = RgcPrng(seed, LABEL_CASE_KAPPA)
     bootstrap_values: list[float] = []
     degenerate_replicates = 0
     n = len(eligible_ids)
     for _ in range(iterations):
-        indices = [rng.randrange(n) for _ in range(n)]
+        indices = [rng.below(n) for _ in range(n)]
         sample_a = [labels_a[index] for index in indices]
         sample_b = [labels_b[index] for index in indices]
         sample_kappa, _, _ = _cohen_kappa(sample_a, sample_b)
@@ -125,13 +129,7 @@ def compute_agreement(
         else:
             bootstrap_values.append(sample_kappa)
 
-    ci95: list[float] | None = None
-    if bootstrap_values:
-        bootstrap_values.sort()
-        ci95 = [
-            bootstrap_values[int(0.025 * (len(bootstrap_values) - 1))],
-            bootstrap_values[int(0.975 * (len(bootstrap_values) - 1))],
-        ]
+    ci95 = percentile_ci95(bootstrap_values)
 
     class_distribution = {
         label: {
@@ -158,6 +156,8 @@ def compute_agreement(
             "method": "percentile_case_bootstrap",
             "iterations": iterations,
             "seed": seed,
+            "generator": "RGC-PRNG-1",
+            "percentile": "hyndman-fan-type-7",
             "valid_replicates": len(bootstrap_values),
             "degenerate_replicates": degenerate_replicates,
         },

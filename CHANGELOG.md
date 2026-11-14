@@ -4,6 +4,10 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- RGC runner `rgc-eval/0.8.0` and the annotator-agreement tool draw every bootstrap sample from RGC-PRNG-1, a SHA-256 generator specified byte for byte in DEC-027 with published reference vectors, and compute 95% intervals with the Hyndman–Fan type 7 percentile. Intervals are no longer numerically comparable with `rgc-eval/0.7.0`. No RGC result exists or was produced.
+
 ## [0.8.0] — 2026-11-13
 
 Versão de produto e de segurança da cadeia de dependências. Não traz resultado confirmatório novo de acurácia; os resultados de benchmark desta versão são exploratórios em DEV.

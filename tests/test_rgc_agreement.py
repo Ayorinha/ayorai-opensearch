@@ -81,9 +81,12 @@ def test_unknown_label_is_rejected() -> None:
         AGREEMENT["compute_agreement"]({"a": "NOT_A_LABEL"}, {"a": "SUPPORTED"}, iterations=10)
 
 
-def test_bootstrap_iterations_must_be_positive() -> None:
+@pytest.mark.parametrize("iterations", [0, -1, True, 1.5])
+def test_bootstrap_iterations_must_be_positive_integer(iterations: object) -> None:
     with pytest.raises(ValueError, match="iterations must be positive"):
-        AGREEMENT["compute_agreement"]({"a": "SUPPORTED"}, {"a": "SUPPORTED"}, iterations=0)
+        AGREEMENT["compute_agreement"](
+            {"a": "SUPPORTED"}, {"a": "SUPPORTED"}, iterations=iterations
+        )
 
 
 def test_all_rule_gap_pairs_abort_instead_of_returning_a_kappa() -> None:
@@ -139,3 +142,11 @@ def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> Non
         "annotation_a_sha256": hashlib.sha256(annotation_a.read_bytes()).hexdigest(),
         "annotation_b_sha256": hashlib.sha256(annotation_b.read_bytes()).hexdigest(),
     }
+
+
+def test_bootstrap_uses_rgc_prng_and_type7_percentile() -> None:
+    labels_a = {f"c{i}": ("SUPPORTED" if i % 3 else "REFUTED") for i in range(12)}
+    labels_b = {f"c{i}": ("SUPPORTED" if i % 4 else "REFUTED") for i in range(12)}
+    result = AGREEMENT["compute_agreement"](labels_a, labels_b, iterations=50)
+    assert result["bootstrap"]["generator"] == "RGC-PRNG-1"
+    assert result["bootstrap"]["percentile"] == "hyndman-fan-type-7"
