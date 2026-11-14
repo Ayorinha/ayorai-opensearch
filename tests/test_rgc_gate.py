@@ -166,6 +166,17 @@ def test_inventory_loader_rejects_annotation_or_result_fields(tmp_path: Path) ->
         MODULE["load_preannotation_inventory"](inventory)
 
 
+def test_inventory_loader_rejects_duplicate_json_keys(tmp_path: Path) -> None:
+    inventory = tmp_path / "inventory.jsonl"
+    inventory.write_text(
+        '{"case_id":"a","case_id":"b","cited_article_ids":["article-a"]}\\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="duplicate JSON key"):
+        MODULE["load_preannotation_inventory"](inventory)
+
+
 def test_gate_cli_writes_minimal_record_and_returns_success_at_k_six(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
