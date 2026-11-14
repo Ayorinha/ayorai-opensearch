@@ -355,9 +355,7 @@ def validate_cluster_citations(
         cited_ids = set(cited)
 
     members = (
-        cluster_members(cluster_id, f"{case_id}: bootstrap_cluster_id")
-        if require_cluster
-        else None
+        cluster_members(cluster_id, f"{case_id}: bootstrap_cluster_id") if require_cluster else None
     )
     if members is not None and cited_ids is not None:
         missing = sorted(set(members) - cited_ids)
