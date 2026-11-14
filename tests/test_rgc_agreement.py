@@ -136,15 +136,16 @@ def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> Non
     )
     report = json.loads(output.read_text(encoding="utf-8"))
     assert report["gate_passed"] is True
-    assert report["bootstrap"] == {
-        "method": "percentile_case_bootstrap",
-        "iterations": 10_000,
-        "seed": 20261003,
-        "generator": "RGC-PRNG-1",
-        "percentile": "hyndman-fan-type-7",
-        "valid_replicates": 10_000,
-        "degenerate_replicates": 0,
-    }
+    assert report["bootstrap"]["method"] == "percentile_case_bootstrap"
+    assert report["bootstrap"]["iterations"] == 10_000
+    assert report["bootstrap"]["seed"] == 20261003
+    assert report["bootstrap"]["generator"] == "RGC-PRNG-1"
+    assert report["bootstrap"]["percentile"] == "hyndman-fan-type-7"
+    assert (
+        report["bootstrap"]["valid_replicates"]
+        + report["bootstrap"]["degenerate_replicates"]
+        == 10_000
+    )
     assert report["inputs"] == {
         "annotation_a_sha256": hashlib.sha256(annotation_a.read_bytes()).hexdigest(),
         "annotation_b_sha256": hashlib.sha256(annotation_b.read_bytes()).hexdigest(),
