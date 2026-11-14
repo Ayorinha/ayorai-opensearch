@@ -191,8 +191,8 @@ def _ordered_differences(
         raise TypeError("component differences must map component IDs to integers")
     if not component_differences:
         raise ValueError("at least one component difference is required")
-    for component_id, value in component_differences.items():
-        parse_component_id(component_id, "sign-flip component ID")
+    for component_identifier, value in component_differences.items():
+        parse_component_id(component_identifier, "sign-flip component ID")
         if type(value) is not int:
             raise ValueError("component differences must be integers")
     component_ids = tuple(sorted(component_differences))
