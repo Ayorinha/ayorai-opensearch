@@ -61,6 +61,13 @@ _SENTENTIAL_NEGATION_EN = re.compile(
     r"\bit\s+is\s+(?P<negated>not\s+)?(?:false|untrue|incorrect)\s+(?:to\s+say\s+)?that\b",
     re.IGNORECASE,
 )
+# An operator only reaches the end of its clause: "É falso que A faliu. B" does
+# not deny B. When the claim is known, an operator counts only if its clause
+# holds at least half of the claim's content tokens.
+_CLAUSE_END_RE = re.compile(
+    r"[.;:!?]|,\s+(?:e|mas|porém|porem|enquanto|and|but|while)\b", re.IGNORECASE
+)
+_OPERATOR_SCOPE_COVERAGE = 0.5
 # Portuguese-only function words used solely to decide whether "no" is English.
 _PT_FUNCTION_WORDS = frozenset(
     {"de", "do", "da", "dos", "das", "um", "os", "as", "ao", "aos", "pelo", "pela", "também"}
@@ -331,20 +338,27 @@ def _sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
-def _has_negation(text: str) -> bool:
+def _has_negation(text: str, claim_tokens: frozenset[str] | None = None) -> bool:
     """Return True when the text negates its predicate.
 
     Portuguese negators always count. The English-only token "no" counts only
     when the text is more English than Portuguese, so Portuguese contractions
     ("no fim de 2025") and "sem" ("sem custo adicional") are not negation.
-    A sentential operator ("É falso que X") flips the result; text without such
-    an operator is classified exactly as before.
+    A sentential operator ("É falso que X") flips the result. With
+    ``claim_tokens`` an operator counts only when its clause covers the claim.
+    Text without a counted operator is classified exactly as before; otherwise
+    every operator's own words (including the "não" of "não é falso que") are
+    removed before the token check, and only counted operators flip.
     """
     operators = 0
     flips = 0
 
     def _remove(match: re.Match[str]) -> str:
         nonlocal operators, flips
+        if claim_tokens is not None and not _operator_covers_claim(
+            match.string, match.end(), claim_tokens
+        ):
+            return " "
         operators += 1
         if match.group("negated") is None:
             flips += 1
@@ -354,6 +368,16 @@ def _has_negation(text: str) -> bool:
     if operators == 0:
         return _has_token_negation(text)
     return (flips % 2 == 1) != _has_token_negation(remainder)
+
+
+def _operator_covers_claim(text: str, start: int, claim_tokens: frozenset[str]) -> bool:
+    """The clause after an operator holds at least half of the claim's content tokens."""
+    if not claim_tokens:
+        return True
+    end = _CLAUSE_END_RE.search(text, start)
+    clause = text[start : end.start() if end else len(text)]
+    scope = {token.casefold() for token in _TOKEN_RE.findall(clause)}
+    return len(claim_tokens & scope) / len(claim_tokens) >= _OPERATOR_SCOPE_COVERAGE
 
 
 def _has_token_negation(text: str) -> bool:
@@ -1041,7 +1065,7 @@ class RuleStanceDetector:
                 date_conflict = self._date_conflict(claim_item.claim.text, item.excerpt)
                 evidence_has_date = bool(_extract_dates(item.excerpt))
                 negation_conflict = _has_negation(claim_item.claim.text) != _has_negation(
-                    item.excerpt
+                    item.excerpt, frozenset(claim_tokens)
                 )
                 direction_conflict = _direction_conflict(claim_item.claim.text, item.excerpt)
                 unverified_structured_fact = (

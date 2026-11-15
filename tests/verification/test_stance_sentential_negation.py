@@ -2,7 +2,9 @@
 
 "É falso que X" declares X false without any negator token. Each operator flips
 polarity once, a negator directly before it cancels it, and text without an
-operator keeps the v6 token-based classification exactly.
+operator keeps the v6 token-based classification exactly. An operator reaches
+only the end of its clause and, when the claim is known, counts only if that
+clause holds at least half of the claim's content tokens.
 """
 
 from __future__ import annotations
@@ -104,6 +106,46 @@ def _stance(claim: str, evidence: str) -> Stance:
 )
 def test_detector_uses_sentential_negation(evidence: str, stance: Stance) -> None:
     assert _stance("A receita da Vértice foi de 40 milhões em 2024.", evidence) == stance
+
+
+CLAIM_TOKENS = frozenset({"receita", "vértice", "foi", "milhões", "2024"})
+
+
+@pytest.mark.parametrize(
+    ("text", "negated"),
+    [
+        ("É falso que a receita da Vértice foi de 40 milhões em 2024.", True),
+        # The operator's clause is about something else: it does not count.
+        ("É falso que a Vértice faliu. A receita da Vértice foi de 40 milhões em 2024.", False),
+        ("É falso que a Vértice faliu, e a receita da Vértice foi de 40 milhões em 2024.", False),
+        ("É falso que a Vértice faliu; a receita da Vértice foi de 40 milhões em 2024.", False),
+        # A later clause with an operator that covers the claim still counts.
+        ("A Vértice cresceu. É falso que a receita da Vértice foi de 40 milhões em 2024.", True),
+        # Without a counted operator the text is classified as in v6 (the "não"
+        # of an uncounted operator still counts there, a known v6 limitation).
+        ("Não é falso que a Vértice faliu. A receita da Vértice foi de 40 milhões em 2024.", True),
+        # With a counted operator, an uncounted operator's "não" is not a negator.
+        (
+            "Não é falso que a Vértice faliu. "
+            "É falso que a receita da Vértice foi de 40 milhões em 2024.",
+            True,
+        ),
+    ],
+)
+def test_operator_counts_only_when_its_clause_covers_the_claim(text: str, negated: bool) -> None:
+    assert _has_negation(text, CLAIM_TOKENS) is negated
+
+
+def test_operator_scope_is_ignored_without_claim_tokens() -> None:
+    text = "É falso que a Vértice faliu. A receita da Vértice foi de 40 milhões em 2024."
+    assert _has_negation(text) is True
+    assert _has_negation(text, frozenset()) is True
+
+
+def test_an_operator_about_another_sentence_does_not_contradict() -> None:
+    evidence = "É falso que a Vértice faliu. A receita da Vértice foi de 40 milhões em 2024."
+    claim = "A receita da Vértice foi de 40 milhões em 2024."
+    assert _stance(claim, evidence) == Stance.SUPPORTS
 
 
 def test_detector_version_is_7() -> None:
