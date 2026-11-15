@@ -79,13 +79,19 @@ def _api_key_digest(presented_key: str, pepper: bytes) -> str:
 PRINCIPAL_STATE_KEY = "ayorai_principal"
 
 
-def principal_for_digest(key_digest: str) -> str:
+_PRINCIPAL_LABEL = b"ayorai-attractor/principal/v1\x00"
+
+
+def principal_for_digest(key_digest: str, pepper: bytes) -> str:
     """Stable, non-secret identity of an authenticated API key.
 
-    Derived from the keyed digest (never from the key), truncated to 64 bits:
-    enough to tell configured keys apart, useless for guessing the key.
+    HMAC-SHA-256 under the pepper, with a domain-separation label, of the keyed
+    digest (never of the key), truncated to 64 bits: enough to tell configured
+    keys apart. Without the pepper a stored principal cannot be linked to an
+    entry of the digest list or used to test key guesses.
     """
-    return "key:" + hashlib.sha256(key_digest.encode("ascii")).hexdigest()[:16]
+    mac = hmac.new(pepper, _PRINCIPAL_LABEL + key_digest.encode("ascii"), hashlib.sha256)
+    return "key:" + mac.hexdigest()[:16]
 
 
 def validate_auth_configuration() -> None:
@@ -274,5 +280,7 @@ class APIKeyAuthMiddleware:
             await self._reject(scope, receive, send, 429, "Rate limit exceeded", retry_after)
             return
 
-        scope.setdefault("state", {})[PRINCIPAL_STATE_KEY] = principal_for_digest(presented_digest)
+        scope.setdefault("state", {})[PRINCIPAL_STATE_KEY] = principal_for_digest(
+            presented_digest, self.pepper
+        )
         await self.app(scope, receive, send)

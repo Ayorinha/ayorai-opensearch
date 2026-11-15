@@ -55,8 +55,8 @@ def tenants(
         "path": tmp_path / "audit.sqlite3",
         "a": {"Authorization": f"Bearer {key_a}"},
         "b": {"Authorization": f"Bearer {key_b}"},
-        "principal_a": principal_for_digest(_digest(key_a, pepper)),
-        "principal_b": principal_for_digest(_digest(key_b, pepper)),
+        "principal_a": principal_for_digest(_digest(key_a, pepper), bytes.fromhex(pepper)),
+        "principal_b": principal_for_digest(_digest(key_b, pepper), bytes.fromhex(pepper)),
         "keys": (key_a, key_b),
         "digests": (_digest(key_a, pepper), _digest(key_b, pepper)),
     }
@@ -161,6 +161,15 @@ def test_the_principal_reveals_neither_key_nor_digest(tenants: dict[str, Any]) -
     assert principal_a.startswith("key:") and len(principal_a) == 20
     for secret in (*tenants["keys"], *tenants["digests"]):
         assert secret not in principal_a and principal_a[4:] not in secret
+
+
+def test_the_principal_is_bound_to_the_pepper() -> None:
+    digest = "ab" * 32
+    first, second = secrets.token_bytes(32), secrets.token_bytes(32)
+    assert principal_for_digest(digest, first) == principal_for_digest(digest, first)
+    assert principal_for_digest(digest, first) != principal_for_digest(digest, second)
+    unkeyed = hashlib.sha256(digest.encode("ascii")).hexdigest()[:16]
+    assert principal_for_digest(digest, first) != "key:" + unkeyed
 
 
 def test_without_authentication_traces_have_no_owner(
