@@ -62,6 +62,8 @@ _BASELINE_NUMBER_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 _CALENDAR_YEAR_RE = re.compile(r"(?:19|20)\d\d")
+_YEAR_TOKEN_RE = re.compile(r"\b(?:19|20)\d\d\b")
+_BASELINE_CLAUSE_END_RE = re.compile(r"[.;:!?,]")
 _TOKEN_RE = re.compile(r"[\wÀ-ÿ]+", re.UNICODE)
 # Negation is language dependent. In Portuguese "no"/"na"/"nos"/"nas" are
 # contractions of em + article ("no fim de 2025") and "sem" ("sem custo")
@@ -947,15 +949,38 @@ def _is_generic(unit: str) -> bool:
     return unit.startswith(("duration:", "measure:")) or unit in {"fraction", "multiplier"}
 
 
-def _mask_comparison_baselines(text: str) -> str:
-    """Remove numbers that are the baseline of a comparison; other text is unchanged."""
+def _mask_comparison_baselines(text: str, claim_years: frozenset[str] = frozenset()) -> str:
+    """Remove numbers that are the baseline of a comparison; other text is unchanged.
+
+    A baseline followed in its clause by a calendar year that the claim names
+    is the value of the claimed period ("versus 40 milhões em 2023" for a claim
+    about 2023), so it is kept.
+    """
 
     def _drop(match: re.Match[str]) -> str:
         if _CALENDAR_YEAR_RE.fullmatch(match.group("number")):
             return match.group(0)
+        if claim_years and claim_years.intersection(_baseline_years(text, match.end())):
+            return match.group(0)
         return f"{match.group('marker')} "
 
     return _BASELINE_NUMBER_RE.sub(_drop, text)
+
+
+def _baseline_years(text: str, start: int) -> set[str]:
+    """Calendar years that belong to the baseline ending at ``start``.
+
+    They follow it in the same clause before any other number: in "versus 40
+    milhões em 2023" the 2023 is the baseline's year; in "de 40 para 31
+    milhões em 2024" the 2024 follows 31 and belongs to the current value.
+    """
+    end = _BASELINE_CLAUSE_END_RE.search(text, start)
+    years: set[str] = set()
+    for number in _NUMBER_RE.findall(text[start : end.start() if end else len(text)]):
+        if not _YEAR_TOKEN_RE.fullmatch(number.strip()):
+            break
+        years.add(number.strip())
+    return years
 
 
 def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
@@ -975,7 +1000,8 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     claim_facts = _numeric_facts(claim_text)
     if not claim_facts:
         return NumericAlignment()
-    evidence_facts = _numeric_facts(_mask_comparison_baselines(evidence_text))
+    claim_years = frozenset(_YEAR_TOKEN_RE.findall(claim_text))
+    evidence_facts = _numeric_facts(_mask_comparison_baselines(evidence_text, claim_years))
     claim_locale = _locale_for(claim_text)
     evidence_locale = _locale_for(evidence_text)
 

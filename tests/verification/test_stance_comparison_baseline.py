@@ -145,6 +145,51 @@ def test_detector_ignores_baseline_numbers(claim: str, evidence: str, stance: St
     assert _stance(claim, evidence) == stance
 
 
+@pytest.mark.parametrize(
+    ("claim", "evidence", "stance"),
+    [
+        # The baseline is the value of the claimed year: it is kept and supports.
+        (
+            "A receita da Vértice foi de 40 milhões em 2023.",
+            "A receita da Vértice foi de 31 milhões em 2024, versus 40 milhões em 2023.",
+            Stance.SUPPORTS,
+        ),
+        # A year after the current value belongs to the current value.
+        (
+            "A receita da Vértice foi de 40 milhões em 2024.",
+            "A receita da Vértice caiu de 40 para 31 milhões em 2024.",
+            Stance.CONTRADICTS,
+        ),
+        (
+            "Vertice revenue was 40 million in 2024.",
+            "Vertice revenue fell from 40 million to 31 million in 2024.",
+            Stance.CONTRADICTS,
+        ),
+    ],
+)
+def test_a_baseline_is_kept_only_for_the_claimed_year(
+    claim: str, evidence: str, stance: Stance
+) -> None:
+    assert _stance(claim, evidence) == stance
+
+
+def test_baseline_years_stop_at_the_next_number() -> None:
+    text = "caiu de 40 para 31 milhões em 2024, versus 40 milhões em 2023."
+    assert _mask_comparison_baselines(text, frozenset({"2023"})) == (
+        "caiu de   para 31 milhões em 2024, versus 40 milhões em 2023."
+    )
+    assert _mask_comparison_baselines(text, frozenset({"2024"})) == (
+        "caiu de   para 31 milhões em 2024, versus   milhões em 2023."
+    )
+
+
+def test_baseline_years_stop_at_the_end_of_the_clause() -> None:
+    text = "Foram 31 milhões em 2024, versus 40 milhões; em 2023 houve 5 demissões."
+    assert _mask_comparison_baselines(text, frozenset({"2023"})) == (
+        "Foram 31 milhões em 2024, versus   milhões; em 2023 houve 5 demissões."
+    )
+
+
 def test_a_year_range_does_not_refute_a_claim_about_its_start() -> None:
     stance = _stance("Revenue has grown since 2023.", "Revenue has grown from 2023 to 2025.")
     assert stance != Stance.CONTRADICTS
