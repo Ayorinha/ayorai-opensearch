@@ -141,9 +141,9 @@ CLAIM_TOKENS = frozenset({"receita", "vértice", "foi", "milhões", "2024"})
         ),
         # A later clause with an operator that covers the claim still counts.
         ("A Vértice cresceu. É falso que a receita da Vértice foi de 40 milhões em 2024.", True),
-        # Without a counted operator the text is classified as in v6 (the "não"
-        # of an uncounted operator still counts there, a known v6 limitation).
-        ("Não é falso que a Vértice faliu. A receita da Vértice foi de 40 milhões em 2024.", True),
+        # The "não" of an uncounted operator sits in another sentence, which does
+        # not state the claim: since v9 it no longer negates it (it did in v6-v8).
+        ("Não é falso que a Vértice faliu. A receita da Vértice foi de 40 milhões em 2024.", False),
         # With a counted operator, an uncounted operator's "não" is not a negator.
         (
             "Não é falso que a Vértice faliu. "
@@ -168,5 +168,5 @@ def test_an_operator_about_another_sentence_does_not_contradict() -> None:
     assert _stance(claim, evidence) == Stance.SUPPORTS
 
 
-def test_detector_version_is_7() -> None:
-    assert RuleStanceDetector.version in {"7", "8"}
+def test_detector_version_is_at_least_7() -> None:
+    assert int(RuleStanceDetector.version) >= 7
