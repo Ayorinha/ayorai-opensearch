@@ -14,6 +14,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from ayorai_attractor.api.auth import APIKeyAuthMiddleware, validate_auth_configuration
 from ayorai_attractor.api.load_control import (
     HeavyRouteConcurrencyLimitMiddleware,
+    inflight_scope_from_env,
     max_inflight_from_env,
 )
 from ayorai_attractor.api.logging_config import configure_logging
@@ -72,6 +73,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # request would reject must not start a partially configured service.
     validate_provider_configuration()
     max_inflight_from_env()
+    inflight_scope_from_env()
     configure_logging()
     try:
         yield
