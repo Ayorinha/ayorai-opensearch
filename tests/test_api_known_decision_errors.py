@@ -109,3 +109,30 @@ def test_check_trace_ids_are_not_persisted(
     assert trace_id == second.json()["trace_id"]
     assert first.json()["results"] == second.json()["results"]
     assert client.get(f"/v1/audit/{trace_id}").status_code == 404
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Scale words (bilhão, milhões) are applied only to money with a currency; "
+        "bare '1,2 bilhão' is read as 1.2 and '1.200 milhões' as 1200 (false refuted)."
+    ),
+)
+def test_equivalent_values_with_different_scale_words_are_not_refuted() -> None:
+    result = _check(
+        "A receita da Vértice foi de 1,2 bilhão em 2024.",
+        "A receita da Vértice foi de 1.200 milhões em 2024.",
+    )
+    assert result["verdict"] != "refuted"
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "A reported denial ('negou que X') is read as a plain statement of X, so the "
+        "document supports the claim it reports being denied."
+    ),
+)
+def test_a_reported_denial_does_not_support_the_claim() -> None:
+    result = _check(CLAIM, "A Vértice negou que a receita da Vértice foi de 40 milhões em 2024.")
+    assert "supports" not in _stances(result)
