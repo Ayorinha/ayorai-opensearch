@@ -75,3 +75,17 @@ def test_distributions_get_verified_signed_provenance_outside_pull_requests() ->
     names = [str(s.get("name", "")) for s in job["steps"]]
     assert names.index(attest["name"]) > names.index("Verify distribution artifact checksums")
     assert names.index(verify["name"]) == names.index(attest["name"]) + 1
+
+
+def test_the_image_applies_debian_security_updates_and_fails_closed() -> None:
+    dockerfile = (WORKFLOWS.parents[1] / "docker" / "Dockerfile").read_text(encoding="utf-8")
+    lines = [line.strip() for line in dockerfile.splitlines()]
+    (start,) = [i for i, line in enumerate(lines) if line.startswith("RUN apt-get update")]
+    block = " ".join(lines[start : start + 4])
+    # An unreachable or unsigned archive must fail the build, not ship stale packages.
+    assert "apt-get update --error-on=any" in block
+    assert "apt-get upgrade --yes --no-install-recommends" in block
+    assert "rm -rf /var/lib/apt/lists/*" in block
+    assert lines[0].startswith("FROM python:3.12-slim@sha256:")
+    pip_install = next(i for i, line in enumerate(lines) if line.startswith("RUN pip install"))
+    assert start < pip_install
