@@ -1,3 +1,4 @@
+import io
 import json
 from typing import Any
 from urllib.error import URLError
@@ -55,8 +56,11 @@ def test_openai_compatible_response_contract(monkeypatch: pytest.MonkeyPatch) ->
         def __exit__(self, *args: Any) -> None:
             return None
 
+        _body = io.BytesIO(json.dumps({"choices": [{"message": {"content": "answer"}}]}).encode())
+
         def read(self, size: int = -1) -> bytes:
-            return json.dumps({"choices": [{"message": {"content": "answer"}}]}).encode()
+            # Consumed like a real HTTP response: b"" once the body is read.
+            return self._body.read(size)
 
     monkeypatch.setattr(
         "ayorai_attractor.providers._http.open_without_redirects",
@@ -77,8 +81,11 @@ def test_http_search_response_contract(monkeypatch: pytest.MonkeyPatch) -> None:
         def __exit__(self, *args: Any) -> None:
             return None
 
+        _body = io.BytesIO(json.dumps({"results": [{"title": "doc"}]}).encode())
+
         def read(self, size: int = -1) -> bytes:
-            return json.dumps({"results": [{"title": "doc"}]}).encode()
+            # Consumed like a real HTTP response: b"" once the body is read.
+            return self._body.read(size)
 
     monkeypatch.setattr(
         "ayorai_attractor.providers._http.open_without_redirects",
@@ -131,8 +138,11 @@ def test_openai_compatible_provider_rejects_malformed_response(
         def __exit__(self, *args: Any) -> None:
             return None
 
+        _body = io.BytesIO(b"{}")
+
         def read(self, size: int = -1) -> bytes:
-            return b"{}"
+            # Consumed like a real HTTP response: b"" once the body is read.
+            return self._body.read(size)
 
     monkeypatch.setattr(
         "ayorai_attractor.providers._http.open_without_redirects",
