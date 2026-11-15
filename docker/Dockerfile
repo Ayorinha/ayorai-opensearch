@@ -3,6 +3,15 @@ FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# Debian security updates published after the pinned base image was built (in
+# November 2026, zlib1g CVE-2026-76844 and CVE-2026-85091). The base digest stays
+# pinned for provenance; the image scan in .github/workflows/docker.yml fails on
+# any high or critical finding that has a fix, so a stale base cannot ship.
+RUN apt-get update --error-on=any \
+    && apt-get upgrade --yes --no-install-recommends \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY pyproject.toml README.md LICENSE ./
