@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -11,7 +11,11 @@ COPY src ./src
 RUN pip install --no-cache-dir . \
     && groupadd --system attractor \
     && useradd --system --gid attractor --home-dir /app --shell /usr/sbin/nologin attractor \
-    && chown -R attractor:attractor /app
+    && chown -R attractor:attractor /app \
+    # The runtime never installs packages: drop pip (and its known advisories)
+    # and the setuid/setgid bits that would let a compromised process escalate.
+    && python -m pip uninstall --yes pip \
+    && find / -xdev -perm /6000 -type f -exec chmod a-s {} +
 
 USER attractor
 
