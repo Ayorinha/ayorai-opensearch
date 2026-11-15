@@ -78,7 +78,7 @@ O conjunto exato depende do cenário. Esta lista é uma orientação de avaliaç
 ## 5. Estado e limites conhecidos
 
 - O projeto contém uma implementação do pipeline de verificação e do Judge 2.0, com testes de regressão.
-- Golden v0 e Golden v0.1 são conjuntos sintéticos de desenvolvimento em inglês; seus resultados não devem ser tratados como validação de produção.
+- Golden v0 e Golden v0.1 são conjuntos sintéticos de desenvolvimento: o corpus de 52 documentos está em inglês e a maioria das consultas e afirmações está em português, o que os torna conjuntos de verificação entre idiomas. Seus resultados não devem ser tratados como validação de produção.
 - Não há resultado de benchmark em português. O protocolo RGC está em desenvolvimento e não está congelado.
 - O sistema não garante detectar todas as alucinações e não certifica a verdade ou a qualidade das fontes externas.
 - A adoção do projeto não comprova, por si só, conformidade com a LGPD ou com qualquer outra obrigação regulatória.
