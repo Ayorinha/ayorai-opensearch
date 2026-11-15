@@ -86,11 +86,25 @@ _SENTENTIAL_NEGATION_EN = re.compile(
     r"\bit\s+is\s+(?P<negated>not\s+)?(?:false|untrue|incorrect)\s+(?:to\s+say\s+)?that\b",
     re.IGNORECASE,
 )
+# Postposed form: "a notícia de que X é falsa" denies X; "... não é falsa"
+# affirms it. The proposition X is the operator's scope.
+_SENTENTIAL_NEGATION_POST_PT = re.compile(
+    r"\b(?:a|o)\s+(?:afirmação|afirmacao|informação|informacao|notícia|noticia|alegação"
+    r"|alegacao|boato|rumor|versão|versao|declaração|declaracao)\s+de\s+que\s+"
+    r"(?P<scope>[^.;:!?]{1,300}?)\s+(?P<negated>(?:não|nao)\s+)?(?:é|era|foi)\s+"
+    r"(?:falso|falsa|incorreto|incorreta|inverídico|inverídica|mentiroso|mentirosa"
+    r"|infundado|infundada)\b",
+    re.IGNORECASE,
+)
 # An operator only reaches the end of its clause: "É falso que A faliu. B" does
-# not deny B. When the claim is known, an operator counts only if its clause
-# holds at least half of the claim's content tokens.
+# not deny B, and neither does "É falso que A faliu porque B". When the claim is
+# known, an operator counts only if its clause holds at least half of the
+# claim's content tokens.
 _CLAUSE_END_RE = re.compile(
-    r"[.;:!?]|,\s+(?:e|mas|porém|porem|enquanto|and|but|while)\b", re.IGNORECASE
+    r"[.;:!?]|,\s+(?:e|mas|porém|porem|enquanto|and|but|while)\b"
+    r"|\b(?:porque|pois|já\s+que|ja\s+que|uma\s+vez\s+que|embora|enquanto|mas|porém|porem"
+    r"|contudo|todavia|because|although|whereas)\b",
+    re.IGNORECASE,
 )
 _OPERATOR_SCOPE_COVERAGE = 0.5
 # Portuguese-only function words used solely to decide whether "no" is English.
@@ -380,29 +394,42 @@ def _has_negation(text: str, claim_tokens: frozenset[str] | None = None) -> bool
 
     def _remove(match: re.Match[str]) -> str:
         nonlocal operators, flips
-        if claim_tokens is not None and not _operator_covers_claim(
-            match.string, match.end(), claim_tokens
-        ):
-            return " "
+        postposed = "scope" in match.re.groupindex
+        # A postposed operator wraps its proposition: keep the proposition so
+        # that a negation inside it is still seen by the token check.
+        kept = f" {match.group('scope')} " if postposed else " "
+        scope = match.group("scope") if postposed else _clause_after(match.string, match.end())
+        if claim_tokens is not None and not _covers_claim(scope, claim_tokens):
+            return kept
         operators += 1
         if match.group("negated") is None:
             flips += 1
-        return " "
+        return kept
 
-    remainder = _SENTENTIAL_NEGATION_EN.sub(_remove, _SENTENTIAL_NEGATION_PT.sub(_remove, text))
+    remainder = text
+    for pattern in (
+        _SENTENTIAL_NEGATION_POST_PT,
+        _SENTENTIAL_NEGATION_PT,
+        _SENTENTIAL_NEGATION_EN,
+    ):
+        remainder = pattern.sub(_remove, remainder)
     if operators == 0:
         return _has_token_negation(text)
     return (flips % 2 == 1) != _has_token_negation(remainder)
 
 
-def _operator_covers_claim(text: str, start: int, claim_tokens: frozenset[str]) -> bool:
-    """The clause after an operator holds at least half of the claim's content tokens."""
+def _clause_after(text: str, start: int) -> str:
+    """Text from ``start`` to the end of its clause."""
+    end = _CLAUSE_END_RE.search(text, start)
+    return text[start : end.start() if end else len(text)]
+
+
+def _covers_claim(scope: str, claim_tokens: frozenset[str]) -> bool:
+    """The scope holds at least half of the claim's content tokens."""
     if not claim_tokens:
         return True
-    end = _CLAUSE_END_RE.search(text, start)
-    clause = text[start : end.start() if end else len(text)]
-    scope = {token.casefold() for token in _TOKEN_RE.findall(clause)}
-    return len(claim_tokens & scope) / len(claim_tokens) >= _OPERATOR_SCOPE_COVERAGE
+    tokens = {token.casefold() for token in _TOKEN_RE.findall(scope)}
+    return len(claim_tokens & tokens) / len(claim_tokens) >= _OPERATOR_SCOPE_COVERAGE
 
 
 def _has_token_negation(text: str) -> bool:
