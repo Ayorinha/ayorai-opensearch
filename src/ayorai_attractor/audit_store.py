@@ -11,7 +11,10 @@ process; this does not make the store a multi-process or multi-replica database.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import os
+import re
 import sqlite3
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -61,13 +64,50 @@ def _utc_timestamp(moment: datetime) -> str:
     return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
+_KEY_ID = re.compile(r"^[A-Za-z0-9_.-]{1,32}$")
+_MIN_MAC_KEY_BYTES = 32
+
+
+def audit_mac_keys_from_env() -> tuple[tuple[str, bytes], ...]:
+    """Parse ATTRACTOR_AUDIT_HMAC_KEYS="id:hex[,id:hex...]" (first = active).
+
+    The keys live outside the database, so a writer of the SQLite file alone
+    cannot forge a trace. Empty or unset disables MACs.
+    """
+    raw = os.getenv("ATTRACTOR_AUDIT_HMAC_KEYS", "").strip()
+    if not raw:
+        return ()
+    keys: list[tuple[str, bytes]] = []
+    for item in raw.split(","):
+        key_id, separator, hex_key = item.strip().partition(":")
+        if not separator:
+            raise ValueError("ATTRACTOR_AUDIT_HMAC_KEYS entries must be id:hex")
+        if not _KEY_ID.match(key_id) or any(key_id == seen for seen, _ in keys):
+            raise ValueError("ATTRACTOR_AUDIT_HMAC_KEYS needs unique ids of [A-Za-z0-9_.-]{1,32}")
+        try:
+            key = bytes.fromhex(hex_key)
+        except ValueError as exc:
+            raise ValueError("ATTRACTOR_AUDIT_HMAC_KEYS keys must be hex") from exc
+        if len(key) < _MIN_MAC_KEY_BYTES:
+            raise ValueError("ATTRACTOR_AUDIT_HMAC_KEYS keys must have at least 32 bytes")
+        keys.append((key_id, key))
+    return tuple(keys)
+
+
+def _mac(key: bytes, version: str, digest: str) -> str:
+    return hmac.new(key, f"{version}:{digest}".encode("ascii"), hashlib.sha256).hexdigest()
+
+
 class DuplicateAuditTraceError(ValueError):
     """Raised when an audit trace ID has already been recorded."""
 
 
 class AuditTraceStore:
     def __init__(
-        self, path: str | None = None, clock: Callable[[], datetime] | None = None
+        self,
+        path: str | None = None,
+        clock: Callable[[], datetime] | None = None,
+        mac_keys: tuple[tuple[str, bytes], ...] | None = None,
     ) -> None:
         configured: str = (
             path
@@ -76,6 +116,7 @@ class AuditTraceStore:
         )
         self.path = configured
         self._clock = clock or (lambda: datetime.now(UTC))
+        self._mac_keys = audit_mac_keys_from_env() if mac_keys is None else mac_keys
         self._lock = RLock()
         if configured != ":memory:":
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
@@ -221,7 +262,7 @@ class AuditTraceStore:
         columns = {
             str(row[1]) for row in connection.execute("PRAGMA table_info(audit_traces)").fetchall()
         }
-        for column in ("owner", "recorded_at", "software_version"):
+        for column in ("owner", "recorded_at", "software_version", "replay_mac", "mac_key_id"):
             if column not in columns:
                 # Column names are internal constants, never caller input.
                 connection.execute(f"ALTER TABLE audit_traces ADD COLUMN {column} TEXT")
@@ -274,6 +315,10 @@ class AuditTraceStore:
             "software_version": __version__,
         }
         replay = ReplayBundle.build(report.trace_id, _r2_v3_events(fields), version=_R2_V3)
+        mac_key_id, replay_mac = None, None
+        if self._mac_keys:
+            mac_key_id, key = self._mac_keys[0]
+            replay_mac = _mac(key, _R2_V3, replay.digest)
         try:
             self._connection.execute(
                 """
@@ -282,8 +327,8 @@ class AuditTraceStore:
                     evidence_count, independent_evidence_count,
                     verified_evidence_count, failure_count, finding_count,
                     replay_digest, replay_version, schema_version, owner,
-                    recorded_at, software_version
-                ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    recorded_at, software_version, replay_mac, mac_key_id
+                ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     report.trace_id,
@@ -299,6 +344,8 @@ class AuditTraceStore:
                     owner,
                     fields["recorded_at"],
                     fields["software_version"],
+                    replay_mac,
+                    mac_key_id,
                 ),
             )
         except sqlite3.IntegrityError as exc:
@@ -369,7 +416,7 @@ class AuditTraceStore:
             SELECT legacy_verification, verification, operation_status, evidence_count,
                    independent_evidence_count, verified_evidence_count, failure_count,
                    finding_count, schema_version, owner, recorded_at, software_version,
-                   replay_digest, replay_version
+                   replay_digest, replay_version, replay_mac, mac_key_id
             FROM audit_traces WHERE trace_id = ?
             """,
             (trace_id,),
@@ -377,7 +424,7 @@ class AuditTraceStore:
         if row is None:
             raise ValueError(f"Unknown audit trace: {trace_id}")
         fields = dict(zip(_R2_V3_FIELDS, row[:12], strict=True))
-        stored_digest, version = row[12], row[13]
+        stored_digest, version, stored_mac, mac_key_id = row[12], row[13], row[14], row[15]
         if version == _R2_V3:
             events = _r2_v3_events(fields)
         elif version in (_R2_V1, _R2_V2):
@@ -395,7 +442,47 @@ class AuditTraceStore:
         else:
             return "invalid"
         rebuilt = ReplayBundle.build(trace_id, events, version=version)
-        return "valid" if rebuilt.digest == stored_digest else "invalid"
+        if rebuilt.digest != stored_digest:
+            return "invalid"
+        if self._mac_keys and version == _R2_V3:
+            # With keys configured every r2-v3 trace must carry a MAC from a known
+            # key: a removed MAC is a downgrade, not a legacy trace.
+            key = dict(self._mac_keys).get(str(mac_key_id)) if mac_key_id is not None else None
+            if key is None or stored_mac is None:
+                return "invalid"
+            if not hmac.compare_digest(_mac(key, version, stored_digest), str(stored_mac)):
+                return "invalid"
+        return "valid"
+
+    def seal_unsealed(self) -> int:
+        """MAC r2-v3 traces recorded before keys were configured; returns how many.
+
+        Only traces whose digest is still valid are sealed, with the active key.
+        Run once when enabling ATTRACTOR_AUDIT_HMAC_KEYS on an existing store.
+        """
+        if not self._mac_keys:
+            raise ValueError("ATTRACTOR_AUDIT_HMAC_KEYS is not configured")
+        key_id, key = self._mac_keys[0]
+        sealed = 0
+        with self._lock:
+            rows = self._connection.execute(
+                "SELECT trace_id, replay_digest FROM audit_traces "
+                "WHERE replay_version = ? AND replay_mac IS NULL ORDER BY trace_id",
+                (_R2_V3,),
+            ).fetchall()
+            saved_keys, self._mac_keys = self._mac_keys, ()
+            try:
+                valid = [row for row in rows if self._verify_locked(str(row[0])) == "valid"]
+            finally:
+                self._mac_keys = saved_keys
+            for trace_id, digest in valid:
+                self._connection.execute(
+                    "UPDATE audit_traces SET replay_mac = ?, mac_key_id = ? WHERE trace_id = ?",
+                    (_mac(key, _R2_V3, str(digest)), key_id, trace_id),
+                )
+                sealed += 1
+            self._connection.commit()
+        return sealed
 
     def get(self, trace_id: str, requester: str | None = None) -> AuditTraceResponse | None:
         """Return the trace only to its owner; legacy traces (no owner) to anyone.
