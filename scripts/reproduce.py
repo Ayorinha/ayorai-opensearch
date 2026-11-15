@@ -34,7 +34,7 @@ REPORTS = ROOT / "reports"
 # Expected values — must match .github/workflows/ci.yml (guarded by a test).
 SMOKE_SEMANTIC_SHA256 = "969ec61a4aee4e4426f5d217819bd185ebba248743e7721714a3123f5df67c3d"
 GOLDEN_V0_SEMANTIC_SHA256 = "21abb816facce73fc924842d12b373b8792abc2e7389e129c35bb58bab806632"
-GOLDEN_V01_SEMANTIC_SHA256 = "64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608"
+GOLDEN_V01_SEMANTIC_SHA256 = "1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180"
 
 GOLDEN_V0_EXPECTED: dict[str, Any] = {
     "case_count": 34,
@@ -55,16 +55,16 @@ GOLDEN_V01_EXPECTED: dict[str, Any] = {
     "case_count": 34,
     "corpus_document_count": 52,
     "cases_with_global_verdict": 30,
-    "global_accuracy": {"correct": 10, "total": 30, "accuracy": 0.333333},
-    "balanced_accuracy": 0.481838,
+    "global_accuracy": {"correct": 11, "total": 30, "accuracy": 0.366667},
+    "balanced_accuracy": 0.502671,
     "legacy_accuracy": {"correct": 13, "total": 30, "accuracy": 0.433333},
     "semantic_digest_version": "1",
     "semantic_sha256": GOLDEN_V01_SEMANTIC_SHA256,
 }
 GOLDEN_V01_MCNEMAR = {
     "legacy_correct_new_wrong": 9,
-    "new_correct_legacy_wrong": 6,
-    "exact_p": 0.60723876953125,
+    "new_correct_legacy_wrong": 7,
+    "exact_p": 0.803619384765625,
 }
 
 

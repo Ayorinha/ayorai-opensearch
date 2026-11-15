@@ -48,6 +48,16 @@ These metric values were supplied from a local execution of the base-commit code
 - `legacy_accuracy`: 13/30 = `0.433333`.
 - McNemar: `legacy_correct_new_wrong=9`, `new_correct_legacy_wrong=6`, exact p-value `0.60723876953125`.
 
+## Reference update — rule detector v10 (2026-11-15)
+
+The recorded output above is kept as the historical PR 0.9 measurement. Detector v10 changes one Golden v0.1 prediction, so the CI reference for Golden v0.1 changes; Golden v0 and smoke-v0 are unchanged.
+
+- **Semantic change:** a number followed by a scale word without a currency ("2,0 milhões", "2.0 million", "1,2 bilhão") is read with its scale, and a count noun right after the scale ("2,0 milhões de clientes", "2.0 million active retail customers") makes it a scaled count of that noun. Previously the scale was applied only to money with a currency, so "2,0 milhões de clientes" was the bare value 2.0 with no attribute in common with the evidence.
+- **Case-level effect:** exactly one case changes. Golden v0.1 `x02` (expected `CONFLICTING`; claim "A NovaBank tinha 2,0 milhões de clientes de varejo ativos no fim de 2025"; evidence doc-005 "2.0 million active retail customers", doc-018 "2.3 million") goes from `PARTIALLY_SUPPORTED` (wrong) to `CONFLICTING` (correct): doc-005 now supports and doc-018 contradicts.
+- **New Golden v0.1 reference:** `global_accuracy` 11/30 = `0.366667`; `balanced_accuracy` `0.502671`; `legacy_accuracy` 13/30 = `0.433333` (unchanged); McNemar `legacy_correct_new_wrong=9`, `new_correct_legacy_wrong=7`, exact p-value `0.803619384765625`; `semantic_sha256` `1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180` (was `64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608`).
+- **Status:** development measurement on a 30-case suite, not a confirmatory result. The McNemar test against the legacy baseline remains non-significant.
+- **Approval:** this reference update requires the maintainer's explicit approval, as stated below.
+
 ## Interpretation and invariants
 
 - Do not change these expected values to make CI pass. If a value differs, investigate the implementation, suite inputs, or execution environment.

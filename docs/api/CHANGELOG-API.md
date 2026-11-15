@@ -2,6 +2,11 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — `/v1/check` rule detector v10 (scale words)
+
+- A number followed by a scale word without a currency is read with its scale: "1,2 bilhão" and "1.200 milhões" are the same quantity (previously 1.2 against 1200, a false contradiction). A count noun right after the scale ("2,0 milhões de clientes", "3 mil funcionários") makes it a scaled count that compares with the same noun at any scale ("3000 funcionários").
+- The component version is now `10`. Golden v0.1 changes in one case (`x02`, now correct); the reference update and its rationale are in `docs/eval/SEMANTIC-DIGEST-V1-REFERENCE.md`.
+
 ## Unreleased — `/v1/check` rule detector v9 (decision fixes)
 
 - A negator in a sentence that does not state the claim no longer turns a confirming sentence into a contradiction: "A Vértice não faliu. A receita foi de 40 milhões em 2024." now supports a claim about the revenue. A sentence made only of denial words ("Isso não é verdade.", "Não procede.") still denies the previous one. Single-sentence excerpts are classified exactly as before.
