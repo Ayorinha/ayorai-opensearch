@@ -70,8 +70,21 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         audit_store.close()
 
 
-_HTTP_400_RESPONSE: dict[str, Any] = {
-    "description": "Request body could not be parsed as JSON.",
+# Malformed JSON is reported as 422 (type json_invalid), never 400.
+_HTTP_401_RESPONSE: dict[str, Any] = {
+    "description": "Missing or invalid API key (ATTRACTOR_AUTH_MODE=api_key).",
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {"detail": {"type": "string"}},
+                "required": ["detail"],
+            }
+        }
+    },
+}
+_HTTP_413_RESPONSE: dict[str, Any] = {
+    "description": "Request body exceeds the configured size limit.",
     "content": {
         "application/json": {
             "schema": {
@@ -212,7 +225,12 @@ def health() -> dict[str, str]:
 @app.post(
     "/v1/opensearch",
     response_model=SearchResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+    },
 )
 def opensearch(request: SearchRequest) -> SearchResponse:
     return engine.run(request)
@@ -221,7 +239,12 @@ def opensearch(request: SearchRequest) -> SearchResponse:
 @app.post(
     "/v1/audit",
     response_model=AuditResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+    },
 )
 def audit(request: SearchRequest) -> AuditResponse:
     """Run the engine and expose a deterministic audit of its evidence."""
@@ -263,7 +286,12 @@ def _ingest_or_422(doc: CheckDocument, loc: list[Any]) -> IngestedDocument:
 @app.post(
     "/v1/check",
     response_model=CheckResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+    },
 )
 def check(request: CheckRequest) -> CheckResponse:
     """Check claims, or an AI answer, against the supplied documents.
@@ -318,7 +346,12 @@ def check(request: CheckRequest) -> CheckResponse:
 @app.post(
     "/v1/fields",
     response_model=FieldsResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+    },
 )
 def fields(request: FieldsRequest) -> FieldsResponse:
     """Compare submitted field values (amount, date, CPF/CNPJ, names) with a document.
@@ -416,7 +449,8 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
                 }
             },
         },
-        400: _HTTP_400_RESPONSE,
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
         422: _HTTP_422_RESPONSE,
         429: _HTTP_429_RESPONSE,
     },
@@ -560,7 +594,12 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
 @app.get(
     "/v1/audit/{trace_id}",
     response_model=AuditTraceResponse,
-    responses={404: _HTTP_404_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        404: _HTTP_404_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+    },
 )
 def audit_trace(trace_id: str) -> AuditTraceResponse:
     """Return persisted audit metadata without exposing raw evidence or prompts."""

@@ -52,8 +52,26 @@
               }
             }
           },
-          "400": {
-            "description": "Request body could not be parsed as JSON.",
+          "401": {
+            "description": "Missing or invalid API key (ATTRACTOR_AUTH_MODE=api_key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the configured size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -98,7 +116,7 @@
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 1.0
                 }
               }
             },
@@ -147,8 +165,26 @@
               }
             }
           },
-          "400": {
-            "description": "Request body could not be parsed as JSON.",
+          "401": {
+            "description": "Missing or invalid API key (ATTRACTOR_AUTH_MODE=api_key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the configured size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -193,7 +229,7 @@
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 1.0
                 }
               }
             },
@@ -242,8 +278,26 @@
               }
             }
           },
-          "400": {
-            "description": "Request body could not be parsed as JSON.",
+          "401": {
+            "description": "Missing or invalid API key (ATTRACTOR_AUTH_MODE=api_key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the configured size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -288,7 +342,7 @@
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 1.0
                 }
               }
             },
@@ -337,8 +391,26 @@
               }
             }
           },
-          "400": {
-            "description": "Request body could not be parsed as JSON.",
+          "401": {
+            "description": "Missing or invalid API key (ATTRACTOR_AUTH_MODE=api_key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the configured size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -383,7 +455,7 @@
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 1.0
                 }
               }
             },
@@ -447,8 +519,26 @@
               }
             }
           },
-          "400": {
-            "description": "Request body could not be parsed as JSON.",
+          "401": {
+            "description": "Missing or invalid API key (ATTRACTOR_AUTH_MODE=api_key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the configured size limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -493,7 +583,7 @@
                 "description": "Seconds to wait before retrying the request.",
                 "schema": {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 1.0
                 }
               }
             },
@@ -539,6 +629,24 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AuditTraceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key (ATTRACTOR_AUTH_MODE=api_key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
                 }
               }
             }
