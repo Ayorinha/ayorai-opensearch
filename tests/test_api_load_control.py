@@ -139,3 +139,24 @@ def test_api_refuses_to_start_with_an_invalid_limit(monkeypatch: pytest.MonkeyPa
     with pytest.raises(ValueError, match="ATTRACTOR_MAX_INFLIGHT_HEAVY"):
         with TestClient(app):
             pass
+
+
+def test_limiter_is_installed_between_authentication_and_body_limit() -> None:
+    """The real application wires the limiter: after authentication, before body buffering.
+
+    ``app.user_middleware`` lists middleware outermost first (Starlette inserts each
+    ``add_middleware`` call at the front), so a smaller index runs earlier.
+    """
+    from ayorai_attractor.api.app import app
+
+    names = [m.cls.__name__ for m in app.user_middleware]
+
+    assert "HeavyRouteConcurrencyLimitMiddleware" in names
+
+    auth = names.index("APIKeyAuthMiddleware")
+    limiter = names.index("HeavyRouteConcurrencyLimitMiddleware")
+    body = names.index("RequestBodyLimitMiddleware")
+
+    # Unauthenticated requests never take a slot; a rejected request is answered
+    # before its body is buffered.
+    assert auth < limiter < body
