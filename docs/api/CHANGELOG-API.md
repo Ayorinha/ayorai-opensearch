@@ -2,6 +2,12 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — `/v1/check` rule detector v9 (decision fixes)
+
+- A negator in a sentence that does not state the claim no longer turns a confirming sentence into a contradiction: "A Vértice não faliu. A receita foi de 40 milhões em 2024." now supports a claim about the revenue. A sentence made only of denial words ("Isso não é verdade.", "Não procede.") still denies the previous one. Single-sentence excerpts are classified exactly as before.
+- A reported denial ("X negou que P", "desmentiu que", "contesta que", "denied that") is `neutral` for P: the document neither asserts P nor establishes that P is false. Previously it supported P.
+- The component version in `components` is now `9`. Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
+
 ## Unreleased — audit traces: ownership, schema v3 and `r2-v3` (behavior change)
 
 - **Behavior change:** `GET /v1/audit/{trace_id}` returns a trace only to the API key that created it. Any other key gets the same 404 body as for an unknown trace. Response schemas are unchanged.

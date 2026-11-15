@@ -109,6 +109,58 @@ _CLAUSE_END_RE = re.compile(
     re.IGNORECASE,
 )
 _OPERATOR_SCOPE_COVERAGE = 0.5
+# Sentence boundary for token negation: "A Vértice não faliu. A receita foi de 40
+# milhões" negates another proposition. A boundary needs whitespace after the
+# mark, so decimals and thousands separators ("1.200", "1,2") never split.
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.;!?])\s+")
+# A sentence made only of denial words ("Isso não é verdade.", "Não procede.",
+# "That is not true.") refers back to the previous sentence: it still counts.
+# "A empresa não comentou." has content of its own and does not.
+_ANAPHORIC_DENIAL_WORDS = frozenset(
+    {
+        "isso",
+        "isto",
+        "aquilo",
+        "essa",
+        "esta",
+        "informação",
+        "informacao",
+        "é",
+        "e",
+        "foi",
+        "era",
+        "verdade",
+        "verdadeiro",
+        "verdadeira",
+        "procede",
+        "correto",
+        "correta",
+        "certo",
+        "certa",
+        "bem",
+        "assim",
+        "o",
+        "a",
+        "that",
+        "this",
+        "it",
+        "is",
+        "was",
+        "true",
+        "correct",
+        "so",
+        "the",
+        "case",
+    }
+)
+# Reported denial: the document says that someone denied the proposition. It
+# neither asserts the proposition nor establishes that it is false.
+_REPORTED_DENIAL_RE = re.compile(
+    r"\b(?:negou|nega|negam|negaram|negava|negavam|desmentiu|desmente|desmentem"
+    r"|desmentiram|contestou|contesta|contestam|contestaram|refutou|refuta|refutaram"
+    r"|denied|denies|deny|disputed|disputes|refuted|refutes)\s+(?:que|that)\b",
+    re.IGNORECASE,
+)
 # Portuguese-only function words used solely to decide whether "no" is English.
 _PT_FUNCTION_WORDS = frozenset(
     {"de", "do", "da", "dos", "das", "um", "os", "as", "ao", "aos", "pelo", "pela", "também"}
@@ -416,8 +468,38 @@ def _has_negation(text: str, claim_tokens: frozenset[str] | None = None) -> bool
     ):
         remainder = pattern.sub(_remove, remainder)
     if operators == 0:
+        return _has_claim_token_negation(text, claim_tokens)
+    return (flips % 2 == 1) != _has_claim_token_negation(remainder, claim_tokens)
+
+
+def _has_claim_token_negation(text: str, claim_tokens: frozenset[str] | None) -> bool:
+    """Token negation, limited to the sentences that state the claim.
+
+    Without ``claim_tokens``, or for a single sentence, this is exactly the token
+    check. In a multi-sentence excerpt a negator counts only in a sentence that
+    covers the claim, or in a sentence made only of denial words that refers back
+    to the previous one ("Isso não é verdade.").
+    """
+    sentences = [s for s in _SENTENCE_SPLIT_RE.split(text.strip()) if s]
+    if claim_tokens is None or len(sentences) < 2:
         return _has_token_negation(text)
-    return (flips % 2 == 1) != _has_token_negation(remainder)
+    for sentence in sentences:
+        if not _has_token_negation(sentence):
+            continue
+        if _covers_claim(sentence, claim_tokens):
+            return True
+        tokens = {token.casefold() for token in _TOKEN_RE.findall(sentence)}
+        if tokens - _NEGATION_TOKENS <= _ANAPHORIC_DENIAL_WORDS:
+            return True
+    return False
+
+
+def _reported_denial(text: str, claim_tokens: frozenset[str]) -> bool:
+    """The text reports that someone denied a proposition covering the claim."""
+    return any(
+        _covers_claim(_clause_after(text, match.end()), claim_tokens)
+        for match in _REPORTED_DENIAL_RE.finditer(text)
+    )
 
 
 def _clause_after(text: str, start: int) -> str:
@@ -1106,7 +1188,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "8"
+    version = "9"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
@@ -1166,7 +1248,11 @@ class RuleStanceDetector:
                 # Polarity and date mismatches only count when claim and evidence
                 # describe the same proposition; otherwise they are unrelated text.
                 same_proposition = lexical >= 0.25
-                if numeric_conflict or (
+                if _reported_denial(item.excerpt, frozenset(claim_tokens)):
+                    # "X negou que P": the document reports a denial; it neither
+                    # asserts P nor establishes that P is false.
+                    stance = Stance.NEUTRAL
+                elif numeric_conflict or (
                     same_proposition and (date_conflict or negation_conflict or direction_conflict)
                 ):
                     stance = Stance.CONTRADICTS

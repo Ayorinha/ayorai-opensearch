@@ -1,9 +1,9 @@
-"""Known decision errors of /v1/check, pinned through the real HTTP application.
+"""Decision errors of /v1/check found in review, pinned through the real HTTP application.
 
-The strict ``xfail`` tests state the correct behaviour and fail today. When a fix
-lands they start passing, strict mode turns that into a failure, and the marker
-must be removed deliberately, together with the measured evaluation of the fix.
-The other tests pin behaviour that is correct today, so a fix cannot break it.
+Each was first pinned as a strict ``xfail``. Detector v9 fixes the cross-sentence
+token negation and the reported denial, which are now ordinary regression tests;
+the bare scale words remain a strict ``xfail``. The control tests pin behaviour
+that was already correct, so a fix cannot break it.
 """
 
 from __future__ import annotations
@@ -62,13 +62,6 @@ def test_a_previous_year_value_does_not_support_a_claim_about_the_current_year()
     assert "supports" not in _stances(result)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Token negation applies to the whole excerpt: a 'não' in another sentence "
-        "turns a confirming sentence into a contradiction (false refuted)."
-    ),
-)
 def test_a_negation_in_another_sentence_does_not_refute_the_claim() -> None:
     result = _check(CLAIM, "A Vértice não faliu. A receita da Vértice foi de 40 milhões em 2024.")
     assert _stances(result) == ["supports"]
@@ -126,13 +119,6 @@ def test_equivalent_values_with_different_scale_words_are_not_refuted() -> None:
     assert result["verdict"] != "refuted"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "A reported denial ('negou que X') is read as a plain statement of X, so the "
-        "document supports the claim it reports being denied."
-    ),
-)
 def test_a_reported_denial_does_not_support_the_claim() -> None:
     result = _check(CLAIM, "A Vértice negou que a receita da Vértice foi de 40 milhões em 2024.")
     assert "supports" not in _stances(result)
