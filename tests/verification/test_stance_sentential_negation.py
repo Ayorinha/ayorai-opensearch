@@ -45,8 +45,12 @@ ROOT = Path(__file__).resolve().parents[2]
         ("Não é falso que a receita não foi de 40 milhões.", True),
         # Not operators: no proposition introduced, or a reported denial.
         ("A notícia é falsa.", False),
+        ("A notícia de que é falsa.", False),
         ("A empresa negou que a receita foi de 40 milhões.", False),
-        ("O boato de que a receita foi de 40 milhões é falso.", False),
+        # Postposed form: the reported proposition is declared false (or not).
+        ("O boato de que a receita foi de 40 milhões é falso.", True),
+        ("A notícia de que a receita foi de 40 milhões não é falsa.", False),
+        ("A afirmação de que a receita não foi de 40 milhões é falsa.", False),
         # Token negation is unchanged.
         ("Não é verdade que a receita foi de 40 milhões.", True),
         ("A receita não foi de 40 milhões.", True),
@@ -119,6 +123,22 @@ CLAIM_TOKENS = frozenset({"receita", "vértice", "foi", "milhões", "2024"})
         ("É falso que a Vértice faliu. A receita da Vértice foi de 40 milhões em 2024.", False),
         ("É falso que a Vértice faliu, e a receita da Vértice foi de 40 milhões em 2024.", False),
         ("É falso que a Vértice faliu; a receita da Vértice foi de 40 milhões em 2024.", False),
+        # A subordinate clause is outside the operator's scope.
+        (
+            "É falso que a Vértice faliu porque a receita da Vértice foi de 40 milhões em 2024.",
+            False,
+        ),
+        (
+            "É falso que a Vértice faliu, embora a receita da Vértice foi de 40 milhões em 2024.",
+            False,
+        ),
+        # Postposed: the scope is the reported proposition.
+        ("A notícia de que a receita da Vértice foi de 40 milhões em 2024 é falsa.", True),
+        (
+            "A notícia de que a Vértice faliu é falsa. "
+            "A receita da Vértice foi de 40 milhões em 2024.",
+            False,
+        ),
         # A later clause with an operator that covers the claim still counts.
         ("A Vértice cresceu. É falso que a receita da Vértice foi de 40 milhões em 2024.", True),
         # Without a counted operator the text is classified as in v6 (the "não"
