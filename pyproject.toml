@@ -49,7 +49,7 @@ dev = [
 ]
 
 [project.scripts]
-opensearch = "ayorai_attractor.cli.main:search"
+opensearch = "ayorai_attractor.cli.main:opensearch_entrypoint"
 attractor = "ayorai_attractor.cli.main:app"
 
 [tool.setuptools]

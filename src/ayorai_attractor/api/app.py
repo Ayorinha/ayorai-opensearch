@@ -23,6 +23,7 @@ from ayorai_attractor.models import (
     SearchResponse,
 )
 from ayorai_attractor.orchestrator import Attractor
+from ayorai_attractor.providers.factory import validate_provider_configuration
 from ayorai_attractor.verification.api_models import (
     ClaimJudgmentResponse,
     Judge2VerificationRequest,
@@ -63,6 +64,9 @@ audit_store = AuditTraceStore()
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Release persistent resources when the API process shuts down."""
     validate_auth_configuration()
+    # Fail closed like authentication: a provider configuration that every
+    # request would reject must not start a partially configured service.
+    validate_provider_configuration()
     configure_logging()
     try:
         yield
