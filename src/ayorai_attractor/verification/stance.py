@@ -38,17 +38,30 @@ class LLMStancePayload(BaseModel):
 _NUMBER_RE = re.compile(r"(?<![\w])[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?")
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 # A number introduced as the baseline of a comparison ("caiu para 31, contra 40
-# no ano anterior", "de 40 para 31", "versus 40", "from 40 to 31") describes
+# no ano anterior", "de 40 para 31", "31, versus 40", "from 40 to 31") describes
 # another period or state, so it neither confirms nor contradicts a claim.
+# "contra"/"ante"/"versus" count only after a comma, a number or at the start
+# of a clause ("venceu ações contra 3 operadoras" is not a comparison); "from"
+# and "de" only in "from N to M" / "de N para M"; "than" never ("more than 40"
+# is a bound). Calendar years are time anchors, never masked.
+_MONEY_PREFIX = r"(?:(?:r\$|us\$|\$|€|usd|brl|eur)\s*)?"
+_BASELINE_VALUE = r"(?P<number>[-+]?\d+(?:[.,]\d+)*)"
 _BASELINE_NUMBER_RE = re.compile(
-    r"(?P<marker>\b(?:contra|ante|versus|vs\.?|than|from|comparad[oa]s?\s+(?:a|com|aos?|às?)"
-    r"|compared\s+(?:to|with)|frente\s+(?:a|aos?|às?))\s+"
-    r"(?:(?:os|as|o|a|the)\s+)?(?:(?:r\$|us\$|\$|€|usd|brl|eur)\s*)?)"
-    r"(?P<number>[-+]?\d+(?:[.,]\d+)*)"
-    r"|(?P<from_marker>\bde\s+(?:(?:r\$|us\$|\$|€)\s*)?)"
-    r"(?P<from_number>[-+]?\d+(?:[.,]\d+)*)(?=[^.;:!?\d]{0,40}?\bpara\s+(?:(?:r\$|us\$|\$|€)\s*)?\d)",
-    re.IGNORECASE,
+    r"(?P<marker>"
+    r"(?:(?:^|[,;(])\s*|(?<=\d)\s+|(?<=\d\s)\w+\s+|(?<=%)\s+)"
+    r"(?:contra|ante|versus|vs\.?)\s+(?:(?:os|as|o|a|the)\s+)?"
+    + _MONEY_PREFIX
+    + r"|\b(?:comparad[oa]s?\s+(?:a|com|aos?|às?)|compared\s+(?:to|with))\s+"
+    r"(?:(?:os|as|o|a|the)\s+)?"
+    + _MONEY_PREFIX
+    + r"|\b(?:de|from)\s+"
+    + _MONEY_PREFIX
+    + r"(?=\d+(?:[.,]\d+)*[^.;:!?\d]{0,40}?"
+    r"\b(?:para|to)\s+" + _MONEY_PREFIX + r"\d)"
+    r")" + _BASELINE_VALUE,
+    re.IGNORECASE | re.MULTILINE,
 )
+_CALENDAR_YEAR_RE = re.compile(r"(?:19|20)\d\d")
 _TOKEN_RE = re.compile(r"[\wÀ-ÿ]+", re.UNICODE)
 # Negation is language dependent. In Portuguese "no"/"na"/"nos"/"nas" are
 # contractions of em + article ("no fim de 2025") and "sem" ("sem custo")
@@ -911,8 +924,9 @@ def _mask_comparison_baselines(text: str) -> str:
     """Remove numbers that are the baseline of a comparison; other text is unchanged."""
 
     def _drop(match: re.Match[str]) -> str:
-        marker = match.group("marker")
-        return f"{marker} " if marker is not None else f"{match.group('from_marker')} "
+        if _CALENDAR_YEAR_RE.fullmatch(match.group("number")):
+            return match.group(0)
+        return f"{match.group('marker')} "
 
     return _BASELINE_NUMBER_RE.sub(_drop, text)
 
