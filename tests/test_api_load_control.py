@@ -296,14 +296,27 @@ def test_host_scope_is_built_from_the_environment(
     assert oct((tmp_path / "slots").stat().st_mode & 0o777) == "0o700"
 
 
-def test_a_writable_shared_lock_dir_is_refused(tmp_path: Any) -> None:
-    import os
-
+@pytest.mark.parametrize("extra_bits", [0o020, 0o002, 0o022])
+def test_a_writable_shared_lock_dir_is_refused(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any, extra_bits: int
+) -> None:
     from ayorai_attractor.api.load_control import HostSlots
 
+    # Simulated through lstat so the test never creates a world-writable directory;
+    # such a directory would let another local user pre-create and hold the slots.
     shared = tmp_path / "shared"
-    shared.mkdir()
-    os.chmod(shared, 0o777)  # another local user could pre-create and hold slots
+    shared.mkdir(mode=0o700)
+    real_lstat = Path.lstat
+
+    def fake_lstat(self: Path) -> Any:
+        info = real_lstat(self)
+        if self != shared:
+            return info
+        fields = list(info)
+        fields[0] = info.st_mode | extra_bits
+        return os.stat_result(fields)
+
+    monkeypatch.setattr(Path, "lstat", fake_lstat)
     with pytest.raises(ValueError, match="writable"):
         HostSlots(str(shared), 2)
 
