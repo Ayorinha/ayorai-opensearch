@@ -49,6 +49,22 @@ def _r2_v3_events(fields: dict[str, Any]) -> list[dict[str, Any]]:
     return [{"event": "audit.completed", **{name: fields[name] for name in _R2_V3_FIELDS}}]
 
 
+LEGACY_TRACE_POLICIES = ("hidden", "shared")
+
+
+def legacy_trace_policy_from_env() -> str:
+    """ATTRACTOR_AUDIT_LEGACY_TRACES: who may read traces recorded without an owner.
+
+    "hidden" (default): no authenticated key reads them, because their creator is
+    unknown and any key could belong to another client. "shared": every
+    authenticated key reads them (the behaviour before owners were recorded).
+    """
+    policy = os.getenv("ATTRACTOR_AUDIT_LEGACY_TRACES", "hidden").strip().lower()
+    if policy not in LEGACY_TRACE_POLICIES:
+        raise ValueError("ATTRACTOR_AUDIT_LEGACY_TRACES must be 'hidden' or 'shared'")
+    return policy
+
+
 class DuplicateAuditTraceError(ValueError):
     """Raised when an audit trace ID has already been recorded."""
 
@@ -62,6 +78,7 @@ class AuditTraceStore:
         )
         self.path = configured
         self._lock = RLock()
+        self._legacy_policy = legacy_trace_policy_from_env()
         if configured != ":memory:":
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(self.path, check_same_thread=False)
@@ -323,10 +340,13 @@ class AuditTraceStore:
         return "valid" if rebuilt.digest == stored_digest else "invalid"
 
     def get(self, trace_id: str, requester: str | None = None) -> AuditTraceResponse | None:
-        """Return the trace only to its owner; legacy traces (no owner) to anyone.
+        """Return the trace only to its owner.
 
-        A trace owned by another principal is reported as missing (None), so the
-        lookup does not reveal that it exists.
+        ``requester`` is the authenticated principal, or None when authentication
+        is off (single tenant: only traces without an owner exist to read). Traces
+        without an owner are returned to authenticated principals only under the
+        "shared" legacy policy. A trace the requester may not read is reported as
+        missing (None), so the lookup does not reveal that it exists.
         """
         with self._lock:
             return self._get_locked(trace_id, requester)
@@ -338,9 +358,11 @@ class AuditTraceStore:
                    independent_evidence_count, verified_evidence_count,
                    failure_count, finding_count, replay_digest,
                    legacy_verification, replay_version
-            FROM audit_traces WHERE trace_id = ? AND (owner IS NULL OR owner = ?)
+            FROM audit_traces WHERE trace_id = ? AND (
+                (owner IS NULL AND (? IS NULL OR ? = 'shared')) OR owner = ?
+            )
             """,
-            (trace_id, requester),
+            (trace_id, requester, self._legacy_policy, requester),
         ).fetchone()
         if row is None:
             return None
