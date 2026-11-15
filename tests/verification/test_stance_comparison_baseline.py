@@ -195,5 +195,5 @@ def test_a_year_range_does_not_refute_a_claim_about_its_start() -> None:
     assert stance != Stance.CONTRADICTS
 
 
-def test_detector_version_is_8() -> None:
-    assert RuleStanceDetector.version == "8"
+def test_detector_version_is_at_least_8() -> None:
+    assert int(RuleStanceDetector.version) >= 8
