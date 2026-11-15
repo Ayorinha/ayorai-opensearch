@@ -181,6 +181,7 @@ def test_read_json_deadline_stops_a_slow_drip_from_a_real_server() -> None:
         assert time.monotonic() - started < 2.5
     finally:
         server.shutdown()
+        server.server_close()
 
 
 def test_read_json_with_deadline_keeps_the_size_limit() -> None:
