@@ -31,6 +31,8 @@ EDITS = {
     "finding_count": "0",
     "schema_version": "schema_version + 1",
     "owner": "'key:intruder'",
+    "recorded_at": "'2000-01-01T00:00:00.000000Z'",
+    "software_version": "'0.0.0'",
 }
 
 
