@@ -83,6 +83,18 @@ def test_a_previous_year_value_does_not_support_a_claim_about_the_current_year()
     assert "supports" not in _stances(result)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Token negation applies to the whole excerpt: a 'não' in another sentence "
+        "turns a confirming sentence into a contradiction (false refuted)."
+    ),
+)
+def test_a_negation_in_another_sentence_does_not_refute_the_claim() -> None:
+    result = _check(CLAIM, "A Vértice não faliu. A receita da Vértice foi de 40 milhões em 2024.")
+    assert _stances(result) == ["supports"]
+
+
 def test_a_document_saying_it_is_not_true_refutes_the_claim() -> None:
     """Control: token negation ('Não é verdade que') is already handled."""
     result = _check(CLAIM, "Não é verdade que a receita da Vértice foi de 40 milhões em 2024.")
