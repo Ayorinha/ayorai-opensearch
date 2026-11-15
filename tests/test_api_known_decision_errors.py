@@ -41,26 +41,12 @@ def _stances(result: dict[str, object]) -> list[object]:
     return [item["stance"] for item in evidence]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Negation is detected per token (não, nunca, nem...); a sentential operator "
-        "such as 'É falso que' is not recognised, so the denial is labelled supports."
-    ),
-)
 def test_a_document_that_declares_the_claim_false_does_not_support_it() -> None:
     result = _check(CLAIM, "É falso que a receita da Vértice foi de 40 milhões em 2024.")
     assert _stances(result) == ["contradicts"]
     assert result["verdict"] == "refuted"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Same cause: with the denial counted as support, a denial plus a supporting "
-        "document is verified with confidence 1.0 instead of conflicting."
-    ),
-)
 def test_a_denial_and_a_confirmation_are_conflicting_not_verified() -> None:
     result = _check(
         CLAIM, "É falso que a receita da Vértice foi de 40 milhões em 2024.", SUPPORTING

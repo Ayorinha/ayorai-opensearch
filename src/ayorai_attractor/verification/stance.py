@@ -46,6 +46,21 @@ _NEGATION_TOKENS_PT = frozenset(
     {"não", "nao", "nunca", "jamais", "nem", "nenhum", "nenhuma", "ninguém", "ninguem"}
 )
 _NEGATION_TOKENS = _NEGATION_TOKENS_EN | _NEGATION_TOKENS_PT
+# Sentential negation: an operator that declares the whole proposition false
+# ("É falso que X", "It is false that X") has no negator token. Each match flips
+# the polarity once; a negator directly before it ("Não é falso que X") cancels
+# it, and the matched words are removed before the token check so that the
+# negator is not counted again. Reported denials ("negou que") are not operators.
+_SENTENTIAL_NEGATION_PT = re.compile(
+    r"(?P<negated>\b(?:não|nao)\s+)?\bé\s+"
+    r"(?:falso|falsa|incorreto|incorreta|inverídico|inverídica|mentira)\s+"
+    r"(?:afirmar\s+que|dizer\s+que|que)\b",
+    re.IGNORECASE,
+)
+_SENTENTIAL_NEGATION_EN = re.compile(
+    r"\bit\s+is\s+(?P<negated>not\s+)?(?:false|untrue|incorrect)\s+(?:to\s+say\s+)?that\b",
+    re.IGNORECASE,
+)
 # Portuguese-only function words used solely to decide whether "no" is English.
 _PT_FUNCTION_WORDS = frozenset(
     {"de", "do", "da", "dos", "das", "um", "os", "as", "ao", "aos", "pelo", "pela", "também"}
@@ -322,7 +337,26 @@ def _has_negation(text: str) -> bool:
     Portuguese negators always count. The English-only token "no" counts only
     when the text is more English than Portuguese, so Portuguese contractions
     ("no fim de 2025") and "sem" ("sem custo adicional") are not negation.
+    A sentential operator ("É falso que X") flips the result; text without such
+    an operator is classified exactly as before.
     """
+    operators = 0
+    flips = 0
+
+    def _remove(match: re.Match[str]) -> str:
+        nonlocal operators, flips
+        operators += 1
+        if match.group("negated") is None:
+            flips += 1
+        return " "
+
+    remainder = _SENTENTIAL_NEGATION_EN.sub(_remove, _SENTENTIAL_NEGATION_PT.sub(_remove, text))
+    if operators == 0:
+        return _has_token_negation(text)
+    return (flips % 2 == 1) != _has_token_negation(remainder)
+
+
+def _has_token_negation(text: str) -> bool:
     tokens = {token.casefold() for token in _TOKEN_RE.findall(text)}
     if _predicate_negators(text) & _NEGATION_TOKENS_PT:
         return True
@@ -959,7 +993,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "6"
+    version = "7"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
