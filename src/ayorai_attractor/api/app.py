@@ -13,7 +13,11 @@ from pydantic import ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from ayorai_attractor.api.auth import APIKeyAuthMiddleware, validate_auth_configuration
+from ayorai_attractor.api.auth import (
+    PRINCIPAL_STATE_KEY,
+    APIKeyAuthMiddleware,
+    validate_auth_configuration,
+)
 from ayorai_attractor.api.load_control import (
     HeavyRouteConcurrencyLimitMiddleware,
     inflight_scope_from_env,
@@ -282,6 +286,12 @@ async def _body_encoding_as_json_invalid(request: Request, exc: StarletteHTTPExc
     return await http_exception_handler(request, exc)
 
 
+def _principal(http_request: Request) -> str | None:
+    """Principal set by APIKeyAuthMiddleware; None when authentication is off."""
+    value = getattr(http_request.state, PRINCIPAL_STATE_KEY, None)
+    return value if isinstance(value, str) else None
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "ayorai-attractor"}
@@ -313,11 +323,11 @@ def opensearch(request: SearchRequest) -> SearchResponse:
         503: _HTTP_503_RESPONSE,
     },
 )
-def audit(request: SearchRequest) -> AuditResponse:
+def audit(request: SearchRequest, http_request: Request) -> AuditResponse:
     """Run the engine and expose a deterministic audit of its evidence."""
     response = engine.run(request)
     report = AuditReport.from_response(response)
-    audit_store.record(response, report)
+    audit_store.record(response, report, owner=_principal(http_request))
     return AuditResponse(
         trace_id=report.trace_id,
         verification=None,
@@ -671,9 +681,9 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
         429: _HTTP_429_RESPONSE,
     },
 )
-def audit_trace(trace_id: str) -> AuditTraceResponse:
+def audit_trace(trace_id: str, http_request: Request) -> AuditTraceResponse:
     """Return persisted audit metadata without exposing raw evidence or prompts."""
-    saved = audit_store.get(trace_id)
+    saved = audit_store.get(trace_id, requester=_principal(http_request))
     if saved is None:
         from fastapi import HTTPException
 
