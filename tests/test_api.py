@@ -142,7 +142,7 @@ def test_audit_trace_lookup_returns_persisted_metadata(monkeypatch, tmp_path, re
     assert body["operation_status"] == "completed"
     assert body["replay_digest"]
     assert body["legacy_verification"] is None
-    assert body["replay_version"] == "r2-v2"
+    assert body["replay_version"] == "r2-v3"
     assert body["replay_integrity"] == "valid"
     assert body["evidence_count"] == 2
 
