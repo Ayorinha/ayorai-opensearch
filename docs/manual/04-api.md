@@ -9,7 +9,7 @@ Este capítulo descreve a interface HTTP implementada, os limites de entrada, a 
 
 ## Como funciona
 
-A aplicação é uma instância FastAPI. No início do ciclo de vida, valida a configuração de autenticação e configura o logging; no encerramento, fecha o armazenamento de rastros de auditoria. O middleware de contexto de requisição gera ou valida um identificador de correlação e registra metadados da resposta. O limite de corpo é aplicado antes do parsing da aplicação, e a autenticação por chave é habilitada por padrão.
+A aplicação é uma instância FastAPI. No início do ciclo de vida, valida a configuração de autenticação e configura o logging; no encerramento, fecha o armazenamento de rastros de auditoria. O middleware de contexto de requisição gera um identificador de correlação (o valor de `X-Request-ID` enviado pelo cliente é descartado) e registra metadados da resposta. O limite de corpo é aplicado antes do parsing da aplicação, e a autenticação por chave é habilitada por padrão.
 
 ### Endpoints
 
@@ -46,7 +46,7 @@ Os comandos de configuração e geração de credenciais ficam em [API-AUTH.md](
 ### Limite de corpo e erros
 
 - O limite padrão do corpo HTTP é 2 MiB (`2 * 1024 * 1024` bytes). `ATTRACTOR_MAX_BODY_BYTES` permite configurar outro limite inteiro positivo; valor inválido ou não positivo impede a criação do middleware.
-- HTTP 400 é usado para corpo que não pode ser interpretado como JSON.
+- Corpo que não pode ser interpretado como JSON retorna HTTP 422 com `type` igual a `json_invalid`.
 - HTTP 401 indica falha de autenticação e usa mensagem genérica.
 - HTTP 413 indica que o corpo excedeu o limite configurado.
 - HTTP 422 indica falha de validação do contrato ou entrada inválida para o endpoint.
@@ -56,8 +56,8 @@ A aplicação documenta os envelopes de erro no OpenAPI. Clientes devem tratar c
 
 ### Identificador de requisição e logs
 
-- O middleware aceita `X-Request-ID` se o valor corresponder ao padrão `[A-Za-z0-9-]{1,64}`; caso contrário, gera um identificador novo.
-- A resposta inclui `X-Request-ID`.
+- Para cada requisição, o servidor sempre gera um identificador próprio (32 caracteres hexadecimais) e substitui qualquer `X-Request-ID` enviado pelo cliente, inclusive no escopo visto pelos handlers.
+- A resposta inclui esse `X-Request-ID` gerado pelo servidor.
 - O registro estruturado contém identificador, método, rota normalizada, status HTTP e duração em milissegundos. O middleware não adiciona payload, afirmações, trechos de evidência, prompts ou credenciais ao registro.
 - `ATTRACTOR_LOG_LEVEL` aceita `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL`; o padrão é `INFO`.
 

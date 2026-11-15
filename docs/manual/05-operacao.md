@@ -114,7 +114,7 @@ Execute os comandos no ambiente configurado para o commit que está sendo avalia
 
 ### Logs e rastreabilidade de requisições
 
-A API registra metadados estruturados por requisição: identificador de requisição, método, rota normalizada, status HTTP e duração. A resposta inclui `X-Request-ID`; um valor de entrada fora do padrão aceito é substituído por um identificador gerado. O nível é controlado por `ATTRACTOR_LOG_LEVEL`, com padrão `INFO`.
+A API registra metadados estruturados por requisição: identificador de requisição, método, rota normalizada, status HTTP e duração. A resposta inclui `X-Request-ID`, sempre gerado pelo servidor; um valor enviado pelo cliente é descartado. O nível é controlado por `ATTRACTOR_LOG_LEVEL`, com padrão `INFO`.
 
 O logger de acesso da aplicação não deve registrar corpos, afirmações, trechos de evidência, credenciais ou query strings. Ao investigar incidentes, use o identificador de requisição e metadados operacionais; não copie dados sensíveis para logs, issues ou pull requests. O rastro consultável pela API tem seu próprio contrato e não deve ser confundido com o log de acesso.
 

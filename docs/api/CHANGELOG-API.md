@@ -2,6 +2,12 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — documented error responses match the implementation
+
+- The OpenAPI document no longer lists HTTP 400 on any route. No route returns 400: a body that is not valid JSON returns 422 with `type` `json_invalid`, as it already did.
+- Every `/v1/*` route now documents HTTP 401 (missing or invalid API key when `ATTRACTOR_AUTH_MODE=api_key`), and every `POST` route documents HTTP 413 (body above `ATTRACTOR_MAX_BODY_BYTES`). Both responses were already returned; only the document changes.
+- No request, response body or status code returned by the API changed.
+
 ## 2026-11-14 — `/v1/fields` negative values (field-check-4)
 
 - A minus sign (`-` or `−`) written right before a `number` or `money` value in the document belongs to it: `-5`, `R$ -100,00`, `R$-100,00` and `-R$ 100,00` are negative. Previously the sign was ignored, so an expected `5` matched a document `-5` (false `conforme`).
