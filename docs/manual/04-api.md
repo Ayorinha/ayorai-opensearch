@@ -1,4 +1,4 @@
-Estado: Atual · Referência: main @ e313326 · Atualizado: 2026-10-21
+Estado: Atual · Referência: main @ 85d6c2b + integração local · Atualizado: 2026-11-15
 Fontes de verdade: `src/ayorai_attractor/api/app.py`, `src/ayorai_attractor/api/auth.py`, `src/ayorai_attractor/api/request_context.py`, `src/ayorai_attractor/api/logging_config.py`, `src/ayorai_attractor/models.py`, `src/ayorai_attractor/verification/api_models.py`, `docs/api/openapi.json`, `docs/security/API-AUTH.md`, testes `tests/test_api.py`, `tests/test_api_auth.py`, `tests/test_api_request_context.py`, `tests/test_api_uvicorn_body_limit.py`, `tests/test_verification_api.py` e `tests/test_openapi_snapshot.py`.
 
 # 04 — API HTTP e contratos
@@ -18,8 +18,10 @@ A aplicação é uma instância FastAPI. No início do ciclo de vida, valida a c
 | `GET /health` | Objeto JSON com `status` e `service` | Endpoint público de saúde; não é um teste completo de dependências externas nem de desempenho. |
 | `POST /v1/opensearch` | `SearchRequest` → `SearchResponse` | Executa o fluxo de pesquisa. A resposta declara `verification: null` e `verdict_authority: "not_adjudicated"`; não equivale a um veredito factual do Judge. |
 | `POST /v1/audit` | `SearchRequest` → `AuditResponse` | Executa a pesquisa e apresenta achados e contagens de auditoria. Também declara que não houve adjudicação factual e indica `/v1/verify` como endpoint formal de verificação. |
-| `GET /v1/audit/{trace_id}` | Identificador do rastro → `AuditTraceResponse` | Retorna metadados persistidos do rastro. Responde 404 se o identificador não existir; a implementação declara que não expõe evidências brutas ou prompts nessa rota. |
+| `GET /v1/audit/{trace_id}` | Identificador do rastro → `AuditTraceResponse` | Retorna metadados persistidos dos rastros criados por `POST /v1/audit`. Nenhuma outra rota persiste rastros: o `trace_id` de `/v1/opensearch` (também `tr_…`) e os de `/v1/check` (`chk_…`) e `/v1/fields` (`fld_…`) respondem 404 aqui. `chk_` e `fld_` são digests do conteúdo da requisição e do motor; o resultado se reproduz reenviando a mesma requisição. Responde 404 se o identificador não existir; a implementação declara que não expõe evidências brutas ou prompts nessa rota. O armazenamento é um arquivo SQLite (`ATTRACTOR_AUDIT_DB`, padrão `.attractor/audit.sqlite3`): num container sem volume para esse caminho, os rastros se perdem quando o container é recriado. |
 | `POST /v1/verify` | Contrato `r1-a` ou `r2-a` → envelope correspondente | Encaminha a entrada ao contrato de compatibilidade legado `r1-a` ou ao contrato canônico do Judge 2.0.0 `r2-a`. A resposta OpenAPI documenta as duas formas por `oneOf`. |
+| `POST /v1/check` | `CheckRequest` (`c1`) → `CheckResponse` | Verifica afirmações contra documentos enviados pelo cliente: seleção de trechos, detector por regras e Judge determinístico ADR-002. Não busca fontes externas e não persiste o resultado. Até 20 documentos (texto de até 200.000 caracteres, ou PDF com camada de texto em base64) e até 50 afirmações, ou uma `answer` de até 20.000 caracteres. O campo `url` do documento é apenas metadado: o servidor não o acessa. |
+| `POST /v1/fields` | `FieldsRequest` (`f1`) → `FieldsResponse` | Confere até 100 campos tipados (`money`, `date`, `cpf_cnpj`, `number`, `text`) contra um documento enviado pelo cliente; o resultado por campo é `conforme`, `divergente`, `ambiguo`, `ausente` ou `invalido`. Não persiste o resultado. |
 
 ### Fluxo de verificação
 
@@ -50,9 +52,18 @@ Os comandos de configuração e geração de credenciais ficam em [API-AUTH.md](
 - HTTP 401 indica falha de autenticação e usa mensagem genérica.
 - HTTP 413 indica que o corpo excedeu o limite configurado.
 - HTTP 422 indica falha de validação do contrato ou entrada inválida para o endpoint.
-- HTTP 404 em `GET /v1/audit/{trace_id}` indica que o rastro solicitado não existe.
+- HTTP 404 em `GET /v1/audit/{trace_id}` indica que o rastro não existe **ou** não pertence à chave que fez a chamada; as duas situações têm resposta idêntica, para que o `trace_id` não sirva de oráculo de existência.
 
 A aplicação documenta os envelopes de erro no OpenAPI. Clientes devem tratar códigos HTTP e corpo de resposta como parte do contrato, sem depender de mensagens internas de exceção.
+
+### Rastros de auditoria: dono, integridade e versões
+
+- Cada rastro gravado por `POST /v1/audit` registra o dono: um principal não secreto derivado da chave (`key:` seguido de 16 caracteres hexadecimais do SHA-256 do digest da chave). Só a mesma chave lê o rastro. O principal não revela a chave nem o digest. Com `ATTRACTOR_AUTH_MODE=off` não há dono.
+- Rastros gravados antes do esquema 3 não têm dono. Por padrão (`ATTRACTOR_AUDIT_LEGACY_TRACES=hidden`) nenhuma chave os lê pela API; `shared` os torna legíveis por qualquer chave autenticada. Outro valor impede a inicialização.
+- O esquema 3 registra também `recorded_at` (UTC, ISO 8601, largura fixa) e `software_version`. A migração a partir do esquema 2 é feita no próprio arquivo, ao abrir, e é idempotente.
+- `replay_version` `r2-v3`: o digest SHA-256 cobre todos os campos persistidos, inclusive dono, data e versão. Rastros `r2-v2` continuam verificados pela regra anterior.
+- Com `ATTRACTOR_AUDIT_HMAC_KEYS` configurada (`id:hex` com 32 bytes, separadas por vírgula; a primeira é a ativa), cada rastro novo recebe também um HMAC-SHA-256. Um MAC ausente, adulterado ou de chave desconhecida torna `replay_integrity` igual a `invalid`.
+- O digest sem chave detecta corrupção e edição sem recálculo; o HMAC detecta quem escreve no banco sem a chave. Nenhum dos dois protege contra quem tem a chave HMAC ou controle do host: a trilha não é imutável.
 
 ### Identificador de requisição e logs
 
@@ -71,6 +82,7 @@ O campo `max_agents` mantém coerção legada para strings numéricas, floats in
 - Autenticação por chave não substitui HTTPS em redes não confiáveis, controles de rede, autorização por escopo, limitação de taxa, rotação operacional de segredos ou gestão de incidentes.
 - `/v1/opensearch` e `/v1/audit` não devem ser apresentados como endpoints de veredito factual.
 - A existência de OpenAPI, autenticação, rastros e testes não constitui certificação, validação institucional ou garantia de prontidão para produção.
+- `info.version` do OpenAPI (`0.1.0`) é a versão do documento de contrato HTTP e não acompanha a versão do pacote (`0.8.0` em `pyproject.toml`). As mudanças de contrato são registradas no [CHANGELOG-API](../api/CHANGELOG-API.md).
 - O contrato congelado `r1-a` deve permanecer compatível; qualquer mudança precisa ser acompanhada por testes de contrato e decisão de versão apropriada.
 
 ## Evidências
@@ -80,6 +92,7 @@ O campo `max_agents` mantém coerção legada para strings numéricas, floats in
 - `src/ayorai_attractor/api/request_context.py` e `logging_config.py`: correlação e logging estruturado.
 - `tests/test_api_auth.py`, `tests/test_api_uvicorn_body_limit.py`, `tests/test_api_request_context.py` e `tests/test_verification_api.py`: testes de autenticação, limite, correlação e contratos.
 - `tests/test_openapi_snapshot.py`: verificação do snapshot OpenAPI.
+- `src/ayorai_attractor/audit_store.py`, `tests/test_api_trace_ownership.py`, `tests/test_audit_hmac.py`, `tests/test_audit_trace_metadata.py` e `tests/test_audit_store_durability.py`: dono, política de legado, HMAC, metadados, backup e retenção dos rastros.
 
 ## Ver também
 

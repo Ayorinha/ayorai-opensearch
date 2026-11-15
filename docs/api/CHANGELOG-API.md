@@ -2,6 +2,18 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — audit traces: ownership, schema v3 and `r2-v3` (behavior change)
+
+- **Behavior change:** `GET /v1/audit/{trace_id}` returns a trace only to the API key that created it. Any other key gets the same 404 body as for an unknown trace. Response schemas are unchanged.
+- Traces recorded before schema v3 have no owner and are hidden from every key by default. `ATTRACTOR_AUDIT_LEGACY_TRACES=shared` restores the previous visibility for them; any other value prevents startup.
+- New traces report `replay_version` `r2-v3`: the digest covers every persisted field, including owner, `recorded_at` (UTC) and `software_version`. `r2-v2` traces keep verifying under the previous rule. The SQLite store migrates from schema 2 to 3 in place, idempotently.
+- Optional `ATTRACTOR_AUDIT_HMAC_KEYS` adds an HMAC-SHA-256 per trace; a missing or altered MAC makes `replay_integrity` `invalid`.
+- The `trace_id` values of `/v1/check` (`chk_…`) and `/v1/fields` (`fld_…`) are content digests and are not stored; `GET /v1/audit/{trace_id}` returns 404 for them, as before.
+
+## Unreleased — host-wide admission limit (opt-in)
+
+- `ATTRACTOR_INFLIGHT_SCOPE=host` shares the `ATTRACTOR_MAX_INFLIGHT_HEAVY` limit across all workers on the same host. The default (`process`) is unchanged. No request or response body changed.
+
 ## Unreleased — admission control for verification routes
 
 - `POST /v1/check`, `/v1/fields`, `/v1/verify`, `/v1/audit` and `/v1/opensearch` now return **HTTP 503** with `Retry-After: 1` when more than `ATTRACTOR_MAX_INFLIGHT_HEAVY` (default 2) such requests are already running in the same worker process. The 503 response is documented in the OpenAPI document.
