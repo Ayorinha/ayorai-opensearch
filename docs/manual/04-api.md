@@ -9,7 +9,7 @@ Este capítulo descreve a interface HTTP implementada, os limites de entrada, a 
 
 ## Como funciona
 
-A aplicação é uma instância FastAPI. No início do ciclo de vida, valida a configuração de autenticação e configura o logging; no encerramento, fecha o armazenamento de rastros de auditoria. O middleware de contexto de requisição gera ou valida um identificador de correlação e registra metadados da resposta. O limite de corpo é aplicado antes do parsing da aplicação, e a autenticação por chave é habilitada por padrão.
+A aplicação é uma instância FastAPI. No início do ciclo de vida, valida a configuração de autenticação e configura o logging; no encerramento, fecha o armazenamento de rastros de auditoria. O middleware de contexto de requisição gera um identificador de correlação (o valor de `X-Request-ID` enviado pelo cliente é descartado) e registra metadados da resposta. O limite de corpo é aplicado antes do parsing da aplicação, e a autenticação por chave é habilitada por padrão.
 
 ### Endpoints
 
