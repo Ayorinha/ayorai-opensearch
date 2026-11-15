@@ -1,4 +1,5 @@
 import json
+import time
 from urllib import error, parse, request
 from urllib.parse import urlparse
 
@@ -26,8 +27,9 @@ class HttpSearchProvider(Provider):
         req = request.Request(f"{self.endpoint}?{query}", headers=headers)
         try:
             # HTTPS was checked above; the transport refuses redirects, so it stays HTTPS.
+            deadline = time.monotonic() + 30
             with _http.open_without_redirects(req, timeout=30) as response:
-                data = _http.read_json(response)
+                data = _http.read_json(response, deadline=deadline)
         except error.URLError as exc:
             raise RuntimeError(f"Search request failed: {exc}") from exc
         text = json.dumps(data, ensure_ascii=False)
