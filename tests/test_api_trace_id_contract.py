@@ -10,6 +10,7 @@ request, not retrieved. /v1/verify returns no trace identifier.
 from __future__ import annotations
 
 import re
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
@@ -116,3 +117,46 @@ def test_trace_lookup_is_exact(client: TestClient) -> None:
     assert client.get(f"/v1/audit/{trace_id}").status_code == 200
     for variant in (trace_id.upper(), trace_id + " ", trace_id[:-1]):
         assert client.get(f"/v1/audit/{variant}").status_code == 404
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "The r2-v2 replay digest covers verification, evidence_count and failure_count "
+        "only; operation_status, independent/verified evidence counts and finding_count "
+        "can be edited in the database while replay_integrity stays 'valid'."
+    ),
+)
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [
+        ("operation_status", "'failed'"),
+        ("independent_evidence_count", "7"),
+        ("verified_evidence_count", "7"),
+        ("finding_count", "0"),
+    ],
+)
+def test_editing_any_persisted_audit_field_is_detected(
+    client: TestClient, tmp_path: Path, column: str, value: str
+) -> None:
+    import sqlite3
+
+    trace_id = _trace(client, "/v1/audit", SEARCH)
+    with closing(sqlite3.connect(tmp_path / "audit.sqlite3")) as connection, connection:
+        connection.execute(
+            f"UPDATE audit_traces SET {column} = {value} WHERE trace_id = ?",  # noqa: S608
+            (trace_id,),
+        )
+    assert client.get(f"/v1/audit/{trace_id}").json()["replay_integrity"] == "invalid"
+
+
+def test_editing_a_digest_covered_field_is_detected(client: TestClient, tmp_path: Path) -> None:
+    import sqlite3
+
+    trace_id = _trace(client, "/v1/audit", SEARCH)
+    with closing(sqlite3.connect(tmp_path / "audit.sqlite3")) as connection, connection:
+        connection.execute(
+            "UPDATE audit_traces SET evidence_count = evidence_count + 1 WHERE trace_id = ?",
+            (trace_id,),
+        )
+    assert client.get(f"/v1/audit/{trace_id}").json()["replay_integrity"] == "invalid"
