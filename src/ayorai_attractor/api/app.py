@@ -12,6 +12,10 @@ from pydantic import ValidationError
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from ayorai_attractor.api.auth import APIKeyAuthMiddleware, validate_auth_configuration
+from ayorai_attractor.api.load_control import (
+    HeavyRouteConcurrencyLimitMiddleware,
+    max_inflight_from_env,
+)
 from ayorai_attractor.api.logging_config import configure_logging
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
@@ -67,6 +71,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # Fail closed like authentication: a provider configuration that every
     # request would reject must not start a partially configured service.
     validate_provider_configuration()
+    max_inflight_from_env()
     configure_logging()
     try:
         yield
@@ -126,6 +131,26 @@ _HTTP_404_RESPONSE: dict[str, Any] = {
 
 _HTTP_429_RESPONSE: dict[str, Any] = {
     "description": "The request rate limit was exceeded.",
+    "headers": {
+        "Retry-After": {
+            "description": "Seconds to wait before retrying the request.",
+            "schema": {"type": "integer", "minimum": 1},
+        }
+    },
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {"detail": {"type": "string"}},
+                "required": ["detail"],
+            }
+        }
+    },
+}
+
+
+_HTTP_503_RESPONSE: dict[str, Any] = {
+    "description": "Too many verification requests in flight on this worker; retry later.",
     "headers": {
         "Retry-After": {
             "description": "Seconds to wait before retrying the request.",
@@ -218,6 +243,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.add_middleware(RequestBodyLimitMiddleware)
+# Between authentication and body buffering: unauthenticated requests never take
+# a slot, and a rejected request is answered before its body is read.
+app.add_middleware(HeavyRouteConcurrencyLimitMiddleware)
 app.add_middleware(APIKeyAuthMiddleware)
 
 
@@ -234,6 +262,7 @@ def health() -> dict[str, str]:
         413: _HTTP_413_RESPONSE,
         422: _HTTP_422_RESPONSE,
         429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
     },
 )
 def opensearch(request: SearchRequest) -> SearchResponse:
@@ -248,6 +277,7 @@ def opensearch(request: SearchRequest) -> SearchResponse:
         413: _HTTP_413_RESPONSE,
         422: _HTTP_422_RESPONSE,
         429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
     },
 )
 def audit(request: SearchRequest) -> AuditResponse:
@@ -295,6 +325,7 @@ def _ingest_or_422(doc: CheckDocument, loc: list[Any]) -> IngestedDocument:
         413: _HTTP_413_RESPONSE,
         422: _HTTP_422_RESPONSE,
         429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
     },
 )
 def check(request: CheckRequest) -> CheckResponse:
@@ -355,6 +386,7 @@ def check(request: CheckRequest) -> CheckResponse:
         413: _HTTP_413_RESPONSE,
         422: _HTTP_422_RESPONSE,
         429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
     },
 )
 def fields(request: FieldsRequest) -> FieldsResponse:
@@ -457,6 +489,7 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
         413: _HTTP_413_RESPONSE,
         422: _HTTP_422_RESPONSE,
         429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
     },
 )
 def verify(payload: Annotated[Any, Body()]) -> Any:

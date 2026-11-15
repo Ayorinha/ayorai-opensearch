@@ -2,6 +2,12 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — admission control for verification routes
+
+- `POST /v1/check`, `/v1/fields`, `/v1/verify`, `/v1/audit` and `/v1/opensearch` now return **HTTP 503** with `Retry-After: 1` when more than `ATTRACTOR_MAX_INFLIGHT_HEAVY` (default 2) such requests are already running in the same worker process. The 503 response is documented in the OpenAPI document.
+- Measured on one worker with 16 clients sending 2 MB `/v1/check` bodies: p99 34.1 s → 3.3 s and peak RSS 1696 MB → 277 MB, with accepted throughput 0.47 → 0.57 requests/s. Clients should retry after `Retry-After`.
+- No request or response body changed. `GET /health` and `GET /v1/audit/{trace_id}` are not limited.
+
 ## Unreleased — documented error responses match the implementation
 
 - The OpenAPI document no longer lists HTTP 400 on any route. No route returns 400: a body that is not valid JSON returns 422 with `type` `json_invalid`, as it already did.
