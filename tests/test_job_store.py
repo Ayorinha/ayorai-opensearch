@@ -23,7 +23,7 @@ def test_job_lifecycle_is_restartable_metadata(store: JobStore) -> None:
     assert running.status is JobStatus.RUNNING
     assert running.attempts == 1
     assert running.lease_until == 130.0
-    finished = store.finish("job-1", success=True)
+    finished = store.finish("job-1", success=True, attempt=running.attempts)
     assert finished.status is JobStatus.SUCCEEDED
     assert finished.lease_until is None
 
@@ -37,9 +37,9 @@ def test_idempotency_key_deduplicates_enqueue(store: JobStore) -> None:
 def test_invalid_state_transition_is_rejected(store: JobStore) -> None:
     store.enqueue("job-1", "request-1")
     with pytest.raises(ValueError, match="only running"):
-        store.finish("job-1", success=True)
-    store.claim("job-1", now=100.0)
-    store.finish("job-1", success=False)
+        store.finish("job-1", success=True, attempt=1)
+    running = store.claim("job-1", now=100.0)
+    store.finish("job-1", success=False, attempt=running.attempts)
     with pytest.raises(ValueError, match="only queued"):
         store.claim("job-1")
 
