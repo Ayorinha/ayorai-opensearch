@@ -49,6 +49,8 @@ Os workflows atuais se complementam, mas não se substituem:
 - `.github/workflows/security.yml` executa `pip-audit`, gera um SBOM CycloneDX como artefato e executa Bandit sobre `src/ayorai_attractor`.
 - `.github/workflows/codeql.yml` executa análise CodeQL para Python com o conjunto `security-extended`.
 - O workflow de revisão de dependências verifica mudanças de dependências em pull requests.
+- `.github/workflows/docker.yml` constrói a imagem e a varre com Grype (binário oficial conferido por SHA-256, sem action de terceiros). O check falha se houver vulnerabilidade de severidade alta ou crítica **com correção disponível**; o relatório CycloneDX completo fica como artefato. Vulnerabilidades sem correção publicada aparecem no relatório, mas não bloqueiam.
+- No push para `main`, o job `build-distributions` publica um atestado de proveniência SLSA, assinado via Sigstore, para o sdist e o wheel, e o verifica no mesmo job. Qualquer pessoa pode conferir um artefato baixado com `gh attestation verify <arquivo> --repo Ayorinha/ayorai-opensearch`.
 - Os checks de CI incluem testes, regressões do Judge/Golden e contratos. Uma simulação RGC ignorada por condição de workflow não deve ser descrita como aprovada.
 
 Esses controles são verificações pontuais no SHA avaliado. Um resultado verde não demonstra ausência de vulnerabilidades desconhecidas nem valida o ambiente de implantação.
