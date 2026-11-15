@@ -119,14 +119,6 @@ def test_trace_lookup_is_exact(client: TestClient) -> None:
         assert client.get(f"/v1/audit/{variant}").status_code == 404
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "The r2-v2 replay digest covers verification, evidence_count and failure_count "
-        "only; operation_status, independent/verified evidence counts and finding_count "
-        "can be edited in the database while replay_integrity stays 'valid'."
-    ),
-)
 @pytest.mark.parametrize(
     ("column", "value"),
     [
