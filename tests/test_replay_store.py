@@ -48,3 +48,38 @@ def test_replay_store_rejects_digest_mismatch(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="mismatch"):
         store.get("f" * 64)
+
+
+def test_replay_store_put_rejects_forged_digest_without_writing(tmp_path) -> None:
+    store_dir = tmp_path / "replays"
+    store = ReplayStore(str(store_dir))
+    bundle = ReplayBundle.build("tr_replay", [{"event": "verified"}])
+    forged = ReplayBundle(bundle.version, bundle.trace_id, bundle.events, "0" * 64)
+    traversal = ReplayBundle(bundle.version, bundle.trace_id, bundle.events, "../outside")
+
+    for candidate in (forged, traversal):
+        with pytest.raises(ValueError, match="does not match"):
+            store.put(candidate)
+
+    assert list(store_dir.iterdir()) == []
+    assert not (tmp_path / "outside.json").exists()
+
+
+def test_replay_store_failed_write_leaves_no_partial_file(tmp_path, monkeypatch) -> None:
+    import os
+
+    store = ReplayStore(str(tmp_path))
+    bundle = ReplayBundle.build("tr_replay", [{"event": "verified"}])
+
+    def crash(*_args: object) -> None:
+        raise OSError("disk failure")
+
+    monkeypatch.setattr(os, "replace", crash)
+    with pytest.raises(OSError, match="disk failure"):
+        store.put(bundle)
+    monkeypatch.undo()
+
+    assert list(tmp_path.iterdir()) == []
+    assert store.get(bundle.digest) is None
+    assert store.put(bundle) == bundle.digest
+    assert store.get(bundle.digest) == bundle
