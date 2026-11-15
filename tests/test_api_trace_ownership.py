@@ -112,14 +112,47 @@ def test_the_owner_is_stored_and_bound_by_the_digest(tenants: dict[str, Any]) ->
     assert client.get(f"/v1/audit/{trace_id}", headers=tenants["a"]).status_code == 404
 
 
-def test_legacy_traces_without_owner_stay_readable(tenants: dict[str, Any]) -> None:
+def _record_legacy(store: AuditTraceStore) -> None:
     response = SearchResponse.model_validate(
         {"query": "q", "mode": "balanced", "answer": "a", "trace_id": "tr_legacy"}
     )
-    tenants["store"].record(response, AuditReport.from_response(response))  # owner=None
+    store.record(response, AuditReport.from_response(response))  # owner=None
+
+
+def test_legacy_traces_without_owner_are_hidden_by_default(tenants: dict[str, Any]) -> None:
+    _record_legacy(tenants["store"])
     client = tenants["client"]
+    unknown = client.get("/v1/audit/tr_doesnotexist", headers=tenants["a"])
     for who in ("a", "b"):
-        assert client.get("/v1/audit/tr_legacy", headers=tenants[who]).status_code == 200
+        hidden = client.get("/v1/audit/tr_legacy", headers=tenants[who])
+        assert hidden.status_code == 404
+        assert hidden.json() == unknown.json()
+
+
+def test_legacy_traces_can_be_shared_explicitly(
+    tenants: dict[str, Any], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("ATTRACTOR_AUDIT_LEGACY_TRACES", "shared")
+    store = AuditTraceStore(str(tmp_path / "shared.sqlite3"))
+    try:
+        monkeypatch.setattr(app_module, "audit_store", store)
+        _record_legacy(store)
+        for who in ("a", "b"):
+            assert (
+                tenants["client"].get("/v1/audit/tr_legacy", headers=tenants[who]).status_code
+                == 200
+            )
+    finally:
+        store.close()
+
+
+@pytest.mark.parametrize("value", ["public", "all", ""])
+def test_an_invalid_legacy_policy_is_refused(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, value: str
+) -> None:
+    monkeypatch.setenv("ATTRACTOR_AUDIT_LEGACY_TRACES", value)
+    with pytest.raises(ValueError, match="ATTRACTOR_AUDIT_LEGACY_TRACES"):
+        AuditTraceStore(str(tmp_path / "x.sqlite3"))
 
 
 def test_the_principal_reveals_neither_key_nor_digest(tenants: dict[str, Any]) -> None:
@@ -184,8 +217,9 @@ def test_a_schema_v2_database_is_upgraded_in_place(tmp_path: Path) -> None:
         connection.execute("PRAGMA user_version = 2")
     for _ in range(2):  # idempotent: reopening does not fail or change the row
         with AuditTraceStore(str(path)) as store:
-            saved = store.get("tr_v2", requester="key:0000000000000000")
+            saved = store.get("tr_v2")  # single-tenant read of an ownerless trace
             assert saved is not None and saved.replay_integrity == "valid"
+            assert store.get("tr_v2", requester="key:0000000000000000") is None
     with closing(sqlite3.connect(path)) as connection:
         assert connection.execute("PRAGMA user_version").fetchone() == (3,)
         assert connection.execute(
