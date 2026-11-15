@@ -1,5 +1,5 @@
-Estado: Atual · Referência: main @ 64461fd · Atualizado: 2026-10-21
-Fontes de verdade: `Makefile`, `pyproject.toml`, `src/ayorai_attractor/cli/main.py`, `src/ayorai_attractor/evaluation/golden.py`, `docs/providers.md`, `docker-compose.yml`, `docker/Dockerfile`, `docs/DOCKER.md`, `docs/security/API-AUTH.md`, `src/ayorai_attractor/api/app.py`, `src/ayorai_attractor/api/auth.py`, `src/ayorai_attractor/api/logging_config.py`, testes `tests/test_cli_contract.py`, `tests/test_cli_module.py`, `tests/test_reproduce_script.py` e testes operacionais/API correspondentes.
+Estado: Atual · Referência: main @ 85d6c2b + integração local · Atualizado: 2026-11-15
+Fontes de verdade: `Makefile`, `pyproject.toml`, `src/ayorai_attractor/cli/main.py`, `src/ayorai_attractor/evaluation/golden.py`, `docs/providers.md`, `docker-compose.yml`, `docker/Dockerfile`, `docs/DOCKER.md`, `docs/security/API-AUTH.md`, `src/ayorai_attractor/api/app.py`, `src/ayorai_attractor/api/auth.py`, `src/ayorai_attractor/api/logging_config.py`, `src/ayorai_attractor/api/load_control.py`, `src/ayorai_attractor/audit_store.py`, testes `tests/test_cli_contract.py`, `tests/test_cli_module.py`, `tests/test_reproduce_script.py` e testes operacionais/API correspondentes.
 
 # 05 — Operação e execução
 
@@ -131,7 +131,39 @@ O logger de acesso da aplicação não deve registrar corpos, afirmações, trec
 5. Reproduza o problema em ambiente isolado com dados não sensíveis e testes direcionados.
 6. Para mudança de código ou configuração, use revisão, checks obrigatórios e procedimento controlado de implantação; não edite artefatos congelados nem contorne testes para restaurar o serviço.
 
-Este capítulo não define uma política de backup, restauração, alta disponibilidade, SLO, rotação automatizada de segredos ou rollback de produção. Esses procedimentos precisam ser definidos e validados para o ambiente concreto antes de alegar prontidão operacional.
+### Persistência, backup e restauração dos rastros de auditoria
+
+Os rastros de `POST /v1/audit` ficam no arquivo indicado por `ATTRACTOR_AUDIT_DB`. Sem um volume montado nesse caminho, eles se perdem quando o contêiner é recriado. Exemplo com volume nomeado (o diretório precisa pertencer ao usuário do contêiner, uid 999):
+
+```bash
+docker volume create ayorai-audit
+docker run --rm --user root --entrypoint sh -v ayorai-audit:/v <imagem> -c 'chown 999:999 /v'
+docker run ... -v ayorai-audit:/app/.attractor <imagem>
+```
+
+Backup online, com o serviço em execução, pela API de backup do SQLite. A cópia é conferida (`integrity_check`) e o comando recusa sobrescrever um arquivo existente:
+
+```python
+from ayorai_attractor.audit_store import AuditTraceStore
+
+with AuditTraceStore("/app/.attractor/audit.sqlite3") as store:
+    print(store.backup("/backups/audit-AAAAMMDD.sqlite3"))  # número de rastros copiados
+```
+
+Restauração:
+
+1. Pare o serviço.
+2. Copie o arquivo de backup para o caminho de `ATTRACTOR_AUDIT_DB`.
+3. Com as mesmas `ATTRACTOR_AUDIT_HMAC_KEYS` da produção, execute `AuditTraceStore(caminho).verify_all()`; o esperado é `invalid` igual a 0.
+4. Suba o serviço.
+
+Com HMAC, mantenha as chaves em custódia separada do backup do banco: quem tem as duas coisas pode reselar registros. Rastros gravados antes de configurar as chaves podem ser selados uma vez com `seal_unsealed()`, que só sela rastros cujo digest ainda confere. Retirar uma chave da lista invalida os rastros assinados por ela.
+
+Retenção: `purge_recorded_before(data_com_fuso)` remove rastros gravados antes da data e devolve quantos removeu; rastros antigos sem `recorded_at` nunca são removidos por esse método. O prazo de retenção e a base legal são decisões do controlador dos dados e não estão definidos no repositório.
+
+Testes: `tests/test_audit_store_durability.py` cobre backup durante escrita contínua, restauração, queda por SIGKILL durante gravação e quatro processos gravando ao mesmo tempo.
+
+Este capítulo não define alta disponibilidade, SLO, rotação automatizada de segredos ou rollback de produção. Esses procedimentos precisam ser definidos e validados para o ambiente concreto antes de alegar prontidão operacional.
 
 ## Contratos e parâmetros
 
@@ -144,7 +176,12 @@ Este capítulo não define uma política de backup, restauração, alta disponib
 | `ATTRACTOR_API_KEY_PEPPER`, `ATTRACTOR_API_KEYS_HMAC_SHA256` | Segredos/digests exigidos no modo `api_key`; consulte `docs/security/API-AUTH.md`. |
 | `ATTRACTOR_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL`; padrão `INFO`. |
 | `ATTRACTOR_MAX_BODY_BYTES` | Limite inteiro positivo do corpo HTTP; padrão 2 MiB. |
-| `ATTRACTOR_MAX_INFLIGHT_HEAVY` | Máximo de requisições `POST /v1/*` em execução simultânea por processo; padrão 2. Acima disso a API responde HTTP 503 com `Retry-After: 1`. Inteiro positivo; valor inválido impede a inicialização. O limite é por worker: com vários workers ou réplicas, aplique também um limite global no gateway. |
+| `ATTRACTOR_MAX_INFLIGHT_HEAVY` | Máximo de requisições `POST /v1/*` em execução simultânea; padrão 2. Acima disso a API responde HTTP 503 com `Retry-After: 1`. Inteiro positivo; valor inválido impede a inicialização. |
+| `ATTRACTOR_INFLIGHT_SCOPE` | `process` (padrão): o limite vale por worker. `host`: o limite é compartilhado por todos os workers do mesmo host, com locks de arquivo (`flock`) liberados pelo kernel se o processo morrer; exige POSIX. Entre réplicas em hosts diferentes, aplique também um limite global no gateway. |
+| `ATTRACTOR_INFLIGHT_LOCK_DIR` | Diretório dos arquivos de vaga no escopo `host`; padrão `/tmp/ayorai-attractor-inflight`. Todos os workers do host devem usar o mesmo diretório. |
+| `ATTRACTOR_AUDIT_DB` | Arquivo SQLite dos rastros de auditoria; padrão `.attractor/audit.sqlite3` (no contêiner, `/app/.attractor/audit.sqlite3`). |
+| `ATTRACTOR_AUDIT_LEGACY_TRACES` | `hidden` (padrão) ou `shared`: visibilidade, pela API, de rastros antigos sem dono. Outro valor impede a inicialização. |
+| `ATTRACTOR_AUDIT_HMAC_KEYS` | Opcional. Chaves HMAC dos rastros, `id:hex` (32 bytes), separadas por vírgula; a primeira assina os rastros novos e as demais só verificam (rotação). Segredo: guarde fora do repositório e fora do backup do banco. |
 | `make test` | Executa pytest. |
 | `make lint` | Executa `ruff check .` e `ruff format --check .`. |
 | `make typecheck` | Executa mypy sobre `src/ayorai_attractor`. |
