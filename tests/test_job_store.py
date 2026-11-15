@@ -111,6 +111,14 @@ def test_finish_with_matching_attempt_on_finished_job_is_rejected(store: JobStor
         store.finish("job-1", success=True, attempt=claimed.attempts)
 
 
+
+def test_finish_requires_attempt_fencing(store: JobStore) -> None:
+    store.enqueue("job-1", "request-1")
+    store.claim("job-1", now=100.0)
+
+    with pytest.raises(TypeError, match="attempt"):
+        store.finish("job-1", success=True)  # type: ignore[call-arg]
+
 def test_concurrent_enqueue_on_one_key_yields_one_job(tmp_path: object) -> None:
     import threading
     from pathlib import Path
