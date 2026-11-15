@@ -292,3 +292,31 @@ def test_concurrent_duplicate_records_have_exactly_one_winner(tmp_path) -> None:
         winners = [digest for digest in results if digest is not None]
         assert len(winners) == 1
         assert store.verify(response.trace_id) == "valid"
+
+
+def test_failed_migration_rolls_back_and_closes_the_connection(tmp_path) -> None:
+    path = tmp_path / "legacy.sqlite3"
+    # SQLite accepts text in an INTEGER column; the migration cannot convert it.
+    _create_legacy_schema(path, ("tr_bad", "supported", "not-a-number", 0, 0, 0, 0, "0" * 64))
+
+    import gc
+    import warnings
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        with pytest.raises(ValueError):
+            AuditTraceStore(str(path))
+        gc.collect()
+    leaked = [w for w in caught if issubclass(w.category, ResourceWarning)]
+    assert leaked == []
+
+    with closing(sqlite3.connect(path)) as connection:
+        tables = {
+            row[0]
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+        }
+        legacy_row = connection.execute("SELECT * FROM audit_traces").fetchall()
+        user_version = connection.execute("PRAGMA user_version").fetchone()[0]
+    assert tables == {"audit_traces"}
+    assert legacy_row == [("tr_bad", "supported", "not-a-number", 0, 0, 0, 0, "0" * 64)]
+    assert user_version == 0

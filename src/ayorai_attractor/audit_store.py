@@ -44,7 +44,13 @@ class AuditTraceStore:
         if configured != ":memory:":
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(self.path, check_same_thread=False)
-        self._migrate()
+        try:
+            self._migrate()
+        except BaseException:
+            # A failed migration must not leak the connection; the rollback in
+            # _migrate_locked already left the database as it was.
+            self._connection.close()
+            raise
 
     def __enter__(self) -> AuditTraceStore:
         return self
@@ -83,7 +89,12 @@ class AuditTraceStore:
 
     def _migrate(self) -> None:
         with self._lock:
-            self._migrate_locked()
+            try:
+                self._migrate_locked()
+            except BaseException:
+                if self._connection.in_transaction:
+                    self._connection.rollback()
+                raise
 
     def _migrate_locked(self) -> None:
         connection = self._connection
