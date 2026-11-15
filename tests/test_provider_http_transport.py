@@ -99,3 +99,46 @@ def test_plain_urlopen_would_have_leaked_the_key(
     with request.urlopen(req, timeout=5) as response:
         response.read()
     assert target.hits and target.hits[0].get("Authorization") == "Bearer secret-key"
+
+
+class _Body:
+    def __init__(self, payload: bytes) -> None:
+        self.payload = payload
+        self.requested: list[int] = []
+
+    def read(self, size: int = -1) -> bytes:
+        self.requested.append(size)
+        return self.payload if size < 0 else self.payload[:size]
+
+
+def test_read_json_accepts_a_body_at_the_limit() -> None:
+    body = _Body(b'{"a": 1}')
+    assert _http.read_json(body, limit=len(body.payload)) == {"a": 1}
+    assert body.requested == [len(body.payload) + 1]
+
+
+def test_read_json_rejects_an_oversized_body_without_reading_it_all() -> None:
+    body = _Body(b"[" + b"0," * 100 + b"0]")
+    with pytest.raises(error.URLError, match="exceeds 16 bytes"):
+        _http.read_json(body, limit=16)
+    assert body.requested == [17]
+
+
+def test_provider_reports_an_oversized_body_as_a_request_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ayorai_attractor.providers.http_search import HttpSearchProvider
+
+    class _Response(_Body):
+        def __enter__(self) -> "_Response":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+    monkeypatch.setattr(_http, "MAX_RESPONSE_BYTES", 8)
+    monkeypatch.setattr(
+        _http, "open_without_redirects", lambda *a, **k: _Response(b'{"results": []}')
+    )
+    with pytest.raises(RuntimeError, match="Search request failed"):
+        HttpSearchProvider("https://example.test/search").execute("query")

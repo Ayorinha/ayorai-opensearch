@@ -51,7 +51,7 @@ class OpenAICompatibleProvider(Provider):
         try:
             # HTTPS was checked above; the transport refuses redirects, so it stays HTTPS.
             with _http.open_without_redirects(req, timeout=60) as response:
-                data = json.load(response)
+                data = _http.read_json(response)
         except error.URLError as exc:
             raise RuntimeError(f"Provider request failed: {exc}") from exc
         try:

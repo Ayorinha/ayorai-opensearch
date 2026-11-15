@@ -6,10 +6,14 @@ HTTP. A provider endpoint that redirects (misconfiguration or compromise) would
 therefore leak its API key and silently break the HTTPS-only boundary the
 providers check before dispatch. This transport refuses every redirect: the
 configured endpoint must answer directly.
+
+Response bodies are read with a fixed upper bound, so a misbehaving endpoint
+cannot exhaust the process memory with an unbounded reply.
 """
 
 from __future__ import annotations
 
+import json
 from email.message import Message
 from typing import IO, Any
 from urllib import error, request
@@ -34,3 +38,22 @@ _OPENER = request.build_opener(_RefuseRedirects)
 def open_without_redirects(req: request.Request, timeout: float) -> Any:
     """Open ``req`` like ``urllib.request.urlopen`` but never follow a redirect."""
     return _OPENER.open(req, timeout=timeout)
+
+
+MAX_RESPONSE_BYTES = 10 * 1024 * 1024
+
+
+def read_json(response: Any, limit: int | None = None) -> Any:
+    """Read and decode a JSON body of at most ``limit`` bytes.
+
+    ``limit`` defaults to ``MAX_RESPONSE_BYTES``, read at call time.
+
+    Oversized bodies raise ``URLError`` so providers report them like any
+    other transport failure.
+    """
+    if limit is None:
+        limit = MAX_RESPONSE_BYTES
+    body = response.read(limit + 1)
+    if len(body) > limit:
+        raise error.URLError(f"response body exceeds {limit} bytes")
+    return json.loads(body)
