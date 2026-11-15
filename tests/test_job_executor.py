@@ -51,3 +51,22 @@ def test_executor_rejects_a_non_queued_job(store: JobStore) -> None:
 
     with pytest.raises(ValueError, match="only queued jobs can be claimed"):
         JobExecutor(store, Handler()).run("j1", now=101.0)
+
+
+def test_executor_whose_lease_expired_cannot_overwrite_the_new_run(store: JobStore) -> None:
+    store.enqueue("j1", "id-1")
+
+    @dataclass
+    class SlowHandler:
+        def execute(self, job: Job) -> None:
+            # While this worker is still running, its lease expires and a
+            # second worker reclaims and claims the same job.
+            store.reclaim_expired(now=200.0)
+            store.claim("j1", now=200.0, lease_seconds=10.0)
+
+    with pytest.raises(ValueError, match="stale lease"):
+        JobExecutor(store, SlowHandler()).run("j1", now=100.0, lease_seconds=10.0)
+
+    current = store.get("j1")
+    assert current.status is JobStatus.RUNNING
+    assert current.attempts == 2
