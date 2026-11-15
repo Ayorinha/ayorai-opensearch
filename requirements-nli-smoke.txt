@@ -4,7 +4,7 @@
 # NumPy is held at 2.3.3 (maintainer decision, 2026-11-12) so the whole modern
 # environment shares one NumPy version.
 # PyTorch CPU is installed separately from the official CPU wheel index in the workflow.
-huggingface-hub==1.32.0
+huggingface-hub==2.4.0
 transformers==5.22.2
 pyarrow==26.0.1
 pandas==3.1.1
