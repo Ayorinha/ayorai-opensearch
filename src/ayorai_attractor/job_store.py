@@ -113,21 +113,18 @@ class JobStore:
             raise
         return self.get(job_id)
 
-    def finish(self, job_id: str, *, success: bool, attempt: int | None = None) -> Job:
-        """Finish a running job.
+    def finish(self, job_id: str, *, success: bool, attempt: int) -> Job:
+        """Finish only the exact running attempt returned by ``claim``.
 
-        ``attempt`` fences the lease: pass the ``attempts`` value returned by
-        ``claim``. If the lease expired and another worker claimed the job,
-        the attempt no longer matches and the stale worker's result is
-        rejected instead of overwriting the current run. Check and update are
-        a single statement.
+        ``attempt`` is mandatory and fences the lease. If the lease expires
+        and another worker claims the job, the attempt no longer matches and
+        the stale worker's result is rejected. Check and update are one
+        conditional SQL statement, so callers cannot bypass the fence.
         """
         status = JobStatus.SUCCEEDED if success else JobStatus.FAILED
         query = "UPDATE jobs SET status = ?, lease_until = NULL WHERE job_id = ? AND status = ?"
-        params: tuple[object, ...] = (status.value, job_id, JobStatus.RUNNING.value)
-        if attempt is not None:
-            query += " AND attempts = ?"
-            params = (*params, attempt)
+        query += " AND attempts = ?"
+        params: tuple[object, ...] = (status.value, job_id, JobStatus.RUNNING.value, attempt)
         updated = self._connection.execute(query, params).rowcount
         self._connection.commit()
         if updated != 1:
