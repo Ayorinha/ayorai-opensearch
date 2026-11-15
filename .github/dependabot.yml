@@ -2,6 +2,10 @@ version: 2
 updates:
   - package-ecosystem: pip
     directory: "/"
+    # Historical environment of the throughput pilot and Phase 1b DEV runs: its
+    # exact pins are part of the recorded provenance and change only by decision.
+    exclude-paths:
+      - "requirements-benchmark-pilot.txt"
     schedule:
       interval: weekly
   - package-ecosystem: github-actions
@@ -16,3 +20,11 @@ updates:
     directory: "/docker"
     schedule:
       interval: weekly
+    # docker/requirements.lock holds CPython 3.12 wheels only; a new Python line
+    # needs a regenerated lock and CI matrix, so only 3.12 digest and patch
+    # updates are proposed automatically.
+    ignore:
+      - dependency-name: "python"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
