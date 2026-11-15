@@ -1,8 +1,10 @@
 import sqlite3
 from contextlib import closing
+from datetime import UTC, datetime
 
 import pytest
 
+from ayorai_attractor import __version__
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore, DuplicateAuditTraceError
 from ayorai_attractor.models import SearchResponse
@@ -21,7 +23,8 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
     )
     report = AuditReport.from_response(response)
     path = tmp_path / "audit.sqlite3"
-    with AuditTraceStore(str(path)) as store:
+    clock = lambda: datetime(2026, 11, 15, 12, 0, 0, tzinfo=UTC)  # noqa: E731
+    with AuditTraceStore(str(path), clock=clock) as store:
         digest = store.record(response, report)
         saved = store.get("tr_persisted")
         assert saved is not None
@@ -63,6 +66,8 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
                     "finding_count": len(report.findings),
                     "schema_version": 3,
                     "owner": None,
+                    "recorded_at": "2026-11-15T12:00:00.000000Z",
+                    "software_version": __version__,
                 }
             ],
             version="r2-v3",

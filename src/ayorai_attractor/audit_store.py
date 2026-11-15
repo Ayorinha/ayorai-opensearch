@@ -13,10 +13,13 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from threading import RLock
 from typing import Any, Final, Literal
 
+from ayorai_attractor import __version__
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.models import AuditTraceResponse, SearchResponse
 from ayorai_attractor.replay import ReplayBundle
@@ -40,6 +43,8 @@ _R2_V3_FIELDS: Final = (
     "finding_count",
     "schema_version",
     "owner",
+    "recorded_at",
+    "software_version",
 )
 ReplayIntegrity = Literal["valid", "invalid"]
 
@@ -47,6 +52,13 @@ ReplayIntegrity = Literal["valid", "invalid"]
 def _r2_v3_events(fields: dict[str, Any]) -> list[dict[str, Any]]:
     """Canonical replay events for an r2-v3 trace (one source for record and verify)."""
     return [{"event": "audit.completed", **{name: fields[name] for name in _R2_V3_FIELDS}}]
+
+
+def _utc_timestamp(moment: datetime) -> str:
+    """Fixed-width UTC ISO 8601 with microseconds, so text order equals time order."""
+    if moment.tzinfo is None:
+        raise ValueError("audit timestamps must be timezone-aware")
+    return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
 LEGACY_TRACE_POLICIES = ("hidden", "shared")
@@ -70,13 +82,16 @@ class DuplicateAuditTraceError(ValueError):
 
 
 class AuditTraceStore:
-    def __init__(self, path: str | None = None) -> None:
+    def __init__(
+        self, path: str | None = None, clock: Callable[[], datetime] | None = None
+    ) -> None:
         configured: str = (
             path
             if path is not None
             else os.getenv("ATTRACTOR_AUDIT_DB", ".attractor/audit.sqlite3")
         )
         self.path = configured
+        self._clock = clock or (lambda: datetime.now(UTC))
         self._lock = RLock()
         self._legacy_policy = legacy_trace_policy_from_env()
         if configured != ":memory:":
@@ -216,12 +231,17 @@ class AuditTraceStore:
 
     @staticmethod
     def _finish_migration(connection: sqlite3.Connection) -> None:
-        """Schema v3: traces record the principal that created them (NULL = legacy)."""
+        """Schema v3: who (owner), when (recorded_at, UTC) and which software version.
+
+        The three columns are NULL on traces recorded before schema v3.
+        """
         columns = {
             str(row[1]) for row in connection.execute("PRAGMA table_info(audit_traces)").fetchall()
         }
-        if "owner" not in columns:
-            connection.execute("ALTER TABLE audit_traces ADD COLUMN owner TEXT")
+        for column in ("owner", "recorded_at", "software_version"):
+            if column not in columns:
+                # Column names are internal constants, never caller input.
+                connection.execute(f"ALTER TABLE audit_traces ADD COLUMN {column} TEXT")
         connection.execute(f"PRAGMA user_version = {_SCHEMA_VERSION}")
         connection.commit()
 
@@ -267,6 +287,8 @@ class AuditTraceStore:
             "finding_count": len(report.findings),
             "schema_version": _SCHEMA_VERSION,
             "owner": owner,
+            "recorded_at": _utc_timestamp(self._clock()),
+            "software_version": __version__,
         }
         replay = ReplayBundle.build(report.trace_id, _r2_v3_events(fields), version=_R2_V3)
         try:
@@ -276,8 +298,9 @@ class AuditTraceStore:
                     trace_id, legacy_verification, verification, operation_status,
                     evidence_count, independent_evidence_count,
                     verified_evidence_count, failure_count, finding_count,
-                    replay_digest, replay_version, schema_version, owner
-                ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    replay_digest, replay_version, schema_version, owner,
+                    recorded_at, software_version
+                ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     report.trace_id,
@@ -291,6 +314,8 @@ class AuditTraceStore:
                     _R2_V3,
                     fields["schema_version"],
                     owner,
+                    fields["recorded_at"],
+                    fields["software_version"],
                 ),
             )
         except sqlite3.IntegrityError as exc:
@@ -323,6 +348,20 @@ class AuditTraceStore:
         finally:
             copy.close()
 
+    def purge_recorded_before(self, cutoff: datetime) -> int:
+        """Delete traces recorded before ``cutoff`` (retention); returns how many.
+
+        Traces without recorded_at (recorded before schema v3) are never purged
+        here: their age is unknown.
+        """
+        with self._lock:
+            cursor = self._connection.execute(
+                "DELETE FROM audit_traces WHERE recorded_at IS NOT NULL AND recorded_at < ?",
+                (_utc_timestamp(cutoff),),
+            )
+            self._connection.commit()
+            return int(cursor.rowcount)
+
     def verify_all(self) -> dict[str, int]:
         """Replay-verify every stored trace (for example after a restore)."""
         with self._lock:
@@ -346,15 +385,16 @@ class AuditTraceStore:
             """
             SELECT legacy_verification, verification, operation_status, evidence_count,
                    independent_evidence_count, verified_evidence_count, failure_count,
-                   finding_count, schema_version, owner, replay_digest, replay_version
+                   finding_count, schema_version, owner, recorded_at, software_version,
+                   replay_digest, replay_version
             FROM audit_traces WHERE trace_id = ?
             """,
             (trace_id,),
         ).fetchone()
         if row is None:
             raise ValueError(f"Unknown audit trace: {trace_id}")
-        fields = dict(zip(_R2_V3_FIELDS, row[:10], strict=True))
-        stored_digest, version = row[10], row[11]
+        fields = dict(zip(_R2_V3_FIELDS, row[:12], strict=True))
+        stored_digest, version = row[12], row[13]
         if version == _R2_V3:
             events = _r2_v3_events(fields)
         elif version in (_R2_V1, _R2_V2):

@@ -20,6 +20,11 @@ from ayorai_attractor.audit_store import _R2_V3_FIELDS, AuditTraceStore, _r2_v3_
 from ayorai_attractor.models import SearchResponse
 from ayorai_attractor.replay import ReplayBundle
 
+# Changes the first hex digit whatever it is ("'0' || ..." is a no-op 1 time in 16).
+FLIP_FIRST_DIGEST_CHAR = (
+    "CASE substr(replay_digest, 1, 1) WHEN '0' THEN '1' ELSE '0' END || substr(replay_digest, 2)"
+)
+
 EDITS = {
     "legacy_verification": "'verified'",
     "verification": "'verified'",
@@ -31,6 +36,8 @@ EDITS = {
     "finding_count": "0",
     "schema_version": "schema_version + 1",
     "owner": "'key:intruder'",
+    "recorded_at": "'2000-01-01T00:00:00.000000Z'",
+    "software_version": "'0.0.0'",
 }
 
 
@@ -108,7 +115,7 @@ def test_editing_the_version_or_digest_is_detected(tmp_path: Path) -> None:
         assert store.verify("tr_v3") == "invalid"
         _edit(path, {"replay_version": "'r2-v3'"})
         assert store.verify("tr_v3") == "valid"
-        _edit(path, {"replay_digest": "'0' || substr(replay_digest, 2)"})
+        _edit(path, {"replay_digest": FLIP_FIRST_DIGEST_CHAR})
         assert store.verify("tr_v3") == "invalid"
         _edit(path, {"replay_version": "'r9-unknown'"})
         assert store.verify("tr_v3") == "invalid"
