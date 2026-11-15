@@ -59,7 +59,7 @@ def test_openai_compatible_response_contract(monkeypatch: pytest.MonkeyPatch) ->
             return json.dumps({"choices": [{"message": {"content": "answer"}}]}).encode()
 
     monkeypatch.setattr(
-        "ayorai_attractor.providers.openai_compatible.request.urlopen",
+        "ayorai_attractor.providers._http.open_without_redirects",
         lambda *args, **kwargs: FakeResponse(),
     )
     response = OpenAICompatibleProvider(api_key="test").execute("query")
@@ -81,7 +81,7 @@ def test_http_search_response_contract(monkeypatch: pytest.MonkeyPatch) -> None:
             return json.dumps({"results": [{"title": "doc"}]}).encode()
 
     monkeypatch.setattr(
-        "ayorai_attractor.providers.http_search.request.urlopen",
+        "ayorai_attractor.providers._http.open_without_redirects",
         lambda *args, **kwargs: FakeResponse(),
     )
     response = HttpSearchProvider("https://example.test/search").execute("query")
@@ -116,9 +116,7 @@ def test_openai_compatible_provider_wraps_url_error(monkeypatch: pytest.MonkeyPa
     def fail_request(*args: Any, **kwargs: Any) -> Any:
         raise URLError("offline")
 
-    monkeypatch.setattr(
-        "ayorai_attractor.providers.openai_compatible.request.urlopen", fail_request
-    )
+    monkeypatch.setattr("ayorai_attractor.providers._http.open_without_redirects", fail_request)
     provider = OpenAICompatibleProvider(api_key="test")
     with pytest.raises(RuntimeError, match="Provider request failed"):
         provider.execute("query")
@@ -138,7 +136,7 @@ def test_openai_compatible_provider_rejects_malformed_response(
             return b"{}"
 
     monkeypatch.setattr(
-        "ayorai_attractor.providers.openai_compatible.request.urlopen",
+        "ayorai_attractor.providers._http.open_without_redirects",
         lambda *args, **kwargs: FakeResponse(),
     )
     provider = OpenAICompatibleProvider(api_key="test")

@@ -2,6 +2,7 @@ import json
 from urllib import error, parse, request
 from urllib.parse import urlparse
 
+from ayorai_attractor.providers import _http
 from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 
@@ -24,8 +25,8 @@ class HttpSearchProvider(Provider):
             headers["Authorization"] = f"Bearer {self.api_key}"
         req = request.Request(f"{self.endpoint}?{query}", headers=headers)
         try:
-            # B310 is suppressed: endpoint validation requires HTTPS before request dispatch.
-            with request.urlopen(req, timeout=30) as response:  # nosec B310
+            # HTTPS was checked above; the transport refuses redirects, so it stays HTTPS.
+            with _http.open_without_redirects(req, timeout=30) as response:
                 data = json.load(response)
         except error.URLError as exc:
             raise RuntimeError(f"Search request failed: {exc}") from exc

@@ -3,6 +3,7 @@ import os
 from urllib import error, request
 from urllib.parse import urlparse
 
+from ayorai_attractor.providers import _http
 from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 
@@ -48,8 +49,8 @@ class OpenAICompatibleProvider(Provider):
             method="POST",
         )
         try:
-            # B310 is suppressed: base URL validation requires HTTPS before request dispatch.
-            with request.urlopen(req, timeout=60) as response:  # nosec B310
+            # HTTPS was checked above; the transport refuses redirects, so it stays HTTPS.
+            with _http.open_without_redirects(req, timeout=60) as response:
                 data = json.load(response)
         except error.URLError as exc:
             raise RuntimeError(f"Provider request failed: {exc}") from exc
