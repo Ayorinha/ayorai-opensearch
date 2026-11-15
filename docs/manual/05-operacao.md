@@ -144,6 +144,7 @@ Este capítulo não define uma política de backup, restauração, alta disponib
 | `ATTRACTOR_API_KEY_PEPPER`, `ATTRACTOR_API_KEYS_HMAC_SHA256` | Segredos/digests exigidos no modo `api_key`; consulte `docs/security/API-AUTH.md`. |
 | `ATTRACTOR_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL`; padrão `INFO`. |
 | `ATTRACTOR_MAX_BODY_BYTES` | Limite inteiro positivo do corpo HTTP; padrão 2 MiB. |
+| `ATTRACTOR_MAX_INFLIGHT_HEAVY` | Máximo de requisições `POST /v1/*` em execução simultânea por processo; padrão 2. Acima disso a API responde HTTP 503 com `Retry-After: 1`. Inteiro positivo; valor inválido impede a inicialização. O limite é por worker: com vários workers ou réplicas, aplique também um limite global no gateway. |
 | `make test` | Executa pytest. |
 | `make lint` | Executa `ruff check .` e `ruff format --check .`. |
 | `make typecheck` | Executa mypy sobre `src/ayorai_attractor`. |

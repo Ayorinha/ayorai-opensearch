@@ -135,6 +135,33 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Too many verification requests in flight on this worker; retry later.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -224,6 +251,33 @@
           },
           "429": {
             "description": "The request rate limit was exceeded.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Too many verification requests in flight on this worker; retry later.",
             "headers": {
               "Retry-After": {
                 "description": "Seconds to wait before retrying the request.",
@@ -361,6 +415,33 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Too many verification requests in flight on this worker; retry later.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -450,6 +531,33 @@
           },
           "429": {
             "description": "The request rate limit was exceeded.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Too many verification requests in flight on this worker; retry later.",
             "headers": {
               "Retry-After": {
                 "description": "Seconds to wait before retrying the request.",
@@ -578,6 +686,33 @@
           },
           "429": {
             "description": "The request rate limit was exceeded.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Too many verification requests in flight on this worker; retry later.",
             "headers": {
               "Retry-After": {
                 "description": "Seconds to wait before retrying the request.",
