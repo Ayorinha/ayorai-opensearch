@@ -1,8 +1,9 @@
+import io
 import json
-from types import SimpleNamespace
 from typing import Any
 from urllib.error import URLError
 
+import httpx
 import pytest
 
 from ayorai_attractor.providers.base import Provider, ProviderResponse
@@ -55,8 +56,11 @@ def test_openai_compatible_response_contract(monkeypatch: pytest.MonkeyPatch) ->
         def __exit__(self, *args: Any) -> None:
             return None
 
+        _body = io.BytesIO(json.dumps({"choices": [{"message": {"content": "answer"}}]}).encode())
+
         def read(self, size: int = -1) -> bytes:
-            return json.dumps({"choices": [{"message": {"content": "answer"}}]}).encode()
+            # Consumed like a real HTTP response: b"" once the body is read.
+            return self._body.read(size)
 
     monkeypatch.setattr(
         "ayorai_attractor.providers._http.open_without_redirects",
@@ -77,8 +81,11 @@ def test_http_search_response_contract(monkeypatch: pytest.MonkeyPatch) -> None:
         def __exit__(self, *args: Any) -> None:
             return None
 
+        _body = io.BytesIO(json.dumps({"results": [{"title": "doc"}]}).encode())
+
         def read(self, size: int = -1) -> bytes:
-            return json.dumps({"results": [{"title": "doc"}]}).encode()
+            # Consumed like a real HTTP response: b"" once the body is read.
+            return self._body.read(size)
 
     monkeypatch.setattr(
         "ayorai_attractor.providers._http.open_without_redirects",
@@ -90,16 +97,15 @@ def test_http_search_response_contract(monkeypatch: pytest.MonkeyPatch) -> None:
     assert response.independent is True
 
 
-def test_opensearch_response_contract(monkeypatch: pytest.MonkeyPatch) -> None:
-    fake = SimpleNamespace(
-        raise_for_status=lambda: None,
-        json=lambda: {"hits": {"hits": [{"_source": {"title": "Doc", "content": "text"}}]}},
+def test_opensearch_response_contract() -> None:
+    transport = httpx.MockTransport(
+        lambda _: httpx.Response(
+            200, json={"hits": {"hits": [{"_source": {"title": "Doc", "content": "text"}}]}}
+        )
     )
-    monkeypatch.setattr(
-        "ayorai_attractor.providers.opensearch.httpx.post",
-        lambda *args, **kwargs: fake,
+    response = OpenSearchProvider("https://example.test", "documents", transport=transport).execute(
+        "query"
     )
-    response = OpenSearchProvider("https://example.test", "documents").execute("query")
     assert response.text == "Doc: text"
     assert response.source == "https://example.test/documents"
     assert response.excerpt == "Doc: text"
@@ -132,8 +138,11 @@ def test_openai_compatible_provider_rejects_malformed_response(
         def __exit__(self, *args: Any) -> None:
             return None
 
+        _body = io.BytesIO(b"{}")
+
         def read(self, size: int = -1) -> bytes:
-            return b"{}"
+            # Consumed like a real HTTP response: b"" once the body is read.
+            return self._body.read(size)
 
     monkeypatch.setattr(
         "ayorai_attractor.providers._http.open_without_redirects",

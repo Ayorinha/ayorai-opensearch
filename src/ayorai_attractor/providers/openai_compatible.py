@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from urllib import error, request
 from urllib.parse import urlparse
 
@@ -50,8 +51,9 @@ class OpenAICompatibleProvider(Provider):
         )
         try:
             # HTTPS was checked above; the transport refuses redirects, so it stays HTTPS.
+            deadline = time.monotonic() + 60
             with _http.open_without_redirects(req, timeout=60) as response:
-                data = _http.read_json(response)
+                data = _http.read_json(response, deadline=deadline)
         except error.URLError as exc:
             raise RuntimeError(f"Provider request failed: {exc}") from exc
         try:

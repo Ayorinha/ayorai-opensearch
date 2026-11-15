@@ -14,6 +14,7 @@ cannot exhaust the process memory with an unbounded reply.
 from __future__ import annotations
 
 import json
+import time
 from email.message import Message
 from typing import IO, Any
 from urllib import error, request
@@ -43,17 +44,37 @@ def open_without_redirects(req: request.Request, timeout: float) -> Any:
 MAX_RESPONSE_BYTES = 10 * 1024 * 1024
 
 
-def read_json(response: Any, limit: int | None = None) -> Any:
+_READ_CHUNK = 64 * 1024
+
+
+def read_json(response: Any, limit: int | None = None, deadline: float | None = None) -> Any:
     """Read and decode a JSON body of at most ``limit`` bytes.
 
     ``limit`` defaults to ``MAX_RESPONSE_BYTES``, read at call time.
 
-    Oversized bodies raise ``URLError`` so providers report them like any
-    other transport failure.
+    ``deadline`` is a ``time.monotonic()`` value. urllib timeouts apply to each
+    socket operation, so a server that sends a byte before every timeout would
+    keep a single ``read`` open indefinitely; with a deadline the body is read
+    in chunks and the deadline is checked between them.
+
+    Oversized or late bodies raise ``URLError`` so providers report them like
+    any other transport failure.
     """
     if limit is None:
         limit = MAX_RESPONSE_BYTES
-    body = response.read(limit + 1)
+    if deadline is None:
+        body = response.read(limit + 1)
+    else:
+        read = getattr(response, "read1", None) or response.read
+        chunks = bytearray()
+        while len(chunks) <= limit:
+            if time.monotonic() > deadline:
+                raise error.URLError("response body was not received before the deadline")
+            chunk = read(min(_READ_CHUNK, limit + 1 - len(chunks)))
+            if not chunk:
+                break
+            chunks += chunk
+        body = bytes(chunks)
     if len(body) > limit:
         raise error.URLError(f"response body exceeds {limit} bytes")
     return json.loads(body)
