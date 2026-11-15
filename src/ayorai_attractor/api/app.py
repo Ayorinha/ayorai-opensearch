@@ -5,10 +5,12 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from ayorai_attractor.api.auth import APIKeyAuthMiddleware, validate_auth_configuration
@@ -247,6 +249,35 @@ app.add_middleware(RequestBodyLimitMiddleware)
 # a slot, and a rejected request is answered before its body is read.
 app.add_middleware(HeavyRouteConcurrencyLimitMiddleware)
 app.add_middleware(APIKeyAuthMiddleware)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _body_encoding_as_json_invalid(request: Request, exc: StarletteHTTPException) -> Response:
+    """Answer a body that is not valid UTF-8 like any other malformed JSON (422).
+
+    FastAPI parses JSON bodies with ``json.loads(bytes)``. Invalid UTF-8 raises
+    UnicodeDecodeError rather than JSONDecodeError, which FastAPI turns into a
+    generic 400. JSON text must be UTF-8 (RFC 8259, section 8.1), so this is a
+    JSON decode error and gets the same documented 422 ``json_invalid`` envelope.
+    Every other HTTPException keeps FastAPI's default handling.
+    """
+    cause = exc.__cause__
+    if exc.status_code == 400 and isinstance(cause, UnicodeDecodeError):
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": [
+                    {
+                        "type": "json_invalid",
+                        "loc": ["body", cause.start],
+                        "msg": "JSON decode error",
+                        "input": {},
+                        "ctx": {"error": "Request body is not valid UTF-8"},
+                    }
+                ]
+            },
+        )
+    return await http_exception_handler(request, exc)
 
 
 @app.get("/health")

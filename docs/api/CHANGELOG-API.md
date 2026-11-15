@@ -11,6 +11,7 @@ All public API contract changes are additive unless explicitly identified otherw
 ## Unreleased — documented error responses match the implementation
 
 - The OpenAPI document no longer lists HTTP 400 on any route. No route returns 400: a body that is not valid JSON returns 422 with `type` `json_invalid`, as it already did.
+- A JSON body that is not valid UTF-8 now also returns 422 `json_invalid` (it returned 400 `There was an error parsing the body`). JSON text must be UTF-8 (RFC 8259, section 8.1).
 - Every `/v1/*` route now documents HTTP 401 (missing or invalid API key when `ATTRACTOR_AUTH_MODE=api_key`), and every `POST` route documents HTTP 413 (body above `ATTRACTOR_MAX_BODY_BYTES`). Both responses were already returned; only the document changes.
 - No request, response body or status code returned by the API changed.
 
