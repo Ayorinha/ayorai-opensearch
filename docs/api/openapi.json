@@ -1035,7 +1035,8 @@
             "type": "string",
             "enum": [
               "r2-v1",
-              "r2-v2"
+              "r2-v2",
+              "r2-v3"
             ],
             "title": "Replay Version"
           },

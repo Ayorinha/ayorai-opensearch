@@ -32,7 +32,7 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
         assert saved.operation_status == "completed"
         assert saved.replay_digest == digest
         assert saved.legacy_verification is None
-        assert saved.replay_version == "r2-v2"
+        assert saved.replay_version == "r2-v3"
         assert saved.replay_integrity == "valid"
 
     with closing(sqlite3.connect(path)) as connection, connection:
@@ -45,19 +45,26 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
             ("tr_persisted",),
         ).fetchone()
         assert connection.execute("PRAGMA user_version").fetchone() == (2,)
-    assert stored == (None, None, "completed", "r2-v2", 2)
+    assert stored == (None, None, "completed", "r2-v3", 2)
+    # r2-v3 binds every persisted field, not only three of them.
     assert (
         ReplayBundle.build(
             "tr_persisted",
             [
                 {
                     "event": "audit.completed",
-                    "verification": "not_adjudicated",
+                    "legacy_verification": None,
+                    "verification": None,
+                    "operation_status": "completed",
                     "evidence_count": 0,
+                    "independent_evidence_count": 0,
+                    "verified_evidence_count": 0,
                     "failure_count": 0,
+                    "finding_count": len(report.findings),
+                    "schema_version": 2,
                 }
             ],
-            version="r2-v2",
+            version="r2-v3",
         ).digest
         == digest
     )

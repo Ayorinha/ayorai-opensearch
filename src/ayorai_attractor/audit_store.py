@@ -24,8 +24,28 @@ from ayorai_attractor.replay import ReplayBundle
 _SCHEMA_VERSION = 2
 _R2_V1: Final = "r2-v1"
 _R2_V2: Final = "r2-v2"
-ReplayVersion = Literal["r2-v1", "r2-v2"]
+_R2_V3: Final = "r2-v3"
+ReplayVersion = Literal["r2-v1", "r2-v2", "r2-v3"]
+# Columns bound by an r2-v3 digest: every persisted field of a trace. r2-v1 and
+# r2-v2 digests bind only verification, evidence_count and failure_count; they
+# are still verified as written, but new traces are recorded as r2-v3.
+_R2_V3_FIELDS: Final = (
+    "legacy_verification",
+    "verification",
+    "operation_status",
+    "evidence_count",
+    "independent_evidence_count",
+    "verified_evidence_count",
+    "failure_count",
+    "finding_count",
+    "schema_version",
+)
 ReplayIntegrity = Literal["valid", "invalid"]
+
+
+def _r2_v3_events(fields: dict[str, Any]) -> list[dict[str, Any]]:
+    """Canonical replay events for an r2-v3 trace (one source for record and verify)."""
+    return [{"event": "audit.completed", **{name: fields[name] for name in _R2_V3_FIELDS}}]
 
 
 class DuplicateAuditTraceError(ValueError):
@@ -206,15 +226,18 @@ class AuditTraceStore:
             return self._record_locked(response, report)
 
     def _record_locked(self, response: SearchResponse, report: AuditReport) -> str:
-        events = [
-            {
-                "event": "audit.completed",
-                "verification": "not_adjudicated",
-                "evidence_count": report.evidence_count,
-                "failure_count": report.failure_count,
-            }
-        ]
-        replay = ReplayBundle.build(response.trace_id, events, version=_R2_V2)
+        fields: dict[str, Any] = {
+            "legacy_verification": None,
+            "verification": None,
+            "operation_status": response.operation_status,
+            "evidence_count": report.evidence_count,
+            "independent_evidence_count": report.independent_evidence_count,
+            "verified_evidence_count": report.verified_evidence_count,
+            "failure_count": report.failure_count,
+            "finding_count": len(report.findings),
+            "schema_version": _SCHEMA_VERSION,
+        }
+        replay = ReplayBundle.build(report.trace_id, _r2_v3_events(fields), version=_R2_V3)
         try:
             self._connection.execute(
                 """
@@ -227,15 +250,15 @@ class AuditTraceStore:
                 """,
                 (
                     report.trace_id,
-                    response.operation_status,
-                    report.evidence_count,
-                    report.independent_evidence_count,
-                    report.verified_evidence_count,
-                    report.failure_count,
-                    len(report.findings),
+                    fields["operation_status"],
+                    fields["evidence_count"],
+                    fields["independent_evidence_count"],
+                    fields["verified_evidence_count"],
+                    fields["failure_count"],
+                    fields["finding_count"],
                     replay.digest,
-                    _R2_V2,
-                    _SCHEMA_VERSION,
+                    _R2_V3,
+                    fields["schema_version"],
                 ),
             )
         except sqlite3.IntegrityError as exc:
@@ -254,33 +277,34 @@ class AuditTraceStore:
     def _verify_locked(self, trace_id: str) -> ReplayIntegrity:
         row = self._connection.execute(
             """
-            SELECT legacy_verification, evidence_count, failure_count,
-                   replay_digest, replay_version
+            SELECT legacy_verification, verification, operation_status, evidence_count,
+                   independent_evidence_count, verified_evidence_count, failure_count,
+                   finding_count, schema_version, replay_digest, replay_version
             FROM audit_traces WHERE trace_id = ?
             """,
             (trace_id,),
         ).fetchone()
         if row is None:
             raise ValueError(f"Unknown audit trace: {trace_id}")
-        legacy_verification, evidence_count, failure_count, stored_digest, version = row
-        if version not in (_R2_V1, _R2_V2):
+        fields = dict(zip(_R2_V3_FIELDS, row[:9], strict=True))
+        stored_digest, version = row[9], row[10]
+        if version == _R2_V3:
+            events = _r2_v3_events(fields)
+        elif version in (_R2_V1, _R2_V2):
+            verification = fields["legacy_verification"] if version == _R2_V1 else "not_adjudicated"
+            if verification is None:
+                return "invalid"
+            events = [
+                {
+                    "event": "audit.completed",
+                    "verification": verification,
+                    "evidence_count": int(fields["evidence_count"]),
+                    "failure_count": int(fields["failure_count"]),
+                }
+            ]
+        else:
             return "invalid"
-        verification = legacy_verification if version == _R2_V1 else "not_adjudicated"
-        if verification is None:
-            return "invalid"
-        events: list[dict[str, Any]] = [
-            {
-                "event": "audit.completed",
-                "verification": verification,
-                "evidence_count": int(evidence_count),
-                "failure_count": int(failure_count),
-            }
-        ]
-        rebuilt = ReplayBundle.build(
-            trace_id,
-            events,
-            version=version,
-        )
+        rebuilt = ReplayBundle.build(trace_id, events, version=version)
         return "valid" if rebuilt.digest == stored_digest else "invalid"
 
     def get(self, trace_id: str) -> AuditTraceResponse | None:
