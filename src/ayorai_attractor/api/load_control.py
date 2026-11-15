@@ -23,6 +23,7 @@ from __future__ import annotations
 import os
 import stat
 import sys
+import tempfile
 from pathlib import Path
 
 from starlette.responses import JSONResponse
@@ -32,7 +33,20 @@ DEFAULT_MAX_INFLIGHT = 2
 HEAVY_PATHS = frozenset({"/v1/check", "/v1/fields", "/v1/verify", "/v1/audit", "/v1/opensearch"})
 RETRY_AFTER_SECONDS = 1
 SCOPES = ("process", "host")
-DEFAULT_LOCK_DIR = "/tmp/ayorai-attractor-inflight"
+LOCK_DIR_NAME = "ayorai-attractor-inflight"
+
+
+def default_lock_dir() -> str:
+    """Per-user slot directory: $XDG_RUNTIME_DIR, else the temp dir with the uid.
+
+    A fixed name in a world-writable directory would let another local user
+    create it first and hold the slots; the uid suffix keeps users apart, and
+    HostSlots still refuses a directory this user does not own.
+    """
+    runtime = os.getenv("XDG_RUNTIME_DIR", "").strip()
+    if runtime and Path(runtime).is_absolute():
+        return str(Path(runtime) / LOCK_DIR_NAME)
+    return str(Path(tempfile.gettempdir()) / f"{LOCK_DIR_NAME}-{os.getuid()}")
 
 
 def max_inflight_from_env() -> int:
@@ -112,7 +126,7 @@ class HeavyRouteConcurrencyLimitMiddleware:
         if self.max_inflight <= 0:
             raise ValueError("max_inflight must be a positive integer")
         if host_slots is None and inflight_scope_from_env() == "host":
-            lock_dir = os.getenv("ATTRACTOR_INFLIGHT_LOCK_DIR", DEFAULT_LOCK_DIR)
+            lock_dir = os.getenv("ATTRACTOR_INFLIGHT_LOCK_DIR") or default_lock_dir()
             host_slots = HostSlots(lock_dir, self.max_inflight)
         self.host_slots = host_slots
         self.inflight = 0

@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import sys
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -330,3 +333,44 @@ def test_api_refuses_to_start_with_an_invalid_scope(monkeypatch: pytest.MonkeyPa
     with pytest.raises(ValueError, match="ATTRACTOR_INFLIGHT_SCOPE"):
         with TestClient(app):
             pass
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX uid")
+def test_the_default_lock_dir_is_per_user(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> None:
+    from ayorai_attractor.api.load_control import default_lock_dir
+
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path))
+    assert default_lock_dir() == str(tmp_path / "ayorai-attractor-inflight")
+    for unusable in ("", "relative/dir"):
+        monkeypatch.setenv("XDG_RUNTIME_DIR", unusable)
+        fallback = default_lock_dir()
+        assert fallback.endswith(f"ayorai-attractor-inflight-{os.getuid()}")
+        assert os.path.isabs(fallback)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX advisory locks")
+def test_a_lock_dir_owned_by_someone_else_is_refused(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    from ayorai_attractor.api.load_control import HostSlots
+
+    lock_dir = tmp_path / "slots"
+    lock_dir.mkdir(mode=0o700)
+    real_lstat = Path.lstat
+
+    class _Foreign:
+        def __init__(self, info: os.stat_result) -> None:
+            self._info = info
+
+        def __getattr__(self, name: str) -> Any:
+            if name == "st_uid":
+                return os.getuid() + 1
+            return getattr(self._info, name)
+
+    def fake_lstat(self: Path) -> Any:
+        info = real_lstat(self)
+        return _Foreign(info) if self == lock_dir else info
+
+    monkeypatch.setattr(Path, "lstat", fake_lstat)
+    with pytest.raises(ValueError, match="owned by this user"):
+        HostSlots(str(lock_dir), 1)
