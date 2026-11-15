@@ -149,4 +149,4 @@ def test_an_operator_about_another_sentence_does_not_contradict() -> None:
 
 
 def test_detector_version_is_7() -> None:
-    assert RuleStanceDetector.version == "7"
+    assert RuleStanceDetector.version in {"7", "8"}

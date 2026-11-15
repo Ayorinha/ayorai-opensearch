@@ -54,13 +54,6 @@ def test_a_denial_and_a_confirmation_are_conflicting_not_verified() -> None:
     assert result["status"] == "conflicting"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "The claimed value matches the previous-year value of a temporal comparison; "
-        "the number is not bound to its period, so the evidence is labelled supports."
-    ),
-)
 def test_a_previous_year_value_does_not_support_a_claim_about_the_current_year() -> None:
     result = _check(
         "O número de reclamações foi 40 em 2024.",

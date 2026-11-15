@@ -37,6 +37,18 @@ class LLMStancePayload(BaseModel):
 
 _NUMBER_RE = re.compile(r"(?<![\w])[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?")
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+# A number introduced as the baseline of a comparison ("caiu para 31, contra 40
+# no ano anterior", "de 40 para 31", "versus 40", "from 40 to 31") describes
+# another period or state, so it neither confirms nor contradicts a claim.
+_BASELINE_NUMBER_RE = re.compile(
+    r"(?P<marker>\b(?:contra|ante|versus|vs\.?|than|from|comparad[oa]s?\s+(?:a|com|aos?|às?)"
+    r"|compared\s+(?:to|with)|frente\s+(?:a|aos?|às?))\s+"
+    r"(?:(?:os|as|o|a|the)\s+)?(?:(?:r\$|us\$|\$|€|usd|brl|eur)\s*)?)"
+    r"(?P<number>[-+]?\d+(?:[.,]\d+)*)"
+    r"|(?P<from_marker>\bde\s+(?:(?:r\$|us\$|\$|€)\s*)?)"
+    r"(?P<from_number>[-+]?\d+(?:[.,]\d+)*)(?=[^.;:!?\d]{0,40}?\bpara\s+(?:(?:r\$|us\$|\$|€)\s*)?\d)",
+    re.IGNORECASE,
+)
 _TOKEN_RE = re.compile(r"[\wÀ-ÿ]+", re.UNICODE)
 # Negation is language dependent. In Portuguese "no"/"na"/"nos"/"nas" are
 # contractions of em + article ("no fim de 2025") and "sem" ("sem custo")
@@ -895,6 +907,16 @@ def _is_generic(unit: str) -> bool:
     return unit.startswith(("duration:", "measure:")) or unit in {"fraction", "multiplier"}
 
 
+def _mask_comparison_baselines(text: str) -> str:
+    """Remove numbers that are the baseline of a comparison; other text is unchanged."""
+
+    def _drop(match: re.Match[str]) -> str:
+        marker = match.group("marker")
+        return f"{marker} " if marker is not None else f"{match.group('from_marker')} "
+
+    return _BASELINE_NUMBER_RE.sub(_drop, text)
+
+
 def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     """Compare every claim fact with the evidence facts (set semantics).
 
@@ -912,7 +934,7 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     claim_facts = _numeric_facts(claim_text)
     if not claim_facts:
         return NumericAlignment()
-    evidence_facts = _numeric_facts(evidence_text)
+    evidence_facts = _numeric_facts(_mask_comparison_baselines(evidence_text))
     claim_locale = _locale_for(claim_text)
     evidence_locale = _locale_for(evidence_text)
 
@@ -1017,7 +1039,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "7"
+    version = "8"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
