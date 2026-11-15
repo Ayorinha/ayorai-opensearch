@@ -46,6 +46,42 @@ _NEGATION_TOKENS_PT = frozenset(
     {"não", "nao", "nunca", "jamais", "nem", "nenhum", "nenhuma", "ninguém", "ninguem"}
 )
 _NEGATION_TOKENS = _NEGATION_TOKENS_EN | _NEGATION_TOKENS_PT
+# Sentential negation: an operator that declares the whole proposition false
+# ("É falso que X", "It is false that X") has no negator token. Each match flips
+# the polarity once; a negator directly before it ("Não é falso que X") cancels
+# it, and the matched words are removed before the token check so that the
+# negator is not counted again. Reported denials ("negou que") are not operators.
+_SENTENTIAL_NEGATION_PT = re.compile(
+    r"(?P<negated>\b(?:não|nao)\s+)?\bé\s+"
+    r"(?:falso|falsa|incorreto|incorreta|inverídico|inverídica|mentira)\s+"
+    r"(?:afirmar\s+que|dizer\s+que|que)\b",
+    re.IGNORECASE,
+)
+_SENTENTIAL_NEGATION_EN = re.compile(
+    r"\bit\s+is\s+(?P<negated>not\s+)?(?:false|untrue|incorrect)\s+(?:to\s+say\s+)?that\b",
+    re.IGNORECASE,
+)
+# Postposed form: "a notícia de que X é falsa" denies X; "... não é falsa"
+# affirms it. The proposition X is the operator's scope.
+_SENTENTIAL_NEGATION_POST_PT = re.compile(
+    r"\b(?:a|o)\s+(?:afirmação|afirmacao|informação|informacao|notícia|noticia|alegação"
+    r"|alegacao|boato|rumor|versão|versao|declaração|declaracao)\s+de\s+que\s+"
+    r"(?P<scope>[^.;:!?]{1,300}?)\s+(?P<negated>(?:não|nao)\s+)?(?:é|era|foi)\s+"
+    r"(?:falso|falsa|incorreto|incorreta|inverídico|inverídica|mentiroso|mentirosa"
+    r"|infundado|infundada)\b",
+    re.IGNORECASE,
+)
+# An operator only reaches the end of its clause: "É falso que A faliu. B" does
+# not deny B, and neither does "É falso que A faliu porque B". When the claim is
+# known, an operator counts only if its clause holds at least half of the
+# claim's content tokens.
+_CLAUSE_END_RE = re.compile(
+    r"[.;:!?]|,\s+(?:e|mas|porém|porem|enquanto|and|but|while)\b"
+    r"|\b(?:porque|pois|já\s+que|ja\s+que|uma\s+vez\s+que|embora|enquanto|mas|porém|porem"
+    r"|contudo|todavia|because|although|whereas)\b",
+    re.IGNORECASE,
+)
+_OPERATOR_SCOPE_COVERAGE = 0.5
 # Portuguese-only function words used solely to decide whether "no" is English.
 _PT_FUNCTION_WORDS = frozenset(
     {"de", "do", "da", "dos", "das", "um", "os", "as", "ao", "aos", "pelo", "pela", "também"}
@@ -316,13 +352,62 @@ def _sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
-def _has_negation(text: str) -> bool:
+def _has_negation(text: str, claim_tokens: frozenset[str] | None = None) -> bool:
     """Return True when the text negates its predicate.
 
     Portuguese negators always count. The English-only token "no" counts only
     when the text is more English than Portuguese, so Portuguese contractions
     ("no fim de 2025") and "sem" ("sem custo adicional") are not negation.
+    A sentential operator ("É falso que X") flips the result. With
+    ``claim_tokens`` an operator counts only when its clause covers the claim.
+    Text without a counted operator is classified exactly as before; otherwise
+    every operator's own words (including the "não" of "não é falso que") are
+    removed before the token check, and only counted operators flip.
     """
+    operators = 0
+    flips = 0
+
+    def _remove(match: re.Match[str]) -> str:
+        nonlocal operators, flips
+        postposed = "scope" in match.re.groupindex
+        # A postposed operator wraps its proposition: keep the proposition so
+        # that a negation inside it is still seen by the token check.
+        kept = f" {match.group('scope')} " if postposed else " "
+        scope = match.group("scope") if postposed else _clause_after(match.string, match.end())
+        if claim_tokens is not None and not _covers_claim(scope, claim_tokens):
+            return kept
+        operators += 1
+        if match.group("negated") is None:
+            flips += 1
+        return kept
+
+    remainder = text
+    for pattern in (
+        _SENTENTIAL_NEGATION_POST_PT,
+        _SENTENTIAL_NEGATION_PT,
+        _SENTENTIAL_NEGATION_EN,
+    ):
+        remainder = pattern.sub(_remove, remainder)
+    if operators == 0:
+        return _has_token_negation(text)
+    return (flips % 2 == 1) != _has_token_negation(remainder)
+
+
+def _clause_after(text: str, start: int) -> str:
+    """Text from ``start`` to the end of its clause."""
+    end = _CLAUSE_END_RE.search(text, start)
+    return text[start : end.start() if end else len(text)]
+
+
+def _covers_claim(scope: str, claim_tokens: frozenset[str]) -> bool:
+    """The scope holds at least half of the claim's content tokens."""
+    if not claim_tokens:
+        return True
+    tokens = {token.casefold() for token in _TOKEN_RE.findall(scope)}
+    return len(claim_tokens & tokens) / len(claim_tokens) >= _OPERATOR_SCOPE_COVERAGE
+
+
+def _has_token_negation(text: str) -> bool:
     tokens = {token.casefold() for token in _TOKEN_RE.findall(text)}
     if _predicate_negators(text) & _NEGATION_TOKENS_PT:
         return True
@@ -959,7 +1044,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "6"
+    version = "7"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
@@ -1007,7 +1092,7 @@ class RuleStanceDetector:
                 date_conflict = self._date_conflict(claim_item.claim.text, item.excerpt)
                 evidence_has_date = bool(_extract_dates(item.excerpt))
                 negation_conflict = _has_negation(claim_item.claim.text) != _has_negation(
-                    item.excerpt
+                    item.excerpt, frozenset(claim_tokens)
                 )
                 direction_conflict = _direction_conflict(claim_item.claim.text, item.excerpt)
                 unverified_structured_fact = (
