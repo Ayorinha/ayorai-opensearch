@@ -1,8 +1,8 @@
 import json
-from types import SimpleNamespace
 from typing import Any
 from urllib.error import URLError
 
+import httpx
 import pytest
 
 from ayorai_attractor.providers.base import Provider, ProviderResponse
@@ -90,16 +90,15 @@ def test_http_search_response_contract(monkeypatch: pytest.MonkeyPatch) -> None:
     assert response.independent is True
 
 
-def test_opensearch_response_contract(monkeypatch: pytest.MonkeyPatch) -> None:
-    fake = SimpleNamespace(
-        raise_for_status=lambda: None,
-        json=lambda: {"hits": {"hits": [{"_source": {"title": "Doc", "content": "text"}}]}},
+def test_opensearch_response_contract() -> None:
+    transport = httpx.MockTransport(
+        lambda _: httpx.Response(
+            200, json={"hits": {"hits": [{"_source": {"title": "Doc", "content": "text"}}]}}
+        )
     )
-    monkeypatch.setattr(
-        "ayorai_attractor.providers.opensearch.httpx.post",
-        lambda *args, **kwargs: fake,
+    response = OpenSearchProvider("https://example.test", "documents", transport=transport).execute(
+        "query"
     )
-    response = OpenSearchProvider("https://example.test", "documents").execute("query")
     assert response.text == "Doc: text"
     assert response.source == "https://example.test/documents"
     assert response.excerpt == "Doc: text"

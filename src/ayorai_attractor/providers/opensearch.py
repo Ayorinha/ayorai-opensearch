@@ -1,10 +1,16 @@
+import json
 import os
 from typing import Any
 
 import httpx
 
 from ayorai_attractor.hybrid import RankedHit, rrf_fuse
+from ayorai_attractor.providers import _http
 from ayorai_attractor.providers.base import Provider, ProviderResponse
+
+
+class ResponseTooLargeError(httpx.TransportError):
+    """The search endpoint answered with a body above the provider limit."""
 
 
 class OpenSearchProvider(Provider):
@@ -18,6 +24,8 @@ class OpenSearchProvider(Provider):
         index: str,
         api_key: str | None = None,
         timeout: float = 10.0,
+        *,
+        transport: httpx.BaseTransport | None = None,
     ) -> None:
         if not endpoint.startswith("https://"):
             raise ValueError("OpenSearch endpoint must use HTTPS")
@@ -27,12 +35,37 @@ class OpenSearchProvider(Provider):
         self.index = index.strip()
         self.api_key = api_key
         self.timeout = timeout
+        self._transport = transport
 
-    def execute(self, query: str) -> ProviderResponse:
+    def _post_search(self, query: dict[str, object]) -> Any:
+        """POST a search and decode a JSON body of at most ``_http.MAX_RESPONSE_BYTES``.
+
+        Redirects are refused (the ApiKey header must reach only the configured
+        endpoint) and the body is streamed, so an oversized or endless answer
+        fails as a transport error instead of exhausting memory.
+        """
         headers = {"Accept": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"ApiKey {self.api_key}"
-        payload = {
+        limit = _http.MAX_RESPONSE_BYTES
+        with httpx.Client(
+            transport=self._transport, timeout=self.timeout, follow_redirects=False
+        ) as client:
+            with client.stream(
+                "POST", f"{self.endpoint}/{self.index}/_search", json=query, headers=headers
+            ) as response:
+                response.raise_for_status()
+                body = bytearray()
+                for chunk in response.iter_bytes():
+                    body += chunk
+                    if len(body) > limit:
+                        raise ResponseTooLargeError(
+                            f"search response exceeds {limit} bytes", request=response.request
+                        )
+        return json.loads(bytes(body))
+
+    def execute(self, query: str) -> ProviderResponse:
+        payload: dict[str, object] = {
             "size": 5,
             "query": {
                 "multi_match": {
@@ -41,14 +74,7 @@ class OpenSearchProvider(Provider):
                 }
             },
         }
-        response = httpx.post(
-            f"{self.endpoint}/{self.index}/_search",
-            json=payload,
-            headers=headers,
-            timeout=self.timeout,
-        )
-        response.raise_for_status()
-        body = response.json()
+        body = self._post_search(payload)
         hits = body.get("hits", {}).get("hits", [])
         excerpts = []
         for hit in hits:
@@ -92,8 +118,9 @@ class HybridOpenSearchProvider(OpenSearchProvider):
         rrf_k: int = 60,
         lexical_weight: float = 0.5,
         semantic_weight: float = 0.5,
+        transport: httpx.BaseTransport | None = None,
     ) -> None:
-        super().__init__(endpoint, index, api_key=api_key, timeout=timeout)
+        super().__init__(endpoint, index, api_key=api_key, timeout=timeout, transport=transport)
         if not semantic_field.strip():
             raise ValueError("semantic_field must not be empty")
         if not model_id.strip():
@@ -162,15 +189,5 @@ class HybridOpenSearchProvider(OpenSearchProvider):
         )
 
     def _search(self, query: dict[str, object]) -> list[dict[str, Any]]:
-        headers = {"Accept": "application/json"}
-        if self.api_key:
-            headers["Authorization"] = f"ApiKey {self.api_key}"
-        response = httpx.post(
-            f"{self.endpoint}/{self.index}/_search",
-            json=query,
-            headers=headers,
-            timeout=self.timeout,
-        )
-        response.raise_for_status()
-        body = response.json()
+        body = self._post_search(query)
         return list(body.get("hits", {}).get("hits", []))
