@@ -285,6 +285,41 @@ class AuditTraceStore:
         self._connection.commit()
         return replay.digest
 
+    def backup(self, destination: str) -> int:
+        """Write a consistent online copy of the store to a new file.
+
+        Uses SQLite's backup API, so it is safe while this process keeps writing
+        (writes wait for the copy). Refuses to overwrite an existing file and
+        checks the copy with PRAGMA integrity_check. Returns the number of traces.
+        """
+        target = Path(destination)
+        if target.exists():
+            raise FileExistsError(f"backup destination already exists: {destination}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        copy = sqlite3.connect(str(target))
+        try:
+            with self._lock:
+                self._connection.backup(copy)
+            if copy.execute("PRAGMA integrity_check").fetchone() != ("ok",):
+                raise sqlite3.DatabaseError(f"backup failed integrity_check: {destination}")
+            return int(copy.execute("SELECT COUNT(*) FROM audit_traces").fetchone()[0])
+        finally:
+            copy.close()
+
+    def verify_all(self) -> dict[str, int]:
+        """Replay-verify every stored trace (for example after a restore)."""
+        with self._lock:
+            trace_ids = [
+                str(row[0])
+                for row in self._connection.execute(
+                    "SELECT trace_id FROM audit_traces ORDER BY trace_id"
+                ).fetchall()
+            ]
+            counts = {"valid": 0, "invalid": 0}
+            for trace_id in trace_ids:
+                counts[self._verify_locked(trace_id)] += 1
+            return counts
+
     def verify(self, trace_id: str) -> ReplayIntegrity:
         with self._lock:
             return self._verify_locked(trace_id)
