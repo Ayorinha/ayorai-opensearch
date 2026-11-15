@@ -559,3 +559,27 @@ def test_rfc8785_integer_domain_fails_closed_with_valid_digest(
     assert result.rule_trace == ({"rule_id": "2.0.0/G1:SCHEMA_VIOLATION", "label": "gate"},)
     assert adjudication.verify_output(result.to_dict())
     assert len(result.output_sha256) == 64
+
+
+@pytest.mark.parametrize(
+    ("decision_state", "admissible"),
+    [(None, False), ("INVALID_INPUT", True)],
+)
+def test_adjudication_refuses_any_gate_result_that_did_not_pass(
+    decision_state: str | None, admissible: bool
+) -> None:
+    declared, gates = fixture([("s1", "a1", "SUPPORTS")])
+    forged = _forge_gate_result(gates)
+    object.__setattr__(forged, "decision_state", decision_state)
+    object.__setattr__(forged, "admissible", admissible)
+    with pytest.raises(ValueError, match="cannot adjudicate"):
+        _adjudicate_atoms(["a1"], declared, forged)
+
+
+def test_atomic_decision_is_immutable() -> None:
+    from dataclasses import FrozenInstanceError
+
+    declared, gates = fixture([("s1", "a1", "SUPPORTS")])
+    decision = _adjudicate_atoms(["a1"], declared, gates)[0]
+    with pytest.raises(FrozenInstanceError):
+        decision.verdict = "REFUTED"  # type: ignore[misc]

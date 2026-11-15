@@ -54,6 +54,10 @@ Exemplo de pesquisa com o provider local padrão:
 attractor search "consulta de exemplo" --mode balanced --max-agents 5
 ```
 
+Códigos de saída de `search` (e do comando `opensearch`, que executa o mesmo comando): **0** quando a operação foi concluída, inclusive com `verdict_authority: not_adjudicated`, que descreve o resultado e não é erro; **1** quando `operation_status` é `failed` (por exemplo, provider indisponível), com o JSON impresso mesmo assim; **2** para entrada inválida, com a mensagem em stderr e nada em stdout.
+
+A API valida a configuração de provider na inicialização e não sobe, como já faz com a autenticação, se `ATTRACTOR_PROVIDER` não for suportado, se `openai-compatible` estiver sem `OPENAI_API_KEY` ou sem URL HTTPS, se só um de `ATTRACTOR_OPENSEARCH_ENDPOINT`/`ATTRACTOR_OPENSEARCH_INDEX` estiver definido, ou se um endpoint de busca não usar HTTPS.
+
 O provider `mock` não exige rede nem credenciais e marca a saída como não independente. O adaptador OpenAI-compatível requer `ATTRACTOR_PROVIDER=openai-compatible` e `OPENAI_API_KEY`; `OPENAI_BASE_URL` e `ATTRACTOR_MODEL` são opcionais conforme `docs/providers.md`. Um provider de execução não é, por si só, fonte de evidência.
 
 A CLI de avaliação aceita somente `golden-v0`, `golden-v0.1` e `smoke-v0`. Exemplo para uma suíte Golden de desenvolvimento:
@@ -114,7 +118,7 @@ Execute os comandos no ambiente configurado para o commit que está sendo avalia
 
 ### Logs e rastreabilidade de requisições
 
-A API registra metadados estruturados por requisição: identificador de requisição, método, rota normalizada, status HTTP e duração. A resposta inclui `X-Request-ID`; um valor de entrada fora do padrão aceito é substituído por um identificador gerado. O nível é controlado por `ATTRACTOR_LOG_LEVEL`, com padrão `INFO`.
+A API registra metadados estruturados por requisição: identificador de requisição, método, rota normalizada, status HTTP e duração. A resposta inclui `X-Request-ID`, sempre gerado pelo servidor; um valor enviado pelo cliente é descartado. O nível é controlado por `ATTRACTOR_LOG_LEVEL`, com padrão `INFO`.
 
 O logger de acesso da aplicação não deve registrar corpos, afirmações, trechos de evidência, credenciais ou query strings. Ao investigar incidentes, use o identificador de requisição e metadados operacionais; não copie dados sensíveis para logs, issues ou pull requests. O rastro consultável pela API tem seu próprio contrato e não deve ser confundido com o log de acesso.
 
@@ -140,6 +144,7 @@ Este capítulo não define uma política de backup, restauração, alta disponib
 | `ATTRACTOR_API_KEY_PEPPER`, `ATTRACTOR_API_KEYS_HMAC_SHA256` | Segredos/digests exigidos no modo `api_key`; consulte `docs/security/API-AUTH.md`. |
 | `ATTRACTOR_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL`; padrão `INFO`. |
 | `ATTRACTOR_MAX_BODY_BYTES` | Limite inteiro positivo do corpo HTTP; padrão 2 MiB. |
+| `ATTRACTOR_MAX_INFLIGHT_HEAVY` | Máximo de requisições `POST /v1/*` em execução simultânea por processo; padrão 2. Acima disso a API responde HTTP 503 com `Retry-After: 1`. Inteiro positivo; valor inválido impede a inicialização. O limite é por worker: com vários workers ou réplicas, aplique também um limite global no gateway. |
 | `make test` | Executa pytest. |
 | `make lint` | Executa `ruff check .` e `ruff format --check .`. |
 | `make typecheck` | Executa mypy sobre `src/ayorai_attractor`. |

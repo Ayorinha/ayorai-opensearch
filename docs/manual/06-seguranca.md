@@ -38,7 +38,7 @@ Os procedimentos de geração e configuração de segredos estão em [API-AUTH.m
 
 ### Limite de entrada e logs
 
-O middleware de corpo limita requisições HTTP a 2 MiB por padrão; `ATTRACTOR_MAX_BODY_BYTES` aceita somente inteiro positivo. O middleware de contexto gera ou valida `X-Request-ID`, devolve esse cabeçalho na resposta e emite um registro estruturado com identificador, método, rota normalizada, status e duração. O registro de acesso não inclui corpo, afirmações, trechos de evidência, prompts ou credenciais.
+O middleware de corpo limita requisições HTTP a 2 MiB por padrão; `ATTRACTOR_MAX_BODY_BYTES` aceita somente inteiro positivo. O middleware de contexto gera `X-Request-ID` (um valor enviado pelo cliente é descartado), devolve esse cabeçalho na resposta e emite um registro estruturado com identificador, método, rota normalizada, status e duração. O registro de acesso não inclui corpo, afirmações, trechos de evidência, prompts ou credenciais.
 
 Falhas de autenticação retornam HTTP 401 com mensagem genérica. O endpoint `/health` é público para probes, mas confirma somente que a rota respondeu; não demonstra a saúde de todas as dependências.
 
@@ -62,7 +62,7 @@ Esses controles são verificações pontuais no SHA avaliado. Um resultado verde
 | `ATTRACTOR_API_KEYS_HMAC_SHA256` | Lista separada por vírgulas de digests HMAC-SHA-256 de 64 caracteres hexadecimais. |
 | `ATTRACTOR_MAX_BODY_BYTES` | Limite de corpo HTTP inteiro positivo; padrão 2 MiB. |
 | `ATTRACTOR_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL`; padrão `INFO`. |
-| `X-Request-ID` | Aceita identificador ASCII com 1–64 caracteres alfanuméricos/hífens; valor inválido é substituído. |
+| `X-Request-ID` | Sempre gerado pelo servidor (32 caracteres hexadecimais); o valor enviado pelo cliente é descartado. |
 | HTTP 401 / 413 / 422 | Falha de autenticação / corpo acima do limite / falha de validação, respectivamente. |
 
 ## Limites conhecidos

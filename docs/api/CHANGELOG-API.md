@@ -2,6 +2,19 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — admission control for verification routes
+
+- `POST /v1/check`, `/v1/fields`, `/v1/verify`, `/v1/audit` and `/v1/opensearch` now return **HTTP 503** with `Retry-After: 1` when more than `ATTRACTOR_MAX_INFLIGHT_HEAVY` (default 2) such requests are already running in the same worker process. The 503 response is documented in the OpenAPI document.
+- Measured on one worker with 16 clients sending 2 MB `/v1/check` bodies: p99 34.1 s → 3.3 s and peak RSS 1696 MB → 277 MB, with accepted throughput 0.47 → 0.57 requests/s. Clients should retry after `Retry-After`.
+- No request or response body changed. `GET /health` and `GET /v1/audit/{trace_id}` are not limited.
+
+## Unreleased — documented error responses match the implementation
+
+- The OpenAPI document no longer lists HTTP 400 on any route. No route returns 400: a body that is not valid JSON returns 422 with `type` `json_invalid`, as it already did.
+- A JSON body that is not valid UTF-8 now also returns 422 `json_invalid` (it returned 400 `There was an error parsing the body`). JSON text must be UTF-8 (RFC 8259, section 8.1).
+- Every `/v1/*` route now documents HTTP 401 (missing or invalid API key when `ATTRACTOR_AUTH_MODE=api_key`), and every `POST` route documents HTTP 413 (body above `ATTRACTOR_MAX_BODY_BYTES`). Both responses were already returned; only the document changes.
+- No request, response body or status code returned by the API changed.
+
 ## 2026-11-14 — `/v1/fields` negative values (field-check-4)
 
 - A minus sign (`-` or `−`) written right before a `number` or `money` value in the document belongs to it: `-5`, `R$ -100,00`, `R$-100,00` and `-R$ 100,00` are negative. Previously the sign was ignored, so an expected `5` matched a document `-5` (false `conforme`).

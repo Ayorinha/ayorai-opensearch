@@ -5,13 +5,19 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from ayorai_attractor.api.auth import APIKeyAuthMiddleware, validate_auth_configuration
+from ayorai_attractor.api.load_control import (
+    HeavyRouteConcurrencyLimitMiddleware,
+    max_inflight_from_env,
+)
 from ayorai_attractor.api.logging_config import configure_logging
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
@@ -23,6 +29,7 @@ from ayorai_attractor.models import (
     SearchResponse,
 )
 from ayorai_attractor.orchestrator import Attractor
+from ayorai_attractor.providers.factory import validate_provider_configuration
 from ayorai_attractor.verification.api_models import (
     ClaimJudgmentResponse,
     Judge2VerificationRequest,
@@ -63,6 +70,10 @@ audit_store = AuditTraceStore()
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Release persistent resources when the API process shuts down."""
     validate_auth_configuration()
+    # Fail closed like authentication: a provider configuration that every
+    # request would reject must not start a partially configured service.
+    validate_provider_configuration()
+    max_inflight_from_env()
     configure_logging()
     try:
         yield
@@ -70,8 +81,21 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         audit_store.close()
 
 
-_HTTP_400_RESPONSE: dict[str, Any] = {
-    "description": "Request body could not be parsed as JSON.",
+# Malformed JSON is reported as 422 (type json_invalid), never 400.
+_HTTP_401_RESPONSE: dict[str, Any] = {
+    "description": "Missing or invalid API key (ATTRACTOR_AUTH_MODE=api_key).",
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {"detail": {"type": "string"}},
+                "required": ["detail"],
+            }
+        }
+    },
+}
+_HTTP_413_RESPONSE: dict[str, Any] = {
+    "description": "Request body exceeds the configured size limit.",
     "content": {
         "application/json": {
             "schema": {
@@ -109,6 +133,26 @@ _HTTP_404_RESPONSE: dict[str, Any] = {
 
 _HTTP_429_RESPONSE: dict[str, Any] = {
     "description": "The request rate limit was exceeded.",
+    "headers": {
+        "Retry-After": {
+            "description": "Seconds to wait before retrying the request.",
+            "schema": {"type": "integer", "minimum": 1},
+        }
+    },
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {"detail": {"type": "string"}},
+                "required": ["detail"],
+            }
+        }
+    },
+}
+
+
+_HTTP_503_RESPONSE: dict[str, Any] = {
+    "description": "Too many verification requests in flight on this worker; retry later.",
     "headers": {
         "Retry-After": {
             "description": "Seconds to wait before retrying the request.",
@@ -201,7 +245,39 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.add_middleware(RequestBodyLimitMiddleware)
+# Between authentication and body buffering: unauthenticated requests never take
+# a slot, and a rejected request is answered before its body is read.
+app.add_middleware(HeavyRouteConcurrencyLimitMiddleware)
 app.add_middleware(APIKeyAuthMiddleware)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _body_encoding_as_json_invalid(request: Request, exc: StarletteHTTPException) -> Response:
+    """Answer a body that is not valid UTF-8 like any other malformed JSON (422).
+
+    FastAPI parses JSON bodies with ``json.loads(bytes)``. Invalid UTF-8 raises
+    UnicodeDecodeError rather than JSONDecodeError, which FastAPI turns into a
+    generic 400. JSON text must be UTF-8 (RFC 8259, section 8.1), so this is a
+    JSON decode error and gets the same documented 422 ``json_invalid`` envelope.
+    Every other HTTPException keeps FastAPI's default handling.
+    """
+    cause = exc.__cause__
+    if exc.status_code == 400 and isinstance(cause, UnicodeDecodeError):
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": [
+                    {
+                        "type": "json_invalid",
+                        "loc": ["body", cause.start],
+                        "msg": "JSON decode error",
+                        "input": {},
+                        "ctx": {"error": "Request body is not valid UTF-8"},
+                    }
+                ]
+            },
+        )
+    return await http_exception_handler(request, exc)
 
 
 @app.get("/health")
@@ -212,7 +288,13 @@ def health() -> dict[str, str]:
 @app.post(
     "/v1/opensearch",
     response_model=SearchResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
+    },
 )
 def opensearch(request: SearchRequest) -> SearchResponse:
     return engine.run(request)
@@ -221,7 +303,13 @@ def opensearch(request: SearchRequest) -> SearchResponse:
 @app.post(
     "/v1/audit",
     response_model=AuditResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
+    },
 )
 def audit(request: SearchRequest) -> AuditResponse:
     """Run the engine and expose a deterministic audit of its evidence."""
@@ -263,7 +351,13 @@ def _ingest_or_422(doc: CheckDocument, loc: list[Any]) -> IngestedDocument:
 @app.post(
     "/v1/check",
     response_model=CheckResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
+    },
 )
 def check(request: CheckRequest) -> CheckResponse:
     """Check claims, or an AI answer, against the supplied documents.
@@ -318,7 +412,13 @@ def check(request: CheckRequest) -> CheckResponse:
 @app.post(
     "/v1/fields",
     response_model=FieldsResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
+    },
 )
 def fields(request: FieldsRequest) -> FieldsResponse:
     """Compare submitted field values (amount, date, CPF/CNPJ, names) with a document.
@@ -416,9 +516,11 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
                 }
             },
         },
-        400: _HTTP_400_RESPONSE,
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
         422: _HTTP_422_RESPONSE,
         429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
     },
 )
 def verify(payload: Annotated[Any, Body()]) -> Any:
@@ -560,7 +662,12 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
 @app.get(
     "/v1/audit/{trace_id}",
     response_model=AuditTraceResponse,
-    responses={404: _HTTP_404_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        404: _HTTP_404_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+    },
 )
 def audit_trace(trace_id: str) -> AuditTraceResponse:
     """Return persisted audit metadata without exposing raw evidence or prompts."""
