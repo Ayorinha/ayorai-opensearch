@@ -6,9 +6,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY pyproject.toml README.md LICENSE ./
+COPY docker/requirements.lock ./docker/requirements.lock
 COPY src ./src
 
-RUN pip install --no-cache-dir . \
+# Dependencies come only from the hash-locked file (no resolution, wheels only);
+# the project itself is installed without resolving anything else, and the build
+# tools it needed are removed afterwards.
+RUN pip install --no-cache-dir --require-hashes --only-binary=:all: -r docker/requirements.lock \
+    && pip install --no-cache-dir --no-deps --no-build-isolation . \
+    && pip uninstall --yes setuptools wheel packaging \
     && groupadd --system attractor \
     && useradd --system --gid attractor --home-dir /app --shell /usr/sbin/nologin attractor \
     && chown -R attractor:attractor /app \
