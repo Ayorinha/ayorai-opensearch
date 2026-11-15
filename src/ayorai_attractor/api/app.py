@@ -5,13 +5,17 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from ayorai_attractor.api.auth import APIKeyAuthMiddleware, validate_auth_configuration
+from ayorai_attractor.api.auth import (
+    PRINCIPAL_STATE_KEY,
+    APIKeyAuthMiddleware,
+    validate_auth_configuration,
+)
 from ayorai_attractor.api.logging_config import configure_logging
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
@@ -204,6 +208,12 @@ app.add_middleware(RequestBodyLimitMiddleware)
 app.add_middleware(APIKeyAuthMiddleware)
 
 
+def _principal(http_request: Request) -> str | None:
+    """Principal set by APIKeyAuthMiddleware; None when authentication is off."""
+    value = getattr(http_request.state, PRINCIPAL_STATE_KEY, None)
+    return value if isinstance(value, str) else None
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "ayorai-attractor"}
@@ -223,11 +233,11 @@ def opensearch(request: SearchRequest) -> SearchResponse:
     response_model=AuditResponse,
     responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
 )
-def audit(request: SearchRequest) -> AuditResponse:
+def audit(request: SearchRequest, http_request: Request) -> AuditResponse:
     """Run the engine and expose a deterministic audit of its evidence."""
     response = engine.run(request)
     report = AuditReport.from_response(response)
-    audit_store.record(response, report)
+    audit_store.record(response, report, owner=_principal(http_request))
     return AuditResponse(
         trace_id=report.trace_id,
         verification=None,
@@ -562,9 +572,9 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
     response_model=AuditTraceResponse,
     responses={404: _HTTP_404_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
 )
-def audit_trace(trace_id: str) -> AuditTraceResponse:
+def audit_trace(trace_id: str, http_request: Request) -> AuditTraceResponse:
     """Return persisted audit metadata without exposing raw evidence or prompts."""
-    saved = audit_store.get(trace_id)
+    saved = audit_store.get(trace_id, requester=_principal(http_request))
     if saved is None:
         from fastapi import HTTPException
 

@@ -76,6 +76,18 @@ def _api_key_digest(presented_key: str, pepper: bytes) -> str:
     return hmac.new(pepper, presented_key.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
+PRINCIPAL_STATE_KEY = "ayorai_principal"
+
+
+def principal_for_digest(key_digest: str) -> str:
+    """Stable, non-secret identity of an authenticated API key.
+
+    Derived from the keyed digest (never from the key), truncated to 64 bits:
+    enough to tell configured keys apart, useless for guessing the key.
+    """
+    return "key:" + hashlib.sha256(key_digest.encode("ascii")).hexdigest()[:16]
+
+
 def validate_auth_configuration() -> None:
     """Validate auth and rate-limit environment settings during application startup."""
     _load_configuration()
@@ -262,4 +274,5 @@ class APIKeyAuthMiddleware:
             await self._reject(scope, receive, send, 429, "Rate limit exceeded", retry_after)
             return
 
+        scope.setdefault("state", {})[PRINCIPAL_STATE_KEY] = principal_for_digest(presented_digest)
         await self.app(scope, receive, send)

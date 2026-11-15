@@ -30,6 +30,7 @@ EDITS = {
     "failure_count": "failure_count + 1",
     "finding_count": "0",
     "schema_version": "schema_version + 1",
+    "owner": "'key:intruder'",
 }
 
 

@@ -21,7 +21,7 @@ from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.models import AuditTraceResponse, SearchResponse
 from ayorai_attractor.replay import ReplayBundle
 
-_SCHEMA_VERSION = 2
+_SCHEMA_VERSION = 3
 _R2_V1: Final = "r2-v1"
 _R2_V2: Final = "r2-v2"
 _R2_V3: Final = "r2-v3"
@@ -39,6 +39,7 @@ _R2_V3_FIELDS: Final = (
     "failure_count",
     "finding_count",
     "schema_version",
+    "owner",
 )
 ReplayIntegrity = Literal["valid", "invalid"]
 
@@ -123,8 +124,7 @@ class AuditTraceStore:
         ).fetchone()
         if exists is None:
             self._create_schema_v2(connection)
-            connection.execute(f"PRAGMA user_version = {_SCHEMA_VERSION}")
-            connection.commit()
+            self._finish_migration(connection)
             return
 
         columns = {
@@ -138,8 +138,7 @@ class AuditTraceStore:
             "schema_version",
         }
         if required.issubset(columns):
-            connection.execute(f"PRAGMA user_version = {_SCHEMA_VERSION}")
-            connection.commit()
+            self._finish_migration(connection)
             return
 
         rows = connection.execute(
@@ -196,6 +195,16 @@ class AuditTraceStore:
             )
         connection.execute("DROP TABLE audit_traces")
         connection.execute("ALTER TABLE audit_traces_v2 RENAME TO audit_traces")
+        self._finish_migration(connection)
+
+    @staticmethod
+    def _finish_migration(connection: sqlite3.Connection) -> None:
+        """Schema v3: traces record the principal that created them (NULL = legacy)."""
+        columns = {
+            str(row[1]) for row in connection.execute("PRAGMA table_info(audit_traces)").fetchall()
+        }
+        if "owner" not in columns:
+            connection.execute("ALTER TABLE audit_traces ADD COLUMN owner TEXT")
         connection.execute(f"PRAGMA user_version = {_SCHEMA_VERSION}")
         connection.commit()
 
@@ -221,11 +230,15 @@ class AuditTraceStore:
                 return _R2_V2
         return _R2_V1
 
-    def record(self, response: SearchResponse, report: AuditReport) -> str:
+    def record(
+        self, response: SearchResponse, report: AuditReport, owner: str | None = None
+    ) -> str:
         with self._lock:
-            return self._record_locked(response, report)
+            return self._record_locked(response, report, owner)
 
-    def _record_locked(self, response: SearchResponse, report: AuditReport) -> str:
+    def _record_locked(
+        self, response: SearchResponse, report: AuditReport, owner: str | None
+    ) -> str:
         fields: dict[str, Any] = {
             "legacy_verification": None,
             "verification": None,
@@ -236,6 +249,7 @@ class AuditTraceStore:
             "failure_count": report.failure_count,
             "finding_count": len(report.findings),
             "schema_version": _SCHEMA_VERSION,
+            "owner": owner,
         }
         replay = ReplayBundle.build(report.trace_id, _r2_v3_events(fields), version=_R2_V3)
         try:
@@ -245,8 +259,8 @@ class AuditTraceStore:
                     trace_id, legacy_verification, verification, operation_status,
                     evidence_count, independent_evidence_count,
                     verified_evidence_count, failure_count, finding_count,
-                    replay_digest, replay_version, schema_version
-                ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    replay_digest, replay_version, schema_version, owner
+                ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     report.trace_id,
@@ -259,6 +273,7 @@ class AuditTraceStore:
                     replay.digest,
                     _R2_V3,
                     fields["schema_version"],
+                    owner,
                 ),
             )
         except sqlite3.IntegrityError as exc:
@@ -279,15 +294,15 @@ class AuditTraceStore:
             """
             SELECT legacy_verification, verification, operation_status, evidence_count,
                    independent_evidence_count, verified_evidence_count, failure_count,
-                   finding_count, schema_version, replay_digest, replay_version
+                   finding_count, schema_version, owner, replay_digest, replay_version
             FROM audit_traces WHERE trace_id = ?
             """,
             (trace_id,),
         ).fetchone()
         if row is None:
             raise ValueError(f"Unknown audit trace: {trace_id}")
-        fields = dict(zip(_R2_V3_FIELDS, row[:9], strict=True))
-        stored_digest, version = row[9], row[10]
+        fields = dict(zip(_R2_V3_FIELDS, row[:10], strict=True))
+        stored_digest, version = row[10], row[11]
         if version == _R2_V3:
             events = _r2_v3_events(fields)
         elif version in (_R2_V1, _R2_V2):
@@ -307,20 +322,25 @@ class AuditTraceStore:
         rebuilt = ReplayBundle.build(trace_id, events, version=version)
         return "valid" if rebuilt.digest == stored_digest else "invalid"
 
-    def get(self, trace_id: str) -> AuditTraceResponse | None:
-        with self._lock:
-            return self._get_locked(trace_id)
+    def get(self, trace_id: str, requester: str | None = None) -> AuditTraceResponse | None:
+        """Return the trace only to its owner; legacy traces (no owner) to anyone.
 
-    def _get_locked(self, trace_id: str) -> AuditTraceResponse | None:
+        A trace owned by another principal is reported as missing (None), so the
+        lookup does not reveal that it exists.
+        """
+        with self._lock:
+            return self._get_locked(trace_id, requester)
+
+    def _get_locked(self, trace_id: str, requester: str | None) -> AuditTraceResponse | None:
         row = self._connection.execute(
             """
             SELECT trace_id, operation_status, evidence_count,
                    independent_evidence_count, verified_evidence_count,
                    failure_count, finding_count, replay_digest,
                    legacy_verification, replay_version
-            FROM audit_traces WHERE trace_id = ?
+            FROM audit_traces WHERE trace_id = ? AND (owner IS NULL OR owner = ?)
             """,
-            (trace_id,),
+            (trace_id, requester),
         ).fetchone()
         if row is None:
             return None
