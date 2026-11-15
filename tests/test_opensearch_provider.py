@@ -1,15 +1,19 @@
 import json
 from collections.abc import Callable, Iterator
+from types import SimpleNamespace
 from typing import Any
 
 import httpx
 import pytest
 
 from ayorai_attractor.providers import _http
+from ayorai_attractor.providers import opensearch as opensearch_module
 from ayorai_attractor.providers.opensearch import (
     HybridOpenSearchProvider,
     OpenSearchProvider,
+    ResponseDeadlineError,
     ResponseTooLargeError,
+    UnsupportedEncodingError,
 )
 
 ENDPOINT = "https://search.example.test"
@@ -131,6 +135,61 @@ def test_opensearch_stops_reading_an_endless_body() -> None:
         OpenSearchProvider(ENDPOINT, "documents", transport=transport).execute("query")
     # Reading stops just past the limit instead of buffering the whole stream.
     assert _http.MAX_RESPONSE_BYTES < produced <= _http.MAX_RESPONSE_BYTES + 65536
+
+
+def test_opensearch_requests_an_uncompressed_answer() -> None:
+    seen: list[httpx.Request] = []
+    OpenSearchProvider(
+        ENDPOINT, "documents", transport=_transport(lambda _: _hits(), seen)
+    ).execute("query")
+    assert seen[0].headers["Accept-Encoding"] == "identity"
+
+
+@pytest.mark.parametrize("encoding", ["gzip", "deflate", "br", "GZIP "])
+def test_opensearch_refuses_a_compressed_answer_before_decoding(encoding: str) -> None:
+    decoded: list[bytes] = []
+
+    def body() -> Iterator[bytes]:
+        decoded.append(b"read")
+        yield b"\x1f\x8b"
+
+    transport = _transport(
+        lambda _: httpx.Response(200, content=body(), headers={"Content-Encoding": encoding}), []
+    )
+    with pytest.raises(UnsupportedEncodingError):
+        OpenSearchProvider(ENDPOINT, "documents", transport=transport).execute("query")
+    assert decoded == []  # the body is never read
+
+
+@pytest.mark.parametrize("encoding", ["identity", ""])
+def test_opensearch_accepts_identity_encoding(encoding: str) -> None:
+    transport = _transport(
+        lambda _: httpx.Response(
+            200,
+            content=json.dumps({"hits": {"hits": []}}).encode(),
+            headers={"Content-Encoding": encoding},
+        ),
+        [],
+    )
+    response = OpenSearchProvider(ENDPOINT, "documents", transport=transport).execute("query")
+    assert response.text == "OpenSearch returned no matching documents."
+
+
+def test_opensearch_enforces_a_total_deadline_across_reads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = [1000.0]
+    monkeypatch.setattr(opensearch_module, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+
+    def drip() -> Iterator[bytes]:
+        while True:
+            clock[0] += 0.5  # each chunk arrives within the per-read timeout
+            yield b" "
+
+    transport = _transport(lambda _: httpx.Response(200, content=drip()), [])
+    with pytest.raises(ResponseDeadlineError):
+        OpenSearchProvider(ENDPOINT, "documents", timeout=2.0, transport=transport).execute("query")
+    assert clock[0] <= 1000.0 + 2.0 + 0.5
 
 
 def test_hybrid_opensearch_fuses_lexical_and_neural_hits() -> None:

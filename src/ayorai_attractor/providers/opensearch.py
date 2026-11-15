@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from typing import Any
 
 import httpx
@@ -11,6 +12,22 @@ from ayorai_attractor.providers.base import Provider, ProviderResponse
 
 class ResponseTooLargeError(httpx.TransportError):
     """The search endpoint answered with a body above the provider limit."""
+
+
+class UnsupportedEncodingError(httpx.TransportError):
+    """The search endpoint compressed its answer although identity was requested.
+
+    Decompression is refused: a small compressed body can expand far beyond the
+    size limit inside a single decoded chunk, before the limit is checked.
+    """
+
+
+class ResponseDeadlineError(httpx.TimeoutException):
+    """The search answer did not complete within the provider timeout.
+
+    httpx timeouts apply to each network operation, so a server that sends a few
+    bytes before every read timeout would otherwise keep the request open forever.
+    """
 
 
 class OpenSearchProvider(Provider):
@@ -41,13 +58,18 @@ class OpenSearchProvider(Provider):
         """POST a search and decode a JSON body of at most ``_http.MAX_RESPONSE_BYTES``.
 
         Redirects are refused (the ApiKey header must reach only the configured
-        endpoint) and the body is streamed, so an oversized or endless answer
-        fails as a transport error instead of exhausting memory.
+        endpoint). The body is read raw and uncompressed (``Accept-Encoding:
+        identity``; any other ``Content-Encoding`` is refused) and streamed, so an
+        oversized, endless or compressed answer fails as a transport error
+        instead of exhausting memory. The whole exchange must finish within
+        ``timeout`` seconds, checked between reads; each read is itself bounded
+        by ``timeout``, so a request lasts at most about twice ``timeout``.
         """
-        headers = {"Accept": "application/json"}
+        headers = {"Accept": "application/json", "Accept-Encoding": "identity"}
         if self.api_key:
             headers["Authorization"] = f"ApiKey {self.api_key}"
         limit = _http.MAX_RESPONSE_BYTES
+        deadline = time.monotonic() + self.timeout
         with httpx.Client(
             transport=self._transport, timeout=self.timeout, follow_redirects=False
         ) as client:
@@ -55,8 +77,20 @@ class OpenSearchProvider(Provider):
                 "POST", f"{self.endpoint}/{self.index}/_search", json=query, headers=headers
             ) as response:
                 response.raise_for_status()
+                encoding = response.headers.get("Content-Encoding", "identity").strip().lower()
+                if encoding not in {"", "identity"}:
+                    raise UnsupportedEncodingError(
+                        f"search response uses Content-Encoding {encoding!r}; "
+                        "only identity is accepted",
+                        request=response.request,
+                    )
                 body = bytearray()
-                for chunk in response.iter_bytes():
+                for chunk in response.iter_bytes():  # identity only: no decoding
+                    if time.monotonic() > deadline:
+                        raise ResponseDeadlineError(
+                            f"search response took longer than {self.timeout} s",
+                            request=response.request,
+                        )
                     body += chunk
                     if len(body) > limit:
                         raise ResponseTooLargeError(
