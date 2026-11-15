@@ -171,6 +171,13 @@ class APIKeyAuthMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
         self.mode, self.key_hashes, self.pepper = _load_configuration()
+        # Principals are derived once, from the configured digests: the request
+        # path only selects one, it never hashes data derived from the presented key.
+        self.principals = (
+            {digest: principal_for_digest(digest, self.pepper) for digest in self.key_hashes}
+            if self.pepper is not None
+            else {}
+        )
         limit = _positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS)
         window_seconds = _positive_int_env(
             "ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS
@@ -268,10 +275,11 @@ class APIKeyAuthMiddleware:
         presented_digest = _api_key_digest(presented_key, self.pepper)
         # Compare every configured digest so the matching key's position
         # in a rotation list does not short-circuit the loop.
-        matched = False
+        matched: str | None = None
         for configured_digest in self.key_hashes:
-            matched |= hmac.compare_digest(presented_digest, configured_digest)
-        if not matched:
+            if hmac.compare_digest(presented_digest, configured_digest):
+                matched = configured_digest
+        if matched is None:
             await self._reject(scope, receive, send, 401, "Unauthorized")
             return
 
@@ -280,7 +288,5 @@ class APIKeyAuthMiddleware:
             await self._reject(scope, receive, send, 429, "Rate limit exceeded", retry_after)
             return
 
-        scope.setdefault("state", {})[PRINCIPAL_STATE_KEY] = principal_for_digest(
-            presented_digest, self.pepper
-        )
+        scope.setdefault("state", {})[PRINCIPAL_STATE_KEY] = self.principals[matched]
         await self.app(scope, receive, send)
