@@ -90,3 +90,29 @@ def test_verify_returns_no_trace_identifier(client: TestClient) -> None:
     )
     assert response.status_code == 200
     assert "trace_id" not in response.json()
+
+
+@pytest.mark.parametrize(
+    "lookup",
+    [
+        "tr_doesnotexist",
+        "' OR '1'='1",
+        "%00",
+        "x" * 5000,
+        "chk_" + "0" * 32,
+    ],
+)
+def test_unknown_or_malformed_trace_identifiers_are_not_found(
+    client: TestClient, lookup: str
+) -> None:
+    _trace(client, "/v1/audit", SEARCH)  # the store is not empty
+    response = client.get(f"/v1/audit/{lookup}")
+    assert response.status_code == 404
+    assert response.json() == {"detail": "audit trace not found"}
+
+
+def test_trace_lookup_is_exact(client: TestClient) -> None:
+    trace_id = _trace(client, "/v1/audit", SEARCH)
+    assert client.get(f"/v1/audit/{trace_id}").status_code == 200
+    for variant in (trace_id.upper(), trace_id + " ", trace_id[:-1]):
+        assert client.get(f"/v1/audit/{variant}").status_code == 404
