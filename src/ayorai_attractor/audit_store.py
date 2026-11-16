@@ -461,16 +461,20 @@ class AuditTraceStore:
         rebuilt = ReplayBundle.build(trace_id, events, version=version)
         if rebuilt.digest != stored_digest:
             return "invalid"
-        if version == _R2_V3:
-            has_mac_metadata = stored_mac is not None or mac_key_id is not None
-            if has_mac_metadata or self._mac_keys:
-                # A trace that carries MAC metadata must never silently fall back
-                # to an unkeyed digest when its verification keys are absent.
-                key = dict(self._mac_keys).get(str(mac_key_id)) if mac_key_id is not None else None
-                if key is None or stored_mac is None:
-                    return "invalid"
-                if not hmac.compare_digest(_mac(key, version, stored_digest), str(stored_mac)):
-                    return "invalid"
+        has_mac_metadata = stored_mac is not None or mac_key_id is not None
+        if self._mac_keys:
+            # When keyed integrity is enabled, every replay version must carry a
+            # valid MAC. This also prevents downgrading an r2-v3 trace to a legacy
+            # replay version to bypass keyed verification.
+            key = dict(self._mac_keys).get(str(mac_key_id)) if mac_key_id is not None else None
+            if key is None or stored_mac is None:
+                return "invalid"
+            if not hmac.compare_digest(_mac(key, str(version), stored_digest), str(stored_mac)):
+                return "invalid"
+        elif has_mac_metadata:
+            # Never silently downgrade a previously keyed trace to digest-only
+            # verification when the verification keys are missing.
+            return "invalid"
         return "valid"
 
     def seal_unsealed(self) -> int:
@@ -485,19 +489,20 @@ class AuditTraceStore:
         sealed = 0
         with self._lock:
             rows = self._connection.execute(
-                "SELECT trace_id, replay_digest FROM audit_traces "
-                "WHERE replay_version = ? AND replay_mac IS NULL ORDER BY trace_id",
-                (_R2_V3,),
+                "SELECT trace_id, replay_digest, replay_version FROM audit_traces "
+                "WHERE replay_version IN (?, ?, ?) AND replay_mac IS NULL "
+                "AND mac_key_id IS NULL ORDER BY trace_id",
+                (_R2_V1, _R2_V2, _R2_V3),
             ).fetchall()
             saved_keys, self._mac_keys = self._mac_keys, ()
             try:
                 valid = [row for row in rows if self._verify_locked(str(row[0])) == "valid"]
             finally:
                 self._mac_keys = saved_keys
-            for trace_id, digest in valid:
+            for trace_id, digest, version in valid:
                 self._connection.execute(
                     "UPDATE audit_traces SET replay_mac = ?, mac_key_id = ? WHERE trace_id = ?",
-                    (_mac(key, _R2_V3, str(digest)), key_id, trace_id),
+                    (_mac(key, str(version), str(digest)), key_id, trace_id),
                 )
                 sealed += 1
             self._connection.commit()
