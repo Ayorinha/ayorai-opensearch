@@ -131,7 +131,9 @@ def test_mac_sealed_store_refuses_to_open_without_verification_keys(
 
     # Removing the key configuration must not silently downgrade the store or
     # allow new records to be written without MACs.
-    with pytest.raises(ValueError, match="ATTRACTOR_AUDIT_HMAC_KEYS must be configured"):
+    with pytest.raises(
+        ValueError, match="ATTRACTOR_AUDIT_HMAC_KEYS must be configured"
+    ):
         AuditTraceStore(str(path), mac_keys=())
 
 
@@ -194,7 +196,9 @@ def test_sealing_existing_traces_skips_tampered_ones(tmp_path: Path) -> None:
         assert store.verify("tr_bad") == "invalid"
         assert store.seal_unsealed() == 0
     # A store with any sealed trace must not reopen in digest-only mode.
-    with pytest.raises(ValueError, match="ATTRACTOR_AUDIT_HMAC_KEYS must be configured"):
+    with pytest.raises(
+        ValueError, match="ATTRACTOR_AUDIT_HMAC_KEYS must be configured"
+    ):
         AuditTraceStore(str(path), mac_keys=())
 
 
