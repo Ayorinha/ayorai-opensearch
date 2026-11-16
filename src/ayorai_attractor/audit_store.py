@@ -94,6 +94,24 @@ def audit_mac_keys_from_env() -> tuple[tuple[str, bytes], ...]:
     return tuple(keys)
 
 
+def audit_hmac_required_from_env() -> bool:
+    """Whether deployment policy requires keyed audit integrity at startup.
+
+    ATTRACTOR_AUDIT_HMAC_REQUIRED defaults to false for backwards-compatible
+    local development. Production deployments should set it to true and provide
+    ATTRACTOR_AUDIT_HMAC_KEYS through a secret manager or equivalent.
+    """
+    raw = os.getenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", "false").strip().lower()
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"", "0", "false", "no", "off"}:
+        return False
+    raise ValueError(
+        "ATTRACTOR_AUDIT_HMAC_REQUIRED must be a boolean "
+        "(true/false, 1/0, yes/no, on/off)"
+    )
+
+
 def _mac(key: bytes, version: str, digest: str) -> str:
     return hmac.new(key, f"{version}:{digest}".encode("ascii"), hashlib.sha256).hexdigest()
 
@@ -133,6 +151,7 @@ class AuditTraceStore:
         self.path = configured
         self._clock = clock or (lambda: datetime.now(UTC))
         self._mac_keys = audit_mac_keys_from_env() if mac_keys is None else mac_keys
+        self._hmac_required = audit_hmac_required_from_env()
         self._lock = RLock()
         self._legacy_policy = legacy_trace_policy_from_env()
         if configured != ":memory:":
@@ -149,6 +168,11 @@ class AuditTraceStore:
 
     def _require_hmac_keys_for_sealed_store(self) -> None:
         """Refuse a silent HMAC downgrade when opening an already sealed store."""
+        if self._hmac_required and not self._mac_keys:
+            raise ValueError(
+                "ATTRACTOR_AUDIT_HMAC_REQUIRED=true requires "
+                "ATTRACTOR_AUDIT_HMAC_KEYS to be configured"
+            )
         if self._mac_keys:
             return
         sealed = self._connection.execute(
