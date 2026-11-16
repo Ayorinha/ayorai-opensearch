@@ -461,14 +461,16 @@ class AuditTraceStore:
         rebuilt = ReplayBundle.build(trace_id, events, version=version)
         if rebuilt.digest != stored_digest:
             return "invalid"
-        if self._mac_keys and version == _R2_V3:
-            # With keys configured every r2-v3 trace must carry a MAC from a known
-            # key: a removed MAC is a downgrade, not a legacy trace.
-            key = dict(self._mac_keys).get(str(mac_key_id)) if mac_key_id is not None else None
-            if key is None or stored_mac is None:
-                return "invalid"
-            if not hmac.compare_digest(_mac(key, version, stored_digest), str(stored_mac)):
-                return "invalid"
+        if version == _R2_V3:
+            has_mac_metadata = stored_mac is not None or mac_key_id is not None
+            if has_mac_metadata or self._mac_keys:
+                # A trace that carries MAC metadata must never silently fall back
+                # to an unkeyed digest when its verification keys are absent.
+                key = dict(self._mac_keys).get(str(mac_key_id)) if mac_key_id is not None else None
+                if key is None or stored_mac is None:
+                    return "invalid"
+                if not hmac.compare_digest(_mac(key, version, stored_digest), str(stored_mac)):
+                    return "invalid"
         return "valid"
 
     def seal_unsealed(self) -> int:
