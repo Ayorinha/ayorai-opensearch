@@ -140,11 +140,26 @@ class AuditTraceStore:
         self._connection = sqlite3.connect(self.path, check_same_thread=False)
         try:
             self._migrate()
+            self._require_hmac_keys_for_sealed_store()
         except BaseException:
-            # A failed migration must not leak the connection; the rollback in
-            # _migrate_locked already left the database as it was.
+            # A failed migration or fail-closed configuration check must not
+            # leak the connection; migration rollback leaves the database intact.
             self._connection.close()
             raise
+
+    def _require_hmac_keys_for_sealed_store(self) -> None:
+        """Refuse a silent HMAC downgrade when opening an already sealed store."""
+        if self._mac_keys:
+            return
+        sealed = self._connection.execute(
+            "SELECT 1 FROM audit_traces "
+            "WHERE replay_mac IS NOT NULL OR mac_key_id IS NOT NULL LIMIT 1"
+        ).fetchone()
+        if sealed is not None:
+            raise ValueError(
+                "ATTRACTOR_AUDIT_HMAC_KEYS must be configured to open a store "
+                "containing HMAC-sealed traces"
+            )
 
     def __enter__(self) -> AuditTraceStore:
         return self
