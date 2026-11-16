@@ -75,7 +75,7 @@ def test_with_a_key_a_recomputed_digest_is_detected(tmp_path: Path) -> None:
         assert store.verify("tr_m") == "invalid"
 
 
-def test_mac_sealed_trace_fails_closed_when_verification_keys_are_missing(
+def test_mac_sealed_store_refuses_to_open_without_verification_keys(
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "a.sqlite3"
@@ -83,10 +83,10 @@ def test_mac_sealed_trace_fails_closed_when_verification_keys_are_missing(
         _record(store)
         assert store.verify("tr_m") == "valid"
 
-    # Removing the key configuration must not silently downgrade a signed trace
-    # to digest-only verification.
-    with AuditTraceStore(str(path), mac_keys=()) as store:
-        assert store.verify("tr_m") == "invalid"
+    # Removing the key configuration must not silently downgrade the store or
+    # allow new records to be written without MACs.
+    with pytest.raises(ValueError, match="ATTRACTOR_AUDIT_HMAC_KEYS must be configured"):
+        AuditTraceStore(str(path), mac_keys=())
 
 
 @pytest.mark.parametrize(
