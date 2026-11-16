@@ -1,14 +1,18 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-13 — after publication of v0.8.0
+Updated: 2026-11-16 — main @ 267a29e (merge PR #569); post-merge CI not confirmed
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-11-13
+## Estado atual — 2026-11-16
 
 - **Release v0.8.0 publicada:** [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0), publicada em 13/11/2026 às 12:51:50 UTC. A tag aponta para o commit `92ea5eb86b69724b05834d98c326e8315bb6b655`, cuja assinatura GitHub foi verificada como válida.
+- **Main em 2026-11-16:** `267a29e64f020f9e524813ec8daf266efba96d0b`, merge por squash da PR [#569](https://github.com/Ayorinha/ayorai-opensearch/pull/569), atualização de Ruff de `0.17.4` para `0.17.5`. A alteração é restrita à dependência de desenvolvimento.
+- **CI pós-merge da main:** não confirmado para `267a29e64f020f9e524813ec8daf266efba96d0b`. As consultas de status combinado e de workflows associadas a esse SHA não retornaram checks/runs. Os nove workflows aprovados na PR #569 pertencem ao head da PR, não substituem evidência pós-merge.
+- **PRs abertas observadas em 2026-11-16:** a [#571](https://github.com/Ayorinha/ayorai-opensearch/pull/571) propõe o detector v10 e alteração da referência Golden v0.1; permanece bloqueada até aprovação metodológica específica. As PRs de RGC, benchmark e reprodutibilidade continuam sujeitas aos gates humanos, às dependências e à governança científica. A lista dinâmica do GitHub prevalece sobre este registro histórico.
+
 - **Versão de código:** `0.8.0` em `pyproject.toml`, `src/ayorai_attractor/__init__.py` e `CITATION.cff`; `CITATION.cff` registra a data de lançamento 2026-11-13.
 - **API documental:** `POST /v1/check` verifica afirmações/respostas de IA contra texto ou PDF com camada de texto, preservando offsets e página; `UNVERIFIED` representa abstenção (#511). `POST /v1/fields` compara campos documentais (dinheiro, data, CPF/CNPJ, número e texto) e devolve os resultados `conforme`, `divergente`, `ambiguo`, `ausente` e `invalido` (#511).
 - **Rastreabilidade das APIs:** o rastro de `/v1/check` é vinculado às páginas (#516); em `/v1/fields`, ao documento completo (#515).
