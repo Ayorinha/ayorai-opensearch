@@ -64,7 +64,7 @@ O `AuditTraceStore` usa SQLite local e grava um resumo operacional, não o conte
 
 **Limite de confiança:** SQLite e replay digest não são armazenamento imutável nem prova contra administrador ou processo com acesso de escrita. HMAC mantido fora do banco dificulta que alguém com acesso somente ao arquivo SQLite forje rastros válidos, mas não impede exclusão, rollback de cópias antigas, indisponibilidade ou comprometimento da chave. Proteja o banco, o host e as chaves separadamente; aplique controle de acesso, retenção e cópias de segurança conforme a política de dados.
 
-O método de backup usa a API de backup online do SQLite, recusa sobrescrever um destino existente e executa `PRAGMA integrity_check` na cópia. Após restauração, execute a verificação de replay de todos os rastros (`verify_all()`) e preserve a chave HMAC correspondente à época dos registros. Integridade estrutural do SQLite e validade do replay são verificações distintas.
+O método de backup usa a API de backup online do SQLite, recusa sobrescrever um destino existente e executa `PRAGMA integrity_check` na cópia. Após restauração, execute a verificação de replay de todos os rastros (`verify_all()`) e preserve todas as chaves HMAC ainda referenciadas pelos rastros retidos. Remover uma chave histórica antes da expiração dos rastros correspondentes faz esses rastros falharem na verificação. Integridade estrutural do SQLite e validade do replay são verificações distintas.
 
 ### Análise de segurança e supply chain
 
