@@ -157,7 +157,7 @@ Restauração:
 3. Com as mesmas `ATTRACTOR_AUDIT_HMAC_KEYS` da produção, execute `AuditTraceStore(caminho).verify_all()`; o esperado é `invalid` igual a 0.
 4. Suba o serviço.
 
-Com HMAC, mantenha as chaves em custódia separada do backup do banco: quem tem as duas coisas pode reselar registros. Rastros gravados antes de configurar as chaves podem ser selados uma vez com `seal_unsealed()`, que só sela rastros cujo digest ainda confere. Retirar uma chave da lista invalida os rastros assinados por ela.
+Com HMAC, mantenha as chaves em custódia separada do backup do banco: quem tem as duas coisas pode reselar registros. Rastros gravados antes de configurar as chaves podem ser selados uma vez com `seal_unsealed()`, que só sela rastros cujo digest ainda confere. A rotina cobre r2-v1, r2-v2 e r2-v3 e preserva a versão de replay. Ao habilitar HMAC em uma base existente, execute-a com a lista completa de chaves antes de usar `verify_all()` como gate: com HMAC configurado, todas as versões suportadas precisam ter MAC válido. Retirar uma chave da lista invalida os rastros assinados por ela.
 
 Retenção: `purge_recorded_before(data_com_fuso)` remove rastros gravados antes da data e devolve quantos removeu; rastros antigos sem `recorded_at` nunca são removidos por esse método. O prazo de retenção e a base legal são decisões do controlador dos dados e não estão definidos no repositório.
 
