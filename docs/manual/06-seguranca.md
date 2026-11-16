@@ -15,6 +15,8 @@ O contrato de verificação separa o conteúdo que chega de usuários, documento
 
 O modelo de ameaças delimita o escopo: integridade de afirmações, evidências e proveniência, cálculo determinístico do veredito, integridade de replay, isolamento de conjuntos de avaliação, licenças e controles de CI/supply chain. Não promete provar a verdade de uma fonte externa, proteger a máquina/conta GitHub/rede/credenciais do operador, impedir comportamento malicioso de dependências comprometidas ou garantir generalização.
 
+**Limite semântico importante entre endpoints:** em `/v1/check`, o detector de stance deriva as posições a partir dos documentos fornecidos. Em `/v1/verify` (`r1-a` e `r2-a`), as stances são fornecidas pelo chamador; o Judge valida a estrutura e as referências de evidência (em `r2-a`, offsets e trechos contra `source_texts`; em `r1-a`, intervalos de offsets e metadados de origem), mas não rederiva nem confirma se a stance fornecida é semanticamente correta. Portanto, `/v1/verify` não deve ser descrito como verificação semântica independente de uma stance fornecida pelo cliente.
+
 ### Proveniência e citações
 
 - O gate de síntese exige pelo menos um identificador de evidência conhecido para cada afirmação gerada; afirmações sem citação válida resultam em abstenção.
