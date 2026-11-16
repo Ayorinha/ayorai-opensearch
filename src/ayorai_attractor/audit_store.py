@@ -136,7 +136,7 @@ def _mac_for_trace(
     }
     canonical = json.dumps(
         payload,
-        ensure_ascii=False,
+        ensure_ascii=True,
         sort_keys=True,
         separators=(",", ":"),
         allow_nan=False,
