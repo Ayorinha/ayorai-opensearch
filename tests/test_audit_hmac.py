@@ -210,7 +210,9 @@ def test_legacy_r2_v1_traces_can_be_sealed_before_keyed_verification(
         assert store.verify("tr_m") == "valid"
 
 
-def test_hmac_keyed_trace_cannot_downgrade_to_legacy_replay_version(tmp_path: Path) -> None:
+def test_hmac_keyed_trace_cannot_downgrade_to_legacy_replay_version(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "a.sqlite3"
     with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
         _record(store)
