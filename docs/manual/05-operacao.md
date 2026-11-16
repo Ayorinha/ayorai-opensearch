@@ -1,4 +1,4 @@
-Estado: Atual · Referência: main @ 85d6c2b + integração local · Atualizado: 2026-11-15
+Estado: Atual · Referência: main @ 345e94f (base desta PR) · Atualizado: 2026-11-16
 Fontes de verdade: `Makefile`, `pyproject.toml`, `src/ayorai_attractor/cli/main.py`, `src/ayorai_attractor/evaluation/golden.py`, `docs/providers.md`, `docker-compose.yml`, `docker/Dockerfile`, `docs/DOCKER.md`, `docs/security/API-AUTH.md`, `src/ayorai_attractor/api/app.py`, `src/ayorai_attractor/api/auth.py`, `src/ayorai_attractor/api/logging_config.py`, `src/ayorai_attractor/api/load_control.py`, `src/ayorai_attractor/audit_store.py`, testes `tests/test_cli_contract.py`, `tests/test_cli_module.py`, `tests/test_reproduce_script.py` e testes operacionais/API correspondentes.
 
 # 05 — Operação e execução
