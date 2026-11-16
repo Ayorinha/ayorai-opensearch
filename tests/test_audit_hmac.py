@@ -75,6 +75,20 @@ def test_with_a_key_a_recomputed_digest_is_detected(tmp_path: Path) -> None:
         assert store.verify("tr_m") == "invalid"
 
 
+def test_mac_sealed_trace_fails_closed_when_verification_keys_are_missing(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "a.sqlite3"
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        _record(store)
+        assert store.verify("tr_m") == "valid"
+
+    # Removing the key configuration must not silently downgrade a signed trace
+    # to digest-only verification.
+    with AuditTraceStore(str(path), mac_keys=()) as store:
+        assert store.verify("tr_m") == "invalid"
+
+
 @pytest.mark.parametrize(
     "tamper",
     [
