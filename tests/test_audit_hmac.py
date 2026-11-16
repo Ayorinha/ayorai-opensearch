@@ -1,4 +1,4 @@
-""""Keyed MACs authenticate audit traces against writers of the SQLite file.
+"""Keyed MACs authenticate audit traces against writers of the SQLite file.
 
 Threat model: an attacker who can write the database but does not hold
 ATTRACTOR_AUDIT_HMAC_KEYS can no longer forge a trace by recomputing the
