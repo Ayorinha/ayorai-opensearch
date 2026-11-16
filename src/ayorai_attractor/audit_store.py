@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import os
 import re
 import sqlite3
@@ -114,6 +115,33 @@ def audit_hmac_required_from_env() -> bool:
 
 def _mac(key: bytes, version: str, digest: str) -> str:
     return hmac.new(key, f"{version}:{digest}".encode("ascii"), hashlib.sha256).hexdigest()
+
+
+def _mac_for_trace(
+    key: bytes, version: str, digest: str, fields: dict[str, Any]
+) -> str:
+    """Authenticate the full persisted row when a legacy digest omits columns.
+
+    r2-v1 and r2-v2 intentionally retain their historical digest contracts.
+    Their HMAC must therefore bind the schema-v3 fields that those digests do
+    not cover (notably owner and recorded_at). r2-v3 already binds every field.
+    """
+    if version == _R2_V3:
+        return _mac(key, version, digest)
+    payload = {
+        "domain": "ayorai.audit.legacy-row.v1",
+        "replay_version": version,
+        "replay_digest": digest,
+        "fields": {name: fields[name] for name in _R2_V3_FIELDS},
+    }
+    canonical = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hmac.new(key, canonical, hashlib.sha256).hexdigest()
 
 
 LEGACY_TRACE_POLICIES = ("hidden", "shared")
@@ -508,7 +536,8 @@ class AuditTraceStore:
             key = dict(self._mac_keys).get(str(mac_key_id)) if mac_key_id is not None else None
             if key is None or stored_mac is None:
                 return "invalid"
-            if not hmac.compare_digest(_mac(key, str(version), stored_digest), str(stored_mac)):
+            expected_mac = _mac_for_trace(key, str(version), str(stored_digest), fields)
+            if not hmac.compare_digest(expected_mac, str(stored_mac)):
                 return "invalid"
         elif has_mac_metadata:
             # Never silently downgrade a previously keyed trace to digest-only
@@ -530,7 +559,11 @@ class AuditTraceStore:
         sealed = 0
         with self._lock:
             rows = self._connection.execute(
-                "SELECT trace_id, replay_digest, replay_version FROM audit_traces "
+                "SELECT trace_id, replay_digest, replay_version, "
+                "legacy_verification, verification, operation_status, evidence_count, "
+                "independent_evidence_count, verified_evidence_count, failure_count, "
+                "finding_count, schema_version, owner, recorded_at, software_version "
+                "FROM audit_traces "
                 "WHERE replay_version IN (?, ?, ?) AND replay_mac IS NULL "
                 "AND mac_key_id IS NULL ORDER BY trace_id",
                 (_R2_V1, _R2_V2, _R2_V3),
@@ -540,10 +573,13 @@ class AuditTraceStore:
                 valid = [row for row in rows if self._verify_locked(str(row[0])) == "valid"]
             finally:
                 self._mac_keys = saved_keys
-            for trace_id, digest, version in valid:
+            for row in valid:
+                trace_id, digest, version, *field_values = row
+                fields = dict(zip(_R2_V3_FIELDS, field_values, strict=True))
+                replay_mac = _mac_for_trace(key, str(version), str(digest), fields)
                 self._connection.execute(
                     "UPDATE audit_traces SET replay_mac = ?, mac_key_id = ? WHERE trace_id = ?",
-                    (_mac(key, str(version), str(digest)), key_id, trace_id),
+                    (replay_mac, key_id, trace_id),
                 )
                 sealed += 1
             self._connection.commit()
