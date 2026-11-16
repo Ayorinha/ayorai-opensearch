@@ -1,4 +1,4 @@
-"""Keyed MACs authenticate audit traces against writers of the SQLite file.
+""""Keyed MACs authenticate audit traces against writers of the SQLite file.
 
 Threat model: an attacker who can write the database but does not hold
 ATTRACTOR_AUDIT_HMAC_KEYS can no longer forge a trace by recomputing the
@@ -147,9 +147,9 @@ def test_sealing_existing_traces_skips_tampered_ones(tmp_path: Path) -> None:
         assert store.verify("tr_ok") == "valid"
         assert store.verify("tr_bad") == "invalid"
         assert store.seal_unsealed() == 0
-    with AuditTraceStore(str(path), mac_keys=()) as store:
-        with pytest.raises(ValueError, match="not configured"):
-            store.seal_unsealed()
+    # A store with any sealed trace must not reopen in digest-only mode.
+    with pytest.raises(ValueError, match="ATTRACTOR_AUDIT_HMAC_KEYS must be configured"):
+        AuditTraceStore(str(path), mac_keys=())
 
 
 def test_legacy_r2_v2_traces_can_be_sealed_before_keyed_verification(
