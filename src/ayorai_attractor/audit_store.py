@@ -108,8 +108,7 @@ def audit_hmac_required_from_env() -> bool:
     if raw in {"", "0", "false", "no", "off"}:
         return False
     raise ValueError(
-        "ATTRACTOR_AUDIT_HMAC_REQUIRED must be a boolean "
-        "(true/false, 1/0, yes/no, on/off)"
+        "ATTRACTOR_AUDIT_HMAC_REQUIRED must be a boolean (true/false, 1/0, yes/no, on/off)"
     )
 
 
@@ -117,9 +116,7 @@ def _mac(key: bytes, version: str, digest: str) -> str:
     return hmac.new(key, f"{version}:{digest}".encode("ascii"), hashlib.sha256).hexdigest()
 
 
-def _mac_for_trace(
-    key: bytes, version: str, digest: str, fields: dict[str, Any]
-) -> str:
+def _mac_for_trace(key: bytes, version: str, digest: str, fields: dict[str, Any]) -> str:
     """Authenticate the full persisted row when a legacy digest omits columns.
 
     r2-v1 and r2-v2 intentionally retain their historical digest contracts.
