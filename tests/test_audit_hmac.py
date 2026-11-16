@@ -20,6 +20,7 @@ from ayorai_attractor.audit_store import (
     _R2_V3_FIELDS,
     AuditTraceStore,
     _r2_v3_events,
+    audit_hmac_required_from_env,
     audit_mac_keys_from_env,
 )
 from ayorai_attractor.models import SearchResponse
@@ -57,6 +58,51 @@ def _set(path: Path, sql: str, trace_id: str = "tr_m") -> None:
     with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(f"UPDATE audit_traces SET {sql} WHERE trace_id = ?", (trace_id,))  # noqa: S608
 
+
+
+def test_hmac_required_policy_fails_closed_without_keys_even_for_an_empty_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", "true")
+    path = tmp_path / "empty.sqlite3"
+    with pytest.raises(
+        ValueError,
+        match="ATTRACTOR_AUDIT_HMAC_REQUIRED=true requires ATTRACTOR_AUDIT_HMAC_KEYS",
+    ):
+        AuditTraceStore(str(path), mac_keys=())
+
+
+def test_hmac_required_policy_survives_removal_of_all_database_mac_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "a.sqlite3"
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        _record(store)
+        assert store.verify("tr_m") == "valid"
+
+    # Simulate a database-only attacker removing every in-database indication
+    # that HMAC had been used. Deployment policy remains outside the SQLite file.
+    _set(path, "replay_mac = NULL, mac_key_id = NULL")
+    monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", "true")
+    with pytest.raises(
+        ValueError,
+        match="ATTRACTOR_AUDIT_HMAC_REQUIRED=true requires ATTRACTOR_AUDIT_HMAC_KEYS",
+    ):
+        AuditTraceStore(str(path), mac_keys=())
+
+
+def test_hmac_required_policy_accepts_explicit_boolean_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for value in ("true", "1", "yes", "on"):
+        monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", value)
+        assert audit_hmac_required_from_env() is True
+    for value in ("false", "0", "no", "off", ""):
+        monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", value)
+        assert audit_hmac_required_from_env() is False
+    monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", "sometimes")
+    with pytest.raises(ValueError, match="must be a boolean"):
+        audit_hmac_required_from_env()
 
 def test_without_keys_a_recomputed_digest_still_passes(tmp_path: Path) -> None:
     path = tmp_path / "a.sqlite3"
