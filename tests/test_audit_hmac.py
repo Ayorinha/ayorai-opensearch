@@ -59,7 +59,6 @@ def _set(path: Path, sql: str, trace_id: str = "tr_m") -> None:
         connection.execute(f"UPDATE audit_traces SET {sql} WHERE trace_id = ?", (trace_id,))  # noqa: S608
 
 
-
 def test_hmac_required_policy_fails_closed_without_keys_even_for_an_empty_store(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -103,6 +102,7 @@ def test_hmac_required_policy_accepts_explicit_boolean_values(
     monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", "sometimes")
     with pytest.raises(ValueError, match="must be a boolean"):
         audit_hmac_required_from_env()
+
 
 def test_without_keys_a_recomputed_digest_still_passes(tmp_path: Path) -> None:
     path = tmp_path / "a.sqlite3"
