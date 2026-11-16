@@ -264,6 +264,48 @@ def test_legacy_r2_v1_traces_can_be_sealed_before_keyed_verification(
         assert store.verify("tr_m") == "invalid"
 
 
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [
+        ("owner", "'attacker'"),
+        ("recorded_at", "'2026-01-01T00:00:00.000000Z'"),
+        ("software_version", "'0.0.0-attacker'"),
+        ("finding_count", "999"),
+    ],
+)
+def test_legacy_hmac_authenticates_schema_v3_fields(
+    tmp_path: Path, column: str, value: str
+) -> None:
+    path = tmp_path / "legacy.sqlite3"
+    with AuditTraceStore(str(path), mac_keys=()) as store:
+        _record(store)
+    legacy = ReplayBundle.build(
+        "tr_m",
+        [
+            {
+                "event": "audit.completed",
+                "verification": "not_adjudicated",
+                "evidence_count": 0,
+                "failure_count": 0,
+            }
+        ],
+        version="r2-v2",
+    ).digest
+    _set(
+        path,
+        f"replay_version = 'r2-v2', replay_digest = '{legacy}', "
+        "replay_mac = NULL, mac_key_id = NULL",
+    )
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        assert store.seal_unsealed() == 1
+        assert store.verify("tr_m") == "valid"
+
+    # Each field below is outside the historical r2-v2 digest contract.
+    _set(path, f"{column} = {value}")
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        assert store.verify("tr_m") == "invalid"
+
+
 def test_hmac_keyed_trace_cannot_downgrade_to_legacy_replay_version(
     tmp_path: Path,
 ) -> None:
