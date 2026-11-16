@@ -1,5 +1,5 @@
 Estado: Atual · Referência: main @ 267a29e · Atualizado: 2026-11-16
-Fontes de verdade: `docs/THREAT-MODEL.md`, `docs/security/API-AUTH.md`, `docs/security/RED-TEAM.md`, `src/ayorai_attractor/api/auth.py`, `src/ayorai_attractor/api/request_context.py`, `src/ayorai_attractor/api/app.py`, `src/ayorai_attractor/api/load_control.py`, `src/ayorai_attractor/audit_store.py`, `src/ayorai_attractor/verification/excerpt.py`, `src/ayorai_attractor/synthesis.py`, `src/ayorai_attractor/verification/judge2/gates.py`, `src/ayorai_attractor/redteam.py`, workflows `.github/workflows/security.yml` and `.github/workflows/codeql.yml`, testes `tests/test_api_auth.py`, `tests/test_api_request_context.py`, `tests/test_api_load_control.py`, `tests/test_audit_store.py`, `tests/test_verification_response_security.py` e testes de segurança do Judge.
+Fontes de verdade: `docs/THREAT-MODEL.md`, `docs/security/API-AUTH.md`, `docs/security/RED-TEAM.md`, `src/ayorai_attractor/api/auth.py`, `src/ayorai_attractor/api/request_context.py`, `src/ayorai_attractor/api/app.py`, `src/ayorai_attractor/api/load_control.py`, `src/ayorai_attractor/audit_store.py`, `src/ayorai_attractor/verification/excerpt.py`, `src/ayorai_attractor/synthesis.py`, `src/ayorai_attractor/verification/judge2/gates.py`, `src/ayorai_attractor/redteam.py`, workflows `.github/workflows/security.yml` and `.github/workflows/codeql.yml`, testes `tests/test_api_auth.py`, `tests/test_api_request_context.py`, `tests/test_api_load_control.py`, `tests/test_audit_store.py`, `tests/test_audit_hmac.py`, `tests/test_verification_response_security.py` e testes de segurança do Judge.
 
 # 06 — Segurança e limites de confiança
 
@@ -97,6 +97,10 @@ Esses controles são verificações pontuais no SHA avaliado. Um resultado verde
 | `ATTRACTOR_AUDIT_DB` | Caminho do arquivo SQLite de auditoria; padrão `.attractor/audit.sqlite3`. |
 | `ATTRACTOR_AUDIT_HMAC_KEYS` | Chaves HMAC externas para integridade criptográfica dos rastros r2-v3; vazio/desconfigurado desabilita MAC. |
 | `ATTRACTOR_AUDIT_LEGACY_TRACES` | `hidden` (padrão) ou `shared` para rastros legados sem proprietário. |
+| `ATTRACTOR_RATE_LIMIT_REQUESTS` | Requisições por janela fixa; padrão 120. |
+| `ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS` | Duração da janela fixa em segundos; padrão 60. |
+| `ATTRACTOR_RATE_LIMIT_MAX_CLIENTS` | Capacidade da tabela de identidades IP; padrão 10.000. |
+| `ATTRACTOR_INFLIGHT_LOCK_DIR` | Diretório de locks POSIX quando `ATTRACTOR_INFLIGHT_SCOPE=host`; deve ser privado e pertencer ao usuário do serviço. |
 
 ## Limites conhecidos
 
@@ -106,6 +110,7 @@ Esses controles são verificações pontuais no SHA avaliado. Um resultado verde
 - O runtime não prova a veracidade de fontes externas, não substitui avaliação jurídica de licenças e não garante generalização além dos dados avaliados.
 - Hashes, logs estruturados, CI e autenticação não constituem certificação, parceria institucional, garantia contra adulteração ou evidência de prontidão para produção.
 - O conjunto Golden v1 oculto deve permanecer fora do desenvolvimento. Nenhum caso de piloto, desenvolvimento ou avaliação confirmatória RGC deve ser enviado a assistentes/modelos ou executado no ATTRACTOR sem os gates explícitos definidos pelo mantenedor.
+- **Limite de isolamento do Golden v1:** o controle atual é parcialmente procedimental. `.gitignore` e `tests/test_golden_v1_isolation.py` impedem que arquivos ocultos sejam adicionados ao repositório, mas o repositório não fornece controle técnico de acesso que impeça um desenvolvedor ou job autorizado a ler o material de consultá-lo ou usá-lo no desenvolvimento. A lacuna está registrada no modelo de ameaças e exige controles operacionais de acesso/execução; não deve ser descrita como isolamento técnico completo.
 
 ## Evidências
 
