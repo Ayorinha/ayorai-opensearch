@@ -181,6 +181,35 @@ def test_legacy_r2_v2_traces_can_be_sealed_before_keyed_verification(
         assert store.verify("tr_m") == "valid"
 
 
+def test_legacy_r2_v1_traces_can_be_sealed_before_keyed_verification(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "a.sqlite3"
+    with AuditTraceStore(str(path), mac_keys=()) as store:
+        _record(store)
+    legacy = ReplayBundle.build(
+        "tr_m",
+        [
+            {
+                "event": "audit.completed",
+                "verification": "supported",
+                "evidence_count": 0,
+                "failure_count": 0,
+            }
+        ],
+        version="r2-v1",
+    ).digest
+    _set(
+        path,
+        f"legacy_verification = 'supported', replay_version = 'r2-v1', "
+        f"replay_digest = '{legacy}', replay_mac = NULL, mac_key_id = NULL",
+    )
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        assert store.verify("tr_m") == "invalid"
+        assert store.seal_unsealed() == 1
+        assert store.verify("tr_m") == "valid"
+
+
 def test_hmac_keyed_trace_cannot_downgrade_to_legacy_replay_version(tmp_path: Path) -> None:
     path = tmp_path / "a.sqlite3"
     with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
