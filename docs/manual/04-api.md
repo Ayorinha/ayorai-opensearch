@@ -1,4 +1,4 @@
-Estado: Atual · Referência: main @ 85d6c2b + integração local · Atualizado: 2026-11-15
+Estado: Atual · Referência: main @ 345e94f (base desta PR) · Atualizado: 2026-11-16
 Fontes de verdade: `src/ayorai_attractor/api/app.py`, `src/ayorai_attractor/api/auth.py`, `src/ayorai_attractor/api/request_context.py`, `src/ayorai_attractor/api/logging_config.py`, `src/ayorai_attractor/models.py`, `src/ayorai_attractor/verification/api_models.py`, `docs/api/openapi.json`, `docs/security/API-AUTH.md`, testes `tests/test_api.py`, `tests/test_api_auth.py`, `tests/test_api_request_context.py`, `tests/test_api_uvicorn_body_limit.py`, `tests/test_verification_api.py` e `tests/test_openapi_snapshot.py`.
 
 # 04 — API HTTP e contratos
