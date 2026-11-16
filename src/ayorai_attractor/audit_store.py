@@ -478,10 +478,10 @@ class AuditTraceStore:
         return "valid"
 
     def seal_unsealed(self) -> int:
-        """MAC r2-v3 traces recorded before keys were configured; returns how many.
+        """MAC valid unsealed r2-v1, r2-v2 and r2-v3 traces; return how many.
 
-        Only traces whose digest is still valid are sealed, with the active key.
-        Run once when enabling ATTRACTOR_AUDIT_HMAC_KEYS on an existing store.
+        Only traces whose replay digest is still valid are sealed, with the active
+        key. Run once when enabling ATTRACTOR_AUDIT_HMAC_KEYS on an existing store.
         """
         if not self._mac_keys:
             raise ValueError("ATTRACTOR_AUDIT_HMAC_KEYS is not configured")
