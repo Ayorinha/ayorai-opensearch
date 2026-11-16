@@ -152,7 +152,36 @@ def test_sealing_existing_traces_skips_tampered_ones(tmp_path: Path) -> None:
             store.seal_unsealed()
 
 
-def test_legacy_r2_v2_traces_are_verified_as_before(tmp_path: Path) -> None:
+def test_legacy_r2_v2_traces_can_be_sealed_before_keyed_verification(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "a.sqlite3"
+    with AuditTraceStore(str(path), mac_keys=()) as store:
+        _record(store)
+    legacy = ReplayBundle.build(
+        "tr_m",
+        [
+            {
+                "event": "audit.completed",
+                "verification": "not_adjudicated",
+                "evidence_count": 0,
+                "failure_count": 0,
+            }
+        ],
+        version="r2-v2",
+    ).digest
+    _set(
+        path,
+        f"replay_version = 'r2-v2', replay_digest = '{legacy}', "
+        "replay_mac = NULL, mac_key_id = NULL",
+    )
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        assert store.verify("tr_m") == "invalid"
+        assert store.seal_unsealed() == 1
+        assert store.verify("tr_m") == "valid"
+
+
+def test_hmac_keyed_trace_cannot_downgrade_to_legacy_replay_version(tmp_path: Path) -> None:
     path = tmp_path / "a.sqlite3"
     with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
         _record(store)
@@ -168,9 +197,15 @@ def test_legacy_r2_v2_traces_are_verified_as_before(tmp_path: Path) -> None:
         ],
         version="r2-v2",
     ).digest
-    _set(path, f"replay_version = 'r2-v2', replay_digest = '{legacy}', replay_mac = NULL")
+    # Simulate an attacker changing the replay version, dropping MAC metadata,
+    # and recomputing the unkeyed legacy digest without possessing the HMAC key.
+    _set(
+        path,
+        f"replay_version = 'r2-v2', replay_digest = '{legacy}', "
+        "replay_mac = NULL, mac_key_id = NULL",
+    )
     with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
-        assert store.verify("tr_m") == "valid"
+        assert store.verify("tr_m") == "invalid"
 
 
 @pytest.mark.parametrize(
