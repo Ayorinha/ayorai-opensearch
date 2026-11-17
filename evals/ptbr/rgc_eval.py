@@ -46,6 +46,7 @@ from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from importlib.metadata import version as distribution_version
 from pathlib import Path
 from typing import Any
 
@@ -1893,6 +1894,10 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                 "python": sys.version.split()[0],
                 "python_implementation": platform.python_implementation(),
                 "package_version": _package_version(),
+                "runtime_dependencies": {
+                    name: distribution_version(name)
+                    for name in ("pydantic", "pydantic-core", "rfc8785")
+                },
                 "inputs": input_report,
                 "config": {
                     "partition": args.partition,
