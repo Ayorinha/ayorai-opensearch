@@ -1460,7 +1460,7 @@ def verify_run_manifest(
 
 
 def _atomic_write_text(path: Path, text: str) -> None:
-    """Write through a temporary file in the same directory and an atomic replace."""
+    """Publish a fully written temporary file with atomic no-overwrite semantics."""
     descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
     linked = False
     try:
@@ -1494,8 +1494,8 @@ def _publish_run(
     never be paired with this run. Both files are written to temporaries and checked
     before either becomes visible. If anything fails after the report is in place, the
     report and the manifest written by this call are removed, so a failed run leaves no
-    report that looks complete. A crash between the two final renames can still leave a
-    report without a manifest; verify_run_manifest then refuses it.
+    report that looks complete. A crash between the two atomic link publications can
+    still leave a report without a manifest; verify_run_manifest then refuses it.
     """
     if out.exists() or manifest_path.exists():
         print(
