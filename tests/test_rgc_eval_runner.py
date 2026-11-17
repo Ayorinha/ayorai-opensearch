@@ -2793,3 +2793,28 @@ def test_protocol_freeze_rejects_non_digest_hash_format(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="protocol_sha256 must be a lowercase SHA-256 digest"):
         RUNNER["validate_protocol_freeze"](tmp_path)
+
+
+def test_snapshot_capture_fails_closed_if_source_changes_during_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "changing.jsonl"
+    source.write_text('{"case_id":"stable"}\\n', encoding="utf-8")
+    real_fstat = RUNNER["os"].fstat
+    calls = 0
+
+    def changed_fstat(descriptor: int) -> object:
+        nonlocal calls
+        result = real_fstat(descriptor)
+        calls += 1
+        if calls == 2:
+            fields = list(result)
+            fields[8] += 1
+            return RUNNER["os"].stat_result(fields)
+        return result
+
+    monkeypatch.setattr(RUNNER["os"], "fstat", changed_fstat)
+    destination = tmp_path / "snapshot"
+    with pytest.raises(ValueError, match="changed while being snapshotted"):
+        RUNNER["_snapshot_files"]({"inputs/cases.jsonl": source}, destination)
+    assert not destination.exists()
