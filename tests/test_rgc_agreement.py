@@ -115,8 +115,7 @@ def test_cli_uses_one_immutable_snapshot_for_metrics_and_hashes(
         ("e", "CONFLICTING"),
     ]
     original = "".join(
-        json.dumps({"case_id": case_id, "label": label}) + "\n"
-        for case_id, label in labels
+        json.dumps({"case_id": case_id, "label": label}) + "\n" for case_id, label in labels
     ).encode("utf-8")
     replacement = (
         b'{"case_id":"a","label":"SUPPORTED"}\n'
