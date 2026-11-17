@@ -837,7 +837,7 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, Any]:
         preregistration_text = preregistration_path.read_text(encoding="utf-8")
         runner_spec_text = runner_spec_path.read_text(encoding="utf-8")
         runner_code_bytes = runner_code_path.read_bytes()
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = _load_strict_json(manifest_path, "protocol freeze manifest")
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(
             "RGC evaluation blocked: protocol freeze requires both documents and "
@@ -883,6 +883,14 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, Any]:
             f"RGC evaluation blocked: freeze manifest must be schema_version "
             f"{FREEZE_SCHEMA_VERSION} with status FROZEN"
         )
+    for field in (
+        "protocol_sha256",
+        "preregistration_sha256",
+        "runner_spec_sha256",
+        "runner_code_sha256",
+    ):
+        if not isinstance(manifest[field], str) or re.fullmatch(r"[0-9a-f]{64}", manifest[field]) is None:
+            raise ValueError(f"RGC evaluation blocked: {field} must be a lowercase SHA-256 digest")
     dependencies = manifest["runner_dependencies_sha256"]
     if not isinstance(dependencies, dict) or set(dependencies) != set(RUNNER_DEPENDENCIES):
         raise ValueError(
@@ -891,6 +899,8 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, Any]:
         )
     if not isinstance(manifest["approved_by"], str) or not manifest["approved_by"].strip():
         raise ValueError("RGC evaluation blocked: freeze approver is missing")
+    if not isinstance(manifest["runner_version"], str) or not manifest["runner_version"]:
+        raise ValueError("RGC evaluation blocked: freeze runner version is missing")
     if not isinstance(manifest["approved_at"], str):
         raise ValueError("RGC evaluation blocked: freeze approval date is missing")
     try:
