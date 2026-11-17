@@ -2706,7 +2706,9 @@ def test_snapshot_digest_is_not_recomputed_from_replaced_source(tmp_path: Path) 
     assert RUNNER["_sha256"](source) != digests["inputs/cases.jsonl"]
 
 
-def test_publish_rechecks_the_exact_input_snapshots(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_publish_rechecks_the_exact_input_snapshots(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     _, _, _, report = _synthetic_run(tmp_path)
     cases = tmp_path / "cases.jsonl"
     out = tmp_path / "bound.json"
