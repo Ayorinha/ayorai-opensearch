@@ -369,3 +369,18 @@ def test_sealing_uses_the_active_key(tmp_path: Path) -> None:
         assert store.verify("tr_m") == "valid"
     with closing(sqlite3.connect(path)) as connection:
         assert connection.execute("SELECT mac_key_id FROM audit_traces").fetchone() == ("k2",)
+
+
+@pytest.mark.parametrize(
+    ("keys", "message"),
+    [
+        ((("bad id", b"a" * 32),), "unique ids"),
+        ((("k1", b"a" * 31),), "at least 32 bytes"),
+        ((("k1", b"a" * 32), ("k1", b"b" * 32)), "unique ids"),
+    ],
+)
+def test_explicitly_supplied_hmac_keys_obey_environment_validation(
+    tmp_path: Path, keys: tuple[tuple[str, bytes], ...], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        AuditTraceStore(str(tmp_path / "invalid.sqlite3"), mac_keys=keys)
