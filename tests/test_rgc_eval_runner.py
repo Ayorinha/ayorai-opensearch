@@ -573,6 +573,64 @@ def test_metrics_match_hand_computation() -> None:
     )
 
 
+def test_h1_is_blocked_when_informative_component_resolution_cannot_reach_005(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Five informative components imply an exact two-sided minimum p of 0.0625.
+    # Simulate a Monte Carlo estimate below 0.05 to prove the final decision also
+    # enforces the mathematical resolution gate, independently of the sampled p.
+    gold: list[str] = []
+    pred: list[str] = []
+    cluster_ids: list[str] = []
+    component_ids: list[str] = []
+    for index in range(25):
+        component = f"component:synthetic-{index:02d}"
+        cluster = f"synthetic:cluster-{index:02d}"
+        component_ids.extend([component] * 4)
+        cluster_ids.extend([cluster] * 4)
+        if index < 5:
+            gold.extend(["SUPPORTED", "SUPPORTED", "REFUTED", "REFUTED"])
+        else:
+            gold.extend(["SUPPORTED"] * 4)
+    pred = list(gold)
+
+    fake_sign_flip = RUNNER["SignFlipResult"](
+        statistic_observed=10,
+        p_value_two_sided=0.001,
+        extreme_permutations=10,
+        permutations_considered=10_000,
+        theoretical_exact_resolution=2 / (2**25),
+        monte_carlo_minimum_p=1 / 10_001,
+        component_count=25,
+        informative_component_count=5,
+        minimum_attainable_p=2 / (2**5),
+        component_ids=tuple(sorted(set(component_ids))),
+        significance_below_005_possible=False,
+        method="monte_carlo",
+        seed=20261003,
+        generator="RGC-PRNG-1",
+        iterations=10_000,
+    )
+    monkeypatch.setitem(RUNNER, "sign_flip_by_component", lambda differences: fake_sign_flip)
+    monkeypatch.setitem(RUNNER, "obuchowski_clustered_test", lambda *args: None)
+
+    metrics = RUNNER["compute_metrics"](
+        gold,
+        pred,
+        "judge2",
+        baseline_label="SUPPORTED",
+        iterations=200,
+        cluster_ids=cluster_ids,
+        component_ids=component_ids,
+    )
+    primary = metrics["primary_criterion"]
+    assert primary["margin_at_least_10pp"] is True
+    assert primary["ci_lower_above_baseline"] is True
+    assert primary["sign_flip_p_below_0_05"] is True
+    assert primary["significance_below_005_possible"] is False
+    assert primary["h1_supported"] is False
+
+
 def test_h1_decision_uses_unrounded_values() -> None:
     # 7 of 10 right vs a 6-of-10 baseline: margin is exactly 10 pp, which binary
     # floating point represents as 0.0999...; it must still count as >= 10 pp.
