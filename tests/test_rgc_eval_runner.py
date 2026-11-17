@@ -9,6 +9,7 @@ from __future__ import annotations
 import ast
 import json
 import runpy
+from types import SimpleNamespace
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -594,7 +595,7 @@ def test_h1_is_blocked_when_informative_component_resolution_cannot_reach_005(
             gold.extend(["SUPPORTED"] * 4)
     pred = list(gold)
 
-    fake_sign_flip = RUNNER["SignFlipResult"](
+    fake_sign_flip = SimpleNamespace(
         statistic_observed=10,
         p_value_two_sided=0.001,
         extreme_permutations=10,
