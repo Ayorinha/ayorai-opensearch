@@ -1059,7 +1059,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     code = RUNNER["main"](argv)
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
-    assert report["runner_version"] == "rgc-eval/0.10.0"
+    assert report["runner_version"] == "rgc-eval/0.11.0"
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
     assert report["protocol_freeze"]["runner_code_sha256"] == freeze_attestation["runner_code_sha256"]
