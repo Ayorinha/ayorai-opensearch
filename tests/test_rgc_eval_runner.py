@@ -2425,7 +2425,16 @@ def test_freeze_dependency_list_matches_the_runner_imports() -> None:
         for name in ("rgc_agreement", "rgc_components", "rgc_ids", "rgc_random")
         if f"evals.ptbr.{name}" in source or f"from evals.ptbr import {name}" in source
     }
-    assert imported == set(RUNNER["RUNNER_DEPENDENCIES"])
+    dependencies = set(RUNNER["RUNNER_DEPENDENCIES"])
+    assert imported <= dependencies
+    assert {
+        "rules/judge-2.0.0.json",
+        "src/ayorai_attractor/verification/judge2/adjudication.py",
+        "src/ayorai_attractor/verification/judge2/gates.py",
+        "src/ayorai_attractor/verification/stance.py",
+        "src/ayorai_attractor/evaluation/stats.py",
+        "pyproject.toml",
+    } <= dependencies
 
 
 @pytest.mark.parametrize(("commit", "clean"), [(None, True), ("f" * 40, False), ("f" * 40, None)])
@@ -2483,7 +2492,9 @@ def _synthetic_run(
     code_root = tmp_path / "checkout"
     (code_root / "evals" / "ptbr").mkdir(parents=True)
     for relative in ("evals/ptbr/rgc_eval.py", *RUNNER["RUNNER_DEPENDENCIES"]):
-        (code_root / relative).write_text(f"# synthetic {relative}\n", encoding="utf-8")
+        target = code_root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(f"# synthetic {relative}\n", encoding="utf-8")
     cases = tmp_path / "cases.jsonl"
     cases.write_text('{"case_id": "syn-1"}\n', encoding="utf-8")
     report: dict[str, Any] = {
