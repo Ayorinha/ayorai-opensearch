@@ -28,6 +28,15 @@ DEFAULT_SEED = RGC_SEED
 GATE_THRESHOLD = 0.6
 
 
+def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        result[key] = value
+    return result
+
+
 def _load_annotations_bytes(content: bytes, source: Path) -> dict[str, str]:
     """Parse strict JSONL from an immutable byte snapshot."""
     try:
@@ -40,9 +49,11 @@ def _load_annotations_bytes(content: bytes, source: Path) -> dict[str, str]:
         if not line.strip():
             raise ValueError(f"{source}:{line_number}: blank lines are not allowed")
         try:
-            row = json.loads(line)
+            row = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{source}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{source}:{line_number}: {exc}") from exc
         if not isinstance(row, dict) or set(row) != {"case_id", "label"}:
             raise ValueError(f"{source}:{line_number}: expected exactly case_id and label")
         case_id, label = row["case_id"], row["label"]
