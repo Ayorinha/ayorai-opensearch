@@ -926,7 +926,10 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, Any]:
         "runner_spec_sha256",
         "runner_code_sha256",
     ):
-        if not isinstance(manifest[field], str) or re.fullmatch(r"[0-9a-f]{64}", manifest[field]) is None:
+        if (
+            not isinstance(manifest[field], str)
+            or re.fullmatch(r"[0-9a-f]{64}", manifest[field]) is None
+        ):
             raise ValueError(f"RGC evaluation blocked: {field} must be a lowercase SHA-256 digest")
     dependencies = manifest["runner_dependencies_sha256"]
     if not isinstance(dependencies, dict) or set(dependencies) != set(RUNNER_DEPENDENCIES):
