@@ -1141,7 +1141,11 @@ def _snapshot_files(
             source_key = source.absolute()
             existing = captured.get(source_key)
             if existing is None:
-                with source.open("rb") as source_handle:
+                descriptor = os.open(
+                    source,
+                    os.O_RDONLY | getattr(os, "O_NONBLOCK", 0),
+                )
+                with os.fdopen(descriptor, "rb") as source_handle:
                     before = os.fstat(source_handle.fileno())
                     if not stat.S_ISREG(before.st_mode):
                         raise ValueError(f"RGC evaluation blocked: {name} is not a regular file")
@@ -1461,7 +1465,12 @@ def _atomic_write_text(path: Path, text: str) -> None:
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
             handle.write(text)
-        os.replace(temporary, path)
+            handle.flush()
+            os.fsync(handle.fileno())
+        # Hard-link publication is atomic and refuses an existing destination. Unlike
+        # os.replace(), it cannot overwrite a report created by a concurrent run.
+        os.link(temporary, path)
+        Path(temporary).unlink()
     except BaseException:
         Path(temporary).unlink(missing_ok=True)
         raise
