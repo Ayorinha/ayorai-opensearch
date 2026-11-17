@@ -1,28 +1,41 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-16 — main @ 267a29e (merge PR #569); post-merge CI not confirmed
+Updated: 2026-11-17 — main @ `345e94f180427245a62f0a5d79ff49cefbd6a975` (merge PR #574); post-merge CI not confirmed
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-11-16
+## Estado atual — 2026-11-17
 
-- **Release v0.8.0 publicada:** [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0), publicada em 13/11/2026 às 12:51:50 UTC. A tag aponta para o commit `92ea5eb86b69724b05834d98c326e8315bb6b655`, cuja assinatura GitHub foi verificada como válida.
-- **Main em 2026-11-16:** `267a29e64f020f9e524813ec8daf266efba96d0b`, merge por squash da PR [#569](https://github.com/Ayorinha/ayorai-opensearch/pull/569), atualização de Ruff de `0.17.4` para `0.17.5`. A alteração é restrita à dependência de desenvolvimento.
-- **CI pós-merge da main:** não confirmado para `267a29e64f020f9e524813ec8daf266efba96d0b`. As consultas de status combinado e de workflows associadas a esse SHA não retornaram checks/runs. Os nove workflows aprovados na PR #569 pertencem ao head da PR, não substituem evidência pós-merge.
-- **PRs abertas observadas em 2026-11-16:** a [#571](https://github.com/Ayorinha/ayorai-opensearch/pull/571) propõe o detector v10 e alteração da referência Golden v0.1; permanece bloqueada até aprovação metodológica específica. As PRs de RGC, benchmark e reprodutibilidade continuam sujeitas aos gates humanos, às dependências e à governança científica. A lista dinâmica do GitHub prevalece sobre este registro histórico.
-
-- **Versão de código:** `0.8.0` em `pyproject.toml`, `src/ayorai_attractor/__init__.py` e `CITATION.cff`; `CITATION.cff` registra a data de lançamento 2026-11-13.
-- **API documental:** `POST /v1/check` verifica afirmações/respostas de IA contra texto ou PDF com camada de texto, preservando offsets e página; `UNVERIFIED` representa abstenção (#511). `POST /v1/fields` compara campos documentais (dinheiro, data, CPF/CNPJ, número e texto) e devolve os resultados `conforme`, `divergente`, `ambiguo`, `ausente` e `invalido` (#511).
-- **Rastreabilidade das APIs:** o rastro de `/v1/check` é vinculado às páginas (#516); em `/v1/fields`, ao documento completo (#515).
-- **Segurança da cadeia de dependências:** auditoria estrita no CI (#533); ambiente NLI isolado e SBOM CycloneDX (#536); checkout de workflow sem persistência de credenciais GitHub (#538); permissões de escrita concedidas por job (#540).
-- **Benchmarks:** a v0.8.0 não apresenta novo resultado confirmatório de acurácia e não utilizou o split TEST. Learn then Test com Emenda 2/reagregação pós-hoc (#488, #492), cache DEV cifrado (#496, #508) e ensemble E3 em DEV-A (#497, #503) permanecem experimentos exploratórios.
-- **Resultado histórico v0.7.0:** o resultado oficial LTT pela regra originalmente registrada permanece 0/11. A reagregação pós-hoc da Emenda 2 não substitui esse resultado nem constitui confirmação.
-- **E3 exploratório em DEV-A (#503):** E3b-01 = **0.7611** versus FactCG = **0.7475**. Resultado exclusivamente exploratório, não confirmatório e **não comparável ao leaderboard**; não representa desempenho externo, produção ou TEST.
-- **RGC e português:** não há benchmark em português publicado; o protocolo RGC permanece **[PROPOSTO]**, não congelado. Não há certificação nem demonstração de conformidade regulatória automática.
-- **Fora da v0.8.0:** confirmação P1 em DEV-B, estatística por componentes RGC (#532) e registro travado por hash do ambiente histórico DEV (#535, pendente de decisão de segurança).
-- **Em aberto, sem aprovação nem execução:** P1 em DEV-B (#504, #505, #527); propostas DEC-026 / elegibilidade de 55 células (#509) e protocolo MiniCheck-Flan-T5-Large (#507), sem download de pesos nem inferência. A identidade de componente do RGC diverge da DEC-023 aprovada (#531, #532, #539) e aguarda decisão do mantenedor.
+- **Main:** `345e94f180427245a62f0a5d79ff49cefbd6a975`, integração da PR [#574](https://github.com/Ayorinha/ayorai-opensearch/pull/574), atualização documental dos controles de integridade de auditoria e admissão. A atualização anterior de status (#572) registrava `267a29e`; foi superada pelas integrações posteriores.
+- **CI pós-merge da main:** não confirmado. A consulta de workflows e a consulta de status combinado para `345e94f180427245a62f0a5d79ff49cefbd6a975` não retornaram execuções/status. Checks de PR não devem ser apresentados como CI pós-merge.
+- **Release v0.8.0:** publicada em 2026-11-13; a tag `v0.8.0` aponta para `92ea5eb86b69724b05834d98c326e8315bb6b655`, cuja assinatura GitHub foi verificada como válida. O DOI específico da versão v0.8.0 ainda não está registrado; o DOI de conceito permanece `10.5281/zenodo.23125082`.
+- **Integrações recentes na main:** #564 introduziu a trilha de auditoria com dono, r2-v3, metadados, backup e HMAC; #565 integrou o detector por regras v8 e fixou erros conhecidos; #566 alinhou documentação de API, proprietário dos rastros, backup e variáveis; #567 restringiu atualizações automáticas para preservar pins históricos do benchmark e a linha Python suportada pela imagem; #568 adicionou varredura Grype da imagem, artefato CycloneDX e proveniência SLSA assinada para sdist/wheel; #569 atualizou Ruff para 0.17.5; #570 corrigiu escopo de negação sentencial e negação relatada; #574 documentou integridade de auditoria e controles de admissão.
+- **Detector de postura v9 (#570):** a negação é considerada somente nas frases que cobrem a afirmação; negações relatadas, como “X negou que P”, são neutras. O commit registra que os digests semânticos Golden v0 e v0.1 permaneceram iguais nessa alteração. A PR #571, ainda aberta, propõe uma mudança distinta que altera a referência Golden v0.1 e requer aprovação específica.
+- **Segurança da cadeia de suprimentos:** a #568 adicionou Grype com binário verificado por SHA-256, falha para achados altos/críticos com correção disponível, artefato CycloneDX e atestação SLSA verificada no job. A #567 mantém fora das atualizações automáticas o ambiente histórico do benchmark e não amplia a linha Python da imagem além da suportada.
+- **Auditoria HMAC:** a #575 propõe exigir MAC em todas as versões de replay suportadas e a configuração externa `ATTRACTOR_AUDIT_HMAC_REQUIRED`. No HEAD `da16071713e8e7a8963f0128cb832ccd613847b3`, os sete workflow runs retornados pela consulta terminaram com sucesso. A PR permanece aberta; falta revisão humana independente para a mudança de segurança e validação operacional de configuração/rotação/backup de chaves. Na proposta #575, HMAC obrigatório continua opt-in; não inferir que ambientes estejam protegidos sem configurar a opção e as chaves.
+- **PRs abertas observadas em 2026-11-17, antes da abertura desta atualização (#578):** 14 no total — 11 Draft e 3 abertas fora de Draft. A #578 é esta PR de status e não integra aquela contagem; após sua integração, a lista deve ser reconsultada. Lista e heads são dinâmicos; consultar GitHub antes de agir:
+  - **#575 — aberta, não Draft:** HMAC em todas as versões de replay; aguarda revisão humana independente e decisão de integração.
+  - **#577 — Draft:** gate H1 para resolução informativa do sign-flip por componente; 8 workflow runs retornados com sucesso no HEAD `11dd79cc0eda157dcb355d36ddd9138092008022`. Teste sintético; sem execução em dados RGC.
+  - **#576 — Draft:** vincula métricas de concordância aos mesmos snapshots de bytes usados no parsing; 8 workflow runs retornados com sucesso no HEAD `5853066ee7d9a6d5d1bb5767d8f6ecb22fd20561`. Revisão automatizada COMMENTED sem bloqueador identificado; não houve leitura de anotações reais.
+  - **#554 — Draft:** manifesto por execução e dependências do runner (E5); GitHub reportou `mergeable=false` no head consultado. A questão de publicação concorrente/TOCTOU precisa ser resolvida antes da integração.
+  - **#553 — Draft:** reconciliação documental de STATISTICS.md com DEC-027 e o runner.
+  - **#571 — aberta, não Draft:** detector v10; altera a referência Golden v0.1 e depende de aprovação metodológica explícita. Não integrar por inferência de autorização.
+  - **#539 — Draft:** continuidade metodológica RGC.
+  - **#535 — Draft:** ambiente histórico Phase 1b DEV; GitHub reportou `mergeable=false`; não contornar Dependency Review nem modificar pins históricos sem decisão e prova de equivalência.
+  - **#531 — aberta, não Draft:** identidade de componente e auditoria metodológica; permanece sujeita à reconciliação com DEC-023/decisão do mantenedor.
+  - **#527 — Draft:** governança do fluxo P1 e lock one-shot; base é `feat/e3-confirm-dev-b`, não `main`.
+  - **#505 — Draft:** confirmação P1 em DEV-B; GitHub reportou `mergeable=false`. Não executar DEV-B sem autorização específica.
+  - **#504 — Draft:** DEC-025, pré-registro E3 proposto e helper de planejamento LTT; não autoriza execução.
+  - **#509 — Draft:** proposta DEC-026 e reconciliação de elegibilidade de 55 células.
+  - **#507 — Draft:** proposta de protocolo MiniCheck-Flan-T5-Large; sem download de pesos ou inferência.
+- **Outras observações de CI:** #575 teve sete workflow runs retornados com sucesso no HEAD citado; #576 e #577 tiveram oito cada. Esses resultados são específicos dos respectivos heads, não da main.
+- **RGC e português:** o protocolo RGC permanece **[PROPOSTO]**, não congelado. #576 e #577 usam apenas regressões sintéticas; nenhuma anotação humana real foi lida, nenhum caso do Piloto 02 ou benchmark definitivo foi criado/rotulado nesta execução, o ATTRACTOR não foi executado sobre casos RGC e nenhuma métrica científica foi produzida.
+- **Pendências humanas/científicas:** piloto 02 manual sem IA e sem execução do sistema; segunda anotação independente por outra pessoa; revisão humana independente F-01; verificação de proveniência/vigência/retificações e isolamento da partição oculta; decisão separada do mantenedor sobre congelamento. CI sintético não substitui esses gates.
+- **Versão de código:** `0.8.0` em `pyproject.toml`, `src/ayorai_attractor/__init__.py` e `CITATION.cff`.
+- **API documental:** `POST /v1/check` verifica afirmações/respostas contra texto ou PDF com camada de texto; `UNVERIFIED` é exposto como abstenção (`status: "abstain/no_answer"`, `verdict: null`). `POST /v1/fields` compara campos documentais e retorna `conforme`, `divergente`, `ambiguo`, `ausente` ou `invalido`.
+- **Limites de alegações:** não há benchmark RGC em português publicado, validação externa independente, certificação regulatória ou conformidade legal automática. **INFERÊNCIA:** a evidência atualmente registrada não é suficiente para declarar o sistema pronto para produção. O estado de engenharia deve ser descrito separadamente da validação científica e operacional.
 
 > As seções seguintes preservam snapshots históricos. Datas, SHAs e estados registrados nelas descrevem exclusivamente o momento da respectiva captura e não substituem o estado atual acima.
 
