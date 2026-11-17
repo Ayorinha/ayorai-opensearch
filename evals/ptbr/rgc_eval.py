@@ -40,6 +40,7 @@ import platform
 import re
 import subprocess
 import sys
+import stat
 import tempfile
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
@@ -1137,17 +1138,40 @@ def _snapshot_files(
     captured: dict[Path, tuple[Path, str]] = {}
     for name, source in sources.items():
         try:
-            resolved = source.resolve(strict=True)
-            existing = captured.get(resolved)
+            source_key = source.absolute()
+            existing = captured.get(source_key)
             if existing is None:
-                payload = resolved.read_bytes()
+                with source.open("rb") as source_handle:
+                    before = os.fstat(source_handle.fileno())
+                    if not stat.S_ISREG(before.st_mode):
+                        raise ValueError(f"RGC evaluation blocked: {name} is not a regular file")
+                    payload = source_handle.read()
+                    after = os.fstat(source_handle.fileno())
+                stable_before = (
+                    before.st_dev,
+                    before.st_ino,
+                    before.st_size,
+                    before.st_mtime_ns,
+                    before.st_ctime_ns,
+                )
+                stable_after = (
+                    after.st_dev,
+                    after.st_ino,
+                    after.st_size,
+                    after.st_mtime_ns,
+                    after.st_ctime_ns,
+                )
+                if stable_before != stable_after or len(payload) != before.st_size:
+                    raise ValueError(
+                        f"RGC evaluation blocked: {name} changed while being snapshotted"
+                    )
                 target = destination / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 with target.open("xb") as handle:
                     handle.write(payload)
                 target.chmod(0o400)
                 digest = hashlib.sha256(payload).hexdigest()
-                captured[resolved] = (target, digest)
+                captured[source_key] = (target, digest)
                 existing = (target, digest)
         except OSError as exc:
             raise ValueError(f"RGC evaluation blocked: cannot snapshot {name}: {source}") from exc
