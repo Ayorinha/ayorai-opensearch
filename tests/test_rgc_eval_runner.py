@@ -2722,3 +2722,12 @@ def test_publish_rechecks_the_exact_input_snapshots(
     assert "inputs.cases_sha256 differs" in capsys.readouterr().err
     assert not out.exists()
     assert not manifest.exists()
+
+
+def test_atomic_text_publication_never_overwrites_existing_output(tmp_path: Path) -> None:
+    target = tmp_path / "report.json"
+    target.write_text("original\\n", encoding="utf-8")
+    with pytest.raises(FileExistsError):
+        RUNNER["_atomic_write_text"](target, "replacement\\n")
+    assert target.read_text(encoding="utf-8") == "original\\n"
+    assert not list(tmp_path.glob(".report.json.*"))
