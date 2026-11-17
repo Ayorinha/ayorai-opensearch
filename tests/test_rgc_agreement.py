@@ -104,6 +104,67 @@ def test_kappa_is_undefined_without_marginal_variation_and_does_not_pass_gate() 
     assert result["ci95_case_bootstrap"] is None
 
 
+def test_cli_uses_one_immutable_snapshot_for_metrics_and_hashes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    labels = [
+        ("a", "SUPPORTED"),
+        ("b", "REFUTED"),
+        ("c", "UNVERIFIED"),
+        ("d", "PARTIALLY_SUPPORTED"),
+        ("e", "CONFLICTING"),
+    ]
+    original = "".join(
+        json.dumps({"case_id": case_id, "label": label}) + "\\n"
+        for case_id, label in labels
+    ).encode("utf-8")
+    replacement = (
+        '{"case_id":"a","label":"SUPPORTED"}\\n'
+        '{"case_id":"b","label":"SUPPORTED"}\\n'
+        '{"case_id":"c","label":"SUPPORTED"}\\n'
+        '{"case_id":"d","label":"SUPPORTED"}\\n'
+        '{"case_id":"e","label":"SUPPORTED"}\\n'
+    ).encode("utf-8")
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    annotation_a.write_bytes(original)
+    annotation_b.write_bytes(original)
+    output = tmp_path / "agreement.json"
+
+    original_read_bytes = Path.read_bytes
+    replaced = False
+
+    def read_bytes_with_replacement(path: Path) -> bytes:
+        nonlocal replaced
+        snapshot = original_read_bytes(path)
+        if path == annotation_a and not replaced:
+            replaced = True
+            annotation_a.write_bytes(replacement)
+        return snapshot
+
+    monkeypatch.setattr(Path, "read_bytes", read_bytes_with_replacement)
+
+    assert (
+        AGREEMENT["main"](
+            [
+                "--annotation-a",
+                str(annotation_a),
+                "--annotation-b",
+                str(annotation_b),
+                "--out",
+                str(output),
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["cohen_kappa"] == 1.0
+    assert report["inputs"]["annotation_a_sha256"] == hashlib.sha256(original).hexdigest()
+    assert report["inputs"]["annotation_b_sha256"] == hashlib.sha256(original).hexdigest()
+    assert hashlib.sha256(annotation_a.read_bytes()).hexdigest() == hashlib.sha256(replacement).hexdigest()
+
+
 def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> None:
     labels = [
         ("a", "SUPPORTED"),
