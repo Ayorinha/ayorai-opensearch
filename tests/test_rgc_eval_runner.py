@@ -2455,6 +2455,10 @@ def test_freeze_dependency_list_matches_the_runner_imports() -> None:
     }
     assert imported <= expected_dependencies
     assert set(RUNNER["RUNNER_DEPENDENCIES"]) == expected_dependencies
+    assert all((ROOT / relative).is_file() for relative in expected_dependencies)
+    assert RUNNER["_sha256"](ROOT / "rules/judge-2.0.0.json") == RUNNER["_sha256"](
+        ROOT / "src/ayorai_attractor/verification/judge2/rules/judge-2.0.0.json"
+    )
 
 
 @pytest.mark.parametrize(("commit", "clean"), [(None, True), ("f" * 40, False), ("f" * 40, None)])
