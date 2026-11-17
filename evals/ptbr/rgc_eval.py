@@ -687,7 +687,7 @@ def compute_metrics(
         test_key = "mcnemar_p_below_0_05"
     primary["h1_supported"] = all(
         primary[k] for k in ("margin_at_least_10pp", "ci_lower_above_baseline", test_key)
-    )
+    ) and (sign_flip is None or primary["significance_below_005_possible"])
     return {
         "n": len(gold),
         "gold_counts": {label: gold.count(label) for label in VOCABULARIES[vocabulary]},
