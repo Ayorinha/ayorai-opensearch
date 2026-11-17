@@ -115,15 +115,15 @@ def test_cli_uses_one_immutable_snapshot_for_metrics_and_hashes(
         ("e", "CONFLICTING"),
     ]
     original = "".join(
-        json.dumps({"case_id": case_id, "label": label}) + "\\n"
+        json.dumps({"case_id": case_id, "label": label}) + "\n"
         for case_id, label in labels
     ).encode("utf-8")
     replacement = (
-        '{"case_id":"a","label":"SUPPORTED"}\\n'
-        '{"case_id":"b","label":"SUPPORTED"}\\n'
-        '{"case_id":"c","label":"SUPPORTED"}\\n'
-        '{"case_id":"d","label":"SUPPORTED"}\\n'
-        '{"case_id":"e","label":"SUPPORTED"}\\n'
+        '{"case_id":"a","label":"SUPPORTED"}\n'
+        '{"case_id":"b","label":"SUPPORTED"}\n'
+        '{"case_id":"c","label":"SUPPORTED"}\n'
+        '{"case_id":"d","label":"SUPPORTED"}\n'
+        '{"case_id":"e","label":"SUPPORTED"}\n'
     ).encode("utf-8")
     annotation_a = tmp_path / "annotation-a.jsonl"
     annotation_b = tmp_path / "annotation-b.jsonl"
@@ -162,7 +162,9 @@ def test_cli_uses_one_immutable_snapshot_for_metrics_and_hashes(
     assert report["cohen_kappa"] == 1.0
     assert report["inputs"]["annotation_a_sha256"] == hashlib.sha256(original).hexdigest()
     assert report["inputs"]["annotation_b_sha256"] == hashlib.sha256(original).hexdigest()
-    assert hashlib.sha256(annotation_a.read_bytes()).hexdigest() == hashlib.sha256(replacement).hexdigest()
+    replacement_hash = hashlib.sha256(replacement).hexdigest()
+    current_hash = hashlib.sha256(annotation_a.read_bytes()).hexdigest()
+    assert current_hash == replacement_hash
 
 
 def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> None:
