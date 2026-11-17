@@ -2799,7 +2799,7 @@ def test_snapshot_capture_fails_closed_if_source_changes_during_read(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     source = tmp_path / "changing.jsonl"
-    source.write_text('{"case_id":"stable"}\\n', encoding="utf-8")
+    source.write_text('{"case_id":"stable"}\n', encoding="utf-8")
     real_fstat = RUNNER["os"].fstat
     calls = 0
 
