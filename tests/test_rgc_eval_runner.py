@@ -2669,10 +2669,11 @@ def test_hidden_run_manifest_requires_clean_commit_even_when_consistent(tmp_path
 def test_run_manifest_detects_statistical_code_changed_after_the_run(tmp_path: Path) -> None:
     manifest_path, report_path, _, _ = _synthetic_run(tmp_path)
     checkout = tmp_path / "checkout"
-    (checkout / "evals" / "ptbr" / "rgc_components.py").write_text("# changed\n", encoding="utf-8")
+    component = checkout / "evals" / "ptbr" / "rgc_components.py"
+    component.write_text("# changed\n", encoding="utf-8")
     with pytest.raises(ValueError, match="rgc_components.py differs from the frozen code"):
         RUNNER["verify_run_manifest"](manifest_path, report_path, root=checkout)
-    (checkout / "evals" / "ptbr" / "rgc_components.py").unlink()
+    component.unlink()
     with pytest.raises(ValueError, match="rgc_components.py is missing"):
         RUNNER["verify_run_manifest"](manifest_path, report_path, root=checkout)
 
