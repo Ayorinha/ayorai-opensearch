@@ -81,9 +81,9 @@ DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 RUNNER_VERSION = "rgc-eval/0.11.0"
 FREEZE_SCHEMA_VERSION = 2
 RUN_MANIFEST_SCHEMA = "rgc-run-manifest/1"
-# Every module whose code decides an RGC number. The freeze binds all of them, so a
-# change to the components, the generator, the ID grammar or the agreement tool after
-# the freeze blocks the run exactly like a change to this file.
+# Direct and transitive deterministic runtime dependencies loaded by the RGC runner,
+# including Judge 2.0 code/rules and the project dependency specification. The freeze
+# binds the full execution closure, not only the statistical helper modules.
 RUNNER_DEPENDENCIES = (
     "evals/ptbr/rgc_agreement.py",
     "evals/ptbr/rgc_components.py",
