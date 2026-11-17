@@ -1066,7 +1066,10 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert report["runner_version"] == "rgc-eval/0.10.0"
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
-    assert report["protocol_freeze"]["runner_code_sha256"] == freeze_attestation["runner_code_sha256"]
+    assert (
+        report["protocol_freeze"]["runner_code_sha256"]
+        == freeze_attestation["runner_code_sha256"]
+    )
     assert report["annotation_approval"]["approved_by"] == "Synthetic test approver"
     assert report["annotation_approval"]["cohen_kappa"] == 1.0
     assert report["metrics"]["system"]["accuracy"] == 1.0
