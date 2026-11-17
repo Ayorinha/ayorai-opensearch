@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "status": "DRAFT",
   "approved_by": "<PREENCHER: responsável humano autorizado>",
   "approved_at": "<PREENCHER: data/hora ISO 8601>",
@@ -7,5 +7,11 @@
   "preregistration_sha256": "<PREENCHER: SHA-256 real de docs/eval/PREREGISTRATION-RGC-v1.md>",
   "runner_spec_sha256": "<PREENCHER: SHA-256 real de docs/eval/RUNNER-RGC-v1.md>",
   "runner_code_sha256": "<PREENCHER: SHA-256 real de evals/ptbr/rgc_eval.py>",
+  "runner_dependencies_sha256": {
+    "evals/ptbr/rgc_agreement.py": "<PREENCHER: SHA-256 real>",
+    "evals/ptbr/rgc_components.py": "<PREENCHER: SHA-256 real>",
+    "evals/ptbr/rgc_ids.py": "<PREENCHER: SHA-256 real>",
+    "evals/ptbr/rgc_random.py": "<PREENCHER: SHA-256 real>"
+  },
   "runner_version": "<PREENCHER: versão exata declarada pelo runner>"
 }
