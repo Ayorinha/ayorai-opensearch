@@ -1233,6 +1233,7 @@ def _snapshot_files(
         snapshots[name], digests[name] = existing
     return snapshots, digests
 
+
 def _git_commit() -> str | None:
     try:
         out = subprocess.run(
