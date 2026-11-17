@@ -1122,6 +1122,38 @@ def validate_annotation_approval(
     }
 
 
+
+def _snapshot_files(
+    sources: Mapping[str, Path], destination: Path
+) -> tuple[dict[str, Path], dict[str, str]]:
+    """Capture each source path once and return private, read-only snapshot paths and hashes.
+
+    All later validation, parsing, evaluation and manifest verification must use these
+    snapshots, never reopen the caller-controlled source paths. Repeated source paths
+    share one captured byte sequence.
+    """
+    snapshots: dict[str, Path] = {}
+    digests: dict[str, str] = {}
+    captured: dict[Path, tuple[Path, str]] = {}
+    for name, source in sources.items():
+        try:
+            resolved = source.resolve(strict=True)
+            existing = captured.get(resolved)
+            if existing is None:
+                payload = resolved.read_bytes()
+                target = destination / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with target.open("xb") as handle:
+                    handle.write(payload)
+                target.chmod(0o400)
+                digest = hashlib.sha256(payload).hexdigest()
+                captured[resolved] = (target, digest)
+                existing = (target, digest)
+        except OSError as exc:
+            raise ValueError(f"RGC evaluation blocked: cannot snapshot {name}: {source}") from exc
+        snapshots[name], digests[name] = existing
+    return snapshots, digests
+
 def _git_commit() -> str | None:
     try:
         out = subprocess.run(
@@ -1411,7 +1443,14 @@ def _atomic_write_text(path: Path, text: str) -> None:
         raise
 
 
-def _publish_run(report: Mapping[str, Any], out: Path, manifest_path: Path) -> int:
+def _publish_run(
+    report: Mapping[str, Any],
+    out: Path,
+    manifest_path: Path,
+    *,
+    input_files: Mapping[str, Path] | None = None,
+    root: Path | None = None,
+) -> int:
     """Write a report and its run manifest as one unit; return 0 or exit code 2.
 
     Never overwrites: an existing report or manifest is refused, so an earlier file can
@@ -1441,7 +1480,7 @@ def _publish_run(report: Mapping[str, Any], out: Path, manifest_path: Path) -> i
             json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         )
         published.append(manifest_path)
-        verify_run_manifest(manifest_path, out)
+        verify_run_manifest(manifest_path, out, input_files=input_files, root=root)
     except (OSError, ValueError) as exc:
         for path in published:
             path.unlink(missing_ok=True)
@@ -1681,6 +1720,196 @@ def evaluate(
     }
 
 
+def _run_evaluation(args: argparse.Namespace) -> int:
+    """Run only from a closed set of immutable input and code snapshots."""
+    with tempfile.TemporaryDirectory(prefix="ayorai-rgc-snapshot-") as temporary:
+        snapshot_root = Path(temporary)
+        freeze_relatives = (
+            "docs/eval/PROTOCOL-GOLDEN-V1.md",
+            "docs/eval/PREREGISTRATION-RGC-v1.md",
+            "docs/eval/RUNNER-RGC-v1.md",
+            "docs/eval/PROTOCOL-FREEZE.json",
+            "evals/ptbr/rgc_eval.py",
+            *RUNNER_DEPENDENCIES,
+        )
+        sources: dict[str, Path] = {
+            relative: ROOT / relative for relative in freeze_relatives
+        }
+        input_sources = {
+            "inputs/cases.jsonl": args.cases,
+            "inputs/labels.jsonl": args.labels,
+            "inputs/annotation-a.jsonl": args.annotation_a,
+            "inputs/annotation-b.jsonl": args.annotation_b,
+            "inputs/agreement-report.json": args.agreement_report,
+            "inputs/annotation-approval.json": args.annotation_approval,
+            "inputs/adjudication-record.json": args.adjudication_record,
+            "inputs/development-cases.jsonl": args.development_cases,
+            "inputs/development-labels.jsonl": args.development_labels,
+            "inputs/documents.jsonl": args.documents,
+        }
+        sources.update(input_sources)
+        try:
+            snapshots, snapshot_hashes = _snapshot_files(sources, snapshot_root)
+
+            # Freeze and approval validation operate on the captured bytes only.
+            protocol_freeze = validate_protocol_freeze(root=snapshot_root)
+            annotation_approval = validate_annotation_approval(
+                snapshots["inputs/cases.jsonl"],
+                snapshots["inputs/labels.jsonl"],
+                snapshots["inputs/development-cases.jsonl"],
+                snapshots["inputs/development-labels.jsonl"],
+                snapshots["inputs/annotation-a.jsonl"],
+                snapshots["inputs/annotation-b.jsonl"],
+                snapshots["inputs/agreement-report.json"],
+                snapshots["inputs/annotation-approval.json"],
+                snapshots["inputs/adjudication-record.json"],
+            )
+
+            git_commit = _git_commit()
+            worktree_clean = _worktree_clean()
+            if args.partition == "hidden" and (
+                git_commit is None or worktree_clean is not True
+            ):
+                print(
+                    "RGC evaluation blocked: the hidden partition runs only from a clean git "
+                    "checkout with a resolvable commit",
+                    file=sys.stderr,
+                )
+                return 2
+
+            started_at = datetime.now(UTC).isoformat(timespec="seconds")
+            documents = load_documents(snapshots["inputs/documents.jsonl"])
+            development_cases = _read_jsonl(snapshots["inputs/development-cases.jsonl"])
+            development_labels = load_labels(
+                snapshots["inputs/development-labels.jsonl"], args.vocabulary
+            )
+            result = evaluate(
+                _read_jsonl(snapshots["inputs/cases.jsonl"]),
+                load_labels(snapshots["inputs/labels.jsonl"], args.vocabulary),
+                documents,
+                development_cases=development_cases,
+                development_labels=development_labels,
+                mode=args.mode,
+                vocabulary=args.vocabulary,
+                top_k=args.top_k,
+                granularity=args.granularity,
+                partition=args.partition,
+            )
+            generated_at = datetime.now(UTC).isoformat(timespec="seconds")
+            input_report = {
+                "cases": str(args.cases),
+                "cases_sha256": snapshot_hashes["inputs/cases.jsonl"],
+                "labels": str(args.labels),
+                "labels_sha256": snapshot_hashes["inputs/labels.jsonl"],
+                "development_cases": str(args.development_cases),
+                "development_cases_sha256": snapshot_hashes["inputs/development-cases.jsonl"],
+                "development_labels": str(args.development_labels),
+                "development_labels_sha256": snapshot_hashes["inputs/development-labels.jsonl"],
+                "documents": str(args.documents),
+                "documents_sha256": snapshot_hashes["inputs/documents.jsonl"],
+                "annotation_a": str(args.annotation_a),
+                "annotation_a_sha256": snapshot_hashes["inputs/annotation-a.jsonl"],
+                "annotation_b": str(args.annotation_b),
+                "annotation_b_sha256": snapshot_hashes["inputs/annotation-b.jsonl"],
+                "agreement_report": str(args.agreement_report),
+                "agreement_report_sha256": snapshot_hashes["inputs/agreement-report.json"],
+                "annotation_approval": str(args.annotation_approval),
+                "annotation_approval_sha256": snapshot_hashes["inputs/annotation-approval.json"],
+                "adjudication_record": str(args.adjudication_record),
+                "adjudication_record_sha256": snapshot_hashes["inputs/adjudication-record.json"],
+            }
+            report = {
+                "runner_version": RUNNER_VERSION,
+                "protocol_freeze": protocol_freeze,
+                "annotation_approval": annotation_approval,
+                "started_at": started_at,
+                "generated_at": generated_at,
+                "git_commit": git_commit,
+                "worktree_clean": worktree_clean,
+                "python": sys.version.split()[0],
+                "python_implementation": platform.python_implementation(),
+                "package_version": _package_version(),
+                "inputs": input_report,
+                "config": {
+                    "partition": args.partition,
+                    "mode": args.mode,
+                    "vocabulary": args.vocabulary,
+                    "top_k": args.top_k,
+                    "granularity": args.granularity,
+                    "bm25": {"k1": BM25_K1, "b": BM25_B},
+                    "stance_detector": (
+                        f"{RuleStanceDetector.component}/{RuleStanceDetector.version}"
+                    ),
+                    "bootstrap": {
+                        "iterations": BOOTSTRAP_ITERATIONS,
+                        "seed": SEED,
+                        "generator": "RGC-PRNG-1",
+                        "percentile": "hyndman-fan-type-7",
+                        "primary_unit": (
+                            "component" if args.partition == "hidden" else "case"
+                        ),
+                        "sensitivity_units": (
+                            ["article_cluster", "case"] if args.partition == "hidden" else []
+                        ),
+                    },
+                    "h1_test": (
+                        "sign_flip_by_component"
+                        if args.partition == "hidden"
+                        else "not_tested"
+                    ),
+                    "baseline_primary": {
+                        "name": "B",
+                        "development_label_count": len(development_labels),
+                        "label": development_baseline_label(
+                            development_labels, args.vocabulary
+                        ),
+                    },
+                    "baseline_descriptive": {
+                        "name": "A",
+                        "source": "evaluation gold labels; descriptive only",
+                    },
+                },
+                **result,
+            }
+            manifest_path = args.out.with_name(args.out.name + ".manifest.json")
+            input_files = {
+                "cases_sha256": snapshots["inputs/cases.jsonl"],
+                "labels_sha256": snapshots["inputs/labels.jsonl"],
+                "development_cases_sha256": snapshots["inputs/development-cases.jsonl"],
+                "development_labels_sha256": snapshots["inputs/development-labels.jsonl"],
+                "documents_sha256": snapshots["inputs/documents.jsonl"],
+                "annotation_a_sha256": snapshots["inputs/annotation-a.jsonl"],
+                "annotation_b_sha256": snapshots["inputs/annotation-b.jsonl"],
+                "agreement_report_sha256": snapshots["inputs/agreement-report.json"],
+                "annotation_approval_sha256": snapshots["inputs/annotation-approval.json"],
+                "adjudication_record_sha256": snapshots["inputs/adjudication-record.json"],
+            }
+            status = _publish_run(
+                report,
+                args.out,
+                manifest_path,
+                input_files=input_files,
+                root=snapshot_root,
+            )
+            if status != 0:
+                return status
+            print(
+                f"run manifest {manifest_path} "
+                f"sha256={_sha256(manifest_path)}"
+            )
+            metrics = result["metrics"]
+            print(
+                f"n={metrics['n']} accuracy={metrics['system']['accuracy']} "
+                f"baseline_B={metrics['baseline_primary']['accuracy']} "
+                f"baseline_A_descriptive={metrics['baseline_descriptive']['accuracy']} "
+                f"h1={metrics['primary_criterion']['h1_supported']}"
+            )
+            return 0
+        except (OSError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -1723,118 +1952,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     export.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
 
-    documents = load_documents(args.documents)
     if args.command == "export-corpus":
-        args.out.write_text(export_strict_corpus(documents), encoding="utf-8")
+        try:
+            documents = load_documents(args.documents)
+            args.out.write_text(
+                export_strict_corpus(documents), encoding="utf-8"
+            )
+        except (OSError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
         print(f"wrote {len(documents)} documents to {args.out}")
         return 0
 
-    try:
-        protocol_freeze = validate_protocol_freeze()
-        annotation_approval = validate_annotation_approval(
-            args.cases,
-            args.labels,
-            args.development_cases,
-            args.development_labels,
-            args.annotation_a,
-            args.annotation_b,
-            args.agreement_report,
-            args.annotation_approval,
-            args.adjudication_record,
-        )
-    except ValueError as exc:
-        print(str(exc), file=sys.stderr)
-        return 2
-
-    git_commit = _git_commit()
-    worktree_clean = _worktree_clean()
-    if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
-        # The single confirmatory run must be reproducible from a recorded commit.
-        print(
-            "RGC evaluation blocked: the hidden partition runs only from a clean git "
-            "checkout with a resolvable commit",
-            file=sys.stderr,
-        )
-        return 2
-    started_at = datetime.now(UTC).isoformat(timespec="seconds")
-
-    development_cases = _read_jsonl(args.development_cases)
-    development_labels = load_labels(args.development_labels, args.vocabulary)
-    result = evaluate(
-        _read_jsonl(args.cases),
-        load_labels(args.labels, args.vocabulary),
-        documents,
-        development_cases=development_cases,
-        development_labels=development_labels,
-        mode=args.mode,
-        vocabulary=args.vocabulary,
-        top_k=args.top_k,
-        granularity=args.granularity,
-        partition=args.partition,
-    )
-    report = {
-        "runner_version": RUNNER_VERSION,
-        "protocol_freeze": protocol_freeze,
-        "annotation_approval": annotation_approval,
-        "started_at": started_at,
-        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "git_commit": git_commit,
-        "worktree_clean": worktree_clean,
-        "python": sys.version.split()[0],
-        "python_implementation": platform.python_implementation(),
-        "package_version": _package_version(),
-        "inputs": {
-            "cases": str(args.cases),
-            "cases_sha256": _sha256(args.cases),
-            "labels_sha256": _sha256(args.labels),
-            "development_cases_sha256": _sha256(args.development_cases),
-            "development_labels_sha256": _sha256(args.development_labels),
-            "documents_sha256": _sha256(args.documents),
-        },
-        "config": {
-            "partition": args.partition,
-            "mode": args.mode,
-            "vocabulary": args.vocabulary,
-            "top_k": args.top_k,
-            "granularity": args.granularity,
-            "bm25": {"k1": BM25_K1, "b": BM25_B},
-            "stance_detector": f"{RuleStanceDetector.component}/{RuleStanceDetector.version}",
-            "bootstrap": {
-                "iterations": BOOTSTRAP_ITERATIONS,
-                "seed": SEED,
-                "generator": "RGC-PRNG-1",
-                "percentile": "hyndman-fan-type-7",
-                "primary_unit": "component" if args.partition == "hidden" else "case",
-                "sensitivity_units": (
-                    ["article_cluster", "case"] if args.partition == "hidden" else []
-                ),
-            },
-            "h1_test": ("sign_flip_by_component" if args.partition == "hidden" else "not_tested"),
-            "baseline_primary": {
-                "name": "B",
-                "development_label_count": len(development_labels),
-                "label": development_baseline_label(development_labels, args.vocabulary),
-            },
-            "baseline_descriptive": {
-                "name": "A",
-                "source": "evaluation gold labels; descriptive only",
-            },
-        },
-        **result,
-    }
-    manifest_path = args.out.with_name(args.out.name + ".manifest.json")
-    status = _publish_run(report, args.out, manifest_path)
-    if status != 0:
-        return status
-    print(f"run manifest {manifest_path} sha256={_sha256(manifest_path)}")
-    m = result["metrics"]
-    print(
-        f"n={m['n']} accuracy={m['system']['accuracy']} "
-        f"baseline_B={m['baseline_primary']['accuracy']} "
-        f"baseline_A_descriptive={m['baseline_descriptive']['accuracy']} "
-        f"h1={m['primary_criterion']['h1_supported']}"
-    )
-    return 0
+    return _run_evaluation(args)
 
 
 if __name__ == "__main__":
