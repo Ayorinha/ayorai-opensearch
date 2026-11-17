@@ -77,7 +77,7 @@ from evals.ptbr.rgc_random import (  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.10.0"
+RUNNER_VERSION = "rgc-eval/0.11.0"
 FREEZE_SCHEMA_VERSION = 2
 RUN_MANIFEST_SCHEMA = "rgc-run-manifest/1"
 # Every module whose code decides an RGC number. The freeze binds all of them, so a
@@ -88,6 +88,28 @@ RUNNER_DEPENDENCIES = (
     "evals/ptbr/rgc_components.py",
     "evals/ptbr/rgc_ids.py",
     "evals/ptbr/rgc_random.py",
+    "pyproject.toml",
+    "rules/judge-2.0.0.json",
+    "src/ayorai_attractor/__init__.py",
+    "src/ayorai_attractor/evaluation/__init__.py",
+    "src/ayorai_attractor/evaluation/stats.py",
+    "src/ayorai_attractor/models.py",
+    "src/ayorai_attractor/verification/__init__.py",
+    "src/ayorai_attractor/verification/claim_pipeline.py",
+    "src/ayorai_attractor/verification/clusters.py",
+    "src/ayorai_attractor/verification/excerpt.py",
+    "src/ayorai_attractor/verification/extraction.py",
+    "src/ayorai_attractor/verification/judge.py",
+    "src/ayorai_attractor/verification/judge2/__init__.py",
+    "src/ayorai_attractor/verification/judge2/adjudication.py",
+    "src/ayorai_attractor/verification/judge2/gates.py",
+    "src/ayorai_attractor/verification/judge2/rules/judge-2.0.0.json",
+    "src/ayorai_attractor/verification/models.py",
+    "src/ayorai_attractor/verification/numeric.py",
+    "src/ayorai_attractor/verification/pt_normalize.py",
+    "src/ayorai_attractor/verification/response.py",
+    "src/ayorai_attractor/verification/security.py",
+    "src/ayorai_attractor/verification/stance.py",
 )
 SEED = RGC_SEED
 BOOTSTRAP_ITERATIONS = 10000
