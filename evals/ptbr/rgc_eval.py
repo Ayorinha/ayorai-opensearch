@@ -50,9 +50,9 @@ from importlib.metadata import version as distribution_version
 from pathlib import Path
 from typing import Any
 
+import ayorai_attractor.verification.judge2 as judge2_module
 from ayorai_attractor.evaluation.stats import mcnemar_exact_pvalue
 from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
-import ayorai_attractor.verification.judge2 as judge2_module
 from ayorai_attractor.verification.judge2 import adjudication
 from ayorai_attractor.verification.models import Claim, Evidence
 from ayorai_attractor.verification.stance import RuleStanceDetector
@@ -1946,7 +1946,9 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                             ["article_cluster", "case"] if args.partition == "hidden" else []
                         ),
                     },
-                    "h1_test": "sign_flip_by_component" if args.partition == "hidden" else "not_tested",
+                    "h1_test": (
+                        "sign_flip_by_component" if args.partition == "hidden" else "not_tested"
+                    ),
                     "baseline_primary": {
                         "name": "B",
                         "development_label_count": len(development_labels),
