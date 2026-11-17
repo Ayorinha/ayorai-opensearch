@@ -906,7 +906,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     for relative in freeze_relatives:
         target = synthetic_root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(f"# synthetic {relative}\\n", encoding="utf-8")
+        target.write_text(f"# synthetic {relative}\n", encoding="utf-8")
     monkeypatch.setitem(globals_, "ROOT", synthetic_root)
     dependency_hashes = {
         relative: RUNNER["_sha256"](synthetic_root / relative)
