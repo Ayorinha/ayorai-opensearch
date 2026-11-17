@@ -69,6 +69,27 @@ _KEY_ID = re.compile(r"^[A-Za-z0-9_.-]{1,32}$")
 _MIN_MAC_KEY_BYTES = 32
 
 
+def _validate_mac_keys(
+    keys: tuple[tuple[str, bytes], ...],
+) -> tuple[tuple[str, bytes], ...]:
+    """Apply the same key policy to environment and explicitly injected keys."""
+    if not isinstance(keys, tuple):
+        raise ValueError("HMAC keys must be a tuple of (key_id, key_bytes) pairs")
+    validated: list[tuple[str, bytes]] = []
+    seen: set[str] = set()
+    for item in keys:
+        if not isinstance(item, tuple) or len(item) != 2:
+            raise ValueError("HMAC keys must be (key_id, key_bytes) pairs")
+        key_id, key = item
+        if not isinstance(key_id, str) or _KEY_ID.fullmatch(key_id) is None or key_id in seen:
+            raise ValueError("HMAC keys need unique ids of [A-Za-z0-9_.-]{1,32}")
+        if not isinstance(key, bytes) or len(key) < _MIN_MAC_KEY_BYTES:
+            raise ValueError("HMAC keys must have at least 32 bytes")
+        seen.add(key_id)
+        validated.append((key_id, key))
+    return tuple(validated)
+
+
 def audit_mac_keys_from_env() -> tuple[tuple[str, bytes], ...]:
     """Parse ATTRACTOR_AUDIT_HMAC_KEYS="id:hex[,id:hex...]" (first = active).
 
@@ -92,7 +113,7 @@ def audit_mac_keys_from_env() -> tuple[tuple[str, bytes], ...]:
         if len(key) < _MIN_MAC_KEY_BYTES:
             raise ValueError("ATTRACTOR_AUDIT_HMAC_KEYS keys must have at least 32 bytes")
         keys.append((key_id, key))
-    return tuple(keys)
+    return _validate_mac_keys(tuple(keys))
 
 
 def audit_hmac_required_from_env() -> bool:
@@ -175,7 +196,7 @@ class AuditTraceStore:
         )
         self.path = configured
         self._clock = clock or (lambda: datetime.now(UTC))
-        self._mac_keys = audit_mac_keys_from_env() if mac_keys is None else mac_keys
+        self._mac_keys = audit_mac_keys_from_env() if mac_keys is None else _validate_mac_keys(mac_keys)
         self._hmac_required = audit_hmac_required_from_env()
         self._lock = RLock()
         self._legacy_policy = legacy_trace_policy_from_env()
