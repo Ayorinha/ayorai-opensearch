@@ -1586,7 +1586,7 @@ def load_labels(path: Path, vocabulary: str) -> dict[str, str]:
         if not line.strip():
             raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
         try:
-            row = json.loads(line)
+            row = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
         except ValueError as exc:
