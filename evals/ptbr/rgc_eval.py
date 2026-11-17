@@ -1462,6 +1462,7 @@ def verify_run_manifest(
 def _atomic_write_text(path: Path, text: str) -> None:
     """Write through a temporary file in the same directory and an atomic replace."""
     descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    linked = False
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
             handle.write(text)
@@ -1470,8 +1471,11 @@ def _atomic_write_text(path: Path, text: str) -> None:
         # Hard-link publication is atomic and refuses an existing destination. Unlike
         # os.replace(), it cannot overwrite a report created by a concurrent run.
         os.link(temporary, path)
+        linked = True
         Path(temporary).unlink()
     except BaseException:
+        if linked:
+            Path(path).unlink(missing_ok=True)
         Path(temporary).unlink(missing_ok=True)
         raise
 
@@ -1755,6 +1759,16 @@ def evaluate(
 
 def _run_evaluation(args: argparse.Namespace) -> int:
     """Run only from a closed set of immutable input and code snapshots."""
+    git_commit = _git_commit()
+    worktree_clean = _worktree_clean()
+    if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
+        print(
+            "RGC evaluation blocked: the hidden partition runs only from a clean git "
+            "checkout with a resolvable commit",
+            file=sys.stderr,
+        )
+        return 2
+
     with tempfile.TemporaryDirectory(prefix="ayorai-rgc-snapshot-") as temporary:
         snapshot_root = Path(temporary)
         freeze_relatives = (
@@ -1797,18 +1811,6 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                 snapshots["inputs/annotation-approval.json"],
                 snapshots["inputs/adjudication-record.json"],
             )
-
-            git_commit = _git_commit()
-            worktree_clean = _worktree_clean()
-            if args.partition == "hidden" and (
-                git_commit is None or worktree_clean is not True
-            ):
-                print(
-                    "RGC evaluation blocked: the hidden partition runs only from a clean git "
-                    "checkout with a resolvable commit",
-                    file=sys.stderr,
-                )
-                return 2
 
             started_at = datetime.now(UTC).isoformat(timespec="seconds")
             documents = load_documents(snapshots["inputs/documents.jsonl"])
@@ -1904,6 +1906,12 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                 },
                 **result,
             }
+            if _git_commit() != git_commit or _worktree_clean() != worktree_clean:
+                raise ValueError(
+                    "RGC evaluation blocked: checkout identity or worktree state changed "
+                    "during the run"
+                )
+
             manifest_path = args.out.with_name(args.out.name + ".manifest.json")
             input_files = {
                 "cases_sha256": snapshots["inputs/cases.jsonl"],
