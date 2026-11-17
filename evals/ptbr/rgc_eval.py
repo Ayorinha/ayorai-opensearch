@@ -38,9 +38,9 @@ import math
 import os
 import platform
 import re
+import stat
 import subprocess
 import sys
-import stat
 import tempfile
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
