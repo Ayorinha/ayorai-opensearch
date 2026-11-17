@@ -2425,16 +2425,36 @@ def test_freeze_dependency_list_matches_the_runner_imports() -> None:
         for name in ("rgc_agreement", "rgc_components", "rgc_ids", "rgc_random")
         if f"evals.ptbr.{name}" in source or f"from evals.ptbr import {name}" in source
     }
-    dependencies = set(RUNNER["RUNNER_DEPENDENCIES"])
-    assert imported <= dependencies
-    assert {
+    expected_dependencies = {
+        "evals/ptbr/rgc_agreement.py",
+        "evals/ptbr/rgc_components.py",
+        "evals/ptbr/rgc_ids.py",
+        "evals/ptbr/rgc_random.py",
+        "pyproject.toml",
         "rules/judge-2.0.0.json",
+        "src/ayorai_attractor/__init__.py",
+        "src/ayorai_attractor/evaluation/__init__.py",
+        "src/ayorai_attractor/evaluation/stats.py",
+        "src/ayorai_attractor/models.py",
+        "src/ayorai_attractor/verification/__init__.py",
+        "src/ayorai_attractor/verification/claim_pipeline.py",
+        "src/ayorai_attractor/verification/clusters.py",
+        "src/ayorai_attractor/verification/excerpt.py",
+        "src/ayorai_attractor/verification/extraction.py",
+        "src/ayorai_attractor/verification/judge.py",
+        "src/ayorai_attractor/verification/judge2/__init__.py",
         "src/ayorai_attractor/verification/judge2/adjudication.py",
         "src/ayorai_attractor/verification/judge2/gates.py",
+        "src/ayorai_attractor/verification/judge2/rules/judge-2.0.0.json",
+        "src/ayorai_attractor/verification/models.py",
+        "src/ayorai_attractor/verification/numeric.py",
+        "src/ayorai_attractor/verification/pt_normalize.py",
+        "src/ayorai_attractor/verification/response.py",
+        "src/ayorai_attractor/verification/security.py",
         "src/ayorai_attractor/verification/stance.py",
-        "src/ayorai_attractor/evaluation/stats.py",
-        "pyproject.toml",
-    } <= dependencies
+    }
+    assert imported <= expected_dependencies
+    assert set(RUNNER["RUNNER_DEPENDENCIES"]) == expected_dependencies
 
 
 @pytest.mark.parametrize(("commit", "clean"), [(None, True), ("f" * 40, False), ("f" * 40, None)])
