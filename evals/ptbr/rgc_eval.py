@@ -868,6 +868,11 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, Any]:
     runner_spec_path = root / "docs" / "eval" / "RUNNER-RGC-v1.md"
     runner_code_path = root / "evals" / "ptbr" / "rgc_eval.py"
     manifest_path = root / "docs" / "eval" / "PROTOCOL-FREEZE.json"
+    if not manifest_path.is_file():
+        raise ValueError(
+            "RGC evaluation blocked: protocol freeze requires both documents and "
+            "docs/eval/PROTOCOL-FREEZE.json"
+        )
 
     try:
         protocol_text = protocol_path.read_text(encoding="utf-8")
