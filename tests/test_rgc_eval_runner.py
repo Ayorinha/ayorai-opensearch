@@ -2673,13 +2673,13 @@ def test_input_snapshot_is_immutable_to_source_replacement_and_reuses_same_captu
     tmp_path: Path,
 ) -> None:
     source = tmp_path / "caller-controlled.jsonl"
-    original = b'{"case_id":"snapshot-original"}\\n'
+    original = b'{"case_id":"snapshot-original"}\n'
     source.write_bytes(original)
     snapshots, digests = RUNNER["_snapshot_files"](
         {"inputs/cases.jsonl": source, "inputs/labels.jsonl": source},
         tmp_path / "private-snapshot",
     )
-    source.write_bytes(b'{"case_id":"attacker-replacement"}\\n')
+    source.write_bytes(b'{"case_id":"attacker-replacement"}\n')
 
     assert snapshots["inputs/cases.jsonl"] == snapshots["inputs/labels.jsonl"]
     assert snapshots["inputs/cases.jsonl"].read_bytes() == original
@@ -2692,7 +2692,7 @@ def test_input_snapshot_is_immutable_to_source_replacement_and_reuses_same_captu
 
 def test_snapshot_digest_is_not_recomputed_from_replaced_source(tmp_path: Path) -> None:
     source = tmp_path / "approved.jsonl"
-    original = b'{"case_id":"approved"}\\n'
+    original = b'{"case_id":"approved"}\n'
     source.write_bytes(original)
     snapshots, digests = RUNNER["_snapshot_files"](
         {"inputs/cases.jsonl": source}, tmp_path / "snapshot"
@@ -2700,7 +2700,7 @@ def test_snapshot_digest_is_not_recomputed_from_replaced_source(tmp_path: Path) 
 
     # Simulate a concurrent replacement after the initial capture and before
     # validation/evaluation/publication. The private snapshot remains authoritative.
-    source.write_bytes(b'{"case_id":"replacement"}\\n')
+    source.write_bytes(b'{"case_id":"replacement"}\n')
     assert RUNNER["_read_jsonl"](snapshots["inputs/cases.jsonl"])[0]["case_id"] == "approved"
     assert RUNNER["_sha256"](snapshots["inputs/cases.jsonl"]) == digests["inputs/cases.jsonl"]
     assert RUNNER["_sha256"](source) != digests["inputs/cases.jsonl"]
@@ -2713,7 +2713,7 @@ def test_publish_rechecks_the_exact_input_snapshots(
     cases = tmp_path / "cases.jsonl"
     out = tmp_path / "bound.json"
     manifest = tmp_path / "bound.json.manifest.json"
-    cases.write_text('{"case_id":"changed-after-evaluation"}\\n', encoding="utf-8")
+    cases.write_text('{"case_id":"changed-after-evaluation"}\n', encoding="utf-8")
 
     status = RUNNER["_publish_run"](
         report, out, manifest, input_files={"cases_sha256": cases}
@@ -2726,8 +2726,8 @@ def test_publish_rechecks_the_exact_input_snapshots(
 
 def test_atomic_text_publication_never_overwrites_existing_output(tmp_path: Path) -> None:
     target = tmp_path / "report.json"
-    target.write_text("original\\n", encoding="utf-8")
+    target.write_text("original\n", encoding="utf-8")
     with pytest.raises(FileExistsError):
-        RUNNER["_atomic_write_text"](target, "replacement\\n")
-    assert target.read_text(encoding="utf-8") == "original\\n"
+        RUNNER["_atomic_write_text"](target, "replacement\n")
+    assert target.read_text(encoding="utf-8") == "original\n"
     assert not list(tmp_path.glob(".report.json.*"))
