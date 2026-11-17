@@ -77,7 +77,7 @@ from evals.ptbr.rgc_random import (  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.9.0"
+RUNNER_VERSION = "rgc-eval/0.10.0"
 FREEZE_SCHEMA_VERSION = 2
 RUN_MANIFEST_SCHEMA = "rgc-run-manifest/1"
 # Every module whose code decides an RGC number. The freeze binds all of them, so a
