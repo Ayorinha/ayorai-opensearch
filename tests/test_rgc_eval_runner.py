@@ -2667,3 +2667,56 @@ def test_publish_refuses_a_stale_manifest_without_its_report(
     stale.unlink()
     assert RUNNER["_publish_run"](report, out, stale) == 0
     assert RUNNER["verify_run_manifest"](stale, out)["report"]["file"] == "new.json"
+
+
+def test_input_snapshot_is_immutable_to_source_replacement_and_reuses_same_capture(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "caller-controlled.jsonl"
+    original = b'{"case_id":"snapshot-original"}\\n'
+    source.write_bytes(original)
+    snapshots, digests = RUNNER["_snapshot_files"](
+        {"inputs/cases.jsonl": source, "inputs/labels.jsonl": source},
+        tmp_path / "private-snapshot",
+    )
+    source.write_bytes(b'{"case_id":"attacker-replacement"}\\n')
+
+    assert snapshots["inputs/cases.jsonl"] == snapshots["inputs/labels.jsonl"]
+    assert snapshots["inputs/cases.jsonl"].read_bytes() == original
+    assert RUNNER["_sha256"](snapshots["inputs/cases.jsonl"]) == digests["inputs/cases.jsonl"]
+    assert RUNNER["_read_jsonl"](snapshots["inputs/cases.jsonl"]) == [
+        {"case_id": "snapshot-original"}
+    ]
+    assert not (snapshots["inputs/cases.jsonl"].stat().st_mode & 0o222)
+
+
+def test_snapshot_digest_is_not_recomputed_from_replaced_source(tmp_path: Path) -> None:
+    source = tmp_path / "approved.jsonl"
+    original = b'{"case_id":"approved"}\\n'
+    source.write_bytes(original)
+    snapshots, digests = RUNNER["_snapshot_files"](
+        {"inputs/cases.jsonl": source}, tmp_path / "snapshot"
+    )
+
+    # Simulate a concurrent replacement after the initial capture and before
+    # validation/evaluation/publication. The private snapshot remains authoritative.
+    source.write_bytes(b'{"case_id":"replacement"}\\n')
+    assert RUNNER["_read_jsonl"](snapshots["inputs/cases.jsonl"])[0]["case_id"] == "approved"
+    assert RUNNER["_sha256"](snapshots["inputs/cases.jsonl"]) == digests["inputs/cases.jsonl"]
+    assert RUNNER["_sha256"](source) != digests["inputs/cases.jsonl"]
+
+
+def test_publish_rechecks_the_exact_input_snapshots(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _, _, _, report = _synthetic_run(tmp_path)
+    cases = tmp_path / "cases.jsonl"
+    out = tmp_path / "bound.json"
+    manifest = tmp_path / "bound.json.manifest.json"
+    cases.write_text('{"case_id":"changed-after-evaluation"}\\n', encoding="utf-8")
+
+    status = RUNNER["_publish_run"](
+        report, out, manifest, input_files={"cases_sha256": cases}
+    )
+    assert status == 2
+    assert "inputs.cases_sha256 differs" in capsys.readouterr().err
+    assert not out.exists()
+    assert not manifest.exists()
