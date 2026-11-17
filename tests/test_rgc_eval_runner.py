@@ -2755,7 +2755,7 @@ def test_atomic_text_publication_never_overwrites_existing_output(tmp_path: Path
 def test_strict_json_loader_rejects_duplicate_keys(tmp_path: Path) -> None:
     manifest = tmp_path / "freeze.json"
     manifest.write_text(
-        '{"schema_version":2,"status":"FROZEN","status":"DRAFT"}\\n',
+        '{"schema_version":2,"status":"FROZEN","status":"DRAFT"}\n',
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="duplicate JSON key 'status'"):
@@ -2770,11 +2770,11 @@ def test_protocol_freeze_rejects_non_digest_hash_format(tmp_path: Path) -> None:
     runner_spec = eval_dir / "RUNNER-RGC-v1.md"
     runner_code = tmp_path / "evals" / "ptbr" / "rgc_eval.py"
     runner_code.parent.mkdir(parents=True)
-    protocol.write_text("Status: CONGELADO\\n", encoding="utf-8")
-    preregistration.write_text("**Estado:** [CONGELADO]\\n", encoding="utf-8")
-    runner_spec.write_text("**Estado:** [CONGELADO]\\n", encoding="utf-8")
+    protocol.write_text("Status: CONGELADO\n", encoding="utf-8")
+    preregistration.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
+    runner_spec.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
     runner_code.write_text(
-        f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\\n', encoding="utf-8"
+        f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\n', encoding="utf-8"
     )
     manifest = {
         "schema_version": 2,
