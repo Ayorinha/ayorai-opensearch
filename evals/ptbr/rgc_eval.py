@@ -1142,7 +1142,7 @@ def _snapshot_files(
             existing = captured.get(source_key)
             if existing is None:
                 descriptor = os.open(
-                    source,
+                    source_key,
                     os.O_RDONLY | getattr(os, "O_NONBLOCK", 0),
                 )
                 with os.fdopen(descriptor, "rb") as source_handle:
