@@ -182,6 +182,8 @@ def load_documents(path: Path = DOCUMENTS) -> dict[str, Document]:
             raw = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{path}:{line_number}: {exc}") from exc
         if not isinstance(raw, dict) or not required.issubset(raw):
             raise ValueError(
                 f"{path}:{line_number}: expected an object containing "
@@ -840,6 +842,8 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
             record = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{path}:{line_number}: {exc}") from exc
         if not isinstance(record, dict):
             raise ValueError(f"{path}:{line_number}: expected an object")
         case_id = record.get("case_id")
@@ -985,6 +989,8 @@ def _strict_jsonl_case_ids(path: Path, *, annotation: bool = False) -> set[str]:
             row = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{path}:{line_number}: {exc}") from exc
         if not isinstance(row, dict):
             raise ValueError(f"{path}:{line_number}: expected a JSON object")
         expected_keys = {"case_id", "label"} if annotation else None
@@ -1578,6 +1584,8 @@ def load_labels(path: Path, vocabulary: str) -> dict[str, str]:
             row = json.loads(line)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{path}:{line_number}: {exc}") from exc
         if not isinstance(row, dict) or set(row) != {"case_id", "verdict"}:
             raise ValueError(f"{path}:{line_number}: expected exactly case_id and verdict")
         case_id, verdict = row["case_id"], row["verdict"]
