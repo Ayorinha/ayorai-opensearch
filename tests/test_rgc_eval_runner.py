@@ -1076,10 +1076,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     )
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
-    assert (
-        report["protocol_freeze"]["runner_code_sha256"]
-        == freeze_attestation["runner_code_sha256"]
-    )
+    assert report["protocol_freeze"]["runner_code_sha256"] == freeze_attestation["runner_code_sha256"]
     assert report["annotation_approval"]["approved_by"] == "Synthetic test approver"
     assert report["annotation_approval"]["cohen_kappa"] == 1.0
     assert report["metrics"]["system"]["accuracy"] == 1.0
@@ -2790,9 +2787,7 @@ def test_protocol_freeze_rejects_non_digest_hash_format(tmp_path: Path) -> None:
     protocol.write_text("Status: CONGELADO\n", encoding="utf-8")
     preregistration.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
     runner_spec.write_text("**Estado:** [CONGELADO]\n", encoding="utf-8")
-    runner_code.write_text(
-        f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\n', encoding="utf-8"
-    )
+    runner_code.write_text(f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\n', encoding="utf-8")
     manifest = {
         "schema_version": 2,
         "status": "FROZEN",
@@ -2805,9 +2800,7 @@ def test_protocol_freeze_rejects_non_digest_hash_format(tmp_path: Path) -> None:
         "runner_dependencies_sha256": _freeze_dependencies(tmp_path),
         "runner_version": RUNNER["RUNNER_VERSION"],
     }
-    (eval_dir / "PROTOCOL-FREEZE.json").write_text(
-        json.dumps(manifest), encoding="utf-8"
-    )
+    (eval_dir / "PROTOCOL-FREEZE.json").write_text(json.dumps(manifest), encoding="utf-8")
     with pytest.raises(ValueError, match="protocol_sha256 must be a lowercase SHA-256 digest"):
         RUNNER["validate_protocol_freeze"](tmp_path)
 
