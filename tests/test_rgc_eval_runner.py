@@ -894,6 +894,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     globals_ = RUNNER["main"].__globals__
     monkeypatch.setitem(globals_, "_git_commit", lambda: "f" * 40)
     monkeypatch.setitem(globals_, "_worktree_clean", lambda: True)
+    repository_root = RUNNER["ROOT"]
     synthetic_root = tmp_path / "synthetic-checkout"
     freeze_relatives = (
         "docs/eval/PROTOCOL-GOLDEN-V1.md",
@@ -906,7 +907,10 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     for relative in freeze_relatives:
         target = synthetic_root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(f"# synthetic {relative}\n", encoding="utf-8")
+        if relative.endswith("judge-2.0.0.json"):
+            target.write_bytes((repository_root / relative).read_bytes())
+        else:
+            target.write_text(f"# synthetic {relative}\n", encoding="utf-8")
     monkeypatch.setitem(globals_, "ROOT", synthetic_root)
     dependency_hashes = {
         relative: RUNNER["_sha256"](synthetic_root / relative)
@@ -1056,8 +1060,14 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         "--out",
         str(out),
     ]
+    # If the runner ignores its captured rule file, adjudication would try this
+    # deliberately missing import-time path and fail. The run must redirect Judge 2.0
+    # to the immutable snapshot and restore the prior module setting afterwards.
+    missing_rules = tmp_path / "must-not-be-read.json"
+    monkeypatch.setattr(RUNNER["judge2_module"], "_RULES_PATH", missing_rules)
     code = RUNNER["main"](argv)
     assert code == 0
+    assert RUNNER["judge2_module"]._RULES_PATH == missing_rules
     report = json.loads(out.read_text(encoding="utf-8"))
     assert report["runner_version"] == "rgc-eval/0.11.0"
     assert set(report["runtime_dependencies"]) == {"pydantic", "pydantic-core", "rfc8785"}
