@@ -45,8 +45,8 @@ O relatório registra o hash do manifesto, os hashes dos artefatos vinculados (i
 
 ### 0.0.1 Manifesto de execução (E5)
 
-Cada `run` grava, ao lado do relatório, `<relatório>.manifest.json` (`rgc-run-manifest/1`, JSON com chaves ordenadas). O manifesto contém exatamente:
-- versão do executor, commit git, se a árvore de trabalho estava limpa, versão e implementação do Python, versão do pacote, versões exatas de `pydantic`, `pydantic-core` e `rfc8785`, partição e horários de início e fim;
+Cada `run` grava, ao lado do relatório, `<relatório>.manifest.json` (`rgc-run-manifest/1`, JSON com chaves ordenadas). O relatório registra a versão e implementação do Python, a versão do pacote e as versões exatas de `pydantic`, `pydantic-core` e `rfc8785`. O manifesto contém exatamente:
+- versão do executor, commit git, se a árvore de trabalho estava limpa, versão e implementação do Python, versão do pacote, partição e horários de início e fim;
 - os hashes das entradas;
 - o SHA-256 da configuração em JSON canônico;
 - os hashes dos manifestos de congelamento e de aprovação das anotações;
