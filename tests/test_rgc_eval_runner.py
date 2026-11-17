@@ -917,17 +917,13 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         "protocol_sha256": "b" * 64,
         "preregistration_sha256": "c" * 64,
         "runner_spec_sha256": "d" * 64,
-        "runner_code_sha256": RUNNER["_sha256"](
-            synthetic_root / "evals/ptbr/rgc_eval.py"
-        ),
+        "runner_code_sha256": RUNNER["_sha256"](synthetic_root / "evals/ptbr/rgc_eval.py"),
         "runner_dependencies_sha256": dependency_hashes,
         "runner_version": RUNNER["RUNNER_VERSION"],
         "approved_by": "Synthetic test approver",
         "approved_at": "2026-10-21",
     }
-    monkeypatch.setitem(
-        globals_, "validate_protocol_freeze", lambda **_: freeze_attestation
-    )
+    monkeypatch.setitem(globals_, "validate_protocol_freeze", lambda **_: freeze_attestation)
     documents = tmp_path / "docs.jsonl"
     documents.write_text(
         json.dumps(
@@ -1066,10 +1062,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert report["runner_version"] == "rgc-eval/0.10.0"
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
-    assert (
-        report["protocol_freeze"]["runner_code_sha256"]
-        == freeze_attestation["runner_code_sha256"]
-    )
+    assert report["protocol_freeze"]["runner_code_sha256"] == freeze_attestation["runner_code_sha256"]
     assert report["annotation_approval"]["approved_by"] == "Synthetic test approver"
     assert report["annotation_approval"]["cohen_kappa"] == 1.0
     assert report["metrics"]["system"]["accuracy"] == 1.0
@@ -2743,9 +2736,7 @@ def test_publish_rechecks_the_exact_input_snapshots(
     manifest = tmp_path / "bound.json.manifest.json"
     cases.write_text('{"case_id":"changed-after-evaluation"}\n', encoding="utf-8")
 
-    status = RUNNER["_publish_run"](
-        report, out, manifest, input_files={"cases_sha256": cases}
-    )
+    status = RUNNER["_publish_run"](report, out, manifest, input_files={"cases_sha256": cases})
     assert status == 2
     assert "inputs.cases_sha256 differs" in capsys.readouterr().err
     assert not out.exists()
