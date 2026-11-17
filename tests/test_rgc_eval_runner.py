@@ -9,9 +9,9 @@ from __future__ import annotations
 import ast
 import json
 import runpy
-from types import SimpleNamespace
 from collections.abc import Callable
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -612,8 +612,8 @@ def test_h1_is_blocked_when_informative_component_resolution_cannot_reach_005(
         generator="RGC-PRNG-1",
         iterations=10_000,
     )
-    monkeypatch.setitem(RUNNER, "sign_flip_by_component", lambda differences: fake_sign_flip)
-    monkeypatch.setitem(RUNNER, "obuchowski_clustered_test", lambda *args: None)
+    monkeypatch.setitem(RUNNER["compute_metrics"].__globals__, "sign_flip_by_component", lambda differences: fake_sign_flip)
+    monkeypatch.setitem(RUNNER["compute_metrics"].__globals__, "obuchowski_clustered_test", lambda *args: None)
 
     metrics = RUNNER["compute_metrics"](
         gold,
