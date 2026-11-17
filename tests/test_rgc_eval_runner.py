@@ -2750,3 +2750,46 @@ def test_atomic_text_publication_never_overwrites_existing_output(tmp_path: Path
         RUNNER["_atomic_write_text"](target, "replacement\n")
     assert target.read_text(encoding="utf-8") == "original\n"
     assert not list(tmp_path.glob(".report.json.*"))
+
+
+def test_strict_json_loader_rejects_duplicate_keys(tmp_path: Path) -> None:
+    manifest = tmp_path / "freeze.json"
+    manifest.write_text(
+        '{"schema_version":2,"status":"FROZEN","status":"DRAFT"}\\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="duplicate JSON key 'status'"):
+        RUNNER["_load_strict_json"](manifest, "protocol freeze manifest")
+
+
+def test_protocol_freeze_rejects_non_digest_hash_format(tmp_path: Path) -> None:
+    eval_dir = tmp_path / "docs" / "eval"
+    eval_dir.mkdir(parents=True)
+    protocol = eval_dir / "PROTOCOL-GOLDEN-V1.md"
+    preregistration = eval_dir / "PREREGISTRATION-RGC-v1.md"
+    runner_spec = eval_dir / "RUNNER-RGC-v1.md"
+    runner_code = tmp_path / "evals" / "ptbr" / "rgc_eval.py"
+    runner_code.parent.mkdir(parents=True)
+    protocol.write_text("Status: CONGELADO\\n", encoding="utf-8")
+    preregistration.write_text("**Estado:** [CONGELADO]\\n", encoding="utf-8")
+    runner_spec.write_text("**Estado:** [CONGELADO]\\n", encoding="utf-8")
+    runner_code.write_text(
+        f'RUNNER_VERSION = "{RUNNER["RUNNER_VERSION"]}"\\n', encoding="utf-8"
+    )
+    manifest = {
+        "schema_version": 2,
+        "status": "FROZEN",
+        "approved_by": "Synthetic approver",
+        "approved_at": "2026-10-21",
+        "protocol_sha256": "not-a-digest",
+        "preregistration_sha256": RUNNER["_sha256"](preregistration),
+        "runner_spec_sha256": RUNNER["_sha256"](runner_spec),
+        "runner_code_sha256": RUNNER["_sha256"](runner_code),
+        "runner_dependencies_sha256": _freeze_dependencies(tmp_path),
+        "runner_version": RUNNER["RUNNER_VERSION"],
+    }
+    (eval_dir / "PROTOCOL-FREEZE.json").write_text(
+        json.dumps(manifest), encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="protocol_sha256 must be a lowercase SHA-256 digest"):
+        RUNNER["validate_protocol_freeze"](tmp_path)
