@@ -158,6 +158,15 @@ class Passage:
     end: int
 
 
+def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        result[key] = value
+    return result
+
+
 # ---------------------------------------------------------------- documents
 
 
@@ -170,7 +179,7 @@ def load_documents(path: Path = DOCUMENTS) -> dict[str, Document]:
         if not line.strip():
             raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
         try:
-            raw = json.loads(line)
+            raw = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
         if not isinstance(raw, dict) or not required.issubset(raw):
@@ -828,7 +837,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
         if not line.strip():
             raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
         try:
-            record = json.loads(line)
+            record = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
         if not isinstance(record, dict):
@@ -973,7 +982,7 @@ def _strict_jsonl_case_ids(path: Path, *, annotation: bool = False) -> set[str]:
         if not line.strip():
             raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
         try:
-            row = json.loads(line)
+            row = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
         if not isinstance(row, dict):
@@ -1037,8 +1046,8 @@ def validate_annotation_approval(
 ) -> dict[str, Any]:
     """Require a passing human agreement report and approval bound to exact artifacts."""
     try:
-        report = json.loads(agreement_report_path.read_text(encoding="utf-8"))
-        manifest = json.loads(approval_manifest_path.read_text(encoding="utf-8"))
+        report = _load_strict_json(agreement_report_path, "agreement report")
+        manifest = _load_strict_json(approval_manifest_path, "annotation approval manifest")
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(
             "RGC evaluation blocked: agreement report and annotation approval manifest are required"
