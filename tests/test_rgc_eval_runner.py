@@ -2820,3 +2820,31 @@ def test_snapshot_capture_fails_closed_if_source_changes_during_read(
     with pytest.raises(ValueError, match="changed while being snapshotted"):
         RUNNER["_snapshot_files"]({"inputs/cases.jsonl": source}, destination)
     assert not destination.exists()
+
+
+def test_case_jsonl_rejects_duplicate_object_keys(tmp_path: Path) -> None:
+    cases = tmp_path / "cases.jsonl"
+    cases.write_text('{"case_id":"a","case_id":"attacker"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate JSON key 'case_id'"):
+        RUNNER["_read_jsonl"](cases)
+
+
+def test_label_jsonl_rejects_duplicate_object_keys(tmp_path: Path) -> None:
+    labels = tmp_path / "labels.jsonl"
+    labels.write_text(
+        '{"case_id":"a","verdict":"SUPPORTED","verdict":"REFUTED"}\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="duplicate JSON key 'verdict'"):
+        RUNNER["load_labels"](labels, "judge2")
+
+
+def test_document_jsonl_rejects_duplicate_object_keys(tmp_path: Path) -> None:
+    documents = tmp_path / "documents.jsonl"
+    documents.write_text(
+        '{"source_id":"a","source_id":"attacker","source_url":"https://example.test",'
+        '"retrieved_at":"2026-10-21T00:00:00Z","source_license":"synthetic","text":"x"}\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="duplicate JSON key 'source_id'"):
+        RUNNER["load_documents"](documents)
