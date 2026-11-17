@@ -196,7 +196,9 @@ class AuditTraceStore:
         )
         self.path = configured
         self._clock = clock or (lambda: datetime.now(UTC))
-        self._mac_keys = audit_mac_keys_from_env() if mac_keys is None else _validate_mac_keys(mac_keys)
+        self._mac_keys = (
+            audit_mac_keys_from_env() if mac_keys is None else _validate_mac_keys(mac_keys)
+        )
         self._hmac_required = audit_hmac_required_from_env()
         self._lock = RLock()
         self._legacy_policy = legacy_trace_policy_from_env()
