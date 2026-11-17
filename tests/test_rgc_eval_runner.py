@@ -891,22 +891,42 @@ def test_strict_corpus_export_is_accepted_by_golden_checker(tmp_path: Path) -> N
 def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # This test exercises report serialization with a synthetic freeze attestation;
     # the real repository protocol intentionally remains unfrozen.
-    monkeypatch.setitem(RUNNER["main"].__globals__, "_git_commit", lambda: "f" * 40)
-    monkeypatch.setitem(RUNNER["main"].__globals__, "_worktree_clean", lambda: True)
+    globals_ = RUNNER["main"].__globals__
+    monkeypatch.setitem(globals_, "_git_commit", lambda: "f" * 40)
+    monkeypatch.setitem(globals_, "_worktree_clean", lambda: True)
+    synthetic_root = tmp_path / "synthetic-checkout"
+    freeze_relatives = (
+        "docs/eval/PROTOCOL-GOLDEN-V1.md",
+        "docs/eval/PREREGISTRATION-RGC-v1.md",
+        "docs/eval/RUNNER-RGC-v1.md",
+        "docs/eval/PROTOCOL-FREEZE.json",
+        "evals/ptbr/rgc_eval.py",
+        *RUNNER["RUNNER_DEPENDENCIES"],
+    )
+    for relative in freeze_relatives:
+        target = synthetic_root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(f"# synthetic {relative}\\n", encoding="utf-8")
+    monkeypatch.setitem(globals_, "ROOT", synthetic_root)
+    dependency_hashes = {
+        relative: RUNNER["_sha256"](synthetic_root / relative)
+        for relative in RUNNER["RUNNER_DEPENDENCIES"]
+    }
+    freeze_attestation = {
+        "manifest_sha256": "a" * 64,
+        "protocol_sha256": "b" * 64,
+        "preregistration_sha256": "c" * 64,
+        "runner_spec_sha256": "d" * 64,
+        "runner_code_sha256": RUNNER["_sha256"](
+            synthetic_root / "evals/ptbr/rgc_eval.py"
+        ),
+        "runner_dependencies_sha256": dependency_hashes,
+        "runner_version": RUNNER["RUNNER_VERSION"],
+        "approved_by": "Synthetic test approver",
+        "approved_at": "2026-10-21",
+    }
     monkeypatch.setitem(
-        RUNNER["main"].__globals__,
-        "validate_protocol_freeze",
-        lambda: {
-            "manifest_sha256": "a" * 64,
-            "protocol_sha256": "b" * 64,
-            "preregistration_sha256": "c" * 64,
-            "runner_spec_sha256": "d" * 64,
-            "runner_code_sha256": "e" * 64,
-            "runner_dependencies_sha256": dict.fromkeys(RUNNER["RUNNER_DEPENDENCIES"], "1" * 64),
-            "runner_version": RUNNER["RUNNER_VERSION"],
-            "approved_by": "Synthetic test approver",
-            "approved_at": "2026-10-21",
-        },
+        globals_, "validate_protocol_freeze", lambda **_: freeze_attestation
     )
     documents = tmp_path / "docs.jsonl"
     documents.write_text(
@@ -1043,10 +1063,10 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     code = RUNNER["main"](argv)
     assert code == 0
     report = json.loads(out.read_text(encoding="utf-8"))
-    assert report["runner_version"] == "rgc-eval/0.9.0"
+    assert report["runner_version"] == "rgc-eval/0.10.0"
     assert report["protocol_freeze"]["approved_by"] == "Synthetic test approver"
     assert report["protocol_freeze"]["protocol_sha256"] == "b" * 64
-    assert report["protocol_freeze"]["runner_code_sha256"] == "e" * 64
+    assert report["protocol_freeze"]["runner_code_sha256"] == freeze_attestation["runner_code_sha256"]
     assert report["annotation_approval"]["approved_by"] == "Synthetic test approver"
     assert report["annotation_approval"]["cohen_kappa"] == 1.0
     assert report["metrics"]["system"]["accuracy"] == 1.0
@@ -1070,6 +1090,11 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
             "development_cases_sha256": development_cases,
             "development_labels_sha256": development_labels,
             "documents_sha256": documents,
+            "annotation_a_sha256": annotation_a,
+            "annotation_b_sha256": annotation_b,
+            "agreement_report_sha256": agreement_report,
+            "annotation_approval_sha256": annotation_approval,
+            "adjudication_record_sha256": adjudication_record,
         },
     )
     assert manifest["schema"] == "rgc-run-manifest/1"
