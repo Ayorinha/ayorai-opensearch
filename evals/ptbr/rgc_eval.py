@@ -52,6 +52,7 @@ from typing import Any
 
 from ayorai_attractor.evaluation.stats import mcnemar_exact_pvalue
 from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
+import ayorai_attractor.verification.judge2 as judge2_module
 from ayorai_attractor.verification.judge2 import adjudication
 from ayorai_attractor.verification.models import Claim, Evidence
 from ayorai_attractor.verification.stance import RuleStanceDetector
@@ -1818,6 +1819,7 @@ def _run_evaluation(args: argparse.Namespace) -> int:
         )
         return 2
 
+    previous_judge_rules_path: Path | None = None
     with tempfile.TemporaryDirectory(prefix="ayorai-rgc-snapshot-") as temporary:
         snapshot_root = Path(temporary)
         freeze_relatives = (
@@ -1844,6 +1846,11 @@ def _run_evaluation(args: argparse.Namespace) -> int:
         sources.update(input_sources)
         try:
             snapshots, snapshot_hashes = _snapshot_files(sources, snapshot_root)
+
+            # Judge 2.0 must load its rule contract from the same captured bytes
+            # that the freeze validator hashed, not from its import-time checkout path.
+            previous_judge_rules_path = judge2_module._RULES_PATH
+            judge2_module._RULES_PATH = snapshots["rules/judge-2.0.0.json"]
 
             # Freeze and approval validation operate on the captured bytes only.
             protocol_freeze = validate_protocol_freeze(root=snapshot_root)
@@ -1989,6 +1996,9 @@ def _run_evaluation(args: argparse.Namespace) -> int:
         except (OSError, ValueError) as exc:
             print(str(exc), file=sys.stderr)
             return 2
+        finally:
+            if previous_judge_rules_path is not None:
+                judge2_module._RULES_PATH = previous_judge_rules_path
 
 
 def main(argv: Sequence[str] | None = None) -> int:
