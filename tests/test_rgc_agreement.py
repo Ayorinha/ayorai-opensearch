@@ -119,12 +119,12 @@ def test_cli_uses_one_immutable_snapshot_for_metrics_and_hashes(
         for case_id, label in labels
     ).encode("utf-8")
     replacement = (
-        '{"case_id":"a","label":"SUPPORTED"}\n'
-        '{"case_id":"b","label":"SUPPORTED"}\n'
-        '{"case_id":"c","label":"SUPPORTED"}\n'
-        '{"case_id":"d","label":"SUPPORTED"}\n'
-        '{"case_id":"e","label":"SUPPORTED"}\n'
-    ).encode("utf-8")
+        b'{"case_id":"a","label":"SUPPORTED"}\n'
+        b'{"case_id":"b","label":"SUPPORTED"}\n'
+        b'{"case_id":"c","label":"SUPPORTED"}\n'
+        b'{"case_id":"d","label":"SUPPORTED"}\n'
+        b'{"case_id":"e","label":"SUPPORTED"}\n'
+    )
     annotation_a = tmp_path / "annotation-a.jsonl"
     annotation_b = tmp_path / "annotation-b.jsonl"
     annotation_a.write_bytes(original)
