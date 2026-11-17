@@ -244,3 +244,13 @@ def test_bootstrap_uses_rgc_prng_and_type7_percentile() -> None:
     result = AGREEMENT["compute_agreement"](labels_a, labels_b, iterations=50)
     assert result["bootstrap"]["generator"] == "RGC-PRNG-1"
     assert result["bootstrap"]["percentile"] == "hyndman-fan-type-7"
+
+
+def test_duplicate_json_object_keys_are_rejected(tmp_path: Path) -> None:
+    file_path = tmp_path / "annotations.jsonl"
+    file_path.write_text(
+        '{"case_id":"a","case_id":"attacker","label":"SUPPORTED"}\\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="duplicate JSON key 'case_id'"):
+        AGREEMENT["load_annotations"](file_path)
