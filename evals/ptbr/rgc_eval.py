@@ -1123,7 +1123,6 @@ def validate_annotation_approval(
     }
 
 
-
 def _snapshot_files(
     sources: Mapping[str, Path], destination: Path
 ) -> tuple[dict[str, Path], dict[str, str]]:
@@ -1779,9 +1778,7 @@ def _run_evaluation(args: argparse.Namespace) -> int:
             "evals/ptbr/rgc_eval.py",
             *RUNNER_DEPENDENCIES,
         )
-        sources: dict[str, Path] = {
-            relative: ROOT / relative for relative in freeze_relatives
-        }
+        sources: dict[str, Path] = {relative: ROOT / relative for relative in freeze_relatives}
         input_sources = {
             "inputs/cases.jsonl": args.cases,
             "inputs/labels.jsonl": args.labels,
@@ -1880,24 +1877,16 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                         "seed": SEED,
                         "generator": "RGC-PRNG-1",
                         "percentile": "hyndman-fan-type-7",
-                        "primary_unit": (
-                            "component" if args.partition == "hidden" else "case"
-                        ),
+                        "primary_unit": ("component" if args.partition == "hidden" else "case"),
                         "sensitivity_units": (
                             ["article_cluster", "case"] if args.partition == "hidden" else []
                         ),
                     },
-                    "h1_test": (
-                        "sign_flip_by_component"
-                        if args.partition == "hidden"
-                        else "not_tested"
-                    ),
+                    "h1_test": "sign_flip_by_component" if args.partition == "hidden" else "not_tested",
                     "baseline_primary": {
                         "name": "B",
                         "development_label_count": len(development_labels),
-                        "label": development_baseline_label(
-                            development_labels, args.vocabulary
-                        ),
+                        "label": development_baseline_label(development_labels, args.vocabulary),
                     },
                     "baseline_descriptive": {
                         "name": "A",
@@ -1934,10 +1923,7 @@ def _run_evaluation(args: argparse.Namespace) -> int:
             )
             if status != 0:
                 return status
-            print(
-                f"run manifest {manifest_path} "
-                f"sha256={_sha256(manifest_path)}"
-            )
+            print(f"run manifest {manifest_path} sha256={_sha256(manifest_path)}")
             metrics = result["metrics"]
             print(
                 f"n={metrics['n']} accuracy={metrics['system']['accuracy']} "
@@ -1996,9 +1982,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "export-corpus":
         try:
             documents = load_documents(args.documents)
-            args.out.write_text(
-                export_strict_corpus(documents), encoding="utf-8"
-            )
+            args.out.write_text(export_strict_corpus(documents), encoding="utf-8")
         except (OSError, ValueError) as exc:
             print(str(exc), file=sys.stderr)
             return 2
