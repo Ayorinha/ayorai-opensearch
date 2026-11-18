@@ -2898,6 +2898,7 @@ def test_document_jsonl_rejects_duplicate_object_keys(tmp_path: Path) -> None:
         RUNNER["load_documents"](documents)
 
 
+
 def test_execution_provenance_accepts_exact_snapshot_module_bytes() -> None:
     runner_path = ROOT / "evals" / "ptbr" / "rgc_eval.py"
     module_path = ROOT / "evals" / "ptbr" / "rgc_ids.py"
@@ -2929,6 +2930,7 @@ def test_execution_provenance_rejects_loaded_source_digest_mismatch() -> None:
     loaded = {"evals.ptbr.rgc_ids": type("LoadedModule", (), {"__file__": str(module_path)})()}
     with pytest.raises(ValueError, match="not bound to the captured source bytes"):
         RUNNER["_assert_loaded_modules_from_snapshot"](ROOT, expected, loaded)
+
 
 def test_isolated_interpreter_imports_from_snapshot_and_rejects_foreign_package(
     tmp_path: Path,
