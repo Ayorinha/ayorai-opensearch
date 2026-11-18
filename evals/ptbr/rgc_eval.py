@@ -2001,7 +2001,8 @@ def _run_evaluation_in_process(args: argparse.Namespace) -> int:
         expected_clean = os.environ.get("AYORAI_RGC_EXPECTED_WORKTREE_CLEAN")
         if expected_commit != (git_commit or "") or expected_clean != str(worktree_clean).lower():
             print(
-                "RGC evaluation blocked: Git checkout identity changed between capture and execution",
+                "RGC evaluation blocked: Git checkout identity changed "
+                "between capture and execution",
                 file=sys.stderr,
             )
             return 2
