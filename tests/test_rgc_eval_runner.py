@@ -2898,7 +2898,6 @@ def test_document_jsonl_rejects_duplicate_object_keys(tmp_path: Path) -> None:
         RUNNER["load_documents"](documents)
 
 
-
 def test_execution_provenance_accepts_exact_snapshot_module_bytes() -> None:
     runner_path = ROOT / "evals" / "ptbr" / "rgc_eval.py"
     module_path = ROOT / "evals" / "ptbr" / "rgc_ids.py"
