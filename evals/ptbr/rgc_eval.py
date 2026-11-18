@@ -1832,9 +1832,12 @@ def _assert_loaded_modules_from_snapshot(
     if expected_runner_hash is None or _sha256(runner_path) != expected_runner_hash:
         raise ValueError("RGC evaluation blocked: runner bytes differ from captured snapshot")
 
-    package_prefixes = ("ayorai_attractor", "evals.ptbr")
     for name, module in tuple(sys.modules.items()):
-        if not name.startswith(package_prefixes):
+        if not (
+            name == "ayorai_attractor"
+            or name.startswith("ayorai_attractor.")
+            or name.startswith("evals.ptbr.")
+        ):
             continue
         origin = getattr(module, "__file__", None)
         if origin is None:
