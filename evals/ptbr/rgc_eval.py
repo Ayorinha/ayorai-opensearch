@@ -1820,7 +1820,9 @@ def evaluate(
 
 
 def _assert_loaded_modules_from_snapshot(
-    snapshot_root: Path, expected_code_hashes: Mapping[str, str]
+    snapshot_root: Path,
+    expected_code_hashes: Mapping[str, str],
+    loaded_modules: Mapping[str, Any] | None = None,
 ) -> None:
     """Fail closed unless every loaded AYORAI/evaluation module came from captured bytes."""
     runner_relative = "evals/ptbr/rgc_eval.py"
@@ -1832,7 +1834,8 @@ def _assert_loaded_modules_from_snapshot(
     if expected_runner_hash is None or _sha256(runner_path) != expected_runner_hash:
         raise ValueError("RGC evaluation blocked: runner bytes differ from captured snapshot")
 
-    for name, module in tuple(sys.modules.items()):
+    modules = sys.modules if loaded_modules is None else loaded_modules
+    for name, module in tuple(modules.items()):
         if not (
             name == "ayorai_attractor"
             or name.startswith("ayorai_attractor.")
