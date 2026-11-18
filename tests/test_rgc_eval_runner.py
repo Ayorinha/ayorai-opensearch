@@ -2893,3 +2893,36 @@ def test_document_jsonl_rejects_duplicate_object_keys(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="duplicate JSON key 'source_id'"):
         RUNNER["load_documents"](documents)
+
+def test_execution_provenance_accepts_exact_snapshot_module_bytes() -> None:
+    runner_path = ROOT / "evals" / "ptbr" / "rgc_eval.py"
+    module_path = ROOT / "evals" / "ptbr" / "rgc_ids.py"
+    expected = {
+        "evals/ptbr/rgc_eval.py": RUNNER["_sha256"](runner_path),
+        "evals/ptbr/rgc_ids.py": RUNNER["_sha256"](module_path),
+    }
+    loaded = {"evals.ptbr.rgc_ids": type("LoadedModule", (), {"__file__": str(module_path)})()}
+    RUNNER["_assert_loaded_modules_from_snapshot"](ROOT, expected, loaded)
+
+
+def test_execution_provenance_rejects_import_origin_outside_snapshot(tmp_path: Path) -> None:
+    runner_path = ROOT / "evals" / "ptbr" / "rgc_eval.py"
+    foreign_module = tmp_path / "rgc_ids.py"
+    foreign_module.write_text("# foreign module\n", encoding="utf-8")
+    expected = {"evals/ptbr/rgc_eval.py": RUNNER["_sha256"](runner_path)}
+    loaded = {"evals.ptbr.rgc_ids": type("LoadedModule", (), {"__file__": str(foreign_module)})()}
+    with pytest.raises(ValueError, match="imported outside the snapshot"):
+        RUNNER["_assert_loaded_modules_from_snapshot"](ROOT, expected, loaded)
+
+
+def test_execution_provenance_rejects_loaded_source_digest_mismatch() -> None:
+    runner_path = ROOT / "evals" / "ptbr" / "rgc_eval.py"
+    module_path = ROOT / "evals" / "ptbr" / "rgc_ids.py"
+    expected = {
+        "evals/ptbr/rgc_eval.py": RUNNER["_sha256"](runner_path),
+        "evals/ptbr/rgc_ids.py": "0" * 64,
+    }
+    loaded = {"evals.ptbr.rgc_ids": type("LoadedModule", (), {"__file__": str(module_path)})()}
+    with pytest.raises(ValueError, match="not bound to the captured source bytes"):
+        RUNNER["_assert_loaded_modules_from_snapshot"](ROOT, expected, loaded)
+
