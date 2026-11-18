@@ -1883,15 +1883,6 @@ def _run_evaluation(args: argparse.Namespace) -> int:
 
     git_commit = _git_commit()
     worktree_clean = _worktree_clean()
-    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
-        expected_commit = os.environ.get("AYORAI_RGC_EXPECTED_GIT_COMMIT", "")
-        expected_clean = os.environ.get("AYORAI_RGC_EXPECTED_WORKTREE_CLEAN")
-        if expected_commit != (git_commit or "") or expected_clean != str(worktree_clean).lower():
-            print(
-                "RGC evaluation blocked: Git checkout identity changed between capture and execution",
-                file=sys.stderr,
-            )
-            return 2
     if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
         print(
             "RGC evaluation blocked: the hidden partition runs only from a clean git "
@@ -2002,6 +1993,15 @@ def _run_evaluation_in_process(args: argparse.Namespace) -> int:
     """Evaluate in the isolated child whose imports come only from captured code."""
     git_commit = _git_commit()
     worktree_clean = _worktree_clean()
+    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
+        expected_commit = os.environ.get("AYORAI_RGC_EXPECTED_GIT_COMMIT", "")
+        expected_clean = os.environ.get("AYORAI_RGC_EXPECTED_WORKTREE_CLEAN")
+        if expected_commit != (git_commit or "") or expected_clean != str(worktree_clean).lower():
+            print(
+                "RGC evaluation blocked: Git checkout identity changed between capture and execution",
+                file=sys.stderr,
+            )
+            return 2
     if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
         print(
             "RGC evaluation blocked: the hidden partition runs only from a clean git "
