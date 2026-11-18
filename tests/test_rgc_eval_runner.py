@@ -2987,4 +2987,3 @@ def test_isolated_interpreter_imports_from_snapshot_and_rejects_foreign_package(
     )
     assert rejected.returncode != 0
     assert "imported outside the snapshot" in rejected.stderr
-
