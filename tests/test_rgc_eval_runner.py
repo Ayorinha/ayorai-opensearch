@@ -8,8 +8,11 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import re
 import runpy
+import subprocess
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -2894,6 +2897,7 @@ def test_document_jsonl_rejects_duplicate_object_keys(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="duplicate JSON key 'source_id'"):
         RUNNER["load_documents"](documents)
 
+
 def test_execution_provenance_accepts_exact_snapshot_module_bytes() -> None:
     runner_path = ROOT / "evals" / "ptbr" / "rgc_eval.py"
     module_path = ROOT / "evals" / "ptbr" / "rgc_ids.py"
@@ -2925,4 +2929,61 @@ def test_execution_provenance_rejects_loaded_source_digest_mismatch() -> None:
     loaded = {"evals.ptbr.rgc_ids": type("LoadedModule", (), {"__file__": str(module_path)})()}
     with pytest.raises(ValueError, match="not bound to the captured source bytes"):
         RUNNER["_assert_loaded_modules_from_snapshot"](ROOT, expected, loaded)
+
+def test_isolated_interpreter_imports_from_snapshot_and_rejects_foreign_package(
+    tmp_path: Path,
+) -> None:
+    code_files = (
+        "evals/ptbr/rgc_eval.py",
+        *(path for path in RUNNER["RUNNER_DEPENDENCIES"] if path.endswith(".py")),
+    )
+    sources = {path: ROOT / path for path in code_files}
+    snapshot_root = tmp_path / "snapshot"
+    snapshots, digests = RUNNER["_snapshot_files"](sources, snapshot_root)
+    expected = {path: digests[path] for path in code_files}
+    script = (
+        "import json, runpy, sys; "
+        "from pathlib import Path; "
+        "namespace = runpy.run_path(sys.argv[1]); "
+        "namespace['_assert_loaded_modules_from_snapshot']("
+        "Path(sys.argv[2]), json.loads(__import__('os').environ['EXPECTED_CODE']))"
+    )
+    base_environment = os.environ.copy()
+    base_environment["EXPECTED_CODE"] = json.dumps(expected, sort_keys=True)
+    base_environment["PYTHONPATH"] = os.pathsep.join(
+        (str(snapshot_root / "src"), str(snapshot_root))
+    )
+    command = [
+        sys.executable,
+        "-B",
+        "-c",
+        script,
+        str(snapshots["evals/ptbr/rgc_eval.py"]),
+        str(snapshot_root),
+    ]
+
+    accepted = subprocess.run(
+        command,
+        cwd=snapshot_root,
+        env=base_environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert accepted.returncode == 0, accepted.stderr
+
+    foreign_environment = base_environment.copy()
+    foreign_environment["PYTHONPATH"] = os.pathsep.join(
+        (str(ROOT / "src"), str(snapshot_root / "src"), str(snapshot_root))
+    )
+    rejected = subprocess.run(
+        command,
+        cwd=snapshot_root,
+        env=foreign_environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert rejected.returncode != 0
+    assert "imported outside the snapshot" in rejected.stderr
 
