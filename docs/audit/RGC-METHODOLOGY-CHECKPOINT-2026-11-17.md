@@ -8,7 +8,7 @@
 - [PR #269](https://github.com/Ayorinha/ayorai-opensearch/pull/269) está fechada **sem merge**. O registro histórico identifica o head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`; os sete workflows desse head foram consultados e terminaram `success`. O endpoint legado de status não retornou registros.
 - A conversa da #269 tem três comentários; não há reviews submetidas nem threads inline. Seu diff original incluía uma alteração incidental em `docs/ARCHITECTURE.md`, motivo registrado para a substituição.
 - A #269 foi substituída pela #272, também fechada sem merge, e depois pela [#273](https://github.com/Ayorinha/ayorai-opensearch/pull/273), que foi integrada. A revisão metodológica incorporada não deve ser reiniciada.
-- [PR #539](https://github.com/Ayorinha/ayorai-opensearch/pull/539) continua Draft, com head `5c27ed57d98fecde57924f934b9075edf880657c`, base histórica `9833d24f35e419117412ca557c51f4869de47e21`, seis commits atrás da main consultada e `mergeable=false`. Seus sete workflows no head consultado passaram, mas a base desatualizada impede tratá-la como pronta para integração. Este checkpoint atualiza a evidência, não modifica nem fecha a #539.
+- [PR #539](https://github.com/Ayorinha/ayorai-opensearch/pull/539) continua Draft, com head `5c27ed57d98fecde57924f934b9075edf880657c` e base histórica `9833d24f35e419117412ca557c51f4869de47e21`. A comparação com a main consultada confirmou **118 commits atrás e 3 à frente** (branches divergentes); GitHub reportou `mergeable=false`. Os sete workflows no head consultado passaram, mas esses checks não tornam a branch atualizada nem pronta para integração. Este checkpoint atualiza a evidência, não modifica nem fecha a #539.
 
 ## 2. Estado científico preservado
 
