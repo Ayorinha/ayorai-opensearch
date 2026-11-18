@@ -1883,6 +1883,15 @@ def _run_evaluation(args: argparse.Namespace) -> int:
 
     git_commit = _git_commit()
     worktree_clean = _worktree_clean()
+    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
+        expected_commit = os.environ.get("AYORAI_RGC_EXPECTED_GIT_COMMIT", "")
+        expected_clean = os.environ.get("AYORAI_RGC_EXPECTED_WORKTREE_CLEAN")
+        if expected_commit != (git_commit or "") or expected_clean != str(worktree_clean).lower():
+            print(
+                "RGC evaluation blocked: Git checkout identity changed between capture and execution",
+                file=sys.stderr,
+            )
+            return 2
     if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
         print(
             "RGC evaluation blocked: the hidden partition runs only from a clean git "
@@ -1918,6 +1927,10 @@ def _run_evaluation(args: argparse.Namespace) -> int:
         with tempfile.TemporaryDirectory(prefix="ayorai-rgc-execution-") as temporary:
             snapshot_root = Path(temporary)
             snapshots, snapshot_hashes = _snapshot_files(sources, snapshot_root)
+            if _git_commit() != git_commit or _worktree_clean() != worktree_clean:
+                raise ValueError(
+                    "RGC evaluation blocked: Git checkout identity changed during code capture"
+                )
             expected_code = {
                 relative: snapshot_hashes[relative]
                 for relative in freeze_relatives
@@ -1926,6 +1939,8 @@ def _run_evaluation(args: argparse.Namespace) -> int:
             environment = os.environ.copy()
             environment["AYORAI_RGC_SNAPSHOT_CHILD"] = "1"
             environment["AYORAI_RGC_GIT_ROOT"] = str(ROOT.resolve())
+            environment["AYORAI_RGC_EXPECTED_GIT_COMMIT"] = git_commit or ""
+            environment["AYORAI_RGC_EXPECTED_WORKTREE_CLEAN"] = str(worktree_clean).lower()
             environment["AYORAI_RGC_EXPECTED_CODE_SHA256"] = json.dumps(
                 expected_code, sort_keys=True, separators=(",", ":")
             )
