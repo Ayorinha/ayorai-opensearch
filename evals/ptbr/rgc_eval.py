@@ -1822,7 +1822,6 @@ def evaluate(
     }
 
 
-
 def _assert_loaded_modules_from_snapshot(
     snapshot_root: Path,
     expected_code_hashes: Mapping[str, str],
