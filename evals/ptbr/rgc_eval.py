@@ -1935,6 +1935,9 @@ def _run_evaluation(args: argparse.Namespace) -> int:
             environment["AYORAI_RGC_EXPECTED_CODE_SHA256"] = json.dumps(
                 expected_code, sort_keys=True, separators=(",", ":")
             )
+            environment["AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256"] = json.dumps(
+                snapshot_hashes, sort_keys=True, separators=(",", ":")
+            )
             # Do not inherit a caller-controlled PYTHONPATH. The child imports the
             # package and eval modules from the immutable snapshot before site-packages.
             environment["PYTHONPATH"] = os.pathsep.join(
@@ -2038,12 +2041,14 @@ def _run_evaluation_in_process(args: argparse.Namespace) -> int:
         try:
             snapshots, snapshot_hashes = _snapshot_files(sources, snapshot_root)
             if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
-                expected_code = json.loads(os.environ["AYORAI_RGC_EXPECTED_CODE_SHA256"])
-                for relative, expected_digest in expected_code.items():
+                expected_snapshot = json.loads(os.environ["AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256"])
+                if not isinstance(expected_snapshot, dict):
+                    raise ValueError("RGC evaluation blocked: invalid expected snapshot digest map")
+                for relative, expected_digest in expected_snapshot.items():
                     if snapshot_hashes.get(relative) != expected_digest:
                         raise ValueError(
-                            "RGC evaluation blocked: snapshot changed after the isolated "
-                            f"interpreter imported {relative}"
+                            "RGC evaluation blocked: captured artifact changed between "
+                            f"parent and isolated child: {relative}"
                         )
 
             # Judge 2.0 must load its rule contract from the same captured bytes
