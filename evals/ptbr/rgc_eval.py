@@ -79,7 +79,7 @@ from evals.ptbr.rgc_random import (  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.11.0"
+RUNNER_VERSION = "rgc-eval/0.12.0"
 FREEZE_SCHEMA_VERSION = 2
 RUN_MANIFEST_SCHEMA = "rgc-run-manifest/1"
 # Direct and transitive deterministic runtime dependencies loaded by the RGC runner,
@@ -1240,9 +1240,10 @@ def _snapshot_files(
 
 
 def _git_commit() -> str | None:
+    git_root = Path(os.environ.get("AYORAI_RGC_GIT_ROOT", str(ROOT))).resolve()
     try:
         out = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True
+            ["git", "rev-parse", "HEAD"], cwd=git_root, capture_output=True, text=True, check=True
         )
     except (OSError, subprocess.CalledProcessError):
         return None
@@ -1251,10 +1252,11 @@ def _git_commit() -> str | None:
 
 def _worktree_clean() -> bool | None:
     """True when tracked and untracked files match the commit; None if git is unavailable."""
+    git_root = Path(os.environ.get("AYORAI_RGC_GIT_ROOT", str(ROOT))).resolve()
     try:
         out = subprocess.run(
             ["git", "status", "--porcelain"],
-            cwd=ROOT,
+            cwd=git_root,
             capture_output=True,
             text=True,
             check=True,
@@ -1816,8 +1818,163 @@ def evaluate(
     }
 
 
+
+def _assert_loaded_modules_from_snapshot(
+    snapshot_root: Path, expected_code_hashes: Mapping[str, str]
+) -> None:
+    """Fail closed unless every loaded AYORAI/evaluation module came from captured bytes."""
+    runner_relative = "evals/ptbr/rgc_eval.py"
+    runner_path = Path(__file__).resolve()
+    expected_runner = (snapshot_root / runner_relative).resolve()
+    if runner_path != expected_runner:
+        raise ValueError("RGC evaluation blocked: runner was not executed from its code snapshot")
+    expected_runner_hash = expected_code_hashes.get(runner_relative)
+    if expected_runner_hash is None or _sha256(runner_path) != expected_runner_hash:
+        raise ValueError("RGC evaluation blocked: runner bytes differ from captured snapshot")
+
+    package_prefixes = ("ayorai_attractor", "evals.ptbr")
+    for name, module in tuple(sys.modules.items()):
+        if not name.startswith(package_prefixes):
+            continue
+        origin = getattr(module, "__file__", None)
+        if origin is None:
+            continue  # namespace package
+        origin_path = Path(origin).resolve()
+        try:
+            relative = origin_path.relative_to(snapshot_root.resolve()).as_posix()
+        except ValueError as exc:
+            raise ValueError(
+                f"RGC evaluation blocked: module {name} was imported outside the snapshot"
+            ) from exc
+        if relative.startswith(("src/ayorai_attractor/", "evals/ptbr/")):
+            expected = expected_code_hashes.get(relative)
+            if expected is None or _sha256(origin_path) != expected:
+                raise ValueError(
+                    f"RGC evaluation blocked: loaded module {name} is not bound "
+                    "to the captured source bytes"
+                )
+
+
 def _run_evaluation(args: argparse.Namespace) -> int:
-    """Run only from a closed set of immutable input and code snapshots."""
+    """Capture first, then evaluate in a fresh interpreter importing only that snapshot."""
+    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
+        try:
+            expected = json.loads(os.environ["AYORAI_RGC_EXPECTED_CODE_SHA256"])
+            if not isinstance(expected, dict) or any(
+                not isinstance(key, str) or not isinstance(value, str)
+                for key, value in expected.items()
+            ):
+                raise ValueError("invalid expected code digest map")
+            _assert_loaded_modules_from_snapshot(ROOT, expected)
+        except (KeyError, TypeError, ValueError, OSError) as exc:
+            print(f"RGC evaluation blocked: invalid execution provenance: {exc}", file=sys.stderr)
+            return 2
+        return _run_evaluation_in_process(args)
+
+    git_commit = _git_commit()
+    worktree_clean = _worktree_clean()
+    if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
+        print(
+            "RGC evaluation blocked: the hidden partition runs only from a clean git "
+            "checkout with a resolvable commit",
+            file=sys.stderr,
+        )
+        return 2
+
+    freeze_relatives = (
+        "docs/eval/PROTOCOL-GOLDEN-V1.md",
+        "docs/eval/PREREGISTRATION-RGC-v1.md",
+        "docs/eval/RUNNER-RGC-v1.md",
+        "docs/eval/PROTOCOL-FREEZE.json",
+        "evals/ptbr/rgc_eval.py",
+        *RUNNER_DEPENDENCIES,
+    )
+    input_sources = {
+        "inputs/cases.jsonl": args.cases,
+        "inputs/labels.jsonl": args.labels,
+        "inputs/annotation-a.jsonl": args.annotation_a,
+        "inputs/annotation-b.jsonl": args.annotation_b,
+        "inputs/agreement-report.json": args.agreement_report,
+        "inputs/annotation-approval.json": args.annotation_approval,
+        "inputs/adjudication-record.json": args.adjudication_record,
+        "inputs/development-cases.jsonl": args.development_cases,
+        "inputs/development-labels.jsonl": args.development_labels,
+        "inputs/documents.jsonl": args.documents,
+    }
+    sources = {relative: ROOT / relative for relative in freeze_relatives}
+    sources.update(input_sources)
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="ayorai-rgc-execution-") as temporary:
+            snapshot_root = Path(temporary)
+            snapshots, snapshot_hashes = _snapshot_files(sources, snapshot_root)
+            expected_code = {
+                relative: snapshot_hashes[relative]
+                for relative in freeze_relatives
+                if relative.endswith(".py")
+            }
+            environment = os.environ.copy()
+            environment["AYORAI_RGC_SNAPSHOT_CHILD"] = "1"
+            environment["AYORAI_RGC_GIT_ROOT"] = str(ROOT.resolve())
+            environment["AYORAI_RGC_EXPECTED_CODE_SHA256"] = json.dumps(
+                expected_code, sort_keys=True, separators=(",", ":")
+            )
+            # Do not inherit a caller-controlled PYTHONPATH. The child imports the
+            # package and eval modules from the immutable snapshot before site-packages.
+            environment["PYTHONPATH"] = os.pathsep.join(
+                (str(snapshot_root / "src"), str(snapshot_root))
+            )
+            command = [
+                sys.executable,
+                "-B",
+                str(snapshots["evals/ptbr/rgc_eval.py"]),
+                "run",
+                str(snapshots["inputs/cases.jsonl"]),
+                "--labels",
+                str(snapshots["inputs/labels.jsonl"]),
+                "--annotation-a",
+                str(snapshots["inputs/annotation-a.jsonl"]),
+                "--annotation-b",
+                str(snapshots["inputs/annotation-b.jsonl"]),
+                "--agreement-report",
+                str(snapshots["inputs/agreement-report.json"]),
+                "--annotation-approval",
+                str(snapshots["inputs/annotation-approval.json"]),
+                "--adjudication-record",
+                str(snapshots["inputs/adjudication-record.json"]),
+                "--development-cases",
+                str(snapshots["inputs/development-cases.jsonl"]),
+                "--development-labels",
+                str(snapshots["inputs/development-labels.jsonl"]),
+                "--documents",
+                str(snapshots["inputs/documents.jsonl"]),
+                "--mode",
+                args.mode,
+                "--vocabulary",
+                args.vocabulary,
+                "--top-k",
+                str(args.top_k),
+                "--partition",
+                args.partition,
+                "--granularity",
+                args.granularity,
+                "--out",
+                str(args.out),
+            ]
+            completed = subprocess.run(
+                command,
+                cwd=snapshot_root,
+                env=environment,
+                check=False,
+            )
+            return completed.returncode
+    except (OSError, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+def _run_evaluation_in_process(args: argparse.Namespace) -> int:
+    """Evaluate in the isolated child whose imports come only from captured code."""
     git_commit = _git_commit()
     worktree_clean = _worktree_clean()
     if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
