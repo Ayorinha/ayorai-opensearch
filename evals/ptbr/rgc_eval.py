@@ -1240,7 +1240,9 @@ def _snapshot_files(
 
 
 def _git_commit() -> str | None:
-    git_root = Path(os.environ.get("AYORAI_RGC_GIT_ROOT", str(ROOT))).resolve()
+    git_root = ROOT
+    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
+        git_root = Path(os.environ.get("AYORAI_RGC_GIT_ROOT", str(ROOT))).resolve()
     try:
         out = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=git_root, capture_output=True, text=True, check=True
@@ -1252,7 +1254,9 @@ def _git_commit() -> str | None:
 
 def _worktree_clean() -> bool | None:
     """True when tracked and untracked files match the commit; None if git is unavailable."""
-    git_root = Path(os.environ.get("AYORAI_RGC_GIT_ROOT", str(ROOT))).resolve()
+    git_root = ROOT
+    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
+        git_root = Path(os.environ.get("AYORAI_RGC_GIT_ROOT", str(ROOT))).resolve()
     try:
         out = subprocess.run(
             ["git", "status", "--porcelain"],
@@ -1965,7 +1969,7 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                 "--granularity",
                 args.granularity,
                 "--out",
-                str(args.out),
+                str(args.out.resolve()),
             ]
             completed = subprocess.run(
                 command,
@@ -2018,6 +2022,14 @@ def _run_evaluation_in_process(args: argparse.Namespace) -> int:
         sources.update(input_sources)
         try:
             snapshots, snapshot_hashes = _snapshot_files(sources, snapshot_root)
+            if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
+                expected_code = json.loads(os.environ["AYORAI_RGC_EXPECTED_CODE_SHA256"])
+                for relative, expected_digest in expected_code.items():
+                    if snapshot_hashes.get(relative) != expected_digest:
+                        raise ValueError(
+                            "RGC evaluation blocked: snapshot changed after the isolated "
+                            f"interpreter imported {relative}"
+                        )
 
             # Judge 2.0 must load its rule contract from the same captured bytes
             # that the freeze validator hashed, not from its import-time checkout path.
