@@ -1937,15 +1937,29 @@ def _run_evaluation(args: argparse.Namespace) -> int:
             environment["AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256"] = json.dumps(
                 snapshot_hashes, sort_keys=True, separators=(",", ":")
             )
-            # Do not inherit a caller-controlled PYTHONPATH. The child imports the
-            # package and eval modules from the immutable snapshot before site-packages.
-            environment["PYTHONPATH"] = os.pathsep.join(
-                (str(snapshot_root / "src"), str(snapshot_root))
+            # Use isolated mode: ignore every PYTHON* environment variable,
+            # disable user site-packages, and avoid prepending the caller's working path.
+            # The only project import paths are then inserted explicitly by this bootstrap.
+            for variable in tuple(environment):
+                if variable.startswith("PYTHON"):
+                    environment.pop(variable)
+            bootstrap = (
+                "import runpy, sys; "
+                "from pathlib import Path; "
+                "runner = Path(sys.argv[1]).resolve(); "
+                "snapshot = Path(sys.argv[2]).resolve(); "
+                "sys.path[:0] = [str(snapshot / 'src'), str(snapshot)]; "
+                "sys.argv = [str(runner), *sys.argv[3:]]; "
+                "runpy.run_path(str(runner), run_name='__main__')"
             )
             command = [
                 sys.executable,
+                "-I",
                 "-B",
+                "-c",
+                bootstrap,
                 str(snapshots["evals/ptbr/rgc_eval.py"]),
+                str(snapshot_root),
                 "run",
                 str(snapshots["inputs/cases.jsonl"]),
                 "--labels",
