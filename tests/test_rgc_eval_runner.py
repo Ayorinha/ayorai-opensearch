@@ -13,6 +13,7 @@ import re
 import runpy
 import subprocess
 import sys
+import sysconfig
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -2944,15 +2945,19 @@ def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environmen
     snapshot_root = tmp_path / "snapshot"
     snapshots, digests = RUNNER["_snapshot_files"](sources, snapshot_root)
     expected = {path: digests[path] for path in code_files}
+    site_paths = sysconfig.get_paths()
+    site_packages = sorted({site_paths["purelib"], site_paths["platlib"]})
     script = (
         "import json, runpy, sys; "
         "from pathlib import Path; "
         "snapshot = Path(sys.argv[2]).resolve(); "
-        "sys.path[:0] = [str(snapshot / 'src'), str(snapshot)]; "
+        "site_packages = json.loads(sys.argv[3]); "
+        "sys.path[:0] = [str(snapshot / 'src'), str(snapshot), *site_packages]; "
         "assert sys.flags.isolated == 1; "
         "assert sys.flags.ignore_environment == 1; "
         "assert sys.flags.no_user_site == 1; "
-        "assert str(Path(sys.argv[3]).resolve()) not in sys.path; "
+        "assert sys.flags.no_site == 1; "
+        "assert str(Path(sys.argv[4]).resolve()) not in sys.path; "
         "namespace = runpy.run_path(sys.argv[1]); "
         "namespace['_assert_loaded_modules_from_snapshot']("
         "snapshot, json.loads(__import__('os').environ['EXPECTED_CODE']))"
@@ -2971,11 +2976,13 @@ def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environmen
     command = [
         sys.executable,
         "-I",
+        "-S",
         "-B",
         "-c",
         script,
         str(snapshots["evals/ptbr/rgc_eval.py"]),
         str(snapshot_root),
+        json.dumps(site_packages),
         str(ROOT / "src"),
     ]
 
