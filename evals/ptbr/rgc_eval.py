@@ -1961,7 +1961,6 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                 os.environ,
                 {
                     "AYORAI_RGC_SNAPSHOT_CHILD": "1",
-                    "AYORAI_RGC_GIT_ROOT": str(ROOT.resolve()),
                     "AYORAI_RGC_EXPECTED_GIT_COMMIT": git_commit or "",
                     "AYORAI_RGC_EXPECTED_WORKTREE_CLEAN": str(worktree_clean).lower(),
                     "AYORAI_RGC_EXPECTED_CODE_SHA256": json.dumps(
@@ -2044,18 +2043,23 @@ def _run_evaluation(args: argparse.Namespace) -> int:
 
 def _run_evaluation_in_process(args: argparse.Namespace) -> int:
     """Evaluate in the isolated child whose imports come only from captured code."""
-    git_commit = _git_commit()
-    worktree_clean = _worktree_clean()
-    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
+    snapshot_child = os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1"
+    if snapshot_child:
+        # The parent checked Git identity both before and after snapshot capture.
+        # The child verifies the immutable snapshot hashes below and deliberately
+        # does not invoke Git or trust inherited Git configuration/PATH.
         expected_commit = os.environ.get("AYORAI_RGC_EXPECTED_GIT_COMMIT", "")
-        expected_clean = os.environ.get("AYORAI_RGC_EXPECTED_WORKTREE_CLEAN")
-        if expected_commit != (git_commit or "") or expected_clean != str(worktree_clean).lower():
-            print(
-                "RGC evaluation blocked: Git checkout identity changed "
-                "between capture and execution",
-                file=sys.stderr,
-            )
+        expected_clean = os.environ.get("AYORAI_RGC_EXPECTED_WORKTREE_CLEAN", "")
+        if expected_clean not in {"true", "false", "none"} or (
+            expected_commit and re.fullmatch(r"[0-9a-f]{40}", expected_commit) is None
+        ):
+            print("RGC evaluation blocked: invalid parent provenance metadata", file=sys.stderr)
             return 2
+        git_commit = expected_commit or None
+        worktree_clean = {"true": True, "false": False, "none": None}[expected_clean]
+    else:
+        git_commit = _git_commit()
+        worktree_clean = _worktree_clean()
     if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
         print(
             "RGC evaluation blocked: the hidden partition runs only from a clean git "
