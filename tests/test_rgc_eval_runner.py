@@ -2981,6 +2981,12 @@ def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environmen
     snapshots, digests = RUNNER["_snapshot_files"](sources, snapshot_root)
     expected = {path: digests[path] for path in code_files}
     site_paths = sysconfig.get_paths()
+    runtime_prefixes = {
+        "prefix": sys.prefix,
+        "exec_prefix": sys.exec_prefix,
+        "base_prefix": sys.base_prefix,
+        "base_exec_prefix": sys.base_exec_prefix,
+    }
     canary_site_packages = tmp_path / "canary-site-packages"
     canary_site_packages.mkdir()
     (canary_site_packages / "fractions.py").write_text("CANARY = True\n", encoding="utf-8")
@@ -2992,6 +2998,18 @@ def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environmen
         "import json, runpy, sys; "
         "from pathlib import Path; "
         "snapshot = Path(sys.argv[2]).resolve(); "
+        "runtime_prefixes = json.loads(sys.argv[4]); "
+        "sys.prefix = runtime_prefixes['prefix']; "
+        "sys.exec_prefix = runtime_prefixes['exec_prefix']; "
+        "sys.base_prefix = runtime_prefixes['base_prefix']; "
+        "sys.base_exec_prefix = runtime_prefixes['base_exec_prefix']; "
+        "import sysconfig; "
+        "runtime_paths = json.loads(sys.argv[5]); "
+        "assert sysconfig.get_paths() == runtime_paths; "
+        "assert sys.prefix == runtime_prefixes['prefix']; "
+        "assert sys.exec_prefix == runtime_prefixes['exec_prefix']; "
+        "assert sys.base_prefix == runtime_prefixes['base_prefix']; "
+        "assert sys.base_exec_prefix == runtime_prefixes['base_exec_prefix']; "
         "site_packages = json.loads(sys.argv[3]); "
         "stdlib_paths = list(sys.path); "
         "sys.modules.pop('fractions', None); "
@@ -3004,7 +3022,7 @@ def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environmen
         "assert sys.flags.ignore_environment == 1; "
         "assert sys.flags.no_user_site == 1; "
         "assert sys.flags.no_site == 1; "
-        "assert str(Path(sys.argv[4]).resolve()) not in sys.path; "
+        "assert str(Path(sys.argv[6]).resolve()) not in sys.path; "
         "namespace = runpy.run_path(sys.argv[1]); "
         "namespace['_assert_loaded_modules_from_snapshot']("
         "snapshot, json.loads(__import__('os').environ['EXPECTED_CODE']))"
@@ -3030,6 +3048,8 @@ def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environmen
         str(snapshots["evals/ptbr/rgc_eval.py"]),
         str(snapshot_root),
         json.dumps(site_packages),
+        json.dumps(runtime_prefixes),
+        json.dumps(site_paths),
         str(ROOT / "src"),
     ]
 
