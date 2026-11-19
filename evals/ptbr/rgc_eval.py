@@ -1871,7 +1871,6 @@ def _snapshot_child_environment(
 ) -> dict[str, str]:
     """Build a minimal child environment without inherited credentials or Git overrides."""
     allowed_system_variables = {
-        "PATH",
         "SYSTEMROOT",
         "WINDIR",
         "TEMP",
