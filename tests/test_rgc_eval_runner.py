@@ -2981,13 +2981,19 @@ def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environmen
     snapshots, digests = RUNNER["_snapshot_files"](sources, snapshot_root)
     expected = {path: digests[path] for path in code_files}
     site_paths = sysconfig.get_paths()
-    site_packages = sorted({site_paths["purelib"], site_paths["platlib"]})
+    canary_site_packages = tmp_path / "canary-site-packages"
+    canary_site_packages.mkdir()
+    (canary_site_packages / "fractions.py").write_text("CANARY = True\\n", encoding="utf-8")
+    site_packages = [*sorted({site_paths["purelib"], site_paths["platlib"]}), str(canary_site_packages)]
     script = (
         "import json, runpy, sys; "
         "from pathlib import Path; "
         "snapshot = Path(sys.argv[2]).resolve(); "
         "site_packages = json.loads(sys.argv[3]); "
-        "sys.path[:0] = [str(snapshot / 'src'), str(snapshot), *site_packages]; "
+        "stdlib_paths = list(sys.path); "
+        "sys.path[:] = list(dict.fromkeys([str(snapshot / 'src'), str(snapshot), *stdlib_paths, *site_packages])); "
+        "import fractions; "
+        "assert Path(fractions.__file__).resolve().parent != Path(site_packages[-1]).resolve(); "
         "assert sys.flags.isolated == 1; "
         "assert sys.flags.ignore_environment == 1; "
         "assert sys.flags.no_user_site == 1; "
