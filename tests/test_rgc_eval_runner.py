@@ -2935,6 +2935,38 @@ def test_execution_provenance_rejects_loaded_source_digest_mismatch() -> None:
         RUNNER["_assert_loaded_modules_from_snapshot"](ROOT, expected, loaded)
 
 
+def test_snapshot_child_environment_drops_git_overrides_and_unrelated_secrets() -> None:
+    parent = {
+        "PATH": "/usr/bin:/bin",
+        "LANG": "C.UTF-8",
+        "GIT_DIR": "/tmp/attacker.git",
+        "GIT_WORK_TREE": "/tmp/attacker-worktree",
+        "GIT_INDEX_FILE": "/tmp/attacker-index",
+        "GIT_CONFIG_COUNT": "1",
+        "AWS_ACCESS_KEY_ID": "must-not-leak",
+        "GITHUB_TOKEN": "must-not-leak",
+        "ATTRACTOR_API_KEYS_HMAC_SHA256": "must-not-leak",
+        "PYTHONPATH": "/tmp/foreign-python",
+        "HTTP_PROXY": "http://attacker.invalid",
+    }
+    metadata = {
+        "AYORAI_RGC_SNAPSHOT_CHILD": "1",
+        "AYORAI_RGC_GIT_ROOT": "/workspace/repository",
+        "AYORAI_RGC_EXPECTED_GIT_COMMIT": "a" * 40,
+    }
+
+    child = RUNNER["_snapshot_child_environment"](parent, metadata)
+
+    assert child == {
+        "PATH": "/usr/bin:/bin",
+        "LANG": "C.UTF-8",
+        **metadata,
+    }
+    assert not any(key.startswith("GIT_") for key in child)
+    assert not any(key in child for key in ("AWS_ACCESS_KEY_ID", "GITHUB_TOKEN"))
+    assert not any(key.startswith("PYTHON") for key in child)
+
+
 def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environment(
     tmp_path: Path,
 ) -> None:
