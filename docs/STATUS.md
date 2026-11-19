@@ -7,25 +7,32 @@ This file is the single source of current project status. Historical documents d
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
 
-## Revalidação dinâmica — 2026-11-19
+## Revalidação dinâmica — 2026-11-19 (consulta final)
 
-**Main:** `73bf91cd7175bdf18edbeffa661ef12a5ddf7f56`; comparação direta com `main` retornou `identical`. Nenhuma integração ocorreu desde a #578. A review COMMENT da #581 registra 13/13 check-runs pós-merge e três workflow runs para esse SHA. Nesta consulta, o endpoint legado de commit statuses não retornou registros; portanto, a contagem 13/13 é evidência registrada na review, não um novo retorno do endpoint.
+**Main:** `73bf91cd7175bdf18edbeffa661ef12a5ddf7f56`. A comparação do SHA com a referência `main` retornou `identical`; o commit `345e94f180427245a62f0a5d79ff49cefbd6a975` é ancestral de `73bf91c`, não a ponta atual. O endpoint combinado de status consultado para `73bf91c` não retornou registros nesta chamada. A review COMMENT anterior da #581 registra 13/13 check-runs pós-merge e três workflow runs (CI, Security e CodeQL); mantenho essa contagem como evidência registrada na review, não como nova resposta do endpoint. Não há alegação de CI pós-merge recém-observado.
 
-**PRs abertas:** a busca do repositório retornou 18 PRs abertas em 2026-11-19. A lista é dinâmica; a situação relevante para RGC é:
+**PRs abertas:** a busca do repositório retornou **19 PRs abertas** nesta consulta. Estados e heads são dinâmicos; abaixo estão as PRs RGC relevantes e as demais observadas:
 
-- **#553 — Draft:** HEAD `4d980043b84b8ffc68559e87ea51cf1b8b959195`; branch divergente, 2 commits à frente e 105 atrás da main. Seus 7/7 workflows passaram nesse SHA antigo, mas não o tornam integrável. A nova linha documental sobre a main atual está na #583.
-- **#576 — Draft:** HEAD `2a24e864368db508cc95a25db78aa676c3393af0`; 8/8 workflow runs `success`. Snapshot de bytes e rejeição de chaves JSON duplicadas; não implementa kappa por componente.
-- **#577 — Draft:** HEAD `e61b66a0f9757f7f25b26d84dec93c550c5d4ce4`; 8/8 workflow runs `success`. Inclui a barreira de resolução informativa `K′` na decisão final de H1; ainda não integrada.
-- **#579 — aberta, não Draft:** esta PR de atualização de status; HEAD anterior ao presente adendo `cd4c3e1abee3314d4cd497b179fcde9c2c88c87b`, 7/7 workflow runs `success`. Este novo HEAD exigirá nova verificação.
-- **#580 — Draft:** HEAD `d4800de68c4229c343737aa0b92d34a10d2aee73`; 8/8 workflow runs `success`. Implementação E5/snapshots imutáveis e subprocesso isolado; exige revisão humana independente. Não mesclar nem alterar template de freeze por inferência.
-- **#581 — Draft:** checkpoint metodológico documental; recebeu adendo de 2026-11-19 no branch da PR. Checks do novo HEAD pendentes de reconsulta.
-- **#583 — Draft:** reconciliação documental de `STATISTICS.md` diretamente sobre a main; HEAD `e488abdf8f02720257fb6609e359e774c935369c`. Somente um arquivo documental; checks pendentes de reconsulta.
-- **#582:** atualização Dependabot de `transformers`; aberta, não revisada neste ciclo.
-- **#575, #554, #571, #539, #535, #531, #527, #505, #504, #509 e #507:** permanecem na lista de abertas retornada pela busca; não foram alteradas nesta revalidação.
+- **#553 — Draft:** HEAD `4d980043b84b8ffc68559e87ea51cf1b8b959195`; 7/7 workflows `success`. A comparação registrada anteriormente mostra branch divergente (2 commits à frente e 105 atrás da main consultada). Não rebasear/mesclar por inferência; a reconciliação documental atualizada está na #583.
+- **#576 — Draft:** HEAD `2a24e864368db508cc95a25db78aa676c3393af0`; 8/8 workflows `success`. Captura única de bytes das anotações e rejeição de chaves JSON duplicadas. Não integra ainda o bootstrap por componente à ferramenta de concordância.
+- **#577 — Draft:** HEAD `e61b66a0f9757f7f25b26d84dec93c550c5d4ce4`; 8/8 workflows `success`. Aplica o gate de resolução informativa (K′) na decisão final de H1, com regressões sintéticas. Não integrada.
+- **#579 — aberta, não Draft:** esta PR de status; HEAD `8d09b4107a93fb68eac350c5b34529fb6ee8da50`; 7/7 workflows `success` neste SHA. Esta atualização criará novo HEAD e exigirá nova consulta.
+- **#580 — Draft:** HEAD `d4800de68c4229c343737aa0b92d34a10d2aee73`; 8/8 workflows `success`, incluindo RGC Design Simulation sintética. O HEAD atual inclui subprocesso Python novo, `PYTHONPATH` restrito ao snapshot e verificações de origem/hash dos módulos carregados, em resposta ao finding de proveniência E5. A CI é evidência de testes sintéticos; permanece necessária revisão independente de engenharia/metodologia. Não alterar template de freeze, não executar casos reais e não mesclar.
+- **#581 — Draft:** HEAD `15c7141998f21161012c194f77f2d443732612e8`; 7/7 workflows `success`. Checkpoint documental; inclui correção de DEC-027 D1 e distinção entre resolução matemática e poder estatístico.
+- **#583 — Draft:** HEAD `069503adfa6cfb0f81757076c6fcb470ecee7984`; 7/7 workflows `success`. Reconciliação de `docs/eval/STATISTICS.md` sobre a main; somente um arquivo documental. Checks não equivalem a aprovação metodológica.
+- **#582:** Dependabot `transformers 5.22.2 → 5.23.0`, aberta e não revisada neste ciclo.
+- **Outras PRs abertas observadas:** #575, #554, #571, #539, #535, #531, #527, #505, #504, #509 e #507. Não foram alteradas nesta revalidação.
 
-**RGC:** DEC-027 D1 resolve a identidade literal de componente; a divergência remanescente está no texto antigo de `STATISTICS.md`, endereçado pela #583. A main já implementa componentes, RGC-PRNG-1, sign-flip e IC primário por componente. A decisão final ainda não aplica o gate `significance_below_005_possible`; a #577 propõe essa correção. O pré-registro tem Emenda 11, mas o protocolo ainda termina na Emenda 10. O bootstrap de kappa por componente não está integrado em `rgc_agreement.py`.
+**PR #269:** fechada sem merge, Draft histórico; HEAD `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`; três comentários, nenhuma review submetida e nenhuma thread inline. Os sete workflow runs consultados para esse HEAD terminaram com sucesso. A linhagem histórica não foi reiniciada.
 
-**Limites:** protocolo **[PROPOSTO]**, sem congelamento. Nenhum caso ou rótulo foi criado; nenhuma anotação real foi lida; nenhum inventário real foi calculado; nenhum sistema/runner foi executado sobre casos RGC; nenhuma métrica foi produzida. Nenhuma PR foi aprovada ou mesclada por esta atualização.
+**RGC — coerência e bloqueios:**
+- DEC-027 D1 resolve a identidade reversível `component:` + IDs canônicos ordenados e unidos por `+`; a divergência documental antiga foi endereçada pela #583.
+- A main implementa componentes conectados, RGC-PRNG-1, sign-flip e IC primário de acurácia por componente. A decisão final de H1 ainda não incorpora `significance_below_005_possible`; #577 propõe a correção.
+- O pré-registro contém Emenda 11, mas `docs/eval/PROTOCOL-GOLDEN-V1.md` ainda termina na Emenda 10. A formalização normativa exige decisão humana e emenda datada; não foi feita.
+- A rotina de bootstrap de kappa por componente existe em `rgc_components.py`, mas `rgc_agreement.py` ainda usa bootstrap por caso. A integração depende da reconciliação normativa DEC-022 e revisão humana.
+- A #580 endereça a vinculação entre bytes capturados e código efetivamente executado por subprocesso isolado; os testes são sintéticos e não provam segurança operacional independente.
+
+**Limites:** protocolo **[PROPOSTO]**, sem congelamento. Nenhum caso foi criado ou rotulado; nenhuma anotação humana real foi lida; nenhum inventário real foi calculado; nenhum sistema/runner foi executado sobre casos do Piloto 02, benchmark definitivo ou partição oculta; nenhuma métrica científica foi produzida. Nenhuma PR foi aprovada ou mesclada nesta atualização.
 
 ## Estado atual — 2026-11-17
 
