@@ -204,3 +204,25 @@ A revisão do HEAD `d4800de68c4229c343737aa0b92d34a10d2aee73` da [PR #580](https
 - Nenhum protocolo, pré-registro, Judge, Golden, manifesto, hash protegido, caso, rótulo ou anotação foi alterado.
 - Nenhum runner, piloto, benchmark ou partição oculta foi executado. Nenhuma métrica ou validação externa foi produzida.
 
+
+
+## Disposição dos achados históricos M-01 a M-11 da PR #269 — 2026-11-19
+
+A comparação da revisão histórica [#269](https://github.com/Ayorinha/ayorai-opensearch/pull/269) com o estado atual evita reabrir tarefas já resolvidas. A classificação abaixo é documental; “endereçado” não significa merge ou validação científica.
+
+| Achado | Estado atual | Evidência / limite |
+|---|---|---|
+| M-01 — matriz 6×6 versus vocabulário RGC | **Endereçado na Draft #583** | O topo de `STATISTICS.md` distingue explicitamente a matriz ADR-002 de seis estados do vocabulário RGC `judge2` de cinco estados. Aguardando integração/revisão. |
+| M-02 — registro ausente versus predição inválida | **Endereçado documental e tecnicamente** | `RUNNER-RGC-v1.md` e a seção correspondente de `STATISTICS.md` distinguem ausência/integridade (abort) de predição presente inválida (`INVALID_PREDICTION`, permanece no denominador). Não houve execução real. |
+| M-03 — intervalos e métricas | **Especificação reconciliada na Draft #583** | A documentação descreve accuracy, balanced accuracy, macro-F1, RGC-PRNG-1 e quantil tipo 7. Classes ausentes em réplicas têm regra documentada. CI sintético não estima precisão do conjunto real. |
+| M-04 — concordância entre anotadores | **Decisão aprovada; implementação parcial** | DEC-020 fixa kappa não ponderado e gate pontual; DEC-022 posterior fixa IC por componente. A CLI `rgc_agreement.py` ainda usa bootstrap por caso; exige reconciliação datada da Emenda 10/pré-registro e revisão humana. |
+| M-05 — independência da anotação e adjudicação | **Pendente de evidência humana** | O protocolo exige segunda anotação independente, mas hashes de dois arquivos não provam que vieram de pessoas diferentes. A identidade distinta deve ser atestada por responsável humano; não criar rótulos com IA. |
+| M-06 — meta de 300 casos, cobertura e precisão | **Pendente** | 300 permanece meta condicionada, não quota. D7/K≥6 é attainability matemática prévia, não cálculo de poder ou justificativa de tamanho amostral. Nenhuma análise de poder sobre dados reais foi feita. |
+| M-07 — divisão público/oculto e baseline | **Decisão documental resolvida** | DEC-014/Emenda 6 fixam B a partir do desenvolvimento público e A como referência descritiva; DEC-018 reserva H1 confirmatória à partição oculta. Nenhum conjunto oculto foi acessado. |
+| M-08 — proveniência, retificações e vigência | **Pendente de revisão humana por caso** | As regras e metadados são documentados, mas a validade de cada dispositivo/retificação exige fonte primária e revisão humana quando o conjunto definitivo for formado. Nenhum caso real foi examinado. |
+| M-09 — contaminação e generalização | **Limite de alegação documentado** | Partição oculta reduz exposição durante desenvolvimento, mas não prova ausência de contaminação prévia. Não há alegação de robustez geral ou validação externa. |
+| M-10 — separação exploratória/confirmatória | **Gate técnico/documental presente; gate humano pendente** | Piloto 02 permanece manual, descartável e sem execução do sistema; freeze gate bloqueia execução até decisão explícita. O piloto ainda não foi realizado nesta revisão. |
+| M-11 — baseline do pré-registro versus DEC-014 | **Resolvido pela Emenda 6** | O pré-registro preserva texto histórico e define B como baseline primária, A como descritiva, excluída de H1. |
+
+**Conclusão de continuidade:** M-01, M-02, M-03 e M-11 não devem ser tratados como trabalho novo; M-01/M-03 dependem da revisão e integração documental da #583. M-04 permanece bloqueado pela reconciliação normativa e integração da CLI. M-05, M-06, M-08 e M-10 dependem de evidência/decisão humana. M-07 e M-09 estão resolvidos no plano documental, sem afirmar resultado empírico.
+
