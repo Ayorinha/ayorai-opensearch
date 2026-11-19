@@ -2937,7 +2937,7 @@ def test_execution_provenance_rejects_loaded_source_digest_mismatch() -> None:
 
 def test_snapshot_child_environment_drops_git_overrides_and_unrelated_secrets() -> None:
     parent = {
-        "PATH": "/usr/bin:/bin",
+        "PATH": "/tmp/attacker-bin",
         "LANG": "C.UTF-8",
         "GIT_DIR": "/tmp/attacker.git",
         "GIT_WORK_TREE": "/tmp/attacker-worktree",
@@ -2951,20 +2951,23 @@ def test_snapshot_child_environment_drops_git_overrides_and_unrelated_secrets() 
     }
     metadata = {
         "AYORAI_RGC_SNAPSHOT_CHILD": "1",
-        "AYORAI_RGC_GIT_ROOT": "/workspace/repository",
         "AYORAI_RGC_EXPECTED_GIT_COMMIT": "a" * 40,
+        "AYORAI_RGC_EXPECTED_WORKTREE_CLEAN": "true",
     }
 
     child = RUNNER["_snapshot_child_environment"](parent, metadata)
 
-    assert child == {
-        "PATH": "/usr/bin:/bin",
-        "LANG": "C.UTF-8",
-        **metadata,
-    }
+    assert child == {"LANG": "C.UTF-8", **metadata}
     assert not any(key.startswith("GIT_") for key in child)
     assert not any(key in child for key in ("AWS_ACCESS_KEY_ID", "GITHUB_TOKEN"))
     assert not any(key.startswith("PYTHON") for key in child)
+
+
+def test_snapshot_child_environment_rejects_non_provenance_metadata() -> None:
+    with pytest.raises(ValueError, match="unexpected child environment variable"):
+        RUNNER["_snapshot_child_environment"](
+            {}, {"GIT_DIR": "/tmp/attacker.git"}
+        )
 
 
 def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environment(
