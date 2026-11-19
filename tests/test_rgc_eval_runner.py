@@ -895,6 +895,9 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     # This test exercises report serialization with a synthetic freeze attestation;
     # the real repository protocol intentionally remains unfrozen.
     globals_ = RUNNER["main"].__globals__
+    # This test targets report serialization and synthetic approvals; the
+    # separate subprocess test below exercises the hermetic interpreter boundary.
+    monkeypatch.setitem(globals_, "_run_evaluation", RUNNER["_run_evaluation_in_process"])
     monkeypatch.setitem(globals_, "_git_commit", lambda: "f" * 40)
     monkeypatch.setitem(globals_, "_worktree_clean", lambda: True)
     repository_root = RUNNER["ROOT"]
@@ -2934,10 +2937,9 @@ def test_execution_provenance_rejects_loaded_source_digest_mismatch() -> None:
 def test_isolated_interpreter_imports_from_snapshot_and_rejects_foreign_package(
     tmp_path: Path,
 ) -> None:
-    code_files = (
-        "evals/ptbr/rgc_eval.py",
-        *(path for path in RUNNER["RUNNER_DEPENDENCIES"] if path.endswith(".py")),
-    )
+    # Include non-Python runtime artifacts too: Judge 2.0 loads its JSON
+    # rule contract during import, before the runner can redirect its path.
+    code_files = ("evals/ptbr/rgc_eval.py", *RUNNER["RUNNER_DEPENDENCIES"])
     sources = {path: ROOT / path for path in code_files}
     snapshot_root = tmp_path / "snapshot"
     snapshots, digests = RUNNER["_snapshot_files"](sources, snapshot_root)
