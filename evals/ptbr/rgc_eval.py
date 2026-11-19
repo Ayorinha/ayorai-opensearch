@@ -1976,7 +1976,8 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                 "snapshot = Path(sys.argv[2]).resolve(); "
                 "site_packages = json.loads(sys.argv[3]); "
                 "stdlib_paths = list(sys.path); "
-                "sys.path[:] = list(dict.fromkeys([str(snapshot / 'src'), str(snapshot), *stdlib_paths, *site_packages])); "
+                "sys.path[:] = list(dict.fromkeys(["
+                "str(snapshot / 'src'), str(snapshot), *stdlib_paths, *site_packages])); "
                 "sys.argv = [str(runner), *sys.argv[4:]]; "
                 "runpy.run_path(str(runner), run_name='__main__')"
             )
