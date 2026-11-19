@@ -1,10 +1,31 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-17 — main @ `73bf91cd7175bdf18edbeffa661ef12a5ddf7f56` (squash merge PR #578); post-merge CI passed (13/13 check-runs successful)
+Updated: 2026-11-19 — main @ `73bf91cd7175bdf18edbeffa661ef12a5ddf7f56` (squash merge PR #578; unchanged since); 13/13 post-merge check-runs are recorded in the #581 review, but the legacy status endpoint returned no records in this recheck
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
+
+
+## Revalidação dinâmica — 2026-11-19
+
+**Main:** `73bf91cd7175bdf18edbeffa661ef12a5ddf7f56`; comparação direta com `main` retornou `identical`. Nenhuma integração ocorreu desde a #578. A review COMMENT da #581 registra 13/13 check-runs pós-merge e três workflow runs para esse SHA. Nesta consulta, o endpoint legado de commit statuses não retornou registros; portanto, a contagem 13/13 é evidência registrada na review, não um novo retorno do endpoint.
+
+**PRs abertas:** a busca do repositório retornou 18 PRs abertas em 2026-11-19. A lista é dinâmica; a situação relevante para RGC é:
+
+- **#553 — Draft:** HEAD `4d980043b84b8ffc68559e87ea51cf1b8b959195`; branch divergente, 2 commits à frente e 105 atrás da main. Seus 7/7 workflows passaram nesse SHA antigo, mas não o tornam integrável. A nova linha documental sobre a main atual está na #583.
+- **#576 — Draft:** HEAD `2a24e864368db508cc95a25db78aa676c3393af0`; 8/8 workflow runs `success`. Snapshot de bytes e rejeição de chaves JSON duplicadas; não implementa kappa por componente.
+- **#577 — Draft:** HEAD `e61b66a0f9757f7f25b26d84dec93c550c5d4ce4`; 8/8 workflow runs `success`. Inclui a barreira de resolução informativa `K′` na decisão final de H1; ainda não integrada.
+- **#579 — aberta, não Draft:** esta PR de atualização de status; HEAD anterior ao presente adendo `cd4c3e1abee3314d4cd497b179fcde9c2c88c87b`, 7/7 workflow runs `success`. Este novo HEAD exigirá nova verificação.
+- **#580 — Draft:** HEAD `d4800de68c4229c343737aa0b92d34a10d2aee73`; 8/8 workflow runs `success`. Implementação E5/snapshots imutáveis e subprocesso isolado; exige revisão humana independente. Não mesclar nem alterar template de freeze por inferência.
+- **#581 — Draft:** checkpoint metodológico documental; recebeu adendo de 2026-11-19 no branch da PR. Checks do novo HEAD pendentes de reconsulta.
+- **#583 — Draft:** reconciliação documental de `STATISTICS.md` diretamente sobre a main; HEAD `e488abdf8f02720257fb6609e359e774c935369c`. Somente um arquivo documental; checks pendentes de reconsulta.
+- **#582:** atualização Dependabot de `transformers`; aberta, não revisada neste ciclo.
+- **#575, #554, #571, #539, #535, #531, #527, #505, #504, #509 e #507:** permanecem na lista de abertas retornada pela busca; não foram alteradas nesta revalidação.
+
+**RGC:** DEC-027 D1 resolve a identidade literal de componente; a divergência remanescente está no texto antigo de `STATISTICS.md`, endereçado pela #583. A main já implementa componentes, RGC-PRNG-1, sign-flip e IC primário por componente. A decisão final ainda não aplica o gate `significance_below_005_possible`; a #577 propõe essa correção. O pré-registro tem Emenda 11, mas o protocolo ainda termina na Emenda 10. O bootstrap de kappa por componente não está integrado em `rgc_agreement.py`.
+
+**Limites:** protocolo **[PROPOSTO]**, sem congelamento. Nenhum caso ou rótulo foi criado; nenhuma anotação real foi lida; nenhum inventário real foi calculado; nenhum sistema/runner foi executado sobre casos RGC; nenhuma métrica foi produzida. Nenhuma PR foi aprovada ou mesclada por esta atualização.
 
 ## Estado atual — 2026-11-17
 
