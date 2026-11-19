@@ -1865,6 +1865,34 @@ def _assert_loaded_modules_from_snapshot(
                 )
 
 
+def _snapshot_child_environment(
+    parent_environment: Mapping[str, str],
+    snapshot_metadata: Mapping[str, str],
+) -> dict[str, str]:
+    """Build a minimal child environment without inherited credentials or Git overrides."""
+    allowed_system_variables = {
+        "PATH",
+        "SYSTEMROOT",
+        "WINDIR",
+        "TEMP",
+        "TMP",
+        "TMPDIR",
+        "LANG",
+        "LC_ALL",
+        "TZ",
+    }
+    environment = {
+        key: value
+        for key, value in parent_environment.items()
+        if key.upper() in allowed_system_variables
+    }
+    for key, value in snapshot_metadata.items():
+        if not key.startswith("AYORAI_RGC_"):
+            raise ValueError(f"unexpected child environment variable: {key}")
+        environment[key] = value
+    return environment
+
+
 def _run_evaluation(args: argparse.Namespace) -> int:
     """Capture first, then evaluate in a fresh interpreter importing only that snapshot."""
     if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
@@ -1927,23 +1955,26 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                 for relative in freeze_relatives
                 if relative.endswith(".py")
             }
-            environment = os.environ.copy()
-            environment["AYORAI_RGC_SNAPSHOT_CHILD"] = "1"
-            environment["AYORAI_RGC_GIT_ROOT"] = str(ROOT.resolve())
-            environment["AYORAI_RGC_EXPECTED_GIT_COMMIT"] = git_commit or ""
-            environment["AYORAI_RGC_EXPECTED_WORKTREE_CLEAN"] = str(worktree_clean).lower()
-            environment["AYORAI_RGC_EXPECTED_CODE_SHA256"] = json.dumps(
-                expected_code, sort_keys=True, separators=(",", ":")
-            )
-            environment["AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256"] = json.dumps(
-                snapshot_hashes, sort_keys=True, separators=(",", ":")
+            # The child needs only snapshot provenance plus a minimal OS environment.
+            # In particular, do not inherit GIT_* overrides or unrelated CI/cloud credentials.
+            environment = _snapshot_child_environment(
+                os.environ,
+                {
+                    "AYORAI_RGC_SNAPSHOT_CHILD": "1",
+                    "AYORAI_RGC_GIT_ROOT": str(ROOT.resolve()),
+                    "AYORAI_RGC_EXPECTED_GIT_COMMIT": git_commit or "",
+                    "AYORAI_RGC_EXPECTED_WORKTREE_CLEAN": str(worktree_clean).lower(),
+                    "AYORAI_RGC_EXPECTED_CODE_SHA256": json.dumps(
+                        expected_code, sort_keys=True, separators=(",", ":")
+                    ),
+                    "AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256": json.dumps(
+                        snapshot_hashes, sort_keys=True, separators=(",", ":")
+                    ),
+                },
             )
             # Use isolated mode: ignore every PYTHON* environment variable,
             # disable user site-packages, and avoid prepending the caller's working path.
             # The only project import paths are then inserted explicitly by this bootstrap.
-            for variable in tuple(environment):
-                if variable.startswith("PYTHON"):
-                    environment.pop(variable)
             site_paths = sysconfig.get_paths()
             site_packages = sorted({site_paths["purelib"], site_paths["platlib"]})
             bootstrap = (
