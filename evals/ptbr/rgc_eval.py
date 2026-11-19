@@ -1974,11 +1974,19 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                 "from pathlib import Path; "
                 "runner = Path(sys.argv[1]).resolve(); "
                 "snapshot = Path(sys.argv[2]).resolve(); "
+                "runtime_prefixes = json.loads(sys.argv[4]); "
+                "sys.prefix = runtime_prefixes['prefix']; "
+                "sys.exec_prefix = runtime_prefixes['exec_prefix']; "
+                "sys.base_prefix = runtime_prefixes['base_prefix']; "
+                "sys.base_exec_prefix = runtime_prefixes['base_exec_prefix']; "
+                "import sysconfig; "
+                "runtime_paths = json.loads(sys.argv[5]); "
+                "if sysconfig.get_paths() != runtime_paths: raise RuntimeError('isolated runtime paths differ from parent'); "
                 "site_packages = json.loads(sys.argv[3]); "
                 "stdlib_paths = list(sys.path); "
                 "sys.path[:] = list(dict.fromkeys(["
                 "str(snapshot / 'src'), str(snapshot), *stdlib_paths, *site_packages])); "
-                "sys.argv = [str(runner), *sys.argv[4:]]; "
+                "sys.argv = [str(runner), *sys.argv[6:]]; "
                 "runpy.run_path(str(runner), run_name='__main__')"
             )
             command = [
@@ -1991,6 +1999,15 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                 str(snapshots["evals/ptbr/rgc_eval.py"]),
                 str(snapshot_root),
                 json.dumps(site_packages),
+                json.dumps(
+                    {
+                        "prefix": sys.prefix,
+                        "exec_prefix": sys.exec_prefix,
+                        "base_prefix": sys.base_prefix,
+                        "base_exec_prefix": sys.base_exec_prefix,
+                    }
+                ),
+                json.dumps(sysconfig.get_paths()),
                 "run",
                 str(snapshots["inputs/cases.jsonl"]),
                 "--labels",
