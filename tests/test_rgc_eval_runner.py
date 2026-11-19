@@ -2934,7 +2934,7 @@ def test_execution_provenance_rejects_loaded_source_digest_mismatch() -> None:
         RUNNER["_assert_loaded_modules_from_snapshot"](ROOT, expected, loaded)
 
 
-def test_isolated_interpreter_imports_from_snapshot_and_rejects_foreign_package(
+def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environment(
     tmp_path: Path,
 ) -> None:
     # Include non-Python runtime artifacts too: Judge 2.0 loads its JSON
@@ -2947,51 +2947,44 @@ def test_isolated_interpreter_imports_from_snapshot_and_rejects_foreign_package(
     script = (
         "import json, runpy, sys; "
         "from pathlib import Path; "
+        "snapshot = Path(sys.argv[2]).resolve(); "
+        "sys.path[:0] = [str(snapshot / 'src'), str(snapshot)]; "
+        "assert sys.flags.isolated == 1; "
+        "assert sys.flags.ignore_environment == 1; "
+        "assert sys.flags.no_user_site == 1; "
+        "assert str(Path(sys.argv[3]).resolve()) not in sys.path; "
         "namespace = runpy.run_path(sys.argv[1]); "
         "namespace['_assert_loaded_modules_from_snapshot']("
-        "Path(sys.argv[2]), json.loads(__import__('os').environ['EXPECTED_CODE']))"
+        "snapshot, json.loads(__import__('os').environ['EXPECTED_CODE']))"
     )
-    base_environment = os.environ.copy()
+    hostile_environment = os.environ.copy()
     # pytest-cov propagates its tracing configuration to child interpreters.
     # This subprocess validates import provenance, not test coverage; allowing
     # it to trace snapshot copies creates duplicate coverage paths for modules.
-    for variable in tuple(base_environment):
+    for variable in tuple(hostile_environment):
         if variable.startswith("COV_CORE_"):
-            base_environment.pop(variable)
-    base_environment["EXPECTED_CODE"] = json.dumps(expected, sort_keys=True)
-    base_environment["PYTHONPATH"] = os.pathsep.join(
-        (str(snapshot_root / "src"), str(snapshot_root))
-    )
+            hostile_environment.pop(variable)
+    hostile_environment["EXPECTED_CODE"] = json.dumps(expected, sort_keys=True)
+    hostile_environment["PYTHONPATH"] = str(ROOT / "src")
+    hostile_environment["PYTHONHOME"] = str(tmp_path / "attacker-pythonhome")
+    hostile_environment["PYTHONUSERBASE"] = str(tmp_path / "attacker-userbase")
     command = [
         sys.executable,
+        "-I",
         "-B",
         "-c",
         script,
         str(snapshots["evals/ptbr/rgc_eval.py"]),
         str(snapshot_root),
+        str(ROOT / "src"),
     ]
 
     accepted = subprocess.run(
         command,
         cwd=snapshot_root,
-        env=base_environment,
+        env=hostile_environment,
         capture_output=True,
         text=True,
         check=False,
     )
     assert accepted.returncode == 0, accepted.stderr
-
-    foreign_environment = base_environment.copy()
-    foreign_environment["PYTHONPATH"] = os.pathsep.join(
-        (str(ROOT / "src"), str(snapshot_root / "src"), str(snapshot_root))
-    )
-    rejected = subprocess.run(
-        command,
-        cwd=snapshot_root,
-        env=foreign_environment,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert rejected.returncode != 0
-    assert "imported outside the snapshot" in rejected.stderr
