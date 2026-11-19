@@ -71,3 +71,59 @@ Links para as PRs e seus heads devem ser consultados novamente antes de qualquer
 ## 6. Escopo desta proposta
 
 Este checkpoint é um novo documento de auditoria. Não altera código, decisões, pré-registro, protocolo, executor, testes, Judge, Golden, manifests/hashes, fontes capturadas, casos, rótulos, workflows, releases ou tags. Não mescla PR, não aprova, não congela, não executa sistema ou benchmark e não reivindica validação externa.
+
+
+
+---
+
+## Adendo de revalidação — 2026-11-18
+
+Este adendo atualiza os fatos dinâmicos do checkpoint sem apagar o retrato de 17/11. Não altera decisões aprovadas, protocolo, pré-registro, código do Judge, Golden, manifestos, hashes, fontes ou dados do benchmark.
+
+### 1. Main e PR #269
+
+- A comparação direta de `main` com o commit `73bf91cd7175bdf18edbeffa661ef12a5ddf7f56` retornou `identical`: este é o HEAD confirmado da `main`. O commit corresponde à atualização documental da PR [#578](https://github.com/Ayorinha/ayorai-opensearch/pull/578).
+- A consulta atual de workflow-runs e de status combinado para esse SHA não retornou objetos. Uma review anterior nas PRs #579/#581 registra 13/13 check-runs e três workflows aprovados, mas essa contagem fica **relatada, não revalidada independentemente nesta consulta**. Não transferir checks de outro SHA.
+- [#269](https://github.com/Ayorinha/ayorai-opensearch/pull/269) permanece fechada sem merge, em Draft no registro do GitHub, head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`. A conversa contém três comentários; não há reviews submetidas nem threads inline. Os sete workflow runs associados ao head foram consultados e concluíram `success`; o endpoint legado de status não retornou registros.
+- A linhagem #269 → #272 → #273 já está concluída na história do repositório. A revisão metodológica original não deve ser reiniciada.
+
+### 2. Estado atual das PRs relevantes
+
+Os resultados abaixo são específicos dos SHAs indicados. “Workflow runs” não deve ser confundido com “check-runs” ou com o endpoint legado de commit statuses.
+
+| PR | HEAD consultado | Workflow runs | Estado / escopo |
+|---|---|---:|---|
+| [#553](https://github.com/Ayorinha/ayorai-opensearch/pull/553) | `4d980043b84b8ffc68559e87ea51cf1b8b959195` | 7/7 success | Draft; somente `docs/eval/STATISTICS.md`; 2 commits à frente e 105 atrás da main, branches divergentes |
+| [#576](https://github.com/Ayorinha/ayorai-opensearch/pull/576) | `2a24e864368db508cc95a25db78aa676c3393af0` | 8/8 success | Draft; snapshot de bytes em `rgc_agreement.py` e testes sintéticos; não implementa DEC-022 |
+| [#577](https://github.com/Ayorinha/ayorai-opensearch/pull/577) | `e61b66a0f9757f7f25b26d84dec93c550c5d4ce4` | 8/8 success | Draft; gate de resolução informativa de H1 e regressão sintética |
+| [#580](https://github.com/Ayorinha/ayorai-opensearch/pull/580) | `d4800de68c4229c343737aa0b92d34a10d2aee73` | 8/8 success | Draft; runner/E5, testes e template de manifesto; não revisado nem alterado neste ciclo |
+| [#579](https://github.com/Ayorinha/ayorai-opensearch/pull/579) | `cd4c3e1abee3314d4cd497b179fcde9c2c88c87b` | 7/7 success | Aberta, não Draft; diff somente em `docs/STATUS.md`; não mesclada |
+| [#581](https://github.com/Ayorinha/ayorai-opensearch/pull/581) | `95367923ffc87dd3af798b69091fbe3a0c2cfe99` | 7/7 success antes deste adendo | Draft; este adendo é documental e será revalidado no novo HEAD |
+
+O endpoint de status combinado não retornou registros para esses heads; os oito/sete resultados acima são os workflow runs consultados diretamente. Não há falha no conjunto de runs atual dessas PRs.
+
+### 3. Revalidação metodológica — diferenças que permanecem
+
+**M-12 — identidade DEC-023.** Na `main`, DEC-023 determina o identificador literal `component:` + IDs únicos ordenados por `+`, enquanto a seção ainda vigente de `STATISTICS.md` descreve `component:sha256:` sobre JSON canônico. A #553 propõe alinhar a documentação à DEC-023, mas sua branch está 105 commits atrás e não deve ser integrada sem reconciliação e novos checks no head atualizado. Nenhum identificador foi calculado com dados reais.
+
+**M-13 — kappa por componente.** DEC-022 aprova bootstrap de Cohen's kappa por componente; a Emenda 10 do protocolo ainda especifica bootstrap por caso. `rgc_agreement.py` continua calculando o intervalo por caso. A #576 resolve a consistência entre bytes lidos e hashes das duas anotações, mas não implementa DEC-022 nem reconcilia a Emenda 10. A alteração metodológica da ferramenta permanece bloqueada até emenda/reconciliação autorizada; não foram lidas anotações reais.
+
+**M-14 — H1 e documentação normativa.** O pré-registro contém a Emenda 11 (DEC-027 D4/D5), que substitui McNemar pelo sign-flip por componente e torna o IC por componente primário. O protocolo consultado ainda termina na Emenda 10; portanto, os dois documentos normativos não estão alinhados. O código em `rgc_eval.py` na main já constrói componentes para a partição `hidden` e calcula bootstrap por componente/sign-flip; a seção correspondente de `STATISTICS.md` ainda declara a implementação pendente e usa a identidade antiga de componente. A #577 acrescenta a barreira de `K′) informativo à decisão final de H1; permanece Draft e só usa regressões sintéticas. Nenhuma execução confirmatória foi feita.
+
+**M-16 — resolução versus poder.** A observação já registrada na review COMMENTED da #581 permanece válida: D7 `K ≥ 6` é condição de resolução matemática prévia, não demonstra poder ou precisão. Para a decisão após os resultados, `K′) (componentes com diferença não nula) também importa. Não fragmentar componentes nem alterar limiares para buscar significância.
+
+**D7 e dados.** Não foi produzido nem consultado inventário real de citações para calcular K. A existência de 300 casos-alvo ou de aproximadamente 90 casos ocultos não demonstra, por si só, número suficiente de componentes independentes.
+
+### 4. Limite de escopo da PR #580
+
+A #580 altera `evals/ptbr/rgc_eval.py`, testes, `RUNNER-RGC-v1.md` e `docs/eval/templates/PROTOCOL-FREEZE.template.json`. Embora os oito workflow runs do HEAD consultado tenham passado, a PR altera o esquema do template de freeze e o runner. Por isso, **nenhuma alteração, aprovação ou integração foi feita nela neste ciclo**, respeitando a restrição de não alterar manifestos/hashes nem congelar o protocolo.
+
+### 5. Pendências e resultado desta revalidação
+
+- Pendente de decisão/emenda autorizada: alinhar o protocolo com a Emenda 11 do pré-registro e DEC-021/027.
+- Pendente de emenda/reconciliação: alinhar a Emenda 10 e DEC-022 antes de trocar o bootstrap de kappa por caso para componente.
+- Pendente de atualização segura: reconciliar `STATISTICS.md` com DEC-023 e com o código já existente, após tratar a divergência de 105 commits da #553.
+- Pendente de evidência humana: Piloto 02 manual sem IA, segunda anotação independente, adjudicação, F-01, proveniência/vigência e isolamento real da partição oculta.
+- O protocolo permanece **[PROPOSTO]**. Nenhum caso foi criado/rotulado, nenhuma anotação real foi lida, nenhum runner foi executado sobre casos RGC e nenhuma métrica foi produzida.
+
+**Alteração deste adendo:** somente este documento de checkpoint, na branch da PR #581. Nenhum arquivo protegido ou dado do benchmark foi alterado. Esta atualização é uma revisão interna, não independente e não externa.
