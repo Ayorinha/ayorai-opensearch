@@ -166,7 +166,7 @@ A antiga PR #553 contém a reconciliação documental adequada, mas sua branch e
 - [#579](https://github.com/Ayorinha/ayorai-opensearch/pull/579) permanece aberta, não Draft, exclusivamente documental; HEAD `cd4c3e1abee3314d4cd497b179fcde9c2c88c87b`, 7/7 workflow runs `success`.
 - [#581](https://github.com/Ayorinha/ayorai-opensearch/pull/581) permanece Draft, exclusivamente documental. No HEAD anterior `b6f357e70f3d401a2e247c82318c495a7f949e76`, 7/7 workflow runs `success`; este novo adendo exige nova validação no HEAD resultante.
 - [#553](https://github.com/Ayorinha/ayorai-opensearch/pull/553): 7/7 workflow runs `success` no head antigo `4d980043b84b8ffc68559e87ea51cf1b8b959195`; isso não supera a divergência de 105 commits.
-- [#580] não foi alterada, aprovada ou integrada. O esquema do template de freeze e o runner permanecem fora do escopo desta revisão documental.
+- A PR #580 não foi alterada, aprovada ou integrada. O esquema do template de freeze e o runner permanecem fora do escopo desta revisão documental.
 
 ### 5. Limites e pendências
 
