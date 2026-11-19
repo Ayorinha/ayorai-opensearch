@@ -89,6 +89,8 @@ O esquema JSONL e os comandos estão no [guia de concordância entre anotadores]
 - `evals/ptbr/rgc_gate.py` calcula `K` antes da anotação de veredito, a partir de um inventário JSONL com exatamente `case_id` e `cited_article_ids`.
 - Recusa campos extras e chaves duplicadas, de modo que rótulos, previsões, resultados e `bootstrap_cluster_id` não entram no cálculo.
 - O registro público contém só `K`, os tamanhos dos componentes e o maior componente.
+**Limite de evidência do gate:** `rgc_gate.py` valida a estrutura do JSONL recebido (campos exatos, IDs, citações, duplicatas e grafo) e calcula `K`; ele não consegue provar, por si só, que o arquivo recebido contém o inventário completo do universo de casos elegíveis. A completude é uma precondição metodológica e deve ser atestada por responsável humano contra a fonte de cadastro/proveniência, antes da anotação, com o artefato privado de origem preservado e seu SHA-256 registrado. O registro público continua limitado a `K), tamanhos dos componentes e maior componente. Nenhum inventário real foi fornecido, verificado ou calculado nesta revisão.
+
 - Códigos de saída:
   - 0: `K ≥ 6`;
   - 3: `K < 6`;
