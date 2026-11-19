@@ -127,3 +127,50 @@ A #580 altera `evals/ptbr/rgc_eval.py`, testes, `RUNNER-RGC-v1.md` e `docs/eval/
 - O protocolo permanece **[PROPOSTO]**. Nenhum caso foi criado/rotulado, nenhuma anotação real foi lida, nenhum runner foi executado sobre casos RGC e nenhuma métrica foi produzida.
 
 **Alteração deste adendo:** somente este documento de checkpoint, na branch da PR #581. Nenhum arquivo protegido ou dado do benchmark foi alterado. Esta atualização é uma revisão interna, não independente e não externa.
+
+
+---
+
+## Adendo de revalidação — 2026-11-19
+
+Este adendo corrige o retrato dinâmico anterior com evidência consultada diretamente na `main` e nas PRs. Não altera a decisão científica, protocolo, pré-registro, Judge, Golden, manifests, hashes, casos, rótulos ou dados.
+
+### 1. Main e linhagem #269
+
+- `main` continua exatamente em `73bf91cd7175bdf18edbeffa661ef12a5ddf7f56`: a comparação `73bf91cd... ↔ main` retornou `identical`.
+- A consulta ao endpoint de commit statuses para esse SHA não retornou registros. A review COMMENT registrada nesta PR em 2026-11-18 documenta 13/13 check-runs `success` e três workflow runs (CI, Security e CodeQL); nesta revalidação, essa contagem é preservada como evidência registrada na review, não como novo retorno do endpoint de status.
+- #269 segue fechada sem merge, Draft no registro histórico, head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`, três comentários, nenhuma review submetida e nenhuma thread inline. A revisão original e sua linhagem #269 → #272 → #273 não foram reiniciadas.
+
+### 2. Correção do achado M-12 — DEC-023 foi especificada pela DEC-027 D1
+
+A revisão anterior descreveu uma incompatibilidade entre a identidade literal `component:` e a proposta `component:sha256:`. A leitura integral da DEC-027 nesta revalidação corrige o enquadramento:
+
+- **DEC-027, aprovada em 2026-11-14, declara que não altera DEC-019 a DEC-023 e mantém os formatos literais `bundle:` e `component:`.**
+- D1 torna a concatenação reversível: IDs canônicos não contêm `+`, usam a gramática definida e não podem iniciar com prefixos reservados.
+- `evals/ptbr/rgc_ids.py` implementa `component:` + IDs únicos ordenados lexicalmente unidos por `+`, com parser reversível.
+- Portanto, a ambiguidade metodológica foi resolvida pela DEC-027 D1. O conflito remanescente está na documentação `docs/eval/STATISTICS.md` da main, que ainda descreve a proposta antiga `component:sha256:`.
+
+A antiga PR #553 contém a reconciliação documental adequada, mas sua branch está divergente: 2 commits à frente e 105 atrás da main. Não a atualizei nem tentei rebase/merge. Para evitar usar uma branch antiga, foi aberta a PR Draft [#583](https://github.com/Ayorinha/ayorai-opensearch/pull/583), diretamente sobre a main atual, com alteração exclusiva de `docs/eval/STATISTICS.md`. A #583 registra também as lacunas de implementação abaixo; seus checks ainda precisam ser verificados no HEAD final.
+
+### 3. Implementação estatística e gates
+
+- **DEC-021/DEC-027 D4-D5:** a main já contém `rgc_components.py`, `rgc_random.py` e `rgc_eval.py` com componentes conectados, RGC-PRNG-1, sign-flip e bootstrap primário por componente. Isso é implementação testada sinteticamente, não execução ou resultado do benchmark.
+- **Resolução informativa K′:** a main calcula e registra `significance_below_005_possible`, mas a expressão de `h1_supported` ainda não usa esse indicador. A PR Draft [#577](https://github.com/Ayorinha/ayorai-opensearch/pull/577) acrescenta a barreira e um teste sintético para `K=25`, `K′=5`, com p Monte Carlo simulado abaixo de 0,05. O HEAD `e61b66a0f9757f7f25b26d84dec93c550c5d4ce4` tem 8/8 workflow runs `success`; não foi mesclado.
+- **DEC-022 — kappa:** `rgc_components.py` contém bootstrap de kappa por componente, mas `rgc_agreement.py` continua com bootstrap por caso. A PR [#576](https://github.com/Ayorinha/ayorai-opensearch/pull/576) protege o vínculo entre bytes analisados e hashes, mas não integra o método por componente. Seu HEAD `2a24e864368db508cc95a25db78aa676c3393af0` tem 8/8 workflow runs `success`.
+- **D7:** a regra aprovada exige `K ≥ 6` no inventário anterior à anotação. Isso é condição necessária de resolução matemática, não evidência de poder nem prova de que o inventário real a satisfaz. Nenhum inventário real foi consultado ou calculado nesta revisão.
+- **Emenda 11:** o pré-registro contém a Emenda 11, mas `docs/eval/PROTOCOL-GOLDEN-V1.md` ainda termina na Emenda 10. A DEC-027 exige emenda datada própria no protocolo. Esse gate normativo continua pendente e não foi alterado.
+
+### 4. Integridade E5 e estado dos checks
+
+- [#580](https://github.com/Ayorinha/ayorai-opensearch/pull/580) permanece Draft. O HEAD atual consultado é `d4800de68c4229c343737aa0b92d34a10d2aee73`, com 8/8 workflow runs `success`, incluindo CI e RGC Design Simulation. Um head anterior `1652e743...` teve falha de CI; foi superado pelo head atual e seus resultados não foram transferidos.
+- [#579](https://github.com/Ayorinha/ayorai-opensearch/pull/579) permanece aberta, não Draft, exclusivamente documental; HEAD `cd4c3e1abee3314d4cd497b179fcde9c2c88c87b`, 7/7 workflow runs `success`.
+- [#581](https://github.com/Ayorinha/ayorai-opensearch/pull/581) permanece Draft, exclusivamente documental. No HEAD anterior `b6f357e70f3d401a2e247c82318c495a7f949e76`, 7/7 workflow runs `success`; este novo adendo exige nova validação no HEAD resultante.
+- [#553](https://github.com/Ayorinha/ayorai-opensearch/pull/553): 7/7 workflow runs `success` no head antigo `4d980043b84b8ffc68559e87ea51cf1b8b959195`; isso não supera a divergência de 105 commits.
+- [#580] não foi alterada, aprovada ou integrada. O esquema do template de freeze e o runner permanecem fora do escopo desta revisão documental.
+
+### 5. Limites e pendências
+
+- Protocolo RGC PT-BR permanece **[PROPOSTO]**, sem congelamento.
+- Piloto 02, segunda anotação humana independente, adjudicação, revisão F-01, proveniência/vigência por dispositivo e evidência real de isolamento da partição oculta continuam pendentes.
+- Nenhum caso foi criado, completado ou rotulado; nenhuma anotação real foi lida; nenhum inventário real foi calculado; nenhum sistema/runner foi executado sobre casos RGC; nenhuma métrica foi produzida.
+- Nenhuma PR foi mesclada ou aprovada nesta revalidação. Reviews COMMENT anteriores continuam COMMENT, não aprovação.
