@@ -174,3 +174,33 @@ A antiga PR #553 contém a reconciliação documental adequada, mas sua branch e
 - Piloto 02, segunda anotação humana independente, adjudicação, revisão F-01, proveniência/vigência por dispositivo e evidência real de isolamento da partição oculta continuam pendentes.
 - Nenhum caso foi criado, completado ou rotulado; nenhuma anotação real foi lida; nenhum inventário real foi calculado; nenhum sistema/runner foi executado sobre casos RGC; nenhuma métrica foi produzida.
 - Nenhuma PR foi mesclada ou aprovada nesta revalidação. Reviews COMMENT anteriores continuam COMMENT, não aprovação.
+
+
+## Adendo adicional — limites de evidência de D7 e E5 (2026-11-19)
+
+### D7 — completude do inventário não é provada pelo helper
+
+A revisão de `evals/ptbr/rgc_gate.py` confirma que o helper aceita JSONL com exatamente `case_id` e `cited_article_ids`, rejeita linhas vazias/chaves duplicadas/IDs inválidos e constrói os componentes pela rotina canônica. Contudo, o código calcula `K` a partir do arquivo recebido; ele não prova que o arquivo representa o universo completo de casos elegíveis. Portanto:
+
+- **FATO VERIFICADO:** o helper valida estrutura e consistência interna, não completude externa do inventário.
+- **PRECONDIÇÃO HUMANA:** um responsável deve atestar a completude contra a fonte/cadastro de proveniência antes da anotação e preservar privadamente o arquivo de origem, data, responsável e SHA-256.
+- **LIMITE PÚBLICO:** o registro público permanece restrito a `K`, tamanhos dos componentes e maior componente, conforme DEC-027 D7.
+- Nenhum inventário real foi fornecido, comparado à fonte, hasheado ou calculado nesta revisão.
+
+A limitação foi registrada também na atualização documental Draft [#583](https://github.com/Ayorinha/ayorai-opensearch/pull/583), em `docs/eval/STATISTICS.md`.
+
+### E5 — bytes de código local vinculados; closure de dependências runtime ainda parcial
+
+A revisão do HEAD `d4800de68c4229c343737aa0b92d34a10d2aee73` da [PR #580](https://github.com/Ayorinha/ayorai-opensearch/pull/580) confirma a execução do runner num interpretador filho, com `PYTHONPATH` apontado ao snapshot, verificação de origem dos módulos AYORAI/RGC carregados e comparação dos seus SHA-256 com os bytes capturados. O conjunto local inclui runner, módulos estatísticos, módulos do Judge, regras JSON e `pyproject.toml`.
+
+**Achado residual E5-RUNTIME-01:** o relatório registra versões de apenas `pydantic`, `pydantic-core` e `rfc8785`; não há lockfile com hashes de distribuição nem prova dos bytes das dependências transitivas efetivamente carregadas. O `pyproject.toml` é capturado, mas declara intervalos de versão, não artefatos instalados exatos. O finding foi registrado como comentário na #580: [comentário técnico](https://github.com/Ayorinha/ayorai-opensearch/pull/580#issuecomment-7003875517), com precisão complementar [aqui](https://github.com/Ayorinha/ayorai-opensearch/pull/580#issuecomment-7003880215).
+
+**Correção segura:** antes de afirmar captura integral do ambiente, gerar lock/constraints reprodutível com hashes dos artefatos realmente usados ou registrar/hash da closure real de dependências importadas; alternativamente, restringir a garantia documental à proveniência do código local e às versões parciais registradas. Não inferir que CI verde resolve esse finding.
+
+### Estado de execução
+
+- A PR #580 tem 8/8 workflow runs `success` no HEAD citado; a revisão E5-RUNTIME-01 é um achado distinto, não uma falha de CI.
+- A PR #583 recebeu a clarificação D7 acima; seu novo HEAD e checks devem ser consultados separadamente.
+- Nenhum protocolo, pré-registro, Judge, Golden, manifesto, hash protegido, caso, rótulo ou anotação foi alterado.
+- Nenhum runner, piloto, benchmark ou partição oculta foi executado. Nenhuma métrica ou validação externa foi produzida.
+
