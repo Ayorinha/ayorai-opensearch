@@ -2952,6 +2952,12 @@ def test_isolated_interpreter_imports_from_snapshot_and_rejects_foreign_package(
         "Path(sys.argv[2]), json.loads(__import__('os').environ['EXPECTED_CODE']))"
     )
     base_environment = os.environ.copy()
+    # pytest-cov propagates its tracing configuration to child interpreters.
+    # This subprocess validates import provenance, not test coverage; allowing
+    # it to trace snapshot copies creates duplicate coverage paths for modules.
+    for variable in tuple(base_environment):
+        if variable.startswith("COV_CORE_"):
+            base_environment.pop(variable)
     base_environment["EXPECTED_CODE"] = json.dumps(expected, sort_keys=True)
     base_environment["PYTHONPATH"] = os.pathsep.join(
         (str(snapshot_root / "src"), str(snapshot_root))
