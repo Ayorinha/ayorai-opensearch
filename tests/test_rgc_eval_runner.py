@@ -2984,7 +2984,10 @@ def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environmen
     canary_site_packages = tmp_path / "canary-site-packages"
     canary_site_packages.mkdir()
     (canary_site_packages / "fractions.py").write_text("CANARY = True\n", encoding="utf-8")
-    site_packages = [\n        *sorted({site_paths["purelib"], site_paths["platlib"]}),\n        str(canary_site_packages),\n    ]
+    site_packages = [
+        *sorted({site_paths["purelib"], site_paths["platlib"]}),
+        str(canary_site_packages),
+    ]
     script = (
         "import json, runpy, sys; "
         "from pathlib import Path; "
