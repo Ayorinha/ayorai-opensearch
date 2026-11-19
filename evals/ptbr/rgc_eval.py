@@ -41,6 +41,7 @@ import re
 import stat
 import subprocess
 import sys
+import sysconfig
 import tempfile
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
@@ -1943,23 +1944,28 @@ def _run_evaluation(args: argparse.Namespace) -> int:
             for variable in tuple(environment):
                 if variable.startswith("PYTHON"):
                     environment.pop(variable)
+            site_paths = sysconfig.get_paths()
+            site_packages = sorted({site_paths["purelib"], site_paths["platlib"]})
             bootstrap = (
-                "import runpy, sys; "
+                "import json, runpy, sys; "
                 "from pathlib import Path; "
                 "runner = Path(sys.argv[1]).resolve(); "
                 "snapshot = Path(sys.argv[2]).resolve(); "
-                "sys.path[:0] = [str(snapshot / 'src'), str(snapshot)]; "
-                "sys.argv = [str(runner), *sys.argv[3:]]; "
+                "site_packages = json.loads(sys.argv[3]); "
+                "sys.path[:0] = [str(snapshot / 'src'), str(snapshot), *site_packages]; "
+                "sys.argv = [str(runner), *sys.argv[4:]]; "
                 "runpy.run_path(str(runner), run_name='__main__')"
             )
             command = [
                 sys.executable,
                 "-I",
+                "-S",
                 "-B",
                 "-c",
                 bootstrap,
                 str(snapshots["evals/ptbr/rgc_eval.py"]),
                 str(snapshot_root),
+                json.dumps(site_packages),
                 "run",
                 str(snapshots["inputs/cases.jsonl"]),
                 "--labels",
