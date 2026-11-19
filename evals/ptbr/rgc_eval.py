@@ -1241,12 +1241,9 @@ def _snapshot_files(
 
 
 def _git_commit() -> str | None:
-    git_root = ROOT
-    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
-        git_root = Path(os.environ.get("AYORAI_RGC_GIT_ROOT", str(ROOT))).resolve()
     try:
         out = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=git_root, capture_output=True, text=True, check=True
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True
         )
     except (OSError, subprocess.CalledProcessError):
         return None
@@ -1255,13 +1252,10 @@ def _git_commit() -> str | None:
 
 def _worktree_clean() -> bool | None:
     """True when tracked and untracked files match the commit; None if git is unavailable."""
-    git_root = ROOT
-    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
-        git_root = Path(os.environ.get("AYORAI_RGC_GIT_ROOT", str(ROOT))).resolve()
     try:
         out = subprocess.run(
             ["git", "status", "--porcelain"],
-            cwd=git_root,
+            cwd=ROOT,
             capture_output=True,
             text=True,
             check=True,
