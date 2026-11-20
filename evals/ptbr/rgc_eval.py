@@ -35,16 +35,23 @@ import argparse
 import hashlib
 import json
 import math
+import os
+import platform
 import re
+import stat
 import subprocess
 import sys
+import sysconfig
+import tempfile
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from importlib.metadata import version as distribution_version
 from pathlib import Path
 from typing import Any
 
+import ayorai_attractor.verification.judge2 as judge2_module
 from ayorai_attractor.evaluation.stats import mcnemar_exact_pvalue
 from ayorai_attractor.verification.extraction import ComponentProvenance, ExtractedClaim
 from ayorai_attractor.verification.judge2 import adjudication
@@ -73,7 +80,40 @@ from evals.ptbr.rgc_random import (  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.9.0"
+RUNNER_VERSION = "rgc-eval/0.12.0"
+FREEZE_SCHEMA_VERSION = 2
+RUN_MANIFEST_SCHEMA = "rgc-run-manifest/1"
+# Direct and transitive deterministic runtime dependencies loaded by the RGC runner,
+# including Judge 2.0 code/rules and the project dependency specification. The freeze
+# binds the full execution closure, not only the statistical helper modules.
+RUNNER_DEPENDENCIES = (
+    "evals/ptbr/rgc_agreement.py",
+    "evals/ptbr/rgc_components.py",
+    "evals/ptbr/rgc_ids.py",
+    "evals/ptbr/rgc_random.py",
+    "pyproject.toml",
+    "rules/judge-2.0.0.json",
+    "src/ayorai_attractor/__init__.py",
+    "src/ayorai_attractor/evaluation/__init__.py",
+    "src/ayorai_attractor/evaluation/stats.py",
+    "src/ayorai_attractor/models.py",
+    "src/ayorai_attractor/verification/__init__.py",
+    "src/ayorai_attractor/verification/claim_pipeline.py",
+    "src/ayorai_attractor/verification/clusters.py",
+    "src/ayorai_attractor/verification/excerpt.py",
+    "src/ayorai_attractor/verification/extraction.py",
+    "src/ayorai_attractor/verification/judge.py",
+    "src/ayorai_attractor/verification/judge2/__init__.py",
+    "src/ayorai_attractor/verification/judge2/adjudication.py",
+    "src/ayorai_attractor/verification/judge2/gates.py",
+    "src/ayorai_attractor/verification/judge2/rules/judge-2.0.0.json",
+    "src/ayorai_attractor/verification/models.py",
+    "src/ayorai_attractor/verification/numeric.py",
+    "src/ayorai_attractor/verification/pt_normalize.py",
+    "src/ayorai_attractor/verification/response.py",
+    "src/ayorai_attractor/verification/security.py",
+    "src/ayorai_attractor/verification/stance.py",
+)
 SEED = RGC_SEED
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
@@ -120,6 +160,15 @@ class Passage:
     end: int
 
 
+def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        result[key] = value
+    return result
+
+
 # ---------------------------------------------------------------- documents
 
 
@@ -132,9 +181,11 @@ def load_documents(path: Path = DOCUMENTS) -> dict[str, Document]:
         if not line.strip():
             raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
         try:
-            raw = json.loads(line)
+            raw = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{path}:{line_number}: {exc}") from exc
         if not isinstance(raw, dict) or not required.issubset(raw):
             raise ValueError(
                 f"{path}:{line_number}: expected an object containing "
@@ -790,9 +841,11 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
         if not line.strip():
             raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
         try:
-            record = json.loads(line)
+            record = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{path}:{line_number}: {exc}") from exc
         if not isinstance(record, dict):
             raise ValueError(f"{path}:{line_number}: expected an object")
         case_id = record.get("case_id")
@@ -809,20 +862,25 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
+def validate_protocol_freeze(root: Path = ROOT) -> dict[str, Any]:
     """Require an explicit freeze decision bound to the exact protocol documents."""
     protocol_path = root / "docs" / "eval" / "PROTOCOL-GOLDEN-V1.md"
     preregistration_path = root / "docs" / "eval" / "PREREGISTRATION-RGC-v1.md"
     runner_spec_path = root / "docs" / "eval" / "RUNNER-RGC-v1.md"
     runner_code_path = root / "evals" / "ptbr" / "rgc_eval.py"
     manifest_path = root / "docs" / "eval" / "PROTOCOL-FREEZE.json"
+    if not manifest_path.is_file():
+        raise ValueError(
+            "RGC evaluation blocked: protocol freeze requires both documents and "
+            "docs/eval/PROTOCOL-FREEZE.json"
+        )
 
     try:
         protocol_text = protocol_path.read_text(encoding="utf-8")
         preregistration_text = preregistration_path.read_text(encoding="utf-8")
         runner_spec_text = runner_spec_path.read_text(encoding="utf-8")
         runner_code_bytes = runner_code_path.read_bytes()
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = _load_strict_json(manifest_path, "protocol freeze manifest")
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(
             "RGC evaluation blocked: protocol freeze requires both documents and "
@@ -854,18 +912,41 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
         "preregistration_sha256",
         "runner_spec_sha256",
         "runner_code_sha256",
+        "runner_dependencies_sha256",
         "runner_version",
     }
     if not isinstance(manifest, dict) or set(manifest) != required:
         raise ValueError("RGC evaluation blocked: freeze manifest has an invalid schema")
     if (
         type(manifest["schema_version"]) is not int
-        or manifest["schema_version"] != 1
+        or manifest["schema_version"] != FREEZE_SCHEMA_VERSION
         or manifest["status"] != "FROZEN"
     ):
-        raise ValueError("RGC evaluation blocked: freeze manifest status must be FROZEN")
+        raise ValueError(
+            f"RGC evaluation blocked: freeze manifest must be schema_version "
+            f"{FREEZE_SCHEMA_VERSION} with status FROZEN"
+        )
+    for field in (
+        "protocol_sha256",
+        "preregistration_sha256",
+        "runner_spec_sha256",
+        "runner_code_sha256",
+    ):
+        if (
+            not isinstance(manifest[field], str)
+            or re.fullmatch(r"[0-9a-f]{64}", manifest[field]) is None
+        ):
+            raise ValueError(f"RGC evaluation blocked: {field} must be a lowercase SHA-256 digest")
+    dependencies = manifest["runner_dependencies_sha256"]
+    if not isinstance(dependencies, dict) or set(dependencies) != set(RUNNER_DEPENDENCIES):
+        raise ValueError(
+            "RGC evaluation blocked: runner_dependencies_sha256 must list exactly "
+            f"{list(RUNNER_DEPENDENCIES)}"
+        )
     if not isinstance(manifest["approved_by"], str) or not manifest["approved_by"].strip():
         raise ValueError("RGC evaluation blocked: freeze approver is missing")
+    if not isinstance(manifest["runner_version"], str) or not manifest["runner_version"]:
+        raise ValueError("RGC evaluation blocked: freeze runner version is missing")
     if not isinstance(manifest["approved_at"], str):
         raise ValueError("RGC evaluation blocked: freeze approval date is missing")
     try:
@@ -886,12 +967,21 @@ def validate_protocol_freeze(root: Path = ROOT) -> dict[str, str]:
     for field, actual_hash in expected_hashes.items():
         if manifest[field] != actual_hash:
             raise ValueError(f"RGC evaluation blocked: {field} differs from freeze manifest")
+    dependency_hashes: dict[str, str] = {}
+    for relative in RUNNER_DEPENDENCIES:
+        try:
+            dependency_hashes[relative] = _sha256(root / relative)
+        except OSError as exc:
+            raise ValueError(f"RGC evaluation blocked: {relative} is missing") from exc
+        if dependencies[relative] != dependency_hashes[relative]:
+            raise ValueError(f"RGC evaluation blocked: {relative} differs from freeze manifest")
     if manifest["runner_version"] != RUNNER_VERSION:
         raise ValueError("RGC evaluation blocked: runner version differs from freeze manifest")
 
     return {
         "manifest_sha256": _sha256(manifest_path),
         **expected_hashes,
+        "runner_dependencies_sha256": dependency_hashes,
         "runner_version": RUNNER_VERSION,
         "approved_by": manifest["approved_by"],
         "approved_at": manifest["approved_at"],
@@ -906,9 +996,11 @@ def _strict_jsonl_case_ids(path: Path, *, annotation: bool = False) -> set[str]:
         if not line.strip():
             raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
         try:
-            row = json.loads(line)
+            row = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{path}:{line_number}: {exc}") from exc
         if not isinstance(row, dict):
             raise ValueError(f"{path}:{line_number}: expected a JSON object")
         expected_keys = {"case_id", "label"} if annotation else None
@@ -970,8 +1062,8 @@ def validate_annotation_approval(
 ) -> dict[str, Any]:
     """Require a passing human agreement report and approval bound to exact artifacts."""
     try:
-        report = json.loads(agreement_report_path.read_text(encoding="utf-8"))
-        manifest = json.loads(approval_manifest_path.read_text(encoding="utf-8"))
+        report = _load_strict_json(agreement_report_path, "agreement report")
+        manifest = _load_strict_json(approval_manifest_path, "annotation approval manifest")
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(
             "RGC evaluation blocked: agreement report and annotation approval manifest are required"
@@ -1089,6 +1181,65 @@ def validate_annotation_approval(
     }
 
 
+def _snapshot_files(
+    sources: Mapping[str, Path], destination: Path
+) -> tuple[dict[str, Path], dict[str, str]]:
+    """Capture each source path once and return private, read-only snapshot paths and hashes.
+
+    All later validation, parsing, evaluation and manifest verification must use these
+    snapshots, never reopen the caller-controlled source paths. Repeated source paths
+    share one captured byte sequence.
+    """
+    snapshots: dict[str, Path] = {}
+    digests: dict[str, str] = {}
+    captured: dict[Path, tuple[Path, str]] = {}
+    for name, source in sources.items():
+        try:
+            source_key = source.absolute()
+            existing = captured.get(source_key)
+            if existing is None:
+                descriptor = os.open(
+                    source_key,
+                    os.O_RDONLY | getattr(os, "O_NONBLOCK", 0),
+                )
+                with os.fdopen(descriptor, "rb") as source_handle:
+                    before = os.fstat(source_handle.fileno())
+                    if not stat.S_ISREG(before.st_mode):
+                        raise ValueError(f"RGC evaluation blocked: {name} is not a regular file")
+                    payload = source_handle.read()
+                    after = os.fstat(source_handle.fileno())
+                stable_before = (
+                    before.st_dev,
+                    before.st_ino,
+                    before.st_size,
+                    before.st_mtime_ns,
+                    before.st_ctime_ns,
+                )
+                stable_after = (
+                    after.st_dev,
+                    after.st_ino,
+                    after.st_size,
+                    after.st_mtime_ns,
+                    after.st_ctime_ns,
+                )
+                if stable_before != stable_after or len(payload) != before.st_size:
+                    raise ValueError(
+                        f"RGC evaluation blocked: {name} changed while being snapshotted"
+                    )
+                target = destination / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with target.open("xb") as handle:
+                    handle.write(payload)
+                target.chmod(0o400)
+                digest = hashlib.sha256(payload).hexdigest()
+                captured[source_key] = (target, digest)
+                existing = (target, digest)
+        except OSError as exc:
+            raise ValueError(f"RGC evaluation blocked: cannot snapshot {name}: {source}") from exc
+        snapshots[name], digests[name] = existing
+    return snapshots, digests
+
+
 def _git_commit() -> str | None:
     try:
         out = subprocess.run(
@@ -1099,6 +1250,340 @@ def _git_commit() -> str | None:
     return out.stdout.strip()
 
 
+def _worktree_clean() -> bool | None:
+    """True when tracked and untracked files match the commit; None if git is unavailable."""
+    try:
+        out = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return out.stdout.strip() == ""
+
+
+def _canonical_sha256(payload: object) -> str:
+    """SHA-256 of canonical JSON: sorted keys, compact separators, UTF-8."""
+    text = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+_SHA256_RE = re.compile(r"[0-9a-f]{64}")
+_COMMIT_RE = re.compile(r"[0-9a-f]{40}")
+RUN_MANIFEST_FIELDS = frozenset(
+    {
+        "schema",
+        "runner_version",
+        "git_commit",
+        "worktree_clean",
+        "python",
+        "python_implementation",
+        "package_version",
+        "partition",
+        "started_at",
+        "finished_at",
+        "inputs",
+        "config_sha256",
+        "protocol_freeze_manifest_sha256",
+        "runner_dependencies_sha256",
+        "annotation_approval_manifest_sha256",
+        "report",
+    }
+)
+
+
+def _is_sha256(value: object) -> bool:
+    return isinstance(value, str) and _SHA256_RE.fullmatch(value) is not None
+
+
+def _utc_timestamp(value: object, field: str) -> datetime:
+    """Parse an ISO 8601 timestamp that must carry a zero UTC offset."""
+    if not isinstance(value, str):
+        raise ValueError(f"{field} must be an ISO 8601 string")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(f"{field} must be an ISO 8601 timestamp") from exc
+    offset = parsed.utcoffset()
+    if offset is None or offset.total_seconds() != 0:
+        raise ValueError(f"{field} must be in UTC")
+    return parsed
+
+
+def _load_strict_json(path: Path, what: str) -> Any:
+    """Read JSON, rejecting unreadable files, invalid JSON and duplicate keys."""
+
+    def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"{what} has a duplicate JSON key {key!r}")
+            result[key] = value
+        return result
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ValueError(f"{what} cannot be read: {path}") from exc
+    try:
+        return json.loads(text, object_pairs_hook=reject_duplicates)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{what} is not valid JSON: {path}") from exc
+
+
+def _manifest_fields_from_report(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Every run-manifest field that the report itself records.
+
+    The report bytes are bound by their SHA-256, so each of these fields is bound too;
+    only ``finished_at`` (written after the report) and the report digest are not.
+    """
+    try:
+        freeze = report["protocol_freeze"]
+        approval = report["annotation_approval"]
+        return {
+            "schema": RUN_MANIFEST_SCHEMA,
+            "runner_version": report["runner_version"],
+            "git_commit": report["git_commit"],
+            "worktree_clean": report["worktree_clean"],
+            "python": report["python"],
+            "python_implementation": report["python_implementation"],
+            "package_version": report["package_version"],
+            "partition": report["config"]["partition"],
+            "started_at": report["started_at"],
+            "inputs": report["inputs"],
+            "config_sha256": _canonical_sha256(report["config"]),
+            "protocol_freeze_manifest_sha256": freeze["manifest_sha256"],
+            "runner_dependencies_sha256": freeze["runner_dependencies_sha256"],
+            "annotation_approval_manifest_sha256": approval["manifest_sha256"],
+        }
+    except (KeyError, TypeError) as exc:
+        raise ValueError(f"report lacks a field the run manifest binds: {exc}") from exc
+
+
+def build_run_manifest(
+    report: Mapping[str, Any], report_path: Path, *, finished_at: str
+) -> dict[str, Any]:
+    """Technical record of one execution (E5). It binds the exact report bytes, the
+    inputs, the configuration, the code version and the approvals the run relied on.
+
+    It does not approve, freeze or publish anything: methodological approval lives in
+    the freeze and annotation manifests, and publication is a separate human decision.
+    """
+    return {
+        **_manifest_fields_from_report(report),
+        "finished_at": finished_at,
+        "report": {"file": report_path.name, "sha256": _sha256(report_path)},
+    }
+
+
+def _package_version() -> str:
+    from ayorai_attractor import __version__
+
+    return str(__version__)
+
+
+def verify_run_manifest(
+    manifest_path: Path,
+    report_path: Path,
+    *,
+    root: Path | None = None,
+    input_files: Mapping[str, Path] | None = None,
+) -> dict[str, Any]:
+    """Check every field of a run manifest; raise ValueError on any difference.
+
+    Checked: the schema and the exact field set, field types and digest formats, the
+    report file name and SHA-256, every field recorded in the report (runner, commit,
+    clean worktree, Python, package, partition, start time, inputs, canonical config,
+    freeze, dependency and approval digests), the hidden-partition requirement of a
+    resolvable commit and a clean worktree, and started_at <= generated_at <=
+    finished_at. Optionally, ``input_files`` maps input digest fields (for example
+    ``cases_sha256``) to files whose bytes are hashed again, and ``root`` is a checkout
+    whose runner code and statistical dependencies are hashed again and compared with
+    the frozen digests recorded in the report.
+
+    Limits: SHA-256 gives integrity, not authenticity. Anyone able to rewrite both
+    files can produce a consistent pair; there is no signature. ``finished_at`` is only
+    checked for format and order. The commit is checked for format, not for existence
+    in a repository.
+    """
+    if not manifest_path.is_file():
+        raise ValueError(f"run manifest is missing: {manifest_path}")
+    if not report_path.is_file():
+        raise ValueError(f"report is missing: {report_path}")
+    manifest = _load_strict_json(manifest_path, "run manifest")
+    report = _load_strict_json(report_path, "report")
+    if not isinstance(manifest, dict):
+        raise ValueError("run manifest must be a JSON object")
+    if manifest.get("schema") != RUN_MANIFEST_SCHEMA:
+        raise ValueError(f"run manifest schema must be {RUN_MANIFEST_SCHEMA}")
+    if set(manifest) != RUN_MANIFEST_FIELDS:
+        missing = sorted(RUN_MANIFEST_FIELDS - set(manifest))
+        extra = sorted(set(manifest) - RUN_MANIFEST_FIELDS)
+        raise ValueError(f"run manifest fields differ: missing={missing} extra={extra}")
+    if not isinstance(report, dict):
+        raise ValueError("report must be a JSON object")
+
+    bound = manifest["report"]
+    if not isinstance(bound, dict) or set(bound) != {"file", "sha256"}:
+        raise ValueError("run manifest report entry must have exactly file and sha256")
+    if not _is_sha256(bound["sha256"]):
+        raise ValueError("report.sha256 is not a SHA-256 hex digest")
+    if bound["file"] != report_path.name:
+        raise ValueError("report.file does not name the report being verified")
+    if bound["sha256"] != _sha256(report_path):
+        raise ValueError("report bytes differ from the run manifest")
+
+    for field in (
+        "config_sha256",
+        "protocol_freeze_manifest_sha256",
+        "annotation_approval_manifest_sha256",
+    ):
+        if not _is_sha256(manifest[field]):
+            raise ValueError(f"{field} is not a SHA-256 hex digest")
+    dependencies = manifest["runner_dependencies_sha256"]
+    if (
+        not isinstance(dependencies, dict)
+        or set(dependencies) != set(RUNNER_DEPENDENCIES)
+        or not all(_is_sha256(value) for value in dependencies.values())
+    ):
+        raise ValueError(
+            f"runner_dependencies_sha256 must map exactly {list(RUNNER_DEPENDENCIES)} "
+            "to SHA-256 hex digests"
+        )
+    inputs = manifest["inputs"]
+    if not isinstance(inputs, dict) or not any(key.endswith("_sha256") for key in inputs):
+        raise ValueError("inputs must be an object with input digests")
+    for key, value in inputs.items():
+        if key.endswith("_sha256") and not _is_sha256(value):
+            raise ValueError(f"inputs.{key} is not a SHA-256 hex digest")
+    for field in ("runner_version", "python", "python_implementation", "package_version"):
+        if not isinstance(manifest[field], str) or not manifest[field]:
+            raise ValueError(f"{field} must be a non-empty string")
+    commit = manifest["git_commit"]
+    if commit is not None and (not isinstance(commit, str) or not _COMMIT_RE.fullmatch(commit)):
+        raise ValueError("git_commit must be a 40-character lowercase hex SHA-1 or null")
+    if manifest["worktree_clean"] is not None and type(manifest["worktree_clean"]) is not bool:
+        raise ValueError("worktree_clean must be true, false or null")
+    if manifest["partition"] not in ("hidden", "development"):
+        raise ValueError("partition must be hidden or development")
+
+    expected = _manifest_fields_from_report(report)
+    for field, value in expected.items():
+        # bool is a subclass of int in Python; compare JSON types exactly.
+        if manifest[field] != value or type(manifest[field]) is not type(value):
+            raise ValueError(f"{field} differs between report and run manifest")
+
+    if manifest["partition"] == "hidden" and (
+        commit is None or manifest["worktree_clean"] is not True
+    ):
+        raise ValueError(
+            "hidden-partition run must record a resolvable commit and a clean worktree"
+        )
+
+    started = _utc_timestamp(manifest["started_at"], "started_at")
+    generated = _utc_timestamp(report.get("generated_at"), "generated_at")
+    finished = _utc_timestamp(manifest["finished_at"], "finished_at")
+    if not started <= generated <= finished:
+        raise ValueError("timestamps must satisfy started_at <= generated_at <= finished_at")
+
+    for key, path in (input_files or {}).items():
+        if not key.endswith("_sha256") or key not in inputs:
+            raise ValueError(f"inputs has no digest field {key!r}")
+        try:
+            actual = _sha256(path)
+        except OSError as exc:
+            raise ValueError(f"input file for {key} cannot be read: {path}") from exc
+        if inputs[key] != actual:
+            raise ValueError(f"inputs.{key} differs from {path}")
+
+    if root is not None:
+        freeze = report["protocol_freeze"]
+        frozen = {
+            "evals/ptbr/rgc_eval.py": freeze.get("runner_code_sha256"),
+            **freeze["runner_dependencies_sha256"],
+        }
+        for relative, digest in frozen.items():
+            try:
+                actual = _sha256(root / relative)
+            except OSError as exc:
+                raise ValueError(f"{relative} is missing under {root}") from exc
+            if actual != digest:
+                raise ValueError(
+                    f"{relative} differs from the frozen code that produced the report"
+                )
+    return manifest
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Publish a fully written temporary file with atomic no-overwrite semantics."""
+    descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    linked = False
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        # Hard-link publication is atomic and refuses an existing destination. Unlike
+        # os.replace(), it cannot overwrite a report created by a concurrent run.
+        os.link(temporary, path)
+        linked = True
+        Path(temporary).unlink()
+    except BaseException:
+        if linked:
+            Path(path).unlink(missing_ok=True)
+        Path(temporary).unlink(missing_ok=True)
+        raise
+
+
+def _publish_run(
+    report: Mapping[str, Any],
+    out: Path,
+    manifest_path: Path,
+    *,
+    input_files: Mapping[str, Path] | None = None,
+    root: Path | None = None,
+) -> int:
+    """Write a report and its run manifest as one unit; return 0 or exit code 2.
+
+    Never overwrites: an existing report or manifest is refused, so an earlier file can
+    never be paired with this run. Both files are written to temporaries and checked
+    before either becomes visible. If anything fails after the report is in place, the
+    report and the manifest written by this call are removed, so a failed run leaves no
+    report that looks complete. A crash between the two atomic link publications can
+    still leave a report without a manifest; verify_run_manifest then refuses it.
+    """
+    if out.exists() or manifest_path.exists():
+        print(
+            f"RGC run refused: {out} or {manifest_path} already exists; choose a new --out",
+            file=sys.stderr,
+        )
+        return 2
+    out.parent.mkdir(parents=True, exist_ok=True)
+    report_text = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+    published: list[Path] = []
+    try:
+        _atomic_write_text(out, report_text)
+        published.append(out)
+        manifest = build_run_manifest(
+            report, out, finished_at=datetime.now(UTC).isoformat(timespec="seconds")
+        )
+        _atomic_write_text(
+            manifest_path,
+            json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        )
+        published.append(manifest_path)
+        verify_run_manifest(manifest_path, out, input_files=input_files, root=root)
+    except (OSError, ValueError) as exc:
+        for path in published:
+            path.unlink(missing_ok=True)
+        print(f"RGC run incomplete: no report or manifest was kept ({exc})", file=sys.stderr)
+        return 2
+    return 0
+
+
 def load_labels(path: Path, vocabulary: str) -> dict[str, str]:
     """Load strict JSONL gold labels without coercing malformed input."""
     allowed = set(VOCABULARIES[vocabulary]) | EXCLUSION_LABELS
@@ -1107,9 +1592,11 @@ def load_labels(path: Path, vocabulary: str) -> dict[str, str]:
         if not line.strip():
             raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
         try:
-            row = json.loads(line)
+            row = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{path}:{line_number}: {exc}") from exc
         if not isinstance(row, dict) or set(row) != {"case_id", "verdict"}:
             raise ValueError(f"{path}:{line_number}: expected exactly case_id and verdict")
         case_id, verdict = row["case_id"], row["verdict"]
@@ -1330,6 +1817,483 @@ def evaluate(
     }
 
 
+def _assert_loaded_modules_from_snapshot(
+    snapshot_root: Path,
+    expected_code_hashes: Mapping[str, str],
+    loaded_modules: Mapping[str, Any] | None = None,
+) -> None:
+    """Fail closed unless every loaded AYORAI/evaluation module came from captured bytes."""
+    runner_relative = "evals/ptbr/rgc_eval.py"
+    runner_path = Path(__file__).resolve()
+    expected_runner = (snapshot_root / runner_relative).resolve()
+    if runner_path != expected_runner:
+        raise ValueError("RGC evaluation blocked: runner was not executed from its code snapshot")
+    expected_runner_hash = expected_code_hashes.get(runner_relative)
+    if expected_runner_hash is None or _sha256(runner_path) != expected_runner_hash:
+        raise ValueError("RGC evaluation blocked: runner bytes differ from captured snapshot")
+
+    modules = sys.modules if loaded_modules is None else loaded_modules
+    for name, module in tuple(modules.items()):
+        if not (
+            name == "ayorai_attractor"
+            or name.startswith("ayorai_attractor.")
+            or name.startswith("evals.ptbr.")
+        ):
+            continue
+        origin = getattr(module, "__file__", None)
+        if origin is None:
+            continue  # namespace package
+        origin_path = Path(origin).resolve()
+        try:
+            relative = origin_path.relative_to(snapshot_root.resolve()).as_posix()
+        except ValueError as exc:
+            raise ValueError(
+                f"RGC evaluation blocked: module {name} was imported outside the snapshot"
+            ) from exc
+        if relative.startswith(("src/ayorai_attractor/", "evals/ptbr/")):
+            expected = expected_code_hashes.get(relative)
+            if expected is None or _sha256(origin_path) != expected:
+                raise ValueError(
+                    f"RGC evaluation blocked: loaded module {name} is not bound "
+                    "to the captured source bytes"
+                )
+
+
+def _snapshot_child_environment(
+    parent_environment: Mapping[str, str],
+    snapshot_metadata: Mapping[str, str],
+) -> dict[str, str]:
+    """Build a minimal child environment without inherited credentials or Git overrides."""
+    allowed_system_variables = {
+        "SYSTEMROOT",
+        "WINDIR",
+        "TEMP",
+        "TMP",
+        "TMPDIR",
+        "LANG",
+        "LC_ALL",
+        "TZ",
+    }
+    environment = {
+        key: value
+        for key, value in parent_environment.items()
+        if key.upper() in allowed_system_variables
+    }
+    for key, value in snapshot_metadata.items():
+        if not key.startswith("AYORAI_RGC_"):
+            raise ValueError(f"unexpected child environment variable: {key}")
+        environment[key] = value
+    return environment
+
+
+SNAPSHOT_EXECUTION_PREFIX = "ayorai-rgc-execution-"
+
+
+def _assert_child_runs_from_parent_snapshot(root: Path) -> None:
+    """Child mode is valid only inside a snapshot directory created by the parent.
+
+    The child trusts provenance metadata (commit, clean worktree) passed by the parent
+    in AYORAI_RGC_* variables. Setting those variables by hand while running the runner
+    from a checkout would otherwise skip the parent's Git gates. A real checkout has a
+    ``.git`` entry; the parent's snapshot never does and lives in a directory named with
+    SNAPSHOT_EXECUTION_PREFIX. This blocks that shortcut; it does not, and cannot, stop
+    an operator who deliberately rebuilds a fake snapshot (see RUNNER-RGC-v1.md).
+    """
+    resolved = root.resolve()
+    if (resolved / ".git").exists() or not resolved.name.startswith(SNAPSHOT_EXECUTION_PREFIX):
+        raise ValueError("runner is not executing from a parent-created snapshot")
+
+
+def _run_evaluation(args: argparse.Namespace) -> int:
+    """Capture first, then evaluate in a fresh interpreter importing only that snapshot."""
+    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
+        try:
+            _assert_child_runs_from_parent_snapshot(ROOT)
+            expected = json.loads(os.environ["AYORAI_RGC_EXPECTED_CODE_SHA256"])
+            if not isinstance(expected, dict) or any(
+                not isinstance(key, str) or not isinstance(value, str)
+                for key, value in expected.items()
+            ):
+                raise ValueError("invalid expected code digest map")
+            _assert_loaded_modules_from_snapshot(ROOT, expected)
+        except (KeyError, TypeError, ValueError, OSError) as exc:
+            print(f"RGC evaluation blocked: invalid execution provenance: {exc}", file=sys.stderr)
+            return 2
+        return _run_evaluation_in_process(args)
+
+    git_commit = _git_commit()
+    worktree_clean = _worktree_clean()
+    if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
+        print(
+            "RGC evaluation blocked: the hidden partition runs only from a clean git "
+            "checkout with a resolvable commit",
+            file=sys.stderr,
+        )
+        return 2
+
+    freeze_relatives = (
+        "docs/eval/PROTOCOL-GOLDEN-V1.md",
+        "docs/eval/PREREGISTRATION-RGC-v1.md",
+        "docs/eval/RUNNER-RGC-v1.md",
+        "docs/eval/PROTOCOL-FREEZE.json",
+        "evals/ptbr/rgc_eval.py",
+        *RUNNER_DEPENDENCIES,
+    )
+    input_sources = {
+        "inputs/cases.jsonl": args.cases,
+        "inputs/labels.jsonl": args.labels,
+        "inputs/annotation-a.jsonl": args.annotation_a,
+        "inputs/annotation-b.jsonl": args.annotation_b,
+        "inputs/agreement-report.json": args.agreement_report,
+        "inputs/annotation-approval.json": args.annotation_approval,
+        "inputs/adjudication-record.json": args.adjudication_record,
+        "inputs/development-cases.jsonl": args.development_cases,
+        "inputs/development-labels.jsonl": args.development_labels,
+        "inputs/documents.jsonl": args.documents,
+    }
+    sources = {relative: ROOT / relative for relative in freeze_relatives}
+    sources.update(input_sources)
+
+    try:
+        with tempfile.TemporaryDirectory(prefix=SNAPSHOT_EXECUTION_PREFIX) as temporary:
+            snapshot_root = Path(temporary)
+            snapshots, snapshot_hashes = _snapshot_files(sources, snapshot_root)
+            if _git_commit() != git_commit or _worktree_clean() != worktree_clean:
+                raise ValueError(
+                    "RGC evaluation blocked: Git checkout identity changed during code capture"
+                )
+            expected_code = {
+                relative: snapshot_hashes[relative]
+                for relative in freeze_relatives
+                if relative.endswith(".py")
+            }
+            # The child needs only snapshot provenance plus a minimal OS environment.
+            # In particular, do not inherit GIT_* overrides or unrelated CI/cloud credentials.
+            environment = _snapshot_child_environment(
+                os.environ,
+                {
+                    "AYORAI_RGC_SNAPSHOT_CHILD": "1",
+                    "AYORAI_RGC_EXPECTED_GIT_COMMIT": git_commit or "",
+                    "AYORAI_RGC_EXPECTED_WORKTREE_CLEAN": str(worktree_clean).lower(),
+                    "AYORAI_RGC_EXPECTED_CODE_SHA256": json.dumps(
+                        expected_code, sort_keys=True, separators=(",", ":")
+                    ),
+                    "AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256": json.dumps(
+                        snapshot_hashes, sort_keys=True, separators=(",", ":")
+                    ),
+                },
+            )
+            # Use isolated mode: ignore every PYTHON* environment variable,
+            # disable user site-packages, and avoid prepending the caller's working path.
+            # The only project import paths are then inserted explicitly by this bootstrap.
+            site_paths = sysconfig.get_paths()
+            site_packages = sorted({site_paths["purelib"], site_paths["platlib"]})
+            bootstrap = (
+                "import json, runpy, sys; "
+                "from pathlib import Path; "
+                "runner = Path(sys.argv[1]).resolve(); "
+                "snapshot = Path(sys.argv[2]).resolve(); "
+                "runtime_prefixes = json.loads(sys.argv[4]); "
+                "sys.prefix = runtime_prefixes['prefix']; "
+                "sys.exec_prefix = runtime_prefixes['exec_prefix']; "
+                "sys.base_prefix = runtime_prefixes['base_prefix']; "
+                "sys.base_exec_prefix = runtime_prefixes['base_exec_prefix']; "
+                "import sysconfig; "
+                "runtime_paths = json.loads(sys.argv[5]); "
+                "if sysconfig.get_paths() != runtime_paths:\n"
+                "    raise RuntimeError('isolated runtime paths differ from parent')\n"
+                "site_packages = json.loads(sys.argv[3]); "
+                "stdlib_paths = list(sys.path); "
+                "sys.path[:] = list(dict.fromkeys(["
+                "str(snapshot / 'src'), str(snapshot), *stdlib_paths, *site_packages])); "
+                "sys.argv = [str(runner), *sys.argv[6:]]; "
+                "runpy.run_path(str(runner), run_name='__main__')"
+            )
+            command = [
+                sys.executable,
+                "-I",
+                "-S",
+                "-B",
+                "-c",
+                bootstrap,
+                str(snapshots["evals/ptbr/rgc_eval.py"]),
+                str(snapshot_root),
+                json.dumps(site_packages),
+                json.dumps(
+                    {
+                        "prefix": sys.prefix,
+                        "exec_prefix": sys.exec_prefix,
+                        "base_prefix": sys.base_prefix,
+                        "base_exec_prefix": sys.base_exec_prefix,
+                    }
+                ),
+                json.dumps(sysconfig.get_paths()),
+                "run",
+                str(snapshots["inputs/cases.jsonl"]),
+                "--labels",
+                str(snapshots["inputs/labels.jsonl"]),
+                "--annotation-a",
+                str(snapshots["inputs/annotation-a.jsonl"]),
+                "--annotation-b",
+                str(snapshots["inputs/annotation-b.jsonl"]),
+                "--agreement-report",
+                str(snapshots["inputs/agreement-report.json"]),
+                "--annotation-approval",
+                str(snapshots["inputs/annotation-approval.json"]),
+                "--adjudication-record",
+                str(snapshots["inputs/adjudication-record.json"]),
+                "--development-cases",
+                str(snapshots["inputs/development-cases.jsonl"]),
+                "--development-labels",
+                str(snapshots["inputs/development-labels.jsonl"]),
+                "--documents",
+                str(snapshots["inputs/documents.jsonl"]),
+                "--mode",
+                args.mode,
+                "--vocabulary",
+                args.vocabulary,
+                "--top-k",
+                str(args.top_k),
+                "--partition",
+                args.partition,
+                "--granularity",
+                args.granularity,
+                "--out",
+                str(args.out.resolve()),
+            ]
+            completed = subprocess.run(
+                command,
+                cwd=snapshot_root,
+                env=environment,
+                check=False,
+            )
+            return completed.returncode
+    except (OSError, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+def _run_evaluation_in_process(args: argparse.Namespace) -> int:
+    """Evaluate in the isolated child whose imports come only from captured code."""
+    snapshot_child = os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1"
+    if snapshot_child:
+        # The parent checked Git identity both before and after snapshot capture.
+        # The child verifies the immutable snapshot hashes below and deliberately
+        # does not invoke Git or trust inherited Git configuration/PATH.
+        expected_commit = os.environ.get("AYORAI_RGC_EXPECTED_GIT_COMMIT", "")
+        expected_clean = os.environ.get("AYORAI_RGC_EXPECTED_WORKTREE_CLEAN", "")
+        if expected_clean not in {"true", "false", "none"} or (
+            expected_commit and re.fullmatch(r"[0-9a-f]{40}", expected_commit) is None
+        ):
+            print("RGC evaluation blocked: invalid parent provenance metadata", file=sys.stderr)
+            return 2
+        git_commit = expected_commit or None
+        worktree_clean = {"true": True, "false": False, "none": None}[expected_clean]
+    else:
+        git_commit = _git_commit()
+        worktree_clean = _worktree_clean()
+    if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
+        print(
+            "RGC evaluation blocked: the hidden partition runs only from a clean git "
+            "checkout with a resolvable commit",
+            file=sys.stderr,
+        )
+        return 2
+
+    previous_judge_rules_path: Path | None = None
+    with tempfile.TemporaryDirectory(prefix="ayorai-rgc-snapshot-") as temporary:
+        snapshot_root = Path(temporary)
+        freeze_relatives = (
+            "docs/eval/PROTOCOL-GOLDEN-V1.md",
+            "docs/eval/PREREGISTRATION-RGC-v1.md",
+            "docs/eval/RUNNER-RGC-v1.md",
+            "docs/eval/PROTOCOL-FREEZE.json",
+            "evals/ptbr/rgc_eval.py",
+            *RUNNER_DEPENDENCIES,
+        )
+        sources: dict[str, Path] = {relative: ROOT / relative for relative in freeze_relatives}
+        input_sources = {
+            "inputs/cases.jsonl": args.cases,
+            "inputs/labels.jsonl": args.labels,
+            "inputs/annotation-a.jsonl": args.annotation_a,
+            "inputs/annotation-b.jsonl": args.annotation_b,
+            "inputs/agreement-report.json": args.agreement_report,
+            "inputs/annotation-approval.json": args.annotation_approval,
+            "inputs/adjudication-record.json": args.adjudication_record,
+            "inputs/development-cases.jsonl": args.development_cases,
+            "inputs/development-labels.jsonl": args.development_labels,
+            "inputs/documents.jsonl": args.documents,
+        }
+        sources.update(input_sources)
+        try:
+            snapshots, snapshot_hashes = _snapshot_files(sources, snapshot_root)
+            if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
+                expected_snapshot = json.loads(os.environ["AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256"])
+                if not isinstance(expected_snapshot, dict):
+                    raise ValueError("RGC evaluation blocked: invalid expected snapshot digest map")
+                for relative, expected_digest in expected_snapshot.items():
+                    if snapshot_hashes.get(relative) != expected_digest:
+                        raise ValueError(
+                            "RGC evaluation blocked: captured artifact changed between "
+                            f"parent and isolated child: {relative}"
+                        )
+
+            # Judge 2.0 must load its rule contract from the same captured bytes
+            # that the freeze validator hashed, not from its import-time checkout path.
+            previous_judge_rules_path = judge2_module._RULES_PATH
+            judge2_module._RULES_PATH = snapshots["rules/judge-2.0.0.json"]
+
+            # Freeze and approval validation operate on the captured bytes only.
+            protocol_freeze = validate_protocol_freeze(root=snapshot_root)
+            annotation_approval = validate_annotation_approval(
+                snapshots["inputs/cases.jsonl"],
+                snapshots["inputs/labels.jsonl"],
+                snapshots["inputs/development-cases.jsonl"],
+                snapshots["inputs/development-labels.jsonl"],
+                snapshots["inputs/annotation-a.jsonl"],
+                snapshots["inputs/annotation-b.jsonl"],
+                snapshots["inputs/agreement-report.json"],
+                snapshots["inputs/annotation-approval.json"],
+                snapshots["inputs/adjudication-record.json"],
+            )
+
+            started_at = datetime.now(UTC).isoformat(timespec="seconds")
+            documents = load_documents(snapshots["inputs/documents.jsonl"])
+            development_cases = _read_jsonl(snapshots["inputs/development-cases.jsonl"])
+            development_labels = load_labels(
+                snapshots["inputs/development-labels.jsonl"], args.vocabulary
+            )
+            result = evaluate(
+                _read_jsonl(snapshots["inputs/cases.jsonl"]),
+                load_labels(snapshots["inputs/labels.jsonl"], args.vocabulary),
+                documents,
+                development_cases=development_cases,
+                development_labels=development_labels,
+                mode=args.mode,
+                vocabulary=args.vocabulary,
+                top_k=args.top_k,
+                granularity=args.granularity,
+                partition=args.partition,
+            )
+            generated_at = datetime.now(UTC).isoformat(timespec="seconds")
+            input_report = {
+                "cases": str(args.cases),
+                "cases_sha256": snapshot_hashes["inputs/cases.jsonl"],
+                "labels": str(args.labels),
+                "labels_sha256": snapshot_hashes["inputs/labels.jsonl"],
+                "development_cases": str(args.development_cases),
+                "development_cases_sha256": snapshot_hashes["inputs/development-cases.jsonl"],
+                "development_labels": str(args.development_labels),
+                "development_labels_sha256": snapshot_hashes["inputs/development-labels.jsonl"],
+                "documents": str(args.documents),
+                "documents_sha256": snapshot_hashes["inputs/documents.jsonl"],
+                "annotation_a": str(args.annotation_a),
+                "annotation_a_sha256": snapshot_hashes["inputs/annotation-a.jsonl"],
+                "annotation_b": str(args.annotation_b),
+                "annotation_b_sha256": snapshot_hashes["inputs/annotation-b.jsonl"],
+                "agreement_report": str(args.agreement_report),
+                "agreement_report_sha256": snapshot_hashes["inputs/agreement-report.json"],
+                "annotation_approval": str(args.annotation_approval),
+                "annotation_approval_sha256": snapshot_hashes["inputs/annotation-approval.json"],
+                "adjudication_record": str(args.adjudication_record),
+                "adjudication_record_sha256": snapshot_hashes["inputs/adjudication-record.json"],
+            }
+            report = {
+                "runner_version": RUNNER_VERSION,
+                "protocol_freeze": protocol_freeze,
+                "annotation_approval": annotation_approval,
+                "started_at": started_at,
+                "generated_at": generated_at,
+                "git_commit": git_commit,
+                "worktree_clean": worktree_clean,
+                "python": sys.version.split()[0],
+                "python_implementation": platform.python_implementation(),
+                "package_version": _package_version(),
+                "runtime_dependencies": {
+                    name: distribution_version(name)
+                    for name in ("pydantic", "pydantic-core", "rfc8785")
+                },
+                "inputs": input_report,
+                "config": {
+                    "partition": args.partition,
+                    "mode": args.mode,
+                    "vocabulary": args.vocabulary,
+                    "top_k": args.top_k,
+                    "granularity": args.granularity,
+                    "bm25": {"k1": BM25_K1, "b": BM25_B},
+                    "stance_detector": (
+                        f"{RuleStanceDetector.component}/{RuleStanceDetector.version}"
+                    ),
+                    "bootstrap": {
+                        "iterations": BOOTSTRAP_ITERATIONS,
+                        "seed": SEED,
+                        "generator": "RGC-PRNG-1",
+                        "percentile": "hyndman-fan-type-7",
+                        "primary_unit": ("component" if args.partition == "hidden" else "case"),
+                        "sensitivity_units": (
+                            ["article_cluster", "case"] if args.partition == "hidden" else []
+                        ),
+                    },
+                    "h1_test": (
+                        "sign_flip_by_component" if args.partition == "hidden" else "not_tested"
+                    ),
+                    "baseline_primary": {
+                        "name": "B",
+                        "development_label_count": len(development_labels),
+                        "label": development_baseline_label(development_labels, args.vocabulary),
+                    },
+                    "baseline_descriptive": {
+                        "name": "A",
+                        "source": "evaluation gold labels; descriptive only",
+                    },
+                },
+                **result,
+            }
+            if _git_commit() != git_commit or _worktree_clean() != worktree_clean:
+                raise ValueError(
+                    "RGC evaluation blocked: checkout identity or worktree state changed "
+                    "during the run"
+                )
+
+            manifest_path = args.out.with_name(args.out.name + ".manifest.json")
+            input_files = {
+                "cases_sha256": snapshots["inputs/cases.jsonl"],
+                "labels_sha256": snapshots["inputs/labels.jsonl"],
+                "development_cases_sha256": snapshots["inputs/development-cases.jsonl"],
+                "development_labels_sha256": snapshots["inputs/development-labels.jsonl"],
+                "documents_sha256": snapshots["inputs/documents.jsonl"],
+                "annotation_a_sha256": snapshots["inputs/annotation-a.jsonl"],
+                "annotation_b_sha256": snapshots["inputs/annotation-b.jsonl"],
+                "agreement_report_sha256": snapshots["inputs/agreement-report.json"],
+                "annotation_approval_sha256": snapshots["inputs/annotation-approval.json"],
+                "adjudication_record_sha256": snapshots["inputs/adjudication-record.json"],
+            }
+            status = _publish_run(
+                report,
+                args.out,
+                manifest_path,
+                input_files=input_files,
+                root=snapshot_root,
+            )
+            if status != 0:
+                return status
+            print(f"run manifest {manifest_path} sha256={_sha256(manifest_path)}")
+            metrics = result["metrics"]
+            print(
+                f"n={metrics['n']} accuracy={metrics['system']['accuracy']} "
+                f"baseline_B={metrics['baseline_primary']['accuracy']} "
+                f"baseline_A_descriptive={metrics['baseline_descriptive']['accuracy']} "
+                f"h1={metrics['primary_criterion']['h1_supported']}"
+            )
+            return 0
+        except (OSError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        finally:
+            if previous_judge_rules_path is not None:
+                judge2_module._RULES_PATH = previous_judge_rules_path
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -1372,99 +2336,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     export.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
 
-    documents = load_documents(args.documents)
     if args.command == "export-corpus":
-        args.out.write_text(export_strict_corpus(documents), encoding="utf-8")
+        try:
+            documents = load_documents(args.documents)
+            args.out.write_text(export_strict_corpus(documents), encoding="utf-8")
+        except (OSError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
         print(f"wrote {len(documents)} documents to {args.out}")
         return 0
 
-    try:
-        protocol_freeze = validate_protocol_freeze()
-        annotation_approval = validate_annotation_approval(
-            args.cases,
-            args.labels,
-            args.development_cases,
-            args.development_labels,
-            args.annotation_a,
-            args.annotation_b,
-            args.agreement_report,
-            args.annotation_approval,
-            args.adjudication_record,
-        )
-    except ValueError as exc:
-        print(str(exc), file=sys.stderr)
-        return 2
-
-    development_cases = _read_jsonl(args.development_cases)
-    development_labels = load_labels(args.development_labels, args.vocabulary)
-    result = evaluate(
-        _read_jsonl(args.cases),
-        load_labels(args.labels, args.vocabulary),
-        documents,
-        development_cases=development_cases,
-        development_labels=development_labels,
-        mode=args.mode,
-        vocabulary=args.vocabulary,
-        top_k=args.top_k,
-        granularity=args.granularity,
-        partition=args.partition,
-    )
-    report = {
-        "runner_version": RUNNER_VERSION,
-        "protocol_freeze": protocol_freeze,
-        "annotation_approval": annotation_approval,
-        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "git_commit": _git_commit(),
-        "python": sys.version.split()[0],
-        "inputs": {
-            "cases": str(args.cases),
-            "cases_sha256": _sha256(args.cases),
-            "labels_sha256": _sha256(args.labels),
-            "development_cases_sha256": _sha256(args.development_cases),
-            "development_labels_sha256": _sha256(args.development_labels),
-            "documents_sha256": _sha256(args.documents),
-        },
-        "config": {
-            "partition": args.partition,
-            "mode": args.mode,
-            "vocabulary": args.vocabulary,
-            "top_k": args.top_k,
-            "granularity": args.granularity,
-            "bm25": {"k1": BM25_K1, "b": BM25_B},
-            "stance_detector": f"{RuleStanceDetector.component}/{RuleStanceDetector.version}",
-            "bootstrap": {
-                "iterations": BOOTSTRAP_ITERATIONS,
-                "seed": SEED,
-                "generator": "RGC-PRNG-1",
-                "percentile": "hyndman-fan-type-7",
-                "primary_unit": "component" if args.partition == "hidden" else "case",
-                "sensitivity_units": (
-                    ["article_cluster", "case"] if args.partition == "hidden" else []
-                ),
-            },
-            "h1_test": ("sign_flip_by_component" if args.partition == "hidden" else "not_tested"),
-            "baseline_primary": {
-                "name": "B",
-                "development_label_count": len(development_labels),
-                "label": development_baseline_label(development_labels, args.vocabulary),
-            },
-            "baseline_descriptive": {
-                "name": "A",
-                "source": "evaluation gold labels; descriptive only",
-            },
-        },
-        **result,
-    }
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    m = result["metrics"]
-    print(
-        f"n={m['n']} accuracy={m['system']['accuracy']} "
-        f"baseline_B={m['baseline_primary']['accuracy']} "
-        f"baseline_A_descriptive={m['baseline_descriptive']['accuracy']} "
-        f"h1={m['primary_criterion']['h1_supported']}"
-    )
-    return 0
+    return _run_evaluation(args)
 
 
 if __name__ == "__main__":

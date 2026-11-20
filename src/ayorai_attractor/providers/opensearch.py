@@ -7,7 +7,10 @@ import httpx
 
 from ayorai_attractor.hybrid import RankedHit, rrf_fuse
 from ayorai_attractor.providers import _http
-from ayorai_attractor.providers.base import Provider, ProviderResponse
+from ayorai_attractor.providers.base import Provider, ProviderResponse, RetrievedSource
+
+# Per-document cap for the content handed to adjudication (API documents allow 200k).
+MAX_SOURCE_CHARS = 20_000
 
 
 class ResponseTooLargeError(httpx.TransportError):
@@ -28,6 +31,28 @@ class ResponseDeadlineError(httpx.TimeoutException):
     httpx timeouts apply to each network operation, so a server that sends a few
     bytes before every read timeout would otherwise keep the request open forever.
     """
+
+
+def _retrieved_source(hit: dict[str, Any], location: str) -> RetrievedSource | None:
+    """Turn one search hit into a source with its own provenance (None when empty)."""
+    source = hit.get("_source", {})
+    title = str(source.get("title", ""))
+    content = str(source.get("content", ""))
+    text = f"{title}: {content}".strip(": ")[:MAX_SOURCE_CHARS]
+    if not text.strip():
+        return None
+    url = source.get("url")
+    url = url if isinstance(url, str) and url.startswith(("https://", "http://")) else None
+    doc_id = hit.get("_id")
+    doc_id = str(doc_id) if doc_id not in (None, "") else None
+    published = source.get("published_at")
+    return RetrievedSource(
+        content=text,
+        source=url or (f"{location}/_doc/{doc_id}" if doc_id else location),
+        url=url,
+        source_id=doc_id,
+        published_at=str(published) if published not in (None, "") else None,
+    )
 
 
 class OpenSearchProvider(Provider):
@@ -110,6 +135,10 @@ class OpenSearchProvider(Provider):
         }
         body = self._post_search(payload)
         hits = body.get("hits", {}).get("hits", [])
+        location = f"{self.endpoint}/{self.index}"
+        documents = tuple(
+            item for item in (_retrieved_source(hit, location) for hit in hits) if item is not None
+        )
         excerpts = []
         for hit in hits:
             source = hit.get("_source", {})
@@ -121,7 +150,9 @@ class OpenSearchProvider(Provider):
             text=text,
             source=f"{self.endpoint}/{self.index}",
             excerpt=text[:2000],
-            independent=True,
+            # The "no matching documents" placeholder is not a source.
+            independent=bool(documents),
+            documents=documents,
         )
 
 
@@ -208,6 +239,14 @@ class HybridOpenSearchProvider(OpenSearchProvider):
             semantic_weight=self.semantic_weight,
         )
         by_id = {str(hit.get("_id")): hit for hit in [*lexical, *semantic] if hit.get("_id")}
+        location = f"{self.endpoint}/{self.index}"
+        documents = tuple(
+            item
+            for item in (
+                _retrieved_source(by_id[ranked.document_id], location) for ranked in fused[:10]
+            )
+            if item is not None
+        )
         excerpts = []
         for ranked in fused[:10]:
             source = by_id[ranked.document_id].get("_source", {})
@@ -219,7 +258,9 @@ class HybridOpenSearchProvider(OpenSearchProvider):
             text=text,
             source=f"{self.endpoint}/{self.index}",
             excerpt=text[:2000],
-            independent=True,
+            # The "no matching documents" placeholder is not a source.
+            independent=bool(documents),
+            documents=documents,
         )
 
     def _search(self, query: dict[str, object]) -> list[dict[str, Any]]:

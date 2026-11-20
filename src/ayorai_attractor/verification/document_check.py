@@ -31,7 +31,7 @@ from .models import Evidence, Stance, StanceEdge, Verdict
 from .response import ResponsePolicy
 from .stance import DetectedStance, RuleStanceDetector, StanceDetectionResult, StanceDetector
 
-ENGINE_VERSION = "document-check-3"
+ENGINE_VERSION = "document-check-5"
 MAX_PASSAGE_CHARS = 600
 TOP_K_PASSAGES = 3
 MIN_SUPPORT_COVERAGE = 0.8
@@ -131,6 +131,19 @@ class CheckDocumentInput:
     media_type: str = "text/plain"
     page_starts: tuple[int, ...] = (0,)
     source_sha256: str | None = None
+    # True only when this server fetched the document itself (POST /v2/audit search).
+    # Documents sent by the client keep their declared ``url``/``source`` as metadata;
+    # the server never accessed them, so their origin is not verified (ADR-002 §2).
+    retrieved_by_server: bool = False
+
+    @property
+    def provenance(self) -> str:
+        return "server_retrieved" if self.retrieved_by_server else "client_supplied"
+
+    @property
+    def provenance_complete(self) -> bool:
+        """ADR-002 §2: a stable location retrieved at a known time, by this server."""
+        return self.retrieved_by_server and self.url is not None
 
     def page_of(self, offset: int) -> int:
         page = 1
@@ -295,6 +308,71 @@ def rank_passages(
     return [item[2] for item in scored if item[1] in chosen]
 
 
+# Source independence (ADR-002 §3): identical content is one cluster, whatever its
+# document id or URL. Content is compared after normalization, and near-duplicates
+# (a copy with a prefix, a few changed words, or a different case/accents/punctuation)
+# are joined too, so that one text submitted several times is never counted as
+# several independent sources. Near-duplicate = containment of word 5-grams (shared
+# shingles over the smaller set) of at least 0.8: a short text reproduced inside a
+# longer one is the same origin (republication or citation chain, ADR-002 §3).
+SHINGLE_WORDS = 5
+NEAR_DUPLICATE_CONTAINMENT = 0.8
+
+
+def normalize_for_identity(text: str) -> str:
+    """Case-, accent-, punctuation- and whitespace-insensitive form of a text."""
+    decomposed = unicodedata.normalize("NFKD", text)
+    stripped = "".join(char for char in decomposed if not unicodedata.combining(char))
+    return " ".join(re.sub(r"[^0-9a-z]+", " ", stripped.casefold()).split())
+
+
+def _shingles(normalized: str) -> frozenset[tuple[str, ...]]:
+    words = normalized.split()
+    size = min(SHINGLE_WORDS, len(words))
+    if size == 0:
+        return frozenset()
+    return frozenset(tuple(words[i : i + size]) for i in range(len(words) - size + 1))
+
+
+def document_origins(documents: Sequence[CheckDocumentInput]) -> dict[str, str]:
+    """Origin id per document: equal for identical or near-duplicate content.
+
+    Deterministic and independent of document order: documents are joined
+    transitively, and each group is named by the smallest normalized-content digest
+    among its members.
+    """
+    normalized = {doc.id: normalize_for_identity(doc.text) for doc in documents}
+    shingles = {doc_id: _shingles(text) for doc_id, text in normalized.items()}
+    parent = {doc.id: doc.id for doc in documents}
+
+    def find(doc_id: str) -> str:
+        while parent[doc_id] != doc_id:
+            parent[doc_id] = parent[parent[doc_id]]
+            doc_id = parent[doc_id]
+        return doc_id
+
+    ids = [doc.id for doc in documents]
+    for index, left in enumerate(ids):
+        for right in ids[index + 1 :]:
+            # Identical normalized texts share every shingle (containment 1.0).
+            if not (shingles[left] and shingles[right]):
+                continue
+            smaller = min(len(shingles[left]), len(shingles[right]))
+            shared = len(shingles[left] & shingles[right])
+            if shared / smaller >= NEAR_DUPLICATE_CONTAINMENT:
+                parent[find(right)] = find(left)
+    digests = {doc_id: _sha256(text) for doc_id, text in normalized.items()}
+    groups: dict[str, list[str]] = {}
+    for doc_id in ids:
+        groups.setdefault(find(doc_id), []).append(doc_id)
+    origin: dict[str, str] = {}
+    for members in groups.values():
+        name = "sha256:" + min(digests[member] for member in members)
+        for member in members:
+            origin[member] = name
+    return origin
+
+
 def _trace_id(
     claims: Sequence[str], documents: Sequence[CheckDocumentInput], engine: dict[str, str]
 ) -> str:
@@ -307,6 +385,10 @@ def _trace_id(
                 _sha256(doc.text),
                 doc.source_sha256 or _sha256(doc.text),
                 list(doc.page_starts),
+                # Provenance decides whether "verified" is reachable, so it is part
+                # of the identity of the check (same text, different origin).
+                doc.provenance,
+                doc.url,
             ]
             for doc in documents
         ],
@@ -339,7 +421,7 @@ def check_documents(
         claim_texts = [str(text).strip() for text in claims or () if str(text).strip()]
     engine = {
         "version": ENGINE_VERSION,
-        "trace_identity": "document-check-trace-2",
+        "trace_identity": "document-check-trace-3",
         "claim_extractor": (
             f"{extractor.component}/{extractor.version}" if answer is not None else "caller"
         ),
@@ -349,6 +431,9 @@ def check_documents(
             f"{getattr(detector, 'version', 'unknown')}"
         ),
         "judge": "ADR-002",
+        "source_independence": (
+            f"normalized-content+word{SHINGLE_WORDS}-containment>={NEAR_DUPLICATE_CONTAINMENT}"
+        ),
     }
     when = retrieved_at or datetime.now(UTC)
     passages = [passage for doc in documents for passage in split_passages(doc)]
@@ -356,7 +441,7 @@ def check_documents(
     # SourceText NFC-maps each document at most once, lazily, for this call only.
     sources = {doc.id: SourceText(doc.text) for doc in documents}
     by_id = {doc.id: doc for doc in documents}
-    origin = {doc.id: "sha256:" + _sha256(doc.text) for doc in documents}
+    origin = document_origins(documents)
     pipeline = ClaimVerificationPipeline(detector)
 
     results: list[ClaimCheck] = []
@@ -393,6 +478,9 @@ def check_documents(
                 # One document = one origin: passages of the same document never count
                 # as independent sources.
                 origin_id=origin[passage.document_id],
+                # Complete provenance (and so "verified") requires an origin this server
+                # actually retrieved; text supplied by the client caps at "supported".
+                provenance_complete=by_id[passage.document_id].provenance_complete,
             )
             for passage in selected
         ]
@@ -443,6 +531,7 @@ def check_documents(
                 "media_type": doc.media_type,
                 "pages": len(doc.page_starts),
                 "source_sha256": doc.source_sha256 or _sha256(doc.text),
+                "provenance": doc.provenance,
             }
             for doc in documents
         ),
