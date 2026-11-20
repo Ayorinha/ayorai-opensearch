@@ -104,6 +104,68 @@ def test_kappa_is_undefined_without_marginal_variation_and_does_not_pass_gate() 
     assert result["ci95_case_bootstrap"] is None
 
 
+def test_cli_uses_one_immutable_snapshot_for_metrics_and_hashes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    labels = [
+        ("a", "SUPPORTED"),
+        ("b", "REFUTED"),
+        ("c", "UNVERIFIED"),
+        ("d", "PARTIALLY_SUPPORTED"),
+        ("e", "CONFLICTING"),
+    ]
+    original = "".join(
+        json.dumps({"case_id": case_id, "label": label}) + "\n" for case_id, label in labels
+    ).encode("utf-8")
+    replacement = (
+        b'{"case_id":"a","label":"SUPPORTED"}\n'
+        b'{"case_id":"b","label":"SUPPORTED"}\n'
+        b'{"case_id":"c","label":"SUPPORTED"}\n'
+        b'{"case_id":"d","label":"SUPPORTED"}\n'
+        b'{"case_id":"e","label":"SUPPORTED"}\n'
+    )
+    annotation_a = tmp_path / "annotation-a.jsonl"
+    annotation_b = tmp_path / "annotation-b.jsonl"
+    annotation_a.write_bytes(original)
+    annotation_b.write_bytes(original)
+    output = tmp_path / "agreement.json"
+
+    original_read_bytes = Path.read_bytes
+    replaced = False
+
+    def read_bytes_with_replacement(path: Path) -> bytes:
+        nonlocal replaced
+        snapshot = original_read_bytes(path)
+        if path == annotation_a and not replaced:
+            replaced = True
+            annotation_a.write_bytes(replacement)
+        return snapshot
+
+    monkeypatch.setattr(Path, "read_bytes", read_bytes_with_replacement)
+
+    assert (
+        AGREEMENT["main"](
+            [
+                "--annotation-a",
+                str(annotation_a),
+                "--annotation-b",
+                str(annotation_b),
+                "--out",
+                str(output),
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["cohen_kappa"] == 1.0
+    assert report["inputs"]["annotation_a_sha256"] == hashlib.sha256(original).hexdigest()
+    assert report["inputs"]["annotation_b_sha256"] == hashlib.sha256(original).hexdigest()
+    replacement_hash = hashlib.sha256(replacement).hexdigest()
+    current_hash = hashlib.sha256(annotation_a.read_bytes()).hexdigest()
+    assert current_hash == replacement_hash
+
+
 def test_cli_report_records_exact_annotation_input_hashes(tmp_path: Path) -> None:
     labels = [
         ("a", "SUPPORTED"),
@@ -182,3 +244,13 @@ def test_bootstrap_uses_rgc_prng_and_type7_percentile() -> None:
     result = AGREEMENT["compute_agreement"](labels_a, labels_b, iterations=50)
     assert result["bootstrap"]["generator"] == "RGC-PRNG-1"
     assert result["bootstrap"]["percentile"] == "hyndman-fan-type-7"
+
+
+def test_duplicate_json_object_keys_are_rejected(tmp_path: Path) -> None:
+    file_path = tmp_path / "annotations.jsonl"
+    file_path.write_text(
+        '{"case_id":"a","case_id":"attacker","label":"SUPPORTED"}\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="duplicate JSON key 'case_id'"):
+        AGREEMENT["load_annotations"](file_path)
