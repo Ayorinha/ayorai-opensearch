@@ -73,3 +73,19 @@ def test_a_conditional_contradiction_is_not_a_refutation() -> None:
 
 def test_detector_version_is_12() -> None:
     assert RuleStanceDetector.version == "12"
+
+
+def test_unrelated_correction_notice_does_not_neutralize_another_claim() -> None:
+    text = (
+        "Retificação: o endereço da Vértice é Rua das Flores, 10.\\n\\n"
+        "A receita da Vértice foi de 40 milhões de reais em 2024."
+    )
+    assert _stances(CLAIM, text) == ["supports"]
+
+
+def test_adjacent_correction_notice_still_neutralizes_the_claim() -> None:
+    text = (
+        "A receita da Vértice foi de 40 milhões de reais em 2024. "
+        "Retificação: o valor correto é 45 milhões de reais."
+    )
+    assert _stances(CLAIM, text) == ["neutral"]
