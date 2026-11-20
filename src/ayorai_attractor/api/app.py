@@ -5,13 +5,24 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from ayorai_attractor.api.auth import APIKeyAuthMiddleware, validate_auth_configuration
+from ayorai_attractor.api.auth import (
+    PRINCIPAL_STATE_KEY,
+    APIKeyAuthMiddleware,
+    validate_auth_configuration,
+)
+from ayorai_attractor.api.load_control import (
+    HeavyRouteConcurrencyLimitMiddleware,
+    inflight_scope_from_env,
+    max_inflight_from_env,
+)
 from ayorai_attractor.api.logging_config import configure_logging
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
@@ -19,10 +30,12 @@ from ayorai_attractor.models import (
     AuditFindingResponse,
     AuditResponse,
     AuditTraceResponse,
+    QualityMode,
     SearchRequest,
     SearchResponse,
 )
 from ayorai_attractor.orchestrator import Attractor
+from ayorai_attractor.providers.factory import validate_provider_configuration
 from ayorai_attractor.verification.api_models import (
     ClaimJudgmentResponse,
     Judge2VerificationRequest,
@@ -32,6 +45,8 @@ from ayorai_attractor.verification.api_models import (
     VerificationRequest,
 )
 from ayorai_attractor.verification.check_models import (
+    AuditV2Request,
+    AuditV2Response,
     CheckDocument,
     CheckRequest,
     CheckResponse,
@@ -44,6 +59,7 @@ from ayorai_attractor.verification.document_ingest import (
     IngestedDocument,
     ingest,
 )
+from ayorai_attractor.verification.extraction import RuleClaimExtractor
 from ayorai_attractor.verification.field_check import (
     FIELD_CHECK_VERSION,
     FieldSpec,
@@ -63,6 +79,11 @@ audit_store = AuditTraceStore()
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Release persistent resources when the API process shuts down."""
     validate_auth_configuration()
+    # Fail closed like authentication: a provider configuration that every
+    # request would reject must not start a partially configured service.
+    validate_provider_configuration()
+    max_inflight_from_env()
+    inflight_scope_from_env()
     configure_logging()
     try:
         yield
@@ -70,8 +91,21 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         audit_store.close()
 
 
-_HTTP_400_RESPONSE: dict[str, Any] = {
-    "description": "Request body could not be parsed as JSON.",
+# Malformed JSON is reported as 422 (type json_invalid), never 400.
+_HTTP_401_RESPONSE: dict[str, Any] = {
+    "description": "Missing or invalid API key (ATTRACTOR_AUTH_MODE=api_key).",
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {"detail": {"type": "string"}},
+                "required": ["detail"],
+            }
+        }
+    },
+}
+_HTTP_413_RESPONSE: dict[str, Any] = {
+    "description": "Request body exceeds the configured size limit.",
     "content": {
         "application/json": {
             "schema": {
@@ -109,6 +143,26 @@ _HTTP_404_RESPONSE: dict[str, Any] = {
 
 _HTTP_429_RESPONSE: dict[str, Any] = {
     "description": "The request rate limit was exceeded.",
+    "headers": {
+        "Retry-After": {
+            "description": "Seconds to wait before retrying the request.",
+            "schema": {"type": "integer", "minimum": 1},
+        }
+    },
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {"detail": {"type": "string"}},
+                "required": ["detail"],
+            }
+        }
+    },
+}
+
+
+_HTTP_503_RESPONSE: dict[str, Any] = {
+    "description": "Too many verification requests in flight on this worker; retry later.",
     "headers": {
         "Retry-After": {
             "description": "Seconds to wait before retrying the request.",
@@ -201,7 +255,45 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.add_middleware(RequestBodyLimitMiddleware)
+# Between authentication and body buffering: unauthenticated requests never take
+# a slot, and a rejected request is answered before its body is read.
+app.add_middleware(HeavyRouteConcurrencyLimitMiddleware)
 app.add_middleware(APIKeyAuthMiddleware)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _body_encoding_as_json_invalid(request: Request, exc: StarletteHTTPException) -> Response:
+    """Answer a body that is not valid UTF-8 like any other malformed JSON (422).
+
+    FastAPI parses JSON bodies with ``json.loads(bytes)``. Invalid UTF-8 raises
+    UnicodeDecodeError rather than JSONDecodeError, which FastAPI turns into a
+    generic 400. JSON text must be UTF-8 (RFC 8259, section 8.1), so this is a
+    JSON decode error and gets the same documented 422 ``json_invalid`` envelope.
+    Every other HTTPException keeps FastAPI's default handling.
+    """
+    cause = exc.__cause__
+    if exc.status_code == 400 and isinstance(cause, UnicodeDecodeError):
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": [
+                    {
+                        "type": "json_invalid",
+                        "loc": ["body", cause.start],
+                        "msg": "JSON decode error",
+                        "input": {},
+                        "ctx": {"error": "Request body is not valid UTF-8"},
+                    }
+                ]
+            },
+        )
+    return await http_exception_handler(request, exc)
+
+
+def _principal(http_request: Request) -> str | None:
+    """Principal set by APIKeyAuthMiddleware; None when authentication is off."""
+    value = getattr(http_request.state, PRINCIPAL_STATE_KEY, None)
+    return value if isinstance(value, str) else None
 
 
 @app.get("/health")
@@ -212,7 +304,13 @@ def health() -> dict[str, str]:
 @app.post(
     "/v1/opensearch",
     response_model=SearchResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
+    },
 )
 def opensearch(request: SearchRequest) -> SearchResponse:
     return engine.run(request)
@@ -221,13 +319,19 @@ def opensearch(request: SearchRequest) -> SearchResponse:
 @app.post(
     "/v1/audit",
     response_model=AuditResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
+    },
 )
-def audit(request: SearchRequest) -> AuditResponse:
+def audit(request: SearchRequest, http_request: Request) -> AuditResponse:
     """Run the engine and expose a deterministic audit of its evidence."""
     response = engine.run(request)
     report = AuditReport.from_response(response)
-    audit_store.record(response, report)
+    audit_store.record(response, report, owner=_principal(http_request))
     return AuditResponse(
         trace_id=report.trace_id,
         verification=None,
@@ -263,7 +367,13 @@ def _ingest_or_422(doc: CheckDocument, loc: list[Any]) -> IngestedDocument:
 @app.post(
     "/v1/check",
     response_model=CheckResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
+    },
 )
 def check(request: CheckRequest) -> CheckResponse:
     """Check claims, or an AI answer, against the supplied documents.
@@ -315,10 +425,132 @@ def check(request: CheckRequest) -> CheckResponse:
     )
 
 
+def _independent_documents(response: SearchResponse) -> list[CheckDocumentInput]:
+    """Independent retrieved sources become documents; model output never does."""
+    seen: set[str] = set()
+    documents: list[CheckDocumentInput] = []
+    for item in response.evidence:
+        text = item.excerpt.strip()
+        if not item.independent or not text or text in seen:
+            continue
+        seen.add(text)
+        documents.append(
+            CheckDocumentInput(
+                id=f"src_{len(documents) + 1:03d}",
+                text=text,
+                source=item.source[:512] or None,
+            )
+        )
+    return documents
+
+
+@app.post(
+    "/v2/audit",
+    response_model=AuditV2Response,
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
+    },
+)
+def audit_v2(request: AuditV2Request, http_request: Request) -> AuditV2Response:
+    """Search, then adjudicate claims against the independent sources found (end to end).
+
+    The engine answers the query and retrieves sources. Only independent sources are
+    checked against; the claims are the caller's, the caller's answer decomposed, or
+    by default the engine's own answer decomposed. Each claim goes through the same
+    passage selection, stance detection and ADR-002 Judge as /v1/check, and the run
+    is recorded as an audit trace owned by the calling key.
+    """
+    response = engine.run(SearchRequest(query=request.query, mode=QualityMode(request.mode)))
+    report = AuditReport.from_response(response)
+    audit_store.record(response, report, owner=_principal(http_request))
+
+    if request.claims is not None:
+        claims_source, claims, answer = "caller_claims", list(request.claims), None
+    elif request.answer is not None:
+        claims_source, claims, answer = "caller_answer", None, request.answer
+    elif response.operation_status == "completed" and response.answer.strip():
+        claims_source, claims, answer = "engine_answer", None, response.answer
+    else:
+        claims_source, claims, answer = "none", None, None
+
+    documents = _independent_documents(response)
+    check_trace_id: str | None = None
+    engine_info: dict[str, str] = {"judge": "ADR-002"}
+    digests: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+    if claims_source != "none" and documents:
+        result = check_documents(documents, claims=claims, answer=answer)
+        check_trace_id, engine_info, digests = (
+            result.trace_id,
+            dict(result.engine),
+            list(result.documents),
+        )
+        results = [
+            {
+                "claim_id": item.claim_id,
+                "claim": item.claim,
+                "status": item.status,
+                "verdict": item.verdict,
+                "confidence": item.confidence,
+                "evidence": [vars(view) for view in item.evidence],
+                "rationale": item.rationale,
+                "abstention_reason": item.abstention_reason,
+            }
+            for item in result.results
+        ]
+    elif claims_source != "none":
+        texts = (
+            claims
+            if claims is not None
+            else [item.claim.text for item in RuleClaimExtractor().extract(answer or "").claims]
+        )
+        results = [
+            {
+                "claim_id": f"clm_{index:03d}",
+                "claim": text,
+                "status": ResponsePolicy.ABSTAIN_NO_ANSWER.value,
+                "verdict": None,
+                "confidence": 1.0,
+                "evidence": [],
+                "rationale": "No independent source was retrieved for the query.",
+                "abstention_reason": "no_independent_source",
+            }
+            for index, text in enumerate(texts, start=1)
+        ]
+    summary: dict[str, int] = {}
+    for item in results:
+        key = item["verdict"] or item["status"]
+        summary[key] = summary.get(key, 0) + 1
+    return AuditV2Response.model_validate(
+        {
+            "trace_id": report.trace_id,
+            "check_trace_id": check_trace_id,
+            "operation_status": response.operation_status,
+            "claims_source": claims_source,
+            "answer": response.answer,
+            "engine": engine_info,
+            "documents": digests,
+            "results": results,
+            "summary": dict(sorted(summary.items())),
+            "failure_count": report.failure_count,
+        }
+    )
+
+
 @app.post(
     "/v1/fields",
     response_model=FieldsResponse,
-    responses={400: _HTTP_400_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
+    },
 )
 def fields(request: FieldsRequest) -> FieldsResponse:
     """Compare submitted field values (amount, date, CPF/CNPJ, names) with a document.
@@ -416,9 +648,11 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
                 }
             },
         },
-        400: _HTTP_400_RESPONSE,
+        401: _HTTP_401_RESPONSE,
+        413: _HTTP_413_RESPONSE,
         422: _HTTP_422_RESPONSE,
         429: _HTTP_429_RESPONSE,
+        503: _HTTP_503_RESPONSE,
     },
 )
 def verify(payload: Annotated[Any, Body()]) -> Any:
@@ -560,11 +794,16 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
 @app.get(
     "/v1/audit/{trace_id}",
     response_model=AuditTraceResponse,
-    responses={404: _HTTP_404_RESPONSE, 422: _HTTP_422_RESPONSE, 429: _HTTP_429_RESPONSE},
+    responses={
+        401: _HTTP_401_RESPONSE,
+        404: _HTTP_404_RESPONSE,
+        422: _HTTP_422_RESPONSE,
+        429: _HTTP_429_RESPONSE,
+    },
 )
-def audit_trace(trace_id: str) -> AuditTraceResponse:
+def audit_trace(trace_id: str, http_request: Request) -> AuditTraceResponse:
     """Return persisted audit metadata without exposing raw evidence or prompts."""
-    saved = audit_store.get(trace_id)
+    saved = audit_store.get(trace_id, requester=_principal(http_request))
     if saved is None:
         from fastapi import HTTPException
 

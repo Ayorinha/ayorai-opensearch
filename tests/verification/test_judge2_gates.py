@@ -253,3 +253,50 @@ def test_multiple_g2_reasons_are_preserved_in_normative_order() -> None:
         "NON_FACTUAL_CLAIM",
         "RETRIEVAL_FAILURE",
     )
+
+
+@pytest.mark.parametrize(
+    ("override", "code"),
+    [
+        ({"evidence": {"e1": "not-a-sequence"}}, "SCHEMA_VIOLATION"),
+        ({"evidence": "e1"}, "SCHEMA_VIOLATION"),
+        ({"stances": "st1"}, "SCHEMA_VIOLATION"),
+        (
+            {"atoms": [{"id": "a1", "text": CLAIM, "start_offset": False, "end_offset": 5}]},
+            "SCHEMA_VIOLATION",
+        ),
+        (
+            {"atoms": [{"id": "a1", "text": CLAIM, "start_offset": 0, "end_offset": True}]},
+            "SCHEMA_VIOLATION",
+        ),
+        (
+            {"atoms": [{"id": "a1", "text": CLAIM, "start_offset": 3, "end_offset": 3}]},
+            "ATOM_SPAN_OUT_OF_RANGE",
+        ),
+        (
+            {"stances": [{"id": "", "atom_id": "a1", "evidence_id": "e1", "stance": "SUPPORTS"}]},
+            "SCHEMA_VIOLATION",
+        ),
+    ],
+)
+def test_g1_rejects_boundary_inputs_found_by_mutation_testing(
+    override: dict[str, object], code: str
+) -> None:
+    """Booleans are not offsets, empty spans and ids are invalid, containers must be lists."""
+    kwargs = valid_kwargs()
+    kwargs.update(override)
+    result = run_gates(**kwargs)
+    assert result.decision_state == "INVALID_INPUT"
+    assert result.reason_codes == (code,)
+    assert result.admissible is False
+
+
+def test_gate_result_is_immutable() -> None:
+    from dataclasses import FrozenInstanceError
+
+    result = run_gates(**valid_kwargs())
+    with pytest.raises(FrozenInstanceError):
+        result.admissible = False  # type: ignore[misc]
+    assert result.evidence
+    with pytest.raises(FrozenInstanceError):
+        result.evidence[0].admitted = True  # type: ignore[misc]

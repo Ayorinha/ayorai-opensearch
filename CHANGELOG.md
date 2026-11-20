@@ -4,6 +4,48 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi criado. Não traz resultado confirmatório de acurácia; o protocolo RGC permanece não congelado.
+
+### API
+- Correção: a seleção de trechos do `/v1/check` e do `/v2/audit` deixava documentos fora da adjudicação quando outros os superavam em relevância. Uma contradição explícita podia ser ignorada, e o resultado sair `verified`. Agora o melhor trecho de cada documento relacionado também é avaliado (`document-check-3`).
+- `POST /v2/audit`: busca e adjudicação ADR-002 de ponta a ponta. Só evidência independente vira documento; o resultado é registrado como rastro com dono (#587).
+- `/v1/fields`: somente dígitos ASCII simples (field-check-3) e sinal de menos ligado ao número ou valor (field-check-4) (#545, #546).
+- Respostas dos providers HTTP limitadas em tamanho, sem compressão e com prazo total (#561).
+- Limite de concorrência das rotas pesadas (HTTP 503), opcionalmente compartilhado entre workers do mesmo host com `ATTRACTOR_INFLIGHT_SCOPE=host` (#556, #563).
+- Endurecimento do fencing de jobs, da integridade do armazenamento e da segurança dos providers (#555).
+
+### Trilha de auditoria
+- Rastros com dono, formato r2-v3, metadados, backup e HMAC externo (`ATTRACTOR_AUDIT_HMAC_KEYS`) (#564).
+- HMAC exigido em todas as versões de replay quando há chaves configuradas: um rastro selado não volta a validar sem o MAC (#575).
+- `ATTRACTOR_AUDIT_HMAC_REQUIRED` impede que o serviço suba sem chaves HMAC (#586).
+- Retenção automática com `ATTRACTOR_AUDIT_RETENTION_DAYS` (desligada por padrão): rastros vencidos são removidos na inicialização e, no máximo, uma vez por hora nas gravações (#586).
+- Correção: o Docker Compose guarda os rastros no volume nomeado `attractor-audit`. Antes, eles se perdiam a cada recriação do contêiner. A imagem cria `/app/.attractor` com dono no usuário do serviço (#586).
+
+### Detector de posição (stance) por regras
+- v8, com erros conhecidos fixados em testes (#565).
+- v9: negação restrita às frases da afirmação e negação relatada classificada como neutra (#570).
+- v10: afirmações hipotéticas ou não assertivas e valores-limite ("acima de", "mais de", "superou") não confirmam a afirmação (#585).
+
+### Segurança, cadeia de suprimentos e imagem
+- Imagem Docker fixada por digest, dependências instaladas por lock com hash e pisos de segurança das dependências (#556, #562).
+- Varredura da imagem com Grype e proveniência SLSA assinada das distribuições (#568).
+- Dependabot sem os pins históricos do benchmark e sem novas linhas de Python na imagem (#567); `actions/download-artifact` 8.0.2 (#520); ruff 0.17.5 (#569).
+- Documentação da integridade da auditoria e dos controles de admissão (#574) e guia de limite de requisições compartilhado entre réplicas (`docs/security/EDGE-RATE-LIMIT.md`).
+
+### RGC e avaliação (sem resultado)
+- DEC-027: reconciliação estatística do RGC (#548). O runner `rgc-eval/0.8.0` e a ferramenta de concordância entre anotadores sorteiam toda amostra bootstrap com o RGC-PRNG-1 (gerador SHA-256 especificado byte a byte, com vetores de referência publicados) e calculam intervalos de 95% pelo percentil tipo 7 de Hyndman–Fan. Os intervalos deixam de ser numericamente comparáveis com `rgc-eval/0.7.0` (#549).
+- Gramática canônica única de ID de artigo (E1, #550); componentes de artigos conectados determinísticos (#532); gate de resolução de componentes antes da anotação (E4/D7, #551); H1 por sign-flip de componentes e IC por componente no runner (Emenda 11, #552).
+- Protocolo de relação entre passagens (proposto) e harness para contradições de `/v1/check` (#547).
+- Testes do Judge 2.0 e cenários E2E (#556).
+
+### Documentação
+- `/v1/check`, `/v1/fields`, dono dos rastros, backup e novas variáveis documentados (#566); status de engenharia atualizado (#572, #578).
+
+### Limites
+- Nenhum resultado de RGC existe ou foi produzido. Nenhum benchmark em português validado; nenhuma certificação.
+- A troca do detector para a v11 (#571) muda a referência do Golden v0.1 e depende de aprovação explícita do mantenedor; não faz parte desta lista.
+- Os limitadores de taxa da aplicação são locais ao processo. Com mais de um worker ou réplica, é preciso impor um limite agregado no gateway.
+
 ## [0.8.0] — 2026-11-13
 
 Versão de produto e de segurança da cadeia de dependências. Não traz resultado confirmatório novo de acurácia; os resultados de benchmark desta versão são exploratórios em DEV.
@@ -17,6 +59,8 @@ Versão de produto e de segurança da cadeia de dependências. Não traz resulta
 - Auditoria estrita de dependências no CI (#533) e validação de pins de benchmark e de actions de artefato (#525); ruff fixado em 0.17.4 (#494); downloads de releases fixadas com nova tentativa em falhas transitórias (#502); atualização do grupo codeql-action (#518).
 - Ambiente NLI moderno auditado em arquivo próprio, sem alterar os pins dos workflows de produção DEV: transformers 5.22.2, huggingface-hub 1.32.0, pandas 3.1.1, pyarrow 26.0.1, torch 2.14.0 CPU e NumPy 2.3.3 único; `accelerate` removido; auditoria OSV e PyPI estrita e SBOM CycloneDX no workflow (#536).
 - `project.license` passa a usar a expressão SPDX `Apache-2.0` (o formato de tabela será recusado pelo setuptools a partir de 18/02/2027).
+- Nenhum `actions/checkout` persiste a credencial do GitHub; o push do `source-capture` usa o token só no comando de envio, via `GIT_ASKPASS` (#538).
+- Permissões de escrita concedidas por job, nunca ao workflow inteiro (`codeql`, `source-capture`), com teste de regressão (#540).
 
 ### Benchmarks (exploratório, DEV)
 - Emenda 2 do Learn then Test: limiares inelegíveis são pulados (#488). A reagregação exploratória e pós-hoc sob essa regra e a análise de poder estão registradas (#492). O resultado oficial da v0.7.0 permanece 0/11.

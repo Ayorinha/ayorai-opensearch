@@ -132,3 +132,20 @@ def test_log_records_error_status(caplog) -> None:  # type: ignore[no-untyped-de
 
     assert response.status_code == 418
     assert _events(caplog)[-1]["status"] == 418
+
+
+def test_unrouted_rejections_are_labelled_with_every_known_api_path() -> None:
+    from ayorai_attractor.api.app import app
+    from ayorai_attractor.api.request_context import _route_label
+
+    api_paths = {
+        route.path
+        for route in app.routes
+        if getattr(route, "path", "").startswith("/v1/") or getattr(route, "path", "") == "/health"
+    }
+    for path in api_paths:
+        expected = path
+        if "{" in path:
+            path = path.replace("{trace_id}", "tr_example")
+        assert _route_label({"path": path}) == expected
+    assert _route_label({"path": "/v1/unknown-client-path"}) == "unmatched"

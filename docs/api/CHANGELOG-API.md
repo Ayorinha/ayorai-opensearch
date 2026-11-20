@@ -2,6 +2,72 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — `/v1/check` and `/v2/audit`: every relevant document is adjudicated (document-check-3, behavior fix)
+
+- **Fix:** passage selection was a global top 3 over all documents, so a document could be left out of adjudication because others outranked it. With four supporting documents and one that explicitly contradicted the claim, the result was `verified` and the contradicting document was never examined. Now the global top 3 is kept and the best passage of every other document that shares content with the claim is added, in relevance order. The example above is `conflicting`.
+- More supporting documents can now count as independent sources, so a verdict can move from `partially_supported` to `verified` when they were previously cut off. `engine.version` is `document-check-3` and `engine.passage_selection` reads `lexical-top3+best-per-document/max600`. No request or response field changed. Golden v0/v0.1 do not use this path and are unchanged.
+- Known limit: within one document only its best passage is added beyond the global top 3; a contradiction in a weaker passage of a document whose best passage supports the claim can still be missed.
+
+## Unreleased — `POST /v2/audit` (additive)
+
+- New end-to-end route: search, then adjudicate claims with the ADR-002 Judge against the independent sources retrieved for the query. Claims come from the caller (`claims`), from a caller answer (`answer`), or by default from the engine's own answer. Model-generated text is never used as evidence; without an independent source every claim abstains with `no_independent_source`.
+- The run is recorded as an audit trace owned by the calling key (`trace_id`, readable through `GET /v1/audit/{trace_id}`); `check_trace_id` is the digest of the claim check.
+- `/v2/audit` is subject to authentication, the body limit and `ATTRACTOR_MAX_INFLIGHT_HEAVY`, like the `/v1` POST routes. No existing route, request or response changed.
+
+## Unreleased — `/v1/check` rule detector v10 (non-assertive framing and bounds)
+
+- A sentence that states the claim only as a possibility, estimate, projection, rumour, hypothesis or open question ("pode ter sido", "estima-se que", "rumores indicam", "deve atingir… segundo projeções", "se fosse", "não se sabe se", "reportedly") is now `neutral` for it. Previously it supported the claim, and "não se sabe se P" refuted it. Affirmative legal and technical wording ("previsto no", "deverá", "não pode ter duração superior a") is not treated as a hedge.
+- In evidence, a number introduced by a bound ("superou 40", "abaixo de 40", "mais de 40", "at least 40") no longer confirms or contradicts an exact claimed value; bounded claims still compare with bounded evidence.
+- The component version is now `10`. Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
+
+## Unreleased — `/v1/check` rule detector v9 (decision fixes)
+
+- A negator in a sentence that does not state the claim no longer turns a confirming sentence into a contradiction: "A Vértice não faliu. A receita foi de 40 milhões em 2024." now supports a claim about the revenue. A sentence made only of denial words ("Isso não é verdade.", "Não procede.") still denies the previous one. Single-sentence excerpts are classified exactly as before.
+- A reported denial ("X negou que P", "desmentiu que", "contesta que", "denied that") is `neutral` for P: the document neither asserts P nor establishes that P is false. Previously it supported P.
+- The component version in `components` is now `9`. Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
+
+## Unreleased — audit traces: ownership, schema v3 and `r2-v3` (behavior change)
+
+- **Behavior change:** `GET /v1/audit/{trace_id}` returns a trace only to the API key that created it. Any other key gets the same 404 body as for an unknown trace. Response schemas are unchanged.
+- Traces recorded before schema v3 have no owner and are hidden from every key by default. `ATTRACTOR_AUDIT_LEGACY_TRACES=shared` restores the previous visibility for them; any other value prevents startup.
+- New traces report `replay_version` `r2-v3`: the digest covers every persisted field, including owner, `recorded_at` (UTC) and `software_version`. `r2-v2` traces keep verifying under the previous rule. The SQLite store migrates from schema 2 to 3 in place, idempotently.
+- Optional `ATTRACTOR_AUDIT_HMAC_KEYS` adds an HMAC-SHA-256 per trace; a missing or altered MAC makes `replay_integrity` `invalid`.
+- The `trace_id` values of `/v1/check` (`chk_…`) and `/v1/fields` (`fld_…`) are content digests and are not stored; `GET /v1/audit/{trace_id}` returns 404 for them, as before.
+
+## Unreleased — host-wide admission limit (opt-in)
+
+- `ATTRACTOR_INFLIGHT_SCOPE=host` shares the `ATTRACTOR_MAX_INFLIGHT_HEAVY` limit across all workers on the same host. The default (`process`) is unchanged. No request or response body changed.
+
+## Unreleased — admission control for verification routes
+
+- `POST /v1/check`, `/v1/fields`, `/v1/verify`, `/v1/audit` and `/v1/opensearch` now return **HTTP 503** with `Retry-After: 1` when more than `ATTRACTOR_MAX_INFLIGHT_HEAVY` (default 2) such requests are already running in the same worker process. The 503 response is documented in the OpenAPI document.
+- Measured on one worker with 16 clients sending 2 MB `/v1/check` bodies: p99 34.1 s → 3.3 s and peak RSS 1696 MB → 277 MB, with accepted throughput 0.47 → 0.57 requests/s. Clients should retry after `Retry-After`.
+- No request or response body changed. `GET /health` and `GET /v1/audit/{trace_id}` are not limited.
+
+## Unreleased — documented error responses match the implementation
+
+- The OpenAPI document no longer lists HTTP 400 on any route. No route returns 400: a body that is not valid JSON returns 422 with `type` `json_invalid`, as it already did.
+- A JSON body that is not valid UTF-8 now also returns 422 `json_invalid` (it returned 400 `There was an error parsing the body`). JSON text must be UTF-8 (RFC 8259, section 8.1).
+- Every `/v1/*` route now documents HTTP 401 (missing or invalid API key when `ATTRACTOR_AUTH_MODE=api_key`), and every `POST` route documents HTTP 413 (body above `ATTRACTOR_MAX_BODY_BYTES`). Both responses were already returned; only the document changes.
+- No request, response body or status code returned by the API changed.
+
+## 2026-11-14 — `/v1/fields` negative values (field-check-4)
+
+- A minus sign (`-` or `−`) written right before a `number` or `money` value in the document belongs to it: `-5`, `R$ -100,00`, `R$-100,00` and `-R$ 100,00` are negative. Previously the sign was ignored, so an expected `5` matched a document `-5` (false `conforme`).
+- A hyphen right after a letter, digit, `.` or `,` is not a sign (`10-12`, `art. 5-A`), and a spaced hyphen is not a sign (`10 - 12`). The sign and the amount must be on the same line as `R$` when `R$` sits between them.
+- Two signs in the document (`--5`, `- -5`, `-R$ -100,00`) are ambiguous: the value is not a candidate and the field is `ausente`.
+- Expected `money` values may carry the same sign forms; two signs (`-R$ -10,00`) are `invalido`. Negative zero is zero.
+- The reported `found`, `start` and `end` include the sign (and the `R$` between the sign and the amount).
+- The response engine metadata reports `field-check-4`. No request or response fields were added or removed.
+
+## 2026-11-14 — `/v1/fields` strict digits (field-check-3)
+
+- Expected `number` values must be plain decimals written with ASCII digits (optional sign, `.` or `,` as the decimal mark). `NaN`, `Infinity`, exponents (`1e3`), underscores (`1_000`) and non-ASCII digits now return `invalido` instead of being normalised.
+- Expected `money`, `date` and `cpf_cnpj` values with non-ASCII digits (for example full-width `１２`) return `invalido`; an expected CPF/CNPJ may contain only ASCII digits, `.`, `/`, `-` and spaces.
+- Document values written with non-ASCII digits are no longer candidates, so the field is `ausente` (abstention) rather than compared through a look-alike value. An ASCII run touching a non-ASCII digit (`１２3`) is not read as a shorter number (`3`).
+- A `number` is never taken as the prefix of a longer dotted or comma sequence (`1.2.3`, `1.000.000`, `1,5.2`); previously `1.2` or `1.000` was extracted from such a sequence. The field is `ausente` instead.
+- The response engine metadata reports `field-check-3`. No request or response fields were added or removed.
+
 ## 2026-11-11 — `/v1/fields` trace identity v2 (semantics clarified)
 
 - The deterministic `trace_id` now binds the caller document ID, media type, extracted-text SHA-256, original-source SHA-256 and page boundaries, in addition to the submitted field specification.
