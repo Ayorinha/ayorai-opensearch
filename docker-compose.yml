@@ -7,9 +7,15 @@ services:
       - .env
     ports:
       - "127.0.0.1:8000:8000"
+    volumes:
+      # Audit traces (ATTRACTOR_AUDIT_DB) survive container recreation.
+      - attractor-audit:/app/.attractor
     environment:
       ATTRACTOR_PROVIDER: ${ATTRACTOR_PROVIDER:-mock}
       ATTRACTOR_AUTH_MODE: ${ATTRACTOR_AUTH_MODE:-api_key}
       ATTRACTOR_API_KEY_PEPPER: ${ATTRACTOR_API_KEY_PEPPER:-}
       ATTRACTOR_API_KEYS_HMAC_SHA256: ${ATTRACTOR_API_KEYS_HMAC_SHA256:-}
       FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
+
+volumes:
+  attractor-audit:

@@ -446,6 +446,146 @@
         }
       }
     },
+    "/v2/audit": {
+      "post": {
+        "summary": "Audit V2",
+        "description": "Search, then adjudicate claims against the independent sources found (end to end).\n\nThe engine answers the query and retrieves sources. Only independent sources are\nchecked against; the claims are the caller's, the caller's answer decomposed, or\nby default the engine's own answer decomposed. Each claim goes through the same\npassage selection, stance detection and ADR-002 Judge as /v1/check, and the run\nis recorded as an audit trace owned by the calling key.",
+        "operationId": "audit_v2_v2_audit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditV2Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditV2Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key (ATTRACTOR_AUTH_MODE=api_key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the configured size limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The request rate limit was exceeded.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Too many verification requests in flight on this worker; retry later.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying the request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1.0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/fields": {
       "post": {
         "summary": "Fields",
@@ -924,22 +1064,22 @@
           },
           "evidence_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Evidence Count"
           },
           "independent_evidence_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Independent Evidence Count"
           },
           "verified_evidence_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Verified Evidence Count"
           },
           "failure_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Failure Count"
           },
           "findings": {
@@ -993,27 +1133,27 @@
           },
           "evidence_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Evidence Count"
           },
           "independent_evidence_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Independent Evidence Count"
           },
           "verified_evidence_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Verified Evidence Count"
           },
           "failure_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Failure Count"
           },
           "finding_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Finding Count"
           },
           "replay_digest": {
@@ -1063,6 +1203,202 @@
         ],
         "title": "AuditTraceResponse"
       },
+      "AuditV2Request": {
+        "not": {
+          "properties": {
+            "claims": {
+              "not": {
+                "type": "null"
+              }
+            },
+            "answer": {
+              "not": {
+                "type": "null"
+              }
+            }
+          },
+          "required": [
+            "claims",
+            "answer"
+          ]
+        },
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "a2",
+            "title": "Schema Version",
+            "default": "a2"
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 3,
+            "pattern": "\\S",
+            "title": "Query"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "fast",
+              "balanced",
+              "deep"
+            ],
+            "title": "Mode",
+            "default": "balanced"
+          },
+          "claims": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                "type": "array",
+                "maxItems": 50,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claims",
+            "description": "Claims to check, verbatim. Optional: without claims or answer, the engine's own answer to the query is checked."
+          },
+          "answer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000,
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer",
+            "description": "An AI answer to decompose into claims and check. Optional."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "AuditV2Request",
+        "description": "POST /v2/audit: search, then check claims against the independent sources found."
+      },
+      "AuditV2Response": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "a2",
+            "title": "Schema Version",
+            "default": "a2"
+          },
+          "trace_id": {
+            "type": "string",
+            "title": "Trace Id",
+            "description": "Persisted audit trace; readable via GET /v1/audit/{id}."
+          },
+          "check_trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check Trace Id",
+            "description": "Digest of the claim check; null when no independent source was found."
+          },
+          "operation_status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "not_recorded"
+            ],
+            "title": "Operation Status"
+          },
+          "verdict_authority": {
+            "type": "string",
+            "const": "adr-002-judge",
+            "title": "Verdict Authority",
+            "default": "adr-002-judge"
+          },
+          "claims_source": {
+            "type": "string",
+            "enum": [
+              "caller_claims",
+              "caller_answer",
+              "engine_answer",
+              "none"
+            ],
+            "title": "Claims Source"
+          },
+          "answer": {
+            "type": "string",
+            "title": "Answer",
+            "description": "The engine's answer to the query."
+          },
+          "engine": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Engine"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/CheckDocumentDigest"
+            },
+            "type": "array",
+            "title": "Documents"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/CheckClaimResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "summary": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Summary"
+          },
+          "failure_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Failure Count"
+          },
+          "scope_note": {
+            "type": "string",
+            "title": "Scope Note",
+            "default": "Claims are checked only against independent sources retrieved for this query; model-generated text is never used as evidence. Under the ADR-002 Judge, 'partially_supported' means support from a single independent source and 'verified' support from two or more. An abstention means the retrieved sources do not establish the claim; it is not a statement that the claim is false."
+          }
+        },
+        "type": "object",
+        "required": [
+          "trace_id",
+          "check_trace_id",
+          "operation_status",
+          "claims_source",
+          "answer",
+          "engine",
+          "documents",
+          "results",
+          "summary",
+          "failure_count"
+        ],
+        "title": "AuditV2Response"
+      },
       "CheckClaimResult": {
         "properties": {
           "claim_id": {
@@ -1092,8 +1428,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Confidence"
           },
           "evidence": {
@@ -1294,7 +1630,7 @@
           },
           "characters": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Characters"
           },
           "media_type": {
@@ -1303,7 +1639,7 @@
           },
           "pages": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Pages"
           },
           "source_sha256": {
@@ -1331,13 +1667,13 @@
           },
           "start": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Start",
             "description": "Inclusive character offset in the document."
           },
           "end": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "End",
             "description": "Exclusive character offset in the document."
           },
@@ -1356,7 +1692,7 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page",
             "description": "1-based page of the evidence start."
           }
@@ -1567,12 +1903,12 @@
           },
           "support_clusters": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Support Clusters"
           },
           "contradiction_clusters": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Contradiction Clusters"
           },
           "provenance_complete": {
@@ -1623,13 +1959,13 @@
           },
           "start_offset": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Start Offset",
             "description": "Inclusive start offset in the source text."
           },
           "end_offset": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "End Offset",
             "description": "Exclusive end offset; must be greater than start_offset."
           },
@@ -1954,15 +2290,15 @@
             "type": "string",
             "maxLength": 500,
             "minLength": 1,
+            "pattern": "\\S",
             "title": "Value",
-            "description": "Expected value, as submitted.",
-            "pattern": "\\S"
+            "description": "Expected value, as submitted."
           },
           "labels": {
             "items": {
               "type": "string",
-              "minLength": 1,
               "maxLength": 128,
+              "minLength": 1,
               "pattern": "\\S"
             },
             "type": "array",
@@ -2082,14 +2418,14 @@
           },
           "start_offset": {
             "type": "integer",
-            "maximum": 9007199254740991,
-            "minimum": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
             "title": "Start Offset"
           },
           "end_offset": {
             "type": "integer",
-            "maximum": 9007199254740991,
-            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991.0,
+            "exclusiveMinimum": 0.0,
             "title": "End Offset",
             "description": "Exclusive end offset in source text; must be within the RFC 8785 safe-integer range."
           }
@@ -2134,14 +2470,14 @@
           },
           "start_offset": {
             "type": "integer",
-            "maximum": 9007199254740991,
-            "minimum": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
             "title": "Start Offset"
           },
           "end_offset": {
             "type": "integer",
-            "maximum": 9007199254740991,
-            "minimum": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
             "title": "End Offset",
             "description": "Must be greater than start_offset; the relational invariant is enforced by the API and Judge 2."
           },
@@ -2432,8 +2768,8 @@
           },
           "max_agents": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Max Agents",
             "description": "Preferred form: JSON integer. Legacy coercion is preserved for compatibility: numeric strings (e.g. \"5\"), integral floats and booleans are still accepted for backward compatibility; removal is not scheduled before v0.6.0.",
             "default": 5
@@ -2503,8 +2839,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1,
-                "minimum": 0
+                "maximum": 1.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
