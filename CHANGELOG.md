@@ -7,6 +7,11 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 ### Added
 
 - `POST /v2/audit`: end-to-end search and ADR-002 adjudication of claims against independent sources only, recorded as an owned audit trace.
+- Automatic retention of audit traces with `ATTRACTOR_AUDIT_RETENTION_DAYS` (off by default): expired traces are purged at startup and at most once per hour on writes.
+
+### Fixed
+
+- Docker Compose now keeps audit traces in the named volume `attractor-audit`; previously they were lost whenever the container was recreated. The image creates `/app/.attractor` owned by the service user so the volume is writable.
 
 ### Changed
 

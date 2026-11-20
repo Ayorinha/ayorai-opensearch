@@ -41,6 +41,21 @@ curl -i http://127.0.0.1:8000/v1/audit
 
 The second command should receive HTTP 401 when API-key authentication is enabled. Send a configured key using Authorization: Bearer or X-API-Key. Do not put raw keys in URLs or logs.
 
+## Audit trail: persistence, integrity and retention
+
+Traces written by `POST /v1/audit` are stored in SQLite at `/app/.attractor/audit.sqlite3`. Docker Compose mounts the named volume `attractor-audit` there, so traces survive `docker compose down` and image rebuilds; `docker compose down -v` deletes them.
+
+Two different HMAC secrets exist; do not confuse them:
+
+| Purpose | Variables | Effect |
+|---|---|---|
+| API-key authentication | `ATTRACTOR_API_KEY_PEPPER`, `ATTRACTOR_API_KEYS_HMAC_SHA256` | Which bearer keys are accepted (section above) |
+| Audit-trace integrity | `ATTRACTOR_AUDIT_HMAC_KEYS`, `ATTRACTOR_AUDIT_HMAC_REQUIRED` | A keyed MAC on every stored trace, so a writer of the SQLite file without the key cannot forge or downgrade traces |
+
+Generate an audit HMAC key (32 bytes, hex) and set `ATTRACTOR_AUDIT_HMAC_KEYS=k1:<64 hex chars>` in `.env`; the first entry signs new traces and later entries only verify (rotation: prepend the new key and keep the old ones while their traces are retained). In production also set `ATTRACTOR_AUDIT_HMAC_REQUIRED=true`: the service then refuses to start without the keys, even with an empty database. When enabling HMAC on an existing store, seal the old traces once with `AuditTraceStore.seal_unsealed()` (see `docs/manual/05-operacao.md`). Keep the audit HMAC keys in a secret manager, separate from database backups.
+
+Automatic retention is off by default. Set `ATTRACTOR_AUDIT_RETENTION_DAYS` to a whole number of days (1 to 36500) to delete older traces at startup and at most once per hour while the service writes; the period and its legal basis are the data controller's decision.
+
 ## Network and secret handling
 
 - The 127.0.0.1 host binding prevents direct publication on all host interfaces. Do not change it to 0.0.0.0 unless exposure is intentional and protected by suitable network controls.
