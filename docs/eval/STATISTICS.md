@@ -128,7 +128,7 @@ O esquema JSONL e os comandos estão no [guia de concordância entre anotadores]
 
 ### Estado de implementação
 
-- `evals/ptbr/rgc_eval.py` (`rgc-eval/0.9.0`) implementa a validação D1/D6, os componentes, o IC primário por componente, o sign-flip primário e as sensibilidades. O executor recalcula o relatório de concordância a partir das anotações aprovadas antes de aceitá-lo.
+- `evals/ptbr/rgc_eval.py` (`rgc-eval/0.12.0`, com captura E5 por snapshots imutáveis e avaliação em interpretador isolado, #580 e #584) implementa a validação D1/D6, os componentes, o IC primário por componente, o sign-flip primário e as sensibilidades. O executor recalcula o relatório de concordância a partir das anotações aprovadas antes de aceitá-lo.
 - `evals/ptbr/rgc_agreement.py` ainda calcula o IC de kappa por bootstrap de casos (Emenda 10). Adotar o bootstrap por componente da DEC-022 na ferramenta de concordância é **pendência**: exige emenda datada da Emenda 10 (protocolo e pré-registro) e um inventário de citações dos casos anotados.
 - Todos os testes usam IDs e dados sintéticos. Não há casos RGC reais, anotação humana processada nem estatística observada.
 
