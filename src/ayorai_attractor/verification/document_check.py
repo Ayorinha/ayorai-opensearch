@@ -31,7 +31,7 @@ from .models import Evidence, Stance, StanceEdge, Verdict
 from .response import ResponsePolicy
 from .stance import DetectedStance, RuleStanceDetector, StanceDetectionResult, StanceDetector
 
-ENGINE_VERSION = "document-check-3"
+ENGINE_VERSION = "document-check-5"
 MAX_PASSAGE_CHARS = 600
 TOP_K_PASSAGES = 3
 MIN_SUPPORT_COVERAGE = 0.8
@@ -131,6 +131,19 @@ class CheckDocumentInput:
     media_type: str = "text/plain"
     page_starts: tuple[int, ...] = (0,)
     source_sha256: str | None = None
+    # True only when this server fetched the document itself (POST /v2/audit search).
+    # Documents sent by the client keep their declared ``url``/``source`` as metadata;
+    # the server never accessed them, so their origin is not verified (ADR-002 §2).
+    retrieved_by_server: bool = False
+
+    @property
+    def provenance(self) -> str:
+        return "server_retrieved" if self.retrieved_by_server else "client_supplied"
+
+    @property
+    def provenance_complete(self) -> bool:
+        """ADR-002 §2: a stable location retrieved at a known time, by this server."""
+        return self.retrieved_by_server and self.url is not None
 
     def page_of(self, offset: int) -> int:
         page = 1
@@ -307,6 +320,10 @@ def _trace_id(
                 _sha256(doc.text),
                 doc.source_sha256 or _sha256(doc.text),
                 list(doc.page_starts),
+                # Provenance decides whether "verified" is reachable, so it is part
+                # of the identity of the check (same text, different origin).
+                doc.provenance,
+                doc.url,
             ]
             for doc in documents
         ],
@@ -339,7 +356,7 @@ def check_documents(
         claim_texts = [str(text).strip() for text in claims or () if str(text).strip()]
     engine = {
         "version": ENGINE_VERSION,
-        "trace_identity": "document-check-trace-2",
+        "trace_identity": "document-check-trace-3",
         "claim_extractor": (
             f"{extractor.component}/{extractor.version}" if answer is not None else "caller"
         ),
@@ -393,6 +410,9 @@ def check_documents(
                 # One document = one origin: passages of the same document never count
                 # as independent sources.
                 origin_id=origin[passage.document_id],
+                # Complete provenance (and so "verified") requires an origin this server
+                # actually retrieved; text supplied by the client caps at "supported".
+                provenance_complete=by_id[passage.document_id].provenance_complete,
             )
             for passage in selected
         ]
@@ -443,6 +463,7 @@ def check_documents(
                 "media_type": doc.media_type,
                 "pages": len(doc.page_starts),
                 "source_sha256": doc.source_sha256 or _sha256(doc.text),
+                "provenance": doc.provenance,
             }
             for doc in documents
         ),

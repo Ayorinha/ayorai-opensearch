@@ -7,6 +7,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi criado. Não traz resultado confirmatório de acurácia; o protocolo RGC permanece não congelado.
 
 ### API
+- Correção (proveniência, ADR-002 §2): no `/v1/check`, texto enviado pelo cliente chegava a `verified`, o veredito reservado a evidência com proveniência completa, embora o servidor nunca tenha acessado a origem (a `url` do documento é só metadado). Cada documento informa agora `provenance`: `client_supplied` (teto `supported`) ou `server_retrieved` (obtido pelo próprio servidor no `/v2/audit`; com URL, pode chegar a `verified`). A proveniência entra na identidade do `trace_id` (`document-check-trace-3`, `document-check-5`).
 - Correção: a seleção de trechos do `/v1/check` e do `/v2/audit` deixava documentos fora da adjudicação quando outros os superavam em relevância. Uma contradição explícita podia ser ignorada, e o resultado sair `verified`. Agora o melhor trecho de cada documento relacionado também é avaliado (`document-check-3`).
 - `POST /v2/audit`: busca e adjudicação ADR-002 de ponta a ponta. Só evidência independente vira documento; o resultado é registrado como rastro com dono (#587).
 - `/v1/fields`: somente dígitos ASCII simples (field-check-3) e sinal de menos ligado ao número ou valor (field-check-4) (#545, #546).

@@ -439,6 +439,7 @@ def _independent_documents(response: SearchResponse) -> list[CheckDocumentInput]
                 id=f"src_{len(documents) + 1:03d}",
                 text=text,
                 source=item.source[:512] or None,
+                retrieved_by_server=True,
             )
         )
     return documents

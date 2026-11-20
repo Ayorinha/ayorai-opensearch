@@ -73,10 +73,14 @@ def test_a_document_saying_it_is_not_true_refutes_the_claim() -> None:
     assert result["verdict"] == "refuted"
 
 
-def test_two_confirming_documents_are_verified() -> None:
-    """Control: a fix for negation must not weaken plain corroboration."""
+def test_two_confirming_documents_are_supported() -> None:
+    """Control: a fix for negation must not weaken plain corroboration.
+
+    Two client-supplied documents reach "supported", the strongest verdict available
+    without server-verified provenance (ADR-002 §2).
+    """
     result = _check(CLAIM, CLAIM, SUPPORTING)
-    assert result["status"] == "verified"
+    assert result["status"] == "supported"
     assert _stances(result) == ["supports", "supports"]
 
 
