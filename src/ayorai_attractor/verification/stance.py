@@ -565,9 +565,17 @@ def _non_assertive(text: str, claim_tokens: frozenset[str]) -> bool:
                 continue
             if correction_notices_apply and _CORRECTION_RE.search(sentence):
                 return True
-            if (\n                correction_notices_apply\n                and index > 0\n                and _CORRECTION_RE.search(sentences[index - 1])\n            ):
+            if (
+                correction_notices_apply
+                and index > 0
+                and _CORRECTION_RE.search(sentences[index - 1])
+            ):
                 return True
-            if (\n                correction_notices_apply\n                and index + 1 < len(sentences)\n                and _CORRECTION_RE.search(sentences[index + 1])\n            ):
+            if (
+                correction_notices_apply
+                and index + 1 < len(sentences)
+                and _CORRECTION_RE.search(sentences[index + 1])
+            ):
                 return True
             if _NON_ASSERTIVE_RE.search(sentence):
                 return True
