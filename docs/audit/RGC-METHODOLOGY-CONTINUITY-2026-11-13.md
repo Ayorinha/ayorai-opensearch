@@ -1,3 +1,5 @@
+Revisão por ferramenta automatizada, publicada pelo mantenedor.
+
 # Continuidade da revisão metodológica — benchmark RGC PT-BR
 
 **Data do retrato:** 2026-11-13  
