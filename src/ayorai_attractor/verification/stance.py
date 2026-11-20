@@ -543,8 +543,10 @@ _GOAL_WORDS = frozenset(
         "intends",
     }
 )
-# A correction notice anywhere in the passage: the figure stated next to it may be
-# the superseded one, so the passage does not establish the claim.
+# A correction notice neutralizes only the claim sentence it immediately qualifies:
+# same sentence, the preceding sentence (a trailing errata notice), or the following
+# sentence (a leading standalone "Errata."). A distant notice must not contaminate
+# an unrelated assertion elsewhere in a multi-claim document.
 _CORRECTION_RE = re.compile(
     r"\b(?:retificação|retificacao|errata|erratum|correção|correcao|correction|corrigido"
     r"|corrected|o\s+(?:valor|número|dado)\s+correto|the\s+correct\s+(?:figure|value))\b",
@@ -553,13 +555,18 @@ _CORRECTION_RE = re.compile(
 
 
 def _non_assertive(text: str, claim_tokens: frozenset[str]) -> bool:
-    """A sentence covering the claim states it only as possible, estimated, asked,
-    conditional, intended or unknown, or the passage carries a correction notice."""
-    if _CORRECTION_RE.search(text) and not _CORRECTION_RE.search(" ".join(claim_tokens)):
-        return True
-    for sentence in _SENTENCE_SPLIT_RE.split(text.strip()):
-        if not sentence or not _covers_claim(sentence, claim_tokens):
+    """A claim sentence is non-assertive, or an adjacent correction notice qualifies it."""
+    sentences = [sentence for sentence in _SENTENCE_SPLIT_RE.split(text.strip()) if sentence]
+    correction_notices_apply = not _CORRECTION_RE.search(" ".join(claim_tokens))
+    for index, sentence in enumerate(sentences):
+        if not _covers_claim(sentence, claim_tokens):
             continue
+        if correction_notices_apply and _CORRECTION_RE.search(sentence):
+            return True
+        if correction_notices_apply and index > 0 and _CORRECTION_RE.search(sentences[index - 1]):
+            return True
+        if correction_notices_apply and index + 1 < len(sentences) and _CORRECTION_RE.search(sentences[index + 1]):
+            return True
         if _NON_ASSERTIVE_RE.search(sentence):
             return True
         if sentence.rstrip().endswith("?") or _CONDITIONAL_OPENING_RE.search(sentence):
@@ -568,7 +575,6 @@ def _non_assertive(text: str, claim_tokens: frozenset[str]) -> bool:
         if (words & _GOAL_WORDS) - claim_tokens:
             return True
     return False
-
 
 def _reported_denial(text: str, claim_tokens: frozenset[str]) -> bool:
     """The text reports that someone denied a proposition covering the claim."""
