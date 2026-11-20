@@ -1,4 +1,4 @@
-Estado: Atual · Referência: main @ 85d6c2b + integração local · Atualizado: 2026-11-15
+Estado: Atual · Referência: main @ 73bf91c (base desta PR) · Atualizado: 2026-11-16
 Fontes de verdade: `Makefile`, `pyproject.toml`, `src/ayorai_attractor/cli/main.py`, `src/ayorai_attractor/evaluation/golden.py`, `docs/providers.md`, `docker-compose.yml`, `docker/Dockerfile`, `docs/DOCKER.md`, `docs/security/API-AUTH.md`, `src/ayorai_attractor/api/app.py`, `src/ayorai_attractor/api/auth.py`, `src/ayorai_attractor/api/logging_config.py`, `src/ayorai_attractor/api/load_control.py`, `src/ayorai_attractor/audit_store.py`, testes `tests/test_cli_contract.py`, `tests/test_cli_module.py`, `tests/test_reproduce_script.py` e testes operacionais/API correspondentes.
 
 # 05 — Operação e execução
@@ -157,9 +157,11 @@ Restauração:
 3. Com as mesmas `ATTRACTOR_AUDIT_HMAC_KEYS` da produção, execute `AuditTraceStore(caminho).verify_all()`; o esperado é `invalid` igual a 0.
 4. Suba o serviço.
 
-Com HMAC, mantenha as chaves em custódia separada do backup do banco: quem tem as duas coisas pode reselar registros. Rastros gravados antes de configurar as chaves podem ser selados uma vez com `seal_unsealed()`, que só sela rastros cujo digest ainda confere. Retirar uma chave da lista invalida os rastros assinados por ela.
+Com HMAC, mantenha as chaves em custódia separada do backup do banco: quem tem as duas coisas pode reselar registros. Rastros gravados antes de configurar as chaves podem ser selados uma vez com `seal_unsealed()`, que só sela rastros cujo digest ainda confere. A rotina cobre r2-v1, r2-v2 e r2-v3 e preserva a versão de replay. Ao habilitar HMAC em uma base existente, execute-a com a lista completa de chaves antes de usar `verify_all()` como gate: com HMAC configurado, todas as versões suportadas precisam ter MAC válido. Se o banco já contém rastros selados, o armazenamento não abre sem `ATTRACTOR_AUDIT_HMAC_KEYS`, evitando continuar gravando sem autenticação criptográfica. A selagem valida o digest existente e autentica o estado atual do rastro; não prova retroativamente que um rastro legado não foi adulterado antes da ativação do HMAC. Retirar uma chave da lista invalida os rastros assinados por ela.
 
-Retenção: `purge_recorded_before(data_com_fuso)` remove rastros gravados antes da data e devolve quantos removeu; rastros antigos sem `recorded_at` nunca são removidos por esse método. O prazo de retenção e a base legal são decisões do controlador dos dados e não estão definidos no repositório.
+Em ambientes que exigem HMAC sem depender dos metadados do banco, configure `ATTRACTOR_AUDIT_HMAC_REQUIRED=true` juntamente com `ATTRACTOR_AUDIT_HMAC_KEYS`. A opção obrigatória faz a inicialização falhar se as chaves não estiverem disponíveis, inclusive quando todos os campos MAC do SQLite forem removidos. Mantenha essa política fora do arquivo do banco (por exemplo, na configuração protegida do serviço) e as chaves em um gerenciador de segredos. O padrão `false` preserva o modo local sem HMAC; portanto, a implantação precisa ativar explicitamente a política quando esse nível de proteção for requerido.
+
+Retenção: com `ATTRACTOR_AUDIT_RETENTION_DAYS` (inteiro de 1 a 36500), o serviço apaga automaticamente os rastros mais antigos que o prazo: na inicialização e, depois, no máximo uma vez por hora, durante as gravações. Sem a variável (padrão), nada é apagado. Para expurgo manual, `purge_recorded_before(data_com_fuso)` remove rastros gravados antes da data e devolve quantos removeu. Rastros antigos sem `recorded_at` nunca são removidos, porque a idade deles é desconhecida. O prazo de retenção e a base legal são decisões do controlador dos dados e não estão definidos no repositório.
 
 Testes: `tests/test_audit_store_durability.py` cobre backup durante escrita contínua, restauração, queda por SIGKILL durante gravação e quatro processos gravando ao mesmo tempo.
 
@@ -182,6 +184,8 @@ Este capítulo não define alta disponibilidade, SLO, rotação automatizada de 
 | `ATTRACTOR_AUDIT_DB` | Arquivo SQLite dos rastros de auditoria; padrão `.attractor/audit.sqlite3` (no contêiner, `/app/.attractor/audit.sqlite3`). |
 | `ATTRACTOR_AUDIT_LEGACY_TRACES` | `hidden` (padrão) ou `shared`: visibilidade, pela API, de rastros antigos sem dono. Outro valor impede a inicialização. |
 | `ATTRACTOR_AUDIT_HMAC_KEYS` | Opcional. Chaves HMAC dos rastros, `id:hex` (32 bytes), separadas por vírgula; a primeira assina os rastros novos e as demais só verificam (rotação). Segredo: guarde fora do repositório e fora do backup do banco. |
+| `ATTRACTOR_AUDIT_HMAC_REQUIRED` | `true` exige `ATTRACTOR_AUDIT_HMAC_KEYS` na inicialização, mesmo com o banco vazio; padrão `false`. Recomendado em produção. |
+| `ATTRACTOR_AUDIT_RETENTION_DAYS` | Opcional. Prazo de retenção automática dos rastros, em dias inteiros (1 a 36500). Vazio ou ausente (padrão): nada é apagado. Valor inválido impede a inicialização. |
 | `make test` | Executa pytest. |
 | `make lint` | Executa `ruff check .` e `ruff format --check .`. |
 | `make typecheck` | Executa mypy sobre `src/ayorai_attractor`. |

@@ -26,6 +26,9 @@ RUN pip install --no-cache-dir --require-hashes --only-binary=:all: -r docker/re
     && pip uninstall --yes setuptools wheel packaging \
     && groupadd --system attractor \
     && useradd --system --gid attractor --home-dir /app --shell /usr/sbin/nologin attractor \
+    # The audit store directory exists in the image, owned by the service user,
+    # so a named volume mounted on it starts with the right owner.
+    && mkdir -p /app/.attractor \
     && chown -R attractor:attractor /app \
     # The runtime never installs packages: drop pip (and its known advisories)
     # and the setuid/setgid bits that would let a compromised process escalate.
