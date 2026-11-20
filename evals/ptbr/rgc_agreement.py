@@ -28,29 +28,50 @@ DEFAULT_SEED = RGC_SEED
 GATE_THRESHOLD = 0.6
 
 
-def load_annotations(path: Path) -> dict[str, str]:
-    """Load strict JSONL annotations with exactly case_id and label per line."""
+def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        result[key] = value
+    return result
+
+
+def _load_annotations_bytes(content: bytes, source: Path) -> dict[str, str]:
+    """Parse strict JSONL from an immutable byte snapshot."""
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"{source}: annotation file must be UTF-8") from exc
+
     annotations: dict[str, str] = {}
-    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    for line_number, line in enumerate(text.splitlines(), start=1):
         if not line.strip():
-            raise ValueError(f"{path}:{line_number}: blank lines are not allowed")
+            raise ValueError(f"{source}:{line_number}: blank lines are not allowed")
         try:
-            row = json.loads(line)
+            row = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
         except json.JSONDecodeError as exc:
-            raise ValueError(f"{path}:{line_number}: invalid JSON") from exc
+            raise ValueError(f"{source}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{source}:{line_number}: {exc}") from exc
         if not isinstance(row, dict) or set(row) != {"case_id", "label"}:
-            raise ValueError(f"{path}:{line_number}: expected exactly case_id and label")
+            raise ValueError(f"{source}:{line_number}: expected exactly case_id and label")
         case_id, label = row["case_id"], row["label"]
         if not isinstance(case_id, str) or not case_id.strip():
-            raise ValueError(f"{path}:{line_number}: case_id must be a non-empty string")
+            raise ValueError(f"{source}:{line_number}: case_id must be a non-empty string")
         if case_id in annotations:
-            raise ValueError(f"{path}:{line_number}: duplicate case_id {case_id!r}")
+            raise ValueError(f"{source}:{line_number}: duplicate case_id {case_id!r}")
         if not isinstance(label, str) or label not in ALLOWED_LABELS:
-            raise ValueError(f"{path}:{line_number}: invalid label {label!r}")
+            raise ValueError(f"{source}:{line_number}: invalid label {label!r}")
         annotations[case_id] = label
     if not annotations:
-        raise ValueError(f"{path}: annotation file is empty")
+        raise ValueError(f"{source}: annotation file is empty")
     return annotations
+
+
+def load_annotations(path: Path) -> dict[str, str]:
+    """Load strict JSONL annotations from one byte snapshot of the file."""
+    return _load_annotations_bytes(path.read_bytes(), path)
 
 
 def _cohen_kappa(
@@ -175,13 +196,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     # The protocol-facing CLI always uses DEC-020/DEC-027 canonical parameters.
     # Custom values remain available through the Python API for isolated tests/diagnostics.
+    # Read each input exactly once. Parsing, agreement, and provenance hashes
+    # must all refer to the same bytes even if a path changes during execution.
+    annotation_a_bytes = args.annotation_a.read_bytes()
+    annotation_b_bytes = args.annotation_b.read_bytes()
     result = compute_agreement(
-        load_annotations(args.annotation_a),
-        load_annotations(args.annotation_b),
+        _load_annotations_bytes(annotation_a_bytes, args.annotation_a),
+        _load_annotations_bytes(annotation_b_bytes, args.annotation_b),
     )
     result["inputs"] = {
-        "annotation_a_sha256": hashlib.sha256(args.annotation_a.read_bytes()).hexdigest(),
-        "annotation_b_sha256": hashlib.sha256(args.annotation_b.read_bytes()).hexdigest(),
+        "annotation_a_sha256": hashlib.sha256(annotation_a_bytes).hexdigest(),
+        "annotation_b_sha256": hashlib.sha256(annotation_b_bytes).hexdigest(),
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
