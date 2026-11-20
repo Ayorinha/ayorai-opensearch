@@ -1,0 +1,44 @@
+name: Artifact Download Action Smoke
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/artifact-action-smoke.yml"
+      - ".github/workflows/phase1b-dev-cache-experiment.yml"
+      - ".github/workflows/phase1b-dev-full.yml"
+      - ".github/workflows/phase1b-dev-full-reaggregate.yml"
+      - ".github/workflows/phase1b-dev-minimal.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  artifact-roundtrip:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Create a synthetic artifact and checksum
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/artifact-smoke
+          printf 'AYORAI artifact action smoke; no benchmark data.\n' > /tmp/artifact-smoke/payload.txt
+          (cd /tmp/artifact-smoke && sha256sum payload.txt > SHA256SUMS)
+      - name: Upload synthetic artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: synthetic-artifact-action-smoke
+          path: /tmp/artifact-smoke/
+          if-no-files-found: error
+          retention-days: 1
+      - name: Download with pinned v8 action
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: synthetic-artifact-action-smoke
+          path: /tmp/artifact-smoke-downloaded
+      - name: Verify exact artifact contents and digest
+        run: |
+          set -euo pipefail
+          cmp /tmp/artifact-smoke/payload.txt /tmp/artifact-smoke-downloaded/payload.txt
+          (cd /tmp/artifact-smoke-downloaded && sha256sum --check SHA256SUMS)
+          echo "ARTIFACT_V7_TO_V8_ROUNDTRIP: PASS"

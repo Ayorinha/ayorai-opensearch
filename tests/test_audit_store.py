@@ -1,8 +1,10 @@
 import sqlite3
 from contextlib import closing
+from datetime import UTC, datetime
 
 import pytest
 
+from ayorai_attractor import __version__
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore, DuplicateAuditTraceError
 from ayorai_attractor.models import SearchResponse
@@ -21,7 +23,8 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
     )
     report = AuditReport.from_response(response)
     path = tmp_path / "audit.sqlite3"
-    with AuditTraceStore(str(path)) as store:
+    clock = lambda: datetime(2026, 11, 15, 12, 0, 0, tzinfo=UTC)  # noqa: E731
+    with AuditTraceStore(str(path), clock=clock) as store:
         digest = store.record(response, report)
         saved = store.get("tr_persisted")
         assert saved is not None
@@ -32,7 +35,7 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
         assert saved.operation_status == "completed"
         assert saved.replay_digest == digest
         assert saved.legacy_verification is None
-        assert saved.replay_version == "r2-v2"
+        assert saved.replay_version == "r2-v3"
         assert saved.replay_integrity == "valid"
 
     with closing(sqlite3.connect(path)) as connection, connection:
@@ -44,20 +47,30 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
             """,
             ("tr_persisted",),
         ).fetchone()
-        assert connection.execute("PRAGMA user_version").fetchone() == (2,)
-    assert stored == (None, None, "completed", "r2-v2", 2)
+        assert connection.execute("PRAGMA user_version").fetchone() == (3,)
+    assert stored == (None, None, "completed", "r2-v3", 3)
+    # r2-v3 binds every persisted field, not only three of them.
     assert (
         ReplayBundle.build(
             "tr_persisted",
             [
                 {
                     "event": "audit.completed",
-                    "verification": "not_adjudicated",
+                    "legacy_verification": None,
+                    "verification": None,
+                    "operation_status": "completed",
                     "evidence_count": 0,
+                    "independent_evidence_count": 0,
+                    "verified_evidence_count": 0,
                     "failure_count": 0,
+                    "finding_count": len(report.findings),
+                    "schema_version": 3,
+                    "owner": None,
+                    "recorded_at": "2026-11-15T12:00:00.000000Z",
+                    "software_version": __version__,
                 }
             ],
-            version="r2-v2",
+            version="r2-v3",
         ).digest
         == digest
     )
@@ -115,7 +128,7 @@ def test_schema_v1_migration_preserves_legacy_value_and_digest(tmp_path) -> None
                 """,
                 (trace_id,),
             ).fetchone()
-        assert migrated == ("supported", None, "not_recorded", legacy_digest, "r2-v1", 2)
+        assert migrated == ("supported", None, "not_recorded", legacy_digest, "r2-v1", 3)
 
     # Reopening an already migrated database must be idempotent.
     with AuditTraceStore(str(path)):
@@ -160,7 +173,7 @@ def test_migration_recognizes_existing_r2_v2_rows(tmp_path) -> None:
                 """,
                 (trace_id,),
             ).fetchone()
-    assert migrated == (None, None, "not_recorded", digest, "r2-v2", 2)
+    assert migrated == (None, None, "not_recorded", digest, "r2-v2", 3)
 
 
 def test_migration_preserves_corrupted_digest_and_get_reports_invalid(tmp_path) -> None:
@@ -292,3 +305,31 @@ def test_concurrent_duplicate_records_have_exactly_one_winner(tmp_path) -> None:
         winners = [digest for digest in results if digest is not None]
         assert len(winners) == 1
         assert store.verify(response.trace_id) == "valid"
+
+
+def test_failed_migration_rolls_back_and_closes_the_connection(tmp_path) -> None:
+    path = tmp_path / "legacy.sqlite3"
+    # SQLite accepts text in an INTEGER column; the migration cannot convert it.
+    _create_legacy_schema(path, ("tr_bad", "supported", "not-a-number", 0, 0, 0, 0, "0" * 64))
+
+    import gc
+    import warnings
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        with pytest.raises(ValueError):
+            AuditTraceStore(str(path))
+        gc.collect()
+    leaked = [w for w in caught if issubclass(w.category, ResourceWarning)]
+    assert leaked == []
+
+    with closing(sqlite3.connect(path)) as connection:
+        tables = {
+            row[0]
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+        }
+        legacy_row = connection.execute("SELECT * FROM audit_traces").fetchall()
+        user_version = connection.execute("PRAGMA user_version").fetchone()[0]
+    assert tables == {"audit_traces"}
+    assert legacy_row == [("tr_bad", "supported", "not-a-number", 0, 0, 0, 0, "0" * 64)]
+    assert user_version == 0

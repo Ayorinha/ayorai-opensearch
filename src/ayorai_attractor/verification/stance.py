@@ -37,6 +37,33 @@ class LLMStancePayload(BaseModel):
 
 _NUMBER_RE = re.compile(r"(?<![\w])[-+]?\d+(?:[.,]\d+|[.,]\d{3})*(?:\s*%)?")
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+# A number introduced as the baseline of a comparison ("caiu para 31, contra 40
+# no ano anterior", "de 40 para 31", "31, versus 40", "from 40 to 31") describes
+# another period or state, so it neither confirms nor contradicts a claim.
+# "contra"/"ante"/"versus" count only after a comma, a number or at the start
+# of a clause ("venceu ações contra 3 operadoras" is not a comparison); "from"
+# and "de" only in "from N to M" / "de N para M"; "than" never ("more than 40"
+# is a bound). Calendar years are time anchors, never masked.
+_MONEY_PREFIX = r"(?:(?:r\$|us\$|\$|€|usd|brl|eur)\s*)?"
+_BASELINE_VALUE = r"(?P<number>[-+]?\d+(?:[.,]\d+)*)"
+_BASELINE_NUMBER_RE = re.compile(
+    r"(?P<marker>"
+    r"(?:(?:^|[,;(])\s*|(?<=\d)\s+|(?<=\d\s)\w+\s+|(?<=%)\s+)"
+    r"(?:contra|ante|versus|vs\.?)\s+(?:(?:os|as|o|a|the)\s+)?"
+    + _MONEY_PREFIX
+    + r"|\b(?:comparad[oa]s?\s+(?:a|com|aos?|às?)|compared\s+(?:to|with))\s+"
+    r"(?:(?:os|as|o|a|the)\s+)?"
+    + _MONEY_PREFIX
+    + r"|\b(?:de|from)\s+"
+    + _MONEY_PREFIX
+    + r"(?=\d+(?:[.,]\d+)*[^.;:!?\d]{0,40}?"
+    r"\b(?:para|to)\s+" + _MONEY_PREFIX + r"\d)"
+    r")" + _BASELINE_VALUE,
+    re.IGNORECASE | re.MULTILINE,
+)
+_CALENDAR_YEAR_RE = re.compile(r"(?:19|20)\d\d")
+_YEAR_TOKEN_RE = re.compile(r"\b(?:19|20)\d\d\b")
+_BASELINE_CLAUSE_END_RE = re.compile(r"[.;:!?,]")
 _TOKEN_RE = re.compile(r"[\wÀ-ÿ]+", re.UNICODE)
 # Negation is language dependent. In Portuguese "no"/"na"/"nos"/"nas" are
 # contractions of em + article ("no fim de 2025") and "sem" ("sem custo")
@@ -46,6 +73,94 @@ _NEGATION_TOKENS_PT = frozenset(
     {"não", "nao", "nunca", "jamais", "nem", "nenhum", "nenhuma", "ninguém", "ninguem"}
 )
 _NEGATION_TOKENS = _NEGATION_TOKENS_EN | _NEGATION_TOKENS_PT
+# Sentential negation: an operator that declares the whole proposition false
+# ("É falso que X", "It is false that X") has no negator token. Each match flips
+# the polarity once; a negator directly before it ("Não é falso que X") cancels
+# it, and the matched words are removed before the token check so that the
+# negator is not counted again. Reported denials ("negou que") are not operators.
+_SENTENTIAL_NEGATION_PT = re.compile(
+    r"(?P<negated>\b(?:não|nao)\s+)?\bé\s+"
+    r"(?:falso|falsa|incorreto|incorreta|inverídico|inverídica|mentira)\s+"
+    r"(?:afirmar\s+que|dizer\s+que|que)\b",
+    re.IGNORECASE,
+)
+_SENTENTIAL_NEGATION_EN = re.compile(
+    r"\bit\s+is\s+(?P<negated>not\s+)?(?:false|untrue|incorrect)\s+(?:to\s+say\s+)?that\b",
+    re.IGNORECASE,
+)
+# Postposed form: "a notícia de que X é falsa" denies X; "... não é falsa"
+# affirms it. The proposition X is the operator's scope.
+_SENTENTIAL_NEGATION_POST_PT = re.compile(
+    r"\b(?:a|o)\s+(?:afirmação|afirmacao|informação|informacao|notícia|noticia|alegação"
+    r"|alegacao|boato|rumor|versão|versao|declaração|declaracao)\s+de\s+que\s+"
+    r"(?P<scope>[^.;:!?]{1,300}?)\s+(?P<negated>(?:não|nao)\s+)?(?:é|era|foi)\s+"
+    r"(?:falso|falsa|incorreto|incorreta|inverídico|inverídica|mentiroso|mentirosa"
+    r"|infundado|infundada)\b",
+    re.IGNORECASE,
+)
+# An operator only reaches the end of its clause: "É falso que A faliu. B" does
+# not deny B, and neither does "É falso que A faliu porque B". When the claim is
+# known, an operator counts only if its clause holds at least half of the
+# claim's content tokens.
+_CLAUSE_END_RE = re.compile(
+    r"[.;:!?]|,\s+(?:e|mas|porém|porem|enquanto|and|but|while)\b"
+    r"|\b(?:porque|pois|já\s+que|ja\s+que|uma\s+vez\s+que|embora|enquanto|mas|porém|porem"
+    r"|contudo|todavia|because|although|whereas)\b",
+    re.IGNORECASE,
+)
+_OPERATOR_SCOPE_COVERAGE = 0.5
+# Sentence boundary for token negation: "A Vértice não faliu. A receita foi de 40
+# milhões" negates another proposition. A boundary needs whitespace after the
+# mark, so decimals and thousands separators ("1.200", "1,2") never split.
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.;!?])\s+")
+# A sentence made only of denial words ("Isso não é verdade.", "Não procede.",
+# "That is not true.") refers back to the previous sentence: it still counts.
+# "A empresa não comentou." has content of its own and does not.
+_ANAPHORIC_DENIAL_WORDS = frozenset(
+    {
+        "isso",
+        "isto",
+        "aquilo",
+        "essa",
+        "esta",
+        "informação",
+        "informacao",
+        "é",
+        "e",
+        "foi",
+        "era",
+        "verdade",
+        "verdadeiro",
+        "verdadeira",
+        "procede",
+        "correto",
+        "correta",
+        "certo",
+        "certa",
+        "bem",
+        "assim",
+        "o",
+        "a",
+        "that",
+        "this",
+        "it",
+        "is",
+        "was",
+        "true",
+        "correct",
+        "so",
+        "the",
+        "case",
+    }
+)
+# Reported denial: the document says that someone denied the proposition. It
+# neither asserts the proposition nor establishes that it is false.
+_REPORTED_DENIAL_RE = re.compile(
+    r"\b(?:negou|nega|negam|negaram|negava|negavam|desmentiu|desmente|desmentem"
+    r"|desmentiram|contestou|contesta|contestam|contestaram|refutou|refuta|refutaram"
+    r"|denied|denies|deny|disputed|disputes|refuted|refutes)\s+(?:que|that)\b",
+    re.IGNORECASE,
+)
 # Portuguese-only function words used solely to decide whether "no" is English.
 _PT_FUNCTION_WORDS = frozenset(
     {"de", "do", "da", "dos", "das", "um", "os", "as", "ao", "aos", "pelo", "pela", "também"}
@@ -316,13 +431,119 @@ def _sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
-def _has_negation(text: str) -> bool:
+def _has_negation(text: str, claim_tokens: frozenset[str] | None = None) -> bool:
     """Return True when the text negates its predicate.
 
     Portuguese negators always count. The English-only token "no" counts only
     when the text is more English than Portuguese, so Portuguese contractions
     ("no fim de 2025") and "sem" ("sem custo adicional") are not negation.
+    A sentential operator ("É falso que X") flips the result. With
+    ``claim_tokens`` an operator counts only when its clause covers the claim.
+    Text without a counted operator is classified exactly as before; otherwise
+    every operator's own words (including the "não" of "não é falso que") are
+    removed before the token check, and only counted operators flip.
     """
+    operators = 0
+    flips = 0
+
+    def _remove(match: re.Match[str]) -> str:
+        nonlocal operators, flips
+        postposed = "scope" in match.re.groupindex
+        # A postposed operator wraps its proposition: keep the proposition so
+        # that a negation inside it is still seen by the token check.
+        kept = f" {match.group('scope')} " if postposed else " "
+        scope = match.group("scope") if postposed else _clause_after(match.string, match.end())
+        if claim_tokens is not None and not _covers_claim(scope, claim_tokens):
+            return kept
+        operators += 1
+        if match.group("negated") is None:
+            flips += 1
+        return kept
+
+    remainder = text
+    for pattern in (
+        _SENTENTIAL_NEGATION_POST_PT,
+        _SENTENTIAL_NEGATION_PT,
+        _SENTENTIAL_NEGATION_EN,
+    ):
+        remainder = pattern.sub(_remove, remainder)
+    if operators == 0:
+        return _has_claim_token_negation(text, claim_tokens)
+    return (flips % 2 == 1) != _has_claim_token_negation(remainder, claim_tokens)
+
+
+def _has_claim_token_negation(text: str, claim_tokens: frozenset[str] | None) -> bool:
+    """Token negation, limited to the sentences that state the claim.
+
+    Without ``claim_tokens``, or for a single sentence, this is exactly the token
+    check. In a multi-sentence excerpt a negator counts only in a sentence that
+    covers the claim, or in a sentence made only of denial words that refers back
+    to the previous one ("Isso não é verdade.").
+    """
+    sentences = [s for s in _SENTENCE_SPLIT_RE.split(text.strip()) if s]
+    if claim_tokens is None or len(sentences) < 2:
+        return _has_token_negation(text)
+    for sentence in sentences:
+        if not _has_token_negation(sentence):
+            continue
+        if _covers_claim(sentence, claim_tokens):
+            return True
+        tokens = {token.casefold() for token in _TOKEN_RE.findall(sentence)}
+        if tokens - _NEGATION_TOKENS <= _ANAPHORIC_DENIAL_WORDS:
+            return True
+    return False
+
+
+# Non-assertive framing: the sentence that states the claim presents it as a
+# possibility, estimate, projection, rumour, hypothesis or open question, so it
+# neither establishes nor refutes it. Checked only in sentences covering the claim.
+_NON_ASSERTIVE_RE = re.compile(
+    r"\b(?:(?<!não\s)podem?\s+ter\s+[a-zà-ú]+(?:ado|ada|ido|ida|ído|to|so|cho)\b"
+    r"|poderia|poderiam|teria\s+sido|teriam\s+sido|talvez|possivelmente|provavelmente"
+    r"|supostamente|alegadamente|aparentemente|estima-se|projeta-se|prevê-se|espera-se"
+    r"|segundo\s+(?:as\s+)?(?:projeções|estimativas|rumores)|deve\s+atingir"
+    r"|rumores?|boatos?|especula-se|especulaç(?:ão|ões)"
+    r"|não\s+se\s+sabe\s+se|ninguém\s+sabe\s+se|é\s+incerto\s+se|não\s+está\s+claro\s+se"
+    r"|não\s+há\s+confirmação\s+de\s+que|sem\s+confirmação"
+    r"|may\s+have|might|could\s+have|reportedly|allegedly|expected\s+to|rumou?rs?"
+    r"|unclear\s+whether|not\s+known\s+whether)\b"
+    r"|\bse\b[^.;!?]{0,200}?\b(?:fosse|fossem|tivesse|tivessem)\b",
+    re.IGNORECASE,
+)
+
+
+def _non_assertive(text: str, claim_tokens: frozenset[str]) -> bool:
+    """A sentence covering the claim states it only as possible, estimated or unknown."""
+    return any(
+        _covers_claim(sentence, claim_tokens) and _NON_ASSERTIVE_RE.search(sentence)
+        for sentence in _SENTENCE_SPLIT_RE.split(text.strip())
+        if sentence
+    )
+
+
+def _reported_denial(text: str, claim_tokens: frozenset[str]) -> bool:
+    """The text reports that someone denied a proposition covering the claim."""
+    return any(
+        _covers_claim(_clause_after(text, match.end()), claim_tokens)
+        for match in _REPORTED_DENIAL_RE.finditer(text)
+    )
+
+
+def _clause_after(text: str, start: int) -> str:
+    """Text from ``start`` to the end of its clause."""
+    end = _CLAUSE_END_RE.search(text, start)
+    return text[start : end.start() if end else len(text)]
+
+
+def _covers_claim(scope: str, claim_tokens: frozenset[str]) -> bool:
+    """The scope holds at least half of the claim's content tokens."""
+    if not claim_tokens:
+        return True
+    tokens = {token.casefold() for token in _TOKEN_RE.findall(scope)}
+    return len(claim_tokens & tokens) / len(claim_tokens) >= _OPERATOR_SCOPE_COVERAGE
+
+
+def _has_token_negation(text: str) -> bool:
     tokens = {token.casefold() for token in _TOKEN_RE.findall(text)}
     if _predicate_negators(text) & _NEGATION_TOKENS_PT:
         return True
@@ -718,7 +939,75 @@ def _attribute(tokens: list[str], index: int, entities: set[str]) -> str:
     return "unknown"
 
 
-def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
+# A number introduced by a bound ("superou 40", "abaixo de 40", "mais de 40",
+# "at least 40") states an inequality, not a value: on the evidence side it can
+# neither confirm nor contradict an exact claimed value. When the claim is itself
+# a bound ("pode chegar a dez vezes", "até trinta anos") bounds compare as before.
+# Calendar years are never treated as bounded values.
+_BOUND_WORDS = frozenset(
+    {
+        "superou",
+        "superar",
+        "supera",
+        "ultrapassou",
+        "ultrapassar",
+        "ultrapassa",
+        "excedeu",
+        "exceder",
+        "excede",
+        "acima",
+        "abaixo",
+        "mais",
+        "menos",
+        "inferior",
+        "superior",
+        "mínimo",
+        "minimo",
+        "máximo",
+        "maximo",
+        "over",
+        "above",
+        "below",
+        "under",
+        "exceeded",
+        "exceeds",
+        "surpassed",
+        "more",
+        "less",
+        "fewer",
+        "least",
+        "most",
+        "até",
+        "ate",
+        "chegar",
+        "up",
+    }
+)
+_BOUND_FILLERS = frozenset({"de", "a", "do", "da", "o", "than", "of", "at", "pelo", "no"})
+
+
+def _is_bound(tokens: list[str], index: int) -> bool:
+    """The number at ``index`` is introduced by a bound word (skipping fillers)."""
+    position = index - 1
+    while position >= 0 and index - position <= 3 and tokens[position] in _BOUND_FILLERS:
+        position -= 1
+    return position >= 0 and index - position <= 3 and tokens[position] in _BOUND_WORDS
+
+
+def _is_year_token(token: str) -> bool:
+    return token.isdigit() and len(token) == 4 and _YEAR_MIN <= int(token) <= _YEAR_MAX
+
+
+def _has_bound(text: str) -> bool:
+    """Some non-year number in the text is introduced by a bound word."""
+    tokens = _fact_tokens(normalize_numerals(text))
+    return any(
+        _is_number(token) and not _is_year_token(token) and _is_bound(tokens, index)
+        for index, token in enumerate(tokens)
+    )
+
+
+def _numeric_facts(text: str, *, skip_bounds: bool = False) -> list[tuple[str, str, str]]:
     """Extract (raw value, unit, attribute) facts deterministically.
 
     `unit` is `currency:scale` for money, `percent`, `year`, `ms`,
@@ -730,6 +1019,8 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
     facts: list[tuple[str, str, str]] = list(quantity_facts)
     for index, token in enumerate(tokens):
         if not _is_number(token):
+            continue
+        if skip_bounds and not _is_year_token(token) and _is_bound(tokens, index):
             continue
         following = tokens[index + 1] if index + 1 < len(tokens) else ""
         money = _currency_and_scale(tokens, index)
@@ -837,6 +1128,40 @@ def _is_generic(unit: str) -> bool:
     return unit.startswith(("duration:", "measure:")) or unit in {"fraction", "multiplier"}
 
 
+def _mask_comparison_baselines(text: str, claim_years: frozenset[str] = frozenset()) -> str:
+    """Remove numbers that are the baseline of a comparison; other text is unchanged.
+
+    A baseline followed in its clause by a calendar year that the claim names
+    is the value of the claimed period ("versus 40 milhões em 2023" for a claim
+    about 2023), so it is kept.
+    """
+
+    def _drop(match: re.Match[str]) -> str:
+        if _CALENDAR_YEAR_RE.fullmatch(match.group("number")):
+            return match.group(0)
+        if claim_years and claim_years.intersection(_baseline_years(text, match.end())):
+            return match.group(0)
+        return f"{match.group('marker')} "
+
+    return _BASELINE_NUMBER_RE.sub(_drop, text)
+
+
+def _baseline_years(text: str, start: int) -> set[str]:
+    """Calendar years that belong to the baseline ending at ``start``.
+
+    They follow it in the same clause before any other number: in "versus 40
+    milhões em 2023" the 2023 is the baseline's year; in "de 40 para 31
+    milhões em 2024" the 2024 follows 31 and belongs to the current value.
+    """
+    end = _BASELINE_CLAUSE_END_RE.search(text, start)
+    years: set[str] = set()
+    for number in _NUMBER_RE.findall(text[start : end.start() if end else len(text)]):
+        if not _YEAR_TOKEN_RE.fullmatch(number.strip()):
+            break
+        years.add(number.strip())
+    return years
+
+
 def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     """Compare every claim fact with the evidence facts (set semantics).
 
@@ -854,7 +1179,11 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     claim_facts = _numeric_facts(claim_text)
     if not claim_facts:
         return NumericAlignment()
-    evidence_facts = _numeric_facts(evidence_text)
+    claim_years = frozenset(_YEAR_TOKEN_RE.findall(claim_text))
+    evidence_facts = _numeric_facts(
+        _mask_comparison_baselines(evidence_text, claim_years),
+        skip_bounds=not _has_bound(claim_text),
+    )
     claim_locale = _locale_for(claim_text)
     evidence_locale = _locale_for(evidence_text)
 
@@ -959,7 +1288,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "6"
+    version = "10"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
@@ -1007,7 +1336,7 @@ class RuleStanceDetector:
                 date_conflict = self._date_conflict(claim_item.claim.text, item.excerpt)
                 evidence_has_date = bool(_extract_dates(item.excerpt))
                 negation_conflict = _has_negation(claim_item.claim.text) != _has_negation(
-                    item.excerpt
+                    item.excerpt, frozenset(claim_tokens)
                 )
                 direction_conflict = _direction_conflict(claim_item.claim.text, item.excerpt)
                 unverified_structured_fact = (
@@ -1019,7 +1348,14 @@ class RuleStanceDetector:
                 # Polarity and date mismatches only count when claim and evidence
                 # describe the same proposition; otherwise they are unrelated text.
                 same_proposition = lexical >= 0.25
-                if numeric_conflict or (
+                if _reported_denial(item.excerpt, frozenset(claim_tokens)) or _non_assertive(
+                    item.excerpt, frozenset(claim_tokens)
+                ):
+                    # "X negou que P", "P pode ter ocorrido", "estima-se que P",
+                    # "não se sabe se P": the document neither asserts P nor
+                    # establishes that P is false.
+                    stance = Stance.NEUTRAL
+                elif numeric_conflict or (
                     same_proposition and (date_conflict or negation_conflict or direction_conflict)
                 ):
                     stance = Stance.CONTRADICTS
