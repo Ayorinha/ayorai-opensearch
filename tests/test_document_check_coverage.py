@@ -58,7 +58,8 @@ def test_verdict_is_invariant_to_document_order() -> None:
 
 def test_every_supporting_document_counts_beyond_the_top_k() -> None:
     item = _check(SUPPORTING)
-    assert item.verdict == "verified"
+    # Client-supplied documents cap at "supported" (ADR-002 §2); all four still count.
+    assert item.verdict == "supported"
     assert {e.document_id for e in item.evidence if e.stance == "supports"} == {
         "d0",
         "d1",
@@ -90,7 +91,7 @@ def test_one_passage_per_extra_document_and_engine_version_reports_the_rule() ->
     per_doc = [p.document_id for p in covered]
     assert len(per_doc) == len(set(per_doc))
     result = check_documents(_documents(SUPPORTING), claims=[CLAIM])
-    assert ENGINE_VERSION == "document-check-3"
+    assert ENGINE_VERSION == "document-check-5"
     assert result.engine["passage_selection"].startswith(
         f"lexical-top{TOP_K_PASSAGES}+best-per-document"
     )
