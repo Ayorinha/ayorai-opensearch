@@ -14,6 +14,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - Endurecimento do fencing de jobs, da integridade do armazenamento e da segurança dos providers (#555).
 
 ### Trilha de auditoria
+- Rotação de chave HMAC: `AuditTraceStore.reseal_with_active_key()` assina de novo, com a chave ativa, os rastros válidos assinados por chaves antigas, para que elas possam ser aposentadas. Rastros inválidos não são re-selados. O procedimento está no manual de operação.
 - Rastros com dono, formato r2-v3, metadados, backup e HMAC externo (`ATTRACTOR_AUDIT_HMAC_KEYS`) (#564).
 - HMAC exigido em todas as versões de replay quando há chaves configuradas: um rastro selado não volta a validar sem o MAC (#575).
 - `ATTRACTOR_AUDIT_HMAC_REQUIRED` impede que o serviço suba sem chaves HMAC (#586).

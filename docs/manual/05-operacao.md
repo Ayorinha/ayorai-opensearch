@@ -157,7 +157,17 @@ Restauração:
 3. Com as mesmas `ATTRACTOR_AUDIT_HMAC_KEYS` da produção, execute `AuditTraceStore(caminho).verify_all()`; o esperado é `invalid` igual a 0.
 4. Suba o serviço.
 
-Com HMAC, mantenha as chaves em custódia separada do backup do banco: quem tem as duas coisas pode reselar registros. Rastros gravados antes de configurar as chaves podem ser selados uma vez com `seal_unsealed()`, que só sela rastros cujo digest ainda confere. A rotina cobre r2-v1, r2-v2 e r2-v3 e preserva a versão de replay. Ao habilitar HMAC em uma base existente, execute-a com a lista completa de chaves antes de usar `verify_all()` como gate: com HMAC configurado, todas as versões suportadas precisam ter MAC válido. Se o banco já contém rastros selados, o armazenamento não abre sem `ATTRACTOR_AUDIT_HMAC_KEYS`, evitando continuar gravando sem autenticação criptográfica. A selagem valida o digest existente e autentica o estado atual do rastro; não prova retroativamente que um rastro legado não foi adulterado antes da ativação do HMAC. Retirar uma chave da lista invalida os rastros assinados por ela.
+Com HMAC, mantenha as chaves em custódia separada do backup do banco: quem tem as duas coisas pode reselar registros. Rastros gravados antes de configurar as chaves podem ser selados uma vez com `seal_unsealed()`, que só sela rastros cujo digest ainda confere. A rotina cobre r2-v1, r2-v2 e r2-v3 e preserva a versão de replay. Ao habilitar HMAC em uma base existente, execute-a com a lista completa de chaves antes de usar `verify_all()` como gate: com HMAC configurado, todas as versões suportadas precisam ter MAC válido. Se o banco já contém rastros selados, o armazenamento não abre sem `ATTRACTOR_AUDIT_HMAC_KEYS`, evitando continuar gravando sem autenticação criptográfica. A selagem valida o digest existente e autentica o estado atual do rastro; não prova retroativamente que um rastro legado não foi adulterado antes da ativação do HMAC. Retirar uma chave da lista invalida os rastros assinados por ela; para aposentá-la, faça a rotação abaixo.
+
+Rotação de chave HMAC:
+
+1. Gere a nova chave (32 bytes, hex) e coloque-a **primeiro** em `ATTRACTOR_AUDIT_HMAC_KEYS`, mantendo as antigas depois dela (`k2:<nova>,k1:<antiga>`). Reinicie o serviço: novos rastros passam a usar a chave nova.
+2. Faça um backup (`store.backup(...)`).
+3. Execute `AuditTraceStore(caminho).reseal_with_active_key()`. Cada rastro assinado por outra chave é verificado com as chaves configuradas e, se válido, assinado de novo com a chave ativa. O retorno é `{"resealed": n, "skipped_invalid": m}`. Rastros inválidos **não** são re-selados, para que uma adulteração nunca vire um rastro válido; com `m > 0`, investigue antes de seguir.
+4. Confirme `verify_all()` com `invalid` igual a 0 (ou igual aos `m` já investigados).
+5. Só então retire a chave antiga da lista e reinicie. Destrua-a depois que nenhum backup retido depender dela.
+
+A rotação autentica o estado atual de cada rastro com a nova chave; ela não substitui a custódia das chaves nem cria armazenamento imutável.
 
 Em ambientes que exigem HMAC sem depender dos metadados do banco, configure `ATTRACTOR_AUDIT_HMAC_REQUIRED=true` juntamente com `ATTRACTOR_AUDIT_HMAC_KEYS`. A opção obrigatória faz a inicialização falhar se as chaves não estiverem disponíveis, inclusive quando todos os campos MAC do SQLite forem removidos. Mantenha essa política fora do arquivo do banco (por exemplo, na configuração protegida do serviço) e as chaves em um gerenciador de segredos. O padrão `false` preserva o modo local sem HMAC; portanto, a implantação precisa ativar explicitamente a política quando esse nível de proteção for requerido.
 
