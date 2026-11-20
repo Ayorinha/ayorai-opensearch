@@ -230,7 +230,7 @@ def test_a_schema_v2_database_is_upgraded_in_place(tmp_path: Path) -> None:
             assert saved is not None and saved.replay_integrity == "valid"
             assert store.get("tr_v2", requester="key:0000000000000000") is None
     with closing(sqlite3.connect(path)) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone() == (3,)
+        assert connection.execute("PRAGMA user_version").fetchone() == (4,)
         assert connection.execute(
             "SELECT owner, schema_version FROM audit_traces WHERE trace_id = 'tr_v2'"
         ).fetchone() == (None, 2)
