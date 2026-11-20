@@ -7,6 +7,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi criado. Não traz resultado confirmatório de acurácia; o protocolo RGC permanece não congelado.
 
 ### API
+- Correção: a seleção de trechos do `/v1/check` e do `/v2/audit` deixava documentos fora da adjudicação quando outros os superavam em relevância. Uma contradição explícita podia ser ignorada, e o resultado sair `verified`. Agora o melhor trecho de cada documento relacionado também é avaliado (`document-check-3`).
 - `POST /v2/audit`: busca e adjudicação ADR-002 de ponta a ponta. Só evidência independente vira documento; o resultado é registrado como rastro com dono (#587).
 - `/v1/fields`: somente dígitos ASCII simples (field-check-3) e sinal de menos ligado ao número ou valor (field-check-4) (#545, #546).
 - Respostas dos providers HTTP limitadas em tamanho, sem compressão e com prazo total (#561).
@@ -24,7 +25,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - v8, com erros conhecidos fixados em testes (#565).
 - v9: negação restrita às frases da afirmação e negação relatada classificada como neutra (#570).
 - v10: afirmações hipotéticas ou não assertivas e valores-limite ("acima de", "mais de", "superou") não confirmam a afirmação (#585).
-- v12: pergunta ("…em 2024?"), condição no início da frase ("Se…", "Caso…", "Supondo que…"), meta ou intenção ("a meta é atingir…", "pretende") e trecho com aviso de retificação ou errata deixam de confirmar a afirmação. Quando a palavra faz parte da própria afirmação ("a meta de inflação foi de 3%"), ela continua sendo confirmada. Golden v0 e v0.1 inalterados. A versão 11 fica reservada à mudança de escala da #571, ainda pendente.
+- v12: pergunta ("…em 2024?"), condição no início da frase ("Se…", "Caso…", "Supondo que…"), meta ou intenção ("a meta é atingir…", "pretende") e aviso de retificação ou errata na frase da afirmação ou na vizinha, no mesmo parágrafo, deixam de confirmar a afirmação; um aviso em outra parte do documento não interfere. Quando a palavra faz parte da própria afirmação ("a meta de inflação foi de 3%"), ela continua sendo confirmada. Golden v0 e v0.1 inalterados. A versão 11 fica reservada à mudança de escala da #571, ainda pendente.
 
 ### Segurança, cadeia de suprimentos e imagem
 - Imagem Docker fixada por digest, dependências instaladas por lock com hash e pisos de segurança das dependências (#556, #562).

@@ -4,9 +4,15 @@ All public API contract changes are additive unless explicitly identified otherw
 
 ## Unreleased — `/v1/check` rule detector v12 (questions, conditions, goals, corrections)
 
-- A sentence that states the claim as a question ("…in 2024?"), opens with a condition ("Se…", "Caso…", "Supondo que…", "If…"), or states a goal or intention ("a meta é atingir…", "pretende", "plans to") is `neutral` for it. A passage carrying a correction notice ("Retificação", "errata", "o valor correto") is `neutral`, because the figure next to it may be the superseded one. Previously all of these supported the claim.
+- A sentence that states the claim as a question ("…in 2024?"), opens with a condition ("Se…", "Caso…", "Supondo que…", "If…"), or states a goal or intention ("a meta é atingir…", "pretende", "plans to") is `neutral` for it. A correction notice ("Retificação", "errata", "o valor correto") in the claim sentence or in the sentence right before or after it, within the same paragraph, makes it `neutral`, because the figure it qualifies may be the superseded one; a notice elsewhere in the document does not. Previously all of these supported the claim.
 - When the trigger word belongs to the claim itself ("A meta de inflação foi de 3%", "A correção monetária foi de 5%"), the passage still supports it.
 - The component version is now `12`; `11` is reserved for the pending scale-word change (#571). Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
+
+## Unreleased — `/v1/check` and `/v2/audit`: every relevant document is adjudicated (document-check-3, behavior fix)
+
+- **Fix:** passage selection was a global top 3 over all documents, so a document could be left out of adjudication because others outranked it. With four supporting documents and one that explicitly contradicted the claim, the result was `verified` and the contradicting document was never examined. Now the global top 3 is kept and the best passage of every other document that shares content with the claim is added, in relevance order. The example above is `conflicting`.
+- More supporting documents can now count as independent sources, so a verdict can move from `partially_supported` to `verified` when they were previously cut off. `engine.version` is `document-check-3` and `engine.passage_selection` reads `lexical-top3+best-per-document/max600`. No request or response field changed. Golden v0/v0.1 do not use this path and are unchanged.
+- Known limit: within one document only its best passage is added beyond the global top 3; a contradiction in a weaker passage of a document whose best passage supports the claim can still be missed.
 
 ## Unreleased — `POST /v2/audit` (additive)
 
