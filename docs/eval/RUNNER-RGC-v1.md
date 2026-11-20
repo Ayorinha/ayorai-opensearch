@@ -88,6 +88,8 @@ A aprovação é uma declaração auditável, não prova criptográfica da ident
 
 ## 3. Parâmetros propostos para congelamento
 
+> **Atualização — 2026-11-14 (Emenda 11, `rgc-eval/0.9.0`):** a tabela reflete a DEC-027. O IC95% primário e o teste de H1 são por componente conectado (DEC-023); o cluster de artigo da DEC-019 e o caso passam a ser sensibilidade. O protocolo continua [PROPOSTO], e nenhuma saída do executor é resultado confirmatório enquanto o protocolo não for congelado e a execução única não for autorizada.
+
 | Parâmetro | Valor proposto | Observação |
 |---|---|---|
 | Modo da avaliação principal | `retrieval` | `oracle` reportado ao lado, como análise secundária |
@@ -97,11 +99,11 @@ A aprovação é uma declaração auditável, não prova criptográfica da ident
 | Vocabulário | `judge2` (5 estados) | DEC-007 aprovada (5 estados); `adr002` (6 estados) permanece apenas como vocabulário histórico alternativo, não usado no RGC |
 | Macro-F1 | média sobre a união dos estados de referência e previstos, **incluindo** `INVALID_PREDICTION` (F1 = 0, escolha conservadora) | |
 | Acurácia balanceada | média das revocações dos estados presentes na referência | |
-| IC95% primário | bootstrap percentil por cluster de artigo, 10.000 reamostragens, seed `20261003`; casos multiartigo usam `bootstrap_cluster_id` canônico conforme DEC-019/Emenda 9 | DEC-019; `docs/eval/STATISTICS.md` |
-| IC95% de sensibilidade | bootstrap percentil por caso, 10.000 reamostragens, seed `20261003` | Reportar separadamente do intervalo primário por cluster |
+| IC95% primário | bootstrap percentil por componente conectado (DEC-023), 10.000 reamostragens, seed `20261003`, RGC-PRNG-1 `dec023-accuracy-bootstrap`, quantil tipo 7 | DEC-027 D5; Emenda 11 |
+| IC95% de sensibilidade | bootstrap por cluster de artigo (DEC-019, `dec019-accuracy-bootstrap`) e por caso (`case-accuracy-bootstrap`) | Reportados separadamente; nunca substituem o primário |
 | Baseline B primária | classe majoritária dos rótulos humanos da partição pública de desenvolvimento (70%); aplicada sem alteração à avaliação; empate resolvido pela ordem fixa de `VOCABULARIES["judge2"]` | DEC-014/Emenda 6; `majority_label` em `evals/ptbr/rgc_eval.py`; registrar rótulos, contagens e SHA-256 no relatório |
 | Baseline A descritiva | classe majoritária da própria partição avaliada; empate desfeito pela ordem do vocabulário | somente prevalência observada; excluída de H1 |
-| Comparação | McNemar exato bilateral (`ayorai_attractor.evaluation.stats`) | |
+| Comparação | sign-flip bilateral por componente (DEC-021): enumeração completa para K ≤ 20; para K > 20, 10.000 sorteios RGC-PRNG-1 `dec021-sign-flip` | DEC-027 D4; Emenda 11. McNemar exato e Obuchowski por componente só como sensibilidade |
 | Precisão das decisões | as três condições de H1 usam valores **não arredondados**; o arredondamento (6 casas) vale só para o relatório | |
 
 Depois de congelados, qualquer mudança nesses valores exige emenda datada antes de nova execução, conforme o pré-registro §5.
@@ -143,6 +145,8 @@ Formato dos rótulos (um por linha): `{"case_id": "...", "verdict": "SUPPORTED"}
 
 **Contrato estrito de documentos-fonte (`load_documents`) — executor `rgc-eval/0.7.0` (2026-10-23; PR #399):** cada linha de `DOCUMENTS.jsonl` deve conter um objeto JSON com os campos obrigatórios `source_id`, `source_url`, `retrieved_at`, `source_license` e `text`, todos strings não vazias. A leitura falha com erro identificado pelo arquivo e número da linha quando encontra linha em branco, JSON inválido, objeto/campo obrigatório ausente, campo obrigatório vazio ou de tipo incorreto. `source_id` duplicado também é rejeitado, como já ocorria antes desta alteração; essa regra não é uma mudança de comportamento. Se `text_sha256` for informado, deve ser uma string com exatamente 64 caracteres hexadecimais minúsculos e corresponder ao SHA-256 UTF-8 de `text`; formato inválido ou hash divergente interrompe a leitura. O campo `text_sha256` é opcional; campos adicionais não são rejeitados por esta validação. Documentos anteriormente aceitos apesar de linhas em branco ou campos malformados podem agora ser rejeitados. Corrija os dados de origem; não contorne a validação.
 
+**Gramática dos IDs de artigo — executor `rgc-eval/0.8.0` (DEC-027, D1):** em qualquer partição, todo campo fornecido é validado: cada item de `cited_article_ids`, o `bootstrap_cluster_id` de artigo único e cada membro de um `bundle:` devem casar com `[a-z0-9]+(-[a-z0-9]+)*(:[a-z0-9]+(-[a-z0-9]+)*)*`, ter no máximo 200 caracteres e não começar por `bundle:` nem `component:`. Na partição oculta, `cited_article_ids` e `bootstrap_cluster_id` são obrigatórios e a consistência entre eles também é verificada; na partição de desenvolvimento, os campos podem ser omitidos, mas, quando presentes, não podem conter IDs inválidos. O caractere `+` nunca ocorre num ID de artigo, então `bundle:` e `component:` são inequívocos. A validação está em `evals/ptbr/rgc_ids.py` e é compartilhada pelas ferramentas do RGC. IDs fora da gramática interrompem a execução; nunca são normalizados.
+
 A execução exige a partição pública de desenvolvimento por `--development-cases` e seus rótulos humanos completos por `--development-labels`. O argumento obrigatório `--partition` declara a partição do arquivo de avaliação: `hidden` habilita o critério confirmatório de H1; `development` calcula somente métricas descritivas e marca H1 como não testada. O executor valida que os IDs dos dois arquivos correspondem exatamente, deriva B somente desses rótulos, registra os SHA-256 dos casos e rótulos e recusa IDs sobrepostos entre desenvolvimento e avaliação. A baseline A, derivada dos rótulos de avaliação, aparece separadamente como descritiva e não participa de H1.
 
 Este executor não afirma validação, parceria ou endosso da Anatel ou de qualquer instituição.
@@ -153,6 +157,10 @@ Este executor não afirma validação, parceria ou endosso da Anatel ou de qualq
 Para cada caso elegível na partição oculta, `bootstrap_cluster_id` deve ser uma string não vazia e estável. Use o ID canônico do artigo que contém a regra principal que decide a afirmação. Se a afirmação depender conjuntamente de vários artigos sem um principal único, use `bundle:` seguido dos IDs canônicos únicos ordenados lexicalmente e unidos por `+`. `cited_article_ids` preserva a lista completa de artigos citados quando aplicável. Casos com a mesma chave são reamostrados juntos; bundles são clusters próprios. A execução confirmatória interrompe se o campo estiver ausente ou inválido.
 
 O relatório publica `system_ci95` como intervalo primário por cluster de artigo e `system_ci95_case_bootstrap` como sensibilidade por caso, além do número de clusters e da unidade de reamostragem. Ambos usam 10.000 iterações e seed `20261003`. Nenhum bootstrap real ou métrica RGC foi produzido por esta alteração.
+
+**Gerador e percentil — executor `rgc-eval/0.8.0` (DEC-027, D2 e D3):** todos os sorteios do executor e da ferramenta de concordância vêm de RGC-PRNG-1 (`evals/ptbr/rgc_random.py`), com um fluxo por procedimento: `dec019-accuracy-bootstrap` (cluster), `case-accuracy-bootstrap` (caso) e `case-kappa-bootstrap` (concordância por caso). Os limites do IC95% usam o quantil tipo 7 de Hyndman–Fan, calculado por fórmula. Antes, os sorteios usavam `random.Random` e os limites, estatística de ordem sem interpolação; por isso, intervalos calculados pela versão `0.7.0` não são comparáveis número a número. Os relatórios registram `generator` e `percentile`. Nenhum bootstrap real ou métrica RGC foi produzido por esta alteração.
+
+**Limite de segurança do RGC-PRNG-1:** o gerador é determinístico e destinado exclusivamente à reprodutibilidade estatística do bootstrap e do sign-flip. Não implementa um mecanismo DRBG especificado/validado pela [NIST SP 800-90A](https://csrc.nist.gov/pubs/sp/800/90/a/r1/final), não recebe entropia nem oferece reseed/prediction resistance e não deve ser usado para chaves, tokens, nonces ou qualquer finalidade de segurança.
 
 
 **Nota de consistência (2026-10-21):** DEC-017 e DEC-018 estão aprovadas pelo mantenedor (opção A); as propostas históricas correspondentes não representam estado pendente. O protocolo permanece **[PROPOSTO]** e não congelado.

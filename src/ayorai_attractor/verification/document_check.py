@@ -25,12 +25,13 @@ from datetime import UTC, datetime
 from typing import Any
 
 from .claim_pipeline import ClaimVerificationPipeline
+from .excerpt import SourceText
 from .extraction import ExtractedClaim, RetrievedDocument, RuleClaimExtractor
 from .models import Evidence, Stance, StanceEdge, Verdict
 from .response import ResponsePolicy
 from .stance import DetectedStance, RuleStanceDetector, StanceDetectionResult, StanceDetector
 
-ENGINE_VERSION = "document-check-2"
+ENGINE_VERSION = "document-check-3"
 MAX_PASSAGE_CHARS = 600
 TOP_K_PASSAGES = 3
 MIN_SUPPORT_COVERAGE = 0.8
@@ -243,15 +244,33 @@ def _passage(document: CheckDocumentInput, start: int, end: int) -> Passage:
     return Passage(document.id, start, end, document.text[start:end])
 
 
-def rank_passages(claim: str, passages: Sequence[Passage], top_k: int) -> list[Passage]:
-    """Deterministic lexical relevance; ties broken by document order."""
+def rank_passages(
+    claim: str,
+    passages: Sequence[Passage],
+    top_k: int,
+    passage_tokens: Sequence[Sequence[str]] | None = None,
+    *,
+    per_document: bool = False,
+) -> list[Passage]:
+    """Deterministic lexical relevance; ties broken by document order.
 
+    With ``per_document``, the best passage of each document that shares content
+    with the claim is added to the global ``top_k`` (see check_documents).
+
+    ``passage_tokens[i]`` must be ``content_tokens(passages[i].text)``; passing
+    it avoids retokenizing every passage for every claim.
+    """
+
+    if passage_tokens is not None and len(passage_tokens) != len(passages):
+        raise ValueError("passage_tokens must align with passages")
     claim_tokens = set(content_tokens(claim))
     if not claim_tokens:
         return []
     scored = []
     for order, passage in enumerate(passages):
-        tokens = content_tokens(passage.text)
+        tokens = (
+            passage_tokens[order] if passage_tokens is not None else content_tokens(passage.text)
+        )
         if not tokens:
             continue
         shared = claim_tokens.intersection(tokens)
@@ -261,7 +280,19 @@ def rank_passages(claim: str, passages: Sequence[Passage], top_k: int) -> list[P
         score = (len(shared) + numeric) / math.sqrt(len(set(tokens)))
         scored.append((-score, order, passage))
     scored.sort(key=lambda item: (item[0], item[1]))
-    return [item[2] for item in scored[:top_k]]
+    if not per_document:
+        return [item[2] for item in scored[:top_k]]
+    # Global top_k plus the best passage of every other document that shares
+    # content with the claim: a document can never be left out of adjudication
+    # because other documents outrank it (a contradicting source would otherwise
+    # be invisible to the Judge). Order stays by relevance, then document order.
+    chosen = {item[1] for item in scored[:top_k]}
+    seen_documents = {item[2].document_id for item in scored[:top_k]}
+    for _, order, passage in scored[top_k:]:
+        if passage.document_id not in seen_documents:
+            seen_documents.add(passage.document_id)
+            chosen.add(order)
+    return [item[2] for item in scored if item[1] in chosen]
 
 
 def _trace_id(
@@ -312,7 +343,7 @@ def check_documents(
         "claim_extractor": (
             f"{extractor.component}/{extractor.version}" if answer is not None else "caller"
         ),
-        "passage_selection": f"lexical-top{top_k}/max{MAX_PASSAGE_CHARS}",
+        "passage_selection": f"lexical-top{top_k}+best-per-document/max{MAX_PASSAGE_CHARS}",
         "stance_detector": (
             f"{getattr(detector, 'component', type(detector).__name__)}/"
             f"{getattr(detector, 'version', 'unknown')}"
@@ -321,7 +352,9 @@ def check_documents(
     }
     when = retrieved_at or datetime.now(UTC)
     passages = [passage for doc in documents for passage in split_passages(doc)]
-    sources = {doc.id: doc.text for doc in documents}
+    passage_tokens = [content_tokens(passage.text) for passage in passages]
+    # SourceText NFC-maps each document at most once, lazily, for this call only.
+    sources = {doc.id: SourceText(doc.text) for doc in documents}
     by_id = {doc.id: doc for doc in documents}
     origin = {doc.id: "sha256:" + _sha256(doc.text) for doc in documents}
     pipeline = ClaimVerificationPipeline(detector)
@@ -329,7 +362,7 @@ def check_documents(
     results: list[ClaimCheck] = []
     for index, claim in enumerate(claim_texts, start=1):
         claim_id = f"clm_{index:03d}"
-        selected = rank_passages(claim, passages, top_k)
+        selected = rank_passages(claim, passages, top_k, passage_tokens, per_document=True)
         if not selected:
             results.append(
                 ClaimCheck(

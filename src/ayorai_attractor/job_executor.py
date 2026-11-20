@@ -29,8 +29,8 @@ class JobExecutor:
         try:
             self.handler.execute(job)
         except Exception:
-            return self.store.finish(job.job_id, success=False)
-        return self.store.finish(job.job_id, success=True)
+            return self.store.finish(job.job_id, success=False, attempt=job.attempts)
+        return self.store.finish(job.job_id, success=True, attempt=job.attempts)
 
     def reclaim_expired(self, *, now: float | None = None) -> int:
         return self.store.reclaim_expired(now=now)

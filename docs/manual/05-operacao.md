@@ -1,5 +1,5 @@
-Estado: Atual · Referência: main @ 64461fd · Atualizado: 2026-10-21
-Fontes de verdade: `Makefile`, `pyproject.toml`, `src/ayorai_attractor/cli/main.py`, `src/ayorai_attractor/evaluation/golden.py`, `docs/providers.md`, `docker-compose.yml`, `docker/Dockerfile`, `docs/DOCKER.md`, `docs/security/API-AUTH.md`, `src/ayorai_attractor/api/app.py`, `src/ayorai_attractor/api/auth.py`, `src/ayorai_attractor/api/logging_config.py`, testes `tests/test_cli_contract.py`, `tests/test_cli_module.py`, `tests/test_reproduce_script.py` e testes operacionais/API correspondentes.
+Estado: Atual · Referência: main @ 73bf91c (base desta PR) · Atualizado: 2026-11-16
+Fontes de verdade: `Makefile`, `pyproject.toml`, `src/ayorai_attractor/cli/main.py`, `src/ayorai_attractor/evaluation/golden.py`, `docs/providers.md`, `docker-compose.yml`, `docker/Dockerfile`, `docs/DOCKER.md`, `docs/security/API-AUTH.md`, `src/ayorai_attractor/api/app.py`, `src/ayorai_attractor/api/auth.py`, `src/ayorai_attractor/api/logging_config.py`, `src/ayorai_attractor/api/load_control.py`, `src/ayorai_attractor/audit_store.py`, testes `tests/test_cli_contract.py`, `tests/test_cli_module.py`, `tests/test_reproduce_script.py` e testes operacionais/API correspondentes.
 
 # 05 — Operação e execução
 
@@ -53,6 +53,10 @@ Exemplo de pesquisa com o provider local padrão:
 ```bash
 attractor search "consulta de exemplo" --mode balanced --max-agents 5
 ```
+
+Códigos de saída de `search` (e do comando `opensearch`, que executa o mesmo comando): **0** quando a operação foi concluída, inclusive com `verdict_authority: not_adjudicated`, que descreve o resultado e não é erro; **1** quando `operation_status` é `failed` (por exemplo, provider indisponível), com o JSON impresso mesmo assim; **2** para entrada inválida, com a mensagem em stderr e nada em stdout.
+
+A API valida a configuração de provider na inicialização e não sobe, como já faz com a autenticação, se `ATTRACTOR_PROVIDER` não for suportado, se `openai-compatible` estiver sem `OPENAI_API_KEY` ou sem URL HTTPS, se só um de `ATTRACTOR_OPENSEARCH_ENDPOINT`/`ATTRACTOR_OPENSEARCH_INDEX` estiver definido, ou se um endpoint de busca não usar HTTPS.
 
 O provider `mock` não exige rede nem credenciais e marca a saída como não independente. O adaptador OpenAI-compatível requer `ATTRACTOR_PROVIDER=openai-compatible` e `OPENAI_API_KEY`; `OPENAI_BASE_URL` e `ATTRACTOR_MODEL` são opcionais conforme `docs/providers.md`. Um provider de execução não é, por si só, fonte de evidência.
 
@@ -114,7 +118,7 @@ Execute os comandos no ambiente configurado para o commit que está sendo avalia
 
 ### Logs e rastreabilidade de requisições
 
-A API registra metadados estruturados por requisição: identificador de requisição, método, rota normalizada, status HTTP e duração. A resposta inclui `X-Request-ID`; um valor de entrada fora do padrão aceito é substituído por um identificador gerado. O nível é controlado por `ATTRACTOR_LOG_LEVEL`, com padrão `INFO`.
+A API registra metadados estruturados por requisição: identificador de requisição, método, rota normalizada, status HTTP e duração. A resposta inclui `X-Request-ID`, sempre gerado pelo servidor; um valor enviado pelo cliente é descartado. O nível é controlado por `ATTRACTOR_LOG_LEVEL`, com padrão `INFO`.
 
 O logger de acesso da aplicação não deve registrar corpos, afirmações, trechos de evidência, credenciais ou query strings. Ao investigar incidentes, use o identificador de requisição e metadados operacionais; não copie dados sensíveis para logs, issues ou pull requests. O rastro consultável pela API tem seu próprio contrato e não deve ser confundido com o log de acesso.
 
@@ -127,7 +131,41 @@ O logger de acesso da aplicação não deve registrar corpos, afirmações, trec
 5. Reproduza o problema em ambiente isolado com dados não sensíveis e testes direcionados.
 6. Para mudança de código ou configuração, use revisão, checks obrigatórios e procedimento controlado de implantação; não edite artefatos congelados nem contorne testes para restaurar o serviço.
 
-Este capítulo não define uma política de backup, restauração, alta disponibilidade, SLO, rotação automatizada de segredos ou rollback de produção. Esses procedimentos precisam ser definidos e validados para o ambiente concreto antes de alegar prontidão operacional.
+### Persistência, backup e restauração dos rastros de auditoria
+
+Os rastros de `POST /v1/audit` ficam no arquivo indicado por `ATTRACTOR_AUDIT_DB`. Sem um volume montado nesse caminho, eles se perdem quando o contêiner é recriado. Exemplo com volume nomeado (o diretório precisa pertencer ao usuário do contêiner, uid 999):
+
+```bash
+docker volume create ayorai-audit
+docker run --rm --user root --entrypoint sh -v ayorai-audit:/v <imagem> -c 'chown 999:999 /v'
+docker run ... -v ayorai-audit:/app/.attractor <imagem>
+```
+
+Backup online, com o serviço em execução, pela API de backup do SQLite. A cópia é conferida (`integrity_check`) e o comando recusa sobrescrever um arquivo existente:
+
+```python
+from ayorai_attractor.audit_store import AuditTraceStore
+
+with AuditTraceStore("/app/.attractor/audit.sqlite3") as store:
+    print(store.backup("/backups/audit-AAAAMMDD.sqlite3"))  # número de rastros copiados
+```
+
+Restauração:
+
+1. Pare o serviço.
+2. Copie o arquivo de backup para o caminho de `ATTRACTOR_AUDIT_DB`.
+3. Com as mesmas `ATTRACTOR_AUDIT_HMAC_KEYS` da produção, execute `AuditTraceStore(caminho).verify_all()`; o esperado é `invalid` igual a 0.
+4. Suba o serviço.
+
+Com HMAC, mantenha as chaves em custódia separada do backup do banco: quem tem as duas coisas pode reselar registros. Rastros gravados antes de configurar as chaves podem ser selados uma vez com `seal_unsealed()`, que só sela rastros cujo digest ainda confere. A rotina cobre r2-v1, r2-v2 e r2-v3 e preserva a versão de replay. Ao habilitar HMAC em uma base existente, execute-a com a lista completa de chaves antes de usar `verify_all()` como gate: com HMAC configurado, todas as versões suportadas precisam ter MAC válido. Se o banco já contém rastros selados, o armazenamento não abre sem `ATTRACTOR_AUDIT_HMAC_KEYS`, evitando continuar gravando sem autenticação criptográfica. A selagem valida o digest existente e autentica o estado atual do rastro; não prova retroativamente que um rastro legado não foi adulterado antes da ativação do HMAC. Retirar uma chave da lista invalida os rastros assinados por ela.
+
+Em ambientes que exigem HMAC sem depender dos metadados do banco, configure `ATTRACTOR_AUDIT_HMAC_REQUIRED=true` juntamente com `ATTRACTOR_AUDIT_HMAC_KEYS`. A opção obrigatória faz a inicialização falhar se as chaves não estiverem disponíveis, inclusive quando todos os campos MAC do SQLite forem removidos. Mantenha essa política fora do arquivo do banco (por exemplo, na configuração protegida do serviço) e as chaves em um gerenciador de segredos. O padrão `false` preserva o modo local sem HMAC; portanto, a implantação precisa ativar explicitamente a política quando esse nível de proteção for requerido.
+
+Retenção: com `ATTRACTOR_AUDIT_RETENTION_DAYS` (inteiro de 1 a 36500), o serviço apaga automaticamente os rastros mais antigos que o prazo: na inicialização e, depois, no máximo uma vez por hora, durante as gravações. Sem a variável (padrão), nada é apagado. Para expurgo manual, `purge_recorded_before(data_com_fuso)` remove rastros gravados antes da data e devolve quantos removeu. Rastros antigos sem `recorded_at` nunca são removidos, porque a idade deles é desconhecida. O prazo de retenção e a base legal são decisões do controlador dos dados e não estão definidos no repositório.
+
+Testes: `tests/test_audit_store_durability.py` cobre backup durante escrita contínua, restauração, queda por SIGKILL durante gravação e quatro processos gravando ao mesmo tempo.
+
+Este capítulo não define alta disponibilidade, SLO, rotação automatizada de segredos ou rollback de produção. Esses procedimentos precisam ser definidos e validados para o ambiente concreto antes de alegar prontidão operacional.
 
 ## Contratos e parâmetros
 
@@ -140,6 +178,14 @@ Este capítulo não define uma política de backup, restauração, alta disponib
 | `ATTRACTOR_API_KEY_PEPPER`, `ATTRACTOR_API_KEYS_HMAC_SHA256` | Segredos/digests exigidos no modo `api_key`; consulte `docs/security/API-AUTH.md`. |
 | `ATTRACTOR_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL`; padrão `INFO`. |
 | `ATTRACTOR_MAX_BODY_BYTES` | Limite inteiro positivo do corpo HTTP; padrão 2 MiB. |
+| `ATTRACTOR_MAX_INFLIGHT_HEAVY` | Máximo de requisições `POST /v1/*` em execução simultânea; padrão 2. Acima disso a API responde HTTP 503 com `Retry-After: 1`. Inteiro positivo; valor inválido impede a inicialização. |
+| `ATTRACTOR_INFLIGHT_SCOPE` | `process` (padrão): o limite vale por worker. `host`: o limite é compartilhado por todos os workers do mesmo host, com locks de arquivo (`flock`) liberados pelo kernel se o processo morrer; exige POSIX. Entre réplicas em hosts diferentes, aplique também um limite global no gateway. |
+| `ATTRACTOR_INFLIGHT_LOCK_DIR` | Diretório dos arquivos de vaga no escopo `host`; padrão por usuário: `$XDG_RUNTIME_DIR/ayorai-attractor-inflight` ou, sem essa variável, o diretório temporário do sistema seguido de `ayorai-attractor-inflight-<uid>`. O diretório precisa pertencer ao usuário do processo e não pode ter escrita para grupo ou outros; caso contrário, a API não inicia. Todos os workers do host devem rodar com o mesmo usuário e usar o mesmo diretório. |
+| `ATTRACTOR_AUDIT_DB` | Arquivo SQLite dos rastros de auditoria; padrão `.attractor/audit.sqlite3` (no contêiner, `/app/.attractor/audit.sqlite3`). |
+| `ATTRACTOR_AUDIT_LEGACY_TRACES` | `hidden` (padrão) ou `shared`: visibilidade, pela API, de rastros antigos sem dono. Outro valor impede a inicialização. |
+| `ATTRACTOR_AUDIT_HMAC_KEYS` | Opcional. Chaves HMAC dos rastros, `id:hex` (32 bytes), separadas por vírgula; a primeira assina os rastros novos e as demais só verificam (rotação). Segredo: guarde fora do repositório e fora do backup do banco. |
+| `ATTRACTOR_AUDIT_HMAC_REQUIRED` | `true` exige `ATTRACTOR_AUDIT_HMAC_KEYS` na inicialização, mesmo com o banco vazio; padrão `false`. Recomendado em produção. |
+| `ATTRACTOR_AUDIT_RETENTION_DAYS` | Opcional. Prazo de retenção automática dos rastros, em dias inteiros (1 a 36500). Vazio ou ausente (padrão): nada é apagado. Valor inválido impede a inicialização. |
 | `make test` | Executa pytest. |
 | `make lint` | Executa `ruff check .` e `ruff format --check .`. |
 | `make typecheck` | Executa mypy sobre `src/ayorai_attractor`. |

@@ -34,21 +34,23 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-FIELD_CHECK_VERSION = "field-check-2"
+FIELD_CHECK_VERSION = "field-check-4"
 FIELD_TYPES = ("money", "date", "cpf_cnpj", "number", "text")
 LABEL_WINDOW = 80  # characters before a candidate searched for a label
 
+# Captures use ASCII [0-9]; the boundaries use the Unicode-aware \d so that an ASCII
+# run touching a non-ASCII digit ("１２3") is never read as a shorter number ("3").
 _MONEY_RE = re.compile(
-    r"(?:R\$\s*)?(?<![\d.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2}|\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})(?![\d])"
-    r"|R\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?![\d.,]*\d)"
+    r"(?:R\$\s*)?(?<![\d.,])([0-9]{1,3}(?:\.[0-9]{3})+,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]{1,3}(?:,[0-9]{3})+\.[0-9]{2}|[0-9]+\.[0-9]{2})(?!\d)"
+    r"|R\$\s*([0-9]{1,3}(?:\.[0-9]{3})+|[0-9]+)(?![\d.,]*\d)"
 )
 _DATE_RE = re.compile(
-    r"(?<!\d)(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?!\d)|(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)"
+    r"(?<!\d)([0-9]{1,2})[/.-]([0-9]{1,2})[/.-]([0-9]{4})(?!\d)|(?<!\d)([0-9]{4})-([0-9]{2})-([0-9]{2})(?!\d)"
 )
 _DOC_RE = re.compile(
-    r"(?<!\d)(\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2})(?!\d)"
+    r"(?<!\d)([0-9]{3}\.?[0-9]{3}\.?[0-9]{3}-?[0-9]{2}|[0-9]{2}\.?[0-9]{3}\.?[0-9]{3}/?[0-9]{4}-?[0-9]{2})(?!\d)"
 )
-_NUMBER_RE = re.compile(r"(?<![\d.,])\d+(?:[.,]\d+)?(?![\d])")
+_NUMBER_RE = re.compile(r"(?<![\d.,])[0-9]+(?:[.,][0-9]+)?(?!\d|[.,]\d)")
 
 
 @dataclass(frozen=True)
@@ -88,18 +90,30 @@ def _fold(text: str) -> str:
     return "".join(char for char in decomposed if not unicodedata.combining(char))
 
 
+_MINUS = "-\u2212"  # hyphen-minus and the Unicode minus sign
+_SIGNED_MONEY_RE = re.compile(rf"([{_MINUS}]?)\s*(?:R\$)?\s*([{_MINUS}]?)(.*)", re.DOTALL)
+
+
+def _signed(value: Decimal, negative: bool) -> Decimal:
+    return -value if negative and value != 0 else value
+
+
 def normalize_money(raw: str) -> str | None:
-    value = raw.replace("R$", "").strip()
-    if re.fullmatch(r"\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2}", value):
+    signed = _SIGNED_MONEY_RE.fullmatch(raw.strip())
+    if signed is None or (signed.group(1) and signed.group(2)):
+        return None
+    negative = bool(signed.group(1) or signed.group(2))
+    value = signed.group(3).replace("R$", "").strip()
+    if re.fullmatch(r"[0-9]{1,3}(?:\.[0-9]{3})+,[0-9]{2}|[0-9]+,[0-9]{2}", value):
         value = value.replace(".", "").replace(",", ".")
-    elif re.fullmatch(r"\d{1,3}(?:,\d{3})+\.\d{2}", value):
+    elif re.fullmatch(r"[0-9]{1,3}(?:,[0-9]{3})+\.[0-9]{2}", value):
         value = value.replace(",", "")
-    elif re.fullmatch(r"\d{1,3}(?:\.\d{3})+", value):  # 1.250 (Brazilian thousands)
+    elif re.fullmatch(r"[0-9]{1,3}(?:\.[0-9]{3})+", value):  # 1.250 (Brazilian thousands)
         value = value.replace(".", "")
-    elif not re.fullmatch(r"\d+(?:\.\d{1,2})?", value):
+    elif not re.fullmatch(r"[0-9]+(?:\.[0-9]{1,2})?", value):
         return None
     try:
-        return f"{Decimal(value):.2f}"
+        return f"{_signed(Decimal(value), negative):.2f}"
     except InvalidOperation:
         return None
 
@@ -119,10 +133,12 @@ def normalize_date(raw: str) -> str | None:
 
 
 def _digits(raw: str) -> str:
-    return re.sub(r"\D", "", raw)
+    return re.sub(r"[^0-9]", "", raw)
 
 
 def cpf_cnpj_is_valid(digits: str) -> bool:
+    if not re.fullmatch(r"[0-9]+", digits):
+        return False
     if len(digits) == 11 and len(set(digits)) > 1:
         for size in (9, 10):
             total = sum(int(digits[i]) * (size + 1 - i) for i in range(size))
@@ -144,14 +160,28 @@ def cpf_cnpj_is_valid(digits: str) -> bool:
 
 
 def normalize_cpf_cnpj(raw: str) -> str | None:
+    # Only ASCII digits and the usual punctuation: "abc123..." or full-width digits are
+    # malformed, not a document number with noise to strip.
+    if not re.fullmatch(r"[0-9./\s-]+", raw.strip()):
+        return None
     digits = _digits(raw)
     return digits if len(digits) in (11, 14) else None
 
 
+_PLAIN_NUMBER_RE = re.compile(r"[+\-\u2212]?(?:[0-9]+(?:[.,][0-9]*)?|[.,][0-9]+)")
+
+
 def normalize_number(raw: str) -> str | None:
-    value = raw.strip().replace(",", ".")
+    # A plain decimal written with ASCII digits only. Decimal() alone would also accept
+    # "NaN", "Infinity", "1e3", "1_000" and non-ASCII digits, none of which can appear
+    # as a document candidate, so they are malformed expected values.
+    value = raw.strip()
+    if not _PLAIN_NUMBER_RE.fullmatch(value):
+        return None
+    negative = value[0] in _MINUS
+    value = value.lstrip("+" + _MINUS).replace(",", ".")
     try:
-        return format(Decimal(value).normalize(), "f")
+        return format(_signed(Decimal(value), negative).normalize(), "f")
     except InvalidOperation:
         return None
 
@@ -241,12 +271,43 @@ def candidates(text: str, spec: FieldSpec) -> list[Candidate]:
     normalizer = NORMALIZERS[spec.type]
     for match in pattern.finditer(text):
         group = (1 if match.group(1) else 2) if spec.type == "money" else 0
-        raw = match.group(group)
         start, end = match.start(group), match.end(group)
+        if spec.type in ("money", "number"):
+            signed_start = _sign_start(text, start, money=spec.type == "money")
+            if signed_start is None:
+                continue
+            start = signed_start
+        raw = text[start:end]
         normalized = normalizer(raw)
         if normalized is not None:
             found.append(Candidate(start, end, raw, normalized, False))
     return _mark_labelled(text, found, spec.labels) if spec.labels else found
+
+
+_SIGN_BEFORE_RE = re.compile(
+    rf"(?:([{_MINUS}])[ \t]*R\$[ \t]*|R\$[ \t]*([{_MINUS}])|([{_MINUS}]))$"
+)
+
+
+def _sign_start(text: str, start: int, *, money: bool) -> int | None:
+    """Start of the value including a minus sign written right before it ("-5",
+    "R$ -100,00", "-R$ 100,00"), so "-5" is never read as 5. A hyphen after a
+    letter, digit or separator ("10-12", "art. 5-A") is not a sign. Two signs
+    ("--5", "-R$ -100,00") are ambiguous: None, the value is not a candidate."""
+
+    window = text[max(0, start - 8) : start]
+    match = _SIGN_BEFORE_RE.search(window)
+    if match is None or (not money and match.group(3) is None):
+        return start
+    offset = start - len(window)
+    sign_at = offset + match.start(next(group for group in (1, 2, 3) if match.group(group)))
+    before = text[sign_at - 1] if sign_at > 0 else ""
+    if before and (before.isalnum() or before in ".,"):
+        return start
+    before_value = text[: offset + match.start()].rstrip(" \t")[-1:]
+    if before in _MINUS or (before_value and before_value in _MINUS):
+        return None
+    return offset + match.start()
 
 
 def labelled_text_values(text: str, labels: Sequence[str]) -> list[tuple[int, int, str, bool]]:

@@ -2,6 +2,8 @@
 
 ATTRACTOR contains an MCP-style gateway and plugin registry. The gateway is the control boundary for tool capabilities; it is not the verification Judge.
 
+**Status: experimental and not wired into any production path.** `mcp_gateway` and `plugins` are outside the import paths of the API and the CLI ([manual, chapter 02](../manual/02-arquitetura.md)). As implemented, `MCPGateway.execute` does not consult `security.policy.SecurityPolicy`; trust filtering is the `trusted_only` argument, which defaults to `True` but a caller can set to `False`; and no audit event is recorded. The sections below describe the intended contract, not an enforced control. Executing tools on behalf of the system requires an authorization layer that does not exist yet (see [Experimental modules](../EXPERIMENTAL-MODULES.md)).
+
 ## Dispatch contract
 
 1. Plugins declare capabilities, enabled state, health, trust level, latency, and optional cost.
