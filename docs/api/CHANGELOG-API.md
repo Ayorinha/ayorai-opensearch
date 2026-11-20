@@ -2,6 +2,13 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — search results are separate sources (behavior fix)
+
+- **Fix:** OpenSearch hits were concatenated into one text cut at 2,000 characters, so `/v2/audit` checked a single document: at most one independent source (`partially_supported` ceiling), no per-hit URL or id, and content after the cut was lost. Each hit is now its own source with its URL (canonical when the index stores an http(s) `url`), id and `published_at`, up to 20,000 characters. Hits sharing a URL are one cluster.
+- `/v1/opensearch` and `/v1/audit` list one `evidence` item per hit (previously one item for all hits); `evidence_count` counts hits. Schemas are unchanged.
+- An OpenSearch query with no hits is no longer reported as independent evidence (it was the placeholder text "OpenSearch returned no matching documents.").
+- The generic `ATTRACTOR_SEARCH_ENDPOINT` adapter still returns one raw JSON excerpt; it has no known result schema to split.
+
 ## Unreleased — `/v2/audit` traces bind the returned adjudication (`r2-v4`, additive)
 
 - **Fix:** the `/v2/audit` trace was recorded before adjudication and held only retrieval counts, so it could not show which verdicts were returned. It is now recorded after adjudication as `replay_version` `r2-v4` (store schema 4).

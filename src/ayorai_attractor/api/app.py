@@ -435,11 +435,15 @@ def _independent_documents(response: SearchResponse) -> list[CheckDocumentInput]
         if not item.independent or not text or text in seen:
             continue
         seen.add(text)
+        url = item.source if item.source.startswith(("https://", "http://")) else None
         documents.append(
             CheckDocumentInput(
                 id=f"src_{len(documents) + 1:03d}",
                 text=text,
                 source=item.source[:512] or None,
+                # The source URL is the canonical URL: two hits from the same URL are
+                # one cluster for the Judge, never two independent sources.
+                url=url if url is not None and len(url) <= 2048 else None,
             )
         )
     return documents

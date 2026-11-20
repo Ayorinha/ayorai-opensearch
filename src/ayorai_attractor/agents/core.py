@@ -45,13 +45,25 @@ class ResearchAgent(Agent):
         if context.search_provider is not None:
             try:
                 search_response = context.search_provider.execute(context.query)
-                search_evidence = context.evidence.add(
-                    claim=f"External search returned results for '{context.query}'.",
-                    source=search_response.source or "external-search",
-                    excerpt=search_response.excerpt or search_response.text,
-                    independent=search_response.independent,
-                )
-                evidence_ids.append(search_evidence.id)
+                if search_response.documents:
+                    # One evidence item per retrieved document, each with its own source.
+                    for document in search_response.documents:
+                        evidence_ids.append(
+                            context.evidence.add(
+                                claim=f"External search returned a document for '{context.query}'.",
+                                source=document.source,
+                                excerpt=document.content,
+                                independent=search_response.independent,
+                            ).id
+                        )
+                else:
+                    search_evidence = context.evidence.add(
+                        claim=f"External search returned results for '{context.query}'.",
+                        source=search_response.source or "external-search",
+                        excerpt=search_response.excerpt or search_response.text,
+                        independent=search_response.independent,
+                    )
+                    evidence_ids.append(search_evidence.id)
             except Exception as exc:
                 context.failures.record(
                     FailureType.API_ERROR,
