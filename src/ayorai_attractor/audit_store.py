@@ -28,11 +28,12 @@ from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.models import AuditTraceResponse, SearchResponse
 from ayorai_attractor.replay import ReplayBundle
 
-_SCHEMA_VERSION = 3
+_SCHEMA_VERSION = 4
 _R2_V1: Final = "r2-v1"
 _R2_V2: Final = "r2-v2"
 _R2_V3: Final = "r2-v3"
-ReplayVersion = Literal["r2-v1", "r2-v2", "r2-v3"]
+_R2_V4: Final = "r2-v4"
+ReplayVersion = Literal["r2-v1", "r2-v2", "r2-v3", "r2-v4"]
 # Columns bound by an r2-v3 digest: every persisted field of a trace. r2-v1 and
 # r2-v2 digests bind only verification, evidence_count and failure_count; they
 # are still verified as written, but new traces are recorded as r2-v3.
@@ -50,12 +51,23 @@ _R2_V3_FIELDS: Final = (
     "recorded_at",
     "software_version",
 )
+# r2-v4 (schema 4) adds the adjudication a trace was recorded with (POST /v2/audit):
+# the claim-check digest and the SHA-256 of the canonical adjudication result. Its
+# digest, and therefore its HMAC, binds every r2-v3 field plus these two.
+_ADJUDICATION_FIELDS: Final = ("check_trace_id", "adjudication_sha256")
+_R2_V4_FIELDS: Final = _R2_V3_FIELDS + _ADJUDICATION_FIELDS
+_SHA256_HEX = re.compile(r"[0-9a-f]{64}")
 ReplayIntegrity = Literal["valid", "invalid"]
 
 
 def _r2_v3_events(fields: dict[str, Any]) -> list[dict[str, Any]]:
     """Canonical replay events for an r2-v3 trace (one source for record and verify)."""
     return [{"event": "audit.completed", **{name: fields[name] for name in _R2_V3_FIELDS}}]
+
+
+def _r2_v4_events(fields: dict[str, Any]) -> list[dict[str, Any]]:
+    """Canonical replay events for an r2-v4 trace: r2-v3 plus the bound adjudication."""
+    return [{"event": "audit.completed", **{name: fields[name] for name in _R2_V4_FIELDS}}]
 
 
 def _utc_timestamp(moment: datetime) -> str:
@@ -144,7 +156,7 @@ def _mac_for_trace(key: bytes, version: str, digest: str, fields: dict[str, Any]
     Their HMAC must therefore bind the schema-v3 fields that those digests do
     not cover (notably owner and recorded_at). r2-v3 already binds every field.
     """
-    if version == _R2_V3:
+    if version in (_R2_V3, _R2_V4):
         return _mac(key, version, digest)
     payload = {
         "domain": "ayorai.audit.legacy-row.v1",
@@ -391,12 +403,21 @@ class AuditTraceStore:
     def _finish_migration(connection: sqlite3.Connection) -> None:
         """Schema v3: who (owner), when (recorded_at, UTC) and which software version.
 
-        The three columns are NULL on traces recorded before schema v3.
+        The three columns are NULL on traces recorded before schema v3. Schema v4
+        adds the adjudication columns (check_trace_id, adjudication_sha256), NULL on
+        every trace that is not r2-v4.
         """
         columns = {
             str(row[1]) for row in connection.execute("PRAGMA table_info(audit_traces)").fetchall()
         }
-        for column in ("owner", "recorded_at", "software_version", "replay_mac", "mac_key_id"):
+        for column in (
+            "owner",
+            "recorded_at",
+            "software_version",
+            "replay_mac",
+            "mac_key_id",
+            *_ADJUDICATION_FIELDS,
+        ):
             if column not in columns:
                 # Column names are internal constants, never caller input.
                 connection.execute(f"ALTER TABLE audit_traces ADD COLUMN {column} TEXT")
@@ -426,13 +447,34 @@ class AuditTraceStore:
         return _R2_V1
 
     def record(
-        self, response: SearchResponse, report: AuditReport, owner: str | None = None
+        self,
+        response: SearchResponse,
+        report: AuditReport,
+        owner: str | None = None,
+        *,
+        adjudication: tuple[str | None, str] | None = None,
     ) -> str:
+        """Persist a trace; return its replay digest.
+
+        ``adjudication`` is ``(check_trace_id, adjudication_sha256)`` for a run that
+        adjudicated claims (POST /v2/audit); the trace is then r2-v4 and its digest and
+        HMAC bind the adjudication. Without it the trace is r2-v3, as before.
+        """
+        if adjudication is not None:
+            check_trace_id, adjudication_sha256 = adjudication
+            if _SHA256_HEX.fullmatch(adjudication_sha256) is None:
+                raise ValueError("adjudication_sha256 must be 64 lowercase hex characters")
+            if check_trace_id is not None and not check_trace_id.strip():
+                raise ValueError("check_trace_id must be non-empty when present")
         with self._lock:
-            return self._record_locked(response, report, owner)
+            return self._record_locked(response, report, owner, adjudication)
 
     def _record_locked(
-        self, response: SearchResponse, report: AuditReport, owner: str | None
+        self,
+        response: SearchResponse,
+        report: AuditReport,
+        owner: str | None,
+        adjudication: tuple[str | None, str] | None = None,
     ) -> str:
         fields: dict[str, Any] = {
             "legacy_verification": None,
@@ -448,11 +490,17 @@ class AuditTraceStore:
             "recorded_at": _utc_timestamp(self._clock()),
             "software_version": __version__,
         }
-        replay = ReplayBundle.build(report.trace_id, _r2_v3_events(fields), version=_R2_V3)
+        if adjudication is None:
+            version, events = _R2_V3, _r2_v3_events(fields)
+            fields["check_trace_id"] = fields["adjudication_sha256"] = None
+        else:
+            fields["check_trace_id"], fields["adjudication_sha256"] = adjudication
+            version, events = _R2_V4, _r2_v4_events(fields)
+        replay = ReplayBundle.build(report.trace_id, events, version=version)
         mac_key_id, replay_mac = None, None
         if self._mac_keys:
             mac_key_id, key = self._mac_keys[0]
-            replay_mac = _mac(key, _R2_V3, replay.digest)
+            replay_mac = _mac(key, version, replay.digest)
         try:
             self._connection.execute(
                 """
@@ -461,8 +509,9 @@ class AuditTraceStore:
                     evidence_count, independent_evidence_count,
                     verified_evidence_count, failure_count, finding_count,
                     replay_digest, replay_version, schema_version, owner,
-                    recorded_at, software_version, replay_mac, mac_key_id
-                ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    recorded_at, software_version, replay_mac, mac_key_id,
+                    check_trace_id, adjudication_sha256
+                ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     report.trace_id,
@@ -473,13 +522,15 @@ class AuditTraceStore:
                     fields["failure_count"],
                     fields["finding_count"],
                     replay.digest,
-                    _R2_V3,
+                    version,
                     fields["schema_version"],
                     owner,
                     fields["recorded_at"],
                     fields["software_version"],
                     replay_mac,
                     mac_key_id,
+                    fields["check_trace_id"],
+                    fields["adjudication_sha256"],
                 ),
             )
         except sqlite3.IntegrityError as exc:
@@ -573,7 +624,8 @@ class AuditTraceStore:
             SELECT legacy_verification, verification, operation_status, evidence_count,
                    independent_evidence_count, verified_evidence_count, failure_count,
                    finding_count, schema_version, owner, recorded_at, software_version,
-                   replay_digest, replay_version, replay_mac, mac_key_id
+                   replay_digest, replay_version, replay_mac, mac_key_id,
+                   check_trace_id, adjudication_sha256
             FROM audit_traces WHERE trace_id = ?
             """,
             (trace_id,),
@@ -582,7 +634,13 @@ class AuditTraceStore:
             raise ValueError(f"Unknown audit trace: {trace_id}")
         fields = dict(zip(_R2_V3_FIELDS, row[:12], strict=True))
         stored_digest, version, stored_mac, mac_key_id = row[12], row[13], row[14], row[15]
-        if version == _R2_V3:
+        adjudication = dict(zip(_ADJUDICATION_FIELDS, row[16:18], strict=True))
+        if version != _R2_V4 and any(value is not None for value in adjudication.values()):
+            # Only r2-v4 binds an adjudication; one attached to an older trace is forged.
+            return "invalid"
+        if version == _R2_V4:
+            events = _r2_v4_events({**fields, **adjudication})
+        elif version == _R2_V3:
             events = _r2_v3_events(fields)
         elif version in (_R2_V1, _R2_V2):
             verification = fields["legacy_verification"] if version == _R2_V1 else "not_adjudicated"
@@ -619,7 +677,7 @@ class AuditTraceStore:
         return "valid"
 
     def seal_unsealed(self) -> int:
-        """MAC valid unsealed r2-v1, r2-v2 and r2-v3 traces; return how many.
+        """MAC valid unsealed r2-v1, r2-v2, r2-v3 and r2-v4 traces; return how many.
 
         Only traces whose replay digest is still valid are sealed, with the active
         key. This establishes a keyed baseline for the current stored state; it
@@ -637,9 +695,9 @@ class AuditTraceStore:
                 "independent_evidence_count, verified_evidence_count, failure_count, "
                 "finding_count, schema_version, owner, recorded_at, software_version "
                 "FROM audit_traces "
-                "WHERE replay_version IN (?, ?, ?) AND replay_mac IS NULL "
+                "WHERE replay_version IN (?, ?, ?, ?) AND replay_mac IS NULL "
                 "AND mac_key_id IS NULL ORDER BY trace_id",
-                (_R2_V1, _R2_V2, _R2_V3),
+                (_R2_V1, _R2_V2, _R2_V3, _R2_V4),
             ).fetchall()
             saved_keys, self._mac_keys = self._mac_keys, ()
             try:
@@ -715,7 +773,7 @@ class AuditTraceStore:
             SELECT trace_id, operation_status, evidence_count,
                    independent_evidence_count, verified_evidence_count,
                    failure_count, finding_count, replay_digest,
-                   legacy_verification, replay_version
+                   legacy_verification, replay_version, check_trace_id, adjudication_sha256
             FROM audit_traces WHERE trace_id = ? AND (
                 (owner IS NULL AND (? IS NULL OR ? = 'shared')) OR owner = ?
             )
@@ -738,5 +796,7 @@ class AuditTraceStore:
             replay_digest=str(row[7]),
             legacy_verification=row[8],
             replay_version=row[9],
+            check_trace_id=row[10],
+            adjudication_sha256=row[11],
             replay_integrity=self.verify(trace_id),
         )
