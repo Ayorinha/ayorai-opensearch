@@ -1,3 +1,5 @@
+Revisão por ferramenta automatizada, publicada pelo mantenedor.
+
 # Checkpoint metodológico — benchmark RGC PT-BR (2026-11-17)
 
 **Base consultada:** `main` @ `73bf91cd7175bdf18edbeffa661ef12a5ddf7f56` ([commit](https://github.com/Ayorinha/ayorai-opensearch/commit/73bf91cd7175bdf18edbeffa661ef12a5ddf7f56)).
