@@ -8,14 +8,17 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 
 ### API
 - Correção (independência das fontes, ADR-002 §3): no `/v1/check` e no `/v2/audit`, a origem de cada documento era o SHA-256 do texto bruto, então o mesmo texto com outra caixa, sem acentos, com outra pontuação ou com um prefixo contava como segunda fonte independente e levava a `verified`. Agora documentos com o mesmo texto normalizado, ou quase-duplicatas (contenção ≥ 0,8 de sequências de 5 palavras), compartilham a origem (`document-check-4`). Um texto curto reproduzido dentro de outro documento também é a mesma origem.
+- Correção: os providers OpenSearch juntavam todos os resultados num único texto, cortado em 2.000 caracteres. O `/v2/audit` via então um só documento: nunca mais de uma fonte independente (teto `partially_supported`), sem URL nem ID por resultado, e o conteúdo depois do corte se perdia. Agora cada resultado é uma fonte própria (`ProviderResponse.documents`), com URL canônica, ID e data de publicação quando o índice os tem, e até 20.000 caracteres. Resultados com a mesma URL formam um único cluster. Uma busca sem resultados deixou de produzir uma "fonte independente" com o texto fixo de ausência.
+- `POST /v2/audit`: busca e adjudicação ADR-002 de ponta a ponta. Só evidência independente vira documento (#587).
+- Correção: o rastro do `/v2/audit` era gravado antes da adjudicação e guardava só contagens; não mostrava quais vereditos o cliente recebeu. Agora ele é gravado depois, como `r2-v4` (esquema 4), e vincula `check_trace_id` e `adjudication_sha256` (SHA-256 RFC 8785 da adjudicação devolvida) ao digest de replay e ao HMAC. O cliente recalcula o mesmo digest a partir da resposta.
 - Correção: a seleção de trechos do `/v1/check` e do `/v2/audit` deixava documentos fora da adjudicação quando outros os superavam em relevância. Uma contradição explícita podia ser ignorada, e o resultado sair `verified`. Agora o melhor trecho de cada documento relacionado também é avaliado (`document-check-3`).
-- `POST /v2/audit`: busca e adjudicação ADR-002 de ponta a ponta. Só evidência independente vira documento; o resultado é registrado como rastro com dono (#587).
 - `/v1/fields`: somente dígitos ASCII simples (field-check-3) e sinal de menos ligado ao número ou valor (field-check-4) (#545, #546).
 - Respostas dos providers HTTP limitadas em tamanho, sem compressão e com prazo total (#561).
 - Limite de concorrência das rotas pesadas (HTTP 503), opcionalmente compartilhado entre workers do mesmo host com `ATTRACTOR_INFLIGHT_SCOPE=host` (#556, #563).
 - Endurecimento do fencing de jobs, da integridade do armazenamento e da segurança dos providers (#555).
 
 ### Trilha de auditoria
+- Rotação de chave HMAC: `AuditTraceStore.reseal_with_active_key()` assina de novo, com a chave ativa, os rastros válidos assinados por chaves antigas, para que elas possam ser aposentadas. Rastros inválidos não são re-selados. O procedimento está no manual de operação.
 - Rastros com dono, formato r2-v3, metadados, backup e HMAC externo (`ATTRACTOR_AUDIT_HMAC_KEYS`) (#564).
 - HMAC exigido em todas as versões de replay quando há chaves configuradas: um rastro selado não volta a validar sem o MAC (#575).
 - `ATTRACTOR_AUDIT_HMAC_REQUIRED` impede que o serviço suba sem chaves HMAC (#586).
@@ -26,8 +29,10 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - v8, com erros conhecidos fixados em testes (#565).
 - v9: negação restrita às frases da afirmação e negação relatada classificada como neutra (#570).
 - v10: afirmações hipotéticas ou não assertivas e valores-limite ("acima de", "mais de", "superou") não confirmam a afirmação (#585).
+- v12: pergunta ("…em 2024?"), condição no início da frase ("Se…", "Caso…", "Supondo que…"), meta ou intenção ("a meta é atingir…", "pretende") e aviso de retificação ou errata na frase da afirmação ou na vizinha, no mesmo parágrafo, deixam de confirmar a afirmação; um aviso em outra parte do documento não interfere. Quando a palavra faz parte da própria afirmação ("a meta de inflação foi de 3%"), ela continua sendo confirmada. Golden v0 e v0.1 inalterados. A versão 11 fica reservada à mudança de escala da #571, ainda pendente.
 
 ### Segurança, cadeia de suprimentos e imagem
+- Correção: erros de providers deixam de expor ao cliente da API a URL interna completa da busca (host, porta e índice), que aparecia em `failures[].message` em respostas 4xx e 5xx do OpenSearch. O cliente recebe só o tipo do erro; o detalhe vai para o log do servidor.
 - Imagem Docker fixada por digest, dependências instaladas por lock com hash e pisos de segurança das dependências (#556, #562).
 - Varredura da imagem com Grype e proveniência SLSA assinada das distribuições (#568).
 - Dependabot sem os pins históricos do benchmark e sem novas linhas de Python na imagem (#567); `actions/download-artifact` 8.0.2 (#520); ruff 0.17.5 (#569).

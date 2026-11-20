@@ -52,6 +52,7 @@ from ayorai_attractor.verification.check_models import (
     CheckResponse,
     FieldsRequest,
     FieldsResponse,
+    adjudication_sha256,
 )
 from ayorai_attractor.verification.document_check import CheckDocumentInput, check_documents
 from ayorai_attractor.verification.document_ingest import (
@@ -434,11 +435,15 @@ def _independent_documents(response: SearchResponse) -> list[CheckDocumentInput]
         if not item.independent or not text or text in seen:
             continue
         seen.add(text)
+        url = item.source if item.source.startswith(("https://", "http://")) else None
         documents.append(
             CheckDocumentInput(
                 id=f"src_{len(documents) + 1:03d}",
                 text=text,
                 source=item.source[:512] or None,
+                # The source URL is the canonical URL: two hits from the same URL are
+                # one cluster for the Judge, never two independent sources.
+                url=url if url is not None and len(url) <= 2048 else None,
             )
         )
     return documents
@@ -461,12 +466,12 @@ def audit_v2(request: AuditV2Request, http_request: Request) -> AuditV2Response:
     The engine answers the query and retrieves sources. Only independent sources are
     checked against; the claims are the caller's, the caller's answer decomposed, or
     by default the engine's own answer decomposed. Each claim goes through the same
-    passage selection, stance detection and ADR-002 Judge as /v1/check, and the run
-    is recorded as an audit trace owned by the calling key.
+    passage selection, stance detection and ADR-002 Judge as /v1/check. The run is
+    then recorded as an r2-v4 audit trace owned by the calling key, binding the
+    claim-check digest and ``adjudication_sha256`` of the returned adjudication.
     """
     response = engine.run(SearchRequest(query=request.query, mode=QualityMode(request.mode)))
     report = AuditReport.from_response(response)
-    audit_store.record(response, report, owner=_principal(http_request))
 
     if request.claims is not None:
         claims_source, claims, answer = "caller_claims", list(request.claims), None
@@ -525,9 +530,11 @@ def audit_v2(request: AuditV2Request, http_request: Request) -> AuditV2Response:
     for item in results:
         key = item["verdict"] or item["status"]
         summary[key] = summary.get(key, 0) + 1
-    return AuditV2Response.model_validate(
+    placeholder = "0" * 64
+    body = AuditV2Response.model_validate(
         {
             "trace_id": report.trace_id,
+            "adjudication_sha256": placeholder,
             "check_trace_id": check_trace_id,
             "operation_status": response.operation_status,
             "claims_source": claims_source,
@@ -539,6 +546,17 @@ def audit_v2(request: AuditV2Request, http_request: Request) -> AuditV2Response:
             "failure_count": report.failure_count,
         }
     )
+    # The digest is taken over the serialized body the client receives, then bound to
+    # the trace: the trace is recorded only after adjudication, so it attests the
+    # verdicts actually returned (r2-v4), not just the retrieval counts.
+    digest = adjudication_sha256(body.model_dump(mode="json"))
+    audit_store.record(
+        response,
+        report,
+        owner=_principal(http_request),
+        adjudication=(check_trace_id, digest),
+    )
+    return body.model_copy(update={"adjudication_sha256": digest})
 
 
 @app.post(
