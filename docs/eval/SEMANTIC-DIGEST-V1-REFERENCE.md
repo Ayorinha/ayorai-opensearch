@@ -48,7 +48,7 @@ These metric values were supplied from a local execution of the base-commit code
 - `legacy_accuracy`: 13/30 = `0.433333`.
 - McNemar: `legacy_correct_new_wrong=9`, `new_correct_legacy_wrong=6`, exact p-value `0.60723876953125`.
 
-## Candidate reference — rule detector v10 (proposed 2026-11-15, pending approval)
+## Candidate reference — rule detector v11 (proposed 2026-11-15, pending approval)
 
 Three states are kept apart in this document:
 
@@ -56,12 +56,12 @@ Three states are kept apart in this document:
 |---|---|---|
 | Historical (PR 0.9 measurement) | `64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608` | "Recorded output" above; never rewritten |
 | Approved reference | `64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608` | "Interpretation and invariants" below; normative until the maintainer approves a change |
-| Candidate (detector v10) | `1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180` | this section; not approved |
+| Candidate (detector v11) | `1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180` | this section; not approved |
 
 - **Semantic change:** a number followed by a scale word without a currency ("2,0 milhões", "2.0 million", "1,2 bilhão") is read with its scale, and a count noun right after the scale ("2,0 milhões de clientes", "2.0 million active retail customers") makes it a scaled count of that noun. Previously the scale was applied only to money with a currency.
 - **Case-level effect:** exactly one case changes. Golden v0.1 `x02` (expected `CONFLICTING`; claim "A NovaBank tinha 2,0 milhões de clientes de varejo ativos no fim de 2025"; evidence doc-005 "2.0 million active retail customers", doc-018 "2.3 million") goes from `PARTIALLY_SUPPORTED` (wrong) to `CONFLICTING` (correct). Golden v0 and smoke-v0 are unchanged.
 - **Candidate Golden v0.1 metrics:** `global_accuracy` 11/30 = `0.366667` (approved: 10/30); `balanced_accuracy` `0.502671` (approved: `0.481838`); `legacy_accuracy` 13/30 unchanged; McNemar `legacy_correct_new_wrong=9`, `new_correct_legacy_wrong=7`, exact p-value `0.803619384765625` (non-significant). Development measurement on 30 cases, not a confirmatory result.
-- **Approval rule:** the change that introduces detector v10 carries the CI, `scripts/reproduce.py` and test assertions for the candidate value, because the code and its pinned reference cannot disagree in CI. That change must be merged only after the maintainer's explicit approval of this candidate; at merge, the candidate becomes the approved reference and the line below is updated in the same change.
+- **Approval rule:** the change that introduces detector v11 carries the CI, `scripts/reproduce.py` and test assertions for the candidate value, because the code and its pinned reference cannot disagree in CI. That change must be merged only after the maintainer's explicit approval of this candidate; at merge, the candidate becomes the approved reference and the line below is updated in the same change.
 
 ## Interpretation and invariants
 

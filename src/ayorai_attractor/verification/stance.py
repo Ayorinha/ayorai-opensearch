@@ -494,6 +494,33 @@ def _has_claim_token_negation(text: str, claim_tokens: frozenset[str] | None) ->
     return False
 
 
+# Non-assertive framing: the sentence that states the claim presents it as a
+# possibility, estimate, projection, rumour, hypothesis or open question, so it
+# neither establishes nor refutes it. Checked only in sentences covering the claim.
+_NON_ASSERTIVE_RE = re.compile(
+    r"\b(?:(?<!não\s)podem?\s+ter\s+[a-zà-ú]+(?:ado|ada|ido|ida|ído|to|so|cho)\b"
+    r"|poderia|poderiam|teria\s+sido|teriam\s+sido|talvez|possivelmente|provavelmente"
+    r"|supostamente|alegadamente|aparentemente|estima-se|projeta-se|prevê-se|espera-se"
+    r"|segundo\s+(?:as\s+)?(?:projeções|estimativas|rumores)|deve\s+atingir"
+    r"|rumores?|boatos?|especula-se|especulaç(?:ão|ões)"
+    r"|não\s+se\s+sabe\s+se|ninguém\s+sabe\s+se|é\s+incerto\s+se|não\s+está\s+claro\s+se"
+    r"|não\s+há\s+confirmação\s+de\s+que|sem\s+confirmação"
+    r"|may\s+have|might|could\s+have|reportedly|allegedly|expected\s+to|rumou?rs?"
+    r"|unclear\s+whether|not\s+known\s+whether)\b"
+    r"|\bse\b[^.;!?]{0,200}?\b(?:fosse|fossem|tivesse|tivessem)\b",
+    re.IGNORECASE,
+)
+
+
+def _non_assertive(text: str, claim_tokens: frozenset[str]) -> bool:
+    """A sentence covering the claim states it only as possible, estimated or unknown."""
+    return any(
+        _covers_claim(sentence, claim_tokens) and _NON_ASSERTIVE_RE.search(sentence)
+        for sentence in _SENTENCE_SPLIT_RE.split(text.strip())
+        if sentence
+    )
+
+
 def _reported_denial(text: str, claim_tokens: frozenset[str]) -> bool:
     """The text reports that someone denied a proposition covering the claim."""
     return any(
@@ -912,7 +939,75 @@ def _attribute(tokens: list[str], index: int, entities: set[str]) -> str:
     return "unknown"
 
 
-def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
+# A number introduced by a bound ("superou 40", "abaixo de 40", "mais de 40",
+# "at least 40") states an inequality, not a value: on the evidence side it can
+# neither confirm nor contradict an exact claimed value. When the claim is itself
+# a bound ("pode chegar a dez vezes", "até trinta anos") bounds compare as before.
+# Calendar years are never treated as bounded values.
+_BOUND_WORDS = frozenset(
+    {
+        "superou",
+        "superar",
+        "supera",
+        "ultrapassou",
+        "ultrapassar",
+        "ultrapassa",
+        "excedeu",
+        "exceder",
+        "excede",
+        "acima",
+        "abaixo",
+        "mais",
+        "menos",
+        "inferior",
+        "superior",
+        "mínimo",
+        "minimo",
+        "máximo",
+        "maximo",
+        "over",
+        "above",
+        "below",
+        "under",
+        "exceeded",
+        "exceeds",
+        "surpassed",
+        "more",
+        "less",
+        "fewer",
+        "least",
+        "most",
+        "até",
+        "ate",
+        "chegar",
+        "up",
+    }
+)
+_BOUND_FILLERS = frozenset({"de", "a", "do", "da", "o", "than", "of", "at", "pelo", "no"})
+
+
+def _is_bound(tokens: list[str], index: int) -> bool:
+    """The number at ``index`` is introduced by a bound word (skipping fillers)."""
+    position = index - 1
+    while position >= 0 and index - position <= 3 and tokens[position] in _BOUND_FILLERS:
+        position -= 1
+    return position >= 0 and index - position <= 3 and tokens[position] in _BOUND_WORDS
+
+
+def _is_year_token(token: str) -> bool:
+    return token.isdigit() and len(token) == 4 and _YEAR_MIN <= int(token) <= _YEAR_MAX
+
+
+def _has_bound(text: str) -> bool:
+    """Some non-year number in the text is introduced by a bound word."""
+    tokens = _fact_tokens(normalize_numerals(text))
+    return any(
+        _is_number(token) and not _is_year_token(token) and _is_bound(tokens, index)
+        for index, token in enumerate(tokens)
+    )
+
+
+def _numeric_facts(text: str, *, skip_bounds: bool = False) -> list[tuple[str, str, str]]:
     """Extract (raw value, unit, attribute) facts deterministically.
 
     `unit` is `currency:scale` for money, `percent`, `year`, `ms`,
@@ -924,6 +1019,8 @@ def _numeric_facts(text: str) -> list[tuple[str, str, str]]:
     facts: list[tuple[str, str, str]] = list(quantity_facts)
     for index, token in enumerate(tokens):
         if not _is_number(token):
+            continue
+        if skip_bounds and not _is_year_token(token) and _is_bound(tokens, index):
             continue
         following = tokens[index + 1] if index + 1 < len(tokens) else ""
         money = _currency_and_scale(tokens, index)
@@ -1113,7 +1210,10 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     if not claim_facts:
         return NumericAlignment()
     claim_years = frozenset(_YEAR_TOKEN_RE.findall(claim_text))
-    evidence_facts = _numeric_facts(_mask_comparison_baselines(evidence_text, claim_years))
+    evidence_facts = _numeric_facts(
+        _mask_comparison_baselines(evidence_text, claim_years),
+        skip_bounds=not _has_bound(claim_text),
+    )
     claim_locale = _locale_for(claim_text)
     evidence_locale = _locale_for(evidence_text)
 
@@ -1227,7 +1327,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "10"
+    version = "11"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
@@ -1287,9 +1387,12 @@ class RuleStanceDetector:
                 # Polarity and date mismatches only count when claim and evidence
                 # describe the same proposition; otherwise they are unrelated text.
                 same_proposition = lexical >= 0.25
-                if _reported_denial(item.excerpt, frozenset(claim_tokens)):
-                    # "X negou que P": the document reports a denial; it neither
-                    # asserts P nor establishes that P is false.
+                if _reported_denial(item.excerpt, frozenset(claim_tokens)) or _non_assertive(
+                    item.excerpt, frozenset(claim_tokens)
+                ):
+                    # "X negou que P", "P pode ter ocorrido", "estima-se que P",
+                    # "não se sabe se P": the document neither asserts P nor
+                    # establishes that P is false.
                     stance = Stance.NEUTRAL
                 elif numeric_conflict or (
                     same_proposition and (date_conflict or negation_conflict or direction_conflict)

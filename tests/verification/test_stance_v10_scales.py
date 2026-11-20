@@ -66,5 +66,5 @@ def test_different_count_nouns_never_compare() -> None:
     assert not alignment.conflict and not alignment.agreement and not alignment.all_matched
 
 
-def test_detector_version_is_10() -> None:
-    assert RuleStanceDetector.version == "10"
+def test_detector_version_is_11() -> None:
+    assert RuleStanceDetector.version == "11"

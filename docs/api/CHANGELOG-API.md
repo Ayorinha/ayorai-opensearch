@@ -2,10 +2,16 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
-## Unreleased — `/v1/check` rule detector v10 (scale words)
+## Unreleased — `/v1/check` rule detector v11 (scale words)
 
 - A number followed by a scale word without a currency is read with its scale: "1,2 bilhão" and "1.200 milhões" are the same quantity (previously 1.2 against 1200, a false contradiction). A count noun right after the scale ("2,0 milhões de clientes", "3 mil funcionários") makes it a scaled count that compares with the same noun at any scale ("3000 funcionários").
-- The component version is now `10`. Golden v0.1 changes in one case (`x02`, now correct); the reference update and its rationale are in `docs/eval/SEMANTIC-DIGEST-V1-REFERENCE.md`.
+- The component version is now `11`. Golden v0.1 changes in one case (`x02`, now correct); the reference update and its rationale are in `docs/eval/SEMANTIC-DIGEST-V1-REFERENCE.md`.
+
+## Unreleased — `/v1/check` rule detector v10 (non-assertive framing and bounds)
+
+- A sentence that states the claim only as a possibility, estimate, projection, rumour, hypothesis or open question ("pode ter sido", "estima-se que", "rumores indicam", "deve atingir… segundo projeções", "se fosse", "não se sabe se", "reportedly") is now `neutral` for it. Previously it supported the claim, and "não se sabe se P" refuted it. Affirmative legal and technical wording ("previsto no", "deverá", "não pode ter duração superior a") is not treated as a hedge.
+- In evidence, a number introduced by a bound ("superou 40", "abaixo de 40", "mais de 40", "at least 40") no longer confirms or contradicts an exact claimed value; bounded claims still compare with bounded evidence.
+- The component version is now `10`. Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
 
 ## Unreleased — `/v1/check` rule detector v9 (decision fixes)
 
