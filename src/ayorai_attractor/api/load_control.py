@@ -30,7 +30,9 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 DEFAULT_MAX_INFLIGHT = 2
-HEAVY_PATHS = frozenset({"/v1/check", "/v1/fields", "/v1/verify", "/v1/audit", "/v1/opensearch"})
+HEAVY_PATHS = frozenset(
+    {"/v1/check", "/v1/fields", "/v1/verify", "/v1/audit", "/v1/opensearch", "/v2/audit"}
+)
 RETRY_AFTER_SECONDS = 1
 SCOPES = ("process", "host")
 LOCK_DIR_NAME = "ayorai-attractor-inflight"
