@@ -6,6 +6,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ### Added
 
+- `POST /v2/audit`: end-to-end search and ADR-002 adjudication of claims against independent sources only, recorded as an owned audit trace.
 - Automatic retention of audit traces with `ATTRACTOR_AUDIT_RETENTION_DAYS` (off by default): expired traces are purged at startup and at most once per hour on writes.
 
 ### Fixed
