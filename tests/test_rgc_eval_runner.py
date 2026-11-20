@@ -2965,9 +2965,7 @@ def test_snapshot_child_environment_drops_git_overrides_and_unrelated_secrets() 
 
 def test_snapshot_child_environment_rejects_non_provenance_metadata() -> None:
     with pytest.raises(ValueError, match="unexpected child environment variable"):
-        RUNNER["_snapshot_child_environment"](
-            {}, {"GIT_DIR": "/tmp/attacker.git"}
-        )
+        RUNNER["_snapshot_child_environment"]({}, {"GIT_DIR": "/tmp/attacker.git"})
 
 
 def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environment(
