@@ -7,6 +7,12 @@ All public API contract changes are additive unless explicitly identified otherw
 - A number followed by a scale word without a currency is read with its scale: "1,2 bilhão" and "1.200 milhões" are the same quantity (previously 1.2 against 1200, a false contradiction). A count noun right after the scale ("2,0 milhões de clientes", "3 mil funcionários") makes it a scaled count that compares with the same noun at any scale ("3000 funcionários").
 - The component version is now `11`. Golden v0.1 changes in one case (`x02`, now correct); the reference update and its rationale are in `docs/eval/SEMANTIC-DIGEST-V1-REFERENCE.md`.
 
+## Unreleased — `/v1/check` and `/v2/audit`: every relevant document is adjudicated (document-check-3, behavior fix)
+
+- **Fix:** passage selection was a global top 3 over all documents, so a document could be left out of adjudication because others outranked it. With four supporting documents and one that explicitly contradicted the claim, the result was `verified` and the contradicting document was never examined. Now the global top 3 is kept and the best passage of every other document that shares content with the claim is added, in relevance order. The example above is `conflicting`.
+- More supporting documents can now count as independent sources, so a verdict can move from `partially_supported` to `verified` when they were previously cut off. `engine.version` is `document-check-3` and `engine.passage_selection` reads `lexical-top3+best-per-document/max600`. No request or response field changed. Golden v0/v0.1 do not use this path and are unchanged.
+- Known limit: within one document only its best passage is added beyond the global top 3; a contradiction in a weaker passage of a document whose best passage supports the claim can still be missed.
+
 ## Unreleased — `POST /v2/audit` (additive)
 
 - New end-to-end route: search, then adjudicate claims with the ADR-002 Judge against the independent sources retrieved for the query. Claims come from the caller (`claims`), from a caller answer (`answer`), or by default from the engine's own answer. Model-generated text is never used as evidence; without an independent source every claim abstains with `no_independent_source`.
