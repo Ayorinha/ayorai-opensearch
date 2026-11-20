@@ -512,13 +512,62 @@ _NON_ASSERTIVE_RE = re.compile(
 )
 
 
+# A sentence that opens with a condition states the claim only as a hypothesis.
+_CONDITIONAL_OPENING_RE = re.compile(
+    r"^\W*(?:se|caso|supondo\s+que|assumindo\s+que|na\s+hipótese\s+de|if|unless"
+    r"|assuming|suppose|supposing)\b",
+    re.IGNORECASE,
+)
+# Goal, plan or intention words: the sentence states a target, not a fact. Ignored
+# when the word is part of the claim itself ("a meta de inflação foi de 3%").
+_GOAL_WORDS = frozenset(
+    {
+        "meta",
+        "metas",
+        "objetivo",
+        "objetivos",
+        "pretende",
+        "pretendem",
+        "planeja",
+        "planejam",
+        "visa",
+        "visam",
+        "almeja",
+        "almejam",
+        "target",
+        "targets",
+        "goal",
+        "goals",
+        "aims",
+        "plans",
+        "intends",
+    }
+)
+# A correction notice anywhere in the passage: the figure stated next to it may be
+# the superseded one, so the passage does not establish the claim.
+_CORRECTION_RE = re.compile(
+    r"\b(?:retificação|retificacao|errata|erratum|correção|correcao|correction|corrigido"
+    r"|corrected|o\s+(?:valor|número|dado)\s+correto|the\s+correct\s+(?:figure|value))\b",
+    re.IGNORECASE,
+)
+
+
 def _non_assertive(text: str, claim_tokens: frozenset[str]) -> bool:
-    """A sentence covering the claim states it only as possible, estimated or unknown."""
-    return any(
-        _covers_claim(sentence, claim_tokens) and _NON_ASSERTIVE_RE.search(sentence)
-        for sentence in _SENTENCE_SPLIT_RE.split(text.strip())
-        if sentence
-    )
+    """A sentence covering the claim states it only as possible, estimated, asked,
+    conditional, intended or unknown, or the passage carries a correction notice."""
+    if _CORRECTION_RE.search(text) and not _CORRECTION_RE.search(" ".join(claim_tokens)):
+        return True
+    for sentence in _SENTENCE_SPLIT_RE.split(text.strip()):
+        if not sentence or not _covers_claim(sentence, claim_tokens):
+            continue
+        if _NON_ASSERTIVE_RE.search(sentence):
+            return True
+        if sentence.rstrip().endswith("?") or _CONDITIONAL_OPENING_RE.search(sentence):
+            return True
+        words = {token.casefold() for token in _TOKEN_RE.findall(sentence)}
+        if (words & _GOAL_WORDS) - claim_tokens:
+            return True
+    return False
 
 
 def _reported_denial(text: str, claim_tokens: frozenset[str]) -> bool:
@@ -1288,7 +1337,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "10"
+    version = "12"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:

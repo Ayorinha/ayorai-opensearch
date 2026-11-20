@@ -2,6 +2,12 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — `/v1/check` rule detector v12 (questions, conditions, goals, corrections)
+
+- A sentence that states the claim as a question ("…in 2024?"), opens with a condition ("Se…", "Caso…", "Supondo que…", "If…"), or states a goal or intention ("a meta é atingir…", "pretende", "plans to") is `neutral` for it. A passage carrying a correction notice ("Retificação", "errata", "o valor correto") is `neutral`, because the figure next to it may be the superseded one. Previously all of these supported the claim.
+- When the trigger word belongs to the claim itself ("A meta de inflação foi de 3%", "A correção monetária foi de 5%"), the passage still supports it.
+- The component version is now `12`; `11` is reserved for the pending scale-word change (#571). Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
+
 ## Unreleased — `POST /v2/audit` (additive)
 
 - New end-to-end route: search, then adjudicate claims with the ADR-002 Judge against the independent sources retrieved for the query. Claims come from the caller (`claims`), from a caller answer (`answer`), or by default from the engine's own answer. Model-generated text is never used as evidence; without an independent source every claim abstains with `no_independent_source`.
