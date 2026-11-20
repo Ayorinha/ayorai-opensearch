@@ -7,6 +7,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi criado. Não traz resultado confirmatório de acurácia; o protocolo RGC permanece não congelado.
 
 ### API
+- Correção: os providers OpenSearch juntavam todos os resultados num único texto, cortado em 2.000 caracteres. O `/v2/audit` via então um só documento: nunca mais de uma fonte independente (teto `partially_supported`), sem URL nem ID por resultado, e o conteúdo depois do corte se perdia. Agora cada resultado é uma fonte própria (`ProviderResponse.documents`), com URL canônica, ID e data de publicação quando o índice os tem, e até 20.000 caracteres. Resultados com a mesma URL formam um único cluster. Uma busca sem resultados deixou de produzir uma "fonte independente" com o texto fixo de ausência.
 - `POST /v2/audit`: busca e adjudicação ADR-002 de ponta a ponta. Só evidência independente vira documento; o resultado é registrado como rastro com dono (#587).
 - `/v1/fields`: somente dígitos ASCII simples (field-check-3) e sinal de menos ligado ao número ou valor (field-check-4) (#545, #546).
 - Respostas dos providers HTTP limitadas em tamanho, sem compressão e com prazo total (#561).
