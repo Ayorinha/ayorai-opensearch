@@ -1,12 +1,34 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-17 — main @ `345e94f180427245a62f0a5d79ff49cefbd6a975` (merge PR #574); post-merge CI not confirmed
+Updated: 2026-11-20 — main @ `3342b5ee129c79b1724ae36f1cbee4e9f03a2d54` (merge PR #539), before the merge of this status update (#595)
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-11-17
+## Estado atual — 2026-11-20 (encerramento técnico)
+
+- **Main:** `3342b5ee129c79b1724ae36f1cbee4e9f03a2d54` (merge da #539), antes do merge desta atualização (#595). CI, Security e CodeQL pós-merge verdes em cada merge anterior desta data; o detalhe por SHA está em [audit/PR-INVENTORY-2026-11-20.md](audit/PR-INVENTORY-2026-11-20.md), §8.
+- **Integradas em 2026-11-20, por autorização individual do mantenedor:** #589 (todo documento relacionado chega à adjudicação), #590 (rastro `r2-v4` vincula a adjudicação do `/v2/audit`), #591 (uma fonte por resultado de busca), #592 (detector v12), #593 (erros de provider sem URL interna), #594 (rotação de chave HMAC), #596 (cópias e quase-duplicatas não são fontes independentes), #597 (texto do cliente não chega a `verified`), #580, #584, #576 e #577 (runner RGC: snapshots E5, interpretador isolado, concordância por snapshot, gate H1), #583 (STATISTICS.md × DEC-027), #581 e #539 (registros metodológicos datados).
+- **Fechadas sem merge, com branches preservadas e destino registrado no inventário:** #553 e #554 (substituídas por #583 e #580), #579 (superada por esta atualização), #531 (superada pela #583), #504, #505, #507, #509 e #527 (benchmarks exploratórios não executados), #535 (ambiente histórico Phase 1b; hashes registrados no inventário).
+- **Aberta:** #571 (detector v11; muda a referência do Golden v0.1), adiada por decisão do mantenedor.
+- **Release:** a versão de código continua `0.8.0`. Nenhuma tag, release ou DOI nova; o `[Unreleased]` do CHANGELOG reúne as mudanças.
+
+### Classificação do estado
+
+| Estado | Itens |
+|---|---|
+| **Integrado na `main` e testado** | Judge determinístico ADR-002 (`/v1/check`, `/v1/fields`, `/v2/audit`) e Judge 2.0 `r2-a` (`/v1/verify`); seleção de trechos por documento; independência das fontes por conteúdo normalizado (`document-check-4`); proveniência `client_supplied`/`server_retrieved` (`document-check-5`; `/v1/check` limitado a `supported`); detector por regras v12; fontes de busca separadas; trilha SQLite `r2-v3`/`r2-v4` com HMAC, backup, `seal_unsealed`, `reseal_with_active_key` e retenção opcional; erros de provider sem dados internos; runner RGC `rgc-eval/0.12.0` com snapshots E5 e interpretador isolado; imagem fixada por digest e lock com hash; Grype, SBOM e SLSA |
+| **Integrado sem revisão humana independente** | Runner RGC (#576, #577, #580, #584): revisão técnica feita por ferramenta automatizada, sem defeito bloqueante; a revisão humana independente prevista no `CONTRIBUTING.md` continua pendente |
+| **Dependente de decisão do mantenedor** | #571 (Golden v0.1); contrato do Judge no `/v1/check` e `/v2/audit` (Judge 1.x × `r2-a` do ADR-009); detecção de exclusão e rollback na trilha (issue #433, exige ADR); escopos, expiração e revogação de chaves (issue #434); IC do kappa por componente (DEC-022, exige emenda datada da Emenda 10); registro das decisões aprovadas DEC-017..020, 023 e 027 em `DECISIONS-APPROVED.md`; pins históricos com avisos de segurança; Dependabot security updates e aprovação obrigatória no ruleset; branches sem PR (entre elas `eval/rgc-pilot`) |
+| **Experimental** | Provider de LLM compatível com OpenAI; NLI opcional; recuperação híbrida OpenSearch; módulos `council` e `arena` (não ligados à API) |
+| **Testado só localmente** | Gateway nginx com duas réplicas (limite agregado e `X-Forwarded-For`); Compose com volume e HMAC exigido |
+| **Não validado** | Implantação em produção ou homologação; POC (proposta, não executada); acurácia científica: Golden v0 7/30 e v0.1 10/30, abaixo do baseline de classe majoritária (13/30); RGC sem resultado |
+
+- **RGC e português:** o protocolo RGC continua **[PROPOSTO]**, não congelado. Nenhum caso RGC foi criado, visto, rotulado ou executado. Faltam, e só pessoas podem fazer: piloto 02, segunda anotação independente, revisão independente F-01, verificação de proveniência, vigência e retificações, isolamento da partição oculta e decisão de congelamento. O congelamento vincula `verification/stance.py`: a #571 deve ser decidida antes dele.
+- **Limites de alegações:** não há benchmark em português publicado, validação externa independente, certificação regulatória nem conformidade legal. **INFERÊNCIA:** a evidência registrada não basta para declarar o sistema pronto para produção.
+
+## Snapshot — 2026-11-17 (substituído pelo estado de 2026-11-20)
 
 - **Main:** `345e94f180427245a62f0a5d79ff49cefbd6a975`, integração da PR [#574](https://github.com/Ayorinha/ayorai-opensearch/pull/574), atualização documental dos controles de integridade de auditoria e admissão. A atualização anterior de status (#572) registrava `267a29e`; foi superada pelas integrações posteriores.
 - **CI pós-merge da main:** não confirmado. A consulta de workflows e a consulta de status combinado para `345e94f180427245a62f0a5d79ff49cefbd6a975` não retornaram execuções/status. Checks de PR não devem ser apresentados como CI pós-merge.
