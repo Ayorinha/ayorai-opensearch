@@ -8,7 +8,6 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 
 ### API
 - Correção: os providers OpenSearch juntavam todos os resultados num único texto, cortado em 2.000 caracteres. O `/v2/audit` via então um só documento: nunca mais de uma fonte independente (teto `partially_supported`), sem URL nem ID por resultado, e o conteúdo depois do corte se perdia. Agora cada resultado é uma fonte própria (`ProviderResponse.documents`), com URL canônica, ID e data de publicação quando o índice os tem, e até 20.000 caracteres. Resultados com a mesma URL formam um único cluster. Uma busca sem resultados deixou de produzir uma "fonte independente" com o texto fixo de ausência.
-
 - Correção: a seleção de trechos do `/v1/check` e do `/v2/audit` deixava documentos fora da adjudicação quando outros os superavam em relevância. Uma contradição explícita podia ser ignorada, e o resultado sair `verified`. Agora o melhor trecho de cada documento relacionado também é avaliado (`document-check-3`).
 - `POST /v2/audit`: busca e adjudicação ADR-002 de ponta a ponta. Só evidência independente vira documento; o resultado é registrado como rastro com dono (#587).
 - `/v1/fields`: somente dígitos ASCII simples (field-check-3) e sinal de menos ligado ao número ou valor (field-check-4) (#545, #546).
