@@ -65,19 +65,20 @@ class JobStore:
         self.close()
 
     def enqueue(self, job_id: str, idempotency_key: str) -> Job:
+        # One statement, so two producers racing on the same idempotency key
+        # cannot both pass a check-then-insert; the loser gets the stored job.
+        # A job_id reused under a different key still raises IntegrityError.
+        self._connection.execute(
+            "INSERT INTO jobs VALUES (?, ?, ?, ?, ?) ON CONFLICT(idempotency_key) DO NOTHING",
+            (job_id, idempotency_key, JobStatus.QUEUED.value, 0, None),
+        )
+        self._connection.commit()
         existing = self._connection.execute(
             "SELECT job_id, idempotency_key, status, attempts, lease_until "
             "FROM jobs WHERE idempotency_key = ?",
             (idempotency_key,),
         ).fetchone()
-        if existing is not None:
-            return self._from_row(existing)
-        self._connection.execute(
-            "INSERT INTO jobs VALUES (?, ?, ?, ?, ?)",
-            (job_id, idempotency_key, JobStatus.QUEUED.value, 0, None),
-        )
-        self._connection.commit()
-        return self.get(job_id)
+        return self._from_row(existing)
 
     def claim(
         self,
@@ -112,16 +113,25 @@ class JobStore:
             raise
         return self.get(job_id)
 
-    def finish(self, job_id: str, *, success: bool) -> Job:
-        job = self.get(job_id)
-        if job.status is not JobStatus.RUNNING:
-            raise ValueError("only running jobs can be finished")
+    def finish(self, job_id: str, *, success: bool, attempt: int) -> Job:
+        """Finish only the exact running attempt returned by ``claim``.
+
+        ``attempt`` is mandatory and fences the lease. If the lease expires
+        and another worker claims the job, the attempt no longer matches and
+        the stale worker's result is rejected. Check and update are one
+        conditional SQL statement, so callers cannot bypass the fence.
+        """
         status = JobStatus.SUCCEEDED if success else JobStatus.FAILED
-        self._connection.execute(
-            "UPDATE jobs SET status = ?, lease_until = NULL WHERE job_id = ?",
-            (status.value, job_id),
-        )
+        query = "UPDATE jobs SET status = ?, lease_until = NULL WHERE job_id = ? AND status = ?"
+        query += " AND attempts = ?"
+        params: tuple[object, ...] = (status.value, job_id, JobStatus.RUNNING.value, attempt)
+        updated = self._connection.execute(query, params).rowcount
         self._connection.commit()
+        if updated != 1:
+            job = self.get(job_id)
+            if job.status is not JobStatus.RUNNING:
+                raise ValueError("only running jobs can be finished")
+            raise ValueError("stale lease: the job was claimed again by another attempt")
         return self.get(job_id)
 
     def reclaim_expired(self, *, now: float | None = None) -> int:

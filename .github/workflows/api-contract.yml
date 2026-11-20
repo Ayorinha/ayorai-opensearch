@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
@@ -65,7 +66,7 @@ jobs:
           OASDIFF_SHA256: "43a4e328e2d13ba1552d760aa68d2485c75c5621f309f6ff64ae895188345247"
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location \
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 2 --retry-max-time 120 --retry-connrefused \
             "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/${OASDIFF_ARCHIVE}" \
             --output "${OASDIFF_ARCHIVE}"
           echo "${OASDIFF_SHA256}  ${OASDIFF_ARCHIVE}" | sha256sum --check -
@@ -90,6 +91,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"

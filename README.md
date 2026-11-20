@@ -15,7 +15,9 @@
 ![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23125082.svg)](https://doi.org/10.5281/zenodo.23125082)
 
-**Site oficial:** [ayorinha.github.io/ayorai-opensearch](https://ayorinha.github.io/ayorai-opensearch/) · [Guia de auditoria de inteligência artificial](https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/)
+**Versão atual:** `0.8.0` · [Release v0.8.0](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0) · [DOI da versão anterior v0.7.0](https://doi.org/10.5281/zenodo.24045951) · [DOI de conceito](https://doi.org/10.5281/zenodo.23125082)
+
+**Site oficial:** [ayorinha.github.io/ayorai-opensearch](https://ayorinha.github.io/ayorai-opensearch/) · [Guia de auditoria de inteligência artificial](https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/) · [Como detectar alucinações de IA](https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/)
 
 [Entenda o projeto](#o-que-é) · [Como funciona](#como-funciona) · [Estado e limites](#o-que-está-comprovado-hoje) · [Documentação](docs/INDEX.md) · [Instalação](#começar)
 
@@ -69,11 +71,23 @@ O ATTRACTOR busca tornar a verificação de respostas de IA mais **inspecionáve
 
 Esses princípios podem apoiar pesquisas e projetos que necessitam avaliar respostas geradas por IA. A adequação a um uso real depende de validação no domínio, qualidade das fontes, configuração, controles operacionais e revisão humana.
 
+## Novidades da v0.8.0 — 13 nov. 2026
+
+A v0.8.0 é uma versão de produto e de segurança da cadeia de dependências. **Não apresenta novo resultado confirmatório de acurácia**; os experimentos de benchmark desta versão são exploratórios em DEV, e o split TEST não foi utilizado.
+
+- **API `POST /v1/check`:** verifica afirmações ou respostas de IA contra documentos enviados em texto ou PDF com camada de texto; as evidências incluem offsets e página. `UNVERIFIED` representa abstenção (#511).
+- **API `POST /v1/fields`:** compara valores (dinheiro, data, CPF/CNPJ, número e texto) com um documento, com os resultados `conforme`, `divergente`, `ambiguo`, `ausente` e `invalido` (#511).
+- **Rastreabilidade:** identidade do rastro vinculada às páginas em `/v1/check` (#516) e ao documento completo em `/v1/fields` (#515).
+- **Segurança da cadeia:** auditoria estrita de dependências no CI (#533), ambiente NLI separado e SBOM CycloneDX (#536), ausência de persistência de credenciais GitHub em checkout de workflows (#538) e permissões de escrita por job (#540).
+- **Experimentos DEV:** Emenda 2 do Learn then Test e reagregação exploratória pós-hoc (#488, #492), cache DEV cifrado (#496, #508) e ensemble E3 exploratório em DEV-A (#497, #503). Esses itens não constituem evidência confirmatória nem desempenho em produção.
+
+A publicação oficial permanece sem benchmark em português; o protocolo RGC não está congelado; não há certificação nem alegação de conformidade regulatória automática. Consulte a [release v0.8.0](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0) e o [Status técnico](docs/STATUS.md).
+
 ## O que está comprovado hoje
 
-O repositório reúne implementação de verificação, contrato do Judge 2.0, testes de regressão e avaliações documentadas. Há resultados históricos documentados para Golden v0 e Golden v0.1, produzidos em inglês e voltados ao desenvolvimento do sistema. Os resultados devem ser interpretados sempre dentro da partição, protocolo e revisão de código indicados no relatório correspondente.
+O repositório reúne implementação de verificação, contrato do Judge 2.0, testes de regressão e avaliações documentadas. Há resultados históricos documentados para Golden v0 e Golden v0.1, conjuntos sintéticos de desenvolvimento com corpus em inglês e consultas e afirmações majoritariamente em português. Os resultados devem ser interpretados sempre dentro da partição, protocolo e revisão de código indicados no relatório correspondente.
 
-### Atualização de benchmark — Calibration V2 (DEV, 7 nov. 2026)
+### Histórico de avaliação — Calibration V2 (DEV, v0.7.0; 7 nov. 2026)
 
 A primeira execução completa da avaliação Calibration V2 no conjunto **LLM-AggreFact (30.420 exemplos, 11 coortes)** foi concluída e documentada. O experimento foi dividido entre **DEV-A** (seleção e métricas probabilísticas cross-fitted) e **DEV-B** (análise LTT), com três modelos avaliados: FactCG, MiniCheck e mDeBERTa.
 
@@ -88,10 +102,11 @@ FactCG, MiniCheck e mDeBERTa são modelos de terceiros (licença MIT), usados se
 
 **Como interpretar:** estes são resultados de **DEV**, não de TEST, produção ou ranking. A BA de 74,68% é uma métrica cross-fitted de desenvolvimento, não uma estimativa de desempenho externo. A regra LTT original interrompeu a sequência no primeiro limiar inelegível (n inferior a 25); essa limitação metodológica está explicitada no relatório. A curva descritiva não deve ser divulgada como certificação. Como referência (não comparação direta, por ser outra partição): a linha de base por regras registrou BA de 49,2% no TEST.
 
-Uma emenda ao pré-registro sobre limiares inelegíveis está em preparação; a certificação confirmatória só será feita em dados não vistos (TEST), com a regra e a configuração congeladas antes.
+A Emenda 2 ao pré-registro foi integrada na PR #488: limiares com menos de 25 respostas aceitas são pulados, sem serem tratados como rejeição ou não rejeição; o primeiro limiar elegível é testado e a sequência para na primeira não rejeição. A reaggregação dos mesmos artefatos DEV sob essa regra, registrada em 8 nov. 2026, é **exploratória e pós-hoc**: quatro coortes passaram pelo procedimento (RAGTruth, ClaimVerify, Lfqa e Reveal), enquanto sete não rejeitaram a hipótese nula no primeiro limiar testado. O resultado oficial da v0.7.0 permanece 0/11 pela regra original; nenhum resultado da reaggregação é certificação confirmatória. Consulte o [relatório exploratório e análise de poder LTT](reports/benchmarks/2026-11-08-phase1b-amendment-2-exploratory/README.md).
 
 - [Relatório completo Calibration V2 — resultados e limitações](reports/benchmarks/2026-11-07-dev-calibration-v2/README.md)
 - [Proveniência, execuções e hashes](reports/benchmarks/2026-11-07-dev-calibration-v2/PROVENANCE.md)
+- [Relatório exploratório Amendment 2 — DEV e análise de poder LTT](reports/benchmarks/2026-11-08-phase1b-amendment-2-exploratory/README.md)
 - [Status técnico atualizado](docs/STATUS.md)
 
 **Ainda não há resultado de benchmark em português.** O conjunto LLM-AggreFact usado nesta avaliação é em inglês. O protocolo RGC permanece em desenvolvimento e não está congelado; resultados deste benchmark não demonstram generalização para documentos jurídicos brasileiros.

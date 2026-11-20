@@ -32,7 +32,7 @@ A API diferencia a busca, a auditoria e a verificação formal. O contrato de /v
 
 ## Correlação de requisições
 
-O middleware de contexto gera ou valida o cabeçalho X-Request-ID, devolve o identificador na resposta e o associa a metadados estruturados de acesso. O log registra campos operacionais como método, rota normalizada, status e duração. Isso permite correlacionar a chamada com o registro correspondente sem copiar o conteúdo integral da requisição.
+O middleware de contexto gera o cabeçalho X-Request-ID, descartando o valor enviado pelo cliente, devolve o identificador na resposta e o associa a metadados estruturados de acesso. O log registra campos operacionais como método, rota normalizada, status e duração. Isso permite correlacionar a chamada com o registro correspondente sem copiar o conteúdo integral da requisição.
 
 Um identificador fornecido pelo cliente pode ser substituído se não obedecer ao formato aceito. Não use o request ID como segredo, token de autorização ou prova criptográfica de integridade.
 
@@ -58,7 +58,7 @@ Não registre corpos, prompts, afirmações, trechos de evidência, credenciais 
 
 ## Retenção e limites operacionais
 
-O repositório não define sozinho a retenção legal, backup, restauração, armazenamento externo imutável, sincronização de relógio, monitoramento contínuo ou resposta a incidentes. Esses requisitos devem ser definidos para o ambiente concreto. O logger local não equivale a um SIEM nem a uma trilha inviolável.
+O armazenamento oferece backup online, verificação completa após restauração e expurgo por data; o procedimento está em [05 — Operação](05-operacao.md). O repositório não define sozinho a retenção legal, o local dos backups, armazenamento externo imutável, sincronização de relógio, monitoramento contínuo ou resposta a incidentes. Esses requisitos devem ser definidos para o ambiente concreto. O logger local não equivale a um SIEM nem a uma trilha inviolável.
 
 A revisão de segurança e a execução de CI são evidências do SHA avaliado, não validação independente. Não alegue certificação, parceria institucional ou prontidão de produção a partir dos relatórios.
 

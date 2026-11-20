@@ -43,7 +43,6 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from random import Random
 from typing import Any
 
 from ayorai_attractor.evaluation.stats import mcnemar_exact_pvalue
@@ -52,11 +51,30 @@ from ayorai_attractor.verification.judge2 import adjudication
 from ayorai_attractor.verification.models import Claim, Evidence
 from ayorai_attractor.verification.stance import RuleStanceDetector
 
+if __package__ in (None, ""):  # run as a script: make the repository importable
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from evals.ptbr import rgc_agreement  # noqa: E402
+from evals.ptbr.rgc_components import (  # noqa: E402
+    bootstrap_metrics_by_component,
+    build_article_components,
+    component_differences,
+    obuchowski_clustered_test,
+    sign_flip_by_component,
+)
+from evals.ptbr.rgc_ids import cluster_members, require_article_id  # noqa: E402
+from evals.ptbr.rgc_random import (  # noqa: E402
+    LABEL_CASE_ACCURACY,
+    LABEL_CLUSTER_ACCURACY,
+    RGC_SEED,
+    RgcPrng,
+    percentile_ci95,
+)
+
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.7.0"
-SEED = 20261003
+RUNNER_VERSION = "rgc-eval/0.9.0"
+SEED = RGC_SEED
 BOOTSTRAP_ITERATIONS = 10000
 DEFAULT_TOP_K = 3
 BM25_K1 = 1.2
@@ -314,42 +332,56 @@ def case_rectified(case: Mapping[str, Any]) -> bool:
     return value
 
 
-def validate_cluster_citations(case: Mapping[str, Any], cluster_id: str, case_id: str) -> None:
-    """Check that a declared bootstrap cluster is supported by cited article IDs.
+def validate_cluster_citations(
+    case: Mapping[str, Any],
+    cluster_id: object,
+    case_id: str,
+    *,
+    require_citations: bool = True,
+    require_cluster: bool = True,
+) -> None:
+    """Validate every supplied canonical article ID and cluster/citation consistency.
 
-    DEC-019 requires cited_article_ids to preserve the complete citation list.
-    A bundle represents the subset jointly necessary when no single principal
-    article exists; it therefore must be contained in, not equal to, that list.
-    This check validates consistency only and cannot determine legal relevance
-    or whether a principal article was correctly selected.
+    Hidden evaluation requires both fields. Development evaluation may omit either,
+    but any supplied field is still checked against DEC-027, D1. A bundle is the
+    subset jointly necessary when no single principal article exists; it must be
+    contained in, not equal to, the complete citation list. This check cannot
+    determine legal relevance or whether a principal article was selected correctly.
     """
+    cited_ids: set[str] | None = None
     if "cited_article_ids" not in case:
-        raise ValueError(f"{case_id}: cited_article_ids is required for hidden partition cases")
-    cited = case["cited_article_ids"]
-    if (
-        not isinstance(cited, list)
-        or not cited
-        or any(
-            not isinstance(article_id, str) or not article_id or article_id != article_id.strip()
-            for article_id in cited
-        )
-        or len(cited) != len(set(cited))
-    ):
-        raise ValueError(
-            f"{case_id}: cited_article_ids must be a non-empty list of unique, "
-            "canonical, non-empty strings"
-        )
-    cited_ids = set(cited)
-    if cluster_id.startswith("bundle:"):
-        members = cluster_id.removeprefix("bundle:").split("+")
+        if require_citations:
+            raise ValueError(f"{case_id}: cited_article_ids is required for hidden partition cases")
+    else:
+        cited = case["cited_article_ids"]
+        if (
+            not isinstance(cited, list)
+            or not cited
+            or any(not isinstance(article_id, str) or not article_id for article_id in cited)
+            or len(cited) != len(set(cited))
+        ):
+            raise ValueError(
+                f"{case_id}: cited_article_ids must be a non-empty list of unique, "
+                "canonical, non-empty strings"
+            )
+        for article_id in cited:  # DEC-027, D1: one grammar for every article ID
+            require_article_id(article_id, f"{case_id}: cited_article_ids")
+        cited_ids = set(cited)
+
+    members = (
+        cluster_members(cluster_id, f"{case_id}: bootstrap_cluster_id") if require_cluster else None
+    )
+    if members is not None and cited_ids is not None:
         missing = sorted(set(members) - cited_ids)
         if missing:
+            if isinstance(cluster_id, str) and cluster_id.startswith("bundle:"):
+                raise ValueError(
+                    f"{case_id}: bundle bootstrap_cluster_id contains IDs absent "
+                    f"from cited_article_ids: {missing}"
+                )
             raise ValueError(
-                f"{case_id}: bundle bootstrap_cluster_id contains IDs absent "
-                f"from cited_article_ids: {missing}"
+                f"{case_id}: bootstrap_cluster_id must be present in cited_article_ids"
             )
-    elif cluster_id not in cited_ids:
-        raise ValueError(f"{case_id}: bootstrap_cluster_id must be present in cited_article_ids")
 
 
 def predict(
@@ -485,28 +517,37 @@ def macro_f1(gold: Sequence[str], pred: Sequence[str]) -> float:
 METRICS = {"accuracy": accuracy, "balanced_accuracy": balanced_accuracy, "macro_f1": macro_f1}
 
 
+def _ci95(samples: Mapping[str, list[float]]) -> dict[str, list[float]]:
+    """Type-7 percentile interval of each metric (DEC-027, D2)."""
+    out: dict[str, list[float]] = {}
+    for name, values in samples.items():
+        interval = percentile_ci95(values)
+        if interval is None:
+            raise ValueError("bootstrap produced no replicates")
+        out[name] = interval
+    return out
+
+
 def bootstrap_ci(
     gold: Sequence[str], pred: Sequence[str], *, iterations: int = BOOTSTRAP_ITERATIONS
 ) -> dict[str, list[float]]:
-    """Percentile 95% CI; one shared resample sequence for all metrics."""
-    # B311 suppression: seeded bootstrap resampling is statistical, not security-sensitive.
-    rng = Random(SEED)  # nosec B311
+    """Percentile 95% CI by case; one shared RGC-PRNG-1 stream for all metrics."""
+    if len(gold) != len(pred):
+        raise ValueError("gold and predictions must have equal lengths")
+    if not gold:
+        raise ValueError("case bootstrap requires at least one case")
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("iterations must be positive")
+    rng = RgcPrng(SEED, LABEL_CASE_ACCURACY)
     n = len(gold)
     samples: dict[str, list[float]] = {name: [] for name in METRICS}
     for _ in range(iterations):
-        idx = [rng.randrange(n) for _ in range(n)]
+        idx = [rng.below(n) for _ in range(n)]
         g = [gold[i] for i in idx]
         p = [pred[i] for i in idx]
         for name, fn in METRICS.items():
             samples[name].append(fn(g, p))
-    out = {}
-    for name, values in samples.items():
-        values.sort()
-        out[name] = [
-            values[int(0.025 * (iterations - 1))],
-            values[int(0.975 * (iterations - 1))],
-        ]
-    return out
+    return _ci95(samples)
 
 
 def bootstrap_ci_by_cluster(
@@ -521,30 +562,24 @@ def bootstrap_ci_by_cluster(
         raise ValueError("gold, predictions, and cluster IDs must have equal lengths")
     if not gold:
         raise ValueError("cluster bootstrap requires at least one case")
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("iterations must be positive")
     if any(not isinstance(cluster, str) or not cluster.strip() for cluster in cluster_ids):
         raise ValueError("bootstrap_cluster_id must be a non-empty string")
     groups: dict[str, list[int]] = {}
     for index, cluster in enumerate(cluster_ids):
         groups.setdefault(cluster, []).append(index)
-    keys = sorted(groups)
-    # B311 suppression: seeded bootstrap resampling is statistical, not security-sensitive.
-    rng = Random(SEED)  # nosec B311
+    keys = sorted(groups)  # lexical order of the cluster IDs (DEC-027, D3)
+    rng = RgcPrng(SEED, LABEL_CLUSTER_ACCURACY)
     samples: dict[str, list[float]] = {name: [] for name in METRICS}
     for _ in range(iterations):
-        selected = [keys[rng.randrange(len(keys))] for _ in keys]
+        selected = [keys[rng.below(len(keys))] for _ in keys]
         indices = [index for cluster in selected for index in groups[cluster]]
         sampled_gold = [gold[index] for index in indices]
         sampled_pred = [pred[index] for index in indices]
         for name, fn in METRICS.items():
             samples[name].append(fn(sampled_gold, sampled_pred))
-    out: dict[str, list[float]] = {}
-    for name, values in samples.items():
-        values.sort()
-        out[name] = [
-            values[int(0.025 * (iterations - 1))],
-            values[int(0.975 * (iterations - 1))],
-        ]
-    return out
+    return _ci95(samples)
 
 
 def majority_label(gold: Sequence[str], vocabulary: str) -> str:
@@ -579,8 +614,17 @@ def compute_metrics(
     baseline_label: str,
     iterations: int,
     cluster_ids: Sequence[str] | None = None,
+    component_ids: Sequence[str] | None = None,
 ) -> dict[str, Any]:
-    """Score H1 against baseline B; report baseline A as descriptive only."""
+    """Score H1 against baseline B; report baseline A as descriptive only.
+
+    Hidden partition (DEC-027 D4-D5; Emenda 11): the primary interval resamples DEC-023
+    connected components and the primary test is the DEC-021 sign-flip by component.
+    The DEC-019 cluster interval, the case interval, exact McNemar and Obuchowski's
+    clustered test are sensitivity analyses only and never decide H1.
+    """
+    if (cluster_ids is None) != (component_ids is None):
+        raise ValueError("cluster and component IDs are required together")
     if baseline_label not in VOCABULARIES[vocabulary]:
         raise ValueError(f"baseline B label {baseline_label!r} is outside vocabulary {vocabulary}")
 
@@ -596,29 +640,53 @@ def compute_metrics(
     base_b = {name: fn(gold, baseline_b) for name, fn in METRICS.items()}
     base_a = {name: fn(gold, baseline_a) for name, fn in METRICS.items()}
     ci_case = bootstrap_ci(gold, pred, iterations=iterations)
-    ci = (
-        bootstrap_ci_by_cluster(gold, pred, cluster_ids, iterations=iterations)
-        if cluster_ids is not None
-        else ci_case
-    )
+    ci_cluster: dict[str, list[float]] | None = None
+    ci = ci_case
+    if cluster_ids is not None and component_ids is not None:
+        ci_cluster = bootstrap_ci_by_cluster(gold, pred, cluster_ids, iterations=iterations)
+        keys = [f"{index:06d}" for index in range(len(gold))]
+        component_ci = bootstrap_metrics_by_component(
+            dict(zip(keys, gold, strict=True)),
+            dict(zip(keys, pred, strict=True)),
+            dict(zip(keys, component_ids, strict=True)),
+            METRICS,
+            iterations=iterations,
+        )
+        ci = {name: list(pair) for name, pair in component_ci.ci95.items()}
     margin = system["accuracy"] - base_b["accuracy"]
     discordant_system = sum(
         p == g and b != g for g, p, b in zip(gold, pred, baseline_b, strict=True)
     )
     discordant_base = sum(p != g and b == g for g, p, b in zip(gold, pred, baseline_b, strict=True))
     p_value = mcnemar_exact_pvalue(gold, pred, baseline_b)
-    primary = {
+    sign_flip = (
+        sign_flip_by_component(component_differences(gold, pred, baseline_b, component_ids))
+        if component_ids is not None
+        else None
+    )
+    obuchowski = (
+        obuchowski_clustered_test(gold, pred, baseline_b, component_ids)
+        if component_ids is not None
+        else None
+    )
+    primary: dict[str, Any] = {
         "baseline": "B",
-        "ci_method": "article_cluster_bootstrap" if cluster_ids is not None else "case_bootstrap",
+        "ci_method": "component_bootstrap" if component_ids is not None else "case_bootstrap",
+        "test": "sign_flip_by_component" if sign_flip is not None else "mcnemar_exact",
         "accuracy_margin_pp": round(100 * margin, 4),
         # Tolerance only absorbs binary floating-point error (e.g. 0.7 - 0.6).
         "margin_at_least_10pp": margin >= 0.10 - 1e-12,
         "ci_lower_above_baseline": ci["accuracy"][0] > base_b["accuracy"],
-        "mcnemar_p_below_0_05": p_value < 0.05,
     }
+    if sign_flip is not None:
+        primary["sign_flip_p_below_0_05"] = sign_flip.p_value_two_sided < 0.05
+        primary["significance_below_005_possible"] = sign_flip.significance_below_005_possible
+        test_key = "sign_flip_p_below_0_05"
+    else:
+        primary["mcnemar_p_below_0_05"] = p_value < 0.05
+        test_key = "mcnemar_p_below_0_05"
     primary["h1_supported"] = all(
-        primary[k]
-        for k in ("margin_at_least_10pp", "ci_lower_above_baseline", "mcnemar_p_below_0_05")
+        primary[k] for k in ("margin_at_least_10pp", "ci_lower_above_baseline", test_key)
     )
     return {
         "n": len(gold),
@@ -629,19 +697,25 @@ def compute_metrics(
         "system_ci95": {name: [round(v, 6) for v in pair] for name, pair in ci.items()},
         **(
             {
+                "system_ci95_article_cluster": {
+                    name: [round(v, 6) for v in pair] for name, pair in ci_cluster.items()
+                },
                 "system_ci95_case_bootstrap": {
                     name: [round(v, 6) for v in pair] for name, pair in ci_case.items()
-                }
+                },
             }
-            if cluster_ids is not None
+            if ci_cluster is not None
             else {}
         ),
         "bootstrap_provenance": {
-            "primary_unit": "article_cluster" if cluster_ids is not None else "case",
-            "sensitivity_unit": "case" if cluster_ids is not None else None,
+            "primary_unit": "component" if component_ids is not None else "case",
+            "sensitivity_units": ["article_cluster", "case"] if component_ids is not None else [],
             "cluster_count": len(set(cluster_ids)) if cluster_ids is not None else None,
+            "component_count": len(set(component_ids)) if component_ids is not None else None,
             "iterations": iterations,
             "seed": SEED,
+            "generator": "RGC-PRNG-1",
+            "percentile": "hyndman-fan-type-7",
         },
         "baseline_primary": {
             "name": "B",
@@ -653,7 +727,31 @@ def compute_metrics(
             "label": baseline_a_label,
             **{name: round(value, 6) for name, value in base_a.items()},
         },
+        **(
+            {
+                "sign_flip": {
+                    "baseline": "B",
+                    "statistic_observed": sign_flip.statistic_observed,
+                    "p_value_two_sided": round(sign_flip.p_value_two_sided, 8),
+                    "method": sign_flip.method,
+                    "component_count": sign_flip.component_count,
+                    "informative_component_count": sign_flip.informative_component_count,
+                    "minimum_attainable_p": sign_flip.minimum_attainable_p,
+                    "extreme_permutations": sign_flip.extreme_permutations,
+                    "permutations_considered": sign_flip.permutations_considered,
+                    "theoretical_exact_resolution": sign_flip.theoretical_exact_resolution,
+                    "monte_carlo_minimum_p": sign_flip.monte_carlo_minimum_p,
+                    "significance_below_005_possible": sign_flip.significance_below_005_possible,
+                    "seed": sign_flip.seed,
+                    "generator": sign_flip.generator,
+                },
+                "obuchowski_sensitivity": obuchowski._asdict() if obuchowski else None,
+            }
+            if sign_flip is not None
+            else {}
+        ),
         "mcnemar": {
+            "role": "sensitivity" if sign_flip is not None else "primary",
             "baseline": "B",
             "system_right_baseline_wrong": discordant_system,
             "system_wrong_baseline_right": discordant_base,
@@ -961,6 +1059,25 @@ def validate_annotation_approval(
             "RGC evaluation blocked: an approved annotation artifact is missing"
         ) from exc
 
+    if set(inputs) != {"annotation_a_sha256", "annotation_b_sha256"}:
+        raise ValueError("RGC evaluation blocked: agreement report input schema is invalid")
+    try:
+        canonical_agreement = rgc_agreement.compute_agreement(
+            rgc_agreement.load_annotations(annotation_a_path),
+            rgc_agreement.load_annotations(annotation_b_path),
+            iterations=rgc_agreement.DEFAULT_ITERATIONS,
+            seed=rgc_agreement.DEFAULT_SEED,
+        )
+    except (OSError, ValueError) as exc:
+        raise ValueError(
+            "RGC evaluation blocked: canonical annotator agreement could not be recomputed"
+        ) from exc
+    report_without_inputs = {key: value for key, value in report.items() if key != "inputs"}
+    if report_without_inputs != canonical_agreement:
+        raise ValueError(
+            "RGC evaluation blocked: agreement report differs from canonical recomputation"
+        )
+
     return {
         "manifest_sha256": _sha256(approval_manifest_path),
         **expected_hashes,
@@ -1067,30 +1184,23 @@ def evaluate(
         ):
             raise ValueError(f"{case_id}: invalid gold label {gold!r} for vocabulary {vocabulary}")
         _validate_rule_gap_policy(gold, pilot_mode=pilot_mode, partition=partition)
-        if gold in EXCLUSION_LABELS:
-            continue
         cluster_id = case.get("bootstrap_cluster_id")
         if partition == "hidden" and (not isinstance(cluster_id, str) or not cluster_id.strip()):
             raise ValueError(
                 f"{case_id}: missing or invalid bootstrap_cluster_id for hidden partition"
             )
-        if (
-            partition == "hidden"
-            and isinstance(cluster_id, str)
-            and cluster_id.startswith("bundle:")
-        ):
-            members = cluster_id.removeprefix("bundle:").split("+")
-            if (
-                len(members) < 2
-                or any(not member for member in members)
-                or members != sorted(set(members))
-            ):
-                raise ValueError(
-                    f"{case_id}: bundle bootstrap_cluster_id must contain at least two "
-                    "unique, sorted IDs"
-                )
-        if partition == "hidden" and isinstance(cluster_id, str):
-            validate_cluster_citations(case, cluster_id, case_id)
+        has_cluster_id = "bootstrap_cluster_id" in case
+        has_cited_article_ids = "cited_article_ids" in case
+        if partition == "hidden" or has_cluster_id or has_cited_article_ids:
+            validate_cluster_citations(
+                case,
+                cluster_id,
+                case_id,
+                require_citations=partition == "hidden",
+                require_cluster=partition == "hidden" or has_cluster_id,
+            )
+        if gold in EXCLUSION_LABELS:
+            continue
         claim = case.get("claim")
         if not isinstance(claim, str) or not claim.strip():
             raise ValueError(f"{case_id}: claim must be a non-empty string")
@@ -1163,6 +1273,26 @@ def evaluate(
     cluster_ids = (
         [str(row["bootstrap_cluster_id"]) for row in rows] if partition == "hidden" else None
     )
+    component_ids: list[str] | None = None
+    if partition == "hidden":
+        # DEC-023 components over the evaluated cases, from their full citations.
+        case_by_id = {str(case["case_id"]): case for case in cases}
+        summary = build_article_components(
+            [
+                {
+                    "case_id": str(row["case_id"]),
+                    "cited_article_ids": case_by_id[str(row["case_id"])]["cited_article_ids"],
+                    "bootstrap_cluster_id": row["bootstrap_cluster_id"],
+                }
+                for row in rows
+            ]
+        )
+        component_of = {
+            case_id: component.component_id
+            for component in summary.components
+            for case_id in component.case_ids
+        }
+        component_ids = [component_of[str(row["case_id"])] for row in rows]
     metrics = compute_metrics(
         gold_labels,
         predicted,
@@ -1170,6 +1300,7 @@ def evaluate(
         baseline_label=baseline_label,
         iterations=iterations,
         cluster_ids=cluster_ids,
+        component_ids=component_ids,
     )
     if partition == "development":
         metrics["primary_criterion"] = {
@@ -1304,9 +1435,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             "bootstrap": {
                 "iterations": BOOTSTRAP_ITERATIONS,
                 "seed": SEED,
-                "primary_unit": "article_cluster" if args.partition == "hidden" else "case",
-                "sensitivity_unit": "case" if args.partition == "hidden" else None,
+                "generator": "RGC-PRNG-1",
+                "percentile": "hyndman-fan-type-7",
+                "primary_unit": "component" if args.partition == "hidden" else "case",
+                "sensitivity_units": (
+                    ["article_cluster", "case"] if args.partition == "hidden" else []
+                ),
             },
+            "h1_test": ("sign_flip_by_component" if args.partition == "hidden" else "not_tested"),
             "baseline_primary": {
                 "name": "B",
                 "development_label_count": len(development_labels),
