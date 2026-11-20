@@ -724,3 +724,31 @@ Para o revisor (não para ferramenta automatizada), no SHA exato de cada PR:
 | 9 | Logs e erros sem dados internos | Logs sim; erros dependem da #593 | Sim | **Bloqueado** até a #593 |
 
 A POC não foi executada. Antes dela, faltam: integrar E-02..E-08, decidir E-10, uma implantação de homologação com gateway e TLS (o gateway só foi testado localmente) e o conjunto de afirmações rotulado por pessoas do parceiro.
+
+## 8. Destino final (2026-11-20, encerramento autorizado pelo mantenedor)
+
+A §7 é a foto do início do encerramento. Esta seção registra o destino de cada item. Merges e fechamentos foram feitos com autorização individual do mantenedor, um por vez: a branch foi atualizada com a `main`, os conflitos foram resolvidos (só changelogs, salvo o indicado), a suíte completa, o ruff, o mypy e os digests do Golden foram conferidos localmente, o CI completo ficou verde no SHA final e só então houve o merge. O CI pós-merge da `main` ficou verde em cada SHA abaixo.
+
+| ID | Item | Destino | Evidência |
+|---|---|---|---|
+| E-01 | #589 | INTEGRADO | `1abe7ea` |
+| E-02 | #590 | INTEGRADO | `2b30c7f` |
+| E-03 | #591 | INTEGRADO | `a16e7ed` (o histórico publicado do CHANGELOG foi preservado byte a byte) |
+| E-04 | #592 | INTEGRADO | `060961d` |
+| E-05 | #593 | INTEGRADO | `1826484` |
+| E-06 | #594 | INTEGRADO | `9aa826f` (conflito em `docs/manual/05-operacao.md` resolvido mantendo a rotação e o `r2-v4`) |
+| E-07 | #596 | INTEGRADO | `e25240e`; bateria adversarial 35/37 com a v12 |
+| E-08 | #597 | INTEGRADO | `40b0a10` (conflitos com a #596 resolvidos: versão `document-check-5`, fonte independente no teste de controle, resultado `supported`). O check de processamento do GitHub Advanced Security ficou em fila; o job `analyze` do CodeQL concluiu com sucesso, e o CodeQL pós-merge na `main` ficou verde |
+| E-14 | #580, #584, #576, #577 | INTEGRADO, sem revisão humana independente | `72e049a`, `9d3bdc3`, `49592e9`, `b2cb7f7`. Revisão técnica por ferramenta automatizada sem defeito bloqueante (observações: sem `fsync` do diretório após a publicação; entradas por link simbólico são seguidas). Na #584, o merge com a `main` (que recebeu a #580 por squash) manteve exatamente o delta próprio da PR (`53344fa..6af29f7`) |
+| E-16 / E-17 | #583 | INTEGRADO | `6ca256f`; estado de implementação corrigido para `rgc-eval/0.12.0` |
+| — | #581, #539 | INTEGRADO | `6935913`, `3342b5e`; registros datados, com a linha de identificação do AGENTS.md §3 |
+| E-17 | #531 | ENCERRADO COM JUSTIFICATIVA | Fechada; superada pela #583; branch preservada |
+| E-18 | #553, #554, #579 | ENCERRADO COM JUSTIFICATIVA | Fechadas; sucessoras #583, #580 e #595; branches preservadas |
+| E-19 | #535 | ENCERRADO COM JUSTIFICATIVA | Fechada; branch `repro/phase1b-dev-env-2026-11-12` preservada (head `0edc35b97ea6cd69d2b3e1258db355d7b31eb6a7`). SHA-256 dos arquivos do ambiente: `MANIFEST.json` `3b23d698b971c19e3021167fbaa88b45cb0e98edc120f1d97f2df398e449ee3b`; `aggregate-minimal-requirements.lock.txt` `a3d9cbf29d29ea358b59e03268a4fcb5bc169978835d190fee19f0299abd378c`; `aggregate-requirements.lock.txt` `64e8244f7b0ae7a6abceef63840492f2cb5b8cb73dede1bb99696301a71ab908`; `inference-requirements.lock.txt` `cf052d1fb0c78a688349476b71ebd4b0856419945ba07b2d74997f2220347000` (todos em `reproducibility/phase1b-dev-2026-11-07/`). Nenhuma vulnerabilidade foi silenciada no CI |
+| E-20 | #504, #505, #507, #509, #527 | ENCERRADO COM JUSTIFICATIVA | Fechadas sem execução de nenhum experimento; branches preservadas e reabríveis |
+| E-25 | Rodapé da #588 | ENCERRADO COM JUSTIFICATIVA | A descrição atual não contém mais o rodapé (verificado) |
+| E-13 | #571 | AGUARDANDO DECISÃO DO MANTENEDOR | Adiada pelo mantenedor; conflita com a v12 já integrada |
+| E-09, E-10, E-11, E-12, E-15, E-21, E-22, E-23, E-24 | Contrato do Judge, trilha (#433), autorização (#434), plano (#435), DEC-022, registro de decisões, pins históricos, configuração do GitHub, branches | AGUARDANDO DECISÃO DO MANTENEDOR | O registro das decisões em `DECISIONS-APPROVED.md` foi apresentado e não autorizado nesta data |
+| E-27, E-28, E-29 | Métricas científicas, POC, RGC humano | NÃO VALIDADO / AGUARDANDO REVISÃO HUMANA | Dependem de trabalho humano (anotação, revisão independente) ou de implantação real |
+
+Comentários de fechamento das #553, #554 e #579 receberam um rodapé de identificação da ferramenta que publica comentários; a ferramenta reinsere esse rodapé a cada edição, então ele não pôde ser removido por ela.

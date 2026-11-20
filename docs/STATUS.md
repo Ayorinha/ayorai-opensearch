@@ -1,39 +1,31 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-20 — main @ `1abe7eaa4ce7c6b6823f0f10646b9ee698487d3d` (merge PR #589); post-merge CI, Security and CodeQL succeeded on this SHA
+Updated: 2026-11-20 — main @ `3342b5ee129c79b1724ae36f1cbee4e9f03a2d54` (merge PR #539), before the merge of this status update (#595)
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-11-20
+## Estado atual — 2026-11-20 (encerramento técnico)
 
-- **Main:** `1abe7eaa4ce7c6b6823f0f10646b9ee698487d3d`, merge da [#589](https://github.com/Ayorinha/ayorai-opensearch/pull/589). Workflows pós-merge nesse SHA: CI [44755459436](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44755459436), Security [44755459132](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44755459132) e CodeQL [44755459238](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44755459238), todos com sucesso.
-- **Integradas desde 17/11:**
-  - #585: detector v10;
-  - #575: HMAC exigido em todas as versões de replay;
-  - #586: retenção automática, `ATTRACTOR_AUDIT_HMAC_REQUIRED` e volume persistente no Compose;
-  - #587: `POST /v2/audit`;
-  - #582: `transformers` 5.23.0 só no ambiente NLI de teste;
-  - #588: CHANGELOG consolidado e guia de gateway;
-  - #589: seleção de trechos `document-check-3` — todo documento relacionado chega à adjudicação (correção P0 da auditoria).
-- **Release:** a versão de código continua `0.8.0`. Nenhuma tag, release ou DOI nova; o `[Unreleased]` do CHANGELOG está preparado.
-- **Auditoria de 2026-11-20:** achados, evidências e matriz de maturidade em [audit/ENGINEERING-AUDIT-2026-11-20.md](audit/ENGINEERING-AUDIT-2026-11-20.md). Inventário completo das 583 PRs e das 105 branches, com destino justificado de cada uma, em [audit/PR-INVENTORY-2026-11-20.md](audit/PR-INVENTORY-2026-11-20.md). Proposta de POC em [poc/POC-PROPOSAL.md](poc/POC-PROPOSAL.md).
+- **Main:** `3342b5ee129c79b1724ae36f1cbee4e9f03a2d54` (merge da #539), antes do merge desta atualização (#595). CI, Security e CodeQL pós-merge verdes em cada merge anterior desta data; o detalhe por SHA está em [audit/PR-INVENTORY-2026-11-20.md](audit/PR-INVENTORY-2026-11-20.md), §8.
+- **Integradas em 2026-11-20, por autorização individual do mantenedor:** #589 (todo documento relacionado chega à adjudicação), #590 (rastro `r2-v4` vincula a adjudicação do `/v2/audit`), #591 (uma fonte por resultado de busca), #592 (detector v12), #593 (erros de provider sem URL interna), #594 (rotação de chave HMAC), #596 (cópias e quase-duplicatas não são fontes independentes), #597 (texto do cliente não chega a `verified`), #580, #584, #576 e #577 (runner RGC: snapshots E5, interpretador isolado, concordância por snapshot, gate H1), #583 (STATISTICS.md × DEC-027), #581 e #539 (registros metodológicos datados).
+- **Fechadas sem merge, com branches preservadas e destino registrado no inventário:** #553 e #554 (substituídas por #583 e #580), #579 (superada por esta atualização), #531 (superada pela #583), #504, #505, #507, #509 e #527 (benchmarks exploratórios não executados), #535 (ambiente histórico Phase 1b; hashes registrados no inventário).
+- **Aberta:** #571 (detector v11; muda a referência do Golden v0.1), adiada por decisão do mantenedor.
+- **Release:** a versão de código continua `0.8.0`. Nenhuma tag, release ou DOI nova; o `[Unreleased]` do CHANGELOG reúne as mudanças.
 
 ### Classificação do estado
 
 | Estado | Itens |
 |---|---|
-| **Implementado, testado e integrado na `main`** | Judge determinístico ADR-002 (`/v1/check`, `/v1/fields`, `/v2/audit`) e Judge 2.0 `r2-a` (`/v1/verify`); seleção de trechos `document-check-3` (#589); detector por regras v10; autenticação por chave com HMAC e pepper; isolamento de rastros por dono; trilha SQLite `r2-v3` com HMAC, backup, `seal_unsealed` e retenção opcional; limites de corpo, taxa e concorrência; imagem fixada por digest e lock com hash; Grype, SBOM e SLSA |
-| **Corrigido e testado em PR aberta, não integrado** | #596 (cópias e quase-duplicatas não são fontes independentes, P1-1); #597 (texto do cliente não chega a `verified`, P1-2); #590 (rastro `r2-v4` vincula a adjudicação do `/v2/audit`); #591 (uma fonte por resultado de busca); #592 (detector v12: pergunta, condição, meta, retificação); #593 (erros de provider sem URL interna); #594 (rotação de chave HMAC) |
-| **Dependente de decisão humana** | #571 (detector v11; muda a referência do Golden v0.1); regra de independência por conteúdo normalizado (P1-1); exigência de proveniência para `verified` (P1-2); migração de `/v1/check` e `/v2/audit` para o contrato do ADR-009 (P1-3); detecção de exclusão de rastros (P2-1); rodapé da descrição da #588 (P2-4); destino das PRs RGC e de benchmark; isolamento dos pins históricos com avisos de segurança |
+| **Integrado na `main` e testado** | Judge determinístico ADR-002 (`/v1/check`, `/v1/fields`, `/v2/audit`) e Judge 2.0 `r2-a` (`/v1/verify`); seleção de trechos por documento; independência das fontes por conteúdo normalizado (`document-check-4`); proveniência `client_supplied`/`server_retrieved` (`document-check-5`; `/v1/check` limitado a `supported`); detector por regras v12; fontes de busca separadas; trilha SQLite `r2-v3`/`r2-v4` com HMAC, backup, `seal_unsealed`, `reseal_with_active_key` e retenção opcional; erros de provider sem dados internos; runner RGC `rgc-eval/0.12.0` com snapshots E5 e interpretador isolado; imagem fixada por digest e lock com hash; Grype, SBOM e SLSA |
+| **Integrado sem revisão humana independente** | Runner RGC (#576, #577, #580, #584): revisão técnica feita por ferramenta automatizada, sem defeito bloqueante; a revisão humana independente prevista no `CONTRIBUTING.md` continua pendente |
+| **Dependente de decisão do mantenedor** | #571 (Golden v0.1); contrato do Judge no `/v1/check` e `/v2/audit` (Judge 1.x × `r2-a` do ADR-009); detecção de exclusão e rollback na trilha (issue #433, exige ADR); escopos, expiração e revogação de chaves (issue #434); IC do kappa por componente (DEC-022, exige emenda datada da Emenda 10); registro das decisões aprovadas DEC-017..020, 023 e 027 em `DECISIONS-APPROVED.md`; pins históricos com avisos de segurança; Dependabot security updates e aprovação obrigatória no ruleset; branches sem PR (entre elas `eval/rgc-pilot`) |
 | **Experimental** | Provider de LLM compatível com OpenAI; NLI opcional; recuperação híbrida OpenSearch; módulos `council` e `arena` (não ligados à API) |
-| **Testado só localmente** | Gateway nginx com duas réplicas: limite agregado e `X-Forwarded-For` (seção 3 da auditoria); Compose com volume e HMAC exigido (testes Docker da #586) |
-| **Não validado** | Implantação em produção; desempenho sob carga real; acurácia científica. Golden v0 7/30 e v0.1 10/30, abaixo do baseline de classe majoritária (13/30); RGC não congelado e sem resultado |
+| **Testado só localmente** | Gateway nginx com duas réplicas (limite agregado e `X-Forwarded-For`); Compose com volume e HMAC exigido |
+| **Não validado** | Implantação em produção ou homologação; POC (proposta, não executada); acurácia científica: Golden v0 7/30 e v0.1 10/30, abaixo do baseline de classe majoritária (13/30); RGC sem resultado |
 
-- **PRs abertas (20/11):** #590 a #597 (desta auditoria) e #571; as PRs RGC e de benchmark #504, #505, #507, #509, #527, #531, #535, #539, #553, #554, #576, #577, #579, #580, #581, #583 e #584 continuam em Draft ou aguardando decisão. Consultar o GitHub antes de agir: a lista e os heads mudam.
-- **RGC — engenharia para o congelamento:** as PRs #576, #577, #580 e #584 se combinam sem conflito sobre a `main` (2452 testes em Python 3.11, 3.12 e 3.13; `mypy --strict` limpo) e, sem congelamento, o runner se recusa a executar (código 2). Na #584 foi corrigida uma brecha que permitia pular, com variáveis de ambiente forjadas, a exigência de checkout limpo para a partição oculta. A #554 está substituída pela #580 e a #553 pela #583. O manifesto da #580 vincula `verification/stance.py`: a #571 (detector v11) e a #592 (detector v12) devem ser decididas **antes** do congelamento.
-- **RGC e português:** o protocolo RGC continua **[PROPOSTO]**, não congelado. Nenhum caso RGC foi criado, visto, rotulado ou executado nesta atualização. Continuam pendentes: piloto 02 manual, segunda anotação independente, revisão independente F-01, verificação de proveniência, vigência e retificações, isolamento da partição oculta e decisão de congelamento.
+- **RGC e português:** o protocolo RGC continua **[PROPOSTO]**, não congelado. Nenhum caso RGC foi criado, visto, rotulado ou executado. Faltam, e só pessoas podem fazer: piloto 02, segunda anotação independente, revisão independente F-01, verificação de proveniência, vigência e retificações, isolamento da partição oculta e decisão de congelamento. O congelamento vincula `verification/stance.py`: a #571 deve ser decidida antes dele.
 - **Limites de alegações:** não há benchmark em português publicado, validação externa independente, certificação regulatória nem conformidade legal. **INFERÊNCIA:** a evidência registrada não basta para declarar o sistema pronto para produção.
 
 ## Snapshot — 2026-11-17 (substituído pelo estado de 2026-11-20)

@@ -2,6 +2,8 @@ Revisão por ferramenta automatizada, publicada pelo mantenedor.
 
 # Auditoria técnica — 2026-11-20
 
+> **Atualização (encerramento de 2026-11-20):** este relatório descreve o estado no início da auditoria. As correções #589–#597 e a linha RGC (#576, #577, #580, #584) foram integradas depois, por autorização individual do mantenedor; o destino de cada item está em [PR-INVENTORY-2026-11-20.md](PR-INVENTORY-2026-11-20.md), §8, e o estado vigente em [STATUS.md](../STATUS.md).
+
 - **`main` auditada:** `5c757ac555746fcb28141f8dc7b9d938b5ba3b3f` (merge da #588). Workflows pós-merge nesse SHA: CI [44741658018](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44741658018), Security [44741658038](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44741658038) e CodeQL [44741657857](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44741657857), todos com sucesso. A árvore é idêntica à do head `f925e43` da #588, onde passaram 37 checks, inclusive o Schemathesis.
 - **Conflito de interesse:** as PRs #585 a #588 e #571 foram produzidas com a mesma ferramenta automatizada que fez esta auditoria. Nesses pontos, esta não é a revisão humana independente pedida no `CONTRIBUTING.md`.
 - **Método:** leitura do código e execução direta. Foram usados:
