@@ -74,8 +74,13 @@ def test_a_document_saying_it_is_not_true_refutes_the_claim() -> None:
 
 
 def test_two_confirming_documents_are_verified() -> None:
-    """Control: a fix for negation must not weaken plain corroboration."""
-    result = _check(CLAIM, CLAIM, SUPPORTING)
+    """Control: a fix for negation must not weaken plain corroboration.
+
+    The two documents must be independently worded: the same sentence with a prefix
+    is one source under ADR-002 §3 (see test_document_check_source_independence.py).
+    """
+    independent = "Em 2024, a Vértice teve receita de 40 milhões, informou a agência."
+    result = _check(CLAIM, SUPPORTING, independent)
     assert result["status"] == "verified"
     assert _stances(result) == ["supports", "supports"]
 

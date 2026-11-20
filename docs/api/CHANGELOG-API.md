@@ -32,6 +32,12 @@ All public API contract changes are additive unless explicitly identified otherw
 - More supporting documents can now count as independent sources, so a verdict can move from `partially_supported` to `verified` when they were previously cut off. `engine.version` is `document-check-3` and `engine.passage_selection` reads `lexical-top3+best-per-document/max600`. No request or response field changed. Golden v0/v0.1 do not use this path and are unchanged.
 - Known limit: within one document only its best passage is added beyond the global top 3; a contradiction in a weaker passage of a document whose best passage supports the claim can still be missed.
 
+## Unreleased — `/v1/check` and `/v2/audit`: copies are not independent sources (document-check-4, behavior fix)
+
+- **Fix (ADR-002 §3):** a document's origin was the SHA-256 of its raw text, so the same text in another case, without accents, with other punctuation or with a prefix ("Nota: …") counted as a second independent source and could make a claim `verified`.
+- Documents now share an origin when their normalized text (case, accents, punctuation and spacing ignored) is identical or when they are near-duplicates: at least 80% of the word 5-grams of the smaller one occur in the other. Joins are transitive and independent of document order. A short text reproduced inside a longer document is the same origin (republication/citation).
+- `engine.version` is `document-check-4`; new `engine.source_independence` = `normalized-content+word5-containment>=0.8`. No request or response field changed. Golden v0/v0.1 do not use this path.
+
 ## Unreleased — `POST /v2/audit` (additive)
 
 - New end-to-end route: search, then adjudicate claims with the ADR-002 Judge against the independent sources retrieved for the query. Claims come from the caller (`claims`), from a caller answer (`answer`), or by default from the engine's own answer. Model-generated text is never used as evidence; without an independent source every claim abstains with `no_independent_source`.

@@ -90,7 +90,7 @@ def test_one_passage_per_extra_document_and_engine_version_reports_the_rule() ->
     per_doc = [p.document_id for p in covered]
     assert len(per_doc) == len(set(per_doc))
     result = check_documents(_documents(SUPPORTING), claims=[CLAIM])
-    assert ENGINE_VERSION == "document-check-3"
+    assert ENGINE_VERSION == "document-check-4"
     assert result.engine["passage_selection"].startswith(
         f"lexical-top{TOP_K_PASSAGES}+best-per-document"
     )
