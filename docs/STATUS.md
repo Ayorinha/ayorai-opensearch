@@ -18,7 +18,7 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
   - #588: CHANGELOG consolidado e guia de gateway;
   - #589: seleção de trechos `document-check-3` — todo documento relacionado chega à adjudicação (correção P0 da auditoria).
 - **Release:** a versão de código continua `0.8.0`. Nenhuma tag, release ou DOI nova; o `[Unreleased]` do CHANGELOG está preparado.
-- **Auditoria de 2026-11-20:** achados, evidências e matriz de maturidade em [audit/ENGINEERING-AUDIT-2026-11-20.md](audit/ENGINEERING-AUDIT-2026-11-20.md). Proposta de POC em [poc/POC-PROPOSAL.md](poc/POC-PROPOSAL.md).
+- **Auditoria de 2026-11-20:** achados, evidências e matriz de maturidade em [audit/ENGINEERING-AUDIT-2026-11-20.md](audit/ENGINEERING-AUDIT-2026-11-20.md). Inventário completo das 583 PRs e das 105 branches, com destino justificado de cada uma, em [audit/PR-INVENTORY-2026-11-20.md](audit/PR-INVENTORY-2026-11-20.md). Proposta de POC em [poc/POC-PROPOSAL.md](poc/POC-PROPOSAL.md).
 
 ### Classificação do estado
 
@@ -32,6 +32,7 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 | **Não validado** | Implantação em produção; desempenho sob carga real; acurácia científica. Golden v0 7/30 e v0.1 10/30, abaixo do baseline de classe majoritária (13/30); RGC não congelado e sem resultado |
 
 - **PRs abertas (20/11):** #590 a #594 (desta auditoria) e #571; as PRs RGC e de benchmark #504, #505, #507, #509, #527, #531, #535, #539, #553, #554, #576, #577, #579, #580, #581, #583 e #584 continuam em Draft ou aguardando decisão. Consultar o GitHub antes de agir: a lista e os heads mudam.
+- **RGC — engenharia para o congelamento:** as PRs #576, #577, #580 e #584 se combinam sem conflito sobre a `main` (2452 testes em Python 3.11, 3.12 e 3.13; `mypy --strict` limpo) e, sem congelamento, o runner se recusa a executar (código 2). Na #584 foi corrigida uma brecha que permitia pular, com variáveis de ambiente forjadas, a exigência de checkout limpo para a partição oculta. A #554 está substituída pela #580 e a #553 pela #583. O manifesto da #580 vincula `verification/stance.py`: a #571 (detector v11) e a #592 (detector v12) devem ser decididas **antes** do congelamento.
 - **RGC e português:** o protocolo RGC continua **[PROPOSTO]**, não congelado. Nenhum caso RGC foi criado, visto, rotulado ou executado nesta atualização. Continuam pendentes: piloto 02 manual, segunda anotação independente, revisão independente F-01, verificação de proveniência, vigência e retificações, isolamento da partição oculta e decisão de congelamento.
 - **Limites de alegações:** não há benchmark em português publicado, validação externa independente, certificação regulatória nem conformidade legal. **INFERÊNCIA:** a evidência registrada não basta para declarar o sistema pronto para produção.
 
