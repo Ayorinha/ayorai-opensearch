@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
+from collections.abc import Mapping
 from typing import Annotated, Any, Literal
 
+import rfc8785
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, UrlConstraints, model_validator
 
 
@@ -261,9 +264,31 @@ class AuditV2Request(BaseModel):
         return self
 
 
+ADJUDICATION_DIGEST_FIELDS = ("check_trace_id", "claims_source", "engine", "documents", "results")
+
+
+def adjudication_sha256(response: Mapping[str, Any]) -> str:
+    """SHA-256 of the RFC 8785 (JCS) encoding of the adjudication part of a /v2/audit response.
+
+    ``response`` is the JSON response body (or ``AuditV2Response.model_dump(mode="json")``).
+    Only ADJUDICATION_DIGEST_FIELDS are covered, so a client can recompute the digest from
+    the body it received and compare it with the one bound to the persisted audit trace.
+    """
+    covered = {name: response[name] for name in ADJUDICATION_DIGEST_FIELDS}
+    return hashlib.sha256(rfc8785.dumps(covered)).hexdigest()
+
+
 class AuditV2Response(BaseModel):
     schema_version: Literal["a2"] = "a2"
     trace_id: str = Field(description="Persisted audit trace; readable via GET /v1/audit/{id}.")
+    adjudication_sha256: str = Field(
+        pattern=r"^[0-9a-f]{64}$",
+        description=(
+            "SHA-256 of the RFC 8785 encoding of {check_trace_id, claims_source, engine, "
+            "documents, results} of this response. The persisted r2-v4 trace binds the same "
+            "value under its replay digest and HMAC."
+        ),
+    )
     check_trace_id: str | None = Field(
         description="Digest of the claim check; null when no independent source was found."
     )

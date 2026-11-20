@@ -449,7 +449,7 @@
     "/v2/audit": {
       "post": {
         "summary": "Audit V2",
-        "description": "Search, then adjudicate claims against the independent sources found (end to end).\n\nThe engine answers the query and retrieves sources. Only independent sources are\nchecked against; the claims are the caller's, the caller's answer decomposed, or\nby default the engine's own answer decomposed. Each claim goes through the same\npassage selection, stance detection and ADR-002 Judge as /v1/check, and the run\nis recorded as an audit trace owned by the calling key.",
+        "description": "Search, then adjudicate claims against the independent sources found (end to end).\n\nThe engine answers the query and retrieves sources. Only independent sources are\nchecked against; the claims are the caller's, the caller's answer decomposed, or\nby default the engine's own answer decomposed. Each claim goes through the same\npassage selection, stance detection and ADR-002 Judge as /v1/check. The run is\nthen recorded as an r2-v4 audit trace owned by the calling key, binding the\nclaim-check digest and ``adjudication_sha256`` of the returned adjudication.",
         "operationId": "audit_v2_v2_audit_post",
         "requestBody": {
           "content": {
@@ -1176,9 +1176,34 @@
             "enum": [
               "r2-v1",
               "r2-v2",
-              "r2-v3"
+              "r2-v3",
+              "r2-v4"
             ],
             "title": "Replay Version"
+          },
+          "check_trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check Trace Id",
+            "description": "r2-v4 only: digest of the claim check bound to this trace."
+          },
+          "adjudication_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adjudication Sha256",
+            "description": "r2-v4 only: SHA-256 of the canonical adjudication returned by POST /v2/audit (see AuditV2Response.adjudication_sha256); bound by the replay digest and HMAC."
           },
           "replay_integrity": {
             "type": "string",
@@ -1303,6 +1328,12 @@
             "title": "Trace Id",
             "description": "Persisted audit trace; readable via GET /v1/audit/{id}."
           },
+          "adjudication_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Adjudication Sha256",
+            "description": "SHA-256 of the RFC 8785 encoding of {check_trace_id, claims_source, engine, documents, results} of this response. The persisted r2-v4 trace binds the same value under its replay digest and HMAC."
+          },
           "check_trace_id": {
             "anyOf": [
               {
@@ -1387,6 +1418,7 @@
         "type": "object",
         "required": [
           "trace_id",
+          "adjudication_sha256",
           "check_trace_id",
           "operation_status",
           "claims_source",

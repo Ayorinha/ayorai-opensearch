@@ -2,6 +2,30 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — provider errors no longer expose internal URLs (security fix)
+
+- **Fix:** a failed search or research provider call returned the exception text in `failures[].message`. For an HTTP error from OpenSearch this included the full internal request URL (host, port and index name), e.g. `Server error '503 Service Unavailable' for url 'https://<host>:<port>/<index>/_search'`. The message is now `"External search failed (<ErrorType>); details are in the server log."` (or `Research provider failed …`), and the detail is logged at WARNING by `ayorai_attractor.agents.core`. API keys were not part of the message before or after.
+
+## Unreleased — `/v1/check` rule detector v12 (questions, conditions, goals, corrections)
+
+- A sentence that states the claim as a question ("…in 2024?"), opens with a condition ("Se…", "Caso…", "Supondo que…", "If…"), or states a goal or intention ("a meta é atingir…", "pretende", "plans to") is `neutral` for it. A correction notice ("Retificação", "errata", "o valor correto") in the claim sentence or in the sentence right before or after it, within the same paragraph, makes it `neutral`, because the figure it qualifies may be the superseded one; a notice elsewhere in the document does not. Previously all of these supported the claim.
+- When the trigger word belongs to the claim itself ("A meta de inflação foi de 3%", "A correção monetária foi de 5%"), the passage still supports it.
+- The component version is now `12`; `11` is reserved for the pending scale-word change (#571). Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
+
+## Unreleased — search results are separate sources (behavior fix)
+
+- **Fix:** OpenSearch hits were concatenated into one text cut at 2,000 characters, so `/v2/audit` checked a single document: at most one independent source (`partially_supported` ceiling), no per-hit URL or id, and content after the cut was lost. Each hit is now its own source with its URL (canonical when the index stores an http(s) `url`), id and `published_at`, up to 20,000 characters. Hits sharing a URL are one cluster.
+- `/v1/opensearch` and `/v1/audit` list one `evidence` item per hit (previously one item for all hits); `evidence_count` counts hits. Schemas are unchanged.
+- An OpenSearch query with no hits is no longer reported as independent evidence (it was the placeholder text "OpenSearch returned no matching documents.").
+- The generic `ATTRACTOR_SEARCH_ENDPOINT` adapter still returns one raw JSON excerpt; it has no known result schema to split.
+
+## Unreleased — `/v2/audit` traces bind the returned adjudication (`r2-v4`, additive)
+
+- **Fix:** the `/v2/audit` trace was recorded before adjudication and held only retrieval counts, so it could not show which verdicts were returned. It is now recorded after adjudication as `replay_version` `r2-v4` (store schema 4).
+- New response field `AuditV2Response.adjudication_sha256`: SHA-256 of the RFC 8785 (JCS) encoding of `{check_trace_id, claims_source, engine, documents, results}` of the response body. A client recomputes it from the body it received.
+- New optional fields on `GET /v1/audit/{trace_id}`: `check_trace_id` and `adjudication_sha256`, set only on `r2-v4` traces. The `r2-v4` replay digest and HMAC cover every `r2-v3` field plus these two. A value attached to an `r2-v1`/`r2-v2`/`r2-v3` trace makes it `invalid`.
+- `replay_version` gains the value `r2-v4`. `/v1/audit` traces stay `r2-v3`. The SQLite store adds two nullable columns in place; existing traces and their digests are unchanged. The trace still holds digests, not the claims or excerpts themselves.
+
 ## Unreleased — `/v1/check` and `/v2/audit`: every relevant document is adjudicated (document-check-3, behavior fix)
 
 - **Fix:** passage selection was a global top 3 over all documents, so a document could be left out of adjudication because others outranked it. With four supporting documents and one that explicitly contradicted the claim, the result was `verified` and the contradicting document was never examined. Now the global top 3 is kept and the best passage of every other document that shares content with the claim is added, in relevance order. The example above is `conflicting`.
@@ -12,12 +36,18 @@ All public API contract changes are additive unless explicitly identified otherw
 
 - **Fix (ADR-002 §2):** every `/v1/check` document was treated as having complete provenance, so two pasted texts could make a claim `verified`, although the server never accessed their origin (`url` is metadata only).
 - New `documents[].provenance` (`CheckDocumentDigest`, additive): `client_supplied` for documents sent by the caller, `server_retrieved` for sources fetched by this server in `POST /v2/audit`. Complete provenance requires `server_retrieved` **and** a URL; only then can the Judge return `verified`. `/v1/check` therefore returns at most `supported`; `/v2/audit` can return `verified` when its sources carry URLs.
-- The provenance and URL of each document are part of the check identity: `engine.trace_identity` is `document-check-trace-3` and `engine.version` is `document-check-5` (`4` is used by the pending source-independence change). Offline checking of supplied documents is unchanged otherwise.
+- The provenance and URL of each document are part of the check identity: `engine.trace_identity` is `document-check-trace-3` and `engine.version` is `document-check-5` (`4` is the source-independence change above). Offline checking of supplied documents is unchanged otherwise.
+
+## Unreleased — `/v1/check` and `/v2/audit`: copies are not independent sources (document-check-4, behavior fix)
+
+- **Fix (ADR-002 §3):** a document's origin was the SHA-256 of its raw text, so the same text in another case, without accents, with other punctuation or with a prefix ("Nota: …") counted as a second independent source and could make a claim `verified`.
+- Documents now share an origin when their normalized text (case, accents, punctuation and spacing ignored) is identical or when they are near-duplicates: at least 80% of the word 5-grams of the smaller one occur in the other. Joins are transitive and independent of document order. A short text reproduced inside a longer document is the same origin (republication/citation).
+- `engine.version` is `document-check-4`; new `engine.source_independence` = `normalized-content+word5-containment>=0.8`. No request or response field changed. Golden v0/v0.1 do not use this path.
 
 ## Unreleased — `POST /v2/audit` (additive)
 
 - New end-to-end route: search, then adjudicate claims with the ADR-002 Judge against the independent sources retrieved for the query. Claims come from the caller (`claims`), from a caller answer (`answer`), or by default from the engine's own answer. Model-generated text is never used as evidence; without an independent source every claim abstains with `no_independent_source`.
-- The run is recorded as an audit trace owned by the calling key (`trace_id`, readable through `GET /v1/audit/{trace_id}`); `check_trace_id` is the digest of the claim check.
+- The run is recorded as an audit trace owned by the calling key (`trace_id`, readable through `GET /v1/audit/{trace_id}`); `check_trace_id` is the digest of the claim check. (As first released, the trace held only retrieval counts; see the `r2-v4` entry above.)
 - `/v2/audit` is subject to authentication, the body limit and `ATTRACTOR_MAX_INFLIGHT_HEAVY`, like the `/v1` POST routes. No existing route, request or response changed.
 
 ## Unreleased — `/v1/check` rule detector v10 (non-assertive framing and bounds)
