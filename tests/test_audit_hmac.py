@@ -20,6 +20,7 @@ from ayorai_attractor.audit_store import (
     _R2_V3_FIELDS,
     AuditTraceStore,
     _r2_v3_events,
+    audit_hmac_required_from_env,
     audit_mac_keys_from_env,
 )
 from ayorai_attractor.models import SearchResponse
@@ -58,6 +59,51 @@ def _set(path: Path, sql: str, trace_id: str = "tr_m") -> None:
         connection.execute(f"UPDATE audit_traces SET {sql} WHERE trace_id = ?", (trace_id,))  # noqa: S608
 
 
+def test_hmac_required_policy_fails_closed_without_keys_even_for_an_empty_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", "true")
+    path = tmp_path / "empty.sqlite3"
+    with pytest.raises(
+        ValueError,
+        match="ATTRACTOR_AUDIT_HMAC_REQUIRED=true requires ATTRACTOR_AUDIT_HMAC_KEYS",
+    ):
+        AuditTraceStore(str(path), mac_keys=())
+
+
+def test_hmac_required_policy_survives_removal_of_all_database_mac_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "a.sqlite3"
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        _record(store)
+        assert store.verify("tr_m") == "valid"
+
+    # Simulate a database-only attacker removing every in-database indication
+    # that HMAC had been used. Deployment policy remains outside the SQLite file.
+    _set(path, "replay_mac = NULL, mac_key_id = NULL")
+    monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", "true")
+    with pytest.raises(
+        ValueError,
+        match="ATTRACTOR_AUDIT_HMAC_REQUIRED=true requires ATTRACTOR_AUDIT_HMAC_KEYS",
+    ):
+        AuditTraceStore(str(path), mac_keys=())
+
+
+def test_hmac_required_policy_accepts_explicit_boolean_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for value in ("true", "1", "yes", "on"):
+        monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", value)
+        assert audit_hmac_required_from_env() is True
+    for value in ("false", "0", "no", "off", ""):
+        monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", value)
+        assert audit_hmac_required_from_env() is False
+    monkeypatch.setenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", "sometimes")
+    with pytest.raises(ValueError, match="must be a boolean"):
+        audit_hmac_required_from_env()
+
+
 def test_without_keys_a_recomputed_digest_still_passes(tmp_path: Path) -> None:
     path = tmp_path / "a.sqlite3"
     with AuditTraceStore(str(path), mac_keys=()) as store:
@@ -73,6 +119,20 @@ def test_with_a_key_a_recomputed_digest_is_detected(tmp_path: Path) -> None:
         assert store.verify("tr_m") == "valid"
         _forge_finding_count(path)
         assert store.verify("tr_m") == "invalid"
+
+
+def test_mac_sealed_store_refuses_to_open_without_verification_keys(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "a.sqlite3"
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        _record(store)
+        assert store.verify("tr_m") == "valid"
+
+    # Removing the key configuration must not silently downgrade the store or
+    # allow new records to be written without MACs.
+    with pytest.raises(ValueError, match="ATTRACTOR_AUDIT_HMAC_KEYS must be configured"):
+        AuditTraceStore(str(path), mac_keys=())
 
 
 @pytest.mark.parametrize(
@@ -133,12 +193,122 @@ def test_sealing_existing_traces_skips_tampered_ones(tmp_path: Path) -> None:
         assert store.verify("tr_ok") == "valid"
         assert store.verify("tr_bad") == "invalid"
         assert store.seal_unsealed() == 0
+    # A store with any sealed trace must not reopen in digest-only mode.
+    with pytest.raises(ValueError, match="ATTRACTOR_AUDIT_HMAC_KEYS must be configured"):
+        AuditTraceStore(str(path), mac_keys=())
+
+
+def test_legacy_r2_v2_traces_can_be_sealed_before_keyed_verification(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "a.sqlite3"
     with AuditTraceStore(str(path), mac_keys=()) as store:
-        with pytest.raises(ValueError, match="not configured"):
-            store.seal_unsealed()
+        _record(store)
+    legacy = ReplayBundle.build(
+        "tr_m",
+        [
+            {
+                "event": "audit.completed",
+                "verification": "not_adjudicated",
+                "evidence_count": 0,
+                "failure_count": 0,
+            }
+        ],
+        version="r2-v2",
+    ).digest
+    _set(
+        path,
+        f"replay_version = 'r2-v2', replay_digest = '{legacy}', "
+        "replay_mac = NULL, mac_key_id = NULL",
+    )
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        assert store.verify("tr_m") == "invalid"
+        assert store.seal_unsealed() == 1
+        assert store.verify("tr_m") == "valid"
+    # Legacy digests omit schema-v3 ownership metadata; the HMAC must bind it.
+    _set(path, "owner = 'attacker'")
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        assert store.verify("tr_m") == "invalid"
 
 
-def test_legacy_r2_v2_traces_are_verified_as_before(tmp_path: Path) -> None:
+def test_legacy_r2_v1_traces_can_be_sealed_before_keyed_verification(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "a.sqlite3"
+    with AuditTraceStore(str(path), mac_keys=()) as store:
+        _record(store)
+    legacy = ReplayBundle.build(
+        "tr_m",
+        [
+            {
+                "event": "audit.completed",
+                "verification": "supported",
+                "evidence_count": 0,
+                "failure_count": 0,
+            }
+        ],
+        version="r2-v1",
+    ).digest
+    _set(
+        path,
+        f"legacy_verification = 'supported', replay_version = 'r2-v1', "
+        f"replay_digest = '{legacy}', replay_mac = NULL, mac_key_id = NULL",
+    )
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        assert store.verify("tr_m") == "invalid"
+        assert store.seal_unsealed() == 1
+        assert store.verify("tr_m") == "valid"
+    # Legacy digests omit schema-v3 ownership metadata; the HMAC must bind it.
+    _set(path, "owner = 'attacker'")
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        assert store.verify("tr_m") == "invalid"
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [
+        ("owner", "'attacker'"),
+        ("recorded_at", "'2026-01-01T00:00:00.000000Z'"),
+        ("software_version", "'0.0.0-attacker'"),
+        ("finding_count", "999"),
+    ],
+)
+def test_legacy_hmac_authenticates_schema_v3_fields(
+    tmp_path: Path, column: str, value: str
+) -> None:
+    path = tmp_path / "legacy.sqlite3"
+    with AuditTraceStore(str(path), mac_keys=()) as store:
+        _record(store)
+    legacy = ReplayBundle.build(
+        "tr_m",
+        [
+            {
+                "event": "audit.completed",
+                "verification": "not_adjudicated",
+                "evidence_count": 0,
+                "failure_count": 0,
+            }
+        ],
+        version="r2-v2",
+    ).digest
+    _set(
+        path,
+        f"replay_version = 'r2-v2', replay_digest = '{legacy}', "
+        "replay_mac = NULL, mac_key_id = NULL",
+    )
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        assert store.seal_unsealed() == 1
+        assert store.verify("tr_m") == "valid"
+
+    # Each field below is outside the historical r2-v2 digest contract.
+    _set(path, f"{column} = {value}")
+    with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
+        assert store.verify("tr_m") == "invalid"
+
+
+def test_hmac_keyed_trace_cannot_downgrade_to_legacy_replay_version(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "a.sqlite3"
     with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
         _record(store)
@@ -154,9 +324,15 @@ def test_legacy_r2_v2_traces_are_verified_as_before(tmp_path: Path) -> None:
         ],
         version="r2-v2",
     ).digest
-    _set(path, f"replay_version = 'r2-v2', replay_digest = '{legacy}', replay_mac = NULL")
+    # Simulate an attacker changing the replay version, dropping MAC metadata,
+    # and recomputing the unkeyed legacy digest without possessing the HMAC key.
+    _set(
+        path,
+        f"replay_version = 'r2-v2', replay_digest = '{legacy}', "
+        "replay_mac = NULL, mac_key_id = NULL",
+    )
     with AuditTraceStore(str(path), mac_keys=(K1,)) as store:
-        assert store.verify("tr_m") == "valid"
+        assert store.verify("tr_m") == "invalid"
 
 
 @pytest.mark.parametrize(
@@ -193,3 +369,18 @@ def test_sealing_uses_the_active_key(tmp_path: Path) -> None:
         assert store.verify("tr_m") == "valid"
     with closing(sqlite3.connect(path)) as connection:
         assert connection.execute("SELECT mac_key_id FROM audit_traces").fetchone() == ("k2",)
+
+
+@pytest.mark.parametrize(
+    ("keys", "message"),
+    [
+        ((("bad id", b"a" * 32),), "unique ids"),
+        ((("k1", b"a" * 31),), "at least 32 bytes"),
+        ((("k1", b"a" * 32), ("k1", b"b" * 32)), "unique ids"),
+    ],
+)
+def test_explicitly_supplied_hmac_keys_obey_environment_validation(
+    tmp_path: Path, keys: tuple[tuple[str, bytes], ...], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        AuditTraceStore(str(tmp_path / "invalid.sqlite3"), mac_keys=keys)

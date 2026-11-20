@@ -13,11 +13,12 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import os
 import re
 import sqlite3
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import RLock
 from typing import Any, Final, Literal
@@ -68,6 +69,27 @@ _KEY_ID = re.compile(r"^[A-Za-z0-9_.-]{1,32}$")
 _MIN_MAC_KEY_BYTES = 32
 
 
+def _validate_mac_keys(
+    keys: tuple[tuple[str, bytes], ...],
+) -> tuple[tuple[str, bytes], ...]:
+    """Apply the same key policy to environment and explicitly injected keys."""
+    if not isinstance(keys, tuple):
+        raise ValueError("HMAC keys must be a tuple of (key_id, key_bytes) pairs")
+    validated: list[tuple[str, bytes]] = []
+    seen: set[str] = set()
+    for item in keys:
+        if not isinstance(item, tuple) or len(item) != 2:
+            raise ValueError("HMAC keys must be (key_id, key_bytes) pairs")
+        key_id, key = item
+        if not isinstance(key_id, str) or _KEY_ID.fullmatch(key_id) is None or key_id in seen:
+            raise ValueError("HMAC keys need unique ids of [A-Za-z0-9_.-]{1,32}")
+        if not isinstance(key, bytes) or len(key) < _MIN_MAC_KEY_BYTES:
+            raise ValueError("HMAC keys must have at least 32 bytes")
+        seen.add(key_id)
+        validated.append((key_id, key))
+    return tuple(validated)
+
+
 def audit_mac_keys_from_env() -> tuple[tuple[str, bytes], ...]:
     """Parse ATTRACTOR_AUDIT_HMAC_KEYS="id:hex[,id:hex...]" (first = active).
 
@@ -91,14 +113,82 @@ def audit_mac_keys_from_env() -> tuple[tuple[str, bytes], ...]:
         if len(key) < _MIN_MAC_KEY_BYTES:
             raise ValueError("ATTRACTOR_AUDIT_HMAC_KEYS keys must have at least 32 bytes")
         keys.append((key_id, key))
-    return tuple(keys)
+    return _validate_mac_keys(tuple(keys))
+
+
+def audit_hmac_required_from_env() -> bool:
+    """Whether deployment policy requires keyed audit integrity at startup.
+
+    ATTRACTOR_AUDIT_HMAC_REQUIRED defaults to false for backwards-compatible
+    local development. Production deployments should set it to true and provide
+    ATTRACTOR_AUDIT_HMAC_KEYS through a secret manager or equivalent.
+    """
+    raw = os.getenv("ATTRACTOR_AUDIT_HMAC_REQUIRED", "false").strip().lower()
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"", "0", "false", "no", "off"}:
+        return False
+    raise ValueError(
+        "ATTRACTOR_AUDIT_HMAC_REQUIRED must be a boolean (true/false, 1/0, yes/no, on/off)"
+    )
 
 
 def _mac(key: bytes, version: str, digest: str) -> str:
     return hmac.new(key, f"{version}:{digest}".encode("ascii"), hashlib.sha256).hexdigest()
 
 
+def _mac_for_trace(key: bytes, version: str, digest: str, fields: dict[str, Any]) -> str:
+    """Authenticate the full persisted row when a legacy digest omits columns.
+
+    r2-v1 and r2-v2 intentionally retain their historical digest contracts.
+    Their HMAC must therefore bind the schema-v3 fields that those digests do
+    not cover (notably owner and recorded_at). r2-v3 already binds every field.
+    """
+    if version == _R2_V3:
+        return _mac(key, version, digest)
+    payload = {
+        "domain": "ayorai.audit.legacy-row.v1",
+        "replay_version": version,
+        "replay_digest": digest,
+        "fields": {name: fields[name] for name in _R2_V3_FIELDS},
+    }
+    canonical = json.dumps(
+        payload,
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hmac.new(key, canonical, hashlib.sha256).hexdigest()
+
+
 LEGACY_TRACE_POLICIES = ("hidden", "shared")
+
+
+_RETENTION_MAX_DAYS: Final = 36_500
+# The automatic purge runs at startup and then at most once per interval, on the
+# write path, so a busy service does not delete on every request.
+_RETENTION_INTERVAL: Final = timedelta(hours=1)
+
+
+def audit_retention_days_from_env() -> int | None:
+    """Read ATTRACTOR_AUDIT_RETENTION_DAYS; unset or empty disables automatic purge.
+
+    The retention period and its legal basis are the data controller's decision,
+    so nothing is deleted unless the operator sets a positive number of days.
+    """
+    raw = os.getenv("ATTRACTOR_AUDIT_RETENTION_DAYS", "").strip()
+    if not raw:
+        return None
+    try:
+        days = int(raw)
+    except ValueError as exc:
+        raise ValueError("ATTRACTOR_AUDIT_RETENTION_DAYS must be a whole number of days") from exc
+    if not 1 <= days <= _RETENTION_MAX_DAYS:
+        raise ValueError(
+            f"ATTRACTOR_AUDIT_RETENTION_DAYS must be between 1 and {_RETENTION_MAX_DAYS}"
+        )
+    return days
 
 
 def legacy_trace_policy_from_env() -> str:
@@ -132,19 +222,46 @@ class AuditTraceStore:
         )
         self.path = configured
         self._clock = clock or (lambda: datetime.now(UTC))
-        self._mac_keys = audit_mac_keys_from_env() if mac_keys is None else mac_keys
+        self._mac_keys = (
+            audit_mac_keys_from_env() if mac_keys is None else _validate_mac_keys(mac_keys)
+        )
+        self._hmac_required = audit_hmac_required_from_env()
         self._lock = RLock()
         self._legacy_policy = legacy_trace_policy_from_env()
+        self._retention_days = audit_retention_days_from_env()
+        self._last_retention_run: datetime | None = None
         if configured != ":memory:":
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(self.path, check_same_thread=False)
         try:
             self._migrate()
+            self._require_hmac_keys_for_sealed_store()
+            with self._lock:
+                self._apply_retention_locked()
         except BaseException:
-            # A failed migration must not leak the connection; the rollback in
-            # _migrate_locked already left the database as it was.
+            # A failed migration or fail-closed configuration check must not
+            # leak the connection; migration rollback leaves the database intact.
             self._connection.close()
             raise
+
+    def _require_hmac_keys_for_sealed_store(self) -> None:
+        """Refuse a silent HMAC downgrade when opening an already sealed store."""
+        if self._hmac_required and not self._mac_keys:
+            raise ValueError(
+                "ATTRACTOR_AUDIT_HMAC_REQUIRED=true requires "
+                "ATTRACTOR_AUDIT_HMAC_KEYS to be configured"
+            )
+        if self._mac_keys:
+            return
+        sealed = self._connection.execute(
+            "SELECT 1 FROM audit_traces "
+            "WHERE replay_mac IS NOT NULL OR mac_key_id IS NOT NULL LIMIT 1"
+        ).fetchone()
+        if sealed is not None:
+            raise ValueError(
+                "ATTRACTOR_AUDIT_HMAC_KEYS must be configured to open a store "
+                "containing HMAC-sealed traces"
+            )
 
     def __enter__(self) -> AuditTraceStore:
         return self
@@ -372,7 +489,30 @@ class AuditTraceStore:
                 ) from exc
             raise
         self._connection.commit()
+        self._apply_retention_locked()
         return replay.digest
+
+    @property
+    def retention_days(self) -> int | None:
+        """Configured automatic retention in days, or None when disabled."""
+        return self._retention_days
+
+    def _apply_retention_locked(self) -> int:
+        """Purge traces older than the configured retention, at most once per interval."""
+        if self._retention_days is None:
+            return 0
+        now = self._clock()
+        if self._last_retention_run is not None and now - self._last_retention_run < (
+            _RETENTION_INTERVAL
+        ):
+            return 0
+        self._last_retention_run = now
+        cursor = self._connection.execute(
+            "DELETE FROM audit_traces WHERE recorded_at IS NOT NULL AND recorded_at < ?",
+            (_utc_timestamp(now - timedelta(days=self._retention_days)),),
+        )
+        self._connection.commit()
+        return int(cursor.rowcount)
 
     def backup(self, destination: str) -> int:
         """Write a consistent online copy of the store to a new file.
@@ -461,20 +601,29 @@ class AuditTraceStore:
         rebuilt = ReplayBundle.build(trace_id, events, version=version)
         if rebuilt.digest != stored_digest:
             return "invalid"
-        if self._mac_keys and version == _R2_V3:
-            # With keys configured every r2-v3 trace must carry a MAC from a known
-            # key: a removed MAC is a downgrade, not a legacy trace.
+        has_mac_metadata = stored_mac is not None or mac_key_id is not None
+        if self._mac_keys:
+            # When keyed integrity is enabled, every replay version must carry a
+            # valid MAC. This also prevents downgrading an r2-v3 trace to a legacy
+            # replay version to bypass keyed verification.
             key = dict(self._mac_keys).get(str(mac_key_id)) if mac_key_id is not None else None
             if key is None or stored_mac is None:
                 return "invalid"
-            if not hmac.compare_digest(_mac(key, version, stored_digest), str(stored_mac)):
+            expected_mac = _mac_for_trace(key, str(version), str(stored_digest), fields)
+            if not hmac.compare_digest(expected_mac, str(stored_mac)):
                 return "invalid"
+        elif has_mac_metadata:
+            # Never silently downgrade a previously keyed trace to digest-only
+            # verification when the verification keys are missing.
+            return "invalid"
         return "valid"
 
     def seal_unsealed(self) -> int:
-        """MAC r2-v3 traces recorded before keys were configured; returns how many.
+        """MAC valid unsealed r2-v1, r2-v2 and r2-v3 traces; return how many.
 
-        Only traces whose digest is still valid are sealed, with the active key.
+        Only traces whose replay digest is still valid are sealed, with the active
+        key. This establishes a keyed baseline for the current stored state; it
+        cannot prove that a legacy trace was authentic before HMAC was enabled.
         Run once when enabling ATTRACTOR_AUDIT_HMAC_KEYS on an existing store.
         """
         if not self._mac_keys:
@@ -483,19 +632,27 @@ class AuditTraceStore:
         sealed = 0
         with self._lock:
             rows = self._connection.execute(
-                "SELECT trace_id, replay_digest FROM audit_traces "
-                "WHERE replay_version = ? AND replay_mac IS NULL ORDER BY trace_id",
-                (_R2_V3,),
+                "SELECT trace_id, replay_digest, replay_version, "
+                "legacy_verification, verification, operation_status, evidence_count, "
+                "independent_evidence_count, verified_evidence_count, failure_count, "
+                "finding_count, schema_version, owner, recorded_at, software_version "
+                "FROM audit_traces "
+                "WHERE replay_version IN (?, ?, ?) AND replay_mac IS NULL "
+                "AND mac_key_id IS NULL ORDER BY trace_id",
+                (_R2_V1, _R2_V2, _R2_V3),
             ).fetchall()
             saved_keys, self._mac_keys = self._mac_keys, ()
             try:
                 valid = [row for row in rows if self._verify_locked(str(row[0])) == "valid"]
             finally:
                 self._mac_keys = saved_keys
-            for trace_id, digest in valid:
+            for row in valid:
+                trace_id, digest, version, *field_values = row
+                fields = dict(zip(_R2_V3_FIELDS, field_values, strict=True))
+                replay_mac = _mac_for_trace(key, str(version), str(digest), fields)
                 self._connection.execute(
                     "UPDATE audit_traces SET replay_mac = ?, mac_key_id = ? WHERE trace_id = ?",
-                    (_mac(key, _R2_V3, str(digest)), key_id, trace_id),
+                    (replay_mac, key_id, trace_id),
                 )
                 sealed += 1
             self._connection.commit()

@@ -7,6 +7,12 @@ All public API contract changes are additive unless explicitly identified otherw
 - A number followed by a scale word without a currency is read with its scale: "1,2 bilhão" and "1.200 milhões" are the same quantity (previously 1.2 against 1200, a false contradiction). A count noun right after the scale ("2,0 milhões de clientes", "3 mil funcionários") makes it a scaled count that compares with the same noun at any scale ("3000 funcionários").
 - The component version is now `11`. Golden v0.1 changes in one case (`x02`, now correct); the reference update and its rationale are in `docs/eval/SEMANTIC-DIGEST-V1-REFERENCE.md`.
 
+## Unreleased — `POST /v2/audit` (additive)
+
+- New end-to-end route: search, then adjudicate claims with the ADR-002 Judge against the independent sources retrieved for the query. Claims come from the caller (`claims`), from a caller answer (`answer`), or by default from the engine's own answer. Model-generated text is never used as evidence; without an independent source every claim abstains with `no_independent_source`.
+- The run is recorded as an audit trace owned by the calling key (`trace_id`, readable through `GET /v1/audit/{trace_id}`); `check_trace_id` is the digest of the claim check.
+- `/v2/audit` is subject to authentication, the body limit and `ATTRACTOR_MAX_INFLIGHT_HEAVY`, like the `/v1` POST routes. No existing route, request or response changed.
+
 ## Unreleased — `/v1/check` rule detector v10 (non-assertive framing and bounds)
 
 - A sentence that states the claim only as a possibility, estimate, projection, rumour, hypothesis or open question ("pode ter sido", "estima-se que", "rumores indicam", "deve atingir… segundo projeções", "se fosse", "não se sabe se", "reportedly") is now `neutral` for it. Previously it supported the claim, and "não se sabe se P" refuted it. Affirmative legal and technical wording ("previsto no", "deverá", "não pode ter duração superior a") is not treated as a hedge.
