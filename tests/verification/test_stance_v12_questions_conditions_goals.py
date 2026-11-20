@@ -80,7 +80,13 @@ def test_unrelated_correction_notice_does_not_neutralize_another_claim() -> None
         "Retificação: o endereço da Vértice é Rua das Flores, 10.\n\n"
         "A receita da Vértice foi de 40 milhões de reais em 2024."
     )
-    assert _stances(CLAIM, text) == ["supports"]
+    result = check_documents([CheckDocumentInput(id="d", text=text)], claims=[CLAIM])
+    item = result.results[0]
+    stance_by_excerpt = {evidence.excerpt: evidence.stance for evidence in item.evidence}
+    # The claim's own paragraph still supports it; the unrelated notice (which also
+    # names the company, so it is selected as a passage) stays neutral on its own.
+    assert stance_by_excerpt[CLAIM] == "supports"
+    assert item.verdict == "partially_supported"
 
 
 def test_adjacent_correction_notice_still_neutralizes_the_claim() -> None:
@@ -89,3 +95,14 @@ def test_adjacent_correction_notice_still_neutralizes_the_claim() -> None:
         "Retificação: o valor correto é 45 milhões de reais."
     )
     assert _stances(CLAIM, text) == ["neutral"]
+
+
+def test_non_adjacent_correction_notice_in_the_same_passage_does_not_neutralize() -> None:
+    # One paragraph, so one passage: the notice is two sentences away from the claim
+    # sentence and concerns something else. Only an adjacent notice qualifies the claim.
+    text = (
+        "Retificação: o endereço da Vértice é Rua das Flores, 10. "
+        "A sede foi inaugurada em março. "
+        "A receita da Vértice foi de 40 milhões de reais em 2024."
+    )
+    assert _stances(CLAIM, text) == ["supports"]

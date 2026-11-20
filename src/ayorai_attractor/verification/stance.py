@@ -586,6 +586,7 @@ def _non_assertive(text: str, claim_tokens: frozenset[str]) -> bool:
                 return True
     return False
 
+
 def _reported_denial(text: str, claim_tokens: frozenset[str]) -> bool:
     """The text reports that someone denied a proposition covering the claim."""
     return any(
