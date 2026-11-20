@@ -136,5 +136,16 @@ class AuditTraceResponse(BaseModel):
     finding_count: int = Field(ge=0)
     replay_digest: str
     legacy_verification: str | None = None
-    replay_version: Literal["r2-v1", "r2-v2", "r2-v3"]
+    replay_version: Literal["r2-v1", "r2-v2", "r2-v3", "r2-v4"]
+    check_trace_id: str | None = Field(
+        default=None,
+        description="r2-v4 only: digest of the claim check bound to this trace.",
+    )
+    adjudication_sha256: str | None = Field(
+        default=None,
+        description=(
+            "r2-v4 only: SHA-256 of the canonical adjudication returned by POST /v2/audit "
+            "(see AuditV2Response.adjudication_sha256); bound by the replay digest and HMAC."
+        ),
+    )
     replay_integrity: Literal["valid", "invalid"]
