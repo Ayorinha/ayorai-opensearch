@@ -7,7 +7,8 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi criado. Não traz resultado confirmatório de acurácia; o protocolo RGC permanece não congelado.
 
 ### API
-- `POST /v2/audit`: busca e adjudicação ADR-002 de ponta a ponta. Só evidência independente vira documento; o resultado é registrado como rastro com dono (#587).
+- `POST /v2/audit`: busca e adjudicação ADR-002 de ponta a ponta. Só evidência independente vira documento (#587).
+- Correção: o rastro do `/v2/audit` era gravado antes da adjudicação e guardava só contagens; não mostrava quais vereditos o cliente recebeu. Agora ele é gravado depois, como `r2-v4` (esquema 4), e vincula `check_trace_id` e `adjudication_sha256` (SHA-256 RFC 8785 da adjudicação devolvida) ao digest de replay e ao HMAC. O cliente recalcula o mesmo digest a partir da resposta.
 - `/v1/fields`: somente dígitos ASCII simples (field-check-3) e sinal de menos ligado ao número ou valor (field-check-4) (#545, #546).
 - Respostas dos providers HTTP limitadas em tamanho, sem compressão e com prazo total (#561).
 - Limite de concorrência das rotas pesadas (HTTP 503), opcionalmente compartilhado entre workers do mesmo host com `ATTRACTOR_INFLIGHT_SCOPE=host` (#556, #563).
