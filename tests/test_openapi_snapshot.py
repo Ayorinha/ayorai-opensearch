@@ -21,6 +21,7 @@ def test_protected_routes_document_rate_limit_response() -> None:
         schema["paths"]["/v1/check"]["post"],
         schema["paths"]["/v1/fields"]["post"],
         schema["paths"]["/v1/audit/{trace_id}"]["get"],
+        schema["paths"]["/v2/audit"]["post"],
     )
 
     for operation in protected_operations:

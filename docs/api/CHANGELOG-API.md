@@ -2,6 +2,24 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — `/v1/check` and `/v2/audit`: every relevant document is adjudicated (document-check-3, behavior fix)
+
+- **Fix:** passage selection was a global top 3 over all documents, so a document could be left out of adjudication because others outranked it. With four supporting documents and one that explicitly contradicted the claim, the result was `verified` and the contradicting document was never examined. Now the global top 3 is kept and the best passage of every other document that shares content with the claim is added, in relevance order. The example above is `conflicting`.
+- More supporting documents can now count as independent sources, so a verdict can move from `partially_supported` to `verified` when they were previously cut off. `engine.version` is `document-check-3` and `engine.passage_selection` reads `lexical-top3+best-per-document/max600`. No request or response field changed. Golden v0/v0.1 do not use this path and are unchanged.
+- Known limit: within one document only its best passage is added beyond the global top 3; a contradiction in a weaker passage of a document whose best passage supports the claim can still be missed.
+
+## Unreleased — `POST /v2/audit` (additive)
+
+- New end-to-end route: search, then adjudicate claims with the ADR-002 Judge against the independent sources retrieved for the query. Claims come from the caller (`claims`), from a caller answer (`answer`), or by default from the engine's own answer. Model-generated text is never used as evidence; without an independent source every claim abstains with `no_independent_source`.
+- The run is recorded as an audit trace owned by the calling key (`trace_id`, readable through `GET /v1/audit/{trace_id}`); `check_trace_id` is the digest of the claim check.
+- `/v2/audit` is subject to authentication, the body limit and `ATTRACTOR_MAX_INFLIGHT_HEAVY`, like the `/v1` POST routes. No existing route, request or response changed.
+
+## Unreleased — `/v1/check` rule detector v10 (non-assertive framing and bounds)
+
+- A sentence that states the claim only as a possibility, estimate, projection, rumour, hypothesis or open question ("pode ter sido", "estima-se que", "rumores indicam", "deve atingir… segundo projeções", "se fosse", "não se sabe se", "reportedly") is now `neutral` for it. Previously it supported the claim, and "não se sabe se P" refuted it. Affirmative legal and technical wording ("previsto no", "deverá", "não pode ter duração superior a") is not treated as a hedge.
+- In evidence, a number introduced by a bound ("superou 40", "abaixo de 40", "mais de 40", "at least 40") no longer confirms or contradicts an exact claimed value; bounded claims still compare with bounded evidence.
+- The component version is now `10`. Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
+
 ## Unreleased — `/v1/check` rule detector v9 (decision fixes)
 
 - A negator in a sentence that does not state the claim no longer turns a confirming sentence into a contradiction: "A Vértice não faliu. A receita foi de 40 milhões em 2024." now supports a claim about the revenue. A sentence made only of denial words ("Isso não é verdade.", "Não procede.") still denies the previous one. Single-sentence excerpts are classified exactly as before.

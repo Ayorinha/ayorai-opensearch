@@ -70,5 +70,5 @@ def test_other_texts_are_not_reported_denials_of_the_claim(text: str) -> None:
     assert not _reported_denial(text, CLAIM_TOKENS)
 
 
-def test_detector_version_is_9() -> None:
-    assert RuleStanceDetector.version == "9"
+def test_detector_version_is_at_least_9() -> None:
+    assert int(RuleStanceDetector.version) >= 9
