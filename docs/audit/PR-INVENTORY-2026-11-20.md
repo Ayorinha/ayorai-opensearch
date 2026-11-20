@@ -8,13 +8,13 @@ Revisão por ferramenta automatizada, publicada pelo mantenedor.
 - **Método das mescladas:** `git merge-base --is-ancestor <merge_commit> origin/main`.
 - **Estados:** os da especificação do mantenedor (INTEGRADO, IMPLEMENTADO EM PR ABERTA, DUPLICADO/SUBSTITUÍDO, FECHADO SEM MERGE — RESOLVIDO/PENDENTE, BLOQUEADO POR DECISÃO, OBSOLETO COM JUSTIFICATIVA, NÃO VERIFICADO; nenhuma PR terminou neste estado). Nenhuma PR foi fechada e nenhuma branch foi apagada.
 
-## 1. PRs abertas (24)
+## 1. PRs abertas (24 na consulta das 18:32 UTC; #596 e #597 abertas depois, na Fase de encerramento — ver §7, E-07 e E-08)
 
 | PR | Título | Base | Head | Checks (ok/total) | Merge | Estado técnico | Dependências | Prioridade | Ação | Evidência |
 |---|---|---|---|---|---|---|---|---|---|---|
 | #595 | docs(status): estado real da main em 2026-11-20, auditoria técnica e proposta de POC | main | `a885c6f` | 20/20 | clean | IMPLEMENTADO EM PR ABERTA | por último (STATUS no SHA final) | P2 | Aguarda autorização de merge | STATUS, auditoria, POC e este inventário. |
 | #594 | feat(audit): rotação de chave HMAC sem invalidar os rastros antigos — P2 | main | `db228d3` | 37/37 | clean | IMPLEMENTADO EM PR ABERTA | conflito textual com #590 (manual 05) | P2 | Aguarda autorização de merge | Rotação HMAC; 4 testes; mutação 3/3; integração com r2-v4 verificada. |
-| #593 | fix(security): erros de provider não expõem URLs internas ao cliente — P2 | main | `40105d8` | 37/37 | clean | IMPLEMENTADO EM PR ABERTA | — | P2 | Aguarda autorização de merge | Erros sem URL interna; 10 testes; mutação 2/2. |
+| #593 | fix(security): erros de provider não expõem URLs internas ao cliente — P2 | main | `331b795` | ver CI do head | clean | IMPLEMENTADO EM PR ABERTA | — | P2 | Aguarda autorização de merge | Erros sem URL interna; 10 testes; mutação 2/2. |
 | #592 | fix(stance): pergunta, condição, meta e retificação não confirmam a afirmação (detector v12) — P1 | main | `e92370c` | 37/37 | clean | IMPLEMENTADO EM PR ABERTA | conflito de versão com #571 | P1 | Aguarda autorização de merge | Detector v12; 19 testes; mutação 8/8 + 4/4. |
 | #591 | fix(search): cada resultado de busca é uma fonte própria, com proveniência — P1 | main | `d20a202` | 38/38 | clean | IMPLEMENTADO EM PR ABERTA | — | P1 | Aguarda autorização de merge | Uma fonte por resultado; 8 testes; mutação 6/6. |
 | #590 | fix(audit): o rastro do /v2/audit vincula a adjudicação devolvida (r2-v4) — P1 | main | `213aaf0` | 38/38 | clean | IMPLEMENTADO EM PR ABERTA | — | P1 | Aguarda autorização de merge | Rastro r2-v4 com adjudication_sha256; 15 testes; mutação 4/4. |
@@ -627,3 +627,100 @@ Todas as 425 PRs mescladas com base `main` têm o commit de merge no histórico 
 
 1. **Registro de decisões:** DEC-017..020, DEC-023 e DEC-027 constam como "Estado vigente: Aprovada" só em `docs/DECISIONS-PENDING.md`, não em `docs/DECISIONS-APPROVED.md` (relacionado à #239, fechada). Os dois arquivos são protegidos: decisão do mantenedor.
 2. **Pins históricos com avisos de segurança** (`requirements-benchmark-pilot.txt`; Dependabot #519–#524, #558, #559): decisão do mantenedor (P3-1).
+
+## 7. Encerramento técnico — inventário de pendências (2026-11-20, 20:43 UTC)
+
+Consulta: `main` `1abe7eaa4ce7c6b6823f0f10646b9ee698487d3d`; 583 PRs (24 abertas, 15 em draft; 431 mescladas = 425 na `main` + 2 no `gh-pages` + 4 em branches intermediárias; 128 fechadas sem merge). As 594 entradas do endpoint de issues são essas 583 PRs mais 11 issues (3 abertas). Não há divergência entre "425" e "431": são universos diferentes. Tags v0.1.0–v0.8.0 e `baseline-legacy-v0`; releases correspondentes, nenhuma em rascunho. Segurança do repositório: secret scanning e push protection **ativos**; atualizações de segurança do Dependabot, padrões não-provider e checagem de validade **desativados**; ruleset `Protecao-main-ATTRACTOR` ativo (sem exclusão, sem force-push, PR obrigatória, 6 checks obrigatórios com branch atualizada, **0 aprovações exigidas**, sem bypass).
+
+Estados: CONCLUÍDO, INTEGRADO, ENCERRADO COM JUSTIFICATIVA, AGUARDANDO DECISÃO DO MANTENEDOR, AGUARDANDO REVISÃO HUMANA, BLOQUEADO EXTERNAMENTE, NÃO VALIDADO. "CONCLUÍDO" aqui significa implementado e testado numa PR com CI verde; nada além da #589 está na `main`.
+
+| ID | Origem | Descrição | Sev. | Impacto se aberto | Dependências | Solução | Responsável | Evidência | Estado |
+|---|---|---|---|---|---|---|---|---|---|
+| E-01 | Auditoria (P0-1), #589 | Contradição fora do top 3 ignorada | P0 | `verified` com refutação presente | — | Melhor trecho por documento | Claude | `1abe7ea`; CI/Security/CodeQL verdes | INTEGRADO |
+| E-02 | P1-5, #590 | Rastro do `/v2/audit` sem a adjudicação | P1 | Resposta entregue não provável | autorização | `r2-v4` + `adjudication_sha256` | Mantenedor (merge) | `213aaf0`, CI 38/38, mutação 4/4 | CONCLUÍDO (PR) |
+| E-03 | P1-4, #591 | Fontes de busca concatenadas | P1 | Teto `partially_supported`; contradição invisível | autorização | Uma fonte por resultado | Mantenedor (merge) | `d20a202`, CI 38/38, mutação 6/6 | CONCLUÍDO (PR) |
+| E-04 | P1-6, #592 | Pergunta/condição/meta/retificação como apoio | P1 | Falso apoio | #571 (versão) | Detector v12 | Mantenedor | `e92370c`, CI 37/37, mutação 8/8 + 4/4 | CONCLUÍDO (PR) |
+| E-05 | P2-5, #593 | Erros de provider expõem URL interna | P2 | Topologia exposta | autorização | Mensagem com tipo do erro; detalhe no log | Mantenedor (merge) | `331b795`; 24 testes (401/403/404/429/500/502/503 em 3 rotas, conexão recusada, timeout) — todos falham no código da `main` | CONCLUÍDO (PR) |
+| E-06 | P2-2, #594 | Rotação HMAC invalidava rastros antigos | P2 | Chave não aposentável | autorização | `reseal_with_active_key` (não re-sela inválidos) | Mantenedor (merge) | `db228d3`, CI 37/37, mutação 3/3; integrado com r2-v4 | CONCLUÍDO (PR) |
+| E-07 | P1-1, #596 | Cópias/quase-duplicatas contadas como fontes independentes | P1 | `verified` com uma só fonte real | autorização; confirmar limiar 0,8 | Origem por texto normalizado e contenção de 5-gramas | Mantenedor | `60841db`; 13 testes; mutação 5/5; 4 casos adversariais corrigidos | CONCLUÍDO (PR) |
+| E-08 | P1-2, #597 | Texto do cliente chegava a `verified` | P1 | Proveniência inflada | autorização; conflito textual com #596 | `provenance` client_supplied/server_retrieved; teto `supported` para o cliente | Mantenedor | `c345951`; 7 testes; mutação 5/5 | CONCLUÍDO (PR) |
+| E-09 | P1-3 | `/v1/check` e `/v2/audit` usam o Judge 1.x (ADR-002), não o `r2-a` normativo do ADR-009 | P1 | Dois contratos de veredito | decisão | Migrar para `r2-a` ou registrar exceção datada no ADR-009 | Mantenedor | Rastreio: `api/app.py` → `check_documents` → `ClaimVerificationPipeline` → `verification/judge.py`; nenhum caminho usa LLM ou NLI no veredito | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-10 | P2-1, issue #433 | Exclusão de rastro e rollback de backup não detectados | P2 | Histórico pode perder registros sem sinal | ADR (exigida pela #433) | Ver §7.1 | Mantenedor | §7.1 (demonstração) | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-11 | Issue #434 | Autorização por tenant/escopos | P2 | Implantação compartilhada sem escopos, expiração ou revogação | ADR | Rastros já isolados por dono (#564, verificado: outra chave recebe 404); faltam escopos, expiração, revogação e tenant | Mantenedor | Sonda da API (Parte 1) | AGUARDANDO DECISÃO DO MANTENEDOR (o texto da issue está desatualizado quanto ao isolamento por dono) |
+| E-12 | Issue #435 | Plano mestre de prontidão | P3 | — | — | Atualizar checklist pelo mantenedor | Mantenedor | 4 comentários na issue | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-13 | #571 | Detector v11 muda o Golden v0.1 (10/30 → 11/30) | P1 | — | Decidir antes do congelamento RGC (o manifesto vincula `stance.py`) | Parecer: só `x02` muda, para a referência; risco de sobreajuste; +1/30 sem significância | Mantenedor + revisor independente | `874fad8`, CI 20/20, digest `1fd6fdb7…` | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-14 | #576, #577, #580, #584 | Linha técnica do runner RGC | P1 | Congelamento sem revisão | revisão humana | Roteiro em §7.4 | Revisor independente | Integração local: 2452 testes em 3.11–3.13; sem congelamento sai com código 2; brecha de variáveis forjadas corrigida na #584 (`6af29f7`) | AGUARDANDO REVISÃO HUMANA |
+| E-15 | DEC-022 / `rgc_agreement.py` | IC do kappa ainda por caso, não por componente | P1 | Concordância fora da decisão aprovada | Emenda datada da Emenda 10 (pré-registro, protegido) | Adotar `bootstrap_cohen_kappa_by_component` após a emenda | Mantenedor | `rgc_agreement.py` publica `ci95_case_bootstrap`; #583 documenta o bloqueio | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-16 | `docs/eval/STATISTICS.md` (main) | Seção "Estado de implementação" de 2026-11-07 diz que o runner não tem componentes/sign-flip; a #552 já implementou | P2 | Documento contradiz o código | #583 | Integrar a #583 (que corrige) | Mantenedor | `grep sign_flip evals/ptbr/rgc_eval.py` = 25 ocorrências | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-17 | #583 × #531 | Texto estatístico normativo divergente | P2 | Duas especificações | decisão metodológica | Manter #583; refazer ou fechar #531 | Mantenedor | Conflito em `STATISTICS.md` (simulado) | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-18 | #553, #554, #579 | Substituídas | P3 | Ruído | — | Fechar | Mantenedor | #553→#583 53/53 linhas; #554→#580 funções portadas; #579→#595 | ENCERRADO COM JUSTIFICATIVA (recomendado; não fechado) |
+| E-19 | #535 | Lock histórico com `cryptography 46.0.3` (4 avisos, um alto) | P2 | Dependency Review bloqueia | decisão | Ver §7.3 | Mantenedor | Log do job `dependency-review` | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-20 | #504, #505, #527, #509, #507 | Benchmarks exploratórios (pré-registro, DEV-B, lock, propostas) | P2 | — | autorização de execução | Não executar sem autorização | Mantenedor | Conflitos de #504/#505 em `DECISIONS-PENDING.md` | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-21 | `DECISIONS-*` | DEC-017..020, 023, 027 aprovadas registradas só em `DECISIONS-PENDING.md` | P2 | Fonte única de decisões inconsistente | arquivos protegidos | Registrar em `DECISIONS-APPROVED.md` | Mantenedor | `grep` em ambos os arquivos | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-22 | Pins históricos (`requirements-benchmark-pilot.txt`) | Avisos conhecidos (transformers, pyarrow, accelerate) | P3 | Risco só nos 3 workflows DEV | decisão | Isolar sem trocar pins | Mantenedor | pip-audit | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-23 | Configuração do GitHub | Dependabot security updates desativado; 0 aprovações exigidas; PRs empilhadas sem CI automático | P2 | Controles ausentes | permissão administrativa | Ativar Dependabot security updates; exigir ≥1 aprovação; avaliar `pull_request` para bases não-main | Mantenedor | API `security_and_analysis`; ruleset | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-24 | Branches | 13 branches com trabalho nunca submetido (entre elas `eval/rgc-pilot`, com dados do piloto) | P2 | Trabalho perdido ou dado fora do fluxo | decisão | Ver §5 | Mantenedor | §5 | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-25 | Descrição da #588 | Rodapé promocional (AGENTS.md §2) | P3 | Governança | autorização (AGENTS.md §3) | Remover a linha | Mantenedor | Corpo da #588 | AGUARDANDO DECISÃO DO MANTENEDOR |
+| E-26 | Varredura de marcadores | `NotImplementedError` em `Agent.run` e `Provider.execute`; "PENDING"/"BLOCKED" em docs | — | — | — | Classes abstratas; nomes de arquivo; estado de elegibilidade | — | `git grep` | ENCERRADO COM JUSTIFICATIVA (não são defeitos) |
+| E-27 | Métricas Golden | v0 7/30, v0.1 10/30, baseline 13/30 | P1 (científico) | Não há resultado de acurácia defensável | trabalho metodológico | Não ajustar ao Golden; ver §7.2 | Mantenedor | `ayorai eval` na `main` (digests `21abb816…`, `64f743b3…`) | NÃO VALIDADO |
+| E-28 | POC | Proposta não executada | P1 | — | E-02..E-08, E-10 | Ver §7.5 | Mantenedor | `docs/poc/POC-PROPOSAL.md` | NÃO VALIDADO |
+| E-29 | RGC (trabalho humano) | Piloto 02, segunda anotação, F-01, congelamento, execução única | P1 | Sem benchmark em português | — | Protocolo vigente | Mantenedor e anotadores | AGENTS.md §5 | AGUARDANDO REVISÃO HUMANA |
+
+### 7.1 Integridade histórica (P2-1, issue #433) — demonstração
+
+Armazenamento SQLite real com HMAC ativo, na `main`:
+
+| Ataque | Resultado |
+|---|---|
+| Alterar um campo de um rastro | Detectado (`invalid`) |
+| Trocar os identificadores de dois rastros | Detectado (os dois `invalid`) |
+| Inserir rastro forjado copiando o MAC de outro | Detectado (`invalid`) |
+| Remover o MAC, rebaixar a versão de replay, abrir banco selado sem chaves | Detectados (testes da trilha) |
+| Reordenar as linhas | Sem efeito: nenhum rastro depende de outro |
+| **Apagar um rastro inteiro** | **Não detectado** |
+| **Restaurar um backup antigo (rollback)** | **Não detectado**: os rastros posteriores somem sem sinal |
+
+Causa estrutural: cada rastro é selado isoladamente. Solução proporcional proposta para a ADR pedida na #433: (1) número de sequência monotônico e MAC encadeado (o MAC de cada rastro cobre o do anterior), que torna detectável a exclusão no meio e a troca de ordem; (2) checkpoint periódico assinado (sequência, cabeça da cadeia e contagem), exportado para fora do banco (log append-only/WORM, ou o log Merkle já existente em `src/ayorai_attractor/auditlog/`), que torna detectáveis a exclusão no fim e o rollback até o intervalo do checkpoint. Quem controla ao mesmo tempo o banco, a chave e o destino do checkpoint continua podendo reescrever o histórico; isso deve constar da ADR. Nada foi implementado: a issue #433 exige ADR aprovada antes de mudar a semântica da persistência.
+
+### 7.2 Golden — leitura por classe (main, `golden-v0.1`)
+
+| Referência | n | Acertos | Previsões |
+|---|---|---|---|
+| VERIFIED | 6 | 2 | 4 × UNVERIFIED |
+| SUPPORTED | 1 | 0 | UNVERIFIED |
+| PARTIALLY_SUPPORTED | 13 | 4 | 9 × UNVERIFIED |
+| UNVERIFIED | 1 | 1 | — |
+| REFUTED | 1 | 1 | — |
+| CONFLICTING | 8 | 2 | 4 × UNVERIFIED, 2 × PARTIALLY_SUPPORTED |
+
+O erro dominante é a abstenção (falso negativo). Todas as previsões `VERIFIED` e `REFUTED` estão certas. O erro mais grave para auditoria é contradição não detectada que vira apoio parcial (2 casos no v0.1, um deles o `x02` da #571). As correções E-01 a E-08 não alteram esses números, porque o Golden não usa o caminho do `/v1/check`. Os números não são comparáveis com o baseline como resultado científico: 30 casos, conjunto público, desenvolvimento iterativo sobre ele.
+
+### 7.3 #535 — recomendação
+
+O lock histórico existe para reproduzir byte a byte o ambiente que gerou os resultados DEV de 2026-11-07. Atualizar o `cryptography` torna a reprodução inexata; silenciar o Dependency Review esconde o risco. Recomendação: manter o lock como **artefato de reprodutibilidade**, com exceção explícita e restrita aos quatro GHSA no `dependency-review` (`allow-ghsas`), justificada no próprio PR e em `docs/security/`, e com três garantias verificáveis: o ambiente roda só nos workflows DEV manuais, sem segredos nem rede de entrada; não é usado pela imagem nem pela API; e a exceção expira na próxima reprodução. Alternativa sem exceção: publicar só os hashes do ambiente e reconstruí-lo sob demanda num ambiente isolado. Decisão do mantenedor.
+
+### 7.4 Roteiro de revisão humana independente (linha RGC)
+
+Para o revisor (não para ferramenta automatizada), no SHA exato de cada PR:
+
+1. **#580 (`53344fa`):** `_snapshot_files` (um descritor, arquivo regular, comparação de inode, tamanho e tempos antes e depois); publicação por hard link sem sobrescrita; redirecionamento e restauração de `judge2_module._RULES_PATH` em sucesso e falha; `verify_run_manifest`; lista `RUNNER_DEPENDENCIES` (o que fica vinculado ao congelamento).
+2. **#584 (`6af29f7`):** bootstrap do filho (`-I -S`), ambiente mínimo, `_assert_child_runs_from_parent_snapshot` e o limite declarado (snapshot falso montado de propósito).
+3. **#576 (`346d060`) e #577 (`f3cde1a`):** leitura única dos bytes de anotação; condição `significance_below_005_possible` só quando há sign-flip.
+4. **Execução reproduzível:** `PYTHONPATH=src python -m pytest -q tests/test_rgc_eval_runner.py tests/test_rgc_agreement.py tests/test_rgc_components.py` e `python scripts/simulate_rgc_design.py`, nas três versões de Python; e `python evals/ptbr/rgc_eval.py run …` sem congelamento, que deve sair com código 2.
+5. **Registrar** SHA revisado, achados, riscos residuais e conclusão (aprovada, aprovada com ressalvas, mudanças solicitadas), conforme `CONTRIBUTING.md`.
+
+### 7.5 POC — critérios de aceitação
+
+| # | Critério | Implementado | Testado | Validado (homologação) |
+|---|---|---|---|---|
+| 1 | Trecho com offsets exatos e página | Sim | Sim (`tests/test_document_check.py`) | Não |
+| 2 | Veredito recalculável pela regra do ADR-002 | Sim | Sim | Não |
+| 3 | Abstenção sem suporte | Sim | Sim (sintético) | Não; depende do conjunto rotulado pelo parceiro |
+| 4 | Contradição não vira `verified` | Sim (#589 na `main`) | Sim | Não |
+| 5 | Mesma requisição, mesmo `trace_id` e resultado | Sim | Sim | Não |
+| 6 | Integridade (`verify_all`) e adulteração detectada | Parcial: exclusão e rollback não detectados (E-10) | Sim (§7.1) | Não |
+| 7 | Recuperação após reinício e restore | Sim | Sim (local, Docker, na #586) | Não |
+| 8 | Isolamento entre usuários | Sim | Sim (404 para rastro de terceiro) | Não |
+| 9 | Logs e erros sem dados internos | Logs sim; erros dependem da #593 | Sim | **Bloqueado** até a #593 |
+
+A POC não foi executada. Antes dela, faltam: integrar E-02..E-08, decidir E-10, uma implantação de homologação com gateway e TLS (o gateway só foi testado localmente) e o conjunto de afirmações rotulado por pessoas do parceiro.
