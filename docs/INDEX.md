@@ -18,6 +18,7 @@ A documentação é organizada por finalidade. Comece pelo README para entender 
 | Arquitetura | [Visão geral](ARCHITECTURE.md) | Entender o fluxo e as fronteiras de responsabilidade. |
 | Execução | [Guia passo a passo](GUIA-PASSO-A-PASSO.md) | Preparar o ambiente e executar verificações. |
 | Estado do projeto | [Status técnico](STATUS.md) | Ver o que está concluído, em andamento ou limitado. |
+| Auditoria técnica e POC | [Auditoria de 2026-11-20](audit/ENGINEERING-AUDIT-2026-11-20.md) · [Proposta de POC](poc/POC-PROPOSAL.md) | Achados, correções em PR, matriz de maturidade e proposta de POC controlada (não executada). |
 | Regras do Judge | [Rastreabilidade Judge 2.0](judge2/TRACEABILITY.md) | Relacionar comportamento esperado e testes. |
 | Decisões | [ADRs](adr/README.md) | Consultar decisões técnicas e suas justificativas. |
 | Segurança | [Modelo de ameaças](THREAT-MODEL.md) | Entender riscos considerados, controles e exclusões. |
