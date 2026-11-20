@@ -2,6 +2,10 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — provider errors no longer expose internal URLs (security fix)
+
+- **Fix:** a failed search or research provider call returned the exception text in `failures[].message`. For an HTTP error from OpenSearch this included the full internal request URL (host, port and index name), e.g. `Server error '503 Service Unavailable' for url 'https://<host>:<port>/<index>/_search'`. The message is now `"External search failed (<ErrorType>); details are in the server log."` (or `Research provider failed …`), and the detail is logged at WARNING by `ayorai_attractor.agents.core`. API keys were not part of the message before or after.
+
 ## Unreleased — `/v1/check` rule detector v12 (questions, conditions, goals, corrections)
 
 - A sentence that states the claim as a question ("…in 2024?"), opens with a condition ("Se…", "Caso…", "Supondo que…", "If…"), or states a goal or intention ("a meta é atingir…", "pretende", "plans to") is `neutral` for it. A correction notice ("Retificação", "errata", "o valor correto") in the claim sentence or in the sentence right before or after it, within the same paragraph, makes it `neutral`, because the figure it qualifies may be the superseded one; a notice elsewhere in the document does not. Previously all of these supported the claim.

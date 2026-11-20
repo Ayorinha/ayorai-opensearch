@@ -30,6 +30,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - v12: pergunta ("…em 2024?"), condição no início da frase ("Se…", "Caso…", "Supondo que…"), meta ou intenção ("a meta é atingir…", "pretende") e aviso de retificação ou errata na frase da afirmação ou na vizinha, no mesmo parágrafo, deixam de confirmar a afirmação; um aviso em outra parte do documento não interfere. Quando a palavra faz parte da própria afirmação ("a meta de inflação foi de 3%"), ela continua sendo confirmada. Golden v0 e v0.1 inalterados. A versão 11 fica reservada à mudança de escala da #571, ainda pendente.
 
 ### Segurança, cadeia de suprimentos e imagem
+- Correção: erros de providers deixam de expor ao cliente da API a URL interna completa da busca (host, porta e índice), que aparecia em `failures[].message` em respostas 4xx e 5xx do OpenSearch. O cliente recebe só o tipo do erro; o detalhe vai para o log do servidor.
 - Imagem Docker fixada por digest, dependências instaladas por lock com hash e pisos de segurança das dependências (#556, #562).
 - Varredura da imagem com Grype e proveniência SLSA assinada das distribuições (#568).
 - Dependabot sem os pins históricos do benchmark e sem novas linhas de Python na imagem (#567); `actions/download-artifact` 8.0.2 (#520); ruff 0.17.5 (#569).
