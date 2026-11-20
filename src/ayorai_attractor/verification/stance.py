@@ -555,25 +555,27 @@ _CORRECTION_RE = re.compile(
 
 
 def _non_assertive(text: str, claim_tokens: frozenset[str]) -> bool:
-    """A claim sentence is non-assertive, or an adjacent correction notice qualifies it."""
-    sentences = [sentence for sentence in _SENTENCE_SPLIT_RE.split(text.strip()) if sentence]
+    """A claim sentence is non-assertive, or a nearby correction notice qualifies it."""
+    paragraphs = [part for part in re.split(r"\\n\\s*\\n", text.strip()) if part]
     correction_notices_apply = not _CORRECTION_RE.search(" ".join(claim_tokens))
-    for index, sentence in enumerate(sentences):
-        if not _covers_claim(sentence, claim_tokens):
-            continue
-        if correction_notices_apply and _CORRECTION_RE.search(sentence):
-            return True
-        if correction_notices_apply and index > 0 and _CORRECTION_RE.search(sentences[index - 1]):
-            return True
-        if correction_notices_apply and index + 1 < len(sentences) and _CORRECTION_RE.search(sentences[index + 1]):
-            return True
-        if _NON_ASSERTIVE_RE.search(sentence):
-            return True
-        if sentence.rstrip().endswith("?") or _CONDITIONAL_OPENING_RE.search(sentence):
-            return True
-        words = {token.casefold() for token in _TOKEN_RE.findall(sentence)}
-        if (words & _GOAL_WORDS) - claim_tokens:
-            return True
+    for paragraph in paragraphs:
+        sentences = [sentence for sentence in _SENTENCE_SPLIT_RE.split(paragraph) if sentence]
+        for index, sentence in enumerate(sentences):
+            if not _covers_claim(sentence, claim_tokens):
+                continue
+            if correction_notices_apply and _CORRECTION_RE.search(sentence):
+                return True
+            if correction_notices_apply and index > 0 and _CORRECTION_RE.search(sentences[index - 1]):
+                return True
+            if correction_notices_apply and index + 1 < len(sentences) and _CORRECTION_RE.search(sentences[index + 1]):
+                return True
+            if _NON_ASSERTIVE_RE.search(sentence):
+                return True
+            if sentence.rstrip().endswith("?") or _CONDITIONAL_OPENING_RE.search(sentence):
+                return True
+            words = {token.casefold() for token in _TOKEN_RE.findall(sentence)}
+            if (words & _GOAL_WORDS) - claim_tokens:
+                return True
     return False
 
 def _reported_denial(text: str, claim_tokens: frozenset[str]) -> bool:
