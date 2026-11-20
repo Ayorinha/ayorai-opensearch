@@ -36,7 +36,7 @@ Estes itens precisam estar integrados na `main`, cada um com autorização do ma
 
 | Item | PR ou decisão | Por que é necessário na POC |
 |---|---|---|
-| Todo documento relacionado chega à adjudicação | #589 | Sem isso, uma contradição pode ser ignorada e o resultado sair `verified` |
+| Todo documento relacionado chega à adjudicação | #589 (integrada) | Sem isso, uma contradição pode ser ignorada e o resultado sair `verified` |
 | Rastro do `/v2/audit` vincula a adjudicação | #590 | Prova que a resposta guardada é a que foi entregue |
 | Uma fonte por resultado de busca | #591 | Necessário só se o `/v2/audit` entrar no escopo |
 | Falsos apoios (pergunta, condição, meta, retificação) | #592 | Reduz apoios indevidos |
@@ -95,4 +95,4 @@ O conjunto de afirmações usado nos critérios 3 e 4 é preparado e rotulado **
 1. Conferência de números, datas e valores em documentos financeiros ou institucionais (`/v1/check`, `/v1/fields`): é o caminho mais testado.
 2. Auditoria de respostas de sistemas de IA contra documentos de referência fornecidos (`/v1/check` com `answer`).
 3. Análise de documentos regulatórios: exige cuidado com vigência e retificações, que o sistema não resolve sozinho.
-4. Verificação aberta com busca (`/v2/audit`): depende da qualidade do índice e das PRs #589, #590 e #591.
+4. Verificação aberta com busca (`/v2/audit`): depende da qualidade do índice e das PRs #590 e #591 (a #589 já está integrada).

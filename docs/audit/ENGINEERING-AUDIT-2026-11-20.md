@@ -20,7 +20,7 @@ Nenhum artefato protegido foi alterado. Todas as correções estão em PRs abert
 
 | ID | Gravidade | Achado | Evidência | Situação |
 |---|---|---|---|---|
-| P0-1 | P0 | `/v1/check` e `/v2/audit` avaliavam só os 3 trechos mais relevantes entre todos os documentos. Com 4 documentos que confirmam e 1 que contradiz explicitamente, o resultado era `verified` e o contraditório nunca era examinado. | Reprodução nas duas ordens; `TOP_K_PASSAGES = 3` em `verification/document_check.py` | Corrigido na #589 (`document-check-3`) |
+| P0-1 | P0 | `/v1/check` e `/v2/audit` avaliavam só os 3 trechos mais relevantes entre todos os documentos. Com 4 documentos que confirmam e 1 que contradiz explicitamente, o resultado era `verified` e o contraditório nunca era examinado. | Reprodução nas duas ordens; `TOP_K_PASSAGES = 3` em `verification/document_check.py` | **Integrado na `main`** pela #589 (`document-check-3`, merge `1abe7ea`) |
 | P1-1 | P1 | Cópias quase idênticas (caixa, acento, pontuação, prefixo) contam como fontes independentes e chegam a `verified`. `normalized_content_hash` nunca é preenchido. | 4 casos adversariais | **Depende de autorização:** é a regra de independência do Judge (ADR-002 §3) |
 | P1-2 | P1 | Texto colado sem URL chega a `verified`: `retrieved_at` é o momento da checagem e `origin_id` é o hash do conteúdo. | Caso base com 2 documentos anônimos | **Depende de autorização:** proveniência do Judge (ADR-002 §2) |
 | P1-3 | P1 | `/v1/check` e `/v2/audit` usam o Judge 1.x (emite `verified` e converte `UNVERIFIED` em abstenção), embora o ADR-009 seja normativo e limite as regras 1.x "até a v0.5.0". | `document_check.py` usa `judge.py`; a versão do projeto é 0.8.0 | **Depende de decisão:** migrar para o `r2-a` ou registrar uma exceção |
@@ -84,7 +84,7 @@ Os logs das réplicas trazem rota, status e duração, sem IP do cliente nem con
 
 ## 5. Decisões reservadas ao mantenedor
 
-1. Autorizar ou não cada uma das PRs #589, #590, #591, #592, #593 e #594 (e esta).
+1. Autorizar ou não cada uma das PRs #590, #591, #592, #593 e #594 (e esta). A #589 já foi integrada.
 2. #571: aprovar ou recusar a mudança de referência do Golden v0.1.
 3. P1-1 e P1-2: autorizar a mudança das regras de independência e de proveniência do Judge.
 4. P1-3: migrar `/v1/check` e `/v2/audit` para o `r2-a`, ou registrar uma exceção ao ADR-009.
@@ -99,7 +99,7 @@ Cada área foi avaliada pelo que a evidência mostra, sem percentuais. "PR abert
 | Área | Estado atual | Evidência | Falhas pendentes | Critério objetivo de conclusão |
 |---|---|---|---|---|
 | Arquitetura | Separação entre inteligência e veredito respeitada no caminho da API | Seção 2 | P1-3 (dois contratos de Judge em uso) | Uma única família de regras normativa por rota, documentada no ADR |
-| Judge | Determinístico e reprodutível; contagem de clusters correta | `judge.py`; `tests/verification/test_judge2_*.py` (o mapeamento explícito para T1–T11 do ADR-009 não foi verificado) | P1-1, P1-2; P0-1 e P1-6 em PR aberta | P1-1 e P1-2 decididos; #589 e #592 integradas; bateria adversarial sem falso apoio |
+| Judge | Determinístico e reprodutível; contagem de clusters correta | `judge.py`; `tests/verification/test_judge2_*.py` (o mapeamento explícito para T1–T11 do ADR-009 não foi verificado) | P1-1, P1-2; P1-6 em PR aberta (P0-1 integrado pela #589) | P1-1 e P1-2 decididos; #592 integrada; bateria adversarial sem falso apoio |
 | Evidências | Fonte independente separada do LLM | Seção 2 | P1-4 em PR aberta; adaptador HTTP genérico ainda junta tudo | #591 integrada; adaptador genérico com schema declarado ou desativado |
 | API | Contratos estáveis, Schemathesis verde | 37 checks da #588 | P1-5 e P2-5 em PR aberta | #590 e #593 integradas; Schemathesis verde no SHA final |
 | Segurança | Autenticação, isolamento, limites e cabeçalhos verificados | Seção 2 | P2-5 em PR aberta; P3-3 | #593 integrada; revisão humana independente da área |
@@ -110,7 +110,7 @@ Cada área foi avaliada pelo que a evidência mostra, sem percentuais. "PR abert
 | Cadeia de suprimentos | Locks com hash, actions fixadas, Grype, SBOM e SLSA | Workflows; pip-audit | P3-1 | Pins históricos isolados de qualquer caminho com segredos ou entrada externa |
 | Benchmark científico | Golden v0 e v0.1 abaixo do baseline; RGC não congelado | P1-7; `docs/STATUS.md` | Tudo o que depende de anotação humana | Protocolo RGC congelado, segunda anotação, execução única autorizada e resultado publicado com IC |
 | Documentação | Corrigida nesta auditoria onde estava errada | Esta PR e as PRs acima | Rodapé da #588 (P2-4) | STATUS igual à `main` real a cada integração |
-| Preparação para POC | Fluxo ponta a ponta existe; vínculo da adjudicação e fontes separadas em PR aberta | `docs/poc/POC-PROPOSAL.md` | #589, #590, #591 não integradas; P1-1 e P1-2 | Critérios de aceitação da proposta de POC atendidos em homologação |
+| Preparação para POC | Fluxo ponta a ponta existe; vínculo da adjudicação e fontes separadas em PR aberta | `docs/poc/POC-PROPOSAL.md` | #590 e #591 não integradas; P1-1 e P1-2 | Critérios de aceitação da proposta de POC atendidos em homologação |
 | Preparação para produção | Não validada | — | Implantação real, revisão independente, P1-1, P1-2, P1-3, P2-1 | Implantação real com evidência de operação, recuperação e segurança |
 
 **Níveis separados:**

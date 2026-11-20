@@ -1,6 +1,6 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-20 — main @ `5c757ac555746fcb28141f8dc7b9d938b5ba3b3f` (merge PR #588); post-merge CI, Security and CodeQL succeeded on this SHA
+Updated: 2026-11-20 — main @ `1abe7eaa4ce7c6b6823f0f10646b9ee698487d3d` (merge PR #589); post-merge CI, Security and CodeQL succeeded on this SHA
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
@@ -8,14 +8,15 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 
 ## Estado atual — 2026-11-20
 
-- **Main:** `5c757ac555746fcb28141f8dc7b9d938b5ba3b3f`, merge da [#588](https://github.com/Ayorinha/ayorai-opensearch/pull/588). Workflows pós-merge nesse SHA: CI [44741658018](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44741658018), Security [44741658038](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44741658038) e CodeQL [44741657857](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44741657857), todos com sucesso.
+- **Main:** `1abe7eaa4ce7c6b6823f0f10646b9ee698487d3d`, merge da [#589](https://github.com/Ayorinha/ayorai-opensearch/pull/589). Workflows pós-merge nesse SHA: CI [44755459436](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44755459436), Security [44755459132](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44755459132) e CodeQL [44755459238](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44755459238), todos com sucesso.
 - **Integradas desde 17/11:**
   - #585: detector v10;
   - #575: HMAC exigido em todas as versões de replay;
   - #586: retenção automática, `ATTRACTOR_AUDIT_HMAC_REQUIRED` e volume persistente no Compose;
   - #587: `POST /v2/audit`;
   - #582: `transformers` 5.23.0 só no ambiente NLI de teste;
-  - #588: CHANGELOG consolidado e guia de gateway.
+  - #588: CHANGELOG consolidado e guia de gateway;
+  - #589: seleção de trechos `document-check-3` — todo documento relacionado chega à adjudicação (correção P0 da auditoria).
 - **Release:** a versão de código continua `0.8.0`. Nenhuma tag, release ou DOI nova; o `[Unreleased]` do CHANGELOG está preparado.
 - **Auditoria de 2026-11-20:** achados, evidências e matriz de maturidade em [audit/ENGINEERING-AUDIT-2026-11-20.md](audit/ENGINEERING-AUDIT-2026-11-20.md). Proposta de POC em [poc/POC-PROPOSAL.md](poc/POC-PROPOSAL.md).
 
@@ -23,14 +24,14 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 
 | Estado | Itens |
 |---|---|
-| **Implementado, testado e integrado na `main`** | Judge determinístico ADR-002 (`/v1/check`, `/v1/fields`, `/v2/audit`) e Judge 2.0 `r2-a` (`/v1/verify`); detector por regras v10; autenticação por chave com HMAC e pepper; isolamento de rastros por dono; trilha SQLite `r2-v3` com HMAC, backup, `seal_unsealed` e retenção opcional; limites de corpo, taxa e concorrência; imagem fixada por digest e lock com hash; Grype, SBOM e SLSA |
-| **Corrigido e testado em PR aberta, não integrado** | #589 (contradição ignorada fora do top 3, P0); #590 (rastro `r2-v4` vincula a adjudicação do `/v2/audit`); #591 (uma fonte por resultado de busca); #592 (detector v12: pergunta, condição, meta, retificação); #593 (erros de provider sem URL interna); #594 (rotação de chave HMAC) |
+| **Implementado, testado e integrado na `main`** | Judge determinístico ADR-002 (`/v1/check`, `/v1/fields`, `/v2/audit`) e Judge 2.0 `r2-a` (`/v1/verify`); seleção de trechos `document-check-3` (#589); detector por regras v10; autenticação por chave com HMAC e pepper; isolamento de rastros por dono; trilha SQLite `r2-v3` com HMAC, backup, `seal_unsealed` e retenção opcional; limites de corpo, taxa e concorrência; imagem fixada por digest e lock com hash; Grype, SBOM e SLSA |
+| **Corrigido e testado em PR aberta, não integrado** | #590 (rastro `r2-v4` vincula a adjudicação do `/v2/audit`); #591 (uma fonte por resultado de busca); #592 (detector v12: pergunta, condição, meta, retificação); #593 (erros de provider sem URL interna); #594 (rotação de chave HMAC) |
 | **Dependente de decisão humana** | #571 (detector v11; muda a referência do Golden v0.1); regra de independência por conteúdo normalizado (P1-1); exigência de proveniência para `verified` (P1-2); migração de `/v1/check` e `/v2/audit` para o contrato do ADR-009 (P1-3); detecção de exclusão de rastros (P2-1); rodapé da descrição da #588 (P2-4); destino das PRs RGC e de benchmark; isolamento dos pins históricos com avisos de segurança |
 | **Experimental** | Provider de LLM compatível com OpenAI; NLI opcional; recuperação híbrida OpenSearch; módulos `council` e `arena` (não ligados à API) |
 | **Testado só localmente** | Gateway nginx com duas réplicas: limite agregado e `X-Forwarded-For` (seção 3 da auditoria); Compose com volume e HMAC exigido (testes Docker da #586) |
 | **Não validado** | Implantação em produção; desempenho sob carga real; acurácia científica. Golden v0 7/30 e v0.1 10/30, abaixo do baseline de classe majoritária (13/30); RGC não congelado e sem resultado |
 
-- **PRs abertas (20/11):** #589 a #594 (desta auditoria) e #571; as PRs RGC e de benchmark #504, #505, #507, #509, #527, #531, #535, #539, #553, #554, #576, #577, #579, #580, #581, #583 e #584 continuam em Draft ou aguardando decisão. Consultar o GitHub antes de agir: a lista e os heads mudam.
+- **PRs abertas (20/11):** #590 a #594 (desta auditoria) e #571; as PRs RGC e de benchmark #504, #505, #507, #509, #527, #531, #535, #539, #553, #554, #576, #577, #579, #580, #581, #583 e #584 continuam em Draft ou aguardando decisão. Consultar o GitHub antes de agir: a lista e os heads mudam.
 - **RGC e português:** o protocolo RGC continua **[PROPOSTO]**, não congelado. Nenhum caso RGC foi criado, visto, rotulado ou executado nesta atualização. Continuam pendentes: piloto 02 manual, segunda anotação independente, revisão independente F-01, verificação de proveniência, vigência e retificações, isolamento da partição oculta e decisão de congelamento.
 - **Limites de alegações:** não há benchmark em português publicado, validação externa independente, certificação regulatória nem conformidade legal. **INFERÊNCIA:** a evidência registrada não basta para declarar o sistema pronto para produção.
 
