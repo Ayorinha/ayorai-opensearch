@@ -8,6 +8,7 @@ case records explicitly. It implements the graph unit specified by DEC-023.
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from itertools import product
 from typing import NamedTuple
@@ -193,6 +194,8 @@ def bootstrap_metrics_by_component(
     pred_by_case: Mapping[str, str],
     component_by_case: Mapping[str, str],
     metrics: Mapping[str, Callable[[Sequence[str], Sequence[str]], float]],
+    *,
+    iterations: int = BOOTSTRAP_ITERATIONS,
 ) -> ComponentMetricBootstrapResult:
     """Bootstrap all cases within sampled connected components (DEC-027 D5).
 
@@ -208,6 +211,8 @@ def bootstrap_metrics_by_component(
         raise ValueError("at least one case is required for component bootstrap")
     if not metrics:
         raise ValueError("at least one metric is required")
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("iterations must be a positive integer")
     if any(
         not isinstance(name, str) or not name or not callable(fn) for name, fn in metrics.items()
     ):
@@ -228,7 +233,7 @@ def bootstrap_metrics_by_component(
     samples: dict[str, list[float]] = {name: [] for name in metrics}
     rng = RgcPrng(RGC_SEED, LABEL_COMPONENT_ACCURACY)
 
-    for _ in range(BOOTSTRAP_ITERATIONS):
+    for _ in range(iterations):
         selected = [rng.below(component_count) for _ in range(component_count)]
         sampled_case_ids = [
             case_id
@@ -252,7 +257,7 @@ def bootstrap_metrics_by_component(
         component_count=component_count,
         case_count=len(case_ids),
         method="percentile_component_bootstrap",
-        iterations=BOOTSTRAP_ITERATIONS,
+        iterations=iterations,
         seed=RGC_SEED,
         generator="RGC-PRNG-1",
         percentile="hyndman-fan-type-7",
@@ -267,6 +272,9 @@ class SignFlipResult(NamedTuple):
     ``theoretical_exact_resolution`` is DEC-021's minimum attainable two-sided p of the
     exact test, 2 / 2**K; ``monte_carlo_minimum_p`` is the smallest p the Monte Carlo
     estimator can return, 1 / (1 + iterations), and is None for the exact test.
+    Components with d_k = 0 do not change any permuted statistic, so the smallest
+    attainable two-sided p is 2 / 2**K', with K' = ``informative_component_count``
+    (components with d_k != 0); ``significance_below_005_possible`` uses K', not K.
     """
 
     statistic_observed: int
@@ -276,6 +284,8 @@ class SignFlipResult(NamedTuple):
     theoretical_exact_resolution: float
     monte_carlo_minimum_p: float | None
     component_count: int
+    informative_component_count: int
+    minimum_attainable_p: float
     component_ids: tuple[str, ...]
     significance_below_005_possible: bool
     method: str
@@ -314,6 +324,8 @@ def sign_flip_by_component(component_differences: Mapping[str, int]) -> SignFlip
     observed = sum(differences)
     total = 1 << component_count
     theoretical_exact_resolution = 2 / total
+    informative = sum(1 for difference in differences if difference != 0)
+    minimum_attainable_p = min(1.0, 2 / (1 << informative))
 
     if component_count <= 20:
         extreme = 0
@@ -331,8 +343,10 @@ def sign_flip_by_component(component_differences: Mapping[str, int]) -> SignFlip
             theoretical_exact_resolution=theoretical_exact_resolution,
             monte_carlo_minimum_p=None,
             component_count=component_count,
+            informative_component_count=informative,
+            minimum_attainable_p=minimum_attainable_p,
             component_ids=component_ids,
-            significance_below_005_possible=component_count >= 6,
+            significance_below_005_possible=minimum_attainable_p < 0.05,
             method="exact",
             seed=None,
             generator=None,
@@ -356,8 +370,10 @@ def sign_flip_by_component(component_differences: Mapping[str, int]) -> SignFlip
         theoretical_exact_resolution=theoretical_exact_resolution,
         monte_carlo_minimum_p=1 / (1 + iterations),
         component_count=component_count,
+        informative_component_count=informative,
+        minimum_attainable_p=minimum_attainable_p,
         component_ids=component_ids,
-        significance_below_005_possible=component_count >= 6,
+        significance_below_005_possible=minimum_attainable_p < 0.05,
         method="monte_carlo",
         seed=seed,
         generator="RGC-PRNG-1",
@@ -496,3 +512,79 @@ def bootstrap_cohen_kappa_by_component(
         ),
         unstable=undefined_fraction > 0.05,
     )
+
+
+def component_differences(
+    gold: Sequence[str],
+    pred: Sequence[str],
+    baseline: Sequence[str],
+    component_ids: Sequence[str],
+) -> dict[str, int]:
+    """DEC-021 paired difference per component: d_k = a_k - b_k.
+
+    a_k counts cases the system gets right and baseline B wrong; b_k the reverse.
+    Summing (system hit) - (baseline hit) per case gives the same value, because cases
+    where both are right or both wrong contribute zero.
+    """
+    if not len(gold) == len(pred) == len(baseline) == len(component_ids):
+        raise ValueError("gold, predictions, baseline and component IDs must have equal lengths")
+    differences: dict[str, int] = {}
+    for g, p, b, component in zip(gold, pred, baseline, component_ids, strict=True):
+        parse_component_id(component, "difference component ID")
+        differences[component] = differences.get(component, 0) + (p == g) - (b == g)
+    return differences
+
+
+class ObuchowskiResult(NamedTuple):
+    """Obuchowski (1998) clustered comparison of two correlated proportions."""
+
+    units: int
+    cases: int
+    system_proportion: float
+    baseline_proportion: float
+    variance: float | None
+    chi_square: float | None
+    p_value: float | None
+
+
+def obuchowski_clustered_test(
+    gold: Sequence[str],
+    pred: Sequence[str],
+    baseline: Sequence[str],
+    unit_ids: Sequence[str],
+) -> ObuchowskiResult:
+    """Sensitivity analysis only (DEC-021; Emenda 11 of the pre-registration).
+
+    Units are DEC-023 connected components; each ID must be a canonical component ID.
+
+    For K units with n_k cases, x_k system hits and y_k baseline hits, N = sum n_k:
+    Var(p1 - p2) = K / (K - 1) * (1 / N^2) * sum_k (x_k - y_k)^2, the variance under
+    H0 (with p_bar = (p1 + p2) / 2, (x_k - n_k p_bar) - (y_k - n_k p_bar) = x_k - y_k);
+    X^2 = (p1 - p2)^2 / Var, chi-square with one degree of freedom. It reproduces the
+    published PET/SPECT clustered example (21 clusters, Var 0.004844, X^2 2.857).
+    Returns None statistics when K < 2 or the variance is zero.
+    """
+    if not len(gold) == len(pred) == len(baseline) == len(unit_ids):
+        raise ValueError("gold, predictions, baseline and unit IDs must have equal lengths")
+    if not gold:
+        raise ValueError("at least one case is required")
+    units: dict[str, list[int]] = {}
+    for g, p, b, unit in zip(gold, pred, baseline, unit_ids, strict=True):
+        parse_component_id(unit, "Obuchowski component ID")
+        counts = units.setdefault(unit, [0, 0, 0])
+        counts[0] += 1
+        counts[1] += p == g
+        counts[2] += b == g
+    k = len(units)
+    total = len(gold)
+    p1 = sum(counts[1] for counts in units.values()) / total
+    p2 = sum(counts[2] for counts in units.values()) / total
+    variance: float | None = None
+    chi_square: float | None = None
+    p_value: float | None = None
+    if k >= 2:
+        variance = k / ((k - 1) * total * total) * sum((x - y) ** 2 for _, x, y in units.values())
+        if variance > 0:
+            chi_square = (p1 - p2) ** 2 / variance
+            p_value = math.erfc(math.sqrt(chi_square / 2))
+    return ObuchowskiResult(k, total, p1, p2, variance, chi_square, p_value)

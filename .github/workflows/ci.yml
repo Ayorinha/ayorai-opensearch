@@ -325,6 +325,12 @@ jobs:
     name: build-distributions
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    # Signed SLSA build provenance (Sigstore) for the sdist and wheel. The write
+    # scopes are used only outside pull requests, by the attestation steps below.
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -388,3 +394,21 @@ jobs:
             dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 90
+      - name: Attest build provenance of the distributions
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.whl
+      - name: Verify the provenance attestations
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for artifact in dist/*.tar.gz dist/*.whl; do
+            gh attestation verify "$artifact" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "${GITHUB_REPOSITORY}/.github/workflows/ci.yml"
+          done

@@ -17,14 +17,22 @@ def _request_id() -> str:
     return uuid.uuid4().hex
 
 
+_KNOWN_PATHS = frozenset(
+    {"/health", "/v1/opensearch", "/v1/audit", "/v1/check", "/v1/fields", "/v1/verify"}
+)
+
+
 def _route_label(scope: Scope) -> str:
     route = scope.get("route")
     route_path = getattr(route, "path", None)
     if isinstance(route_path, str):
         return str(route_path)
 
+    # Requests rejected before routing (401, 413, 429) carry no route; label
+    # them by path only when the path is a known API route, so arbitrary
+    # client-chosen paths never reach the logs.
     path = scope.get("path")
-    if path in {"/health", "/v1/opensearch", "/v1/audit", "/v1/verify"}:
+    if path in _KNOWN_PATHS:
         return str(path)
     if (
         isinstance(path, str)

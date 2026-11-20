@@ -76,6 +76,24 @@ def _api_key_digest(presented_key: str, pepper: bytes) -> str:
     return hmac.new(pepper, presented_key.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
+PRINCIPAL_STATE_KEY = "ayorai_principal"
+
+
+_PRINCIPAL_LABEL = b"ayorai-attractor/principal/v1\x00"
+
+
+def principal_for_digest(key_digest: str, pepper: bytes) -> str:
+    """Stable, non-secret identity of an authenticated API key.
+
+    HMAC-SHA-256 under the pepper, with a domain-separation label, of the keyed
+    digest (never of the key), truncated to 64 bits: enough to tell configured
+    keys apart. Without the pepper a stored principal cannot be linked to an
+    entry of the digest list or used to test key guesses.
+    """
+    mac = hmac.new(pepper, _PRINCIPAL_LABEL + key_digest.encode("ascii"), hashlib.sha256)
+    return "key:" + mac.hexdigest()[:16]
+
+
 def validate_auth_configuration() -> None:
     """Validate auth and rate-limit environment settings during application startup."""
     _load_configuration()
@@ -153,6 +171,13 @@ class APIKeyAuthMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
         self.mode, self.key_hashes, self.pepper = _load_configuration()
+        # Principals are derived once, from the configured digests: the request
+        # path only selects one, it never hashes data derived from the presented key.
+        self.principals = (
+            {digest: principal_for_digest(digest, self.pepper) for digest in self.key_hashes}
+            if self.pepper is not None
+            else {}
+        )
         limit = _positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS)
         window_seconds = _positive_int_env(
             "ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS
@@ -250,10 +275,11 @@ class APIKeyAuthMiddleware:
         presented_digest = _api_key_digest(presented_key, self.pepper)
         # Compare every configured digest so the matching key's position
         # in a rotation list does not short-circuit the loop.
-        matched = False
+        matched: str | None = None
         for configured_digest in self.key_hashes:
-            matched |= hmac.compare_digest(presented_digest, configured_digest)
-        if not matched:
+            if hmac.compare_digest(presented_digest, configured_digest):
+                matched = configured_digest
+        if matched is None:
             await self._reject(scope, receive, send, 401, "Unauthorized")
             return
 
@@ -262,4 +288,5 @@ class APIKeyAuthMiddleware:
             await self._reject(scope, receive, send, 429, "Rate limit exceeded", retry_after)
             return
 
+        scope.setdefault("state", {})[PRINCIPAL_STATE_KEY] = self.principals[matched]
         await self.app(scope, receive, send)

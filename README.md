@@ -85,7 +85,7 @@ A publicação oficial permanece sem benchmark em português; o protocolo RGC n�
 
 ## O que está comprovado hoje
 
-O repositório reúne implementação de verificação, contrato do Judge 2.0, testes de regressão e avaliações documentadas. Há resultados históricos documentados para Golden v0 e Golden v0.1, produzidos em inglês e voltados ao desenvolvimento do sistema. Os resultados devem ser interpretados sempre dentro da partição, protocolo e revisão de código indicados no relatório correspondente.
+O repositório reúne implementação de verificação, contrato do Judge 2.0, testes de regressão e avaliações documentadas. Há resultados históricos documentados para Golden v0 e Golden v0.1, conjuntos sintéticos de desenvolvimento com corpus em inglês e consultas e afirmações majoritariamente em português. Os resultados devem ser interpretados sempre dentro da partição, protocolo e revisão de código indicados no relatório correspondente.
 
 ### Histórico de avaliação — Calibration V2 (DEV, v0.7.0; 7 nov. 2026)
 

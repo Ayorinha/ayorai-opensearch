@@ -62,7 +62,7 @@ export ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS=60
 export ATTRACTOR_RATE_LIMIT_MAX_CLIENTS=10000
 ~~~
 
-All three values must be positive integers. With `ATTRACTOR_AUTH_MODE=off`, authentication is disabled but the IP rate limit remains active; `off` does not disable request throttling. The limiters are deliberately bounded and process-local: they protect a single application process from bursts and basic credential guessing, but counters are not shared across workers or replicas and reset on restart. A multi-worker or multi-replica deployment MUST also enforce a shared rate limit at its trusted API gateway or edge.
+All three values must be positive integers. With `ATTRACTOR_AUTH_MODE=off`, authentication is disabled but the IP rate limit remains active; `off` does not disable request throttling. The limiters are deliberately bounded and process-local: they protect a single application process from bursts and basic credential guessing, but counters are not shared across workers or replicas and reset on restart. A multi-worker or multi-replica deployment MUST also enforce a shared rate limit at its trusted API gateway or edge. See [EDGE-RATE-LIMIT.md](EDGE-RATE-LIMIT.md) for requirements and an example.
 
 ## Trusted reverse proxies and client IPs
 

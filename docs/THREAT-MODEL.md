@@ -2,7 +2,7 @@
 
 ## 1. Scope
 
-ATTRACTOR protects the integrity of claim-level verification: caller-supplied claims are evaluated against a closed-world evidence set, stance is produced from evidence, provenance is retained, and the final verdict is selected by the deterministic Judge.
+ATTRACTOR protects the integrity of claim-level verification: caller-supplied claims are evaluated against a closed-world evidence set, provenance is retained, and the final verdict is selected by the deterministic Judge. On `/v1/check`, stance is produced from the supplied documents by the stance detector. On `/v1/verify` (`r1-a` and `r2-a`), stances are caller-supplied. The Judge validates their structure and the evidence they reference (in `r2-a`, offsets and excerpts against the supplied `source_texts`; in `r1-a`, offset ranges and origin metadata only), but it does not re-derive or verify whether a stance is semantically correct.
 
 In scope:
 - resistance to document/model text attempting to steer the final verdict;
