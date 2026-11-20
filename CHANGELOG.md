@@ -7,6 +7,7 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi criado. Não traz resultado confirmatório de acurácia; o protocolo RGC permanece não congelado.
 
 ### API
+- Correção (independência das fontes, ADR-002 §3): no `/v1/check` e no `/v2/audit`, a origem de cada documento era o SHA-256 do texto bruto, então o mesmo texto com outra caixa, sem acentos, com outra pontuação ou com um prefixo contava como segunda fonte independente e levava a `verified`. Agora documentos com o mesmo texto normalizado, ou quase-duplicatas (contenção ≥ 0,8 de sequências de 5 palavras), compartilham a origem (`document-check-4`). Um texto curto reproduzido dentro de outro documento também é a mesma origem.
 - Correção: a seleção de trechos do `/v1/check` e do `/v2/audit` deixava documentos fora da adjudicação quando outros os superavam em relevância. Uma contradição explícita podia ser ignorada, e o resultado sair `verified`. Agora o melhor trecho de cada documento relacionado também é avaliado (`document-check-3`).
 - `POST /v2/audit`: busca e adjudicação ADR-002 de ponta a ponta. Só evidência independente vira documento; o resultado é registrado como rastro com dono (#587).
 - `/v1/fields`: somente dígitos ASCII simples (field-check-3) e sinal de menos ligado ao número ou valor (field-check-4) (#545, #546).
