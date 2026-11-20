@@ -13,6 +13,7 @@ import re
 import runpy
 import subprocess
 import sys
+import sysconfig
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -2934,7 +2935,40 @@ def test_execution_provenance_rejects_loaded_source_digest_mismatch() -> None:
         RUNNER["_assert_loaded_modules_from_snapshot"](ROOT, expected, loaded)
 
 
-def test_isolated_interpreter_imports_from_snapshot_and_rejects_foreign_package(
+def test_snapshot_child_environment_drops_git_overrides_and_unrelated_secrets() -> None:
+    parent = {
+        "PATH": "/tmp/attacker-bin",
+        "LANG": "C.UTF-8",
+        "GIT_DIR": "/tmp/attacker.git",
+        "GIT_WORK_TREE": "/tmp/attacker-worktree",
+        "GIT_INDEX_FILE": "/tmp/attacker-index",
+        "GIT_CONFIG_COUNT": "1",
+        "AWS_ACCESS_KEY_ID": "must-not-leak",
+        "GITHUB_TOKEN": "must-not-leak",
+        "ATTRACTOR_API_KEYS_HMAC_SHA256": "must-not-leak",
+        "PYTHONPATH": "/tmp/foreign-python",
+        "HTTP_PROXY": "http://attacker.invalid",
+    }
+    metadata = {
+        "AYORAI_RGC_SNAPSHOT_CHILD": "1",
+        "AYORAI_RGC_EXPECTED_GIT_COMMIT": "a" * 40,
+        "AYORAI_RGC_EXPECTED_WORKTREE_CLEAN": "true",
+    }
+
+    child = RUNNER["_snapshot_child_environment"](parent, metadata)
+
+    assert child == {"LANG": "C.UTF-8", **metadata}
+    assert not any(key.startswith("GIT_") for key in child)
+    assert not any(key in child for key in ("AWS_ACCESS_KEY_ID", "GITHUB_TOKEN"))
+    assert not any(key.startswith("PYTHON") for key in child)
+
+
+def test_snapshot_child_environment_rejects_non_provenance_metadata() -> None:
+    with pytest.raises(ValueError, match="unexpected child environment variable"):
+        RUNNER["_snapshot_child_environment"]({}, {"GIT_DIR": "/tmp/attacker.git"})
+
+
+def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environment(
     tmp_path: Path,
 ) -> None:
     # Include non-Python runtime artifacts too: Judge 2.0 loads its JSON
@@ -2944,54 +2978,135 @@ def test_isolated_interpreter_imports_from_snapshot_and_rejects_foreign_package(
     snapshot_root = tmp_path / "snapshot"
     snapshots, digests = RUNNER["_snapshot_files"](sources, snapshot_root)
     expected = {path: digests[path] for path in code_files}
+    site_paths = sysconfig.get_paths()
+    runtime_prefixes = {
+        "prefix": sys.prefix,
+        "exec_prefix": sys.exec_prefix,
+        "base_prefix": sys.base_prefix,
+        "base_exec_prefix": sys.base_exec_prefix,
+    }
+    canary_site_packages = tmp_path / "canary-site-packages"
+    canary_site_packages.mkdir()
+    (canary_site_packages / "fractions.py").write_text("CANARY = True\n", encoding="utf-8")
+    site_packages = [
+        *sorted({site_paths["purelib"], site_paths["platlib"]}),
+        str(canary_site_packages),
+    ]
     script = (
         "import json, runpy, sys; "
         "from pathlib import Path; "
+        "snapshot = Path(sys.argv[2]).resolve(); "
+        "runtime_prefixes = json.loads(sys.argv[4]); "
+        "sys.prefix = runtime_prefixes['prefix']; "
+        "sys.exec_prefix = runtime_prefixes['exec_prefix']; "
+        "sys.base_prefix = runtime_prefixes['base_prefix']; "
+        "sys.base_exec_prefix = runtime_prefixes['base_exec_prefix']; "
+        "import sysconfig; "
+        "runtime_paths = json.loads(sys.argv[5]); "
+        "assert sysconfig.get_paths() == runtime_paths; "
+        "assert sys.prefix == runtime_prefixes['prefix']; "
+        "assert sys.exec_prefix == runtime_prefixes['exec_prefix']; "
+        "assert sys.base_prefix == runtime_prefixes['base_prefix']; "
+        "assert sys.base_exec_prefix == runtime_prefixes['base_exec_prefix']; "
+        "site_packages = json.loads(sys.argv[3]); "
+        "stdlib_paths = list(sys.path); "
+        "sys.modules.pop('fractions', None); "
+        "sys.path[:] = list(dict.fromkeys(["
+        "str(snapshot / 'src'), str(snapshot), *stdlib_paths, *site_packages])); "
+        "import fractions; "
+        "assert Path(fractions.__file__).resolve().parent != "
+        "Path(site_packages[-1]).resolve(); "
+        "assert sys.flags.isolated == 1; "
+        "assert sys.flags.ignore_environment == 1; "
+        "assert sys.flags.no_user_site == 1; "
+        "assert sys.flags.no_site == 1; "
+        "assert str(Path(sys.argv[6]).resolve()) not in sys.path; "
         "namespace = runpy.run_path(sys.argv[1]); "
         "namespace['_assert_loaded_modules_from_snapshot']("
-        "Path(sys.argv[2]), json.loads(__import__('os').environ['EXPECTED_CODE']))"
+        "snapshot, json.loads(__import__('os').environ['EXPECTED_CODE']))"
     )
-    base_environment = os.environ.copy()
+    hostile_environment = os.environ.copy()
     # pytest-cov propagates its tracing configuration to child interpreters.
     # This subprocess validates import provenance, not test coverage; allowing
     # it to trace snapshot copies creates duplicate coverage paths for modules.
-    for variable in tuple(base_environment):
+    for variable in tuple(hostile_environment):
         if variable.startswith("COV_CORE_"):
-            base_environment.pop(variable)
-    base_environment["EXPECTED_CODE"] = json.dumps(expected, sort_keys=True)
-    base_environment["PYTHONPATH"] = os.pathsep.join(
-        (str(snapshot_root / "src"), str(snapshot_root))
-    )
+            hostile_environment.pop(variable)
+    hostile_environment["EXPECTED_CODE"] = json.dumps(expected, sort_keys=True)
+    hostile_environment["PYTHONPATH"] = str(ROOT / "src")
+    hostile_environment["PYTHONHOME"] = str(tmp_path / "attacker-pythonhome")
+    hostile_environment["PYTHONUSERBASE"] = str(tmp_path / "attacker-userbase")
     command = [
         sys.executable,
+        "-I",
+        "-S",
         "-B",
         "-c",
         script,
         str(snapshots["evals/ptbr/rgc_eval.py"]),
         str(snapshot_root),
+        json.dumps(site_packages),
+        json.dumps(runtime_prefixes),
+        json.dumps(site_paths),
+        str(ROOT / "src"),
     ]
 
     accepted = subprocess.run(
         command,
         cwd=snapshot_root,
-        env=base_environment,
+        env=hostile_environment,
         capture_output=True,
         text=True,
         check=False,
     )
     assert accepted.returncode == 0, accepted.stderr
 
-    foreign_environment = base_environment.copy()
-    foreign_environment["PYTHONPATH"] = os.pathsep.join(
-        (str(ROOT / "src"), str(snapshot_root / "src"), str(snapshot_root))
+
+def test_child_mode_requires_a_parent_created_snapshot(tmp_path: Path) -> None:
+    check = RUNNER["_assert_child_runs_from_parent_snapshot"]
+    prefix = RUNNER["SNAPSHOT_EXECUTION_PREFIX"]
+    good = tmp_path / f"{prefix}abc"
+    good.mkdir()
+    check(good)  # the parent's snapshot directory: accepted
+    checkout = tmp_path / f"{prefix}with-git"
+    (checkout / ".git").mkdir(parents=True)
+    with pytest.raises(ValueError, match="parent-created snapshot"):
+        check(checkout)
+    other = tmp_path / "some-checkout"
+    other.mkdir()
+    with pytest.raises(ValueError, match="parent-created snapshot"):
+        check(other)
+
+
+def test_forged_child_variables_do_not_bypass_the_git_gates(tmp_path: Path) -> None:
+    # Running the runner from the checkout with hand-set child-mode variables used to
+    # skip the parent's clean-checkout and commit checks for the hidden partition.
+    synthetic = tmp_path / "synthetic.jsonl"
+    synthetic.write_text("", encoding="utf-8")
+    environment = {
+        "PATH": os.environ.get("PATH", ""),
+        "PYTHONPATH": str(ROOT / "src"),
+        "AYORAI_RGC_SNAPSHOT_CHILD": "1",
+        "AYORAI_RGC_EXPECTED_GIT_COMMIT": "a" * 40,
+        "AYORAI_RGC_EXPECTED_WORKTREE_CLEAN": "true",
+        "AYORAI_RGC_EXPECTED_CODE_SHA256": "{}",
+        "AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256": "{}",
+    }
+    arguments = [
+        sys.executable,
+        str(ROOT / "evals" / "ptbr" / "rgc_eval.py"),
+        "run",
+        str(synthetic),
+        *("--labels", str(synthetic)),
+        *("--annotation-a", str(synthetic), "--annotation-b", str(synthetic)),
+        *("--agreement-report", str(synthetic), "--annotation-approval", str(synthetic)),
+        *("--adjudication-record", str(synthetic)),
+        *("--development-cases", str(synthetic), "--development-labels", str(synthetic)),
+        *("--partition", "hidden", "--mode", "oracle", "--out", str(tmp_path / "out.json")),
+    ]
+    completed = subprocess.run(
+        arguments, cwd=ROOT, env=environment, capture_output=True, text=True, check=False
     )
-    rejected = subprocess.run(
-        command,
-        cwd=snapshot_root,
-        env=foreign_environment,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert rejected.returncode != 0
-    assert "imported outside the snapshot" in rejected.stderr
+    assert completed.returncode == 2
+    assert "not executing from a parent-created snapshot" in completed.stderr
+    assert not (tmp_path / "out.json").exists()

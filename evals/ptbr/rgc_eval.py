@@ -41,6 +41,7 @@ import re
 import stat
 import subprocess
 import sys
+import sysconfig
 import tempfile
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
@@ -1240,12 +1241,9 @@ def _snapshot_files(
 
 
 def _git_commit() -> str | None:
-    git_root = ROOT
-    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
-        git_root = Path(os.environ.get("AYORAI_RGC_GIT_ROOT", str(ROOT))).resolve()
     try:
         out = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=git_root, capture_output=True, text=True, check=True
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True
         )
     except (OSError, subprocess.CalledProcessError):
         return None
@@ -1254,13 +1252,10 @@ def _git_commit() -> str | None:
 
 def _worktree_clean() -> bool | None:
     """True when tracked and untracked files match the commit; None if git is unavailable."""
-    git_root = ROOT
-    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
-        git_root = Path(os.environ.get("AYORAI_RGC_GIT_ROOT", str(ROOT))).resolve()
     try:
         out = subprocess.run(
             ["git", "status", "--porcelain"],
-            cwd=git_root,
+            cwd=ROOT,
             capture_output=True,
             text=True,
             check=True,
@@ -1864,10 +1859,56 @@ def _assert_loaded_modules_from_snapshot(
                 )
 
 
+def _snapshot_child_environment(
+    parent_environment: Mapping[str, str],
+    snapshot_metadata: Mapping[str, str],
+) -> dict[str, str]:
+    """Build a minimal child environment without inherited credentials or Git overrides."""
+    allowed_system_variables = {
+        "SYSTEMROOT",
+        "WINDIR",
+        "TEMP",
+        "TMP",
+        "TMPDIR",
+        "LANG",
+        "LC_ALL",
+        "TZ",
+    }
+    environment = {
+        key: value
+        for key, value in parent_environment.items()
+        if key.upper() in allowed_system_variables
+    }
+    for key, value in snapshot_metadata.items():
+        if not key.startswith("AYORAI_RGC_"):
+            raise ValueError(f"unexpected child environment variable: {key}")
+        environment[key] = value
+    return environment
+
+
+SNAPSHOT_EXECUTION_PREFIX = "ayorai-rgc-execution-"
+
+
+def _assert_child_runs_from_parent_snapshot(root: Path) -> None:
+    """Child mode is valid only inside a snapshot directory created by the parent.
+
+    The child trusts provenance metadata (commit, clean worktree) passed by the parent
+    in AYORAI_RGC_* variables. Setting those variables by hand while running the runner
+    from a checkout would otherwise skip the parent's Git gates. A real checkout has a
+    ``.git`` entry; the parent's snapshot never does and lives in a directory named with
+    SNAPSHOT_EXECUTION_PREFIX. This blocks that shortcut; it does not, and cannot, stop
+    an operator who deliberately rebuilds a fake snapshot (see RUNNER-RGC-v1.md).
+    """
+    resolved = root.resolve()
+    if (resolved / ".git").exists() or not resolved.name.startswith(SNAPSHOT_EXECUTION_PREFIX):
+        raise ValueError("runner is not executing from a parent-created snapshot")
+
+
 def _run_evaluation(args: argparse.Namespace) -> int:
     """Capture first, then evaluate in a fresh interpreter importing only that snapshot."""
     if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
         try:
+            _assert_child_runs_from_parent_snapshot(ROOT)
             expected = json.loads(os.environ["AYORAI_RGC_EXPECTED_CODE_SHA256"])
             if not isinstance(expected, dict) or any(
                 not isinstance(key, str) or not isinstance(value, str)
@@ -1914,7 +1955,7 @@ def _run_evaluation(args: argparse.Namespace) -> int:
     sources.update(input_sources)
 
     try:
-        with tempfile.TemporaryDirectory(prefix="ayorai-rgc-execution-") as temporary:
+        with tempfile.TemporaryDirectory(prefix=SNAPSHOT_EXECUTION_PREFIX) as temporary:
             snapshot_root = Path(temporary)
             snapshots, snapshot_hashes = _snapshot_files(sources, snapshot_root)
             if _git_commit() != git_commit or _worktree_clean() != worktree_clean:
@@ -1926,26 +1967,67 @@ def _run_evaluation(args: argparse.Namespace) -> int:
                 for relative in freeze_relatives
                 if relative.endswith(".py")
             }
-            environment = os.environ.copy()
-            environment["AYORAI_RGC_SNAPSHOT_CHILD"] = "1"
-            environment["AYORAI_RGC_GIT_ROOT"] = str(ROOT.resolve())
-            environment["AYORAI_RGC_EXPECTED_GIT_COMMIT"] = git_commit or ""
-            environment["AYORAI_RGC_EXPECTED_WORKTREE_CLEAN"] = str(worktree_clean).lower()
-            environment["AYORAI_RGC_EXPECTED_CODE_SHA256"] = json.dumps(
-                expected_code, sort_keys=True, separators=(",", ":")
+            # The child needs only snapshot provenance plus a minimal OS environment.
+            # In particular, do not inherit GIT_* overrides or unrelated CI/cloud credentials.
+            environment = _snapshot_child_environment(
+                os.environ,
+                {
+                    "AYORAI_RGC_SNAPSHOT_CHILD": "1",
+                    "AYORAI_RGC_EXPECTED_GIT_COMMIT": git_commit or "",
+                    "AYORAI_RGC_EXPECTED_WORKTREE_CLEAN": str(worktree_clean).lower(),
+                    "AYORAI_RGC_EXPECTED_CODE_SHA256": json.dumps(
+                        expected_code, sort_keys=True, separators=(",", ":")
+                    ),
+                    "AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256": json.dumps(
+                        snapshot_hashes, sort_keys=True, separators=(",", ":")
+                    ),
+                },
             )
-            environment["AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256"] = json.dumps(
-                snapshot_hashes, sort_keys=True, separators=(",", ":")
-            )
-            # Do not inherit a caller-controlled PYTHONPATH. The child imports the
-            # package and eval modules from the immutable snapshot before site-packages.
-            environment["PYTHONPATH"] = os.pathsep.join(
-                (str(snapshot_root / "src"), str(snapshot_root))
+            # Use isolated mode: ignore every PYTHON* environment variable,
+            # disable user site-packages, and avoid prepending the caller's working path.
+            # The only project import paths are then inserted explicitly by this bootstrap.
+            site_paths = sysconfig.get_paths()
+            site_packages = sorted({site_paths["purelib"], site_paths["platlib"]})
+            bootstrap = (
+                "import json, runpy, sys; "
+                "from pathlib import Path; "
+                "runner = Path(sys.argv[1]).resolve(); "
+                "snapshot = Path(sys.argv[2]).resolve(); "
+                "runtime_prefixes = json.loads(sys.argv[4]); "
+                "sys.prefix = runtime_prefixes['prefix']; "
+                "sys.exec_prefix = runtime_prefixes['exec_prefix']; "
+                "sys.base_prefix = runtime_prefixes['base_prefix']; "
+                "sys.base_exec_prefix = runtime_prefixes['base_exec_prefix']; "
+                "import sysconfig; "
+                "runtime_paths = json.loads(sys.argv[5]); "
+                "if sysconfig.get_paths() != runtime_paths:\n"
+                "    raise RuntimeError('isolated runtime paths differ from parent')\n"
+                "site_packages = json.loads(sys.argv[3]); "
+                "stdlib_paths = list(sys.path); "
+                "sys.path[:] = list(dict.fromkeys(["
+                "str(snapshot / 'src'), str(snapshot), *stdlib_paths, *site_packages])); "
+                "sys.argv = [str(runner), *sys.argv[6:]]; "
+                "runpy.run_path(str(runner), run_name='__main__')"
             )
             command = [
                 sys.executable,
+                "-I",
+                "-S",
                 "-B",
+                "-c",
+                bootstrap,
                 str(snapshots["evals/ptbr/rgc_eval.py"]),
+                str(snapshot_root),
+                json.dumps(site_packages),
+                json.dumps(
+                    {
+                        "prefix": sys.prefix,
+                        "exec_prefix": sys.exec_prefix,
+                        "base_prefix": sys.base_prefix,
+                        "base_exec_prefix": sys.base_exec_prefix,
+                    }
+                ),
+                json.dumps(sysconfig.get_paths()),
                 "run",
                 str(snapshots["inputs/cases.jsonl"]),
                 "--labels",
@@ -1993,18 +2075,23 @@ def _run_evaluation(args: argparse.Namespace) -> int:
 
 def _run_evaluation_in_process(args: argparse.Namespace) -> int:
     """Evaluate in the isolated child whose imports come only from captured code."""
-    git_commit = _git_commit()
-    worktree_clean = _worktree_clean()
-    if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
+    snapshot_child = os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1"
+    if snapshot_child:
+        # The parent checked Git identity both before and after snapshot capture.
+        # The child verifies the immutable snapshot hashes below and deliberately
+        # does not invoke Git or trust inherited Git configuration/PATH.
         expected_commit = os.environ.get("AYORAI_RGC_EXPECTED_GIT_COMMIT", "")
-        expected_clean = os.environ.get("AYORAI_RGC_EXPECTED_WORKTREE_CLEAN")
-        if expected_commit != (git_commit or "") or expected_clean != str(worktree_clean).lower():
-            print(
-                "RGC evaluation blocked: Git checkout identity changed "
-                "between capture and execution",
-                file=sys.stderr,
-            )
+        expected_clean = os.environ.get("AYORAI_RGC_EXPECTED_WORKTREE_CLEAN", "")
+        if expected_clean not in {"true", "false", "none"} or (
+            expected_commit and re.fullmatch(r"[0-9a-f]{40}", expected_commit) is None
+        ):
+            print("RGC evaluation blocked: invalid parent provenance metadata", file=sys.stderr)
             return 2
+        git_commit = expected_commit or None
+        worktree_clean = {"true": True, "false": False, "none": None}[expected_clean]
+    else:
+        git_commit = _git_commit()
+        worktree_clean = _worktree_clean()
     if args.partition == "hidden" and (git_commit is None or worktree_clean is not True):
         print(
             "RGC evaluation blocked: the hidden partition runs only from a clean git "
