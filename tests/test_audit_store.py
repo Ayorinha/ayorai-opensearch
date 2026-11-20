@@ -47,8 +47,8 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
             """,
             ("tr_persisted",),
         ).fetchone()
-        assert connection.execute("PRAGMA user_version").fetchone() == (3,)
-    assert stored == (None, None, "completed", "r2-v3", 3)
+        assert connection.execute("PRAGMA user_version").fetchone() == (4,)
+    assert stored == (None, None, "completed", "r2-v3", 4)
     # r2-v3 binds every persisted field, not only three of them.
     assert (
         ReplayBundle.build(
@@ -64,7 +64,7 @@ def test_audit_trace_store_persists_summary_and_digest(tmp_path) -> None:
                     "verified_evidence_count": 0,
                     "failure_count": 0,
                     "finding_count": len(report.findings),
-                    "schema_version": 3,
+                    "schema_version": 4,
                     "owner": None,
                     "recorded_at": "2026-11-15T12:00:00.000000Z",
                     "software_version": __version__,
@@ -128,7 +128,7 @@ def test_schema_v1_migration_preserves_legacy_value_and_digest(tmp_path) -> None
                 """,
                 (trace_id,),
             ).fetchone()
-        assert migrated == ("supported", None, "not_recorded", legacy_digest, "r2-v1", 3)
+        assert migrated == ("supported", None, "not_recorded", legacy_digest, "r2-v1", 4)
 
     # Reopening an already migrated database must be idempotent.
     with AuditTraceStore(str(path)):
@@ -173,7 +173,7 @@ def test_migration_recognizes_existing_r2_v2_rows(tmp_path) -> None:
                 """,
                 (trace_id,),
             ).fetchone()
-    assert migrated == (None, None, "not_recorded", digest, "r2-v2", 3)
+    assert migrated == (None, None, "not_recorded", digest, "r2-v2", 4)
 
 
 def test_migration_preserves_corrupted_digest_and_get_reports_invalid(tmp_path) -> None:
