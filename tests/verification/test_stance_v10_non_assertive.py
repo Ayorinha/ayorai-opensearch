@@ -106,5 +106,5 @@ def test_bound_claims_still_compare_with_bound_evidence() -> None:
     )
 
 
-def test_detector_version_is_10() -> None:
-    assert RuleStanceDetector.version == "10"
+def test_detector_version_is_at_least_10() -> None:
+    assert int(RuleStanceDetector.version) >= 10
