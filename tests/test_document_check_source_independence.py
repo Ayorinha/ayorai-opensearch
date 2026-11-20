@@ -48,7 +48,7 @@ def test_independently_worded_sources_still_count_twice() -> None:
             "Segundo o balanço, a receita da Vértice foi de 40 milhões de reais em 2024.",
             "Em 2024, a Vértice teve receita de 40 milhões de reais, informou a agência.",
         )
-        == "verified"
+        == "supported"  # two independent sources; client-supplied, so not "verified"
     )
 
 

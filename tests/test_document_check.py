@@ -55,7 +55,8 @@ def test_two_independent_documents_are_needed_for_full_support() -> None:
     item = check_documents(
         [DOC, other], claims=["O devedor é a empresa Comercial Alfa Ltda."]
     ).results[0]
-    assert item.verdict == "verified"  # two independent sources under ADR-002
+    # Two independent sources; client-supplied, so "supported" (ADR-002 §2), not "verified".
+    assert item.verdict == "supported"
     assert {e.document_id for e in item.evidence if e.stance == "supports"} == {
         "titulo",
         "registro",
@@ -147,8 +148,8 @@ def test_trace_id_binds_page_boundaries_and_page_attribution() -> None:
     assert first.documents[0]["sha256"] == second.documents[0]["sha256"]
     assert first.documents[0]["source_sha256"] == second.documents[0]["source_sha256"]
     assert first.trace_id != second.trace_id
-    assert first.engine["trace_identity"] == "document-check-trace-2"
-    assert second.engine["trace_identity"] == "document-check-trace-2"
+    assert first.engine["trace_identity"] == "document-check-trace-3"
+    assert second.engine["trace_identity"] == "document-check-trace-3"
     assert first.results[0].evidence
     assert second.results[0].evidence
     assert {item.page for item in first.results[0].evidence} == {1}

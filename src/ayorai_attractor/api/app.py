@@ -444,6 +444,7 @@ def _independent_documents(response: SearchResponse) -> list[CheckDocumentInput]
                 # The source URL is the canonical URL: two hits from the same URL are
                 # one cluster for the Judge, never two independent sources.
                 url=url if url is not None and len(url) <= 2048 else None,
+                retrieved_by_server=True,
             )
         )
     return documents

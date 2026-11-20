@@ -130,6 +130,15 @@ class CheckDocumentDigest(BaseModel):
     media_type: str
     pages: int = Field(ge=1)
     source_sha256: str = Field(description="SHA-256 of the original uploaded bytes or text.")
+    provenance: Literal["client_supplied", "server_retrieved"] = Field(
+        default="client_supplied",
+        description=(
+            "client_supplied: sent by the caller; its url/source are unverified metadata. "
+            "server_retrieved: fetched by this server (POST /v2/audit). Only "
+            "server_retrieved documents with a URL have complete provenance (ADR-002 §2), "
+            "which the Judge requires for 'verified'."
+        ),
+    )
 
 
 class CheckResponse(BaseModel):

@@ -1678,6 +1678,16 @@
             "type": "string",
             "title": "Source Sha256",
             "description": "SHA-256 of the original uploaded bytes or text."
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "client_supplied",
+              "server_retrieved"
+            ],
+            "title": "Provenance",
+            "description": "client_supplied: sent by the caller; its url/source are unverified metadata. server_retrieved: fetched by this server (POST /v2/audit). Only server_retrieved documents with a URL have complete provenance (ADR-002 §2), which the Judge requires for 'verified'.",
+            "default": "client_supplied"
           }
         },
         "type": "object",

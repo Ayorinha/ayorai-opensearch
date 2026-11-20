@@ -32,6 +32,12 @@ All public API contract changes are additive unless explicitly identified otherw
 - More supporting documents can now count as independent sources, so a verdict can move from `partially_supported` to `verified` when they were previously cut off. `engine.version` is `document-check-3` and `engine.passage_selection` reads `lexical-top3+best-per-document/max600`. No request or response field changed. Golden v0/v0.1 do not use this path and are unchanged.
 - Known limit: within one document only its best passage is added beyond the global top 3; a contradiction in a weaker passage of a document whose best passage supports the claim can still be missed.
 
+## Unreleased — `/v1/check`: client-supplied text is not "verified" (document-check-5, behavior fix)
+
+- **Fix (ADR-002 §2):** every `/v1/check` document was treated as having complete provenance, so two pasted texts could make a claim `verified`, although the server never accessed their origin (`url` is metadata only).
+- New `documents[].provenance` (`CheckDocumentDigest`, additive): `client_supplied` for documents sent by the caller, `server_retrieved` for sources fetched by this server in `POST /v2/audit`. Complete provenance requires `server_retrieved` **and** a URL; only then can the Judge return `verified`. `/v1/check` therefore returns at most `supported`; `/v2/audit` can return `verified` when its sources carry URLs.
+- The provenance and URL of each document are part of the check identity: `engine.trace_identity` is `document-check-trace-3` and `engine.version` is `document-check-5` (`4` is the source-independence change above). Offline checking of supplied documents is unchanged otherwise.
+
 ## Unreleased — `/v1/check` and `/v2/audit`: copies are not independent sources (document-check-4, behavior fix)
 
 - **Fix (ADR-002 §3):** a document's origin was the SHA-256 of its raw text, so the same text in another case, without accents, with other punctuation or with a prefix ("Nota: …") counted as a second independent source and could make a claim `verified`.
