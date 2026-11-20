@@ -3060,3 +3060,53 @@ def test_isolated_interpreter_imports_snapshot_despite_hostile_python_environmen
         check=False,
     )
     assert accepted.returncode == 0, accepted.stderr
+
+
+def test_child_mode_requires_a_parent_created_snapshot(tmp_path: Path) -> None:
+    check = RUNNER["_assert_child_runs_from_parent_snapshot"]
+    prefix = RUNNER["SNAPSHOT_EXECUTION_PREFIX"]
+    good = tmp_path / f"{prefix}abc"
+    good.mkdir()
+    check(good)  # the parent's snapshot directory: accepted
+    checkout = tmp_path / f"{prefix}with-git"
+    (checkout / ".git").mkdir(parents=True)
+    with pytest.raises(ValueError, match="parent-created snapshot"):
+        check(checkout)
+    other = tmp_path / "some-checkout"
+    other.mkdir()
+    with pytest.raises(ValueError, match="parent-created snapshot"):
+        check(other)
+
+
+def test_forged_child_variables_do_not_bypass_the_git_gates(tmp_path: Path) -> None:
+    # Running the runner from the checkout with hand-set child-mode variables used to
+    # skip the parent's clean-checkout and commit checks for the hidden partition.
+    synthetic = tmp_path / "synthetic.jsonl"
+    synthetic.write_text("", encoding="utf-8")
+    environment = {
+        "PATH": os.environ.get("PATH", ""),
+        "PYTHONPATH": str(ROOT / "src"),
+        "AYORAI_RGC_SNAPSHOT_CHILD": "1",
+        "AYORAI_RGC_EXPECTED_GIT_COMMIT": "a" * 40,
+        "AYORAI_RGC_EXPECTED_WORKTREE_CLEAN": "true",
+        "AYORAI_RGC_EXPECTED_CODE_SHA256": "{}",
+        "AYORAI_RGC_EXPECTED_SNAPSHOT_SHA256": "{}",
+    }
+    arguments = [
+        sys.executable,
+        str(ROOT / "evals" / "ptbr" / "rgc_eval.py"),
+        "run",
+        str(synthetic),
+        *("--labels", str(synthetic)),
+        *("--annotation-a", str(synthetic), "--annotation-b", str(synthetic)),
+        *("--agreement-report", str(synthetic), "--annotation-approval", str(synthetic)),
+        *("--adjudication-record", str(synthetic)),
+        *("--development-cases", str(synthetic), "--development-labels", str(synthetic)),
+        *("--partition", "hidden", "--mode", "oracle", "--out", str(tmp_path / "out.json")),
+    ]
+    completed = subprocess.run(
+        arguments, cwd=ROOT, env=environment, capture_output=True, text=True, check=False
+    )
+    assert completed.returncode == 2
+    assert "not executing from a parent-created snapshot" in completed.stderr
+    assert not (tmp_path / "out.json").exists()

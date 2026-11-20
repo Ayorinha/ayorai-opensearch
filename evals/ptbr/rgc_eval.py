@@ -1886,10 +1886,29 @@ def _snapshot_child_environment(
     return environment
 
 
+SNAPSHOT_EXECUTION_PREFIX = "ayorai-rgc-execution-"
+
+
+def _assert_child_runs_from_parent_snapshot(root: Path) -> None:
+    """Child mode is valid only inside a snapshot directory created by the parent.
+
+    The child trusts provenance metadata (commit, clean worktree) passed by the parent
+    in AYORAI_RGC_* variables. Setting those variables by hand while running the runner
+    from a checkout would otherwise skip the parent's Git gates. A real checkout has a
+    ``.git`` entry; the parent's snapshot never does and lives in a directory named with
+    SNAPSHOT_EXECUTION_PREFIX. This blocks that shortcut; it does not, and cannot, stop
+    an operator who deliberately rebuilds a fake snapshot (see RUNNER-RGC-v1.md).
+    """
+    resolved = root.resolve()
+    if (resolved / ".git").exists() or not resolved.name.startswith(SNAPSHOT_EXECUTION_PREFIX):
+        raise ValueError("runner is not executing from a parent-created snapshot")
+
+
 def _run_evaluation(args: argparse.Namespace) -> int:
     """Capture first, then evaluate in a fresh interpreter importing only that snapshot."""
     if os.environ.get("AYORAI_RGC_SNAPSHOT_CHILD") == "1":
         try:
+            _assert_child_runs_from_parent_snapshot(ROOT)
             expected = json.loads(os.environ["AYORAI_RGC_EXPECTED_CODE_SHA256"])
             if not isinstance(expected, dict) or any(
                 not isinstance(key, str) or not isinstance(value, str)
@@ -1936,7 +1955,7 @@ def _run_evaluation(args: argparse.Namespace) -> int:
     sources.update(input_sources)
 
     try:
-        with tempfile.TemporaryDirectory(prefix="ayorai-rgc-execution-") as temporary:
+        with tempfile.TemporaryDirectory(prefix=SNAPSHOT_EXECUTION_PREFIX) as temporary:
             snapshot_root = Path(temporary)
             snapshots, snapshot_hashes = _snapshot_files(sources, snapshot_root)
             if _git_commit() != git_commit or _worktree_clean() != worktree_clean:
