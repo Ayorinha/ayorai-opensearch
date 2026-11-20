@@ -48,15 +48,20 @@ These metric values were supplied from a local execution of the base-commit code
 - `legacy_accuracy`: 13/30 = `0.433333`.
 - McNemar: `legacy_correct_new_wrong=9`, `new_correct_legacy_wrong=6`, exact p-value `0.60723876953125`.
 
-## Reference update — rule detector v10 (2026-11-15)
+## Candidate reference — rule detector v10 (proposed 2026-11-15, pending approval)
 
-The recorded output above is kept as the historical PR 0.9 measurement. Detector v10 changes one Golden v0.1 prediction, so the CI reference for Golden v0.1 changes; Golden v0 and smoke-v0 are unchanged.
+Three states are kept apart in this document:
 
-- **Semantic change:** a number followed by a scale word without a currency ("2,0 milhões", "2.0 million", "1,2 bilhão") is read with its scale, and a count noun right after the scale ("2,0 milhões de clientes", "2.0 million active retail customers") makes it a scaled count of that noun. Previously the scale was applied only to money with a currency, so "2,0 milhões de clientes" was the bare value 2.0 with no attribute in common with the evidence.
-- **Case-level effect:** exactly one case changes. Golden v0.1 `x02` (expected `CONFLICTING`; claim "A NovaBank tinha 2,0 milhões de clientes de varejo ativos no fim de 2025"; evidence doc-005 "2.0 million active retail customers", doc-018 "2.3 million") goes from `PARTIALLY_SUPPORTED` (wrong) to `CONFLICTING` (correct): doc-005 now supports and doc-018 contradicts.
-- **New Golden v0.1 reference:** `global_accuracy` 11/30 = `0.366667`; `balanced_accuracy` `0.502671`; `legacy_accuracy` 13/30 = `0.433333` (unchanged); McNemar `legacy_correct_new_wrong=9`, `new_correct_legacy_wrong=7`, exact p-value `0.803619384765625`; `semantic_sha256` `1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180` (was `64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608`).
-- **Status:** development measurement on a 30-case suite, not a confirmatory result. The McNemar test against the legacy baseline remains non-significant.
-- **Approval:** this reference update requires the maintainer's explicit approval, as stated below.
+| State | Golden v0.1 `semantic_sha256` | Where |
+|---|---|---|
+| Historical (PR 0.9 measurement) | `64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608` | "Recorded output" above; never rewritten |
+| Approved reference | `64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608` | "Interpretation and invariants" below; normative until the maintainer approves a change |
+| Candidate (detector v10) | `1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180` | this section; not approved |
+
+- **Semantic change:** a number followed by a scale word without a currency ("2,0 milhões", "2.0 million", "1,2 bilhão") is read with its scale, and a count noun right after the scale ("2,0 milhões de clientes", "2.0 million active retail customers") makes it a scaled count of that noun. Previously the scale was applied only to money with a currency.
+- **Case-level effect:** exactly one case changes. Golden v0.1 `x02` (expected `CONFLICTING`; claim "A NovaBank tinha 2,0 milhões de clientes de varejo ativos no fim de 2025"; evidence doc-005 "2.0 million active retail customers", doc-018 "2.3 million") goes from `PARTIALLY_SUPPORTED` (wrong) to `CONFLICTING` (correct). Golden v0 and smoke-v0 are unchanged.
+- **Candidate Golden v0.1 metrics:** `global_accuracy` 11/30 = `0.366667` (approved: 10/30); `balanced_accuracy` `0.502671` (approved: `0.481838`); `legacy_accuracy` 13/30 unchanged; McNemar `legacy_correct_new_wrong=9`, `new_correct_legacy_wrong=7`, exact p-value `0.803619384765625` (non-significant). Development measurement on 30 cases, not a confirmatory result.
+- **Approval rule:** the change that introduces detector v10 carries the CI, `scripts/reproduce.py` and test assertions for the candidate value, because the code and its pinned reference cannot disagree in CI. That change must be merged only after the maintainer's explicit approval of this candidate; at merge, the candidate becomes the approved reference and the line below is updated in the same change.
 
 ## Interpretation and invariants
 
@@ -64,5 +69,5 @@ The recorded output above is kept as the historical PR 0.9 measurement. Detector
 - Do not edit Golden v0/v0.1, the corpus, manifests, or historical reports as part of this change.
 - The older narrative in [BASELINE-v0.md](BASELINE-v0.md) is a historical baseline report and must not be silently rewritten to these later code-version measurements.
 - The legacy `content_sha256` keeps its existing calculation and report placement. It may change between equivalent runs because nested per-result latency remains included.
-- `semantic_sha256` is versioned and its reference values are deliberately fixed in CI for Golden v0 (`21abb816facce73fc924842d12b373b8792abc2e7389e129c35bb58bab806632`), Golden v0.1 (`64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608`), and smoke-v0 (`969ec61a4aee4e4426f5d217819bd185ebba248743e7721714a3123f5df67c3d`). If an intentional change alters any reference digest, it requires a separate PR, an explicit rationale documenting the semantic change and its effect on case-level predictions, and maintainer approval. Do not update these values merely to make CI pass.
+- `semantic_sha256` is versioned and its reference values are deliberately fixed in CI for Golden v0 (`21abb816facce73fc924842d12b373b8792abc2e7389e129c35bb58bab806632`), Golden v0.1 (`64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608`; a candidate replacement, `1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180`, is pending approval — see the section above), and smoke-v0 (`969ec61a4aee4e4426f5d217819bd185ebba248743e7721714a3123f5df67c3d`). If an intentional change alters any reference digest, it requires a separate PR, an explicit rationale documenting the semantic change and its effect on case-level predictions, and maintainer approval. Do not update these values merely to make CI pass.
 - A stable semantic digest is evidence that the canonicalized semantic report is unchanged; it is not, by itself, proof that every replay path or every external dependency is reproducible.
