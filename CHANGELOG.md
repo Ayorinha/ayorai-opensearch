@@ -4,6 +4,14 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Automatic retention of audit traces with `ATTRACTOR_AUDIT_RETENTION_DAYS` (off by default): expired traces are purged at startup and at most once per hour on writes.
+
+### Fixed
+
+- Docker Compose now keeps audit traces in the named volume `attractor-audit`; previously they were lost whenever the container was recreated. The image creates `/app/.attractor` owned by the service user so the volume is writable.
+
 ### Changed
 
 - RGC runner `rgc-eval/0.8.0` and the annotator-agreement tool draw every bootstrap sample from RGC-PRNG-1, a SHA-256 generator specified byte for byte in DEC-027 with published reference vectors, and compute 95% intervals with the Hyndman–Fan type 7 percentile. Intervals are no longer numerically comparable with `rgc-eval/0.7.0`. No RGC result exists or was produced.

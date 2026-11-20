@@ -18,7 +18,7 @@ import os
 import re
 import sqlite3
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import RLock
 from typing import Any, Final, Literal
@@ -165,6 +165,32 @@ def _mac_for_trace(key: bytes, version: str, digest: str, fields: dict[str, Any]
 LEGACY_TRACE_POLICIES = ("hidden", "shared")
 
 
+_RETENTION_MAX_DAYS: Final = 36_500
+# The automatic purge runs at startup and then at most once per interval, on the
+# write path, so a busy service does not delete on every request.
+_RETENTION_INTERVAL: Final = timedelta(hours=1)
+
+
+def audit_retention_days_from_env() -> int | None:
+    """Read ATTRACTOR_AUDIT_RETENTION_DAYS; unset or empty disables automatic purge.
+
+    The retention period and its legal basis are the data controller's decision,
+    so nothing is deleted unless the operator sets a positive number of days.
+    """
+    raw = os.getenv("ATTRACTOR_AUDIT_RETENTION_DAYS", "").strip()
+    if not raw:
+        return None
+    try:
+        days = int(raw)
+    except ValueError as exc:
+        raise ValueError("ATTRACTOR_AUDIT_RETENTION_DAYS must be a whole number of days") from exc
+    if not 1 <= days <= _RETENTION_MAX_DAYS:
+        raise ValueError(
+            f"ATTRACTOR_AUDIT_RETENTION_DAYS must be between 1 and {_RETENTION_MAX_DAYS}"
+        )
+    return days
+
+
 def legacy_trace_policy_from_env() -> str:
     """ATTRACTOR_AUDIT_LEGACY_TRACES: who may read traces recorded without an owner.
 
@@ -202,12 +228,16 @@ class AuditTraceStore:
         self._hmac_required = audit_hmac_required_from_env()
         self._lock = RLock()
         self._legacy_policy = legacy_trace_policy_from_env()
+        self._retention_days = audit_retention_days_from_env()
+        self._last_retention_run: datetime | None = None
         if configured != ":memory:":
             Path(configured).parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(self.path, check_same_thread=False)
         try:
             self._migrate()
             self._require_hmac_keys_for_sealed_store()
+            with self._lock:
+                self._apply_retention_locked()
         except BaseException:
             # A failed migration or fail-closed configuration check must not
             # leak the connection; migration rollback leaves the database intact.
@@ -459,7 +489,30 @@ class AuditTraceStore:
                 ) from exc
             raise
         self._connection.commit()
+        self._apply_retention_locked()
         return replay.digest
+
+    @property
+    def retention_days(self) -> int | None:
+        """Configured automatic retention in days, or None when disabled."""
+        return self._retention_days
+
+    def _apply_retention_locked(self) -> int:
+        """Purge traces older than the configured retention, at most once per interval."""
+        if self._retention_days is None:
+            return 0
+        now = self._clock()
+        if self._last_retention_run is not None and now - self._last_retention_run < (
+            _RETENTION_INTERVAL
+        ):
+            return 0
+        self._last_retention_run = now
+        cursor = self._connection.execute(
+            "DELETE FROM audit_traces WHERE recorded_at IS NOT NULL AND recorded_at < ?",
+            (_utc_timestamp(now - timedelta(days=self._retention_days)),),
+        )
+        self._connection.commit()
+        return int(cursor.rowcount)
 
     def backup(self, destination: str) -> int:
         """Write a consistent online copy of the store to a new file.
