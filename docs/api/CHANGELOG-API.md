@@ -2,6 +2,12 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — `/v1/check` rule detector v12 (questions, conditions, goals, corrections)
+
+- A sentence that states the claim as a question ("…in 2024?"), opens with a condition ("Se…", "Caso…", "Supondo que…", "If…"), or states a goal or intention ("a meta é atingir…", "pretende", "plans to") is `neutral` for it. A correction notice ("Retificação", "errata", "o valor correto") in the claim sentence or in the sentence right before or after it, within the same paragraph, makes it `neutral`, because the figure it qualifies may be the superseded one; a notice elsewhere in the document does not. Previously all of these supported the claim.
+- When the trigger word belongs to the claim itself ("A meta de inflação foi de 3%", "A correção monetária foi de 5%"), the passage still supports it.
+- The component version is now `12`; `11` is reserved for the pending scale-word change (#571). Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
+
 ## Unreleased — search results are separate sources (behavior fix)
 
 - **Fix:** OpenSearch hits were concatenated into one text cut at 2,000 characters, so `/v2/audit` checked a single document: at most one independent source (`partially_supported` ceiling), no per-hit URL or id, and content after the cut was lost. Each hit is now its own source with its URL (canonical when the index stores an http(s) `url`), id and `published_at`, up to 20,000 characters. Hits sharing a URL are one cluster.

@@ -27,6 +27,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - v8, com erros conhecidos fixados em testes (#565).
 - v9: negação restrita às frases da afirmação e negação relatada classificada como neutra (#570).
 - v10: afirmações hipotéticas ou não assertivas e valores-limite ("acima de", "mais de", "superou") não confirmam a afirmação (#585).
+- v12: pergunta ("…em 2024?"), condição no início da frase ("Se…", "Caso…", "Supondo que…"), meta ou intenção ("a meta é atingir…", "pretende") e aviso de retificação ou errata na frase da afirmação ou na vizinha, no mesmo parágrafo, deixam de confirmar a afirmação; um aviso em outra parte do documento não interfere. Quando a palavra faz parte da própria afirmação ("a meta de inflação foi de 3%"), ela continua sendo confirmada. Golden v0 e v0.1 inalterados. A versão 11 fica reservada à mudança de escala da #571, ainda pendente.
 
 ### Segurança, cadeia de suprimentos e imagem
 - Imagem Docker fixada por digest, dependências instaladas por lock com hash e pisos de segurança das dependências (#556, #562).
