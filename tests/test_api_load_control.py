@@ -111,7 +111,7 @@ def test_every_post_verification_route_is_heavy() -> None:
     post_routes = {
         route.path
         for route in app.routes
-        if "POST" in getattr(route, "methods", set()) and route.path.startswith("/v1/")
+        if "POST" in getattr(route, "methods", set()) and route.path.startswith(("/v1/", "/v2/"))
     }
     assert post_routes == HEAVY_PATHS
 

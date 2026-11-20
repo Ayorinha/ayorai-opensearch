@@ -205,3 +205,72 @@ class FieldsResponse(BaseModel):
         "the value was not located next to the field labels; it is an abstention, not a "
         "finding of error."
     )
+
+
+class AuditV2Request(BaseModel):
+    """POST /v2/audit: search, then check claims against the independent sources found."""
+
+    # At most one of claims/answer: documented in the schema so clients and contract
+    # tests see the same rule the validator enforces.
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "not": {
+                "required": ["claims", "answer"],
+                "properties": {
+                    "claims": {"not": {"type": "null"}},
+                    "answer": {"not": {"type": "null"}},
+                },
+            }
+        },
+    )
+
+    schema_version: Literal["a2"] = "a2"
+    query: str = Field(min_length=3, max_length=10_000, pattern=r"\S")
+    mode: Literal["fast", "balanced", "deep"] = "balanced"
+    claims: list[ClaimText] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=50,
+        description=(
+            "Claims to check, verbatim. Optional: without claims or answer, the engine's "
+            "own answer to the query is checked."
+        ),
+    )
+    answer: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=20_000,
+        pattern=r"\S",
+        description="An AI answer to decompose into claims and check. Optional.",
+    )
+
+    @model_validator(mode="after")
+    def _at_most_one_input(self) -> AuditV2Request:
+        if self.claims is not None and self.answer is not None:
+            raise ValueError("provide at most one of 'claims' or 'answer'")
+        return self
+
+
+class AuditV2Response(BaseModel):
+    schema_version: Literal["a2"] = "a2"
+    trace_id: str = Field(description="Persisted audit trace; readable via GET /v1/audit/{id}.")
+    check_trace_id: str | None = Field(
+        description="Digest of the claim check; null when no independent source was found."
+    )
+    operation_status: Literal["completed", "failed", "not_recorded"]
+    verdict_authority: Literal["adr-002-judge"] = "adr-002-judge"
+    claims_source: Literal["caller_claims", "caller_answer", "engine_answer", "none"]
+    answer: str = Field(description="The engine's answer to the query.")
+    engine: dict[str, str]
+    documents: list[CheckDocumentDigest]
+    results: list[CheckClaimResult]
+    summary: dict[str, int]
+    failure_count: int = Field(ge=0)
+    scope_note: str = (
+        "Claims are checked only against independent sources retrieved for this query; "
+        "model-generated text is never used as evidence. Under the ADR-002 Judge, "
+        "'partially_supported' means support from a single independent source and "
+        "'verified' support from two or more. An abstention means the retrieved sources "
+        "do not establish the claim; it is not a statement that the claim is false."
+    )
