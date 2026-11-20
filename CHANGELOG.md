@@ -207,14 +207,19 @@ Primeira medição completa em benchmark internacional (LLM-AggreFact, partiçã
 ### Changed
 
 - OpenAPI schema of the `/v1/verify` `status` field now references `Verdict` and `ResponsePolicy` via `anyOf`; accepted wire values are unchanged.
+
 - (F1.3) Split transport-level abstention into `ResponsePolicy`; `VerificationResponse.status` now distinguishes `Verdict` from abstention policy, and `verdict` is typed as `Verdict | None`. The deprecated `ResponseStatus` compatibility enum remains available until v0.5.0; production contracts use `Verdict | ResponsePolicy`. The `/v1/verify` r1-a wire values are unchanged.
+
 - **Removed (PR 1.3 / #129):** `VerificationStatus` (`src/ayorai_attractor/models.py`) and `EvidenceStore.status()` (`src/ayorai_attractor/evidence/core.py`) were removed. This is a breaking change for consumers importing `VerificationStatus`; migrate to the formal deterministic verdict contract at `/v1/verify` rather than deriving factual status from the evidence store. To reproduce the historical legacy baseline, check out the `baseline-legacy-v0` tag; do not regenerate it with current code.
+
 - Search and audit responses no longer claim a factual verdict: `verification` is deprecated and
   returned as `null`, `verdict_authority` is `not_adjudicated`, and `/v1/verify` is the canonical
   formal-verification endpoint. Operational failures are reported separately in `operation_status`.
   The deprecated `verification` and `confidence` response fields are scheduled for removal in v0.5.0.
 - SQLite audit storage uses a versioned schema via `PRAGMA user_version` and idempotent migration from existing databases. The migration preserves `legacy_verification` and does not rewrite historical digests. Replay records distinguish `r2-v1` (legacy verification values) and `r2-v2` (`not_adjudicated`); audit lookup exposes `replay_integrity` as `valid` or `invalid` so tampered records can be identified.
+
 - Rule stance (detector version 6): Portuguese number words, legal duplicates `40 (quarenta)`, fractions and multipliers, duration conversion (1 ano = 12 meses), `vezes`/`dias-multa`, set semantics per fact, comparative bounds not read as negation, competing named actors block support. New module `verification/pt_normalize.py`.
+
 - Rule stance (detector version 5): negation is now language dependent; Portuguese contractions (`no`, `na`, `nos`, `nas`) and `sem` are no longer read as negation, and `jamais`, `nem`, `nenhum(a)`, `ninguém` are.
 - Rule stance: dates are recognised in Portuguese written form (`10 de março de 2026`, `1º de abril de 2026`), slash form (`10/03/2026`, day/month in Portuguese and month/day in English) and month form (`março de 2026`), compared only at the asserted granularity.
 - Rule stance: opposite directional predicates on the same proposition (`subiu`/`caiu`, `aumentou`/`diminuiu`, `aprovou`/`rejeitou`, `rose`/`fell`) are classified as CONTRADICTS even when the numbers coincide.
@@ -223,6 +228,7 @@ Primeira medição completa em benchmark internacional (LLM-AggreFact, partiçã
 ### Evaluation
 
 - PT-CP-Audit: realistic audit simulation on the real Brazilian Penal Code (152 cases, dev/test by provision). Rule stance v5 → v6 on the held-out test (hand-written cases): false-support rate 25.9% → 14.8%, accuracy 65.0% → 72.5%, McNemar p ≈ 0.45 (directional). See `evals/pt-cp-audit/RESULTS.md`.
+
 - F1.2 (pre-registered in `docs/eval/PREREGISTRATION-F1.2.md`, measured once): rule path C v4 → v5 left balanced accuracy unchanged on Golden v0 (42.73%) and v0.1 (48.18%), McNemar p = 1.0, with no regression. Four wrong `REFUTED` verdicts became wrong `UNVERIFIED`. Current path C accuracy on Golden v0 is 23.33% (the 26.67% in F1 was measured on older rule code). See `docs/eval/F1.2-RESULTS.md`.
 
 ### Governance
