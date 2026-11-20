@@ -716,6 +716,45 @@ class AuditTraceStore:
             self._connection.commit()
         return sealed
 
+    def reseal_with_active_key(self) -> dict[str, int]:
+        """Re-MAC, with the active (first) key, every valid trace sealed by another key.
+
+        Key rotation: put the new key first in ATTRACTOR_AUDIT_HMAC_KEYS and keep the
+        old ones, run this, check ``verify_all()``, then the old keys can be retired.
+        A trace is resealed only if it verifies under the configured keys, so an
+        altered trace is never laundered into a valid one: it is counted in
+        ``skipped_invalid`` and left as it is. Returns
+        ``{"resealed": n, "skipped_invalid": m}``.
+        """
+        if not self._mac_keys:
+            raise ValueError("ATTRACTOR_AUDIT_HMAC_KEYS is not configured")
+        key_id, key = self._mac_keys[0]
+        counts = {"resealed": 0, "skipped_invalid": 0}
+        with self._lock:
+            rows = self._connection.execute(
+                "SELECT trace_id, replay_digest, replay_version, "
+                "legacy_verification, verification, operation_status, evidence_count, "
+                "independent_evidence_count, verified_evidence_count, failure_count, "
+                "finding_count, schema_version, owner, recorded_at, software_version "
+                "FROM audit_traces WHERE mac_key_id IS NOT NULL AND mac_key_id != ? "
+                "ORDER BY trace_id",
+                (key_id,),
+            ).fetchall()
+            for row in rows:
+                trace_id, digest, version, *field_values = row
+                if self._verify_locked(str(trace_id)) != "valid":
+                    counts["skipped_invalid"] += 1
+                    continue
+                fields = dict(zip(_R2_V3_FIELDS, field_values, strict=True))
+                replay_mac = _mac_for_trace(key, str(version), str(digest), fields)
+                self._connection.execute(
+                    "UPDATE audit_traces SET replay_mac = ?, mac_key_id = ? WHERE trace_id = ?",
+                    (replay_mac, key_id, trace_id),
+                )
+                counts["resealed"] += 1
+            self._connection.commit()
+        return counts
+
     def get(self, trace_id: str, requester: str | None = None) -> AuditTraceResponse | None:
         """Return the trace only to its owner.
 
