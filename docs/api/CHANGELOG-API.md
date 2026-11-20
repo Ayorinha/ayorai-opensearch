@@ -2,6 +2,10 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — provider errors no longer expose internal URLs (security fix)
+
+- **Fix:** a failed search or research provider call returned the exception text in `failures[].message`. For an HTTP error from OpenSearch this included the full internal request URL (host, port and index name), e.g. `Server error '503 Service Unavailable' for url 'https://<host>:<port>/<index>/_search'`. The message is now `"External search failed (<ErrorType>); details are in the server log."` (or `Research provider failed …`), and the detail is logged at WARNING by `ayorai_attractor.agents.core`. API keys were not part of the message before or after.
+
 ## Unreleased — `POST /v2/audit` (additive)
 
 - New end-to-end route: search, then adjudicate claims with the ADR-002 Judge against the independent sources retrieved for the query. Claims come from the caller (`claims`), from a caller answer (`answer`), or by default from the engine's own answer. Model-generated text is never used as evidence; without an independent source every claim abstains with `no_independent_source`.

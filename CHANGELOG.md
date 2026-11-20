@@ -26,6 +26,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - v10: afirmações hipotéticas ou não assertivas e valores-limite ("acima de", "mais de", "superou") não confirmam a afirmação (#585).
 
 ### Segurança, cadeia de suprimentos e imagem
+- Correção: erros de providers deixam de expor ao cliente da API a URL interna completa da busca (host, porta e índice), que aparecia em `failures[].message` em respostas 4xx e 5xx do OpenSearch. O cliente recebe só o tipo do erro; o detalhe vai para o log do servidor.
 - Imagem Docker fixada por digest, dependências instaladas por lock com hash e pisos de segurança das dependências (#556, #562).
 - Varredura da imagem com Grype e proveniência SLSA assinada das distribuições (#568).
 - Dependabot sem os pins históricos do benchmark e sem novas linhas de Python na imagem (#567); `actions/download-artifact` 8.0.2 (#520); ruff 0.17.5 (#569).

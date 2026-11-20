@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 
 from ayorai_attractor.evidence.core import EvidenceStore
@@ -5,6 +6,18 @@ from ayorai_attractor.failure_engine.core import FailureEngine
 from ayorai_attractor.models import AgentResult, FailureStage, FailureType
 from ayorai_attractor.providers.base import Provider
 from ayorai_attractor.tenant import TenantContext
+
+logger = logging.getLogger(__name__)
+
+
+def _client_safe(prefix: str, exc: Exception) -> str:
+    """Failure text for API clients: the error type only.
+
+    Exception text can carry internal endpoints and index names (an HTTP error
+    names the full request URL), so it goes to the server log, never the response.
+    """
+    logger.warning("%s: %s: %s", prefix, type(exc).__name__, exc)
+    return f"{prefix} ({type(exc).__name__}); details are in the server log."
 
 
 @dataclass
@@ -55,7 +68,7 @@ class ResearchAgent(Agent):
             except Exception as exc:
                 context.failures.record(
                     FailureType.API_ERROR,
-                    f"External search failed: {exc}",
+                    _client_safe("External search failed", exc),
                     recoverable=True,
                     stage=FailureStage.RETRIEVAL,
                 )
@@ -64,7 +77,7 @@ class ResearchAgent(Agent):
         except Exception as exc:
             failure = context.failures.record(
                 FailureType.API_ERROR,
-                f"Research provider failed: {exc}",
+                _client_safe("Research provider failed", exc),
                 recoverable=True,
             )
             return AgentResult(
