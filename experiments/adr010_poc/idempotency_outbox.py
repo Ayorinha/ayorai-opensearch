@@ -289,8 +289,12 @@ class SQLiteIdempotencyOutbox:
             )
         except sqlite3.IntegrityError as error:
             connection.rollback()
-            if "UNIQUE constraint failed: adr010_idempotency_outbox.tessera_index" in str(error):
-                raise CorruptStoreError("Tessera index is already assigned to another key") from error
+            if "UNIQUE constraint failed: adr010_idempotency_outbox.tessera_index" in str(
+                error
+            ):
+                raise CorruptStoreError(
+                    "Tessera index is already assigned to another key"
+                ) from error
             raise
         except Exception:
             connection.rollback()
