@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "experiments/adr010-poc/**"
+      - "experiments/adr010_poc/**"
       - "tests/auditlog_poc/**"
       - "tests/auditlog/vectors/rfc6962-transparency-dev.json"
       - "src/ayorai_attractor/auditlog/**"
@@ -34,7 +34,7 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
       - run: python -m pytest tests/auditlog_poc -q
-      - run: ruff check experiments/adr010-poc tests/auditlog_poc
+      - run: ruff check experiments/adr010_poc tests/auditlog_poc
 
   tessera-posix-conformance:
     name: Tessera v1.0.4 POSIX conformance
