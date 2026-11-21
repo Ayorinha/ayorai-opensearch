@@ -49,4 +49,4 @@ jobs:
           go-version: "1.24.0"
           cache: false
       - name: Run upstream Tessera POSIX writer and independent fsck
-        run: python3 experiments/adr010-poc/run_tessera_poc.py
+        run: python3 experiments/adr010_poc/run_tessera_poc.py
