@@ -25,7 +25,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
   - **Arquivo de chaves:** `ATTRACTOR_API_KEYS_FILE` é relido quando muda; cada chave tem escopos (`verify`, `audit:write`, `audit:read`, `metrics`), `expires_at` e `revoked_at`/`revoked_by`.
   - **Respostas:** chave desconhecida, expirada ou revogada recebe 401; sem o escopo da rota, 403.
   - **Arquivo inválido depois da subida:** o serviço mantém o último válido, e a métrica `attractor_api_keys_reload_failures_total` dispara o alerta `AttractorApiKeysReloadFailing`.
-  - **Emissão e revogação:** `python -m ayorai_attractor.api.keys`, com gravação atômica.
+  - **Emissão e revogação:** `python -m ayorai_attractor.api.keys`, com gravação atômica. A ferramenta lê a chave por stdin e grava só o digest; nunca gera nem exibe a chave.
   - **Compatibilidade:** `ATTRACTOR_API_KEYS_HMAC_SHA256` continua como antes, com todos os escopos, e o principal de cada chave não muda.
 
 ### Trilha de auditoria

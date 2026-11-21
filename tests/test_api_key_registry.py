@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import io
 import json
 import os
 import secrets
@@ -306,7 +307,7 @@ def test_principal_is_the_same_in_legacy_and_file_modes(key_file: Path, monkeypa
 # --- criterion 6: nothing secret leaks ---------------------------------------
 
 
-def test_no_digest_or_key_in_logs_or_metrics(key_file: Path, caplog: Any) -> None:
+def test_no_digest_or_key_in_logs_or_metrics(key_file: Path, caplog: Any, monkeypatch: Any) -> None:
     key = _key()
     _write(key_file, [_entry("ops", key, ["verify"])])
     with caplog.at_level("DEBUG"):
@@ -314,6 +315,7 @@ def test_no_digest_or_key_in_logs_or_metrics(key_file: Path, caplog: Any) -> Non
         _call(client, "POST", "/v1/check", key)
         key_file.write_text("{broken")
         _call(client, "POST", "/v1/check", key)
+        monkeypatch.setattr("sys.stdin", io.StringIO(_key() + "\n"))
         keys_module.main(["new", "--id", "next", "--scope", "verify"])
     text = "\n".join(record.getMessage() for record in caplog.records) + http_metrics.render()
     assert _digest(key) not in text and key not in text and PEPPER not in text
@@ -322,30 +324,28 @@ def test_no_digest_or_key_in_logs_or_metrics(key_file: Path, caplog: Any) -> Non
 # --- command line --------------------------------------------------------------
 
 
-def test_new_command_appends_a_working_key(key_file: Path, capsys: Any, monkeypatch: Any) -> None:
+def test_new_command_reads_the_key_and_stores_only_its_digest(
+    key_file: Path, capsys: Any, monkeypatch: Any
+) -> None:
     _write(key_file, [])
-    assert (
-        keys_module.main(
-            [
-                "new",
-                "--id",
-                "metrics-bot",
-                "--scope",
-                "metrics",
-                "--expires",
-                "2999-01-01T00:00:00Z",
-                "--file",
-                str(key_file),
-            ]
-        )
-        == 0
-    )
-    key = capsys.readouterr().err.split("manager): ")[1].strip()
+    key = _key()
+    monkeypatch.setattr("sys.stdin", io.StringIO(key + "\n"))
+    arguments = ["new", "--id", "metrics-bot", "--scope", "metrics"]
+    arguments += ["--expires", "2999-01-01T00:00:00Z", "--file", str(key_file)]
+    assert keys_module.main(arguments) == 0
+    captured = capsys.readouterr()
+    assert key not in captured.out + captured.err  # never displayed
     stored = json.loads(key_file.read_text())["keys"]
     assert stored[0]["digest"] == _digest(key) and key not in key_file.read_text()
     client = TestClient(_app())
     assert _call(client, "GET", "/metrics", key) == 200
     assert _call(client, "POST", "/v1/check", key) == 403
+
+
+def test_new_command_rejects_a_short_key(key_file: Path, monkeypatch: Any) -> None:
+    monkeypatch.setattr("sys.stdin", io.StringIO("short\n"))
+    with pytest.raises(SystemExit, match="at least"):
+        keys_module.main(["new", "--id", "x", "--scope", "verify"])
 
 
 def test_revoke_unknown_or_twice_fails(key_file: Path) -> None:

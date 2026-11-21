@@ -58,14 +58,15 @@ The placeholders above are intentionally invalid and must be replaced. In `api_k
 - other routes, such as the OpenAPI pages, need a valid key and no scope;
 - `/health` and `/ready` stay public.
 
-**Issuing and revoking.** `ATTRACTOR_API_KEY_PEPPER` must be set:
+**Issuing and revoking.** `ATTRACTOR_API_KEY_PEPPER` must be set. Create the key in the secret manager, for example with `python -c "import secrets; print(secrets.token_urlsafe(32))"`, then pass it on standard input. Without a pipe, `new` prompts for it without echo:
 
 ~~~bash
-python -m ayorai_attractor.api.keys new --id metrics-bot --scope metrics --expires 2027-01-01T00:00:00Z --file keys.json
+<read the key from the secret manager> | python -m ayorai_attractor.api.keys new --id metrics-bot --scope metrics --expires 2027-01-01T00:00:00Z --file keys.json
 python -m ayorai_attractor.api.keys revoke --file keys.json --id metrics-bot --by "maintainer name"
 ~~~
 
-- `new` prints the key once, on standard error. Store it in a secret manager.
+- `new` never generates, displays or stores the key, only its digest. Keys shorter than 32 characters are refused.
+- This differs from ADR-012 §4, which had the tool generate and show the key once. Code scanning flags any program output of a secret, so the key now stays in the secret manager.
 - Both commands validate the whole file and write it atomically, so the service never reads a half-written file.
 - The service logs every revocation it applies with the key `id`, `revoked_by` and time, never digests.
 
