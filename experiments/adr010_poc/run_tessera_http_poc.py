@@ -120,12 +120,54 @@ def main() -> None:
                 raise TimeoutError("Tessera did not publish the expected HTTP checkpoint")
 
             origin = checkpoint_lines[0]
-            tree_size = int(checkpoint_lines[1])
-            root_hash = base64.b64decode(checkpoint_lines[2], validate=True)
+            initial_tree_size = int(checkpoint_lines[1])
+            initial_root_hash = base64.b64decode(checkpoint_lines[2], validate=True)
             if origin != "example.com/log/ayorai-adr010-poc":
                 raise RuntimeError(f"unexpected HTTP checkpoint origin: {origin}")
-            if root_hash != expected_root:
+            if initial_tree_size != len(leaves) or initial_root_hash != expected_root:
                 raise RuntimeError("Tessera HTTP checkpoint root differs from public vector")
+
+            duplicate_request = Request(
+                f"{base_url}/add",
+                data=leaves[0],
+                headers={"Content-Type": "application/octet-stream"},
+                method="POST",
+            )
+            with urlopen(duplicate_request, timeout=15) as response:
+                duplicate_index = int(response.read().decode("ascii").strip())
+            if duplicate_index != len(leaves):
+                raise RuntimeError(
+                    "unexpected duplicate behavior from the pinned conformance server: "
+                    f"expected new index {len(leaves)}, got {duplicate_index}"
+                )
+
+            deadline = time.monotonic() + 30
+            final_checkpoint_lines: list[str] = []
+            while time.monotonic() < deadline:
+                if process.poll() is not None:
+                    raise RuntimeError("Tessera HTTP server exited before duplicate publication")
+                try:
+                    with urlopen(f"{base_url}/checkpoint", timeout=2) as response:
+                        final_checkpoint_lines = response.read().decode("utf-8").splitlines()
+                    if (
+                        len(final_checkpoint_lines) >= 3
+                        and int(final_checkpoint_lines[1]) >= len(leaves) + 1
+                    ):
+                        break
+                except HTTPError as error:
+                    if error.code != 404:
+                        raise
+                time.sleep(0.25)
+            if (
+                len(final_checkpoint_lines) < 3
+                or int(final_checkpoint_lines[1]) != len(leaves) + 1
+            ):
+                raise TimeoutError("Tessera did not publish the duplicate HTTP append")
+
+            final_tree_size = int(final_checkpoint_lines[1])
+            final_root_hash = base64.b64decode(final_checkpoint_lines[2], validate=True)
+            if final_root_hash == initial_root_hash:
+                raise RuntimeError("duplicate append unexpectedly left the checkpoint root unchanged")
         finally:
             try:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -156,10 +198,13 @@ def main() -> None:
             raise RuntimeError(f"Tessera HTTP log failed fsck:\n{fsck_output}")
 
         print(f"TESSERA_HTTP_VERSION={TESSERA_VERSION}")
-        print(f"HTTP_ENTRIES={len(leaves)}")
-        print(f"HTTP_CHECKPOINT_ORIGIN={origin}")
-        print(f"HTTP_CHECKPOINT_TREE_SIZE={tree_size}")
-        print(f"HTTP_CHECKPOINT_ROOT_SHA256={root_hash.hex()}")
+        print(f"HTTP_INITIAL_ENTRIES={len(leaves)}")
+        print(f"HTTP_INITIAL_CHECKPOINT_TREE_SIZE={initial_tree_size}")
+        print(f"HTTP_INITIAL_CHECKPOINT_ROOT_SHA256={initial_root_hash.hex()}")
+        print(f"HTTP_DUPLICATE_APPEND_INDEX={duplicate_index}")
+        print("HTTP_DUPLICATE_WAS_DEDUPLICATED=false")
+        print(f"HTTP_FINAL_CHECKPOINT_TREE_SIZE={final_tree_size}")
+        print(f"HTTP_FINAL_CHECKPOINT_ROOT_SHA256={final_root_hash.hex()}")
         print("HTTP_CHECKPOINT_SIGNATURE=VERIFIED_BY_TESSERA_FSCK")
         print("HTTP_TILE_AND_ENTRY_BUNDLE_INTEGRITY=VERIFIED_BY_TESSERA_FSCK")
 
