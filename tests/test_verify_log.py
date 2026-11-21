@@ -497,3 +497,10 @@ def test_concurrent_writers_produce_one_consistent_tree(tmp_path: Path) -> None:
     finally:
         for log in logs:
             log.close()
+
+
+def test_idempotency_header_is_ignored_when_the_log_is_off(api: Any) -> None:
+    # Contract: with the log off the header has no effect (Schemathesis sends any string).
+    response = api("off").post("/v1/verify", json=_r2a(), headers={"Idempotency-Key": "x" * 500})
+    assert response.status_code == 200
+    assert "audit_status" not in response.json()

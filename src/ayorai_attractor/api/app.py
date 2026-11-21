@@ -734,9 +734,11 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
             "required": False,
             "description": (
                 "r2-a with the verification log on (ADR-009 §15.1): same key and same input "
-                "return the same event and receipt; same key with another input is a 409."
+                "return the same event and receipt; same key with another input is a 409. "
+                "With the log on, the key must be 1-128 visible ASCII characters (else 422); "
+                "with the log off, or for r1-a, the header is ignored."
             ),
-            "schema": {"type": "string", "minLength": 1, "maxLength": 128},
+            "schema": {"type": "string"},
         }
     ],
     "requestBody": {
