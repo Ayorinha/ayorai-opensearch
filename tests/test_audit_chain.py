@@ -227,3 +227,46 @@ def test_backup_carries_the_chain(tmp_path: Path) -> None:
         store.backup(copy)
     with AuditTraceStore(copy, mac_keys=(OLD,)) as store:
         assert store.verify_chain(checkpoint)["complete"] is True
+
+
+def test_failed_chain_append_rolls_back_the_trace(tmp_path: Path) -> None:
+    # A trace whose chain entry could not be written must not be committed later
+    # by an unrelated successful call: the caller was told the record failed.
+    path = str(tmp_path / "a.sqlite3")
+    with AuditTraceStore(path, mac_keys=(OLD,)) as store:
+        original = store._append_chain_locked
+
+        def failing(*args: object, **kwargs: object) -> None:
+            raise sqlite3.OperationalError("disk I/O error")
+
+        store._append_chain_locked = failing  # type: ignore[method-assign]
+        with pytest.raises(sqlite3.OperationalError):
+            _record(store)
+        store._append_chain_locked = original  # type: ignore[method-assign]
+        _record(store)
+        report = store.verify_chain()
+        assert store.verify_all() == {"valid": 1, "invalid": 0}
+    assert report["unsequenced_traces"] == 0
+    assert report["complete"] is True
+
+
+def test_failed_purge_record_keeps_the_traces(tmp_path: Path) -> None:
+    # A purge whose chain record cannot be written must not delete anything:
+    # otherwise the deletion would later look like tampering, or go unrecorded.
+    path = str(tmp_path / "a.sqlite3")
+    now = [datetime(2026, 1, 1, tzinfo=UTC)]
+    with AuditTraceStore(path, clock=lambda: now[0], mac_keys=(OLD,)) as store:
+        old = _record(store)
+        now[0] += timedelta(days=10)
+
+        def failing(*args: object, **kwargs: object) -> None:
+            raise sqlite3.OperationalError("disk I/O error")
+
+        original = store._append_chain_locked
+        store._append_chain_locked = failing  # type: ignore[method-assign]
+        with pytest.raises(sqlite3.OperationalError):
+            store.purge_recorded_before(now[0] - timedelta(days=5))
+        store._append_chain_locked = original  # type: ignore[method-assign]
+        _record(store)
+        assert store.get(old, requester="alice") is not None
+        assert store.verify_chain()["complete"] is True
