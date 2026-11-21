@@ -19,6 +19,7 @@ It accepts already-computed 32-byte RFC 6962 leaf hashes. It does not create or 
 - Conflict: same key with a different leaf is rejected.
 - Inclusion proof verification against the root captured when the entry was appended.
 - Concurrent writer calls using independent SQLite connections.
+- Process exit before commit and retry after commit when the original response is lost.
 - Detection of a changed leaf against a caller-held checkpoint.
 - Detection of a deleted row without automatic repair.
 
