@@ -23,6 +23,7 @@ It accepts already-computed 32-byte RFC 6962 leaf hashes. It does not create or 
 - Process exit before commit and retry after commit when the original response is lost.
 - Durable outbox state machine: PENDING → ASSIGNED → RECORDED, with unresolved-row recovery, immutable checkpoint receipts and unique Tessera index assignment.
 - Inclusion proofs are stored in the RECORDED receipt and verified against the leaf hash and checkpoint root before commit.
+- Fail-closed Tessera adapter contract: append, exact-entry reconciliation scan and checkpoint publication are injected behind a narrow protocol; unresolved PENDING rows are never blindly re-appended.
 - Detection of a changed leaf against a caller-held checkpoint.
 - Detection of a deleted row without automatic repair.
 
@@ -66,7 +67,7 @@ This is not an implementation of the ADR-010 production phases.
 - It does not sign checkpoints or implement C2SP signed notes.
 - It does not serve tlog-tiles, tile bundles, consistency proofs over HTTP, or witness cosignatures.
 - It does not implement event schema, RFC 8785 commitment creation, salt custody, erasure, a complete HTTP idempotency adapter, or integration with /v1/verify.
-- The outbox is a state-machine prototype only: the caller must verify the checkpoint signature and origin before recording it and must reconcile PENDING rows by searching Tessera's durable log rather than blindly appending again. The adapter contract verifies inclusion proofs, but the real Tessera scanner/proof fetcher is not implemented.
+- The outbox and adapter are state-machine prototypes only: the caller must verify the checkpoint signature and origin before recording it and must reconcile PENDING rows by searching Tessera's durable log rather than blindly appending again. The adapter contract verifies inclusion proofs, but the real Tessera scanner/proof fetcher and HTTP adapter are not implemented.
 - The outbox stores the raw Idempotency-Key in its experimental SQLite database; production must define key confidentiality, hashing/HMAC, retention and access control.
 - It does not defend against an operator who can rewrite the database and every local copy of a checkpoint.
 - A TreeHead or AppendReceipt from this prototype is unsigned and is not a trust anchor.
