@@ -1,6 +1,6 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-21 — main @ `50ed1cea3b9c2153eee6b01cfc0d70b7fe7ab58e` (merge PR #609), before the merge of this status update; post-closure audit in [audit/POST-CLOSURE-AUDIT-2026-11-21.md](audit/POST-CLOSURE-AUDIT-2026-11-21.md)
+Updated: 2026-11-21 — `main` @ `3798be64e8ae6e4d8dac2a35b7c3611c8194ee17` (merge PR #614). This reconciliation is proposed in [PR #615](https://github.com/Ayorinha/ayorai-opensearch/pull/615) and is not yet merged. CI, Security and CodeQL passed on this exact `main` SHA; see runs [CI 44912288739](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44912288739), [Security 44912288756](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44912288756) and [CodeQL 44912288735](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44912288735). Post-closure audit: [audit/POST-CLOSURE-AUDIT-2026-11-21.md](audit/POST-CLOSURE-AUDIT-2026-11-21.md)
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
@@ -20,10 +20,12 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
   - #606: auditoria pós-encerramento, inventário das branches, índices de ADR e decisões;
   - #609: texto superado por retificação não é evidência (`rgc-eval/0.14.0`); a suíte não tem mais nenhum `xfail`;
   - #610: relatórios F1.2 sem caminhos internos (hashes recalculados e registrados); guia de anotação alinhado à Emenda 4;
-  - #611: falha da retenção depois do commit não vira erro de gravação.
-- **Verificação final na `main` `50ed1ce`:**
-  - CI, Security e CodeQL passaram;
-  - `2602 passed` em Python 3.11, 3.12 e 3.13, sem `xfail`;
+  - #611: falha da retenção depois do commit não vira erro de gravação;
+  - #614: reconciliação documental final do ciclo, com atualização do STATUS, ROADMAP, auditoria pós-encerramento e referência à proposta de emenda DEC-022.
+- **Verificação na `main` `3798be6` (SHA completo no cabeçalho):**
+  - CI, Security e CodeQL passaram no SHA exato;
+  - jobs de teste Python 3.11, 3.12 e 3.13, regressões Judge/Golden, lint e build de distribuições concluíram com sucesso;
+  - a contagem `2602 passed` foi observada no HEAD da PR #614 (`5516191`), não deve ser atribuída automaticamente a qualquer SHA posterior sem consultar o respectivo log;
   - `scripts/reproduce.py`: Golden v0 7/30, v0.1 11/30, Judge 6/6;
   - `ruff`, `mypy` e `mypy --strict` do runner sem erros;
   - `bandit` 0;
@@ -38,8 +40,8 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
   Nenhuma decisão continua pendente no registro.
 - **Issues:** #433, #434 e #435 foram fechadas. O que falta delas é roteiro, não defeito, e está em [ROADMAP.md](ROADMAP.md).
 - **Pins históricos (P3-1):** mantidos e isolados em workflows manuais, com regra testada; ver [security/HISTORICAL-PINS.md](security/HISTORICAL-PINS.md).
-- **PRs e issues abertas:** nenhuma, além desta atualização.
-- **Release:** versão de código `0.8.0`; nenhuma tag, release ou DOI nova.
+- **PRs abertas verificadas em 2026-11-21:** #613 (Draft, atualização de STATUS superada pela #614; permanece aberta e aguarda decisão do mantenedor) e #615 (esta reconciliação ampliada de versão e documentação). Não há issues abertas (`0`).
+- **Release:** v0.8.0 publicada em 2026-11-13; tag `v0.8.0` aponta para `92ea5eb86b69724b05834d98c326e8315bb6b655`, commit com assinatura verificada pelo GitHub; [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0). CI, Security e CodeQL da tag passaram. O Version DOI v0.8.0 ainda não estava registrado no Zenodo em 2026-11-21. DOI de conceito: `10.5281/zenodo.23125082`; Version DOI v0.7.0: `10.5281/zenodo.24045951`.
 
 ### Classificação do estado
 
@@ -48,12 +50,12 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 | **Integrado na `main` e testado** | Judge ADR-002 em `/v1/check`, `/v1/fields`, `/v2/audit` e Judge 2.0 `r2-a` em `/v1/verify`, uma família por rota (ADR-011); detector por regras v13; independência por conteúdo normalizado e proveniência (`document-check-5`); trilha SQLite `r2-v3`/`r2-v4` com HMAC, rotação, retenção e cadeia de sequência; runner RGC `rgc-eval/0.14.0` com IC por componente para acurácia, H1 e kappa e exclusão de texto superado; imagem por digest, lock com hash, Grype, SBOM e SLSA |
 | **Integrado sem revisão humana independente** | Runner e ferramenta de concordância do RGC (#576, #577, #580, #584, #600, #609); detector v13 (#599); cadeia de auditoria (#602, #604, #611). A revisão pós-merge por ferramenta automatizada não substitui a humana |
 | **Texto normativo aguardando o mantenedor** | Emendas datadas da DEC-022 (pré-registro e protocolo) e Emenda 11 no protocolo: texto pronto em [eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md](eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md). Os arquivos são protegidos e não foram editados por ferramenta automatizada |
-| **Configuração do repositório (só pelo mantenedor, em Settings)** | Dependabot alerts e security updates desligados; 92 branches em 2026-11-21 (`main`, `gh-pages` e 90 antigas, sem nenhuma PR aberta associada). O repositório apaga a branch de origem quando a PR é mesclada (`delete_branch_on_merge`); a contagem de 94 incluía branches de PRs que estavam abertas na hora. A classificação por conteúdo de cada branch está no relatório de auditoria: 22 vazias ou já incorporadas, que são as candidatas à exclusão pelo mantenedor, 12 com conteúdo não incorporado e 56 em conflito com a `main`, que pedem triagem. A exigência de aprovação no ruleset continua 0 de propósito: com um único mantenedor, o GitHub não permite aprovar a própria PR, e exigir 1 aprovação bloquearia todo merge |
+| **Configuração do repositório (só pelo mantenedor, em Settings)** | Dependabot alerts e security updates desligados; 94 branches consultadas em 2026-11-21 (`main`, `gh-pages`, 90 branches antigas do inventário e as duas heads das PRs abertas #613 e #615). O repositório apaga a branch de origem quando a PR é mesclada (`delete_branch_on_merge`); a contagem de 94 incluía branches de PRs que estavam abertas na hora. A classificação por conteúdo de cada branch está no relatório de auditoria: 22 vazias ou já incorporadas, que são as candidatas à exclusão pelo mantenedor, 12 com conteúdo não incorporado e 56 em conflito com a `main`, que pedem triagem. A exigência de aprovação no ruleset continua 0 de propósito: com um único mantenedor, o GitHub não permite aprovar a própria PR, e exigir 1 aprovação bloquearia todo merge |
 | **Roteiro** | [ROADMAP.md](ROADMAP.md): persistir o veredito do `/v1/verify`, log Merkle, escopos e expiração de chaves, tenant, observabilidade, build reprodutível |
-| **Não validado** | Implantação real; POC (proposta); acurácia científica: Golden v0 7/30 e v0.1 11/30, abaixo do baseline de classe majoritária (13/30); RGC sem resultado |
+| **Não validado / limites científicos** | Implantação real; POC (proposta); Golden v0 7/30 e v0.1 11/30, abaixo do baseline majoritário (13/30); RGC sem resultado validado. PT-CP-Audit possui avaliação interna separada (test manual n=40: acurácia 65,0%→72,5%, apoio falso 25,9%→14,8%, McNemar p=0,453125; test completo n=68: acurácia 76,5%→83,8%, apoio falso 17,1%→9,8%, p=0,179688). Resultado direcional, sem significância estatística; não equivale a validação externa nem a benchmark RGC. |
 
 - **RGC:** protocolo **[PROPOSTO]**, não congelado. Só pessoas podem fazer: piloto 02, segunda anotação independente, revisão F-01, inserção das emendas propostas, congelamento e execução única. Nenhum caso RGC foi criado, visto, rotulado ou executado.
-- **Limites de alegações:** sem benchmark em português publicado, validação externa, certificação ou conformidade legal. **INFERÊNCIA:** a evidência não basta para declarar o sistema pronto para produção.
+- **Limites de alegações:** existe avaliação interna PT-CP-Audit em português, mas não há benchmark RGC PT-BR validado, validação externa independente, certificação ou demonstração de conformidade legal. **INFERÊNCIA:** a evidência registrada não basta para declarar o sistema pronto para produção.
 
 ## Snapshot — 2026-11-20 (substituído pelo estado de 2026-11-21)
 

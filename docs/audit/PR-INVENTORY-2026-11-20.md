@@ -636,7 +636,7 @@ Estados: CONCLUÍDO, INTEGRADO, ENCERRADO COM JUSTIFICATIVA, AGUARDANDO DECISÃO
 
 | ID | Origem | Descrição | Sev. | Impacto se aberto | Dependências | Solução | Responsável | Evidência | Estado |
 |---|---|---|---|---|---|---|---|---|---|
-| E-01 | Auditoria (P0-1), #589 | Contradição fora do top 3 ignorada | P0 | `verified` com refutação presente | — | Melhor trecho por documento | Claude | `1abe7ea`; CI/Security/CodeQL verdes | INTEGRADO |
+| E-01 | Auditoria (P0-1), #589 | Contradição fora do top 3 ignorada | P0 | `verified` com refutação presente | — | Melhor trecho por documento | Mantenedor (commit `1abe7ea`, autoria Git verificada) | `1abe7ea`; CI/Security/CodeQL verdes | INTEGRADO |
 | E-02 | P1-5, #590 | Rastro do `/v2/audit` sem a adjudicação | P1 | Resposta entregue não provável | autorização | `r2-v4` + `adjudication_sha256` | Mantenedor (merge) | `213aaf0`, CI 38/38, mutação 4/4 | CONCLUÍDO (PR) |
 | E-03 | P1-4, #591 | Fontes de busca concatenadas | P1 | Teto `partially_supported`; contradição invisível | autorização | Uma fonte por resultado | Mantenedor (merge) | `d20a202`, CI 38/38, mutação 6/6 | CONCLUÍDO (PR) |
 | E-04 | P1-6, #592 | Pergunta/condição/meta/retificação como apoio | P1 | Falso apoio | #571 (versão) | Detector v12 | Mantenedor | `e92370c`, CI 37/37, mutação 8/8 + 4/4 | CONCLUÍDO (PR) |

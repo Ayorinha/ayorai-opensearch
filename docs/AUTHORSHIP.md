@@ -28,4 +28,4 @@ The verifiable record of authorship and prior intellectual property (first commi
 
 ## Citation
 
-For research or software reuse, cite the repository using [CITATION.cff](../CITATION.cff). Cite all versions with DOI 10.5281/zenodo.23125082; cite a specific release with its version DOI (v0.6.0: 10.5281/zenodo.23607357; v0.5.0: 10.5281/zenodo.23344005; v0.4.0: 10.5281/zenodo.23300849).
+For research or software reuse, cite the repository using [CITATION.cff](../CITATION.cff). The concept DOI for all versions is `10.5281/zenodo.23125082`. Cite a specific release with its registered version DOI: v0.7.0 (`10.5281/zenodo.24045951`), v0.6.0 (`10.5281/zenodo.23607357`), v0.5.0 (`10.5281/zenodo.23344005`) or v0.4.0 (`10.5281/zenodo.23300849`). The v0.8.0 GitHub Release is published, but its Zenodo version DOI was still pending on 2026-11-21; do not invent or infer a version DOI.
