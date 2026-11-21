@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verificação de afirmações em respostas de IA: como funciona e ferramentas open source | AYORAI ATTRACTOR</title>
+<meta name="description" content="O que é verificação de afirmações (claim verification) em respostas de IA, como ela detecta alucinações, como funciona passo a passo e quais ferramentas e modelos open source existem: MiniCheck, FactCG, HallOumi, OpenFactCheck, Veracity e AYORAI ATTRACTOR.">
+<meta name="author" content="Anderson Leon Ayora">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://ayorinha.github.io/ayorai-opensearch/verificacao-de-afirmacoes-ia/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="AYORAI ATTRACTOR">
+<meta property="og:title" content="Verificação de afirmações em respostas de IA: guia e ferramentas open source">
+<meta property="og:description" content="Como verificar, afirmação por afirmação, se uma resposta de IA é sustentada pelas fontes — e quais ferramentas open source fazem isso.">
+<meta property="og:url" content="https://ayorinha.github.io/ayorai-opensearch/verificacao-de-afirmacoes-ia/">
+<meta property="og:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": "Verificação de afirmações em respostas de IA: como funciona e ferramentas open source",
+      "description": "O que é verificação de afirmações em respostas de IA, como funciona passo a passo e quais ferramentas e modelos open source existem.",
+      "inLanguage": "pt-BR",
+      "datePublished": "2026-11-21",
+      "dateModified": "2026-11-21",
+      "image": "https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png",
+      "author": {"@type": "Person", "name": "Anderson Leon Ayora", "url": "https://github.com/Ayorinha"},
+      "publisher": {"@type": "Person", "name": "Anderson Leon Ayora", "url": "https://github.com/Ayorinha"},
+      "mainEntityOfPage": "https://ayorinha.github.io/ayorai-opensearch/verificacao-de-afirmacoes-ia/",
+      "about": ["Verificação de afirmações", "Claim verification", "Detecção de alucinação de IA", "Auditoria de respostas de IA"],
+      "mentions": [
+        {"@type": "SoftwareSourceCode", "name": "AYORAI ATTRACTOR", "url": "https://ayorinha.github.io/ayorai-opensearch/", "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch"},
+        {"@type": "SoftwareSourceCode", "name": "OpenFactCheck", "codeRepository": "https://github.com/yuxiaw/openfactcheck"},
+        {"@type": "ScholarlyArticle", "name": "Veracity: An Open-Source AI Fact-Checking System", "url": "https://arxiv.org/abs/2506.15794"},
+        {"@type": "ScholarlyArticle", "name": "VerifAI: A Verifiable Open-Source Search Engine for Biomedical Question Answering", "url": "https://arxiv.org/abs/2604.08549"}
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "AYORAI ATTRACTOR", "item": "https://ayorinha.github.io/ayorai-opensearch/"},
+        {"@type": "ListItem", "position": 2, "name": "Verificação de afirmações em respostas de IA", "item": "https://ayorinha.github.io/ayorai-opensearch/verificacao-de-afirmacoes-ia/"}
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {"@type": "Question", "name": "O que é verificação de afirmações em IA?", "acceptedAnswer": {"@type": "Answer", "text": "É checar, uma a uma, se as afirmações de uma resposta de IA são sustentadas pelas fontes usadas, em vez de avaliar o texto inteiro de uma vez."}},
+        {"@type": "Question", "name": "Verificação de afirmações é o mesmo que detecção de alucinação?", "acceptedAnswer": {"@type": "Answer", "text": "É uma das formas mais diretas de detectar alucinações: uma afirmação que nenhuma fonte sustenta, ou que a fonte contradiz, é um sinal de alucinação."}},
+        {"@type": "Question", "name": "Existe ferramenta open source para verificar afirmações de IA?", "acceptedAnswer": {"@type": "Answer", "text": "Sim. Há modelos verificadores como MiniCheck, FactCG e HallOumi, sistemas de checagem como OpenFactCheck e Veracity, e camadas de auditoria como o AYORAI ATTRACTOR, projeto brasileiro sob licença Apache-2.0."}},
+        {"@type": "Question", "name": "A verificação de afirmações prova que a fonte é verdadeira?", "acceptedAnswer": {"@type": "Answer", "text": "Não. Ela mostra se a afirmação é sustentada pela evidência fornecida. Se a própria fonte estiver errada ou desatualizada, a verificação não corrige isso."}}
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../">AYORAI ATTRACTOR</a>
+    <nav class="nav" aria-label="Principal">
+      <a class="hide-sm" href="../#como-funciona">Como funciona</a>
+      <a class="hide-sm" href="../auditoria-de-inteligencia-artificial/">Guia de auditoria</a>
+      <a href="./" aria-current="page"><span class="lg">Verificação de afirmações</span><span class="sm">Verificação</span></a>
+      <a class="gh" href="https://github.com/Ayorinha/ayorai-opensearch">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap narrow article">
+  <nav class="crumb" aria-label="Trilha"><a href="../">AYORAI ATTRACTOR</a> / Verificação de afirmações em respostas de IA</nav>
+  <h1>Verificação de afirmações em respostas de IA: como funciona e ferramentas open source</h1>
+  <p class="byline">Por Anderson Leon Ayora, autor do AYORAI ATTRACTOR · Publicado em 21 de novembro de 2026</p>
+
+  <div class="callout"><strong>Em resumo:</strong> verificação de afirmações (em inglês, <em>claim verification</em>) é checar, uma a uma, se as afirmações de uma resposta de IA são sustentadas pelas fontes usadas. É a forma mais direta de encontrar alucinações. Existem modelos open source que fazem a checagem, como MiniCheck e FactCG, e camadas de auditoria, como o <a href="../">AYORAI ATTRACTOR</a>, que registram como cada veredito foi obtido.</div>
+
+  <div class="toc">
+    <strong>Neste guia</strong>
+    <ol>
+      <li><a href="#o-que-e">O que é verificação de afirmações</a></li>
+      <li><a href="#por-que">Por que verificar afirmação por afirmação</a></li>
+      <li><a href="#como-funciona">Como funciona, passo a passo</a></li>
+      <li><a href="#ferramentas">Ferramentas e modelos open source</a></li>
+      <li><a href="#como-escolher">Como escolher</a></li>
+      <li><a href="#attractor">Onde o AYORAI ATTRACTOR se encaixa</a></li>
+      <li><a href="#limites">Limites</a></li>
+      <li><a href="#faq">Perguntas frequentes</a></li>
+    </ol>
+  </div>
+
+  <h2 id="o-que-e">O que é verificação de afirmações</h2>
+  <p>Uma resposta de IA quase nunca é uma frase só. Ela reúne várias afirmações: um número, uma data, um nome, uma regra. A verificação de afirmações separa essas partes e pergunta, para cada uma: <strong>a fonte usada sustenta isto, contradiz isto ou não permite concluir?</strong></p>
+  <p>É diferente de perguntar se a resposta "parece correta" ou se ela "citou uma fonte". Uma resposta pode citar um documento real e, mesmo assim, afirmar algo que o documento não diz.</p>
+
+  <h2 id="por-que">Por que verificar afirmação por afirmação</h2>
+  <ul>
+    <li><strong>O erro fica localizado.</strong> Em vez de "a resposta tem problema", você sabe qual frase está sem sustentação.</li>
+    <li><strong>Uma fonte boa não "contamina" o parágrafo inteiro.</strong> Um trecho correto não deve dar credibilidade automática às frases vizinhas.</li>
+    <li><strong>Dá para auditar depois.</strong> Cada veredito fica ligado ao trecho de evidência que o justificou.</li>
+  </ul>
+
+  <h2 id="como-funciona">Como funciona, passo a passo</h2>
+  <h3>1. Separar as afirmações</h3>
+  <p>A resposta é dividida em afirmações curtas e verificáveis. Opiniões e recomendações ficam de fora: só se verifica o que pode ser confrontado com uma fonte.</p>
+  <h3>2. Reunir as evidências</h3>
+  <p>Para cada afirmação, buscam-se os trechos relevantes nos documentos de referência — os mesmos usados pela IA ou uma base confiável — guardando a posição exata de cada trecho.</p>
+  <h3>3. Comparar afirmação e evidência</h3>
+  <p>Um modelo de inferência textual (NLI) ou um verificador especializado estima se o trecho apoia, contradiz ou é neutro em relação à afirmação.</p>
+  <h3>4. Decidir o veredito</h3>
+  <p>A estimativa do modelo vira um veredito. Aqui está a diferença entre as abordagens: em algumas, o próprio modelo decide; em outras, regras explícitas decidem a partir das estimativas. Quando a evidência não basta, a resposta honesta é "não verificado".</p>
+  <h3>5. Registrar</h3>
+  <p>Afirmação, trecho, posição, versão do modelo e versão das regras são guardados, para que outra pessoa possa conferir o resultado depois.</p>
+
+  <h2 id="ferramentas">Ferramentas e modelos open source</h2>
+  <p>As ferramentas abaixo resolvem partes diferentes do problema. Não é um ranking: cada uma tem outro objetivo.</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Ferramenta</th><th>Tipo</th><th>O que faz</th></tr>
+    <tr><td><strong>MiniCheck</strong></td><td>Modelo verificador</td><td>Estima se um documento sustenta uma afirmação. Usado como verificador de referência no LLM-AggreFact.</td></tr>
+    <tr><td><strong>FactCG</strong></td><td>Modelo verificador</td><td>Também estima se a afirmação é sustentada pelo documento de referência.</td></tr>
+    <tr><td><strong>HallOumi</strong> (Oumi)</td><td>Modelo verificador</td><td>Modelo open source de verificação de afirmações lançado pela Oumi em abril de 2025.</td></tr>
+    <tr><td><a href="https://github.com/yuxiaw/openfactcheck"><strong>OpenFactCheck</strong></a></td><td>Framework de checagem</td><td>Decompõe respostas, busca evidências, verifica e avalia checadores automáticos de factualidade.</td></tr>
+    <tr><td><a href="https://arxiv.org/abs/2506.15794"><strong>Veracity</strong></a></td><td>Sistema de checagem</td><td>Usa LLMs com busca na web para analisar o quanto um texto é factual, voltado ao público em geral.</td></tr>
+    <tr><td><a href="https://arxiv.org/abs/2604.08549"><strong>VerifAI</strong></a></td><td>Busca com verificação</td><td>Perguntas e respostas biomédicas; decompõe a resposta em afirmações e confere contra as evidências recuperadas.</td></tr>
+    <tr><td><a href="../"><strong>AYORAI ATTRACTOR</strong></a></td><td>Camada de auditoria</td><td>Usa verificadores como os acima, mas o veredito final é emitido por um Judge determinístico com regras versionadas, e cada resultado fica ligado à evidência e à proveniência.</td></tr>
+  </table>
+  </div>
+
+  <h2 id="como-escolher">Como escolher</h2>
+  <ul>
+    <li><strong>Você só precisa de um sinal de "sustentado ou não"?</strong> Um modelo verificador, como MiniCheck ou FactCG, pode bastar.</li>
+    <li><strong>Precisa checar textos livres contra a web?</strong> Sistemas como OpenFactCheck ou Veracity buscam as evidências por você.</li>
+    <li><strong>Precisa explicar e reproduzir cada decisão</strong> — para um cliente, um auditor ou um órgão regulador? Aí entra uma camada de auditoria, que registra regras, versões e evidências.</li>
+  </ul>
+
+  <h2 id="attractor">Onde o AYORAI ATTRACTOR se encaixa</h2>
+  <p>O AYORAI ATTRACTOR não substitui os modelos verificadores: ele os usa. Na avaliação da versão v0.7.0, três verificadores foram medidos na partição DEV do LLM-AggreFact (30.420 exemplos, 11 coortes), e o FactCG foi selecionado pela regra registrada antes do experimento.</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Verificador</th><th>Acurácia balanceada cross-fitted (DEV-A)</th></tr>
+    <tr><td>FactCG</td><td>74,68%</td></tr>
+    <tr><td>MiniCheck</td><td>72,87%</td></tr>
+    <tr><td>mDeBERTa</td><td>62,57%</td></tr>
+  </table>
+  </div>
+  <p>São métricas de desenvolvimento (DEV), não de teste final, e medem os modelos, não a acurácia global dos vereditos do ATTRACTOR. O detalhamento está no <a href="https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.7.0">relatório da v0.7.0</a> (DOI <a href="https://doi.org/10.5281/zenodo.24045951">10.5281/zenodo.24045951</a>).</p>
+  <p>O que o ATTRACTOR acrescenta é a parte de auditoria:</p>
+  <ul>
+    <li><strong>Veredito por regras, não pelo modelo.</strong> O Judge 2.0 aplica regras versionadas e emite cinco vereditos:</li>
+  </ul>
+  <div class="verdicts"><span class="chip ok">SUPPORTED</span><span class="chip mid">PARTIALLY_SUPPORTED</span><span class="chip mid">UNVERIFIED</span><span class="chip mid">CONFLICTING</span><span class="chip no">REFUTED</span></div>
+  <ul>
+    <li><strong>Evidência localizada.</strong> Na API <code>POST /v1/check</code>, as evidências vêm com posição no texto e página, inclusive em PDFs com camada de texto.</li>
+    <li><strong>Documento tratado como dado.</strong> O conteúdo das fontes nunca é tratado como instrução para o sistema.</li>
+    <li><strong>Código aberto e citável.</strong> Licença Apache-2.0 e DOI na Zenodo (<a href="https://doi.org/10.5281/zenodo.23125082">10.5281/zenodo.23125082</a>).</li>
+  </ul>
+
+  <div class="callout"><strong>Inteligência ≠ Autorização ≠ Execução.</strong> Modelos ajudam a analisar; regras explícitas decidem; e quem consome o resultado não deve transformar uma estimativa de modelo em fato sem passar por essas regras.</div>
+
+  <h2 id="limites">Limites</h2>
+  <ul>
+    <li>A verificação mostra se a afirmação é sustentada <strong>pela evidência fornecida</strong>. Não prova que a fonte é verdadeira, completa ou atual.</li>
+    <li>Os benchmarks mais usados para medir verificadores, como o LLM-AggreFact, são em inglês. No ATTRACTOR, ainda não há resultado validado em português publicado.</li>
+    <li>Nenhuma dessas ferramentas substitui revisão humana em decisões de alto impacto.</li>
+  </ul>
+
+  <h2 id="faq">Perguntas frequentes</h2>
+  <details><summary>O que é verificação de afirmações em IA?</summary><p>É checar, uma a uma, se as afirmações de uma resposta de IA são sustentadas pelas fontes usadas, em vez de avaliar o texto inteiro de uma vez.</p></details>
+  <details><summary>Verificação de afirmações é o mesmo que detecção de alucinação?</summary><p>É uma das formas mais diretas de detectar alucinações: uma afirmação que nenhuma fonte sustenta, ou que a fonte contradiz, é um sinal de alucinação. Veja também o guia <a href="../alucinacao-de-ia/">Alucinação de IA</a>.</p></details>
+  <details><summary>Existe ferramenta open source para verificar afirmações de IA?</summary><p>Sim. Há modelos verificadores como MiniCheck, FactCG e HallOumi, sistemas de checagem como OpenFactCheck e Veracity, e camadas de auditoria como o AYORAI ATTRACTOR, projeto brasileiro sob licença Apache-2.0.</p></details>
+  <details><summary>A verificação de afirmações prova que a fonte é verdadeira?</summary><p>Não. Ela mostra se a afirmação é sustentada pela evidência fornecida. Se a própria fonte estiver errada ou desatualizada, a verificação não corrige isso.</p></details>
+  <details><summary>Qual a relação com auditoria de inteligência artificial?</summary><p>A verificação de afirmações é a auditoria da camada de respostas. O guia <a href="../auditoria-de-inteligencia-artificial/">Auditoria de inteligência artificial</a> mostra as outras camadas: dados, modelo e processo.</p></details>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <p class="fbrand">AYORAI ATTRACTOR</p>
+        <p class="fmotto">Evidência antes de conclusão.</p>
+        <p>Projeto open source de auditoria técnica de respostas de inteligência artificial. Autor e mantenedor: Anderson Leon Ayora.</p>
+      </div>
+      <div>
+        <h4>Projeto</h4>
+        <ul>
+          <li><a href="../">Página inicial</a></li>
+          <li><a href="../auditoria-de-inteligencia-artificial/">Auditoria de inteligência artificial</a></li>
+          <li><a href="../alucinacao-de-ia/">Alucinação de IA</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Status técnico</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Código</h4>
+        <ul>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch">Repositório no GitHub</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/releases">Versões</a></li>
+          <li><a href="https://doi.org/10.5281/zenodo.23125082">DOI · Zenodo</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="legal">Distribuído sob a licença Apache-2.0. Não é apresentado como certificado e não substitui revisão humana, controles internos ou avaliação jurídica.</p>
+  </div>
+</footer>
+</body>
+</html>
