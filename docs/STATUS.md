@@ -1,6 +1,6 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-21 — main @ `0088e695dbce5717eff4777034f48d85566c9f76` (merge PR #602), with #601 integrated next; before the merge of this status update
+Updated: 2026-11-21 — main @ `8926e53385e515eba8c9e1b05ec15ab8530a3e97` (merge PR #601), before the merge of this status update (#603)
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
