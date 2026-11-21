@@ -1,6 +1,6 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-21 — `main` @ `3798be64e8ae6e4d8dac2a35b7c3611c8194ee17` (merge PR #614). This reconciliation is proposed in [PR #615](https://github.com/Ayorinha/ayorai-opensearch/pull/615) and is not yet merged. CI, Security and CodeQL passed on this exact `main` SHA; see runs [CI 44912288739](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44912288739), [Security 44912288756](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44912288756) and [CodeQL 44912288735](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44912288735). Post-closure audit: [audit/POST-CLOSURE-AUDIT-2026-11-21.md](audit/POST-CLOSURE-AUDIT-2026-11-21.md)
+Updated: 2026-11-21 — `main` @ `e35dce886dbdc049e56895eabc41c3777874225f` (merge PR #615). Documentation is reconciled to v0.8.0. Public site metadata and indexing were updated on `gh-pages` via PR #616 (merge `1aaf0c8b734cbc619b351cbe362194d37fa9331d`). PR #613 was closed as superseded. CI, Security, CodeQL, API Contract Guard, Schemathesis, Dependency Review and Golden r2 Migration passed on the PR #615 head before merge.
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
@@ -40,7 +40,7 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
   Nenhuma decisão continua pendente no registro.
 - **Issues:** #433, #434 e #435 foram fechadas. O que falta delas é roteiro, não defeito, e está em [ROADMAP.md](ROADMAP.md).
 - **Pins históricos (P3-1):** mantidos e isolados em workflows manuais, com regra testada; ver [security/HISTORICAL-PINS.md](security/HISTORICAL-PINS.md).
-- **PRs abertas verificadas em 2026-11-21:** #613 (Draft, atualização de STATUS superada pela #614; permanece aberta e aguarda decisão do mantenedor) e #615 (esta reconciliação ampliada de versão e documentação). Não há issues abertas (`0`).
+- **PRs deste ciclo:** #613 encerrada como superada, sem merge; #615 integrada à `main`; #616 integrada à `gh-pages`. Nenhuma das três permanece aberta. No último inventário de issues documentado, não havia issues abertas (`0`).
 - **Release:** v0.8.0 publicada em 2026-11-13; tag `v0.8.0` aponta para `92ea5eb86b69724b05834d98c326e8315bb6b655`, commit com assinatura verificada pelo GitHub; [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0). CI, Security e CodeQL da tag passaram. O Version DOI v0.8.0 ainda não estava registrado no Zenodo em 2026-11-21. DOI de conceito: `10.5281/zenodo.23125082`; Version DOI v0.7.0: `10.5281/zenodo.24045951`.
 
 ### Classificação do estado
