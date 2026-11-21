@@ -28,9 +28,19 @@ From the repository root, after installing the development extra:
 
     python -m pytest tests/auditlog_poc -q
 
-The tests reuse the public Go-generated Merkle vectors already checked by
-tests/auditlog/test_merkle_vectors.py. No new benchmark cases or business data
-are introduced.
+The Python writer test reuses the public Go-generated Merkle vectors already
+checked by tests/auditlog/test_merkle_vectors.py. No new benchmark cases or
+business data are introduced.
+
+To run the separate Tessera POSIX conformance experiment (Go 1.24+ and network
+access to download pinned Go modules are required):
+
+    python experiments/adr010-poc/run_tessera_poc.py
+
+This runs the upstream Tessera v1.0.4 POSIX one-shot personality and its fsck
+verifier against the same 17 public vector leaves. It uses a publicly documented
+upstream demo signing key only for this disposable test log; never reuse it for
+any real deployment.
 
 ## Deliberate limitations
 
