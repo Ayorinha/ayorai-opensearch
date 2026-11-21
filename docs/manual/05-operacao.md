@@ -162,6 +162,7 @@ Com `ATTRACTOR_VERIFY_LOG_MODE=local` ou `required`, cada decisão `r2-a` do `/v
      ```python
      from ayorai_attractor.auditlog.note import NoteSigner
      from ayorai_attractor.auditlog.store import VerificationLog
+
      log = VerificationLog(caminho_do_banco, NoteSigner(origem, semente))
      assert log.verify_log()["valid"]
      assert log.matches_checkpoint(nota_guardada)  # False: rollback ou história reescrita
