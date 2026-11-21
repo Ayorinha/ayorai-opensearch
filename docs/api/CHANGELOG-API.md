@@ -2,6 +2,12 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — operational probes and metrics (additive)
+
+- `GET /ready`: readiness, without authentication; `200 {"status":"ready"}` when the audit store answers, `503 {"status":"not_ready"}` otherwise.
+- `GET /metrics`: Prometheus text format; requires the API key like every other route.
+- Both routes are operational and are not in the OpenAPI document. No existing request or response changed.
+
 ## Unreleased — `/v1/check` rule detector v13 (scale words)
 
 - A number followed by a scale word without a currency is read with its scale: "1,2 bilhão" and "1.200 milhões" are the same quantity (previously 1.2 against 1200, a false contradiction). A count noun right after the scale ("2,0 milhões de clientes", "3 mil funcionários") makes it a scaled count that compares with the same noun at any scale ("3000 funcionários").

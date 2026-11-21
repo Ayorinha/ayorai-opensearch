@@ -11,6 +11,7 @@ The modules below ship in the `ayorai_attractor` package but are **not used** by
 | `ayorai_attractor.memory.core` | In-memory key/value store for research notes | No persistence. |
 | `ayorai_attractor.observability.audit` | In-memory audit event log | Distinct from the persistent API audit store. |
 | `ayorai_attractor.observability.opentelemetry` | `TraceSink` adapter that exports trace events as OpenTelemetry spans | Requires the optional `telemetry` extra; raises `RuntimeError` without it. Cannot change verification results. |
+| `ayorai_attractor.verification.pt_nli` | AYORAI-PT-NLI inference integration (ADR-008): EuroBERT stance backend and `build_pt_nli_detector()` for `check_documents` | Added 2026-11-21. No trained checkpoint exists yet; the public base model is rejected (no NLI head). Loads only with `transformers>=5.3.0` (native EuroBERT), `trust_remote_code=False` and a 40-character revision; `UNAUDITED` weights need evaluation mode or explicit opt-in. Not wired into the API. Pinned by `tests/test_pt_nli.py`. |
 | `ayorai_attractor.providers.catalog` | Registry of provider metadata, filtered by capability | Disabled providers are excluded. |
 | `ayorai_attractor.research_contract` | Declarative research requirements (Pydantic) | Validation only. |
 | `ayorai_attractor.security.policy` | Capability allow-list for tool calls | Deny by default. **`requires_approval` is recorded but not enforced by `authorize()`**; any future caller must check it. |

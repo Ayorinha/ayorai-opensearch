@@ -141,7 +141,8 @@ def test_unrouted_rejections_are_labelled_with_every_known_api_path() -> None:
     api_paths = {
         route.path
         for route in app.routes
-        if getattr(route, "path", "").startswith("/v1/") or getattr(route, "path", "") == "/health"
+        if getattr(route, "path", "").startswith(("/v1/", "/v2/"))
+        or getattr(route, "path", "") in ("/health", "/ready", "/metrics")
     }
     for path in api_paths:
         expected = path

@@ -1,0 +1,16 @@
+PASS  liveness /health: HTTP 200
+PASS  readiness /ready: HTTP 200 b'{"status":"ready"}'
+PASS  protected route without key -> 401: HTTP 401
+PASS  wrong key -> 401: HTTP 401
+PASS  metrics without key -> 401: HTTP 401
+PASS  /v1/check answers with a deterministic trace: HTTP 200 verdict=partially_supported
+PASS  server-generated X-Request-ID: len=32
+PASS  same request -> same trace_id: chk_ equal
+PASS  /v1/audit records a trace: HTTP 200
+PASS  owner reads its trace, integrity valid: HTTP 200 integrity=valid
+PASS  other key cannot read the trace -> 404: HTTP 404
+PASS  unknown trace -> 404: HTTP 404
+PASS  empty body -> 422, not 500: HTTP 422
+PASS  body above 2 MiB -> 413: HTTP 413
+PASS  metrics with key, bounded labels: HTTP 200, 107 lines
+{"checks": 15, "created_trace": "tr_fa366ffdcbb043ebb34908c2cba583fe", "failed": 0}

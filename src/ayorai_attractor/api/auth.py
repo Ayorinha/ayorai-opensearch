@@ -249,7 +249,8 @@ class APIKeyAuthMiddleware:
         await response(scope, receive, send)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope.get("path") == "/health":
+        # Liveness and readiness probes answer without a key and outside the limiter.
+        if scope["type"] != "http" or scope.get("path") in ("/health", "/ready"):
             await self.app(scope, receive, send)
             return
 

@@ -7,6 +7,8 @@ All notable changes to AYORAI ATTRACTOR are documented here.
 Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi criado. Não traz resultado confirmatório de acurácia; o protocolo RGC permanece não congelado.
 
 ### API
+- Observabilidade: `GET /ready` (readiness, sem chave; 503 quando o banco da trilha não responde), separado do `GET /health` (liveness); `GET /metrics` em formato Prometheus, protegido pela chave, com contagem por rota, método e status, histograma de latência por rota e falhas de gravação da trilha. Rótulos limitados: nenhum conteúdo, chave ou trace ID. Regras de alerta em `docker/observability/prometheus-alerts.yml`; SLOs propostos e recuperação em `docs/observability/SLO-AND-ALERTS.md`.
+- Correção: requisições a `/v2/audit` recusadas antes do roteamento (401, 413, 429) apareciam no log de acesso como `unmatched`; agora são registradas como `/v2/audit`.
 - Correção (proveniência, ADR-002 §2): no `/v1/check`, texto enviado pelo cliente chegava a `verified`, o veredito reservado a evidência com proveniência completa, embora o servidor nunca tenha acessado a origem (a `url` do documento é só metadado). Cada documento informa agora `provenance`: `client_supplied` (teto `supported`) ou `server_retrieved` (obtido pelo próprio servidor no `/v2/audit`; com URL, pode chegar a `verified`). A proveniência entra na identidade do `trace_id` (`document-check-trace-3`, `document-check-5`).
 - Correção (independência das fontes, ADR-002 §3): no `/v1/check` e no `/v2/audit`, a origem de cada documento era o SHA-256 do texto bruto, então o mesmo texto com outra caixa, sem acentos, com outra pontuação ou com um prefixo contava como segunda fonte independente e levava a `verified`. Agora documentos com o mesmo texto normalizado, ou quase-duplicatas (contenção ≥ 0,8 de sequências de 5 palavras), compartilham a origem (`document-check-4`). Um texto curto reproduzido dentro de outro documento também é a mesma origem.
 - Correção: os providers OpenSearch juntavam todos os resultados num único texto, cortado em 2.000 caracteres. O `/v2/audit` via então um só documento: nunca mais de uma fonte independente (teto `partially_supported`), sem URL nem ID por resultado, e o conteúdo depois do corte se perdia. Agora cada resultado é uma fonte própria (`ProviderResponse.documents`), com URL canônica, ID e data de publicação quando o índice os tem, e até 20.000 caracteres. Resultados com a mesma URL formam um único cluster. Uma busca sem resultados deixou de produzir uma "fonte independente" com o texto fixo de ausência.
@@ -29,6 +31,16 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - Retenção automática com `ATTRACTOR_AUDIT_RETENTION_DAYS` (desligada por padrão): rastros vencidos são removidos na inicialização e, no máximo, uma vez por hora nas gravações (#586).
 - Correção: o Docker Compose guarda os rastros no volume nomeado `attractor-audit`. Antes, eles se perdiam a cada recriação do contêiner. A imagem cria `/app/.attractor` com dono no usuário do serviço (#586).
 
+### AYORAI-PT-NLI (ADR-008), integração de inferência
+- Novo `ayorai_attractor.verification.pt_nli`: backend EuroBERT para stance por pares (SUPPORTS, CONTRADICTS, NEUTRAL) e `build_pt_nli_detector()`, que se usa em `check_documents(stance_detector=...)`.
+- **Carregamento com falha fechada:**
+  - sem código remoto (`trust_remote_code=False`; exige `transformers>=5.3.0`, com EuroBERT nativo);
+  - revisão como SHA completo;
+  - `model_type` `eurobert`;
+  - três rótulos de NLI exigidos. O modelo base público, sem cabeça NLI, é recusado.
+- **Licença:** pesos `UNAUDITED` só carregam em modo de avaliação ou com opt-in explícito.
+- **Escopo:** sem treinamento, sem dependência nova, sem ligação com a API e sem mudança no Judge, no Golden ou no RGC. Modelo base fixado em `EuroBERT/EuroBERT-210m@39b51e15`.
+
 ### Detector de posição (stance) por regras
 - v8, com erros conhecidos fixados em testes (#565).
 - v9: negação restrita às frases da afirmação e negação relatada classificada como neutra (#570).
@@ -37,6 +49,8 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - v13: número seguido de palavra de escala sem moeda é lido com a escala ("1,2 bilhão" e "1.200 milhões" são a mesma quantidade; antes, 1,2 contra 1200 gerava falsa contradição). Um substantivo contável logo depois da escala ("2,0 milhões de clientes") vira contagem desse substantivo. Muda um caso do Golden v0.1 (`x02`, agora correto): 11/30 em vez de 10/30, com a nova referência `1fd6fdb7…` aprovada pelo mantenedor em 2026-11-21. Golden v0 inalterado (#571, refeita sobre o v12).
 
 ### Segurança, cadeia de suprimentos e imagem
+- `docker-compose.yml` endurecido: raiz só de leitura, `/tmp` em tmpfs `noexec,nosuid`, `cap_drop: ALL` e `no-new-privileges`, validados na homologação local de 2026-11-21 (`docs/audit/HOMOLOGATION-LOCAL-2026-11-21.md`).
+- Ferramentas de operação: `scripts/ops/homologation_smoke.py` (16 verificações de segurança e operação contra uma instância) e `scripts/benchmarks/load_test.py` (carga em laço fechado). A medição de capacidade de 2026-11-21 está em `docs/benchmarks/CAPACITY-2026-11-21.md`.
 - Correção: erros de providers deixam de expor ao cliente da API a URL interna completa da busca (host, porta e índice), que aparecia em `failures[].message` em respostas 4xx e 5xx do OpenSearch. O cliente recebe só o tipo do erro; o detalhe vai para o log do servidor.
 - Imagem Docker fixada por digest, dependências instaladas por lock com hash e pisos de segurança das dependências (#556, #562).
 - Varredura da imagem com Grype e proveniência SLSA assinada das distribuições (#568).
