@@ -60,17 +60,22 @@ A cada append, o protótipo recalcula a raiz inteira e armazena a raiz/tamanho a
 
 A suíte reutiliza os 17 hashes e as 18 raízes do vetor público já mantido no repositório, produzido pela implementação Go independente. Também testa reabertura do banco, idempotência, conflito, concorrência, exclusão de linha e alteração de folha contra um checkpoint guardado pelo chamador. Dois testes adicionais encerram um processo abruptamente: um antes do commit, para verificar rollback; outro depois do commit e antes da resposta, para verificar que o retry retorna o recibo original sem criar uma segunda entrada.
 
-### Resultado inicial de execução (21/11/2026)
+### Resultado final de execução (21/11/2026)
 
-O job Tessera v1.0.4 POSIX conformance passou no workflow [ADR-010 isolated persistence POC — run 44917079201](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917079201), no SHA 12a328e7fb5c1f7dc1c94540c64c6b7dab106b8b. Resultado observado:
+A primeira execução detectou um defeito real em verify_receipt: para uma árvore de uma única folha, a prova de inclusão é vazia e a implementação inicial não comparava a folha persistida com a folha do recibo. A correção foi aplicada e coberta por teste de regressão.
 
-- 17 folhas dos vetores públicos;
+No SHA final da PR #618 (471c5658b131b5ba36a3b7e4a0c2d25b39c3411f), o workflow [ADR-010 isolated persistence POC — run 44917649602](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917649602) passou integralmente:
+
+- 14 testes Python aprovados;
+- Ruff check aprovado;
+- Tessera v1.0.4 POSIX one-shot aprovado;
 - checkpoint com tree size 17;
-- raiz SHA-256 1780178a188d10bf4aa75b1f78378e13c28db181dca036d01a2551000299be62, igual à raiz esperada do vetor independente;
-- assinatura do checkpoint verificada pelo Tessera fsck;
-- integridade de tiles e entry bundles verificada pelo fsck.
+- raiz SHA-256 1780178a188d10bf4aa75b1f78378e13c28db181dca036d01a2551000299be62, igual à referência dos vetores públicos;
+- assinatura do checkpoint, tiles e entry bundles verificados pelo Tessera fsck.
 
-O job Python da mesma execução falhou em um teste de adulteração: para uma árvore de uma única folha, verify_receipt gerava a prova vazia e não comparava a folha persistida com a folha contida no recibo. A falha foi corrigida no código da PR #618 (verificação agora compara a folha armazenada antes de validar a prova). A suíte Python está aguardando nova execução no SHA atualizado; portanto, a POC completa ainda não está aprovada.
+O workflow geral [CI — run 44917649782](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917649782) também passou no SHA final. Cada matriz Python 3.11, 3.12 e 3.13 executou 2.616 testes aprovados e 1 ignorado. A cobertura observada foi 94%, acima do baseline de 85%, sem alteração do arquivo de baseline. Também passaram CodeQL, Security, Dependency Review, Golden r2 Migration, API Contract Guard e Schemathesis Full API Contract.
+
+**Interpretação:** a POC isolada e os checks de regressão do repositório estão aprovados. Isso comprova os cenários exercitados, não capacidade de produção, resistência contra operador privilegiado, conformidade LGPD ou desempenho em escala. Nenhum benchmark de capacidade foi executado.
 
 ## 4. Limites de segurança e interpretação
 
