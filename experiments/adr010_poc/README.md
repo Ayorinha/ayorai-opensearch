@@ -34,15 +34,20 @@ The Python writer test reuses the public Go-generated Merkle vectors already
 checked by tests/auditlog/test_merkle_vectors.py. No new benchmark cases or
 business data are introduced.
 
-To run the separate Tessera POSIX conformance experiment (Go 1.24+, OpenSSL 3+ and network
+To run the Tessera conformance experiments (Go 1.24+, OpenSSL 3+ and network
 access to download pinned Go modules are required):
 
     python experiments/adr010_poc/run_tessera_poc.py
+    python experiments/adr010_poc/run_tessera_http_poc.py
 
-This runs the upstream Tessera v1.0.4 POSIX one-shot personality and its fsck
-verifier against the same 17 public vector leaves. It generates a disposable
-Ed25519 signing key with OpenSSL at runtime; the private key is not committed
-and is deleted with the temporary test directory.
+The first runs the upstream Tessera v1.0.4 POSIX one-shot personality and fsck
+against the same 17 public vector leaves. The second starts the upstream POSIX
+HTTP conformance personality on loopback, POSTs five public vector leaves,
+checks assigned indices and the published checkpoint, then runs fsck. The HTTP
+personality is an upstream conformance example only: it has no AYORAI API-key
+authentication, no strict Idempotency-Key contract and no /v1/verify integration.
+Both scripts generate disposable Ed25519 signing keys with OpenSSL at runtime;
+private keys are not committed and are deleted with the temporary directories.
 
 ## Deliberate limitations
 
