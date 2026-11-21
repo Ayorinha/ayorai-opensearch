@@ -1,29 +1,21 @@
-"""Run the upstream Tessera POSIX one-shot personality against public vectors.
-
-This downloads and runs the pinned upstream Tessera v1.0.4 examples. It uses
-the publicly documented upstream demo key, which is intentionally public and
-must never be used for a real log.
-"""
+"""Run the upstream Tessera POSIX one-shot personality against public vectors."""
 
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
 TESSERA_VERSION = "v1.0.4"
-TEST_PRIVATE_KEY = (
-    "PRIVATE+KEY+example.com/log/testdata+33d7b496+"
-    "AeymY/SZAX0jZcJ8enZ5FY1Dz+wTML2yWSkK+9DSF3eg"
-)
-TEST_PUBLIC_KEY = (
-    "example.com/log/testdata+33d7b496+"
-    "AeHTu4Q3hEIMHNqc6fASMsq3rKNx280NI+oO5xCFkkSx"
-)
+LOG_ORIGIN = "example.com/log/ayorai-adr010-poc"
+ED25519_PRIVATE_DER_PREFIX = bytes.fromhex("302e020100300506032b657004220420")
+ED25519_PUBLIC_DER_PREFIX = bytes.fromhex("302a300506032b6570032100")
 
 
 def run(command: list[str], env: dict[str, str], timeout: int = 300) -> str:
@@ -44,6 +36,59 @@ def run(command: list[str], env: dict[str, str], timeout: int = 300) -> str:
     return output
 
 
+def generate_ephemeral_note_keys(work: Path) -> tuple[str, str]:
+    """Generate a disposable Ed25519 signed-note key pair using OpenSSL."""
+    openssl = shutil.which("openssl")
+    if openssl is None:
+        raise SystemExit("OpenSSL 3+ is required to generate a disposable test key")
+
+    seed = secrets.token_bytes(32)
+    private_der = work / "ephemeral-ed25519-private.der"
+    public_der = work / "ephemeral-ed25519-public.der"
+    private_der.write_bytes(ED25519_PRIVATE_DER_PREFIX + seed)
+    try:
+        run(
+            [
+                openssl,
+                "pkey",
+                "-inform",
+                "DER",
+                "-in",
+                str(private_der),
+                "-pubout",
+                "-outform",
+                "DER",
+                "-out",
+                str(public_der),
+            ],
+            os.environ.copy(),
+        )
+    finally:
+        private_der.unlink(missing_ok=True)
+
+    encoded_public = public_der.read_bytes()
+    if (
+        len(encoded_public) != len(ED25519_PUBLIC_DER_PREFIX) + 32
+        or not encoded_public.startswith(ED25519_PUBLIC_DER_PREFIX)
+    ):
+        raise RuntimeError("OpenSSL returned an unexpected Ed25519 public-key encoding")
+
+    public_note_key = b"\x01" + encoded_public[-32:]
+    key_hash = hashlib.sha256(LOG_ORIGIN.encode("utf-8") + b"\n" + public_note_key)
+    key_id = key_hash.digest()[:4].hex()
+    private_note_key = b"\x01" + seed
+
+    signer = (
+        f"PRIVATE+KEY+{LOG_ORIGIN}+{key_id}+"
+        f"{base64.b64encode(private_note_key).decode('ascii')}"
+    )
+    verifier = (
+        f"{LOG_ORIGIN}+{key_id}+"
+        f"{base64.b64encode(public_note_key).decode('ascii')}"
+    )
+    return signer, verifier
+
+
 def main() -> None:
     go = shutil.which("go")
     if go is None:
@@ -58,11 +103,12 @@ def main() -> None:
     if len(leaves) != 17:
         raise SystemExit(f"expected the existing 17 public reference leaves, got {len(leaves)}")
 
-    environment = os.environ.copy()
-    environment["LOG_PRIVATE_KEY"] = TEST_PRIVATE_KEY
-
     with tempfile.TemporaryDirectory(prefix="ayorai-adr010-tessera-") as temporary:
         work = Path(temporary)
+        signer, verifier = generate_ephemeral_note_keys(work)
+        environment = os.environ.copy()
+        environment["LOG_PRIVATE_KEY"] = signer
+
         storage = work / "log"
         entries = work / "entries"
         entries.mkdir()
@@ -98,11 +144,11 @@ def main() -> None:
             raise RuntimeError(
                 "Tessera root differs from the existing independent Go reference vector"
             )
-        if origin != "example.com/log/testdata":
+        if origin != LOG_ORIGIN:
             raise RuntimeError(f"unexpected checkpoint origin: {origin}")
 
         public_key_path = work / "tessera-test.pub"
-        public_key_path.write_text(TEST_PUBLIC_KEY + "\n", encoding="utf-8")
+        public_key_path.write_text(verifier + "\n", encoding="utf-8")
         fsck_output = run(
             [
                 go,
