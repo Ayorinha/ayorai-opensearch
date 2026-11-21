@@ -44,9 +44,7 @@ class MerkleFrontier:
         if self.tree_size < 0:
             raise CorruptStoreError("frontier tree size is negative")
         expected_levels = {
-            level
-            for level in range(self.tree_size.bit_length())
-            if self.tree_size & (1 << level)
+            level for level in range(self.tree_size.bit_length()) if self.tree_size & (1 << level)
         }
         if set(self.nodes) != expected_levels:
             raise CorruptStoreError("frontier levels do not match the binary tree size")
@@ -185,9 +183,7 @@ class SQLiteFrontierWriter:
         frontier = MerkleFrontier(tree_size=tree_size, nodes=nodes)
         frontier.validate()
         if tree_size == 0:
-            latest = connection.execute(
-                "SELECT COUNT(*) FROM adr010_frontier_entries"
-            ).fetchone()
+            latest = connection.execute("SELECT COUNT(*) FROM adr010_frontier_entries").fetchone()
             if latest is None or latest[0] != 0:
                 raise CorruptStoreError("empty frontier has persisted entries")
         else:
