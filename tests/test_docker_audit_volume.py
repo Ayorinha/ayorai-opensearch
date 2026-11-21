@@ -28,3 +28,12 @@ def test_env_example_lists_audit_settings_with_safe_defaults() -> None:
     assert "ATTRACTOR_AUDIT_HMAC_KEYS=" in lines
     assert "ATTRACTOR_AUDIT_HMAC_REQUIRED=false" in lines
     assert "ATTRACTOR_AUDIT_RETENTION_DAYS=" in lines
+
+
+def test_compose_runs_with_a_read_only_root_and_no_capabilities() -> None:
+    compose = yaml.safe_load((ROOT / "docker-compose.yml").read_text(encoding="utf-8"))
+    service = compose["services"]["attractor"]
+    assert service["read_only"] is True
+    assert service["cap_drop"] == ["ALL"]
+    assert "no-new-privileges:true" in service["security_opt"]
+    assert any(entry.startswith("/tmp:") and "noexec" in entry for entry in service["tmpfs"])

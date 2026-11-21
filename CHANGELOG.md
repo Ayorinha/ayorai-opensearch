@@ -49,6 +49,8 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - v13: número seguido de palavra de escala sem moeda é lido com a escala ("1,2 bilhão" e "1.200 milhões" são a mesma quantidade; antes, 1,2 contra 1200 gerava falsa contradição). Um substantivo contável logo depois da escala ("2,0 milhões de clientes") vira contagem desse substantivo. Muda um caso do Golden v0.1 (`x02`, agora correto): 11/30 em vez de 10/30, com a nova referência `1fd6fdb7…` aprovada pelo mantenedor em 2026-11-21. Golden v0 inalterado (#571, refeita sobre o v12).
 
 ### Segurança, cadeia de suprimentos e imagem
+- `docker-compose.yml` endurecido: raiz só de leitura, `/tmp` em tmpfs `noexec,nosuid`, `cap_drop: ALL` e `no-new-privileges`, validados na homologação local de 2026-11-21 (`docs/audit/HOMOLOGATION-LOCAL-2026-11-21.md`).
+- Ferramentas de operação: `scripts/ops/homologation_smoke.py` (16 verificações de segurança e operação contra uma instância) e `scripts/benchmarks/load_test.py` (carga em laço fechado). A medição de capacidade de 2026-11-21 está em `docs/benchmarks/CAPACITY-2026-11-21.md`.
 - Correção: erros de providers deixam de expor ao cliente da API a URL interna completa da busca (host, porta e índice), que aparecia em `failures[].message` em respostas 4xx e 5xx do OpenSearch. O cliente recebe só o tipo do erro; o detalhe vai para o log do servidor.
 - Imagem Docker fixada por digest, dependências instaladas por lock com hash e pisos de segurança das dependências (#556, #562).
 - Varredura da imagem com Grype e proveniência SLSA assinada das distribuições (#568).

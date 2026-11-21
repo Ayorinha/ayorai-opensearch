@@ -52,11 +52,11 @@ O que a `main` tem hoje e o que falta, tema por tema. "Existe" quer dizer códig
 | Rastreabilidade do veredito | `trace_id` determinístico no `/v1/check`; `adjudication_sha256` no `/v2/audit` (`r2-v4`) | — | Veredito do `/v1/verify` persistido (ADR-009 §15.1) |
 | Evidências | Trechos com offsets e proveniência `client_supplied`/`server_retrieved` | Documentos com `url` ou origem declarada | Armazenamento verificável das evidências, não só dos digests |
 | Logs | Logs estruturados sem conteúdo, com `request_id` (`api/request_context.py`) | — | Envio a uma plataforma, com retenção definida |
-| Métricas e alertas | `MetricsCollector` com saída Prometheus (`metrics.py`), sem rota HTTP; adaptador OpenTelemetry opcional | Painel mínimo de 429/503 e falhas de `verify_chain` | Rota de métricas, alertas e SLO |
-| Carga e concorrência | Controle de requisições pesadas em andamento (`test_api_load_control.py`); SQLite serializado por processo | Teste de carga no ambiente da POC | Testes de carga e soak; banco que aceite várias réplicas |
+| Métricas e alertas | `GET /metrics` (Prometheus, com chave), regras de alerta e SLOs propostos ([observability/SLO-AND-ALERTS.md](observability/SLO-AND-ALERTS.md)) | Ligar a coleta e os alertas na plataforma da POC | Painel e SLOs confirmados com tráfego real |
+| Carga e concorrência | Controle de requisições pesadas; medição local de 2026-11-21 ([benchmarks/CAPACITY-2026-11-21.md](benchmarks/CAPACITY-2026-11-21.md)): cerca de 55 req/s de `/v1/check` por processo, 503 imediato acima do limite, memória estável de cerca de 50 MiB | Repetir a medição no ambiente da POC | Testes de carga e soak; banco que aceite várias réplicas |
 | TLS e gateway | Guia e exemplo nginx ([security/EDGE-RATE-LIMIT.md](security/EDGE-RATE-LIMIT.md)), testados só localmente | Gateway com TLS na POC | Gateway com contador compartilhado entre instâncias |
 | Backup e recuperação | `backup()` com `integrity_check`; restauração documentada | Teste de restauração antes do início | Plano de recuperação com RPO e RTO definidos e testados |
 | Build e cadeia de suprimentos | Imagem por digest, lock com hashes, SBOM, SLSA, Grype, pip-audit | — | Build reprodutível comparado de forma independente; alertas do Dependabot ligados |
 | Segredos | Variáveis de ambiente; `ATTRACTOR_AUDIT_HMAC_REQUIRED` | Gerenciador de segredos para pepper e chaves HMAC | Rotação periódica documentada para o pepper |
-| Monitoramento de falhas | `HEALTHCHECK` na imagem; `/health` | — | Readiness e liveness distintos; alerta de falha da trilha |
-| Contêiner | Usuário sem privilégios (`USER attractor`) | — | Sistema de arquivos só de leitura e `cap_drop` no Compose |
+| Monitoramento de falhas | `HEALTHCHECK` (liveness `/health`), readiness `/ready`, alerta `AttractorAuditRecordFailures` | — | — |
+| Contêiner | Usuário sem privilégios; Compose com raiz só de leitura, `cap_drop: ALL` e `no-new-privileges`, validados na homologação local ([audit/HOMOLOGATION-LOCAL-2026-11-21.md](audit/HOMOLOGATION-LOCAL-2026-11-21.md)) | — | — |

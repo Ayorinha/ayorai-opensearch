@@ -10,6 +10,16 @@ services:
     volumes:
       # Audit traces (ATTRACTOR_AUDIT_DB) survive container recreation.
       - attractor-audit:/app/.attractor
+    # Runtime hardening, validated in the local homologation of 2026-11-21
+    # (docs/audit/HOMOLOGATION-LOCAL-2026-11-21.md): the only writable paths are
+    # the audit volume and a small /tmp; no Linux capabilities; no privilege gain.
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       ATTRACTOR_PROVIDER: ${ATTRACTOR_PROVIDER:-mock}
       ATTRACTOR_AUTH_MODE: ${ATTRACTOR_AUTH_MODE:-api_key}
