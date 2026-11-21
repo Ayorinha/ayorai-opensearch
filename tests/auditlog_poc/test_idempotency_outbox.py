@@ -73,6 +73,18 @@ def test_outbox_assign_is_idempotent_but_rejects_different_index(tmp_path: Path)
         outbox.assign("request-1", LEAF, tessera_index=8)
 
 
+def test_outbox_prevents_two_idempotency_keys_from_claiming_one_tessera_index(
+    tmp_path: Path,
+) -> None:
+    outbox = SQLiteIdempotencyOutbox(tmp_path / "outbox-unique-index.sqlite3")
+    outbox.reserve("request-a", LEAF)
+    outbox.reserve("request-b", OTHER_LEAF)
+    outbox.assign("request-a", LEAF, tessera_index=0)
+
+    with pytest.raises(CorruptStoreError, match="already assigned"):
+        outbox.assign("request-b", OTHER_LEAF, tessera_index=0)
+
+
 def test_outbox_record_checkpoint_is_idempotent_and_immutable(tmp_path: Path) -> None:
     outbox = SQLiteIdempotencyOutbox(tmp_path / "outbox-record.sqlite3")
     outbox.reserve("request-1", LEAF)
