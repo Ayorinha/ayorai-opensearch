@@ -15,7 +15,7 @@ from pathlib import Path
 from ayorai_attractor.auditlog import (
     HASH_SIZE,
     empty_root,
-    inclusion_proof as merkle_inclusion_proof,
+    inclusion_proof,
     tree_root,
     verify_inclusion,
 )
@@ -284,7 +284,7 @@ class SQLiteMerkleWriter:
                 or not 0 < selected_size <= len(hashes)
             ):
                 raise ValueError("tree_size must be between 1 and the current tree size")
-            proof = merkle_inclusion_proof(index, hashes[:selected_size])
+            proof = inclusion_proof(index, hashes[:selected_size])
             connection.commit()
             return tuple(proof)
         except Exception:
@@ -324,7 +324,7 @@ class SQLiteMerkleWriter:
             if not hmac.compare_digest(stored_leaf, receipt.leaf_hash):
                 connection.rollback()
                 return False
-            proof = merkle_inclusion_proof(receipt.index, hashes[: receipt.tree_size])
+            proof = inclusion_proof(receipt.index, hashes[: receipt.tree_size])
             connection.commit()
         except (ValueError, CorruptStoreError, sqlite3.Error, TypeError):
             connection.rollback()
