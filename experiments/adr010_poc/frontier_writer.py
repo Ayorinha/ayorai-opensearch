@@ -27,6 +27,7 @@ from .python_writer import (
     CorruptStoreError,
     IdempotencyConflict,
     TreeHead,
+    WriterError,
 )
 
 
@@ -128,7 +129,7 @@ class SQLiteFrontierWriter:
         try:
             mode = connection.execute("PRAGMA journal_mode = WAL").fetchone()
             if mode is None or str(mode[0]).lower() != "wal":
-                raise RuntimeError("SQLite WAL mode could not be enabled")
+                raise WriterError("SQLite WAL mode could not be enabled")
             connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS adr010_frontier_metadata (
