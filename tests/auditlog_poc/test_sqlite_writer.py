@@ -156,6 +156,39 @@ os._exit(23)
     assert recovered.matches_checkpoint(0, recovered.tree_head().root_hash)
 
 
+
+def test_retry_after_process_exit_after_commit_returns_original_receipt(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "lost-response.sqlite3"
+    leaf_hex = LEAF_HASHES[0].hex()
+    child_code = f"""
+import os
+import sys
+from experiments.adr010_poc.python_writer import SQLiteMerkleWriter
+
+writer = SQLiteMerkleWriter(sys.argv[1])
+writer.append("committed-response-lost", bytes.fromhex({leaf_hex!r}))
+os._exit(23)
+"""
+    crashed = subprocess.run(
+        [sys.executable, "-c", child_code, str(database)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert crashed.returncode == 23
+    writer = SQLiteMerkleWriter(database)
+    retry = writer.append("committed-response-lost", LEAF_HASHES[0])
+
+    assert retry.duplicate
+    assert retry.index == 0
+    assert retry.tree_size == 1
+    assert writer.tree_head().tree_size == 1
+    assert writer.verify_receipt(retry)
+
+
 def test_concurrent_appends_are_serialized_without_lost_indices(tmp_path: Path) -> None:
     writer = SQLiteMerkleWriter(tmp_path / "concurrent.sqlite3")
     work = [
