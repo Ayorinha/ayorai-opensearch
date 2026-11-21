@@ -47,14 +47,15 @@ access to download pinned Go modules are required):
 The first runs the upstream Tessera v1.0.4 POSIX one-shot personality and fsck
 against the same 17 public vector leaves. The second starts the upstream POSIX
 HTTP conformance personality on loopback, POSTs five public vector leaves,
-checks assigned indices and the published checkpoint, then tests duplicate
-behavior before and after a server restart. The in-memory antispam returns index
-0 for an immediate duplicate, but after restart the same body/key is appended
-again at index 5; a different body with the same Idempotency-Key is accepted at
-index 6. This is a negative control proving that this conformance personality's
-antispam is not durable idempotency. It is an upstream example only: it has no
-AYORAI API-key authentication, no strict Idempotency-Key contract and no
-/v1/verify integration.
+checks assigned indices and the published checkpoint, then tests both default
+in-memory antispam and the upstream experimental Badger-backed persistent mode.
+The default cache returns index 0 for an immediate duplicate but, after restart,
+appends the same body again at index 5. The Badger mode returns index 0 even
+after restart, but a different body with the same Idempotency-Key is still
+accepted at index 5. Thus persistent content-based antispam is useful but is not
+an Idempotency-Key contract. The upstream option is explicitly experimental in
+[Tessera v1.0.4 source](https://github.com/transparency-dev/tessera/blob/v1.0.4/cmd/conformance/posix/main.go). The conformance server has no AYORAI API-key
+authentication and no /v1/verify integration.
 Both scripts generate disposable Ed25519 signing keys with OpenSSL at runtime;
 private keys are not committed and are deleted with the temporary directories.
 
