@@ -14,6 +14,7 @@ It accepts already-computed 32-byte RFC 6962 leaf hashes. It does not create or 
 
 - SQLite file-backed storage with WAL and FULL synchronous mode.
 - One append transaction guarded by BEGIN IMMEDIATE.
+- Two Python writer variants: a simple full-recompute baseline and an incremental Merkle-frontier writer.
 - Contiguous append indices and structural checks on restart.
 - Idempotent retry: same key and same leaf returns the original local receipt.
 - Conflict: same key with a different leaf is rejected.
@@ -47,14 +48,15 @@ and is deleted with the temporary test directory.
 
 This is not an implementation of the ADR-010 production phases.
 
-- It recomputes the entire Merkle root for every append: O(n) per append and O(n²) over n appends. This is intentionally simple and unsuitable for a growing production log.
+- python_writer.py recomputes the entire Merkle root for every append: O(n) per append and O(n²) over n appends. It is a deliberately simple transaction/idempotency baseline.
+- frontier_writer.py maintains the RFC 6962 compact frontier and updates O(log n) nodes per append. It rebuilds and validates the frontier on startup in O(n), and proof generation reads the selected leaf prefix. This is a more realistic Python candidate, but it is still an unsigned local SQLite prototype.
 - It does not sign checkpoints or implement C2SP signed notes.
 - It does not serve tlog-tiles, tile bundles, consistency proofs over HTTP, or witness cosignatures.
 - It does not implement event schema, RFC 8785 commitment creation, salt custody, erasure, API idempotency, or integration with /v1/verify.
 - It does not defend against an operator who can rewrite the database and every local copy of a checkpoint.
 - A TreeHead or AppendReceipt from this prototype is unsigned and is not a trust anchor.
 
-A successful test run proves only the tested SQLite mechanics and vector compatibility. It does not prove production readiness, tamper resistance, LGPD compliance, or an externally verifiable audit log.
+A successful test run proves only the tested SQLite mechanics and vector compatibility. It does not prove production readiness, tamper resistance, LGPD compliance, or an externally verifiable audit log. Neither Python writer has been benchmarked at scale.
 
 ## Next comparison
 
