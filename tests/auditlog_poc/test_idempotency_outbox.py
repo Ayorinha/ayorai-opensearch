@@ -45,9 +45,11 @@ def test_outbox_transitions_pending_assigned_recorded_and_replays(tmp_path: Path
     assert recorded.tree_size == 1
     assert recorded.root_hash == ROOT
     assert recorded.checkpoint_note == SIGNED_CHECKPOINT
+    assert recorded.inclusion_proof == ()
     assert replay.replayed
     assert replay.state == "RECORDED"
     assert replay.tessera_index == 0
+    assert replay.inclusion_proof == ()
     assert outbox.list_unresolved() == ()
 
 
@@ -245,6 +247,22 @@ def test_outbox_rejects_invalid_checkpoint_metadata(tmp_path: Path) -> None:
         )
     with pytest.raises(ValueError, match="checkpoint_note"):
         outbox.record_checkpoint("request-1", LEAF, 0, 1, ROOT, b"", ())
+
+
+def test_outbox_rejects_invalid_inclusion_proof(tmp_path: Path) -> None:
+    outbox = SQLiteIdempotencyOutbox(tmp_path / "outbox-invalid-proof.sqlite3")
+    outbox.reserve("request-1", LEAF)
+
+    with pytest.raises(ValueError, match="inclusion_proof"):
+        outbox.record_checkpoint(
+            "request-1",
+            LEAF,
+            tessera_index=0,
+            tree_size=1,
+            root_hash=ROOT,
+            checkpoint_note=SIGNED_CHECKPOINT,
+            inclusion_proof=(OTHER_LEAF,),
+        )
 
 
 def test_outbox_rejects_assign_or_record_without_reservation(tmp_path: Path) -> None:
