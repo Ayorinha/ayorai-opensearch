@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import closing
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -91,7 +92,7 @@ def test_mutated_leaf_no_longer_matches_a_caller_held_checkpoint(tmp_path: Path)
     receipt = writer.append("mutation-key", LEAF_HASHES[0])
     checkpoint = writer.tree_head()
 
-    with sqlite3.connect(database) as connection:
+    with closing(sqlite3.connect(database)) as connection:
         connection.execute(
             """
             UPDATE adr010_poc_entries
@@ -100,6 +101,7 @@ def test_mutated_leaf_no_longer_matches_a_caller_held_checkpoint(tmp_path: Path)
             """,
             (bytes([LEAF_HASHES[0][0] ^ 1]) + LEAF_HASHES[0][1:],),
         )
+        connection.commit()
 
     reopened = SQLiteMerkleWriter(database)
     assert not reopened.matches_checkpoint(checkpoint.tree_size, checkpoint.root_hash)
@@ -112,8 +114,9 @@ def test_deleted_entry_is_detected_without_silent_repair(tmp_path: Path) -> None
     for index, leaf_hash in enumerate(LEAF_HASHES[:3]):
         writer.append(f"delete-{index}", leaf_hash)
 
-    with sqlite3.connect(database) as connection:
+    with closing(sqlite3.connect(database)) as connection:
         connection.execute("DELETE FROM adr010_poc_entries WHERE leaf_index = 1")
+        connection.commit()
 
     with pytest.raises(CorruptStoreError, match="entry count"):
         SQLiteMerkleWriter(database)
