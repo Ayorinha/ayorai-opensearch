@@ -56,7 +56,7 @@ O writer recebe hashes de folhas já calculados. Ele não recebe texto de claim,
 
 A cada append, o protótipo recalcula a raiz inteira e armazena a raiz/tamanho associados ao recibo local. Isso torna a implementação fácil de inspecionar, mas O(n) por append. É intencionalmente um baseline de correção, não uma proposta de escala.
 
-A suíte reutiliza os 17 hashes e as 18 raízes do vetor público já mantido no repositório, produzido pela implementação Go independente. Também testa reabertura do banco, idempotência, conflito, concorrência, exclusão de linha e alteração de folha contra um checkpoint guardado pelo chamador.
+A suíte reutiliza os 17 hashes e as 18 raízes do vetor público já mantido no repositório, produzido pela implementação Go independente. Também testa reabertura do banco, idempotência, conflito, concorrência, exclusão de linha e alteração de folha contra um checkpoint guardado pelo chamador. Dois testes adicionais encerram um processo abruptamente: um antes do commit, para verificar rollback; outro depois do commit e antes da resposta, para verificar que o retry retorna o recibo original sem criar uma segunda entrada.
 
 ## 4. Limites de segurança e interpretação
 
