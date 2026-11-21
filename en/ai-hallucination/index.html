@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Hallucination: How to Detect and Verify Answers from ChatGPT and Other AIs | AYORAI ATTRACTOR</title>
+<meta name="description" content="What AI hallucination is, why AI gets things wrong, warning signs and a step-by-step method to check whether an answer from ChatGPT or another AI is correct. A guide from the open-source project AYORAI ATTRACTOR.">
+<meta name="author" content="Anderson Leon Ayora">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://ayorinha.github.io/ayorai-opensearch/en/ai-hallucination/">
+<link rel="alternate" hreflang="pt-BR" href="https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/">
+<link rel="alternate" hreflang="en" href="https://ayorinha.github.io/ayorai-opensearch/en/ai-hallucination/">
+<link rel="alternate" hreflang="es" href="https://ayorinha.github.io/ayorai-opensearch/es/alucinacion-de-ia/">
+<link rel="alternate" hreflang="x-default" href="https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="AYORAI ATTRACTOR">
+<meta property="og:title" content="AI hallucination: how to detect and verify AI answers">
+<meta property="og:description" content="Why AI makes mistakes with confidence, the warning signs, and how to check each claim against its evidence.">
+<meta property="og:url" content="https://ayorinha.github.io/ayorai-opensearch/en/ai-hallucination/">
+<meta property="og:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": "AI hallucination: how to detect and verify answers from ChatGPT and other AIs",
+      "description": "What AI hallucination is, why AI gets things wrong, warning signs and a step-by-step method to check whether an answer from ChatGPT or another AI is correct. A guide from the open-source project AYORAI ATTRACTOR.",
+      "inLanguage": "en",
+      "datePublished": "2026-11-21",
+      "dateModified": "2026-11-21",
+      "image": "https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png",
+      "author": {
+        "@type": "Person",
+        "name": "Anderson Leon Ayora",
+        "url": "https://github.com/Ayorinha"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Anderson Leon Ayora",
+        "url": "https://github.com/Ayorinha"
+      },
+      "mainEntityOfPage": "https://ayorinha.github.io/ayorai-opensearch/en/ai-hallucination/",
+      "about": [
+        "AI hallucination",
+        "Hallucination detection",
+        "AI answer verification",
+        "Fact-checking AI"
+      ],
+      "translationOfWork": {
+        "@type": "Article",
+        "url": "https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/",
+        "inLanguage": "pt-BR"
+      },
+      "mentions": {
+        "@type": "SoftwareSourceCode",
+        "name": "AYORAI ATTRACTOR",
+        "url": "https://ayorinha.github.io/ayorai-opensearch/",
+        "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "AYORAI ATTRACTOR",
+          "item": "https://ayorinha.github.io/ayorai-opensearch/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "AI hallucination",
+          "item": "https://ayorinha.github.io/ayorai-opensearch/en/ai-hallucination/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "inLanguage": "en",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is AI hallucination?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It is when AI generates plausible information that is false or not supported by the sources — including citing a source that does not say it."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does ChatGPT make mistakes?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. ChatGPT and other language models can be wrong, even with great confidence. Important information should be checked against the sources."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How can I tell if an AI answer is correct?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Split it into claims, open the sources, find the exact passage and check whether it supports each claim. Without a supporting passage, the claim is not verified."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there a tool to detect AI hallucinations?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "There are approaches that help, such as AYORAI ATTRACTOR, a Brazilian open-source project for evidence-based verification of AI answers. None guarantees detecting every hallucination."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How can hallucinations be avoided?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Providing reliable sources, asking for the quoted passages and asking clear questions reduces the problem but does not eliminate it. When the answer matters, verify it."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../../">AYORAI ATTRACTOR</a>
+    <nav class="nav" aria-label="Main">
+      <a class="hide-sm" href="../../en/ai-auditing/">AI auditing</a>
+      <a href="./" aria-current="page"><span class="lg">AI hallucination</span><span class="sm">Hallucination</span></a>
+      <a class="hide-sm" href="../../en/claim-verification/">Claim verification</a>
+      <a class="gh" href="https://github.com/Ayorinha/ayorai-opensearch">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap narrow article">
+  <img class="banner" style="display:block;width:100%;height:auto;margin:0 0 1.2rem" src="../../assets/ayorai-attractor-banner.png" width="1600" height="400" alt="AYORAI ATTRACTOR — official logo with a dandelion in place of the I">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="../../">AYORAI ATTRACTOR</a> / AI hallucination <span style="float:right"><span class="langs" style="display:inline-flex;gap:.5rem;font-size:.85rem"><a href="../../alucinacao-de-ia/" lang="pt-BR" hreflang="pt-BR">PT</a> · <a href="./" aria-current="true" lang="en">EN</a> · <a href="../../es/alucinacion-de-ia/" lang="es" hreflang="es">ES</a></span></span></nav>
+  <h1>AI hallucination: how to detect and verify answers from ChatGPT and other AIs</h1>
+  <p class="byline">By Anderson Leon Ayora, author of AYORAI ATTRACTOR · Published on November 21, 2026</p>
+
+  <div class="callout"><strong>In short:</strong> AI can be wrong with complete confidence. The safe way to know whether an answer is correct is not to trust its tone, but to check each claim against the evidence that should support it. That is exactly what <a href="../../">AYORAI ATTRACTOR</a>, a Brazilian open-source project, does in a structured, auditable way.</div>
+
+  <div class="toc">
+    <strong>In this guide</strong>
+    <ol>
+      <li><a href="#what-is">What AI hallucination is</a></li>
+      <li><a href="#why">Why AI gets things wrong</a></li>
+      <li><a href="#signs">Warning signs</a></li>
+      <li><a href="#verify">How to verify an answer, step by step</a></li>
+      <li><a href="#organisations">Verification in companies and institutions</a></li>
+      <li><a href="#limits">What no tool guarantees</a></li>
+      <li><a href="#faq">Frequently asked questions</a></li>
+    </ol>
+  </div>
+
+  <h2 id="what-is">What AI hallucination is</h2>
+  <p><strong>AI hallucination</strong> is when an artificial intelligence model — such as ChatGPT, Gemini or others — produces information that sounds plausible but is false or not supported by the sources. It can be an invented number, a wrong date, a law that does not say what was claimed, or a bibliographic reference that does not exist.</p>
+  <p>There is a harder-to-spot kind of error: the answer <strong>cites a real source, but the source does not support what was said</strong>. The citation creates a sense of reliability the answer does not deserve. That is why "the AI cited a source" is not the same as "the information is proven".</p>
+
+  <h2 id="why">Why AI gets things wrong</h2>
+  <p>Language models are trained to produce the most likely text given their input, not to look up facts for every sentence. When data is missing, when the question is ambiguous or when the topic is very specific, the model still tends to answer fluently. Even systems that retrieve documents before answering can summarise incorrectly, mix up sources or attribute to a document something it does not say.</p>
+
+  <h2 id="signs">Warning signs</h2>
+  <ul>
+    <li>Very precise numbers, dates or percentages without a matching source.</li>
+    <li>Quotes, legal articles or references you cannot find.</li>
+    <li>Links that do not open or lead to pages about another subject.</li>
+    <li>Very confident answers about niche, recent or local topics.</li>
+    <li>Contradictions within the answer itself or between two answers to the same question.</li>
+  </ul>
+
+  <h2 id="verify">How to check whether an AI answer is correct, step by step</h2>
+  <h3>1. Split the answer into claims</h3>
+  <p>An answer usually combines several claims. List each one separately: it is much easier to check "law X came into force on a given date" than a whole paragraph.</p>
+  <h3>2. Ask for the sources and open them</h3>
+  <p>Ask the AI for the sources of each claim and open every one. Prefer primary sources: the text of the law, the official document, the scientific paper, the company report.</p>
+  <h3>3. Find the exact passage</h3>
+  <p>Locate in the source the passage that should support the claim. If you cannot find it, the claim is not verified — even if the source exists.</p>
+  <h3>4. Compare rigorously</h3>
+  <p>Does the passage say exactly that? Only part of it? The opposite? Do two sources say different things?</p>
+  <h3>5. Classify and record</h3>
+  <p>Use clear categories and note the source and passage used. AYORAI ATTRACTOR uses five verdicts:</p>
+  <div class="verdicts"><span class="chip ok">SUPPORTED</span><span class="chip mid">PARTIALLY_SUPPORTED</span><span class="chip mid">UNVERIFIED</span><span class="chip mid">CONFLICTING</span><span class="chip no">REFUTED</span></div>
+  <p>The golden rule: <strong>lack of evidence is not confirmation</strong>.</p>
+
+  <h2 id="organisations">Verification in companies and institutions</h2>
+  <p>Checking by hand works for one answer. For organisations that use AI at scale — customer service, legal, finance, the public sector — verification has to be <strong>systematic, traceable and reproducible</strong>. That is the field of <a href="../../en/ai-auditing/">AI auditing</a>.</p>
+  <p><a href="../../">AYORAI ATTRACTOR</a> is a Brazilian open-source project (Apache-2.0 license), created by Anderson Leon Ayora, that automates this method: it isolates each claim, links the evidence and its provenance, analyses whether the evidence supports or contradicts the claim, and leaves the final decision to a <strong>deterministic Judge</strong> with versioned rules. Language models can help with the analysis but are not the authority for the verdict — the project's principle is <em>Intelligence ≠ Authorization ≠ Execution</em>.</p>
+  <p><a href="https://github.com/Ayorinha/ayorai-opensearch">Code on GitHub</a> · <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf">Technical document (PDF, Portuguese)</a></p>
+
+  <h2 id="limits">What no tool guarantees</h2>
+  <p>No tool detects every hallucination, and none proves that an external source is true — only whether it supports the claim or not. AYORAI ATTRACTOR is not presented as a certification and has no benchmark result in Portuguese yet; the current state is in the <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Technical status</a>. For important decisions, human review remains essential.</p>
+
+  <h2 id="faq">Frequently asked questions</h2>
+  <details open><summary>What is AI hallucination?</summary><p>It is when AI generates plausible information that is false or not supported by the sources — including citing a source that does not say it.</p></details>
+  <details><summary>Does ChatGPT make mistakes?</summary><p>Yes. ChatGPT and other language models can be wrong, even with great confidence. Important information should be checked against the sources.</p></details>
+  <details><summary>How can I tell if an AI answer is correct?</summary><p>Split it into claims, open the sources, find the exact passage and check whether it supports each claim. Without a supporting passage, the claim is not verified.</p></details>
+  <details><summary>Is there a tool to detect AI hallucinations?</summary><p>There are approaches that help, such as AYORAI ATTRACTOR, a Brazilian open-source project for evidence-based verification of AI answers. None guarantees detecting every hallucination.</p></details>
+  <details><summary>How can hallucinations be avoided?</summary><p>Providing reliable sources, asking for the quoted passages and asking clear questions reduces the problem but does not eliminate it. When the answer matters, verify it.</p></details>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <p class="fbrand">AYORAI ATTRACTOR</p>
+        <p class="fmotto">Evidence before conclusion.</p>
+        <p>Open-source project for evidence-based technical auditing of artificial intelligence answers. Author and maintainer: Anderson Leon Ayora.</p>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <ul>
+          <li><a href="../../">Home (Portuguese)</a></li>
+          <li><a href="../../en/ai-auditing/">AI auditing</a></li>
+          <li><a href="../../en/ai-hallucination/">AI hallucination</a></li>
+          <li><a href="../../en/claim-verification/">Claim verification</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Technical status</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Code</h4>
+        <ul>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch">GitHub repository</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/releases">Releases</a></li>
+          <li><a href="https://doi.org/10.5281/zenodo.23125082">DOI · Zenodo</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="legal">Released under the Apache-2.0 license. It is not presented as a certification and does not replace human review, internal controls or legal assessment.</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoría de inteligencia artificial: guía práctica, gobernanza de IA y herramienta de código abierto | AYORAI ATTRACTOR</title>
+<meta name="description" content="Qué es la auditoría de inteligencia artificial (auditoría de IA), en qué se diferencia de la auditoría con IA, gobernanza de IA y auditoría de algoritmos, cómo auditar respuestas de IA paso a paso y herramientas de código abierto. Guía del proyecto brasileño AYORAI ATTRACTOR.">
+<meta name="author" content="Anderson Leon Ayora">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://ayorinha.github.io/ayorai-opensearch/es/auditoria-de-inteligencia-artificial/">
+<link rel="alternate" hreflang="pt-BR" href="https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/">
+<link rel="alternate" hreflang="en" href="https://ayorinha.github.io/ayorai-opensearch/en/ai-auditing/">
+<link rel="alternate" hreflang="es" href="https://ayorinha.github.io/ayorai-opensearch/es/auditoria-de-inteligencia-artificial/">
+<link rel="alternate" hreflang="x-default" href="https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="AYORAI ATTRACTOR">
+<meta property="og:title" content="Auditoría de inteligencia artificial: guía práctica y de código abierto">
+<meta property="og:description" content="Qué es, qué auditar y cómo verificar respuestas de IA con evidencias y reglas reproducibles.">
+<meta property="og:url" content="https://ayorinha.github.io/ayorai-opensearch/es/auditoria-de-inteligencia-artificial/">
+<meta property="og:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": "Auditoría de inteligencia artificial: guía práctica y de código abierto",
+      "description": "Qué es la auditoría de inteligencia artificial (auditoría de IA), en qué se diferencia de la auditoría con IA, gobernanza de IA y auditoría de algoritmos, cómo auditar respuestas de IA paso a paso y herramientas de código abierto. Guía del proyecto brasileño AYORAI ATTRACTOR.",
+      "inLanguage": "es",
+      "datePublished": "2026-11-21",
+      "dateModified": "2026-11-21",
+      "image": "https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png",
+      "author": {
+        "@type": "Person",
+        "name": "Anderson Leon Ayora",
+        "url": "https://github.com/Ayorinha"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Anderson Leon Ayora",
+        "url": "https://github.com/Ayorinha"
+      },
+      "mainEntityOfPage": "https://ayorinha.github.io/ayorai-opensearch/es/auditoria-de-inteligencia-artificial/",
+      "about": [
+        "Auditoría de inteligencia artificial",
+        "Gobernanza de IA",
+        "Auditoría de algoritmos",
+        "Verificación de respuestas de IA"
+      ],
+      "translationOfWork": {
+        "@type": "Article",
+        "url": "https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/",
+        "inLanguage": "pt-BR"
+      },
+      "mentions": {
+        "@type": "SoftwareSourceCode",
+        "name": "AYORAI ATTRACTOR",
+        "url": "https://ayorinha.github.io/ayorai-opensearch/",
+        "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "AYORAI ATTRACTOR",
+          "item": "https://ayorinha.github.io/ayorai-opensearch/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Auditoría de inteligencia artificial",
+          "item": "https://ayorinha.github.io/ayorai-opensearch/es/auditoria-de-inteligencia-artificial/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "inLanguage": "es",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Qué es la auditoría de inteligencia artificial?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Es el proceso de examinar los datos, el modelo, las respuestas y el proceso de uso de un sistema de IA para comprobar si funciona como afirma y si sus conclusiones pueden inspeccionarse y reproducirse."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Cuál es la diferencia entre auditoría de IA y auditoría con IA?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "La auditoría con IA usa la inteligencia artificial como herramienta en auditorías tradicionales. La auditoría de IA examina el propio sistema de IA para comprobar si es confiable."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué es la gobernanza de IA?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Es el conjunto de reglas, roles y controles para usar la IA con responsabilidad. La auditoría de IA es la forma de demostrar que esos controles funcionan."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Existe una herramienta de código abierto para auditar respuestas de IA?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí: AYORAI ATTRACTOR, proyecto brasileño de código abierto distribuido bajo la licencia Apache-2.0, creado por Anderson Leon Ayora."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Cómo se audita la respuesta de un chatbot?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Delimite las afirmaciones, relacione las evidencias, analice si respaldan o contradicen cada afirmación, decida con reglas explícitas y conserve los artefactos para su inspección."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿La auditoría de IA garantiza el cumplimiento legal?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No por sí sola. Apoya la gobernanza y el cumplimiento, pero no sustituye la revisión humana, los controles internos, la evaluación jurídica ni la certificación."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../../">AYORAI ATTRACTOR</a>
+    <nav class="nav" aria-label="Principal">
+      <a href="./" aria-current="page"><span class="lg">Auditoría de IA</span><span class="sm">Auditoría</span></a>
+      <a class="hide-sm" href="../../es/alucinacion-de-ia/">Alucinación de IA</a>
+      <a class="hide-sm" href="../../es/verificacion-de-afirmaciones-ia/">Verificación de afirmaciones</a>
+      <a class="gh" href="https://github.com/Ayorinha/ayorai-opensearch">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap narrow article">
+  <img class="banner" style="display:block;width:100%;height:auto;margin:0 0 1.2rem" src="../../assets/ayorai-attractor-banner.png" width="1600" height="400" alt="AYORAI ATTRACTOR — logotipo oficial con un diente de león en lugar de la I">
+  <nav class="crumb" aria-label="Ruta"><a href="../../">AYORAI ATTRACTOR</a> / Auditoría de inteligencia artificial <span style="float:right"><span class="langs" style="display:inline-flex;gap:.5rem;font-size:.85rem"><a href="../../auditoria-de-inteligencia-artificial/" lang="pt-BR" hreflang="pt-BR">PT</a> · <a href="../../en/ai-auditing/" lang="en" hreflang="en">EN</a> · <a href="./" aria-current="true" lang="es">ES</a></span></span></nav>
+  <h1>Auditoría de inteligencia artificial: guía práctica y de código abierto</h1>
+  <p class="byline">Por Anderson Leon Ayora, autor de AYORAI ATTRACTOR · Publicado el 21 de noviembre de 2026</p>
+
+  <div class="callout"><strong>En resumen:</strong> auditar una IA es poder responder, con evidencias, a la pregunta "¿por qué el sistema llegó a esta conclusión?". <a href="../../">AYORAI ATTRACTOR</a> es un proyecto brasileño de código abierto que aplica esta idea a las respuestas de IA: examina cada afirmación, relaciona las evidencias y emite el veredicto con reglas explícitas y versionadas.</div>
+
+  <div class="toc">
+    <strong>En esta guía</strong>
+    <ol>
+      <li><a href="#que-es">Qué es la auditoría de inteligencia artificial</a></li>
+      <li><a href="#de-ia-vs-con-ia">Auditoría de IA frente a auditoría con IA</a></li>
+      <li><a href="#que-auditar">Qué se audita en un sistema de IA</a></li>
+      <li><a href="#paso-a-paso">Cómo auditar respuestas de IA, paso a paso</a></li>
+      <li><a href="#principios">Principios de una buena auditoría</a></li>
+      <li><a href="#gobernanza">Gobernanza de IA, auditoría de algoritmos y regulación</a></li>
+      <li><a href="#herramientas">Herramientas de código abierto</a></li>
+      <li><a href="#limites">Límites</a></li>
+      <li><a href="#faq">Preguntas frecuentes</a></li>
+    </ol>
+  </div>
+
+  <h2 id="que-es">Qué es la auditoría de inteligencia artificial</h2>
+  <p>La auditoría de inteligencia artificial es el proceso de examinar un sistema de IA para comprobar si hace lo que afirma hacer, si sus conclusiones se apoyan en evidencias y si sus decisiones pueden ser inspeccionadas y reproducidas por otra persona más adelante. Es, para la IA, lo que la auditoría contable es para las finanzas: un registro verificable, no una explicación de buena fe.</p>
+  <p>Con la IA generativa, la auditoría ganó un nuevo foco. Los modelos de lenguaje escriben respuestas fluidas y convincentes, a veces citando fuentes que no respaldan lo que se dice. En decisiones que exigen responsabilidad, no basta con que la respuesta parezca correcta: hay que poder examinar de dónde viene.</p>
+
+  <h2 id="de-ia-vs-con-ia">La auditoría de IA no es lo mismo que la auditoría con IA</h2>
+  <p>Las dos expresiones se parecen, pero tratan de cosas distintas. La <strong>auditoría con IA</strong> consiste en usar inteligencia artificial como herramienta en auditorías tradicionales: contables, fiscales o de control interno. La <strong>auditoría de IA</strong> es lo contrario: examinar el propio sistema de inteligencia artificial para saber si es confiable. Esta guía, y AYORAI ATTRACTOR, tratan de la segunda.</p>
+
+  <h2 id="que-auditar">Qué se audita en un sistema de IA</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Capa</th><th>Pregunta de auditoría</th></tr>
+    <tr><td>Datos</td><td>¿De dónde vienen los datos de entrenamiento y de consulta? ¿Los datos personales se tratan conforme a la ley de protección de datos (como la LGPD en Brasil o el RGPD en Europa)?</td></tr>
+    <tr><td>Modelo</td><td>¿Qué modelo y qué versión se usaron? ¿Se midió el desempeño con un método transparente?</td></tr>
+    <tr><td>Respuestas</td><td>¿Cada afirmación está respaldada por la evidencia citada? ¿Hay contradicciones o lagunas?</td></tr>
+    <tr><td>Proceso</td><td>¿Quién puede decidir y quién puede actuar sobre el resultado? ¿Se puede inspeccionar cada decisión?</td></tr>
+  </table>
+  </div>
+  <p>AYORAI ATTRACTOR actúa en la capa de <strong>respuestas</strong>: la verificación de cada afirmación frente a sus evidencias.</p>
+
+  <h2 id="paso-a-paso">Cómo auditar respuestas de IA, paso a paso</h2>
+  <h3>1. Delimite cada afirmación</h3>
+  <p>Una respuesta de IA suele reunir varias afirmaciones. Auditar todo el texto de una vez oculta errores; auditar afirmación por afirmación muestra exactamente dónde está el problema.</p>
+  <h3>2. Relacione las evidencias</h3>
+  <p>Para cada afirmación, identifique las fuentes y los fragmentos relevantes, conservando las referencias de procedencia disponibles.</p>
+  <h3>3. Analice la relación</h3>
+  <p>¿La evidencia respalda, contradice o no aclara la afirmación? Los modelos de lenguaje pueden ayudar en este análisis, pero no deben ser la autoridad del veredicto final.</p>
+  <h3>4. Decida con reglas explícitas y versionadas</h3>
+  <p>Reglas deterministas seleccionan el veredicto, de modo que la misma entrada estructurada conduzca al mismo resultado. Cuando las evidencias no bastan, lo honesto es registrar "no verificado", no adivinar; cuando se contradicen, registrar el conflicto, no elegir una fuente en silencio. En AYORAI ATTRACTOR, el Judge 2.0 emite cinco veredictos:</p>
+  <div class="verdicts"><span class="chip ok">SUPPORTED</span><span class="chip mid">PARTIALLY_SUPPORTED</span><span class="chip mid">UNVERIFIED</span><span class="chip mid">CONFLICTING</span><span class="chip no">REFUTED</span></div>
+  <h3>5. Conserve los artefactos para su inspección</h3>
+  <p>Guarde las afirmaciones, las evidencias, la versión de las reglas y los artefactos de evaluación. Los hashes ayudan a comprobar que los artefactos no fueron alterados, pero no prueban la veracidad del contenido.</p>
+
+  <div class="callout"><strong>Inteligencia ≠ Autorización ≠ Ejecución.</strong> Los modelos pueden ayudar en el análisis; el Judge determinista aplica el contrato explícito del sistema; y la aplicación que consume el resultado no debe convertir una sugerencia de un modelo en una decisión factual sin pasar por las reglas previstas.</div>
+
+  <h2 id="principios">Principios de una buena auditoría de IA</h2>
+  <ul>
+    <li><strong>Trazabilidad:</strong> toda conclusión remite a las evidencias y referencias que la respaldan.</li>
+    <li><strong>Separación de funciones:</strong> quien genera la respuesta no es quien decide el veredicto.</li>
+    <li><strong>Reproducibilidad:</strong> reglas, conjuntos de evaluación y artefactos versionados.</li>
+    <li><strong>Límites declarados:</strong> distinguir lo que se midió, lo que está implementado y lo que aún está en desarrollo.</li>
+    <li><strong>Transparencia:</strong> código, reglas y método abiertos a la inspección; por eso importa el código abierto.</li>
+  </ul>
+
+  <h2 id="gobernanza">Gobernanza de IA, auditoría de algoritmos y regulación</h2>
+  <p>La <strong>gobernanza de IA</strong> es el conjunto de reglas, roles y controles que una organización adopta para usar la inteligencia artificial con responsabilidad. La <strong>auditoría de algoritmos</strong> es una de sus herramientas: sin ella, la gobernanza se queda en el papel, porque no hay forma de demostrar que los controles funcionan.</p>
+  <p>El proyecto nació en Brasil, donde el uso de datos personales por sistemas de IA está sujeto a la LGPD (Ley 13.709/2018). El proyecto de ley brasileño sobre IA, el <a href="https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2487262">PL 2.338/2023</a>, fue aprobado por el Senado y enviado a la Cámara de Diputados, donde seguía en trámite según la ficha oficial consultada el 7 de noviembre de 2026; por lo tanto, es una propuesta y no una ley vigente. En cualquier escenario regulatorio, la capacidad de mostrar <strong>por qué</strong> un sistema llegó a una conclusión, con evidencias, reglas explícitas y registros reproducibles, es relevante, pero no sustituye la evaluación jurídica ni los controles organizacionales.</p>
+  <p>Si trabaja con IA generativa a diario, vea también la guía sobre <a href="../../es/alucinacion-de-ia/">alucinación de IA y cómo verificar respuestas de ChatGPT y otras IA</a>.</p>
+
+  <h2 id="herramientas">Herramientas de código abierto para la auditoría de IA</h2>
+  <h3>AYORAI ATTRACTOR (Brasil)</h3>
+  <p>Proyecto brasileño de código abierto, licencia Apache-2.0, creado por Anderson Leon Ayora. Realiza la auditoría técnica de respuestas de IA a nivel de cada afirmación, con un Judge determinista y reglas versionadas, pruebas de regresión y documentación de su estado y sus límites. Vea la comparación detallada en <a href="../../es/verificacion-de-afirmaciones-ia/">Verificación de afirmaciones en respuestas de IA</a>.</p>
+  <p><a href="https://github.com/Ayorinha/ayorai-opensearch">Código en GitHub</a> · <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf">Documento técnico (PDF, en portugués)</a> · <a href="https://doi.org/10.5281/zenodo.23125082">DOI en Zenodo</a></p>
+  <h3>Otras iniciativas</h3>
+  <p>El ecosistema abierto de auditoría de IA también incluye el programa de herramientas abiertas de auditoría apoyado por la <a href="https://www.mozillafoundation.org/en/what-we-fund/oat">Mozilla Foundation</a> y los recursos de <a href="https://openmined.org/for-ai-auditors/">OpenMined</a> para auditores. Para una visión académica del campo, vea el estudio <a href="https://arxiv.org/abs/2206.10613">"The Right Tool for the Job: Open-Source Auditing Tools in Machine Learning"</a>. Estas iniciativas cubren capas distintas y se complementan.</p>
+
+  <h2 id="limites">Límites</h2>
+  <p>Ninguna herramienta de auditoría, por sí sola, garantiza el cumplimiento normativo, una certificación o la detección de toda alucinación. AYORAI ATTRACTOR no se presenta como certificación y todavía no tiene resultados de benchmark en portugués; consulte el <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Estado técnico</a> para la situación más reciente. El sistema apoya el análisis; no sustituye la revisión humana, los controles internos ni la evaluación jurídica.</p>
+
+  <h2 id="faq">Preguntas frecuentes</h2>
+  <details open><summary>¿Qué es la auditoría de inteligencia artificial?</summary><p>Es el proceso de examinar los datos, el modelo, las respuestas y el proceso de uso de un sistema de IA para comprobar si funciona como afirma y si sus conclusiones pueden inspeccionarse y reproducirse.</p></details>
+  <details><summary>¿Cuál es la diferencia entre auditoría de IA y auditoría con IA?</summary><p>La auditoría con IA usa la inteligencia artificial como herramienta en auditorías tradicionales. La auditoría de IA examina el propio sistema de IA para comprobar si es confiable.</p></details>
+  <details><summary>¿Qué es la gobernanza de IA?</summary><p>Es el conjunto de reglas, roles y controles para usar la IA con responsabilidad. La auditoría de IA es la forma de demostrar que esos controles funcionan.</p></details>
+  <details><summary>¿Existe una herramienta de código abierto para auditar respuestas de IA?</summary><p>Sí: AYORAI ATTRACTOR, proyecto brasileño de código abierto distribuido bajo la licencia Apache-2.0, creado por Anderson Leon Ayora.</p></details>
+  <details><summary>¿Cómo se audita la respuesta de un chatbot?</summary><p>Delimite las afirmaciones, relacione las evidencias, analice si respaldan o contradicen cada afirmación, decida con reglas explícitas y conserve los artefactos para su inspección.</p></details>
+  <details><summary>¿La auditoría de IA garantiza el cumplimiento legal?</summary><p>No por sí sola. Apoya la gobernanza y el cumplimiento, pero no sustituye la revisión humana, los controles internos, la evaluación jurídica ni la certificación.</p></details>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <p class="fbrand">AYORAI ATTRACTOR</p>
+        <p class="fmotto">Evidencia antes que conclusión.</p>
+        <p>Proyecto de código abierto de auditoría técnica de respuestas de inteligencia artificial basada en evidencias. Autor y mantenedor: Anderson Leon Ayora.</p>
+      </div>
+      <div>
+        <h4>Proyecto</h4>
+        <ul>
+          <li><a href="../../">Inicio (portugués)</a></li>
+          <li><a href="../../es/auditoria-de-inteligencia-artificial/">Auditoría de IA</a></li>
+          <li><a href="../../es/alucinacion-de-ia/">Alucinación de IA</a></li>
+          <li><a href="../../es/verificacion-de-afirmaciones-ia/">Verificación de afirmaciones</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Estado técnico</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Código</h4>
+        <ul>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch">Repositorio en GitHub</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/releases">Versiones</a></li>
+          <li><a href="https://doi.org/10.5281/zenodo.23125082">DOI · Zenodo</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="legal">Distribuido bajo la licencia Apache-2.0. No se presenta como certificación y no sustituye la revisión humana, los controles internos ni la evaluación jurídica.</p>
+  </div>
+</footer>
+</body>
+</html>
