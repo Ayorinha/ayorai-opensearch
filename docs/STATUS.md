@@ -46,12 +46,19 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 - **Issues:** #433, #434 e #435 foram fechadas. O que falta delas é roteiro, não defeito, e está em [ROADMAP.md](ROADMAP.md).
 - **Pins históricos (P3-1):** mantidos e isolados em workflows manuais, com regra testada; ver [security/HISTORICAL-PINS.md](security/HISTORICAL-PINS.md).
 - **PRs abertas em 2026-11-21, de outra sessão do mantenedor:** #617 (STATUS da v0.8.0, superada por esta atualização) e #618 (prova de conceito do escritor da ADR-010; o teste em Python 3.11 falha e ela altera a ADR-010, que é protegida). Nenhuma das duas foi mesclada por esta sessão. A #613 foi fechada. Não há issues abertas (`0`).
-- **ADR-010, fases 2 e 3 (PR #623, aberta, sem merge):**
+- **ADR-010, fases 2 e 3 (PR #623, mesclada em 2026-11-21):**
   - log Merkle com checkpoints C2SP assinados e registro do `/v1/verify` (`audit_status`, `audit_receipt`, `Idempotency-Key`; modo padrão `off`);
   - verificação cruzada com referências em Go;
   - 50 mil eventos a cerca de 1,2 ms por gravação.
 
-  Estado: **tecnicamente implementada, formalmente pendente**. As decisões 5 a 7 e os textos para as ADRs protegidas estão propostos em [adr/ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md](adr/ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md) e aguardam o mantenedor. A #618 (POC isolada) foi mesclada em 2026-11-21.
+  Estado: **concluída no escopo decidido**. As decisões 5 a 7 foram tomadas pelo mantenedor em 2026-11-21 (DEC-028, DEC-029 e DEC-030) e registradas na ADR-010, no ADR-009 §15.1 e no `DECISIONS-APPROVED.md`. A #618 (POC isolada) foi mesclada em 2026-11-21.
+
+  O que fica para depois, por decisão:
+  - testemunhas independentes (etapa 2 da DEC-029);
+  - carimbo do tempo ICP-Brasil (adiado pela DEC-030);
+  - medição no hardware de produção.
+
+  Até haver duas testemunhas independentes, o log não resiste ao operador que detém a chave.
 - **Release:** v0.8.0 publicada em 2026-11-13; tag `v0.8.0` aponta para `92ea5eb86b69724b05834d98c326e8315bb6b655`, commit com assinatura verificada pelo GitHub; [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0). CI, Security e CodeQL da tag passaram. O Version DOI v0.8.0 ainda não estava registrado no Zenodo em 2026-11-21. DOI de conceito: `10.5281/zenodo.23125082`; Version DOI v0.7.0: `10.5281/zenodo.24045951`.
 
 ### Classificação do estado
