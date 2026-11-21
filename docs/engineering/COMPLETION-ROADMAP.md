@@ -11,11 +11,11 @@ Concluir o escopo de engenharia necessário para uma versão profissional, segur
 
 ## Estado de partida verificado
 
-- A versão publicada registrada no repositório é a v0.6.0.
+- **Versão publicada vigente (verificação em 2026-11-21):** v0.8.0, data oficial 2026-11-13, tag `92ea5eb86b69724b05834d98c326e8315bb6b655`, [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0). O Version DOI da v0.8.0 ainda estava pendente no Zenodo; o DOI de conceito é `10.5281/zenodo.23125082` e o DOI de versão v0.7.0 é `10.5281/zenodo.24045951`. A baseline de engenharia deste plano permanece historicamente fixada em 06/11/2026; não deve ser confundida com a versão atual.
 - O projeto já possui API FastAPI, modelos Pydantic, autenticação, testes automatizados, workflows de CI, segurança, CodeQL, análise de dependências, Docker e instrumentação de observabilidade.
 - A biblioteca `auditlog` contém hashing Merkle, compromissos e vetores de referência; a ADR-010 ainda descreve lacunas de serviço persistente, integração com `/v1/verify`, checkpoints, custódia de chaves, testemunhas externas, recuperação e medição operacional.
 - A documentação de proveniência registra hashes de distribuição verificados para v0.6.0, mas lista SBOM, proveniência SLSA, assinaturas e provas temporais como controles futuros.
-- `docs/STATUS.md` contém snapshots históricos e declara como referência uma data anterior à baseline atual; deve ser atualizado em uma tarefa documental própria, sem apagar o histórico.
+- `docs/STATUS.md` é a fonte única de status atual e foi reconciliado para `main` `3798be64e8ae6e4d8dac2a35b7c3611c8194ee17` em 2026-11-21; os snapshots anteriores permanecem preservados como histórico.
 - A ADR-010 mantém abertas as decisões de arquitetura sobre writer Python versus Tessera, testemunhas independentes e eventual carimbo de tempo ICP-Brasil.
 
 ## Princípios e limites
