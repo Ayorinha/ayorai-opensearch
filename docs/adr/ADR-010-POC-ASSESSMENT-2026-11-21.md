@@ -100,7 +100,7 @@ A POC SQLite evita essa janela porque a chave, o índice e a raiz são gravados 
 
 ## 7. Experimento comparativo obrigatório antes da decisão 5
 
-O runner de Tessera em experiments/adr010_poc/run_tessera_poc.py executa o posix-oneshot v1.0.4 sobre os 17 vetores públicos, verifica o tamanho e a raiz do checkpoint contra a referência Go existente e executa Tessera fsck para validar assinatura, tiles e bundles. A suíte automatizada correspondente está em .github/workflows/adr010-poc.yml. O runner usa uma chave de demonstração publicada pelo próprio projeto Tessera, exclusivamente para o log descartável do teste; essa chave nunca pode ser usada em qualquer ambiente real.
+O runner de Tessera em experiments/adr010_poc/run_tessera_poc.py executa o posix-oneshot v1.0.4 sobre os 17 vetores públicos, verifica o tamanho e a raiz do checkpoint contra a referência Go existente e executa Tessera fsck para validar assinatura, tiles e bundles. A suíte automatizada correspondente está em .github/workflows/adr010-poc.yml. O runner gera uma chave Ed25519 descartável com OpenSSL em tempo de execução; a chave privada não é versionada e é apagada junto com o diretório temporário.
 
 A comparação Tessera precisa ser executada em branch e ambiente isolados, com versões e digests fixados. O protocolo mínimo:
 
