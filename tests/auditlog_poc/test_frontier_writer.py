@@ -37,8 +37,7 @@ def test_sqlite_frontier_writer_reproduces_roots_and_historical_checkpoints(
 ) -> None:
     writer = SQLiteFrontierWriter(tmp_path / "frontier.sqlite3")
     receipts = [
-        writer.append(f"frontier-{index}", leaf_hash)
-        for index, leaf_hash in enumerate(LEAF_HASHES)
+        writer.append(f"frontier-{index}", leaf_hash) for index, leaf_hash in enumerate(LEAF_HASHES)
     ]
 
     for index, receipt in enumerate(receipts):
