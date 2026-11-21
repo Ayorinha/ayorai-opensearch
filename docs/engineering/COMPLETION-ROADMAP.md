@@ -56,7 +56,7 @@ Concluir o escopo de engenharia necessário para uma versão profissional, segur
 **Aceitação:** matriz de ameaças e controles, evidência dos testes de segurança e registro explícito dos riscos não eliminados.
 
 ### E3 — Auditoria verificável (ADR-010)
-- **Estado em 2026-11-21:** comparação e POC isolada em andamento na [PR #618](https://github.com/Ayorinha/ayorai-opensearch/pull/618): baseline SQLite em Python + runner Tessera v1.0.4 POSIX/one-shot/fsck, com vetores públicos. A execução de CI ainda está pendente; nenhum resultado de conformidade ou desempenho é declarado.
+- **Estado em 2026-11-21:** comparação e POC isolada em andamento na [PR #618](https://github.com/Ayorinha/ayorai-opensearch/pull/618). O job Tessera v1.0.4 passou com 17 vetores públicos, checkpoint size 17, raiz igual à referência e fsck aprovado ([run 44917079201](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917079201)). O job Python detectou falha na verificação de recibo após mutação de uma árvore de uma folha; a correção está na PR e aguarda reexecução. A POC completa ainda não está aprovada e nenhum resultado de desempenho é declarado.
 - A POC não fecha a escolha Python/Tessera, não integra com `/v1/verify`, não adiciona dependência de runtime e não altera Judge/Golden/RGC. As decisões 5–7 da ADR-010 permanecem abertas.
 - Fechar primeiro as decisões de arquitetura ainda abertas por meio de comparação documentada e prova de conceito isolada.
 - Especificar esquema versionado de evento, canonicalização, compromisso salgado, recibo, prova de inclusão, checkpoint e política de retenção/eliminação.
