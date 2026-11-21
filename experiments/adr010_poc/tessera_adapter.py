@@ -22,6 +22,7 @@ class VerifiedCheckpoint:
     tree_size: int
     root_hash: bytes
     checkpoint_note: bytes
+    inclusion_proof: tuple[bytes, ...]
 
 
 class TesseraClient(Protocol):
@@ -90,6 +91,7 @@ class TesseraOutboxAdapter:
             or len(checkpoint.root_hash) != HASH_SIZE
             or not isinstance(checkpoint.checkpoint_note, bytes)
             or not checkpoint.checkpoint_note
+            or not isinstance(checkpoint.inclusion_proof, tuple)
         ):
             raise ReconciliationRequired(
                 "Tessera has not provided a valid checkpoint covering the assigned index"
@@ -102,4 +104,5 @@ class TesseraOutboxAdapter:
             tree_size=checkpoint.tree_size,
             root_hash=checkpoint.root_hash,
             checkpoint_note=checkpoint.checkpoint_note,
+            inclusion_proof=checkpoint.inclusion_proof,
         )
