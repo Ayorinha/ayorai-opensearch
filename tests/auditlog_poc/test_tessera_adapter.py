@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ayorai_attractor.auditlog import tree_root
+from ayorai_attractor.auditlog import inclusion_proof, tree_root
 from experiments.adr010_poc.idempotency_outbox import SQLiteIdempotencyOutbox
 from experiments.adr010_poc.python_writer import IdempotencyConflict
 from experiments.adr010_poc.tessera_adapter import (
@@ -41,7 +41,8 @@ class FakeTessera:
             raise RuntimeError("fake checkpoint does not include assigned index")
         root_hash = tree_root(tuple(self.entries))
         note = f"verified-test-checkpoint:{tree_size}:{root_hash.hex()}".encode("ascii")
-        return VerifiedCheckpoint(tree_size, root_hash, note)
+        proof = tuple(inclusion_proof(tessera_index, tuple(self.entries)))
+        return VerifiedCheckpoint(tree_size, root_hash, note, proof)
 
 
 def test_adapter_records_once_and_replays_original_receipt_after_restart(
@@ -149,6 +150,7 @@ def test_adapter_keeps_assigned_state_when_checkpoint_is_not_valid(
         tree_size=0,
         root_hash=b"short",
         checkpoint_note=b"unverified",
+        inclusion_proof=(),
     )
 
     with pytest.raises(ReconciliationRequired, match="valid checkpoint"):
