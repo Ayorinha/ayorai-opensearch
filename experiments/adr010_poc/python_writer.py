@@ -294,13 +294,44 @@ class SQLiteMerkleWriter:
             connection.close()
 
     def verify_receipt(self, receipt: AppendReceipt) -> bool:
-        """Verify a receipt against the corresponding local tree prefix."""
+        """Verify the persisted leaf and proof against the receipt's tree prefix."""
         if not isinstance(receipt, AppendReceipt):
             return False
-        try:
-            proof = self.inclusion_proof(receipt.index, receipt.tree_size)
-        except (ValueError, CorruptStoreError, sqlite3.Error):
+        if (
+            isinstance(receipt.index, bool)
+            or not isinstance(receipt.index, int)
+            or isinstance(receipt.tree_size, bool)
+            or not isinstance(receipt.tree_size, int)
+            or not isinstance(receipt.leaf_hash, bytes | bytearray)
+            or len(receipt.leaf_hash) != HASH_SIZE
+            or not isinstance(receipt.root_hash, bytes | bytearray)
+            or len(receipt.root_hash) != HASH_SIZE
+        ):
             return False
+
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN")
+            hashes = self._load_snapshot(connection)
+            if (
+                receipt.tree_size <= 0
+                or receipt.tree_size > len(hashes)
+                or not 0 <= receipt.index < receipt.tree_size
+            ):
+                connection.rollback()
+                return False
+            stored_leaf = hashes[receipt.index]
+            if not hmac.compare_digest(stored_leaf, receipt.leaf_hash):
+                connection.rollback()
+                return False
+            proof = merkle_inclusion_proof(receipt.index, hashes[: receipt.tree_size])
+            connection.commit()
+        except (ValueError, CorruptStoreError, sqlite3.Error, TypeError):
+            connection.rollback()
+            return False
+        finally:
+            connection.close()
+
         return verify_inclusion(
             receipt.index,
             receipt.tree_size,
