@@ -15,7 +15,7 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from experiments.adr010_poc.run_tessera_poc import (
+from run_tessera_poc import (
     TESSERA_VERSION,
     generate_ephemeral_note_keys,
     run,
