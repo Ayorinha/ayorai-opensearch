@@ -124,7 +124,6 @@ def test_deleted_entry_is_detected_without_silent_repair(tmp_path: Path) -> None
         SQLiteMerkleWriter(database)
 
 
-
 def test_process_crash_before_commit_does_not_leave_partial_entry(tmp_path: Path) -> None:
     database = tmp_path / "crash-recovery.sqlite3"
     SQLiteMerkleWriter(database)
@@ -154,7 +153,6 @@ os._exit(23)
     recovered = SQLiteMerkleWriter(database)
     assert recovered.tree_head().tree_size == 0
     assert recovered.matches_checkpoint(0, recovered.tree_head().root_hash)
-
 
 
 def test_retry_after_process_exit_after_commit_returns_original_receipt(
