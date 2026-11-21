@@ -1,8 +1,8 @@
 """Decision errors of /v1/check found in review, pinned through the real HTTP application.
 
 Each was first pinned as a strict ``xfail``. Detector v9 fixes the cross-sentence
-token negation and the reported denial, which are now ordinary regression tests;
-the bare scale words remain a strict ``xfail``. The control tests pin behaviour
+token negation and the reported denial; detector v13 fixes the bare scale words.
+They are now ordinary regression tests. The control tests pin behaviour
 that was already correct, so a fix cannot break it.
 """
 
@@ -111,13 +111,6 @@ def test_check_trace_ids_are_not_persisted(
     assert client.get(f"/v1/audit/{trace_id}").status_code == 404
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Scale words (bilhão, milhões) are applied only to money with a currency; "
-        "bare '1,2 bilhão' is read as 1.2 and '1.200 milhões' as 1200 (false refuted)."
-    ),
-)
 def test_equivalent_values_with_different_scale_words_are_not_refuted() -> None:
     result = _check(
         "A receita da Vértice foi de 1,2 bilhão em 2024.",

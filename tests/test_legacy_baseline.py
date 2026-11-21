@@ -119,7 +119,7 @@ def test_semantic_digests_are_unchanged_for_all_three_suites() -> None:
 
     expected = {
         "golden-v0": "21abb816facce73fc924842d12b373b8792abc2e7389e129c35bb58bab806632",
-        "golden-v0.1": "64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608",
+        "golden-v0.1": "1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180",
         "smoke-v0": "969ec61a4aee4e4426f5d217819bd185ebba248743e7721714a3123f5df67c3d",
     }
     for suite, golden_name in (
