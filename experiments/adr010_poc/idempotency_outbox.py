@@ -231,7 +231,11 @@ class SQLiteIdempotencyOutbox:
     ) -> OutboxRecord:
         """Persist the index returned by Tessera before waiting for publication."""
         self._validate_key_and_leaf(idempotency_key, leaf_hash)
-        if isinstance(tessera_index, bool) or not isinstance(tessera_index, int) or tessera_index < 0:
+        if (
+            isinstance(tessera_index, bool)
+            or not isinstance(tessera_index, int)
+            or tessera_index < 0
+        ):
             raise ValueError("tessera_index must be a non-negative integer")
 
         connection = self._connect()
