@@ -92,7 +92,7 @@
         { "@type": "Question", "name": "Quais vereditos o AYORAI ATTRACTOR emite?",
           "acceptedAnswer": { "@type": "Answer", "text": "O Judge 2.0 emite cinco vereditos: SUPPORTED, PARTIALLY_SUPPORTED, UNVERIFIED, REFUTED e CONFLICTING." } },
         { "@type": "Question", "name": "O AYORAI ATTRACTOR é certificado ou garante conformidade?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Não. O projeto não é apresentado como certificado, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só. Ainda não há resultado de benchmark em português." } }
+          "acceptedAnswer": { "@type": "Answer", "text": "Não. O projeto não é apresentado como certificado, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só. Existe uma avaliação interna em português (PT-CP-Audit), sobre um corpus do Código Penal brasileiro; ela não valida o benchmark RGC nem demonstra generalização externa. O benchmark RGC PT-BR ainda não tem resultado validado." } }
       ]
     }
   ]
@@ -203,7 +203,7 @@
     <div class="wrap narrow">
       <p class="kicker">Estado e limites</p>
       <h2>O que está comprovado hoje</h2>
-      <p>A versão pública atual é a <strong>v0.8.0</strong>, publicada em 13 de novembro de 2026. Esta versão amplia a API documental e reforça a segurança da cadeia de dependências. Ela não apresenta novo resultado confirmatório de acurácia; os experimentos de benchmark associados são exploratórios em DEV, e o split TEST não foi utilizado.</p>
+      <p>A versão pública atual é a <strong>v0.8.0</strong>, publicada em 13 de novembro de 2026. O código, os metadados de citação e o arquivo de proveniência estão vinculados à tag oficial e ao commit de release. Esta versão amplia a API documental e reforça a segurança da cadeia de dependências. Ela não apresenta novo resultado confirmatório de acurácia; os experimentos de benchmark associados são exploratórios em DEV, e o split TEST não foi utilizado.</p>
       <div class="callout">
         <strong>O que entrou na v0.8.0</strong>
         <ul>
@@ -218,7 +218,7 @@
       <div class="limits">
         <strong style="color:var(--mid)">Limites declarados</strong>
         <ul>
-          <li>Ainda não há resultado de benchmark em português; o protocolo RGC está em desenvolvimento e não está congelado.</li>
+          <li>Existe avaliação interna PT-CP-Audit em português, sobre um corpus do Código Penal brasileiro; seus resultados são direcionais e não estatisticamente significativos no teste manual reservado. Isso não equivale a validação do benchmark RGC nem a validação externa. O protocolo RGC continua proposto e não está congelado.</li>
           <li>O split TEST não foi utilizado para os experimentos exploratórios descritos na v0.8.0.</li>
           <li>Resultados sintéticos não demonstram desempenho em produção nem generalização para documentos jurídicos brasileiros.</li>
           <li>O projeto não é apresentado como certificado, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só.</li>
