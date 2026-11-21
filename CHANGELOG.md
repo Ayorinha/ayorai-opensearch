@@ -44,6 +44,12 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - Gramática canônica única de ID de artigo (E1, #550); componentes de artigos conectados determinísticos (#532); gate de resolução de componentes antes da anotação (E4/D7, #551); H1 por sign-flip de componentes e IC por componente no runner (Emenda 11, #552).
 - Protocolo de relação entre passagens (proposto) e harness para contradições de `/v1/check` (#547).
 - Testes do Judge 2.0 e cenários E2E (#556).
+- Runner `rgc-eval/0.12.0` (#580): captura única, em snapshots imutáveis, dos bytes de todas as entradas, do protocolo, do manifesto de congelamento e do código congelado; validação, avaliação e hashes usam só os snapshots; manifesto de execução verificado e publicação atômica sem sobrescrita.
+- A avaliação roda num interpretador Python isolado (`-I -S`), com ambiente mínimo e importando só o snapshot (#584). O modo filho só é aceito dentro de um snapshot criado pelo processo pai; variáveis de ambiente forjadas não pulam mais a exigência de checkout limpo da partição oculta.
+- A ferramenta de concordância calcula kappa e hashes sobre os mesmos bytes lidos uma única vez e recusa JSON com chave duplicada (#576).
+- O gate de H1 exige resolução estatística suficiente (`significance_below_005_possible`) quando o teste primário é o sign-flip por componente (#577).
+- `docs/eval/STATISTICS.md` reconciliado com a DEC-027 e com o código atual (#583); registros metodológicos datados de 2026-11-13 e 2026-11-17 (#539, #581).
+- A revisão técnica dessas mudanças foi feita por ferramenta automatizada; a revisão humana independente prevista no `CONTRIBUTING.md` continua pendente. O protocolo RGC continua [PROPOSTO]; nenhuma execução RGC foi feita.
 
 ### Documentação
 - `/v1/check`, `/v1/fields`, dono dos rastros, backup e novas variáveis documentados (#566); status de engenharia atualizado (#572, #578).
