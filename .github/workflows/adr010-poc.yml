@@ -50,3 +50,5 @@ jobs:
           cache: false
       - name: Run upstream Tessera POSIX writer and independent fsck
         run: python3 experiments/adr010_poc/run_tessera_poc.py
+      - name: Exercise upstream Tessera POSIX HTTP conformance personality
+        run: python3 experiments/adr010_poc/run_tessera_http_poc.py
