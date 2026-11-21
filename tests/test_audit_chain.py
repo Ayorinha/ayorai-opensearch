@@ -270,3 +270,24 @@ def test_failed_purge_record_keeps_the_traces(tmp_path: Path) -> None:
         _record(store)
         assert store.get(old, requester="alice") is not None
         assert store.verify_chain()["complete"] is True
+
+
+def test_retention_failure_after_commit_does_not_fail_the_recorded_trace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    # The trace is committed before the automatic retention runs. A retention
+    # error must not be reported as a failed record, and its partial purge is undone.
+    monkeypatch.setenv("ATTRACTOR_AUDIT_RETENTION_DAYS", "30")
+    path = str(tmp_path / "a.sqlite3")
+    with AuditTraceStore(path, mac_keys=(OLD,)) as store:
+
+        def failing(*args: object, **kwargs: object) -> int:
+            raise sqlite3.OperationalError("database is locked")
+
+        store._purge_locked = failing  # type: ignore[method-assign]
+        store._last_retention_run = None
+        with caplog.at_level("WARNING", logger="ayorai_attractor.audit_store"):
+            trace = _record(store)
+        assert store.get(trace, requester="alice") is not None
+        assert store.verify_chain()["complete"] is True
+    assert any("retention" in record.getMessage() for record in caplog.records)

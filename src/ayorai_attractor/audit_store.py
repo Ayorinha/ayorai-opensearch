@@ -23,6 +23,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import os
 import re
 import sqlite3
@@ -36,6 +37,8 @@ from ayorai_attractor import __version__
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.models import AuditTraceResponse, SearchResponse
 from ayorai_attractor.replay import ReplayBundle
+
+logger = logging.getLogger(__name__)
 
 _SCHEMA_VERSION = 4
 _R2_V1: Final = "r2-v1"
@@ -623,7 +626,16 @@ class AuditTraceStore:
             raise
         self._append_chain_locked("trace", report.trace_id, replay.digest, None)
         self._connection.commit()
-        self._apply_retention_locked()
+        # The trace is durable from here on. The automatic retention is housekeeping:
+        # its failure must not turn a recorded trace into a reported failure, and a
+        # partial purge is undone. It runs again on the next write after the interval.
+        try:
+            self._apply_retention_locked()
+        except sqlite3.Error as exc:
+            self._rollback_open_transaction()
+            logger.warning(
+                "audit retention failed after recording a trace (%s)", type(exc).__name__
+            )
         return replay.digest
 
     @property
