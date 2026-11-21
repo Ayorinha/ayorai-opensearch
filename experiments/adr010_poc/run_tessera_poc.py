@@ -30,8 +30,7 @@ def run(command: list[str], env: dict[str, str], timeout: int = 300) -> str:
     output = result.stdout + result.stderr
     if result.returncode != 0:
         raise RuntimeError(
-            f"command failed with exit code {result.returncode}: "
-            f"{' '.join(command)}\n{output}"
+            f"command failed with exit code {result.returncode}: {' '.join(command)}\n{output}"
         )
     return output
 
@@ -67,9 +66,8 @@ def generate_ephemeral_note_keys(work: Path) -> tuple[str, str]:
         private_der.unlink(missing_ok=True)
 
     encoded_public = public_der.read_bytes()
-    if (
-        len(encoded_public) != len(ED25519_PUBLIC_DER_PREFIX) + 32
-        or not encoded_public.startswith(ED25519_PUBLIC_DER_PREFIX)
+    if len(encoded_public) != len(ED25519_PUBLIC_DER_PREFIX) + 32 or not encoded_public.startswith(
+        ED25519_PUBLIC_DER_PREFIX
     ):
         raise RuntimeError("OpenSSL returned an unexpected Ed25519 public-key encoding")
 
@@ -78,14 +76,8 @@ def generate_ephemeral_note_keys(work: Path) -> tuple[str, str]:
     key_id = key_hash.digest()[:4].hex()
     private_note_key = b"\x01" + seed
 
-    signer = (
-        f"PRIVATE+KEY+{LOG_ORIGIN}+{key_id}+"
-        f"{base64.b64encode(private_note_key).decode('ascii')}"
-    )
-    verifier = (
-        f"{LOG_ORIGIN}+{key_id}+"
-        f"{base64.b64encode(public_note_key).decode('ascii')}"
-    )
+    signer = f"PRIVATE+KEY+{LOG_ORIGIN}+{key_id}+{base64.b64encode(private_note_key).decode('ascii')}"
+    verifier = f"{LOG_ORIGIN}+{key_id}+{base64.b64encode(public_note_key).decode('ascii')}"
     return signer, verifier
 
 
