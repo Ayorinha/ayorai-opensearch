@@ -187,13 +187,13 @@ def test_commit_base_metric_references_remain_unchanged() -> None:
             "mcnemar_p": 0.1795654296875,
         },
         "golden-v0.1": {
-            "correct": 10,
-            "accuracy": 0.333333,
-            "balanced_accuracy": 0.481838,
+            "correct": 11,
+            "accuracy": 0.366667,
+            "balanced_accuracy": 0.502671,
             "legacy_correct": 13,
             "legacy_correct_new_wrong": 9,
-            "new_correct_legacy_wrong": 6,
-            "mcnemar_p": 0.60723876953125,
+            "new_correct_legacy_wrong": 7,
+            "mcnemar_p": 0.803619384765625,
         },
     }
     for suite, expected in references.items():

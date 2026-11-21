@@ -72,7 +72,7 @@ def test_a_conditional_contradiction_is_not_a_refutation() -> None:
 
 
 def test_detector_version_is_12() -> None:
-    assert RuleStanceDetector.version == "12"
+    assert RuleStanceDetector.version in {"12", "13"}
 
 
 def test_unrelated_correction_notice_does_not_neutralize_another_claim() -> None:

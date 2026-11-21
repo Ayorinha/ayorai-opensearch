@@ -80,7 +80,7 @@ from evals.ptbr.rgc_random import (  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.12.0"
+RUNNER_VERSION = "rgc-eval/0.13.0"
 FREEZE_SCHEMA_VERSION = 2
 RUN_MANIFEST_SCHEMA = "rgc-run-manifest/1"
 # Direct and transitive deterministic runtime dependencies loaded by the RGC runner,
@@ -1151,14 +1151,21 @@ def validate_annotation_approval(
             "RGC evaluation blocked: an approved annotation artifact is missing"
         ) from exc
 
-    if set(inputs) != {"annotation_a_sha256", "annotation_b_sha256"}:
+    if set(inputs) != {"annotation_a_sha256", "annotation_b_sha256", "cases_sha256"}:
         raise ValueError("RGC evaluation blocked: agreement report input schema is invalid")
+    if inputs["cases_sha256"] != expected_hashes["cases_sha256"]:
+        raise ValueError(
+            "RGC evaluation blocked: agreement report was computed on other cases (cases_sha256)"
+        )
     try:
+        # DEC-022: the component interval is recomputed from the approved cases'
+        # citations, so a report without it, or with other components, is refused.
         canonical_agreement = rgc_agreement.compute_agreement(
             rgc_agreement.load_annotations(annotation_a_path),
             rgc_agreement.load_annotations(annotation_b_path),
             iterations=rgc_agreement.DEFAULT_ITERATIONS,
             seed=rgc_agreement.DEFAULT_SEED,
+            component_by_case=rgc_agreement.load_component_ids(cases_path),
         )
     except (OSError, ValueError) as exc:
         raise ValueError(

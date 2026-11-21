@@ -27,16 +27,20 @@ CHECKER = runpy.run_path(str(ROOT / "scripts" / "check_golden_pt.py"))
 AGREEMENT = runpy.run_path(str(ROOT / "evals" / "ptbr" / "rgc_agreement.py"))
 
 
-def _write_agreement_report(path: Path, annotation_a: Path, annotation_b: Path) -> dict[str, Any]:
+def _write_agreement_report(
+    path: Path, annotation_a: Path, annotation_b: Path, cases: Path
+) -> dict[str, Any]:
     report = AGREEMENT["compute_agreement"](
         AGREEMENT["load_annotations"](annotation_a),
         AGREEMENT["load_annotations"](annotation_b),
         iterations=AGREEMENT["DEFAULT_ITERATIONS"],
         seed=AGREEMENT["DEFAULT_SEED"],
+        component_by_case=AGREEMENT["load_component_ids"](cases),
     )
     report["inputs"] = {
         "annotation_a_sha256": RUNNER["_sha256"](annotation_a),
         "annotation_b_sha256": RUNNER["_sha256"](annotation_b),
+        "cases_sha256": RUNNER["_sha256"](cases),
     }
     path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return report
@@ -1057,7 +1061,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         "\n".join(json.dumps(row) for row in annotation_rows) + "\n", encoding="utf-8"
     )
     agreement_report = tmp_path / "agreement.json"
-    _write_agreement_report(agreement_report, annotation_a, annotation_b)
+    _write_agreement_report(agreement_report, annotation_a, annotation_b, cases)
     adjudication_record = tmp_path / "adjudication.md"
     adjudication_record.write_text("Synthetic test only; no real annotations.\n", encoding="utf-8")
     annotation_approval = tmp_path / "annotation-approval.json"
@@ -1138,7 +1142,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert code == 0
     assert RUNNER["judge2_module"]._RULES_PATH == missing_rules
     report = json.loads(out.read_text(encoding="utf-8"))
-    assert report["runner_version"] == "rgc-eval/0.12.0"
+    assert report["runner_version"] == "rgc-eval/0.13.0"
     assert set(report["runtime_dependencies"]) == {"pydantic", "pydantic-core", "rfc8785"}
     assert all(
         isinstance(value, str) and value for value in report["runtime_dependencies"].values()
@@ -1236,7 +1240,10 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
     agreement = tmp_path / "agreement.json"
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
-    cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
+    cases.write_text(
+        json.dumps({"case_id": "case-1", "cited_article_ids": ["lei-sintetica:art-1"]}) + "\n",
+        encoding="utf-8",
+    )
     labels.write_text("{}\n", encoding="utf-8")
     annotation_a.write_text(
         json.dumps({"case_id": "case-1", "label": "SUPPORTED"}) + "\n", encoding="utf-8"
@@ -1249,7 +1256,7 @@ def test_annotation_approval_rejects_failed_human_agreement(tmp_path: Path) -> N
     development_cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
     development_labels.write_text("{}\n", encoding="utf-8")
     adjudication.write_text("synthetic only\n", encoding="utf-8")
-    agreement_data = _write_agreement_report(agreement, annotation_a, annotation_b)
+    agreement_data = _write_agreement_report(agreement, annotation_a, annotation_b, cases)
     approval.write_text(
         json.dumps(
             {
@@ -1293,7 +1300,11 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
     cases.write_text(
-        "\n".join(json.dumps({"case_id": case_id}) for case_id in ("case-1", "case-2")) + "\n",
+        "\n".join(
+            json.dumps({"case_id": case_id, "cited_article_ids": [f"lei-sintetica:{case_id}"]})
+            for case_id in ("case-1", "case-2")
+        )
+        + "\n",
         encoding="utf-8",
     )
     labels.write_text("{}\n", encoding="utf-8")
@@ -1314,7 +1325,7 @@ def test_annotation_approval_binds_final_labels_hash(tmp_path: Path) -> None:
     development_cases.write_text(json.dumps({"case_id": "case-1"}) + "\n", encoding="utf-8")
     development_labels.write_text("{}\n", encoding="utf-8")
     adjudication.write_text("synthetic only\n", encoding="utf-8")
-    _write_agreement_report(agreement, annotation_a, annotation_b)
+    _write_agreement_report(agreement, annotation_a, annotation_b, cases)
     approval.write_text(
         json.dumps(
             {
@@ -1379,7 +1390,11 @@ def test_annotation_approval_rejects_tampered_recomputed_statistics(tmp_path: Pa
     approval = tmp_path / "approval.json"
     adjudication = tmp_path / "adjudication.md"
     cases.write_text(
-        "\n".join(json.dumps({"case_id": x}) for x in ("a", "b")) + "\n",
+        "\n".join(
+            json.dumps({"case_id": x, "cited_article_ids": [f"lei-sintetica:art-{x}"]})
+            for x in ("a", "b")
+        )
+        + "\n",
         encoding="utf-8",
     )
     labels.write_text("{}\n", encoding="utf-8")
@@ -1398,7 +1413,7 @@ def test_annotation_approval_rejects_tampered_recomputed_statistics(tmp_path: Pa
         "\n".join(json.dumps(row) for row in annotation_rows) + "\n",
         encoding="utf-8",
     )
-    canonical = _write_agreement_report(agreement, annotation_a, annotation_b)
+    canonical = _write_agreement_report(agreement, annotation_a, annotation_b, cases)
     manifest = {
         "schema_version": 1,
         "status": "APPROVED",
@@ -1421,6 +1436,10 @@ def test_annotation_approval_rejects_tampered_recomputed_statistics(tmp_path: Pa
         lambda report: report["bootstrap"].update(percentile="legacy-order-statistic"),
         lambda report: report["ci95_case_bootstrap"].__setitem__(0, -0.5),
         lambda report: report.update(cohen_kappa=0.9),
+        lambda report: report.pop("ci95_component_bootstrap"),
+        lambda report: report.pop("component_bootstrap"),
+        lambda report: report["component_bootstrap"].update(component_count=1),
+        lambda report: report["component_bootstrap"].update(unstable=False),
     )
     for mutate in mutations:
         report = json.loads(json.dumps(canonical))
@@ -1430,6 +1449,30 @@ def test_annotation_approval_rejects_tampered_recomputed_statistics(tmp_path: Pa
         manifest["cohen_kappa"] = report["cohen_kappa"]
         approval.write_text(json.dumps(manifest), encoding="utf-8")
         with pytest.raises(ValueError, match="differs from canonical recomputation"):
+            RUNNER["validate_annotation_approval"](
+                cases,
+                labels,
+                development_cases,
+                development_labels,
+                annotation_a,
+                annotation_b,
+                agreement,
+                approval,
+                adjudication,
+            )
+
+    # The agreement report must be bound to the approved cases (DEC-022 components).
+    for inputs_mutation, message in (
+        (lambda inputs: inputs.pop("cases_sha256"), "input schema is invalid"),
+        (lambda inputs: inputs.update(cases_sha256="0" * 64), "computed on other cases"),
+    ):
+        report = json.loads(json.dumps(canonical))
+        inputs_mutation(report["inputs"])
+        agreement.write_text(json.dumps(report), encoding="utf-8")
+        manifest["agreement_report_sha256"] = RUNNER["_sha256"](agreement)
+        manifest["cohen_kappa"] = report["cohen_kappa"]
+        approval.write_text(json.dumps(manifest), encoding="utf-8")
+        with pytest.raises(ValueError, match=message):
             RUNNER["validate_annotation_approval"](
                 cases,
                 labels,
