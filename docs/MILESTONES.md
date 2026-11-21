@@ -10,8 +10,8 @@ Updated: 2026-11-04
 
 ## Release and RGC evidence
 
-- **Current published release: v0.6.0** — [Zenodo version DOI 10.5281/zenodo.23607357](https://doi.org/10.5281/zenodo.23607357). Concept DOI: [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082).
-- **Previous release: v0.5.0** — [Zenodo version DOI 10.5281/zenodo.23344005](https://doi.org/10.5281/zenodo.23344005).
+- **Current published release: v0.8.0** — official date 2026-11-13, [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0). The v0.8.0 Zenodo version DOI has not been registered yet. Concept DOI: [10.5281/zenodo.23125082](https://doi.org/10.5281/zenodo.23125082).
+- **Previous release: v0.7.0** — [Zenodo version DOI 10.5281/zenodo.24045951](https://doi.org/10.5281/zenodo.24045951).
 - **DEC-010 approved:** option A, with a target of approximately one-third compound claims. [#204 — decision](https://github.com/Ayorinha/ayorai-opensearch/pull/204), [#203 — executor `rgc-eval/0.2.0` and `atoms`](https://github.com/Ayorinha/ayorai-opensearch/pull/203), and [#205 — Protocol Amendment 3](https://github.com/Ayorinha/ayorai-opensearch/pull/205).
 - **Exploratory pilot completed on 2026-10-16:** Anderson annotated 20 cases. Distribution: 9 SUPPORTED, 11 REFUTED, 0 UNVERIFIED, 0 PARTIALLY_SUPPORTED, 0 CONFLICTING, 0 RULE_GAP. No pilot cases were designed for PARTIALLY_SUPPORTED or CONFLICTING. The pilot results are discarded and labels are not in the repository; the system was not executed on the cases. This pilot does not measure system performance.
 - **DEC-011 approved on 2026-10-17:** [#206 — annotation-guide findings](https://github.com/Ayorinha/ayorai-opensearch/pull/206) records (1) “not confirmed” versus “contradicted” (pilot-18), (2) rectification (pilot-19; option A, [#207](https://github.com/Ayorinha/ayorai-opensearch/pull/207)), and (3) values/quantifiers/modality (pilot-04, pilot-12; claims that turn “preferencialmente” into an obligation are excluded from v1). Protocol Amendment 4: [#227](https://github.com/Ayorinha/ayorai-opensearch/pull/227).

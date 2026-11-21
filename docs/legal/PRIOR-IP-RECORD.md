@@ -23,6 +23,8 @@ Cada item abaixo pode ser conferido de forma independente, sem depender deste do
 | Release v0.4.0 | 2026-10-11 | tag `v0.4.0` (`d4d1c16`) · DOI 10.5281/zenodo.23300849 |
 | Release v0.5.0 | 2026-10-13 | tag `v0.5.0` (`e9eccb5`) · DOI 10.5281/zenodo.23344005 |
 | Release v0.6.0 | 2026-10-23 | tag `v0.6.0` (`6fcdb7d`) · DOI 10.5281/zenodo.23607357 |
+| Release v0.7.0 | 2026-11-07 | tag `v0.7.0` (`43bbe8e`) · DOI 10.5281/zenodo.24045951 |
+| Release v0.8.0 | 2026-11-13 | tag `v0.8.0` (`92ea5eb`) · DOI da versão ainda não registrado no Zenodo |
 | DOI de conceito (todas as versões) | — | 10.5281/zenodo.23125082 |
 
 Os registros no Zenodo (CERN) são depósitos com data e conteúdo arquivados por terceiro independente; os hashes de commit do Git ligam cada versão ao seu conteúdo exato.
