@@ -187,7 +187,7 @@ class SQLiteIdempotencyOutbox:
         rows = connection.execute(
             """
             SELECT idempotency_key, leaf_hash, state, tessera_index,
-                   tree_size, root_hash, checkpoint_note
+                   tree_size, root_hash, checkpoint_note, inclusion_proof
             FROM adr010_idempotency_outbox
             """
         ).fetchall()
