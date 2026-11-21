@@ -75,9 +75,11 @@ def generate_ephemeral_note_keys(work: Path) -> tuple[str, str]:
     key_hash = hashlib.sha256(LOG_ORIGIN.encode("utf-8") + b"\n" + public_note_key)
     key_id = key_hash.digest()[:4].hex()
     private_note_key = b"\x01" + seed
+    encoded_private = base64.b64encode(private_note_key).decode("ascii")
+    encoded_public = base64.b64encode(public_note_key).decode("ascii")
 
-    signer = f"PRIVATE+KEY+{LOG_ORIGIN}+{key_id}+{base64.b64encode(private_note_key).decode('ascii')}"
-    verifier = f"{LOG_ORIGIN}+{key_id}+{base64.b64encode(public_note_key).decode('ascii')}"
+    signer = f"PRIVATE+KEY+{LOG_ORIGIN}+{key_id}+{encoded_private}"
+    verifier = f"{LOG_ORIGIN}+{key_id}+{encoded_public}"
     return signer, verifier
 
 
