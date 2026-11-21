@@ -135,6 +135,7 @@ def main() -> None:
     vector_path = root / "tests" / "auditlog" / "vectors" / "rfc6962-transparency-dev.json"
     vectors = json.loads(vector_path.read_text(encoding="utf-8"))
     leaves = [bytes.fromhex(value) for value in vectors["leaves_hex"][:5]]
+    different_leaf = bytes.fromhex(vectors["leaves_hex"][5])
     expected_root = bytes.fromhex(vectors["roots"][len(leaves)])
 
     with tempfile.TemporaryDirectory(prefix="ayorai-adr010-tessera-http-") as temporary:
@@ -197,7 +198,7 @@ def main() -> None:
                 )
 
             same_key_different_body_index = post_entry(
-                second_url, leaves[1], "same-idempotency-key"
+                second_url, different_leaf, "same-idempotency-key"
             )
             if same_key_different_body_index != len(leaves) + 1:
                 raise RuntimeError(
@@ -285,7 +286,7 @@ def main() -> None:
                     f"got index {persistent_restart_duplicate}"
                 )
             persistent_same_key_different_body = post_entry(
-                persistent_second_url, leaves[1], "same-idempotency-key"
+                persistent_second_url, different_leaf, "same-idempotency-key"
             )
             if persistent_same_key_different_body != len(leaves):
                 raise RuntimeError(
