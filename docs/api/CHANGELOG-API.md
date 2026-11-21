@@ -2,6 +2,14 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — `/v1/verify` r2-a: verification-event log (additive, opt-in)
+
+- With `ATTRACTOR_VERIFY_LOG_MODE=local|required`, the r2-a response adds `audit_status` (`recorded` | `not_recorded`) and `audit_receipt` (`ayorai.verify-receipt.v1`). Both are outside `result`; `output_sha256` is unchanged. With the default `off`, the response is byte-identical to before.
+- New optional request header `Idempotency-Key` (1–128 visible ASCII characters): the same key and input return the same receipt; the same key with another input returns 409; an invalid key returns 422.
+- `required` mode: if the event cannot be recorded, the response is 503 and carries no verdict.
+- New operational route `GET /v1/verify/log` (API key; not in OpenAPI): `origin`, `verifier_key` and the latest signed checkpoint. It returns 404 when the log is off.
+- `r1-a` is unchanged.
+
 ## Unreleased — operational probes and metrics (additive)
 
 - `GET /ready`: readiness, without authentication; `200 {"status":"ready"}` when the audit store answers, `503 {"status":"not_ready"}` otherwise.

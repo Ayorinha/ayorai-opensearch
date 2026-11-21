@@ -1,0 +1,89 @@
+// Independent verifier for AYORAI verify-log receipts, using the Go references:
+// golang.org/x/mod/sumdb/note (signed notes) and transparency-dev/merkle (RFC 6962).
+package main
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/transparency-dev/merkle/proof"
+	"github.com/transparency-dev/merkle/rfc6962"
+	"golang.org/x/mod/sumdb/note"
+)
+
+type receipt struct {
+	Index          uint64   `json:"index"`
+	Leaf           string   `json:"leaf"`
+	InclusionProof []string `json:"inclusion_proof"`
+	Checkpoint     string   `json:"checkpoint"`
+}
+
+type input struct {
+	VerifierKey string    `json:"verifier_key"`
+	Receipts    []receipt `json:"receipts"`
+	Consistency struct {
+		OldCheckpoint string   `json:"old_checkpoint"`
+		NewCheckpoint string   `json:"new_checkpoint"`
+		Proof         []string `json:"proof"`
+	} `json:"consistency"`
+}
+
+func parse(vkey, text string) (uint64, []byte, error) {
+	v, err := note.NewVerifier(vkey)
+	if err != nil {
+		return 0, nil, err
+	}
+	n, err := note.Open([]byte(text), note.VerifierList(v))
+	if err != nil {
+		return 0, nil, err
+	}
+	lines := strings.Split(n.Text, "\n")
+	size, err := strconv.ParseUint(lines[1], 10, 64)
+	if err != nil {
+		return 0, nil, err
+	}
+	root, err := base64.StdEncoding.DecodeString(lines[2])
+	return size, root, err
+}
+
+func decode(items []string) [][]byte {
+	out := [][]byte{}
+	for _, s := range items {
+		b, _ := base64.StdEncoding.DecodeString(s)
+		out = append(out, b)
+	}
+	return out
+}
+
+func main() {
+	var in input
+	if err := json.NewDecoder(os.Stdin).Decode(&in); err != nil {
+		panic(err)
+	}
+	ok := 0
+	for _, r := range in.Receipts {
+		size, root, err := parse(in.VerifierKey, r.Checkpoint)
+		if err != nil {
+			fmt.Println("FAIL checkpoint", r.Index, err)
+			continue
+		}
+		leaf, _ := base64.StdEncoding.DecodeString(r.Leaf)
+		lh := rfc6962.DefaultHasher.HashLeaf(leaf)
+		if err := proof.VerifyInclusion(rfc6962.DefaultHasher, r.Index, size, lh, decode(r.InclusionProof), root); err != nil {
+			fmt.Println("FAIL inclusion", r.Index, err)
+			continue
+		}
+		ok++
+	}
+	s1, r1, err1 := parse(in.VerifierKey, in.Consistency.OldCheckpoint)
+	s2, r2, err2 := parse(in.VerifierKey, in.Consistency.NewCheckpoint)
+	cons := "FAIL"
+	if err1 == nil && err2 == nil && proof.VerifyConsistency(rfc6962.DefaultHasher, s1, s2, decode(in.Consistency.Proof), r1, r2) == nil {
+		cons = "OK"
+	}
+	fmt.Printf("receipts verified: %d/%d; consistency %d->%d: %s\n", ok, len(in.Receipts), s1, s2, cons)
+}

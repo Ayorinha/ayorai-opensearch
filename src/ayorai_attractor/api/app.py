@@ -3,6 +3,7 @@ import json
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import Body, FastAPI, HTTPException, Request
@@ -13,6 +14,7 @@ from pydantic import ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from ayorai_attractor import __version__
 from ayorai_attractor.api.auth import (
     PRINCIPAL_STATE_KEY,
     APIKeyAuthMiddleware,
@@ -25,8 +27,19 @@ from ayorai_attractor.api.load_control import (
     max_inflight_from_env,
 )
 from ayorai_attractor.api.logging_config import configure_logging
+from ayorai_attractor.api.verify_log import (
+    close_verify_log,
+    get_verify_log,
+    validate_verify_log_configuration,
+    verify_log_mode,
+)
 from ayorai_attractor.audit import AuditReport
 from ayorai_attractor.audit_store import AuditTraceStore
+from ayorai_attractor.auditlog.store import (
+    IdempotencyConflict,
+    VerificationEvent,
+    valid_idempotency_key,
+)
 from ayorai_attractor.models import (
     AuditFindingResponse,
     AuditResponse,
@@ -86,11 +99,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     validate_provider_configuration()
     max_inflight_from_env()
     inflight_scope_from_env()
+    validate_verify_log_configuration()
     configure_logging()
     try:
         yield
     finally:
         audit_store.close()
+        close_verify_log()
 
 
 # Malformed JSON is reported as 422 (type json_invalid), never 400.
@@ -317,6 +332,59 @@ def ready() -> Response:
 def metrics() -> Response:
     """Prometheus text exposition; protected by the API key like every other route."""
     return Response(http_metrics.render(), media_type="text/plain; version=0.0.4")
+
+
+def _record_verification(
+    canonical_result: dict[str, Any], http_request: Request, mode: str
+) -> dict[str, Any]:
+    """Record one r2-a decision (ADR-010 phase 3); fail closed in required mode."""
+    key = http_request.headers.get("idempotency-key")
+    if key is not None and not valid_idempotency_key(key):
+        raise HTTPException(
+            status_code=422, detail="Idempotency-Key must be 1-128 visible ASCII characters"
+        )
+    event = VerificationEvent(
+        input_sha256=str(canonical_result["input_sha256"]),
+        output_sha256=str(canonical_result["output_sha256"]),
+        rules_sha256=str(canonical_result["rules_sha256"]),
+        decision_state=str(canonical_result["decision_state"]),
+        verdict=(
+            str(canonical_result["verdict"])
+            if canonical_result.get("verdict") is not None
+            else None
+        ),
+        client=_principal(http_request) or "anonymous",
+        received_at=datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        software_id=f"ayorai-opensearch/{__version__}",
+    )
+    try:
+        receipt = get_verify_log().append(event, key)
+    except IdempotencyConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except Exception as exc:
+        http_metrics.audit_record_failed()
+        if mode == "required":
+            # Owner decision 3: no verdict circulates unrecorded.
+            raise HTTPException(
+                status_code=503, detail="Verification not recorded; retry with the same key."
+            ) from exc
+        return {"audit_status": "not_recorded"}
+    return {"audit_status": "recorded", "audit_receipt": receipt}
+
+
+@app.get("/v1/verify/log", include_in_schema=False)
+def verify_log_state() -> Response:
+    """Latest signed checkpoint and verifier key, for offline receipt verification."""
+    if verify_log_mode() == "off":
+        return JSONResponse({"detail": "Verification log is off"}, status_code=404)
+    log = get_verify_log()
+    return JSONResponse(
+        {
+            "origin": log.origin,
+            "verifier_key": log.verifier_key,
+            "checkpoint": log.latest_checkpoint(),
+        }
+    )
 
 
 def _record_trace(
@@ -659,6 +727,20 @@ def fields(request: FieldsRequest) -> FieldsResponse:
 
 
 _VERIFY_REQUEST_BODY: dict[str, Any] = {
+    "parameters": [
+        {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": False,
+            "description": (
+                "r2-a with the verification log on (ADR-009 §15.1): same key and same input "
+                "return the same event and receipt; same key with another input is a 409. "
+                "With the log on, the key must be 1-128 visible ASCII characters (else 422); "
+                "with the log off, or for r1-a, the header is ignored."
+            ),
+            "schema": {"type": "string"},
+        }
+    ],
     "requestBody": {
         "required": True,
         "content": {
@@ -671,7 +753,7 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
                 }
             }
         },
-    }
+    },
 }
 
 
@@ -694,13 +776,25 @@ _VERIFY_REQUEST_BODY: dict[str, Any] = {
             },
         },
         401: _HTTP_401_RESPONSE,
+        409: {
+            "description": "Idempotency-Key already used for a different input (verify log on).",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {"detail": {"type": "string"}},
+                        "required": ["detail"],
+                    }
+                }
+            },
+        },
         413: _HTTP_413_RESPONSE,
         422: _HTTP_422_RESPONSE,
         429: _HTTP_429_RESPONSE,
         503: _HTTP_503_RESPONSE,
     },
 )
-def verify(payload: Annotated[Any, Body()]) -> Any:
+def verify(payload: Annotated[Any, Body()], http_request: Request) -> Any:
     """Dispatch r1-a unchanged or expose the canonical Judge 2.0.0 result for r2-a."""
     if payload is None:
         # Preserve the frozen r1-a HTTP 422 body for a JSON null request.
@@ -779,7 +873,11 @@ def verify(payload: Annotated[Any, Body()]) -> Any:
             technical_explanation=explanation["technical_explanation"],
             response_policy=response_policy,
         )
-        return JSONResponse(content=response.model_dump(mode="json"))
+        content = response.model_dump(mode="json", exclude={"audit_status", "audit_receipt"})
+        mode = verify_log_mode()
+        if mode != "off":
+            content.update(_record_verification(canonical_result, http_request, mode))
+        return JSONResponse(content=content)
 
     try:
         request = VerificationRequest.model_validate(payload, from_attributes=True)

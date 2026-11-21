@@ -29,6 +29,7 @@ _KNOWN_PATHS = frozenset(
         "/v1/check",
         "/v1/fields",
         "/v1/verify",
+        "/v1/verify/log",
         "/v2/audit",
     }
 )
