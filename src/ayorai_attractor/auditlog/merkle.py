@@ -211,3 +211,77 @@ def verify_consistency(
     return (
         sn == 0 and hmac.compare_digest(fr, bytes(root1)) and hmac.compare_digest(sr, bytes(root2))
     )
+
+
+class IncrementalTree:
+    """Append-only RFC 6962 tree with O(log n) appends (ADR-010, phase 2).
+
+    ``levels[k][i]`` is the hash of the complete subtree over leaves
+    ``[i * 2**k, (i + 1) * 2**k)``. Every RFC 6962 split puts a complete,
+    aligned power-of-two subtree on the left, so roots and proofs are assembled
+    from these stored subtrees in O(log² n) instead of rehashing all leaves.
+    Results are byte-identical to ``tree_root``, ``inclusion_proof`` and
+    ``consistency_proof``.
+    """
+
+    def __init__(self) -> None:
+        self.levels: list[list[bytes]] = [[]]
+
+    def __len__(self) -> int:
+        return len(self.levels[0])
+
+    def append(self, leaf: bytes) -> None:
+        if not _valid_hash(leaf):
+            raise ValueError("leaf hash must be 32 bytes")
+        self.levels[0].append(bytes(leaf))
+        level = 0
+        while len(self.levels[level]) % 2 == 0:
+            pair = self.levels[level][-2:]
+            if level + 1 == len(self.levels):
+                self.levels.append([])
+            self.levels[level + 1].append(node_hash(pair[0], pair[1]))
+            level += 1
+
+    def _mth(self, start: int, size: int) -> bytes:
+        if size == 0:
+            return empty_root()
+        if size & (size - 1) == 0 and start % size == 0:
+            return self.levels[size.bit_length() - 1][start // size]
+        k = _split(size)
+        return node_hash(self._mth(start, k), self._mth(start + k, size - k))
+
+    def root(self, size: int | None = None) -> bytes:
+        size = len(self) if size is None else size
+        if not _is_int(size) or not 0 <= size <= len(self):
+            raise ValueError("size must be inside the tree")
+        return self._mth(0, size)
+
+    def _path(self, index: int, start: int, size: int) -> list[bytes]:
+        if size == 1:
+            return []
+        k = _split(size)
+        if index < k:
+            return [*self._path(index, start, k), self._mth(start + k, size - k)]
+        return [*self._path(index - k, start + k, size - k), self._mth(start, k)]
+
+    def inclusion_proof(self, index: int, size: int | None = None) -> list[bytes]:
+        size = len(self) if size is None else size
+        if not (_is_int(index) and _is_int(size)) or not 0 <= index < size <= len(self):
+            raise ValueError("index must be inside a tree of that size")
+        return self._path(index, 0, size)
+
+    def _subproof(self, m: int, start: int, size: int, complete: bool) -> list[bytes]:
+        if m == size:
+            return [] if complete else [self._mth(start, size)]
+        k = _split(size)
+        if m <= k:
+            return [*self._subproof(m, start, k, complete), self._mth(start + k, size - k)]
+        return [*self._subproof(m - k, start + k, size - k, False), self._mth(start, k)]
+
+    def consistency_proof(self, size1: int, size2: int | None = None) -> list[bytes]:
+        size2 = len(self) if size2 is None else size2
+        if not (_is_int(size1) and _is_int(size2)) or not 0 < size1 <= size2 <= len(self):
+            raise ValueError("sizes must satisfy 0 < size1 <= size2 <= tree size")
+        if size1 == size2:
+            return []
+        return self._subproof(size1, 0, size2, True)

@@ -233,3 +233,67 @@ def test_bytearray_with_the_correct_value_is_accepted() -> None:
     assert merkle.verify_inclusion(1, 4, bytearray(LEAF_HASHES[1]), proof, bytearray(ROOTS[4]))
     cproof = [bytearray(x) for x in merkle.consistency_proof(2, LEAF_HASHES[:4])]
     assert merkle.verify_consistency(2, 4, bytearray(ROOTS[2]), bytearray(ROOTS[4]), cproof)
+
+
+def _incremental() -> merkle.IncrementalTree:
+    tree = merkle.IncrementalTree()
+    for leaf in LEAF_HASHES:
+        tree.append(leaf)
+    return tree
+
+
+def test_incremental_tree_roots_match_reference() -> None:
+    tree = merkle.IncrementalTree()
+    assert tree.root() == ROOTS[0]
+    for size, leaf in enumerate(LEAF_HASHES, start=1):
+        tree.append(leaf)
+        assert len(tree) == size
+        assert tree.root() == ROOTS[size]
+    full = _incremental()
+    assert [full.root(size) for size in range(len(ROOTS))] == ROOTS
+
+
+def test_incremental_tree_inclusion_matches_reference() -> None:
+    tree = _incremental()
+    for case in VECTORS["inclusion"]:
+        proof = tree.inclusion_proof(case["index"], case["size"])
+        assert _hx(proof) == case["proof"], case
+
+
+def test_incremental_tree_consistency_matches_reference() -> None:
+    tree = _incremental()
+    for case in VECTORS["consistency"]:
+        proof = tree.consistency_proof(case["size1"], case["size2"])
+        assert _hx(proof) == case["proof"], case
+
+
+def test_incremental_tree_matches_batch_functions_on_larger_trees() -> None:
+    rng = random.Random(20261121)
+    hashes = [merkle.leaf_hash(rng.randbytes(16)) for _ in range(300)]
+    tree = merkle.IncrementalTree()
+    for size, leaf in enumerate(hashes, start=1):
+        tree.append(leaf)
+        if size % 37 and size not in (1, 2, 64, 65, 128, 255, 256, 257, 300):
+            continue
+        prefix = hashes[:size]
+        assert tree.root() == merkle.tree_root(prefix)
+        for index in {0, size // 2, size - 1}:
+            assert tree.inclusion_proof(index) == merkle.inclusion_proof(index, prefix)
+        for size1 in {1, size // 3 or 1, size}:
+            assert tree.consistency_proof(size1) == merkle.consistency_proof(size1, prefix)
+
+
+@pytest.mark.parametrize(
+    ("method", "args"),
+    [
+        ("root", (18,)),
+        ("inclusion_proof", (17, 17)),
+        ("inclusion_proof", (0, 18)),
+        ("consistency_proof", (0, 17)),
+        ("consistency_proof", (5, 4)),
+        ("consistency_proof", (1, 18)),
+    ],
+)
+def test_incremental_tree_rejects_out_of_range(method: str, args: tuple[int, ...]) -> None:
+    with pytest.raises(ValueError):
+        getattr(_incremental(), method)(*args)

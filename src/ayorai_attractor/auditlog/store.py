@@ -39,8 +39,7 @@ import rfc8785
 
 from ayorai_attractor.auditlog.commitment import commit, new_salt, verify_commitment
 from ayorai_attractor.auditlog.merkle import (
-    consistency_proof,
-    inclusion_proof,
+    IncrementalTree,
     leaf_hash,
     tree_root,
     verify_inclusion,
@@ -117,7 +116,7 @@ class VerificationLog:
             )
             with self._lock:
                 self._bind_origin()
-                self._hashes: list[bytes] = []
+                self._tree = IncrementalTree()
                 self._reload_hashes()
         except BaseException:
             # Refusing a database (other origin, corruption) must not leak the connection.
@@ -152,13 +151,19 @@ class VerificationLog:
             raise LogCorruption("the database belongs to another log origin or signing key")
 
     def _reload_hashes(self) -> None:
-        self._hashes = []
+        tree = IncrementalTree()
         for idx, leaf, stored in self._connection.execute(
             "SELECT idx, leaf, leaf_hash FROM vlog_leaves ORDER BY idx"
         ):
-            if idx != len(self._hashes) or leaf_hash(bytes(leaf)) != bytes(stored):
+            if idx != len(tree) or leaf_hash(bytes(leaf)) != bytes(stored):
                 raise LogCorruption(f"leaf {idx} does not match its stored hash or position")
-            self._hashes.append(bytes(stored))
+            tree.append(bytes(stored))
+        self._tree = tree
+
+    def _stored_size(self) -> int:
+        """Leaves in the database; O(log n) through the primary key (COUNT(*) is O(n))."""
+        row = self._connection.execute("SELECT MAX(idx) FROM vlog_leaves").fetchone()
+        return 0 if row[0] is None else int(row[0]) + 1
 
     def _checkpoint_note(self, size: int, root: bytes) -> str:
         body = f"{self.origin}\n{size}\n{_b64(root)}\n"
@@ -172,7 +177,7 @@ class VerificationLog:
 
     def size(self) -> int:
         with self._lock:
-            return len(self._hashes)
+            return len(self._tree)
 
     def latest_checkpoint(self) -> str:
         with self._lock:
@@ -211,10 +216,8 @@ class VerificationLog:
                         stored: dict[str, Any] = json.loads(row[1])
                         return stored
                 # Another process may have appended since this one last read the tree.
-                count = int(
-                    self._connection.execute("SELECT COUNT(*) FROM vlog_leaves").fetchone()[0]
-                )
-                if count != len(self._hashes):
+                count = self._stored_size()
+                if count != len(self._tree):
                     self._reload_hashes()
                 receipt = self._append_locked(event, key_digest)
                 self._connection.execute("COMMIT")
@@ -259,7 +262,7 @@ class VerificationLog:
             "receipt_version": RECEIPT_VERSION,
             "index": index,
             "leaf": _b64(leaf),
-            "inclusion_proof": [_b64(node) for node in inclusion_proof(index, self._hashes)],
+            "inclusion_proof": [_b64(node) for node in self._tree.inclusion_proof(index)],
             "checkpoint": note,
             "salt": _b64(salt),
             "record": record,
@@ -275,9 +278,9 @@ class VerificationLog:
     def consistency(self, old_size: int) -> list[str]:
         """RFC 6962 consistency proof from ``old_size`` to the current tree (for witnesses)."""
         with self._lock:
-            if not 0 < old_size <= len(self._hashes):
+            if not 0 < old_size <= len(self._tree):
                 raise ValueError("old_size must be between 1 and the current size")
-            return [_b64(node) for node in consistency_proof(old_size, self._hashes)]
+            return [_b64(node) for node in self._tree.consistency_proof(old_size)]
 
     def erase(self, index: int, erased_at: str, reason: str = "data_subject_request") -> int | None:
         """Delete salt and record of one event (LGPD) and log the erasure itself.
@@ -293,10 +296,8 @@ class VerificationLog:
         with self._lock:
             self._connection.execute("BEGIN IMMEDIATE")
             try:
-                count = int(
-                    self._connection.execute("SELECT COUNT(*) FROM vlog_leaves").fetchone()[0]
-                )
-                if count != len(self._hashes):
+                count = self._stored_size()
+                if count != len(self._tree):
                     self._reload_hashes()
                 cursor = self._connection.execute(
                     "UPDATE vlog_records SET salt = NULL, record = NULL, erased_at = ? "
@@ -325,14 +326,14 @@ class VerificationLog:
 
     def _append_leaf_locked(self, leaf: bytes) -> int:
         """Append a public leaf and sign the new checkpoint (inside the caller's transaction)."""
-        index = len(self._hashes)
+        index = len(self._tree)
         hashed = leaf_hash(leaf)
         self._connection.execute(
             "INSERT INTO vlog_leaves (idx, leaf, leaf_hash) VALUES (?, ?, ?)", (index, leaf, hashed)
         )
-        self._hashes.append(hashed)
-        size = len(self._hashes)
-        note = self._checkpoint_note(size, tree_root(self._hashes))
+        self._tree.append(hashed)
+        size = len(self._tree)
+        note = self._checkpoint_note(size, self._tree.root())
         self._connection.execute(
             "INSERT INTO vlog_checkpoints (size, note) VALUES (?, ?)", (size, note)
         )
@@ -350,9 +351,9 @@ class VerificationLog:
         if parsed is None or parsed.origin != self.origin:
             return False
         with self._lock:
-            if parsed.size > len(self._hashes):
+            if parsed.size > len(self._tree):
                 return False
-            return tree_root(self._hashes[: parsed.size]) == parsed.root
+            return self._tree.root(parsed.size) == parsed.root
 
     def backup(self, destination: str) -> int:
         """Consistent online copy to a new file (SQLite backup API); returns the tree size."""
@@ -373,16 +374,16 @@ class VerificationLog:
     def verify_log(self) -> dict[str, Any]:
         """Re-derive the tree and check every stored checkpoint (signature, size and root)."""
         with self._lock:
-            hashes: list[bytes] = []
+            tree = IncrementalTree()
             problems: list[str] = []
             for idx, leaf, stored in self._connection.execute(
                 "SELECT idx, leaf, leaf_hash FROM vlog_leaves ORDER BY idx"
             ):
-                if idx != len(hashes):
+                if idx != len(tree):
                     problems.append(f"gap before leaf {idx}")
                 if leaf_hash(bytes(leaf)) != bytes(stored):
                     problems.append(f"leaf {idx} hash mismatch")
-                hashes.append(leaf_hash(bytes(leaf)))
+                tree.append(leaf_hash(bytes(leaf)))
             checkpoints = self._connection.execute(
                 "SELECT size, note FROM vlog_checkpoints ORDER BY size"
             ).fetchall()
@@ -391,11 +392,11 @@ class VerificationLog:
                 parsed = parse_checkpoint(body) if body is not None else None
                 if parsed is None or parsed.origin != self.origin or parsed.size != size:
                     problems.append(f"checkpoint {size}: bad signature or body")
-                elif size > len(hashes) or tree_root(hashes[:size]) != parsed.root:
+                elif size > len(tree) or tree.root(size) != parsed.root:
                     problems.append(f"checkpoint {size}: root does not match the tree")
             latest = int(checkpoints[-1][0]) if checkpoints else 0
-            if latest != len(hashes):
-                problems.append(f"latest checkpoint covers {latest} of {len(hashes)} leaves")
+            if latest != len(tree):
+                problems.append(f"latest checkpoint covers {latest} of {len(tree)} leaves")
             # Every erased record must have its own erasure leaf, logged after the event.
             erasure_leaves: dict[int, int] = {}
             event_leaves: list[int] = []
@@ -430,7 +431,7 @@ class VerificationLog:
             erased = len(erased_rows)
             return {
                 "valid": not problems,
-                "size": len(hashes),
+                "size": len(tree),
                 "checkpoints": len(checkpoints),
                 "erased_records": erased,
                 "problems": problems,

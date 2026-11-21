@@ -101,6 +101,13 @@ O registro histórico de componentes R1–R20, com descrições de escopo e link
 | 5.7 Judge determinístico: regras formais, versionadas e testadas; registrar condições satisfeitas/não satisfeitas e motivo | §5.7; ADR-002 | src/ayorai_attractor/verification/judge.py | tests/test_verification_judge.py; tests/test_verdict_authority.py | [PARCIAL]; a autoridade factual permanece no Judge determinístico e as guardas F1.4 limitam caminhos alternativos de construção de Verdict. O contrato atual ainda não registra rule_id, versão das regras e trilha de regras satisfeitas/não satisfeitas; isso pertence ao backlog do Judge 2.0. |
 | 5.8 Relatórios: gerar a partir de registros estruturados validados, em formato legível por máquina e documentado por esquema | §5.8 | `src/ayorai_attractor/evaluation/golden.py`; `src/ayorai_attractor/evaluation/digest.py`; `src/ayorai_attractor/replay.py` | `tests/test_golden_digest.py`; testes de avaliação/replay pertinentes; **sem teste de conformidade a JSON Schema versionado** | [PARCIAL — digest semântico v1 IMPLEMENTADO e testado; esquema JSON Schema versionado NÃO IMPLEMENTADO] | `content_sha256` legado mantém a semântica anterior e pode variar por incluir latências aninhadas. O digest semântico não substitui esquema nem prova replay completo. |
 
+**Registro verificável do `/v1/verify` (ADR-010, fases 2 e 3; ADR-009 §15.1):**
+- Código: `src/ayorai_attractor/auditlog/` (`merkle.py`, `note.py`, `store.py`) e `src/ayorai_attractor/api/verify_log.py`.
+- Testes: `tests/test_verify_log.py` e `tests/auditlog/`.
+- Evidência: vetores e verificação cruzada com Go em `tests/auditlog/vectors/README.md`.
+- Status: [IMPLEMENTADO NA PR #623, NÃO MESCLADO].
+- Limitações: decisões 5 a 7 aguardando o mantenedor; não há testemunha independente nem carimbo do tempo, então o log não resiste ao operador que detém a chave ([proposta](adr/ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md)).
+
 **Nota de escopo:** replay e integridade não constituem um item separado da arquitetura §5. Rastreá-los na pergunta 10 (reprodutibilidade) e na §2.3 (proveniência integral), sem rotulá-los como §5.4.
 
 ### 2.5 Taxonomia de vereditos — seção 6

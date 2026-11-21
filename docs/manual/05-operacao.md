@@ -149,6 +149,13 @@ Com `ATTRACTOR_VERIFY_LOG_MODE=local` ou `required`, cada decisão `r2-a` do `/v
 - **Verificação do servidor:** `VerificationLog.verify_log()` recalcula a árvore e confere todos os checkpoints guardados. Rode diariamente e guarde o checkpoint mais recente (`GET /v1/verify/log`) fora do host.
 - **Apagamento (LGPD):** `VerificationLog.erase(indice, data)` apaga o sal e o registro de um evento e grava um **evento de apagamento** na árvore (`ayorai.verify-erasure.v1`: índice apagado, data e motivo, sem dados pessoais), sob um novo checkpoint assinado. A árvore continua válida, e o recibo que o cliente guardou continua verificável. `verify_log()` acusa qualquer registro apagado ou removido sem o evento correspondente.
 - **Backup e restauração:** `VerificationLog.backup(destino)` faz uma cópia consistente com `integrity_check`. Depois de restaurar, rode `verify_log()` e confira o último checkpoint guardado fora do host com `matches_checkpoint(nota)`: uma cópia mais antiga ou uma história reescrita devolve `False`.
+- **Desempenho medido (contêiner de desenvolvimento, não o hardware de produção):**
+  - com 50 mil eventos, cada gravação leva cerca de 1,2 ms (p95 de 1,7 ms) e ocupa cerca de 930 bytes;
+  - o banco reabre em 0,15 s;
+  - `verify_log()` completo leva 7,7 s.
+
+  Meça de novo no hardware da implantação.
+- **Custódia da chave:** guarde a semente num gerenciador de segredos e publique a chave de verificação num canal separado. Para trocar a chave, abra um log novo, com outra origem. Os requisitos completos estão em `docs/adr/ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md`, seção "Modelo de confiança".
 - **Limites:** sem testemunhas nem carimbo do tempo (ADR-010, decisões 6 e 7), quem controla o banco e a chave pode reescrever o log. Recibos e checkpoints guardados fora do host são o que permite detectar isso. O armazenamento é SQLite com um escritor por vez (vários processos no mesmo host podem compartilhar o banco). Ainda não há publicação no formato de tiles nem prova de consistência servida por HTTP; `consistency()` existe na biblioteca.
 
 ### Persistência, backup e restauração dos rastros de auditoria
