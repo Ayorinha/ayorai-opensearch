@@ -1,5 +1,7 @@
 # R8 — Deterministic observability metrics
 
+> The service's HTTP metrics (`GET /metrics`), readiness (`GET /ready`), proposed SLOs, alert rules and recovery steps are in [SLO-AND-ALERTS.md](SLO-AND-ALERTS.md). This page describes the separate `MetricsCollector` library.
+
 R8 starts with a dependency-free metrics core that can be embedded in the ATTRACTOR orchestration path without changing verification semantics.
 
 ## Metrics

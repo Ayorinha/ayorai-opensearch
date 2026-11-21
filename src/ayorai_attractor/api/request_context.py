@@ -9,6 +9,8 @@ import uuid
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from ayorai_attractor.api.http_metrics import http_metrics
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +20,17 @@ def _request_id() -> str:
 
 
 _KNOWN_PATHS = frozenset(
-    {"/health", "/v1/opensearch", "/v1/audit", "/v1/check", "/v1/fields", "/v1/verify"}
+    {
+        "/health",
+        "/ready",
+        "/metrics",
+        "/v1/opensearch",
+        "/v1/audit",
+        "/v1/check",
+        "/v1/fields",
+        "/v1/verify",
+        "/v2/audit",
+    }
 )
 
 
@@ -81,6 +93,9 @@ class RequestContextMiddleware:
                 "duration_ms": round((time.perf_counter() - started) * 1000, 3),
             }
             logger.info("%s", json.dumps(event, separators=(",", ":"), sort_keys=True))
+            http_metrics.observe(
+                str(event["route"]), method, status_code, time.perf_counter() - started
+            )
             logged = True
 
         async def send_with_request_id(message: Message) -> None:

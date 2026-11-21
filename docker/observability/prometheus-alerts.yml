@@ -1,0 +1,63 @@
+# Prometheus alerting rules for AYORAI ATTRACTOR (docs/observability/SLO-AND-ALERTS.md).
+# Thresholds are starting points for a controlled deployment, not validated SLOs.
+# Counters are per process: every expression aggregates across instances.
+groups:
+  - name: ayorai-attractor
+    rules:
+      - alert: AttractorDown
+        expr: up{job="ayorai-attractor"} == 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "A replica does not answer the /metrics scrape."
+          runbook: "docs/manual/05-operacao.md#parada-diagnóstico-e-recuperação"
+
+      - alert: AttractorHigh5xxRate
+        expr: |
+          sum(rate(attractor_http_requests_total{status=~"5..",status!="503"}[5m]))
+            / clamp_min(sum(rate(attractor_http_requests_total[5m])), 1e-9) > 0.01
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: "More than 1% of responses are server errors (503 excluded)."
+
+      - alert: AttractorSaturated
+        expr: |
+          sum(rate(attractor_http_requests_total{status="503"}[5m]))
+            / clamp_min(sum(rate(attractor_http_requests_total[5m])), 1e-9) > 0.05
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "More than 5% of requests are shed (503): heavy-route capacity is too low."
+
+      - alert: AttractorRateLimited
+        expr: |
+          sum(rate(attractor_http_requests_total{status="429"}[15m]))
+            / clamp_min(sum(rate(attractor_http_requests_total[15m])), 1e-9) > 0.10
+        for: 15m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "More than 10% of requests hit the rate limit (429)."
+
+      - alert: AttractorCheckLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(attractor_http_request_duration_seconds_bucket{route="/v1/check"}[10m]))
+          ) > 2.5
+        for: 15m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "p95 latency of /v1/check is above 2.5 s."
+
+      - alert: AttractorAuditRecordFailures
+        expr: increase(attractor_audit_record_failures_total[10m]) > 0
+        labels:
+          severity: page
+        annotations:
+          summary: "Audit traces failed to record: the trail is incomplete."
+          runbook: "docs/manual/05-operacao.md#persistência-backup-e-restauração-dos-rastros-de-auditoria"

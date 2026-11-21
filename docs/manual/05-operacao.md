@@ -99,7 +99,9 @@ curl -i http://127.0.0.1:8000/v1/audit
 
 Com a autenticação habilitada, a primeira chamada deve responder sem credenciais; a segunda deve retornar HTTP 401 quando enviada sem chave. Para chamar uma rota protegida, use uma chave configurada no ambiente por `Authorization: Bearer` ou `X-API-Key`. Não coloque a chave na URL.
 
-`/health` comprova apenas que a rota respondeu. Não confirma a disponibilidade de todos os provedores, integrações, fontes externas ou dependências, nem mede desempenho ou capacidade.
+`/health` comprova apenas que o processo respondeu (liveness). Não confirma provedores, integrações, fontes externas nem dependências, e não mede desempenho ou capacidade.
+
+`/ready` (readiness, sem chave) responde 200 só quando o banco da trilha de auditoria responde, e 503 sem detalhes no caso contrário; use-o para tirar uma réplica do tráfego. `/metrics` (com a chave da API) expõe métricas Prometheus por rota e status. Métricas, SLOs propostos, alertas e o roteiro de recuperação estão em [SLO-AND-ALERTS.md](../observability/SLO-AND-ALERTS.md).
 
 #### Testes e verificações de qualidade
 
