@@ -1,6 +1,6 @@
 # Proposta de registro — implementação das fases 2 e 3 da ADR-010
 
-**Estado:** PROPOSTA, para o mantenedor inserir. Os arquivos de destino são protegidos (AGENTS.md §4): ADRs aceitas e decisões aprovadas. Por isso não foram editados por ferramenta automatizada. O código já está na PR que traz este arquivo.
+**Estado:** REGISTRADA em 2026-11-21. O mantenedor escolheu as opções recomendadas das decisões 5, 6 e 7 e autorizou o registro. Os textos abaixo foram inseridos na ADR-010 (seções de decisões e de status), no ADR-009 §15.1 e no `DECISIONS-APPROVED.md` (DEC-028 a DEC-030). Este arquivo fica como a análise que fundamenta essas decisões; a fonte normativa são os arquivos de destino.
 
 ## Texto proposto 1 — nova seção da `docs/adr/ADR-010-verifiable-audit-log.md`, antes de "Primary sources"
 

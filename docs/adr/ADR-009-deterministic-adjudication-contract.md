@@ -193,6 +193,14 @@ Aprovada pelo mantenedor em 2026-10-17 (ADR-010, decisão 4). Vale apenas para `
 
 Os nomes finais, esquemas e códigos de erro são fixados na PR que implementar a fase 3 da ADR-010, com alteração do OpenAPI aprovada pelo mantenedor. Até lá, nenhum desses campos existe na API.
 
+**Nota de implementação (2026-11-21, PR #623).** A fase 3 da ADR-010 fixou:
+- `audit_status` (`recorded` ou `not_recorded`) e `audit_receipt` (objeto `ayorai.verify-receipt.v1`), presentes só com `ATTRACTOR_VERIFY_LOG_MODE` diferente de `off`;
+- cabeçalho `Idempotency-Key` com 1 a 128 caracteres visíveis; formato inválido devolve 422;
+- conflito de chave: 409;
+- falha de gravação no modo `required`: 503, sem veredito.
+
+O `r1-a` não muda.
+
 ## 16. Decisões do mantenedor registradas
 
 - **Q1 — K1 domina se algum átomo for REFUTED: SIM.** Uma contradição atômica impede declarar a afirmação composta como integralmente suportada.

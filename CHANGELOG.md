@@ -28,6 +28,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
   - **Padrão:** `off`, que não muda nada.
   - **Dependência nova:** `cryptography` (Ed25519), incluída no lock da imagem com hash.
   - **Desempenho:** árvore incremental, com gravação de cerca de 1,2 ms até 50 mil eventos e `verify_log()` linear.
+  - **Decisões 5 a 7 da ADR-010 registradas em 2026-11-21:** escritor Python (DEC-028), testemunhas em duas etapas (DEC-029) e carimbo do tempo ICP-Brasil adiado (DEC-030). Ficam registradas na ADR-010, no ADR-009 §15.1 e no `DECISIONS-APPROVED.md`.
   - **Verificação independente:** recibos, checkpoints e provas de consistência conferidos com `golang.org/x/mod/sumdb/note` e `transparency-dev/merkle` (`tests/auditlog/vectors/`).
 - Correção: uma falha da retenção automática, que roda depois do commit do rastro, deixa de chegar ao chamador como erro de gravação. O rastro já está gravado; a purga parcial é desfeita e o erro vai para o log (só o tipo da exceção), e a retenção roda de novo na próxima gravação após o intervalo.
 - Correção: uma falha ao gravar a entrada da cadeia (ou o registro de uma purga) desfaz a transação inteira. Antes, o rastro ou a exclusão ficavam pendentes na conexão, e a próxima gravação bem-sucedida os confirmava: o chamador recebia erro, mas o rastro ficava gravado sem entrada na cadeia. A selagem, a resselagem e o sequenciamento também desfazem a transação em caso de erro, e a rotação confere a cadeia sob a mesma trava que a reassina.

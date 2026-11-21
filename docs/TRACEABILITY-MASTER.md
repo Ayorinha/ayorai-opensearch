@@ -105,8 +105,8 @@ O registro histórico de componentes R1–R20, com descrições de escopo e link
 - Código: `src/ayorai_attractor/auditlog/` (`merkle.py`, `note.py`, `store.py`) e `src/ayorai_attractor/api/verify_log.py`.
 - Testes: `tests/test_verify_log.py` e `tests/auditlog/`.
 - Evidência: vetores e verificação cruzada com Go em `tests/auditlog/vectors/README.md`.
-- Status: [IMPLEMENTADO NA PR #623, NÃO MESCLADO].
-- Limitações: decisões 5 a 7 aguardando o mantenedor; não há testemunha independente nem carimbo do tempo, então o log não resiste ao operador que detém a chave ([proposta](adr/ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md)).
+- Status: [IMPLEMENTADO — PR #623, mesclada em 2026-11-21]; decisões 5 a 7 registradas (DEC-028 a DEC-030).
+- Limitações: testemunhas independentes e carimbo do tempo adiados por decisão; até lá, o log não resiste ao operador que detém a chave ([ADR-010](adr/ADR-010-verifiable-audit-log.md)).
 
 **Nota de escopo:** replay e integridade não constituem um item separado da arquitetura §5. Rastreá-los na pergunta 10 (reprodutibilidade) e na §2.3 (proveniência integral), sem rotulá-los como §5.4.
 

@@ -41,6 +41,9 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-025 | Pré-registro E3 e planejamento LTT (benchmarks exploratórios) | **Só proposta**, na PR #504, fechada sem merge em 2026-11-20; nunca decidida. O ID fica reservado | Branch `docs/e3-confirm-dev-b-prereg` |
 | DEC-026 | Elegibilidade E3 por estados de exposição verificáveis | **Só proposta**, na PR #509, fechada sem merge em 2026-11-20; nunca decidida. O ID fica reservado | Branch `docs/dec-026-proposal` |
 | DEC-027 | Reconciliação estatística do RGC (IDs, percentil, gerador, H1, validação, K) | Aprovada pelo mantenedor (2026-11-14), por delegação às recomendações conjuntas | Este arquivo |
+| DEC-028 | ADR-010, decisão 5: escritor Python | Decidida (2026-11-21) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-028--adr-010-decisão-5-escritor-python) |
+| DEC-029 | ADR-010, decisão 6: testemunhas em duas etapas | Decidida (2026-11-21) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-029--adr-010-decisão-6-testemunhas-em-duas-etapas) |
+| DEC-030 | ADR-010, decisão 7: carimbo do tempo ICP-Brasil adiado | Decidida (2026-11-21) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-030--adr-010-decisão-7-carimbo-do-tempo-icp-brasil-adiado) |
 
 ## Decisões aprovadas
 

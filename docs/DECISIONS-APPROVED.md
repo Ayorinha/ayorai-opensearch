@@ -87,6 +87,46 @@ As quatro que restavam pendentes nesse registro (DEC-001, DEC-003, DEC-004 e DEC
 - **Condições permanentes:** revisão independente do SHA exato de cada PR, CI verde, merge por SQUASH e artefatos congelados intocados. Nenhuma alteração de Golden, threshold ou manifesto congelado é autorizada por esta decisão.
 - **Limite de maturidade:** a publicação v0.4.0 não afirma que o Judge 2.0.0 esteja totalmente implementado, que os Goldens de desenvolvimento demonstrem generalização em produção ou que haja certificação regulatória ou conformidade jurídica automática.
 
+## Decisões de 2026-11-21 — ADR-010, decisões 5 a 7 (DEC-028 a DEC-030)
+
+- **Data da decisão:** 2026-11-21
+- **Decisor e mantenedor:** Anderson Leon Ayora
+- **Forma:** resposta explícita do mantenedor a três perguntas, cada uma com a opção recomendada escolhida. Também autorizou registrar as decisões nos arquivos protegidos e mesclar a PR com o CI verde.
+- **Base:** análises em [adr/ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md](adr/ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md); POC isolada na PR #618; implementação e evidências na PR #623.
+
+### DEC-028 — ADR-010, decisão 5: escritor Python
+
+- **Decisão:** a rota (a) da ADR-010, um escritor em Python dentro do serviço, implementa as fases 2 e 3.
+- **Base:** a POC isolada da PR #618 exercitou as duas rotas.
+  - O escritor Python grava a chave de idempotência, o sal, o registro, a folha e o checkpoint numa só transação SQLite.
+  - O Tessera exige um segundo armazenamento e um mecanismo de reconciliação ainda não implementado.
+- **Consequências:**
+  - o log grava num único host (SQLite, um escritor por vez) e não publica tlog-tiles;
+  - o Tessera será reavaliado se houver gravação em mais de um host, se o p95 de gravação passar de 50 ms no hardware de produção ou se as testemunhas exigirem tlog-tiles.
+- **Evidência:** PR #618 e PR #623 (testes, verificação cruzada com Go e medições).
+
+### DEC-029 — ADR-010, decisão 6: testemunhas em duas etapas
+
+- **Decisão:**
+  1. Até haver testemunhas independentes, o operador guarda fora do servidor, pelo menos uma vez por dia, o checkpoint mais recente e o confere contra o log. Isso não é apresentado como testemunha independente.
+  2. A fase 4 implementará o protocolo C2SP tlog-witness e buscará pelo menos duas testemunhas sem vínculo de controle com o operador, com preferência por instituições brasileiras tecnicamente adequadas.
+- **Consequências:**
+  - nenhuma afirmação de resistência ao operador antes de duas cossignaturas independentes ativas;
+  - checkpoints incompatíveis são tratados como incidente: gravação congelada no modo `required`, os dois checkpoints preservados e o fato publicado.
+- **Em aberto:** quem serão as testemunhas. Nenhuma foi contatada, e não há parceria.
+
+### DEC-030 — ADR-010, decisão 7: carimbo do tempo ICP-Brasil adiado
+
+- **Decisão:** adiar a contratação. Quando um uso exigir hora oponível a terceiros:
+  - carimbar periodicamente o hash do checkpoint (nunca cada evento) numa ACT credenciada pela ICP-Brasil;
+  - guardar e publicar o token RFC 3161 junto do checkpoint;
+  - documentar a verificação com OpenSSL e a cadeia do ITI.
+- **Pré-condições para contratar:**
+  - lista vigente de ACTs e preços levantados;
+  - parecer jurídico sobre o efeito probatório;
+  - autorização expressa do mantenedor para o gasto.
+- **Consequências:** até lá, `received_at` e os checkpoints têm hora declarada pelo operador, e não se afirma hora certificada.
+
 ## DEC-008 — Publicar a release v0.5.0?
 
 - **Data da decisão:** 2026-10-13

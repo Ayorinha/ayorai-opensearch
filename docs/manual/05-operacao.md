@@ -156,7 +156,21 @@ Com `ATTRACTOR_VERIFY_LOG_MODE=local` ou `required`, cada decisão `r2-a` do `/v
 
   Meça de novo no hardware da implantação.
 - **Custódia da chave:** guarde a semente num gerenciador de segredos e publique a chave de verificação num canal separado. Para trocar a chave, abra um log novo, com outra origem. Os requisitos completos estão em `docs/adr/ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md`, seção "Modelo de confiança".
-- **Limites:** sem testemunhas nem carimbo do tempo (ADR-010, decisões 6 e 7), quem controla o banco e a chave pode reescrever o log. Recibos e checkpoints guardados fora do host são o que permite detectar isso. O armazenamento é SQLite com um escritor por vez (vários processos no mesmo host podem compartilhar o banco). Ainda não há publicação no formato de tiles nem prova de consistência servida por HTTP; `consistency()` existe na biblioteca.
+- **Checkpoint fora do servidor (DEC-029, etapa 1), procedimento diário:**
+  1. Copie a resposta de `GET /v1/verify/log` para um armazenamento que o operador do servidor não consiga alterar, como outra conta ou um repositório privado com histórico.
+  2. No host, confira o último checkpoint guardado:
+     ```python
+     from ayorai_attractor.auditlog.note import NoteSigner
+     from ayorai_attractor.auditlog.store import VerificationLog
+
+     log = VerificationLog(caminho_do_banco, NoteSigner(origem, semente))
+     assert log.verify_log()["valid"]
+     assert log.matches_checkpoint(nota_guardada)  # False: rollback ou história reescrita
+     ```
+  3. `False` é incidente: congele a gravação no modo `required`, preserve o banco, o backup e os dois checkpoints, e registre o fato.
+
+  Isso detecta rollback e reescrita depois da cópia. Não é testemunha independente: quem controla o servidor e a cópia pode alterar os dois.
+- **Limites:** sem testemunhas nem carimbo do tempo (ADR-010, decisões 6 e 7, ambos adiados por decisão do mantenedor), quem controla o banco e a chave pode reescrever o log. Recibos e checkpoints guardados fora do host são o que permite detectar isso. O armazenamento é SQLite com um escritor por vez (vários processos no mesmo host podem compartilhar o banco). Ainda não há publicação no formato de tiles nem prova de consistência servida por HTTP; `consistency()` existe na biblioteca.
 
 ### Persistência, backup e restauração dos rastros de auditoria
 

@@ -1,6 +1,6 @@
 # ADR-010: Verifiable audit log
 
-- **Status:** Accepted in part — owner decisions 1–4 recorded on 2026-10-17; decisions 5–7 remain open
+- **Status:** Accepted — owner decisions 1–4 recorded on 2026-10-17 and decisions 5–7 on 2026-11-21 (DEC-028, DEC-029, DEC-030)
 - **Date:** 2026-10-17
 - **Decision owner:** Anderson Leon Ayora
 - **Scope:** Design direction for a verifiable audit log. Implementation proceeds only through separate, reviewed PRs (see "Implementation phasing").
@@ -113,11 +113,15 @@ The current `audit_traces` table is frozen as legacy. A digest of an exported, c
 | 3 | Behavior when recording fails in recording-required deployments | **Fail closed.** No verdict is returned without a recorded event; the API returns an error and the client may retry with the same `Idempotency-Key`. Local (non-recording) mode keeps `audit_status = "not_recorded"`. |
 | 4 | Amendment to ADR-009 §15 | **Approved.** Recorded as ADR-009 §15.1: additive response fields outside `result`, only when recording is enabled; Judge rules, `result` and its hashes are unchanged. |
 
-## Still open
+## Owner decisions (recorded 2026-11-21)
 
-5. Python writer versus Tessera, to be settled by proof of concept.
-6. Who could act as independent witnesses.
-7. Whether and when to procure ICP-Brasil timestamps.
+The analyses behind these decisions are in [ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md](ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md).
+
+| # | Question | Decision |
+| --- | --- | --- |
+| 5 | Python writer versus Tessera | **Python writer (DEC-028).** One SQLite transaction holds idempotency key, salt, record, leaf and checkpoint, so there is no reconciliation window between two stores. Tessera is reconsidered if more than one host must write, if append p95 exceeds 50 ms on production hardware, or if witnesses require C2SP tlog-tiles. |
+| 6 | Independent witnesses | **Two stages (DEC-029).** Stage 1, now: the operator keeps the latest checkpoint outside the server at least daily and checks it against the log; this is not described as an independent witness. Stage 2, in phase 4: C2SP tlog-witness with at least two witnesses without control ties to the operator, preferring technically suitable Brazilian institutions. No resistance to the operator is claimed before two independent cosignatures are active; incompatible checkpoints are an incident. |
+| 7 | ICP-Brasil timestamps | **Deferred (DEC-030).** No procurement now. When a use requires time that can be opposed to third parties, the checkpoint hash (never each event) is timestamped periodically by an ICP-Brasil-accredited ACT, after a survey of current ACTs and prices, a legal opinion on probative effect and the owner's explicit authorization of the expense. Until then, `received_at` and checkpoints carry operator-declared time. |
 
 ## Implementation phasing
 
@@ -127,6 +131,44 @@ Each phase is a separate PR with its own review and CI evidence.
 2. **Checkpoints and storage.** C2SP checkpoint and signed-note (Ed25519), tile storage, single-writer append and restart behavior, mutation tests (acceptance criteria 3, 5 and 7). New runtime dependencies, if any, are declared and approved in that PR.
 3. **Recording `/v1/verify`.** Recording-required mode, receipts, `Idempotency-Key`, OpenAPI change, per ADR-009 §15.1.
 4. **External state.** Witnesses, RFC 3161 timestamps and anchoring, after decisions 5–7.
+
+## Implementation status (2026-11-21)
+
+Recorded after implementation, without changing the decisions above.
+
+| Phase | State | Where |
+|---|---|---|
+| 1. Core library | Done | `auditlog/merkle.py`, `auditlog/commitment.py` |
+| 2. Checkpoints and storage | Done, with one deviation (below) | `auditlog/note.py`, `auditlog/merkle.py` (`IncrementalTree`), `auditlog/store.py` (PR #623) |
+| 3. Recording `/v1/verify` | Done | `api/verify_log.py`, `/v1/verify`, `GET /v1/verify/log` (PR #623) |
+| 4. External state | Stage 1 of decision 6 (operator-held checkpoint) as an operating procedure; witnesses and timestamps deferred by decisions 6 and 7 | `docs/manual/05-operacao.md` |
+
+- **Phase 2:**
+  - C2SP tlog-checkpoint and signed-note with Ed25519 (type 0x01).
+  - The signature over the public vector of `golang.org/x/mod/sumdb/note` is byte-identical.
+  - One writer at a time (`BEGIN IMMEDIATE`); restart re-derives every leaf hash.
+  - The incremental tree appends in O(log n).
+- **Deviation:** leaves and checkpoints live in SQLite tables, not published as C2SP tlog-tiles. Tiles are needed only for stage 2 of decision 6.
+- **Phase 3, as in ADR-009 §15.1:**
+  - `ATTRACTOR_VERIFY_LOG_MODE` is `off` (default), `local` or `required`;
+  - `audit_status` and `audit_receipt` stay outside `result`, and `output_sha256` is unchanged;
+  - `Idempotency-Key`: same key and input return the same receipt; another input is a 409;
+  - in `required` mode, a recording failure is a 503 with no verdict.
+- **Erasure:** `erase()` removes salt and record and appends an erasure leaf (`ayorai.verify-erasure.v1`, no personal data). `verify_log()` flags any record removed without one.
+- **Acceptance criteria:**
+
+  | # | State | Evidence |
+  |---|---|---|
+  | 1 | Done | Threat model and key custody in the implementation proposal |
+  | 2 | Done | Phase 1 vectors |
+  | 3 | Done | Mutation tests in `tests/test_verify_log.py` |
+  | 4 | Done | Receipts, checkpoints and consistency proofs verified with `golang.org/x/mod/sumdb/note` and `transparency-dev/merkle` (`tests/auditlog/vectors/README.md`) |
+  | 5 | Done | Retry, concurrency (6 threads, 2 instances) and restart tests; Docker run |
+  | 6 | Done | Salted commitments, erasure with an erasure leaf, seed never stored |
+  | 7 | Done for operator-held checkpoints | `backup()`, restore and `matches_checkpoint()`. Anchoring by witnesses or timestamps follows decisions 6 and 7 |
+  | 8 | Done on the development container | 50 000 events: about 1.2 ms per append (p95 1.7 ms), about 930 bytes per event, reopen in 0.15 s, full `verify_log()` in 7.7 s. Re-measure on deployment hardware |
+
+- **Trust limit:** until two independent witnesses cosign, whoever holds both the database and the key can rewrite the log. Client-held receipts and operator-held checkpoints detect it.
 
 ## Primary sources (consulted 2026-10-17)
 
