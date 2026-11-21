@@ -91,7 +91,7 @@ The current `audit_traces` table is frozen as legacy. A digest of an exported, c
 3. **Hash chain** — detects edits relative to a trusted checkpoint, but proofs need the whole chain; superseded by option 5.
 4. **HMAC with a server secret instead of salted commitments** — resists guessing, but only the secret holder can verify, and a leaked secret exposes every event.
 5. **Merkle log in C2SP tlog-tiles format** — proposed.
-6. **Implementation route for option 5:** (a) Python writer, with proofs cross-verified in CI by the Go reference tooling; (b) Trillian Tessera (Go, Apache 2.0, production-ready per its repository) run as a separate service. To be decided by an isolated proof of concept, not by preference.
+6. **Implementation route for option 5:** (a) Python writer, with proofs cross-verified in CI by the Go reference tooling; (b) Tessera (Go library, Apache 2.0, production-ready per its repository), integrated through a narrow Go adapter/process boundary if the application remains in Python. Tessera is not a generic standalone HTTP microservice; the adapter and its operational cost must be evaluated in an isolated proof of concept. To be decided by evidence, not preference. See [the 2026-11-21 preliminary assessment](ADR-010-POC-ASSESSMENT-2026-11-21.md).
 
 ## Acceptance criteria for a future implementation
 
