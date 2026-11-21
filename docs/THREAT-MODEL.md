@@ -120,7 +120,7 @@ Out of scope:
 | E | No technical isolation gate prevents hidden Golden v1 leakage into development/training. | high |
 | F | No automated training-data license manifest gate prevents EVAL_ONLY contamination before training. | high |
 | G | No technical control prevents tuning against visible evaluation results. | medium |
-| R1 | Audit records are not tamper-resistant against database administrators; `/v1/verify` verdicts are not recorded. See proposed ADR-010. | high |
+| R1 | Audit records are not tamper-resistant against database administrators; `/v1/verify` verdicts are not recorded. See ADR-010. Partially mitigated (2026-11-21): external HMAC keys detect edits to a trace; the sequence chain (`verify_chain()`) detects a trace deleted from the middle and a trace inserted outside the API; a checkpoint kept off the host detects truncation and rollback. Someone holding both the database and the active key can still rewrite the whole chain. | high |
 
 ## 5. Non-goals
 

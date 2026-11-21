@@ -155,16 +155,29 @@ Restauração:
 1. Pare o serviço.
 2. Copie o arquivo de backup para o caminho de `ATTRACTOR_AUDIT_DB`.
 3. Com as mesmas `ATTRACTOR_AUDIT_HMAC_KEYS` da produção, execute `AuditTraceStore(caminho).verify_all()`; o esperado é `invalid` igual a 0.
-4. Suba o serviço.
+4. Execute `verify_chain(checkpoint)` com o último checkpoint guardado fora do host (ver "Cadeia de sequência" abaixo). Um backup é mais antigo que o checkpoint mais recente; nesse caso, `checkpoint_mismatch` é esperado e deve ser conferido com o checkpoint da data do backup.
+5. Suba o serviço.
 
 Com HMAC, mantenha as chaves em custódia separada do backup do banco: quem tem as duas coisas pode reselar registros. Rastros gravados antes de configurar as chaves podem ser selados uma vez com `seal_unsealed()`, que só sela rastros cujo digest ainda confere. A rotina cobre r2-v1, r2-v2, r2-v3 e r2-v4 e preserva a versão de replay. Ao habilitar HMAC em uma base existente, execute-a com a lista completa de chaves antes de usar `verify_all()` como gate: com HMAC configurado, todas as versões suportadas precisam ter MAC válido. Se o banco já contém rastros selados, o armazenamento não abre sem `ATTRACTOR_AUDIT_HMAC_KEYS`, evitando continuar gravando sem autenticação criptográfica. A selagem valida o digest existente e autentica o estado atual do rastro; não prova retroativamente que um rastro legado não foi adulterado antes da ativação do HMAC. Retirar uma chave da lista invalida os rastros assinados por ela; para aposentá-la, faça a rotação abaixo.
+
+Cadeia de sequência (detecção de exclusão):
+
+- Todo rastro gravado pela API também entra em `audit_chain`, uma sequência com elos encadeados por HMAC (SHA-256 sem chave). `verify_all()` confere cada rastro; `verify_chain()` confere o conjunto e reporta:
+  - `missing_traces`: rastro apagado sem registro de purga;
+  - `broken_links`: entrada da cadeia removida, renumerada ou reescrita;
+  - `digest_mismatches`: digest do rastro diferente do encadeado;
+  - `unsequenced_traces`: rastros sem entrada na cadeia (anteriores a ela, ou inseridos fora da API).
+- `intact` é verdadeiro sem nenhum dos três primeiros; `complete` exige também zero rastros sem sequência.
+- A retenção (`ATTRACTOR_AUDIT_RETENTION_DAYS`) e `purge_recorded_before()` gravam um registro de purga na cadeia, com as sequências apagadas. Uma purga não cobre rastros gravados depois dela.
+- **Checkpoint externo:** guarde `store.checkpoint()` (`{"seq", "link"}`) fora do host, por exemplo junto com o hash do backup diário. `verify_chain(checkpoint)` acusa `checkpoint_mismatch` se as entradas mais recentes tiverem sido removidas ou se o banco tiver voltado a uma cópia antiga. Sem checkpoint externo, essas duas situações **não** são detectáveis localmente.
+- Base criada antes da cadeia: execute `sequence_unsequenced()` uma vez (depois de `seal_unsealed()`, se usar HMAC). Ela encadeia os rastros válidos em ordem de `trace_id` e estabelece uma linha de base; não prova o que aconteceu antes.
 
 Rotação de chave HMAC:
 
 1. Gere a nova chave (32 bytes, hex) e coloque-a **primeiro** em `ATTRACTOR_AUDIT_HMAC_KEYS`, mantendo as antigas depois dela (`k2:<nova>,k1:<antiga>`). Reinicie o serviço: novos rastros passam a usar a chave nova.
 2. Faça um backup (`store.backup(...)`).
 3. Execute `AuditTraceStore(caminho).reseal_with_active_key()`. Cada rastro assinado por outra chave é verificado com as chaves configuradas e, se válido, assinado de novo com a chave ativa. O retorno é `{"resealed": n, "skipped_invalid": m}`. Rastros inválidos **não** são re-selados, para que uma adulteração nunca vire um rastro válido; com `m > 0`, investigue antes de seguir.
-4. Confirme `verify_all()` com `invalid` igual a 0 (ou igual aos `m` já investigados).
+4. Confirme `verify_all()` com `invalid` igual a 0 (ou igual aos `m` já investigados) e `verify_chain()` com `intact` verdadeiro. A mesma chamada reassina a cadeia com a chave ativa, mas só se ela estiver íntegra; uma cadeia com problema continua com a chave antiga e precisa ser investigada antes de aposentar a chave.
 5. Só então retire a chave antiga da lista e reinicie. Destrua-a depois que nenhum backup retido depender dela.
 
 A rotação autentica o estado atual de cada rastro com a nova chave; ela não substitui a custódia das chaves nem cria armazenamento imutável.
