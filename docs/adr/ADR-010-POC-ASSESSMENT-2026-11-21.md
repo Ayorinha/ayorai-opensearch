@@ -64,9 +64,9 @@ A suíte reutiliza os 17 hashes e as 18 raízes do vetor público já mantido no
 
 A primeira execução detectou um defeito real em verify_receipt: para uma árvore de uma única folha, a prova de inclusão é vazia e a implementação inicial não comparava a folha persistida com a folha do recibo. A correção foi aplicada e coberta por teste de regressão.
 
-A POC Python/Tessera foi expandida depois da validação inicial. No SHA de código c38073f0929bf50c905d5f4a68eb1d5434adcd20, o workflow [ADR-010 isolated persistence POC — run 44919193010](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44919193010) passou integralmente:
+A POC Python/Tessera foi expandida depois da validação inicial. No SHA 1b55b6620c4c59c63a465d5b4a07932db4f23f43, o workflow [ADR-010 isolated persistence POC — run 44919722764](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44919722764) passou integralmente:
 
-- 25 testes Python aprovados;
+- 37 testes Python aprovados, incluindo o estado durável de idempotência e recuperação;
 - Ruff check aprovado;
 - Tessera v1.0.4 POSIX one-shot: 17 folhas, tree size 17 e raiz SHA-256 1780178a188d10bf4aa75b1f78378e13c28db181dca036d01a2551000299be62, igual à referência dos vetores públicos;
 - Tessera HTTP: cinco folhas iniciais, índices 0–4, checkpoint size 5 e raiz 4e3bbb1f7b478dcfe71fb631631519a3bca12c9aefca1612bfce4c13a86264d4;
@@ -75,7 +75,7 @@ A POC Python/Tessera foi expandida depois da validação inicial. No SHA de cód
 
 A observação de deduplicação é consistente com o código do [servidor POSIX de conformidade do Tessera v1.0.4](https://github.com/transparency-dev/tessera/blob/v1.0.4/cmd/conformance/posix/main.go): ele instancia antispam em memória. A execução confirma que esse cache não sobrevive ao restart e que o handler de exemplo não implementa semântica de Idempotency-Key. Portanto, o antispam do exemplo não substitui um registro de idempotência durável do AYORAI.
 
-A versão anterior, sem a variante frontier e o teste HTTP, passou no [CI geral — run 44917649782](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917649782): 2.616 testes aprovados e 1 ignorado em Python 3.11/3.12/3.13, cobertura 94% contra baseline 85%, além de CodeQL, Security, Dependency Review, Golden r2 Migration e contratos API. **O CI geral da extensão atual está em execução; esse resultado anterior não é apresentado como validação do SHA atual.**
+O CI geral do SHA atual ainda está em execução. A versão anterior, sem a variante frontier, o teste HTTP e o outbox, passou no [CI geral — run 44917649782](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917649782): 2.616 testes aprovados e 1 ignorado em Python 3.11/3.12/3.13, cobertura 94% contra baseline 85%, além de CodeQL, Security, Dependency Review, Golden r2 Migration e contratos API. **O CI geral da extensão atual está em execução; esse resultado anterior não é apresentado como validação do SHA atual.**
 
 **Interpretação:** a POC isolada está aprovada nos cenários exercitados. Ela demonstra a viabilidade técnica de um writer Python incremental e de uma fronteira HTTP com Tessera, além de confirmar a insuficiência do antispam em memória para idempotência durável. Não comprova capacidade de produção, resistência contra operador privilegiado, conformidade LGPD ou desempenho em escala. Nenhum benchmark de capacidade foi executado.
 
@@ -90,6 +90,22 @@ Foi adicionada uma segunda variante isolada em experiments/adr010_poc/frontier_w
 - O writer serializa append com BEGIN IMMEDIATE e mantém a chave de idempotência na mesma transação do append local.
 
 A variante é deliberadamente separada do writer de recomputação completa, que permanece como baseline simples. Nenhuma das duas implementa checkpoint assinado, tlog-tiles, testemunhas ou integração API. O frontier local não é âncora externa; a detecção de reescrita completa continua dependendo de checkpoint guardado fora do banco.
+
+
+### Outbox de idempotência durável — state machine
+
+Foi adicionada em experiments/adr010_poc/idempotency_outbox.py uma máquina de estados SQLite para o adaptador Tessera:
+
+- PENDING: a chave e o hash da folha comprometida foram reservados localmente antes do envio ao Tessera.
+- ASSIGNED: o índice retornado pelo Tessera foi persistido localmente.
+- RECORDED: um checkpoint assinado que inclui o índice foi recebido e armazenado.
+- Repetir a mesma chave e o mesmo leaf hash devolve o estado/recibo existente; repetir a chave com outro leaf hash gera conflito.
+- Índices Tessera são únicos entre as chaves.
+- PENDING e ASSIGNED são expostos por list_unresolved(); não há reenvio automático após restart.
+- record_checkpoint() permite reconciliar uma linha PENDING quando um processo externo de recuperação localiza o índice correspondente no log durável.
+
+A suíte inclui encerramento abrupto depois da reserva e depois da atribuição, restart, transições repetidas, conflitos, concorrência e colisão de índice. **Limite:** o scanner que localiza um append no Tessera quando o processo cai entre Add e assign ainda não foi implementado. Até a reconciliação, a solicitação permanece pendente e o serviço deve falhar fechado. O módulo também não verifica a assinatura do checkpoint: exige que o chamador a valide antes de persistir o note. A chave Idempotency-Key é armazenada em texto no banco experimental; produção precisa definir proteção, HMAC/derivação, retenção e controle de acesso.
+
 
 ## 4. Limites de segurança e interpretação
 
@@ -112,7 +128,7 @@ Uma integração Tessera + banco do AYORAI cria dois domínios de persistência:
 3. O processo cai antes de gravar esse índice no registro de idempotência.
 4. No retry, a camada externa não sabe se a entrada foi sequenciada. O antispam best-effort do Tessera não garante deduplicação.
 
-Portanto, uma tabela de idempotência externa, por si só, ainda não demonstra exactly-once. A POC Tessera precisa incluir encerramento abrupto precisamente nessa janela e provar uma estratégia de reconciliação. Alternativas a avaliar incluem uma personality que controla conjuntamente o estado de idempotência e sequenciamento, um mecanismo de busca/reconciliação por identificador opaco de operação ou um backend transacional integrado. Não se deve declarar o requisito satisfeito com base apenas no índice retornado pelo Add.
+Portanto, uma tabela de idempotência externa, por si só, ainda não demonstra exactly-once. A POC do outbox agora modela os estados PENDING, ASSIGNED e RECORDED e falha fechado quando uma linha permanece pendente; ela ainda não implementa o scanner que localiza no Tessera o append cuja resposta se perdeu. A POC Tessera precisa incluir encerramento abrupto precisamente nessa janela e provar uma estratégia de reconciliação. Alternativas a avaliar incluem uma personality que controla conjuntamente o estado de idempotência e sequenciamento, um mecanismo de busca/reconciliação por hash de compromisso ou identificador opaco de operação, ou um backend transacional integrado. Não se deve declarar o requisito satisfeito com base apenas no índice retornado pelo Add.
 
 A POC SQLite evita essa janela porque a chave, o índice e a raiz são gravados na mesma transação local. Isso não torna SQLite uma solução de produção: a raiz é recalculada O(n), os checkpoints não são assinados e o protocolo tlog-tiles não é servido.
 
@@ -128,7 +144,7 @@ A POC SQLite evita essa janela porque a chave, o índice e a raiz são gravados 
 | Witnesses | Integrar e operar | Suporte declarado no projeto |
 | Dependências de runtime Python | Potencialmente nenhuma além do conjunto atual | Processo/binário Go adicional |
 | Complexidade operacional | Menos processos, mais código criptográfico/armazenamento próprio | Mais uma fronteira operacional, menos protocolo próprio |
-| Evidência atual | Baseline SQLite O(n) + variante frontier O(log n) por append; ambas isoladas e sem benchmark de capacidade | Runner Tessera v1.0.4 POSIX one-shot + fsck aprovado nos mesmos vetores públicos |
+| Evidência atual | Baseline SQLite O(n), frontier O(log n) por append e outbox PENDING/ASSIGNED/RECORDED; 37 testes dedicados aprovados | Tessera v1.0.4 POSIX one-shot + HTTP + fsck; antispam em memória não sobrevive ao restart |
 | Decisão | **Não decidida** | **Não decidida** |
 
 ## 7. Experimento comparativo obrigatório antes da decisão 5
