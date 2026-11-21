@@ -7,6 +7,15 @@ administrator with write access. It does not persist raw prompts, evidence
 excerpts, credentials, or model outputs. SQLite schema changes are versioned
 with PRAGMA user_version. Access to the shared connection is serialized within this
 process; this does not make the store a multi-process or multi-replica database.
+
+Every trace recorded through this API is also appended to ``audit_chain``, a
+sequence of links chained by HMAC (SHA-256 without keys). ``verify_chain()``
+detects a trace deleted from the middle, a chain entry removed or rewritten, a
+trace inserted without the API, and, against a checkpoint kept outside the
+host, truncation of the most recent entries or a rollback to an older copy.
+Retention purges are recorded in the chain, so they are not reported as
+deletions. Without an external checkpoint, removing the newest entries, or
+replacing the whole database by an older one, cannot be detected locally.
 """
 
 from __future__ import annotations
@@ -172,6 +181,53 @@ def _mac_for_trace(key: bytes, version: str, digest: str, fields: dict[str, Any]
         allow_nan=False,
     ).encode("utf-8")
     return hmac.new(key, canonical, hashlib.sha256).hexdigest()
+
+
+_CHAIN_DOMAIN: Final = "ayorai.audit.chain.v1"
+_CHAIN_GENESIS: Final = "genesis"
+ChainKind = Literal["trace", "purge"]
+
+
+def _chain_link(
+    key: bytes | None,
+    *,
+    seq: int,
+    kind: str,
+    trace_id: str | None,
+    replay_digest: str | None,
+    payload: str | None,
+    previous: str,
+) -> str:
+    """Link of one chain entry: HMAC-SHA256 with a key, SHA-256 without one."""
+    canonical = json.dumps(
+        {
+            "domain": _CHAIN_DOMAIN,
+            "seq": seq,
+            "kind": kind,
+            "trace_id": trace_id,
+            "replay_digest": replay_digest,
+            "payload": payload,
+            "previous": previous,
+        },
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    if key is None:
+        return hashlib.sha256(canonical).hexdigest()
+    return hmac.new(key, canonical, hashlib.sha256).hexdigest()
+
+
+def _seq_ranges(seqs: list[int]) -> list[list[int]]:
+    """Compress sorted sequence numbers into inclusive [first, last] ranges."""
+    ranges: list[list[int]] = []
+    for seq in sorted(seqs):
+        if ranges and seq == ranges[-1][1] + 1:
+            ranges[-1][1] = seq
+        else:
+            ranges.append([seq, seq])
+    return ranges
 
 
 LEGACY_TRACE_POLICIES = ("hidden", "shared")
@@ -421,6 +477,21 @@ class AuditTraceStore:
             if column not in columns:
                 # Column names are internal constants, never caller input.
                 connection.execute(f"ALTER TABLE audit_traces ADD COLUMN {column} TEXT")
+        # Additive: the sequence chain lives in its own table, so trace rows, their
+        # digests and their MACs keep the schema-4 contract.
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS audit_chain (
+                seq INTEGER PRIMARY KEY,
+                kind TEXT NOT NULL,
+                trace_id TEXT UNIQUE,
+                replay_digest TEXT,
+                payload TEXT,
+                link TEXT NOT NULL,
+                key_id TEXT
+            )
+            """
+        )
         connection.execute(f"PRAGMA user_version = {_SCHEMA_VERSION}")
         connection.commit()
 
@@ -539,6 +610,7 @@ class AuditTraceStore:
                     f"Audit trace already exists: {report.trace_id}"
                 ) from exc
             raise
+        self._append_chain_locked("trace", report.trace_id, replay.digest, None)
         self._connection.commit()
         self._apply_retention_locked()
         return replay.digest
@@ -558,12 +630,7 @@ class AuditTraceStore:
         ):
             return 0
         self._last_retention_run = now
-        cursor = self._connection.execute(
-            "DELETE FROM audit_traces WHERE recorded_at IS NOT NULL AND recorded_at < ?",
-            (_utc_timestamp(now - timedelta(days=self._retention_days)),),
-        )
-        self._connection.commit()
-        return int(cursor.rowcount)
+        return self._purge_locked(now - timedelta(days=self._retention_days), "retention")
 
     def backup(self, destination: str) -> int:
         """Write a consistent online copy of the store to a new file.
@@ -593,12 +660,236 @@ class AuditTraceStore:
         here: their age is unknown.
         """
         with self._lock:
-            cursor = self._connection.execute(
-                "DELETE FROM audit_traces WHERE recorded_at IS NOT NULL AND recorded_at < ?",
-                (_utc_timestamp(cutoff),),
+            return self._purge_locked(cutoff, "purge_recorded_before")
+
+    def _purge_locked(self, cutoff: datetime, reason: str) -> int:
+        """Delete traces recorded before ``cutoff`` and record the purge in the chain."""
+        cutoff_text = _utc_timestamp(cutoff)
+        purged_seqs = [
+            int(row[0])
+            for row in self._connection.execute(
+                "SELECT c.seq FROM audit_chain c JOIN audit_traces t ON t.trace_id = c.trace_id "
+                "WHERE c.kind = 'trace' AND t.recorded_at IS NOT NULL AND t.recorded_at < ?",
+                (cutoff_text,),
+            ).fetchall()
+        ]
+        cursor = self._connection.execute(
+            "DELETE FROM audit_traces WHERE recorded_at IS NOT NULL AND recorded_at < ?",
+            (cutoff_text,),
+        )
+        deleted = int(cursor.rowcount)
+        if deleted:
+            payload = json.dumps(
+                {
+                    "reason": reason,
+                    "cutoff": cutoff_text,
+                    "deleted": deleted,
+                    "seqs": _seq_ranges(purged_seqs),
+                },
+                sort_keys=True,
+                separators=(",", ":"),
             )
+            self._append_chain_locked("purge", None, None, payload)
+        self._connection.commit()
+        return deleted
+
+    def _append_chain_locked(
+        self,
+        kind: ChainKind,
+        trace_id: str | None,
+        replay_digest: str | None,
+        payload: str | None,
+    ) -> None:
+        """Append one entry, linked to the previous one, inside the caller's transaction."""
+        head = self._connection.execute(
+            "SELECT seq, link FROM audit_chain ORDER BY seq DESC LIMIT 1"
+        ).fetchone()
+        seq = 1 if head is None else int(head[0]) + 1
+        previous = _CHAIN_GENESIS if head is None else str(head[1])
+        key_id, key = self._mac_keys[0] if self._mac_keys else (None, None)
+        link = _chain_link(
+            key,
+            seq=seq,
+            kind=kind,
+            trace_id=trace_id,
+            replay_digest=replay_digest,
+            payload=payload,
+            previous=previous,
+        )
+        self._connection.execute(
+            "INSERT INTO audit_chain (seq, kind, trace_id, replay_digest, payload, link, key_id) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (seq, kind, trace_id, replay_digest, payload, link, key_id),
+        )
+
+    def checkpoint(self) -> dict[str, Any]:
+        """Head of the chain, to be kept outside this host (detects truncation and rollback).
+
+        Returns ``{"seq": n, "link": hex}``; ``{"seq": 0, "link": "genesis"}`` when empty.
+        """
+        with self._lock:
+            head = self._connection.execute(
+                "SELECT seq, link FROM audit_chain ORDER BY seq DESC LIMIT 1"
+            ).fetchone()
+        if head is None:
+            return {"seq": 0, "link": _CHAIN_GENESIS}
+        return {"seq": int(head[0]), "link": str(head[1])}
+
+    def verify_chain(self, checkpoint: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Verify the sequence chain against the stored traces.
+
+        Reports, in counts: ``broken_links`` (an entry removed, reordered or rewritten,
+        or signed by an unknown key), ``missing_traces`` (a recorded trace deleted
+        without a recorded purge), ``digest_mismatches`` (a trace whose digest differs
+        from the one chained), ``unsequenced_traces`` (traces with no chain entry:
+        recorded before the chain existed, or inserted without the API) and
+        ``checkpoint_mismatch`` (the given external checkpoint is not in the chain:
+        truncation or rollback). ``intact`` is true when none of the first three and
+        no checkpoint mismatch occurred; ``complete`` additionally requires zero
+        unsequenced traces.
+        """
+        with self._lock:
+            entries = self._connection.execute(
+                "SELECT seq, kind, trace_id, replay_digest, payload, link, key_id "
+                "FROM audit_chain ORDER BY seq"
+            ).fetchall()
+            stored = {
+                str(row[0]): str(row[1])
+                for row in self._connection.execute(
+                    "SELECT trace_id, replay_digest FROM audit_traces"
+                ).fetchall()
+            }
+        keys = dict(self._mac_keys)
+        broken = 0
+        previous = _CHAIN_GENESIS
+        expected_seq = 1
+        purged: set[int] = set()
+        chained_traces: dict[int, tuple[str, str]] = {}
+        links: dict[int, str] = {}
+        for seq, kind, trace_id, digest, payload, link, key_id in entries:
+            seq = int(seq)
+            if seq != expected_seq:
+                broken += 1  # an entry was removed: the sequence has a gap
+                expected_seq = seq
+            expected_seq += 1
+            if key_id is None:
+                key: bytes | None = None
+                usable = not self._mac_keys  # keyed stores never accept unkeyed links
+            else:
+                key = keys.get(str(key_id))
+                usable = key is not None
+            recomputed = (
+                _chain_link(
+                    key,
+                    seq=seq,
+                    kind=str(kind),
+                    trace_id=trace_id,
+                    replay_digest=digest,
+                    payload=payload,
+                    previous=previous,
+                )
+                if usable
+                else None
+            )
+            if recomputed is None or not hmac.compare_digest(recomputed, str(link)):
+                broken += 1
+            previous = str(link)
+            links[seq] = str(link)
+            if kind == "trace" and trace_id is not None:
+                chained_traces[seq] = (str(trace_id), str(digest))
+            elif kind == "purge" and payload is not None:
+                try:
+                    ranges = json.loads(payload)["seqs"]
+                    for first, last in ranges:
+                        # A purge can only cover entries recorded before it.
+                        purged.update(range(int(first), min(int(last), seq - 1) + 1))
+                except (ValueError, KeyError, TypeError):
+                    broken += 1
+            else:
+                broken += 1
+        missing = 0
+        mismatched = 0
+        for seq, (trace_id, digest) in chained_traces.items():
+            current = stored.get(trace_id)
+            if current is None:
+                if seq not in purged:
+                    missing += 1
+            elif current != digest:
+                mismatched += 1
+        chained_ids = {trace_id for trace_id, _ in chained_traces.values()}
+        unsequenced = sum(1 for trace_id in stored if trace_id not in chained_ids)
+        checkpoint_mismatch = False
+        if checkpoint is not None:
+            seq = int(checkpoint.get("seq", -1))
+            link = str(checkpoint.get("link", ""))
+            if seq == 0:
+                checkpoint_mismatch = link != _CHAIN_GENESIS
+            else:
+                checkpoint_mismatch = links.get(seq) != link
+        intact = not (broken or missing or mismatched or checkpoint_mismatch)
+        head_seq = int(entries[-1][0]) if entries else 0
+        return {
+            "intact": intact,
+            "complete": intact and unsequenced == 0,
+            "entries": len(entries),
+            "head": {"seq": head_seq, "link": previous},
+            "broken_links": broken,
+            "missing_traces": missing,
+            "digest_mismatches": mismatched,
+            "unsequenced_traces": unsequenced,
+            "checkpoint_mismatch": checkpoint_mismatch,
+        }
+
+    def sequence_unsequenced(self) -> int:
+        """Append valid traces that have no chain entry; return how many.
+
+        For stores created before the chain existed. Traces are appended in
+        trace_id order; this establishes a baseline for the current state and does
+        not prove what happened before it. Invalid traces are left out.
+        """
+        with self._lock:
+            rows = self._connection.execute(
+                "SELECT t.trace_id, t.replay_digest FROM audit_traces t "
+                "LEFT JOIN audit_chain c ON c.trace_id = t.trace_id "
+                "WHERE c.seq IS NULL ORDER BY t.trace_id"
+            ).fetchall()
+            appended = 0
+            for trace_id, digest in rows:
+                if self._verify_locked(str(trace_id)) != "valid":
+                    continue
+                self._append_chain_locked("trace", str(trace_id), str(digest), None)
+                appended += 1
             self._connection.commit()
-            return int(cursor.rowcount)
+        return appended
+
+    def _relink_chain_locked(self) -> bool:
+        """Recompute every link with the active key; only when the chain is intact."""
+        if not self._mac_keys:
+            return False
+        key_id, key = self._mac_keys[0]
+        entries = self._connection.execute(
+            "SELECT seq, kind, trace_id, replay_digest, payload, key_id FROM audit_chain "
+            "ORDER BY seq"
+        ).fetchall()
+        if all(row[5] == key_id for row in entries):
+            return False
+        previous = _CHAIN_GENESIS
+        for seq, kind, trace_id, digest, payload, _ in entries:
+            link = _chain_link(
+                key,
+                seq=int(seq),
+                kind=str(kind),
+                trace_id=trace_id,
+                replay_digest=digest,
+                payload=payload,
+                previous=previous,
+            )
+            self._connection.execute(
+                "UPDATE audit_chain SET link = ?, key_id = ? WHERE seq = ?",
+                (link, key_id, seq),
+            )
+            previous = link
+        return True
 
     def verify_all(self) -> dict[str, int]:
         """Replay-verify every stored trace (for example after a restore)."""
@@ -724,13 +1015,20 @@ class AuditTraceStore:
         A trace is resealed only if it verifies under the configured keys, so an
         altered trace is never laundered into a valid one: it is counted in
         ``skipped_invalid`` and left as it is. Returns
-        ``{"resealed": n, "skipped_invalid": m}``.
+        ``{"resealed": n, "skipped_invalid": m}``. The sequence chain is re-linked
+        with the active key in the same call, only if ``verify_chain()`` reports it
+        intact; check ``verify_chain()`` too before retiring the old keys.
         """
         if not self._mac_keys:
             raise ValueError("ATTRACTOR_AUDIT_HMAC_KEYS is not configured")
         key_id, key = self._mac_keys[0]
         counts = {"resealed": 0, "skipped_invalid": 0}
+        # The sequence chain moves to the active key too, but only if it verifies
+        # under the configured keys: a broken chain is never re-signed.
+        chain_intact = self.verify_chain()["intact"]
         with self._lock:
+            if chain_intact:
+                self._relink_chain_locked()
             rows = self._connection.execute(
                 "SELECT trace_id, replay_digest, replay_version, "
                 "legacy_verification, verification, operation_status, evidence_count, "

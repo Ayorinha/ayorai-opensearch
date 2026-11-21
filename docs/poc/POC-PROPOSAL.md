@@ -64,7 +64,7 @@ Todos são verificáveis por quem não escreveu o código:
 3. **Abstenção:** em pelo menos 10 afirmações sem suporte nos documentos, o sistema se abstém; nenhuma recebe apoio.
 4. **Contradição:** em pelo menos 10 afirmações com valor, data ou ano trocados, o resultado é `refuted` ou `conflicting`; nenhuma é `verified`.
 5. **Reprodução:** reenviar a mesma requisição dá o mesmo `trace_id` (`chk_…`) e o mesmo resultado.
-6. **Integridade:** `verify_all()` dá `invalid = 0`. Uma adulteração feita de propósito numa cópia do banco (alterar uma contagem, um dono ou o digest da adjudicação) resulta em `invalid`.
+6. **Integridade:** `verify_all()` dá `invalid = 0` e `verify_chain(checkpoint)` dá `intact` verdadeiro. Uma adulteração feita de propósito numa cópia do banco (alterar uma contagem, um dono ou o digest da adjudicação) resulta em `invalid`.
 7. **Recuperação:** depois de reiniciar o container e restaurar o backup, os rastros continuam `valid`.
 8. **Isolamento:** a chave de um usuário não lê o rastro de outro (404).
 9. **Segurança operacional:** os logs não contêm conteúdo, afirmações nem segredos; erros não expõem endereços internos.
@@ -79,7 +79,7 @@ O conjunto de afirmações usado nos critérios 3 e 4 é preparado e rotulado **
 | Duplicatas contadas como fontes independentes (P1-1) | Curadoria dos documentos; decisão do mantenedor sobre P1-1 antes da POC |
 | Expectativa de "certificação" | Este documento e a política de alegações do `CONTRIBUTING.md` |
 | Perda de chave HMAC | Custódia em gerenciador de segredos; rotação com `reseal_with_active_key()` |
-| Exclusão silenciosa de rastros (P2-1) | Backups com hash registrados fora do host até a decisão de desenho |
+| Exclusão de rastros (P2-1) | `verify_chain()` detecta exclusão no meio da trilha; `checkpoint()` diário guardado fora do host detecta truncamento e rollback; backups com hash fora do host |
 | Dados pessoais | Escopo sem dados pessoais; retenção acordada; nenhuma conformidade legal declarada |
 
 ## 7. Plano de avaliação
