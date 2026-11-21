@@ -115,7 +115,7 @@ def main() -> None:
         for index, leaf in enumerate(leaves):
             (entries / f"{index:03d}.entry").write_bytes(leaf)
 
-        append_output = run(
+        run(
             [
                 go,
                 "run",
@@ -125,8 +125,6 @@ def main() -> None:
             ],
             environment,
         )
-        if "Failed" in append_output or "ERROR" in append_output:
-            raise RuntimeError(f"Tessera append reported an error:\n{append_output}")
 
         checkpoint_path = storage / "checkpoint"
         if not checkpoint_path.is_file():
