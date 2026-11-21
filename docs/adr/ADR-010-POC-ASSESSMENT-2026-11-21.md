@@ -60,22 +60,24 @@ A cada append, o protótipo recalcula a raiz inteira e armazena a raiz/tamanho a
 
 A suíte reutiliza os 17 hashes e as 18 raízes do vetor público já mantido no repositório, produzido pela implementação Go independente. Também testa reabertura do banco, idempotência, conflito, concorrência, exclusão de linha e alteração de folha contra um checkpoint guardado pelo chamador. Dois testes adicionais encerram um processo abruptamente: um antes do commit, para verificar rollback; outro depois do commit e antes da resposta, para verificar que o retry retorna o recibo original sem criar uma segunda entrada.
 
-### Resultado final de execução (21/11/2026)
+### Resultados de execução (21/11/2026)
 
 A primeira execução detectou um defeito real em verify_receipt: para uma árvore de uma única folha, a prova de inclusão é vazia e a implementação inicial não comparava a folha persistida com a folha do recibo. A correção foi aplicada e coberta por teste de regressão.
 
-No SHA final da PR #618 (471c5658b131b5ba36a3b7e4a0c2d25b39c3411f), o workflow [ADR-010 isolated persistence POC — run 44917649602](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917649602) passou integralmente:
+A POC Python/Tessera foi expandida depois da validação inicial. No SHA de código c38073f0929bf50c905d5f4a68eb1d5434adcd20, o workflow [ADR-010 isolated persistence POC — run 44919193010](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44919193010) passou integralmente:
 
-- 14 testes Python aprovados;
+- 25 testes Python aprovados;
 - Ruff check aprovado;
-- Tessera v1.0.4 POSIX one-shot aprovado;
-- checkpoint com tree size 17;
-- raiz SHA-256 1780178a188d10bf4aa75b1f78378e13c28db181dca036d01a2551000299be62, igual à referência dos vetores públicos;
-- assinatura do checkpoint, tiles e entry bundles verificados pelo Tessera fsck.
+- Tessera v1.0.4 POSIX one-shot: 17 folhas, tree size 17 e raiz SHA-256 1780178a188d10bf4aa75b1f78378e13c28db181dca036d01a2551000299be62, igual à referência dos vetores públicos;
+- Tessera HTTP: cinco folhas iniciais, índices 0–4, checkpoint size 5 e raiz 4e3bbb1f7b478dcfe71fb631631519a3bca12c9aefca1612bfce4c13a86264d4;
+- no mesmo servidor, a repetição imediata do primeiro corpo retornou índice 0; depois de reiniciar o processo, o mesmo corpo com a mesma Idempotency-Key foi anexado novamente no índice 5; outro corpo com a mesma Idempotency-Key foi aceito no índice 6;
+- checkpoint final size 7, raiz c49c6f0c96c9e8738d63ad3c08ab337f1a775e049ef2d35de13b46e80034e2c3; assinatura, tiles e entry bundles aprovados pelo Tessera fsck.
 
-O workflow geral [CI — run 44917649782](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917649782) também passou no SHA final. Cada matriz Python 3.11, 3.12 e 3.13 executou 2.616 testes aprovados e 1 ignorado. A cobertura observada foi 94%, acima do baseline de 85%, sem alteração do arquivo de baseline. Também passaram CodeQL, Security, Dependency Review, Golden r2 Migration, API Contract Guard e Schemathesis Full API Contract.
+A observação de deduplicação é consistente com o código do [servidor POSIX de conformidade do Tessera v1.0.4](https://github.com/transparency-dev/tessera/blob/v1.0.4/cmd/conformance/posix/main.go): ele instancia antispam em memória. A execução confirma que esse cache não sobrevive ao restart e que o handler de exemplo não implementa semântica de Idempotency-Key. Portanto, o antispam do exemplo não substitui um registro de idempotência durável do AYORAI.
 
-**Interpretação:** a POC isolada e os checks de regressão do repositório estão aprovados. Isso comprova os cenários exercitados, não capacidade de produção, resistência contra operador privilegiado, conformidade LGPD ou desempenho em escala. Nenhum benchmark de capacidade foi executado.
+A versão anterior, sem a variante frontier e o teste HTTP, passou no [CI geral — run 44917649782](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917649782): 2.616 testes aprovados e 1 ignorado em Python 3.11/3.12/3.13, cobertura 94% contra baseline 85%, além de CodeQL, Security, Dependency Review, Golden r2 Migration e contratos API. **O CI geral da extensão atual está em execução; esse resultado anterior não é apresentado como validação do SHA atual.**
+
+**Interpretação:** a POC isolada está aprovada nos cenários exercitados. Ela demonstra a viabilidade técnica de um writer Python incremental e de uma fronteira HTTP com Tessera, além de confirmar a insuficiência do antispam em memória para idempotência durável. Não comprova capacidade de produção, resistência contra operador privilegiado, conformidade LGPD ou desempenho em escala. Nenhum benchmark de capacidade foi executado.
 
 ### Variante incremental Python — frontier Merkle
 
