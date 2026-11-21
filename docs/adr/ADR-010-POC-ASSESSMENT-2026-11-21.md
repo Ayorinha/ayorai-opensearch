@@ -50,7 +50,7 @@ Ainda não existem como implementação de produção:
 
 ## 3. Prova de conceito Python — o que está sendo testado
 
-O protótipo em experiments/adr010-poc/python_writer.py utiliza somente a biblioteca padrão do Python e a biblioteca Merkle já existente. Não adiciona dependência de runtime.
+O protótipo em experiments/adr010_poc/python_writer.py utiliza somente a biblioteca padrão do Python e a biblioteca Merkle já existente. Não adiciona dependência de runtime.
 
 O writer recebe hashes de folhas já calculados. Ele não recebe texto de claim, evidência, corpo de requisição ou veredito. A persistência é feita em SQLite file-backed, WAL, synchronous FULL e transação BEGIN IMMEDIATE. O índice é sequencial; a chave de idempotência é única; reuso da chave com outra folha gera conflito.
 
@@ -87,7 +87,7 @@ Nenhum resultado desta POC deve ser descrito como log inviolável, prova de auto
 
 ## 6. Experimento comparativo obrigatório antes da decisão 5
 
-O runner de Tessera em experiments/adr010-poc/run_tessera_poc.py executa o posix-oneshot v1.0.4 sobre os 17 vetores públicos, verifica o tamanho e a raiz do checkpoint contra a referência Go existente e executa Tessera fsck para validar assinatura, tiles e bundles. A suíte automatizada correspondente está em .github/workflows/adr010-poc.yml. O runner usa uma chave de demonstração publicada pelo próprio projeto Tessera, exclusivamente para o log descartável do teste; essa chave nunca pode ser usada em qualquer ambiente real.
+O runner de Tessera em experiments/adr010_poc/run_tessera_poc.py executa o posix-oneshot v1.0.4 sobre os 17 vetores públicos, verifica o tamanho e a raiz do checkpoint contra a referência Go existente e executa Tessera fsck para validar assinatura, tiles e bundles. A suíte automatizada correspondente está em .github/workflows/adr010-poc.yml. O runner usa uma chave de demonstração publicada pelo próprio projeto Tessera, exclusivamente para o log descartável do teste; essa chave nunca pode ser usada em qualquer ambiente real.
 
 A comparação Tessera precisa ser executada em branch e ambiente isolados, com versões e digests fixados. O protocolo mínimo:
 
