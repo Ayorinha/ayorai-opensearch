@@ -13,10 +13,7 @@ from ayorai_attractor.auditlog import inclusion_proof, tree_root
 from experiments.adr010_poc.idempotency_outbox import SQLiteIdempotencyOutbox
 from experiments.adr010_poc.python_writer import CorruptStoreError, IdempotencyConflict
 
-LEAF = bytes.fromhex(
-    "6f4f7c6c6f5a4f0b2c3d4e5f60718293"
-    "a4b5c6d7e8f90123456789abcdef0123"
-)
+LEAF = bytes.fromhex("6f4f7c6c6f5a4f0b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123")
 OTHER_LEAF = bytes([LEAF[0] ^ 1]) + LEAF[1:]
 ROOT = LEAF
 SIGNED_CHECKPOINT = b"test-only signed checkpoint note"
@@ -93,21 +90,15 @@ def test_outbox_record_checkpoint_is_idempotent_and_immutable(tmp_path: Path) ->
     outbox.reserve("request-1", LEAF)
     outbox.assign("request-1", LEAF, tessera_index=0)
 
-    first = outbox.record_checkpoint(
-        "request-1", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT, ()
-    )
-    replay = outbox.record_checkpoint(
-        "request-1", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT, ()
-    )
+    first = outbox.record_checkpoint("request-1", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT, ())
+    replay = outbox.record_checkpoint("request-1", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT, ())
 
     assert first.state == "RECORDED"
     assert not first.replayed
     assert replay.state == "RECORDED"
     assert replay.replayed
     with pytest.raises(CorruptStoreError, match="silently replaced"):
-        outbox.record_checkpoint(
-            "request-1", LEAF, 0, 1, ROOT, b"different checkpoint", ()
-        )
+        outbox.record_checkpoint("request-1", LEAF, 0, 1, ROOT, b"different checkpoint", ())
 
 
 def test_pending_outbox_survives_restart_and_fails_closed_until_reconciled(
@@ -238,13 +229,9 @@ def test_outbox_rejects_invalid_checkpoint_metadata(tmp_path: Path) -> None:
     outbox.reserve("request-1", LEAF)
 
     with pytest.raises(ValueError, match="tree_size"):
-        outbox.record_checkpoint(
-            "request-1", LEAF, 0, 0, ROOT, SIGNED_CHECKPOINT, ()
-        )
+        outbox.record_checkpoint("request-1", LEAF, 0, 0, ROOT, SIGNED_CHECKPOINT, ())
     with pytest.raises(ValueError, match="root_hash"):
-        outbox.record_checkpoint(
-            "request-1", LEAF, 0, 1, b"short", SIGNED_CHECKPOINT, ()
-        )
+        outbox.record_checkpoint("request-1", LEAF, 0, 1, b"short", SIGNED_CHECKPOINT, ())
     with pytest.raises(ValueError, match="checkpoint_note"):
         outbox.record_checkpoint("request-1", LEAF, 0, 1, ROOT, b"", ())
 
@@ -271,6 +258,4 @@ def test_outbox_rejects_assign_or_record_without_reservation(tmp_path: Path) -> 
     with pytest.raises(CorruptStoreError, match="unreserved"):
         outbox.assign("missing", LEAF, tessera_index=0)
     with pytest.raises(CorruptStoreError, match="unreserved"):
-        outbox.record_checkpoint(
-            "missing", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT, ()
-        )
+        outbox.record_checkpoint("missing", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT, ())

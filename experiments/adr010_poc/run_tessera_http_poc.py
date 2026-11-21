@@ -165,9 +165,7 @@ def main() -> None:
             if initial_size != len(leaves) or initial_root != expected_root:
                 raise RuntimeError("Tessera HTTP checkpoint root differs from public vector")
 
-            immediate_duplicate_index = post_entry(
-                first_url, leaves[0], "same-idempotency-key"
-            )
+            immediate_duplicate_index = post_entry(first_url, leaves[0], "same-idempotency-key")
             if immediate_duplicate_index != 0:
                 raise RuntimeError(
                     "expected in-memory antispam to return original index 0, "
@@ -188,9 +186,7 @@ def main() -> None:
             go, storage, environment, work, "server-restarted"
         )
         try:
-            restart_duplicate_index = post_entry(
-                second_url, leaves[0], "same-idempotency-key"
-            )
+            restart_duplicate_index = post_entry(second_url, leaves[0], "same-idempotency-key")
             if restart_duplicate_index != len(leaves):
                 raise RuntimeError(
                     "expected the in-memory antispam cache to reset after restart; "
@@ -206,9 +202,7 @@ def main() -> None:
                     f"expected index {len(leaves) + 1}, got {same_key_different_body_index}"
                 )
 
-            final_origin, final_size, final_root = wait_for_checkpoint(
-                second_url, len(leaves) + 2
-            )
+            final_origin, final_size, final_root = wait_for_checkpoint(second_url, len(leaves) + 2)
             if final_origin != origin or final_size != len(leaves) + 2:
                 raise RuntimeError("unexpected checkpoint after Tessera process restart")
             if final_root == initial_root:
@@ -324,10 +318,7 @@ def main() -> None:
         print(f"HTTP_PERSISTENT_INITIAL_TREE_SIZE={persistent_initial_size}")
         print(f"HTTP_PERSISTENT_IMMEDIATE_DUPLICATE_INDEX={persistent_immediate_duplicate}")
         print(f"HTTP_PERSISTENT_RESTART_DUPLICATE_INDEX={persistent_restart_duplicate}")
-        print(
-            "HTTP_PERSISTENT_SAME_KEY_DIFFERENT_BODY_INDEX="
-            f"{persistent_same_key_different_body}"
-        )
+        print(f"HTTP_PERSISTENT_SAME_KEY_DIFFERENT_BODY_INDEX={persistent_same_key_different_body}")
         print("HTTP_PERSISTENT_ANTISPAM_SURVIVES_RESTART=true")
         print("HTTP_PERSISTENT_IDEMPOTENCY_KEY_CONTRACT_ENFORCED=false")
         print(f"HTTP_PERSISTENT_FINAL_TREE_SIZE={persistent_final_size}")

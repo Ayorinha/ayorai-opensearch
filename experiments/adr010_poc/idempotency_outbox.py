@@ -142,7 +142,9 @@ class SQLiteIdempotencyOutbox:
         ):
             raise CorruptStoreError("PENDING outbox row contains remote receipt fields")
         if state == "ASSIGNED" and (
-            isinstance(index, bool) or not isinstance(index, int) or index < 0
+            isinstance(index, bool)
+            or not isinstance(index, int)
+            or index < 0
             or any(value is not None for value in (size, root, note, proof_blob))
         ):
             raise CorruptStoreError("ASSIGNED outbox row is malformed")
@@ -311,9 +313,7 @@ class SQLiteIdempotencyOutbox:
             )
         except sqlite3.IntegrityError as error:
             connection.rollback()
-            if "UNIQUE constraint failed: adr010_idempotency_outbox.tessera_index" in str(
-                error
-            ):
+            if "UNIQUE constraint failed: adr010_idempotency_outbox.tessera_index" in str(error):
                 raise CorruptStoreError(
                     "Tessera index is already assigned to another key"
                 ) from error
@@ -357,8 +357,7 @@ class SQLiteIdempotencyOutbox:
         ):
             raise ValueError("checkpoint_note must contain 1–65536 bytes")
         if not isinstance(inclusion_proof, tuple) or any(
-            not isinstance(node, bytes) or len(node) != HASH_SIZE
-            for node in inclusion_proof
+            not isinstance(node, bytes) or len(node) != HASH_SIZE for node in inclusion_proof
         ):
             raise ValueError("inclusion_proof must be a tuple of 32-byte hashes")
         if not verify_inclusion(
@@ -447,9 +446,7 @@ class SQLiteIdempotencyOutbox:
             )
         except sqlite3.IntegrityError as error:
             connection.rollback()
-            if "UNIQUE constraint failed: adr010_idempotency_outbox.tessera_index" in str(
-                error
-            ):
+            if "UNIQUE constraint failed: adr010_idempotency_outbox.tessera_index" in str(error):
                 raise CorruptStoreError(
                     "Tessera index is already assigned to another key"
                 ) from error

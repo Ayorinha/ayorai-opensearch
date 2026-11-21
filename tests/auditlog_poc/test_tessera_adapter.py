@@ -89,9 +89,9 @@ def test_adapter_resumes_assigned_row_without_appending_again(tmp_path: Path) ->
     index = tessera.append(LEAF)
     outbox.assign("request-1", LEAF, index)
 
-    record = TesseraOutboxAdapter(
-        SQLiteIdempotencyOutbox(database), tessera
-    ).submit("request-1", LEAF)
+    record = TesseraOutboxAdapter(SQLiteIdempotencyOutbox(database), tessera).submit(
+        "request-1", LEAF
+    )
 
     assert record.state == "RECORDED"
     assert record.tessera_index == 0
