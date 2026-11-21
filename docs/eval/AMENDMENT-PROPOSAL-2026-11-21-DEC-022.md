@@ -17,7 +17,7 @@ Também acrescentar, na linha "Emendas vigentes para leitura conjunta" do iníci
 
 Pela decisão do mantenedor registrada na DEC-022, opção A, aprovada em 2026-11-07, e especificada pela DEC-027 (D2 e D3, aprovada em 2026-11-14):
 
-1. **IC95% de kappa.** O intervalo do item 2 da Emenda 10 passa a ser o percentil por bootstrap de componente conectado (DEC-023): 10.000 reamostragens, seed `20261003`, RGC-PRNG-1 com o fluxo `dec022-kappa-bootstrap` e quantil tipo 7 de Hyndman–Fan. Cada réplica sorteia K componentes com reposição e leva todos os casos elegíveis do componente sorteado, preservando a multiplicidade.
+1. **IC95% de kappa.** O intervalo do item 2 da Emenda 10 passa a ser o percentil por bootstrap de componente conectado (DEC-023): 10.000 reamostragens, seed `20261003`, RGC-PRNG-1 com o fluxo `dec022-kappa-bootstrap` e quantil tipo 7 de Hyndman–Fan. K é o número de componentes que têm pelo menos um par elegível depois da exclusão dos pares `RULE_GAP`; um componente cujos pares foram todos excluídos não entra na reamostragem. Cada réplica sorteia K componentes com reposição e leva todos os casos elegíveis do componente sorteado, preservando a multiplicidade.
 2. **Réplicas indefinidas.** Réplicas em que kappa é indefinido são excluídas do intervalo, contadas e reportadas com a proporção. Se a proporção passar de 5%, o intervalo é marcado como **instável**.
 3. **Componentes.** Os componentes são construídos só com `case_id` e `cited_article_ids` do arquivo de casos aprovado, sem ler rótulos, previsões ou resultados. O relatório de concordância registra o SHA-256 desse arquivo. ID fora da gramática D1 ou lista de citações vazia interrompe o cálculo.
 4. **Sensibilidade.** O IC por bootstrap de casos da Emenda 10 continua reportado, apenas como sensibilidade.
@@ -43,8 +43,19 @@ Registro neste protocolo da Emenda 11 do pré-registro (2026-11-14). Pela decis�
 
 ## Emenda 12 (AAAA-MM-DD) — IC de kappa por componente (DEC-022)
 
-(Mesmo texto da Emenda 12 proposta para o pré-registro, acima.)
+Pela decisão do mantenedor registrada na DEC-022, opção A, aprovada em 2026-11-07, e especificada pela DEC-027 (D2 e D3, aprovada em 2026-11-14):
+
+1. **IC95% de kappa.** O intervalo do item 2 da Emenda 10 passa a ser o percentil por bootstrap de componente conectado (DEC-023): 10.000 reamostragens, seed `20261003`, RGC-PRNG-1 com o fluxo `dec022-kappa-bootstrap` e quantil tipo 7 de Hyndman–Fan. K é o número de componentes que têm pelo menos um par elegível depois da exclusão dos pares `RULE_GAP`; um componente cujos pares foram todos excluídos não entra na reamostragem. Cada réplica sorteia K componentes com reposição e leva todos os casos elegíveis do componente sorteado, preservando a multiplicidade.
+2. **Réplicas indefinidas.** Réplicas em que kappa é indefinido são excluídas do intervalo, contadas e reportadas com a proporção. Se a proporção passar de 5%, o intervalo é marcado como **instável**.
+3. **Componentes.** Os componentes são construídos só com `case_id` e `cited_article_ids` do arquivo de casos aprovado, sem ler rótulos, previsões ou resultados. O relatório de concordância registra o SHA-256 desse arquivo. ID fora da gramática D1 ou lista de citações vazia interrompe o cálculo.
+4. **Sensibilidade.** O IC por bootstrap de casos da Emenda 10 continua reportado, apenas como sensibilidade.
+5. **Preservação.** O gate continua sendo a estimativa pontual `κ ≥ 0,6`; nenhum limite de intervalo é gate. Os demais itens da Emenda 10 não mudam. A redação original da Emenda 10 continua acima, como registro histórico.
+6. **Limites.** Esta emenda não congela o protocolo, não cria nem rotula casos, não calcula concordância real e não autoriza execução do ATTRACTOR sobre casos RGC. A ferramenta que a implementa é `evals/ptbr/rgc_agreement.py`, verificada pelo executor `rgc-eval/0.13.0`.
 ```
+
+## Clarificação a confirmar
+
+A definição de K no item 1 da Emenda 12 não estava escrita na DEC-022. Ela foi pedida na revisão da #600 e corresponde ao que o código já faz: `rgc_components.py` agrupa só os casos elegíveis antes de sortear os componentes. O teste `test_component_whose_pairs_are_all_rule_gap_is_not_resampled` fixa esse comportamento. Por ser uma redação nova, ela depende da aprovação do mantenedor junto com a inserção da emenda.
 
 ## Efeito no código
 
