@@ -40,4 +40,4 @@ A captura das fontes e a existência do executor não significam que o conjunto 
 
 ## Referências
 
-[README](../../README.md) · [STATUS](../STATUS.md) · [TRACEABILITY-MASTER](../TRACEABILITY-MASTER.md) · [PREREGISTRATION-RGC-v1](../eval/PREREGISTRATION-RGC-v1.md) · [RUNNER-RGC-v1](../eval/RUNNER-RGC-v1.md)
+[README](../../README.md) · [STATUS](../STATUS.md) · [Judge 2.0 Traceability](../judge2/TRACEABILITY.md) · [TRACEABILITY-MASTER histórico](../TRACEABILITY-MASTER.md) · [PREREGISTRATION-RGC-v1](../eval/PREREGISTRATION-RGC-v1.md) · [RUNNER-RGC-v1](../eval/RUNNER-RGC-v1.md)
