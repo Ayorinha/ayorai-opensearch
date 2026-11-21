@@ -43,11 +43,14 @@ access to download pinned Go modules are required):
 The first runs the upstream Tessera v1.0.4 POSIX one-shot personality and fsck
 against the same 17 public vector leaves. The second starts the upstream POSIX
 HTTP conformance personality on loopback, POSTs five public vector leaves,
-checks assigned indices and the published checkpoint, then repeats one leaf as
-a negative control. The repeated body receives a new index, demonstrating that
-the upstream conformance endpoint does not provide strict deduplication. The HTTP
-personality is an upstream conformance example only: it has no AYORAI API-key
-authentication, no strict Idempotency-Key contract and no /v1/verify integration.
+checks assigned indices and the published checkpoint, then tests duplicate
+behavior before and after a server restart. The in-memory antispam returns index
+0 for an immediate duplicate, but after restart the same body/key is appended
+again at index 5; a different body with the same Idempotency-Key is accepted at
+index 6. This is a negative control proving that this conformance personality's
+antispam is not durable idempotency. It is an upstream example only: it has no
+AYORAI API-key authentication, no strict Idempotency-Key contract and no
+/v1/verify integration.
 Both scripts generate disposable Ed25519 signing keys with OpenSSL at runtime;
 private keys are not committed and are deleted with the temporary directories.
 
