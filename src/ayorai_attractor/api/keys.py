@@ -303,7 +303,8 @@ def _command_new(args: argparse.Namespace) -> int:
     if args.expires is not None:
         _parse_time(args.expires, "expires_at", 0)
     key = secrets.token_urlsafe(32)
-    assert len(key) >= MIN_API_KEY_LENGTH
+    if len(key) < MIN_API_KEY_LENGTH:  # token_urlsafe(32) yields 43 characters
+        raise SystemExit("generated key is shorter than the minimum")
     entry = {
         "id": args.id,
         "digest": _api_key_digest(key, _pepper_from_env()),

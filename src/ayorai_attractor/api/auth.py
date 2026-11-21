@@ -238,7 +238,8 @@ class APIKeyAuthMiddleware:
     def _principal(self, digest: str) -> str:
         principal = self.principals.get(digest)
         if principal is None:
-            assert self.pepper is not None
+            if self.pepper is None:  # unreachable: api_key mode always has a pepper
+                raise RuntimeError("principal requested without a pepper")
             principal = principal_for_digest(digest, self.pepper)
             self.principals[digest] = principal
         return principal
