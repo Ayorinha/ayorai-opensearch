@@ -1,4 +1,4 @@
-"""Exercise the upstream Tessera POSIX HTTP conformance personality."""
+"""Exercise Tessera's POSIX HTTP personality and its antispam limits."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
+from typing import BinaryIO
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -20,6 +21,105 @@ from run_tessera_poc import (
     generate_ephemeral_note_keys,
     run,
 )
+
+
+def start_server(
+    go: str,
+    storage: Path,
+    environment: dict[str, str],
+    work: Path,
+    label: str,
+) -> tuple[subprocess.Popen[bytes], BinaryIO, str]:
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    base_url = f"http://127.0.0.1:{port}"
+    server_log = (work / f"{label}.log").open("w+b")
+    process = subprocess.Popen(
+        [
+            go,
+            "run",
+            f"github.com/transparency-dev/tessera/cmd/conformance/posix@{TESSERA_VERSION}",
+            f"--storage_dir={storage}",
+            f"--listen=127.0.0.1:{port}",
+        ],
+        env=environment,
+        stdout=server_log,
+        stderr=subprocess.STDOUT,
+        start_new_session=True,
+    )
+
+    try:
+        for _ in range(120):
+            if process.poll() is not None:
+                raise RuntimeError("Tessera HTTP server exited before becoming ready")
+            try:
+                with urlopen(f"{base_url}/checkpoint", timeout=0.5):
+                    return process, server_log, base_url
+            except HTTPError as error:
+                if error.code == 404:
+                    return process, server_log, base_url
+                raise
+            except URLError:
+                time.sleep(0.25)
+        raise TimeoutError("Tessera HTTP server did not become ready")
+    except Exception as error:
+        server_log.flush()
+        server_log.seek(0)
+        detail = server_log.read().decode("utf-8", errors="replace")
+        stop_server(process, server_log)
+        raise RuntimeError(f"HTTP server startup failed:\n{detail}") from error
+
+
+def stop_server(process: subprocess.Popen[bytes], server_log: BinaryIO) -> None:
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait(timeout=5)
+    server_log.close()
+
+
+def post_entry(base_url: str, leaf: bytes, idempotency_key: str) -> int:
+    request = Request(
+        f"{base_url}/add",
+        data=leaf,
+        headers={
+            "Content-Type": "application/octet-stream",
+            "Idempotency-Key": idempotency_key,
+        },
+        method="POST",
+    )
+    with urlopen(request, timeout=15) as response:
+        return int(response.read().decode("ascii").strip())
+
+
+def wait_for_checkpoint(base_url: str, expected_size: int) -> tuple[str, int, bytes]:
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        try:
+            with urlopen(f"{base_url}/checkpoint", timeout=2) as response:
+                lines = response.read().decode("utf-8").splitlines()
+            if len(lines) >= 3:
+                tree_size = int(lines[1])
+                if tree_size >= expected_size:
+                    return (
+                        lines[0],
+                        tree_size,
+                        base64.b64decode(lines[2], validate=True),
+                    )
+        except HTTPError as error:
+            if error.code != 404:
+                raise
+        time.sleep(0.25)
+    raise TimeoutError(f"Tessera did not publish checkpoint size {expected_size}")
 
 
 def main() -> None:
@@ -43,145 +143,73 @@ def main() -> None:
         public_key_path = work / "tessera-http-test.pub"
         public_key_path.write_text(verifier + "\n", encoding="utf-8")
 
-        with socket.socket() as listener:
-            listener.bind(("127.0.0.1", 0))
-            port = listener.getsockname()[1]
-        base_url = f"http://127.0.0.1:{port}"
-
-        server_log_path = work / "server.log"
-        server_log = server_log_path.open("w+b")
-        process = subprocess.Popen(
-            [
-                go,
-                "run",
-                f"github.com/transparency-dev/tessera/cmd/conformance/posix@{TESSERA_VERSION}",
-                f"--storage_dir={storage}",
-                f"--listen=127.0.0.1:{port}",
-            ],
-            env=environment,
-            stdout=server_log,
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
+        first_process, first_log, first_url = start_server(
+            go, storage, environment, work, "server-first"
         )
-
         try:
-            ready = False
-            for _ in range(120):
-                if process.poll() is not None:
-                    raise RuntimeError("Tessera HTTP server exited before becoming ready")
-                try:
-                    with urlopen(f"{base_url}/checkpoint", timeout=0.5):
-                        ready = True
-                        break
-                except HTTPError as error:
-                    if error.code == 404:
-                        ready = True
-                        break
-                    raise
-                except URLError:
-                    time.sleep(0.25)
-            if not ready:
-                raise TimeoutError("Tessera HTTP server did not become ready")
-
-            assigned_indices: list[int] = []
-            for expected_index, leaf in enumerate(leaves):
-                request = Request(
-                    f"{base_url}/add",
-                    data=leaf,
-                    headers={"Content-Type": "application/octet-stream"},
-                    method="POST",
-                )
-                with urlopen(request, timeout=15) as response:
-                    assigned_index = int(response.read().decode("ascii").strip())
-                if assigned_index != expected_index:
-                    raise RuntimeError(
-                        f"expected Tessera index {expected_index}, got {assigned_index}"
-                    )
-                assigned_indices.append(assigned_index)
-
+            assigned_indices = [
+                post_entry(first_url, leaf, "same-idempotency-key" if index == 0 else f"key-{index}")
+                for index, leaf in enumerate(leaves)
+            ]
             if assigned_indices != list(range(len(leaves))):
-                raise RuntimeError("Tessera HTTP writer returned non-contiguous indices")
+                raise RuntimeError(f"unexpected initial Tessera indices: {assigned_indices}")
 
-            deadline = time.monotonic() + 30
-            checkpoint_lines: list[str] = []
-            while time.monotonic() < deadline:
-                if process.poll() is not None:
-                    raise RuntimeError("Tessera HTTP server exited before checkpoint publication")
-                try:
-                    with urlopen(f"{base_url}/checkpoint", timeout=2) as response:
-                        checkpoint_lines = response.read().decode("utf-8").splitlines()
-                    if len(checkpoint_lines) >= 3 and int(checkpoint_lines[1]) >= len(leaves):
-                        break
-                except HTTPError as error:
-                    if error.code != 404:
-                        raise
-                time.sleep(0.25)
-            if len(checkpoint_lines) < 3 or int(checkpoint_lines[1]) != len(leaves):
-                raise TimeoutError("Tessera did not publish the expected HTTP checkpoint")
-
-            origin = checkpoint_lines[0]
-            initial_tree_size = int(checkpoint_lines[1])
-            initial_root_hash = base64.b64decode(checkpoint_lines[2], validate=True)
+            origin, initial_size, initial_root = wait_for_checkpoint(first_url, len(leaves))
             if origin != "example.com/log/ayorai-adr010-poc":
                 raise RuntimeError(f"unexpected HTTP checkpoint origin: {origin}")
-            if initial_tree_size != len(leaves) or initial_root_hash != expected_root:
+            if initial_size != len(leaves) or initial_root != expected_root:
                 raise RuntimeError("Tessera HTTP checkpoint root differs from public vector")
 
-            duplicate_request = Request(
-                f"{base_url}/add",
-                data=leaves[0],
-                headers={"Content-Type": "application/octet-stream"},
-                method="POST",
+            immediate_duplicate_index = post_entry(
+                first_url, leaves[0], "same-idempotency-key"
             )
-            with urlopen(duplicate_request, timeout=15) as response:
-                duplicate_index = int(response.read().decode("ascii").strip())
-            if duplicate_index != len(leaves):
+            if immediate_duplicate_index != 0:
                 raise RuntimeError(
-                    "unexpected duplicate behavior from the pinned conformance server: "
-                    f"expected new index {len(leaves)}, got {duplicate_index}"
+                    "expected in-memory antispam to return original index 0, "
+                    f"got {immediate_duplicate_index}"
+                )
+            _, size_after_immediate_retry, root_after_immediate_retry = wait_for_checkpoint(
+                first_url, len(leaves)
+            )
+            if (
+                size_after_immediate_retry != initial_size
+                or root_after_immediate_retry != initial_root
+            ):
+                raise RuntimeError("immediate duplicate unexpectedly changed the Tessera log")
+        finally:
+            stop_server(first_process, first_log)
+
+        second_process, second_log, second_url = start_server(
+            go, storage, environment, work, "server-restarted"
+        )
+        try:
+            restart_duplicate_index = post_entry(
+                second_url, leaves[0], "same-idempotency-key"
+            )
+            if restart_duplicate_index != len(leaves):
+                raise RuntimeError(
+                    "expected the in-memory antispam cache to reset after restart; "
+                    f"expected index {len(leaves)}, got {restart_duplicate_index}"
                 )
 
-            deadline = time.monotonic() + 30
-            final_checkpoint_lines: list[str] = []
-            while time.monotonic() < deadline:
-                if process.poll() is not None:
-                    raise RuntimeError("Tessera HTTP server exited before duplicate publication")
-                try:
-                    with urlopen(f"{base_url}/checkpoint", timeout=2) as response:
-                        final_checkpoint_lines = response.read().decode("utf-8").splitlines()
-                    if (
-                        len(final_checkpoint_lines) >= 3
-                        and int(final_checkpoint_lines[1]) >= len(leaves) + 1
-                    ):
-                        break
-                except HTTPError as error:
-                    if error.code != 404:
-                        raise
-                time.sleep(0.25)
-            if (
-                len(final_checkpoint_lines) < 3
-                or int(final_checkpoint_lines[1]) != len(leaves) + 1
-            ):
-                raise TimeoutError("Tessera did not publish the duplicate HTTP append")
+            same_key_different_body_index = post_entry(
+                second_url, leaves[1], "same-idempotency-key"
+            )
+            if same_key_different_body_index != len(leaves) + 1:
+                raise RuntimeError(
+                    "expected the conformance endpoint to ignore Idempotency-Key; "
+                    f"expected index {len(leaves) + 1}, got {same_key_different_body_index}"
+                )
 
-            final_tree_size = int(final_checkpoint_lines[1])
-            final_root_hash = base64.b64decode(final_checkpoint_lines[2], validate=True)
-            if final_root_hash == initial_root_hash:
-                raise RuntimeError("duplicate append did not change the checkpoint root")
+            final_origin, final_size, final_root = wait_for_checkpoint(
+                second_url, len(leaves) + 2
+            )
+            if final_origin != origin or final_size != len(leaves) + 2:
+                raise RuntimeError("unexpected checkpoint after Tessera process restart")
+            if final_root == initial_root:
+                raise RuntimeError("restart retries did not change the Tessera checkpoint")
         finally:
-            try:
-                os.killpg(process.pid, signal.SIGTERM)
-            except ProcessLookupError:
-                pass
-            try:
-                process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                process.wait(timeout=5)
-            server_log.close()
+            stop_server(second_process, second_log)
 
         fsck_output = run(
             [
@@ -199,12 +227,15 @@ def main() -> None:
 
         print(f"TESSERA_HTTP_VERSION={TESSERA_VERSION}")
         print(f"HTTP_INITIAL_ENTRIES={len(leaves)}")
-        print(f"HTTP_INITIAL_CHECKPOINT_TREE_SIZE={initial_tree_size}")
-        print(f"HTTP_INITIAL_CHECKPOINT_ROOT_SHA256={initial_root_hash.hex()}")
-        print(f"HTTP_DUPLICATE_APPEND_INDEX={duplicate_index}")
-        print("HTTP_DUPLICATE_WAS_DEDUPLICATED=false")
-        print(f"HTTP_FINAL_CHECKPOINT_TREE_SIZE={final_tree_size}")
-        print(f"HTTP_FINAL_CHECKPOINT_ROOT_SHA256={final_root_hash.hex()}")
+        print(f"HTTP_INITIAL_CHECKPOINT_TREE_SIZE={initial_size}")
+        print(f"HTTP_INITIAL_CHECKPOINT_ROOT_SHA256={initial_root.hex()}")
+        print(f"HTTP_IMMEDIATE_DUPLICATE_INDEX={immediate_duplicate_index}")
+        print(f"HTTP_RESTART_DUPLICATE_INDEX={restart_duplicate_index}")
+        print(f"HTTP_SAME_KEY_DIFFERENT_BODY_INDEX={same_key_different_body_index}")
+        print("HTTP_ANTISPAM_SURVIVES_RESTART=false")
+        print("HTTP_IDEMPOTENCY_KEY_CONTRACT_ENFORCED=false")
+        print(f"HTTP_FINAL_CHECKPOINT_TREE_SIZE={final_size}")
+        print(f"HTTP_FINAL_CHECKPOINT_ROOT_SHA256={final_root.hex()}")
         print("HTTP_CHECKPOINT_SIGNATURE=VERIFIED_BY_TESSERA_FSCK")
         print("HTTP_TILE_AND_ENTRY_BUNDLE_INTEGRITY=VERIFIED_BY_TESSERA_FSCK")
 
