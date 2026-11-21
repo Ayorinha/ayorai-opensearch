@@ -35,7 +35,7 @@ business data are introduced.
 To run the separate Tessera POSIX conformance experiment (Go 1.24+ and network
 access to download pinned Go modules are required):
 
-    python experiments/adr010-poc/run_tessera_poc.py
+    python experiments/adr010_poc/run_tessera_poc.py
 
 This runs the upstream Tessera v1.0.4 POSIX one-shot personality and its fsck
 verifier against the same 17 public vector leaves. It uses a publicly documented
