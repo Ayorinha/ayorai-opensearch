@@ -21,6 +21,7 @@ It accepts already-computed 32-byte RFC 6962 leaf hashes. It does not create or 
 - Inclusion proof verification against the root captured when the entry was appended.
 - Concurrent writer calls using independent SQLite connections.
 - Process exit before commit and retry after commit when the original response is lost.
+- Durable outbox state machine: PENDING → ASSIGNED → RECORDED, with unresolved-row recovery, immutable checkpoint receipts and unique Tessera index assignment.
 - Detection of a changed leaf against a caller-held checkpoint.
 - Detection of a deleted row without automatic repair.
 
@@ -30,9 +31,10 @@ From the repository root, after installing the development extra:
 
     python -m pytest tests/auditlog_poc -q
 
-The Python writer test reuses the public Go-generated Merkle vectors already
-checked by tests/auditlog/test_merkle_vectors.py. No new benchmark cases or
-business data are introduced.
+The Python tests reuse the public Go-generated Merkle vectors already checked
+by tests/auditlog/test_merkle_vectors.py. The outbox tests simulate process exits
+between local reservation, Tessera index assignment and checkpoint recording.
+No new benchmark cases or business data are introduced.
 
 To run the Tessera conformance experiments (Go 1.24+, OpenSSL 3+ and network
 access to download pinned Go modules are required):
@@ -62,7 +64,9 @@ This is not an implementation of the ADR-010 production phases.
 - frontier_writer.py maintains the RFC 6962 compact frontier and updates O(log n) nodes per append. It rebuilds and validates the frontier on startup in O(n), and proof generation reads the selected leaf prefix. This is a more realistic Python candidate, but it is still an unsigned local SQLite prototype.
 - It does not sign checkpoints or implement C2SP signed notes.
 - It does not serve tlog-tiles, tile bundles, consistency proofs over HTTP, or witness cosignatures.
-- It does not implement event schema, RFC 8785 commitment creation, salt custody, erasure, API idempotency, or integration with /v1/verify.
+- It does not implement event schema, RFC 8785 commitment creation, salt custody, erasure, a complete HTTP idempotency adapter, or integration with /v1/verify.
+- The outbox is a state-machine prototype only: the caller must verify the checkpoint signature before recording it and must reconcile PENDING rows by searching Tessera's durable log rather than blindly appending again.
+- The outbox stores the raw Idempotency-Key in its experimental SQLite database; production must define key confidentiality, hashing/HMAC, retention and access control.
 - It does not defend against an operator who can rewrite the database and every local copy of a checkpoint.
 - A TreeHead or AppendReceipt from this prototype is unsigned and is not a trust anchor.
 
@@ -70,7 +74,7 @@ A successful test run proves only the tested SQLite mechanics and vector compati
 
 ## Next comparison
 
-The Python prototype is the baseline for a separate Tessera adapter experiment. The comparison must use the same public leaf vector, the same POSIX storage class, the same append/restart/concurrency workload, and documented hardware. It must report latency distributions, throughput, CPU, memory, storage growth, proof interoperability, restart behavior, and failure recovery.
+The Python writer and outbox prototypes are the baseline for a separate Tessera adapter experiment. The comparison must use the same public leaf vector, the same POSIX storage class, the same append/restart/concurrency workload, and documented hardware. It must report latency distributions, throughput, CPU, memory, storage growth, proof interoperability, restart behavior, and failure recovery.
 
 Tessera itself is a Go library; the upstream project also provides POSIX conformance and one-shot personalities. A Python deployment would still need a small Go adapter/process boundary or a deliberate Go integration for AYORAI-specific authentication, strict idempotency and receipt semantics. That boundary and its operational cost must be included in the comparison.
 
