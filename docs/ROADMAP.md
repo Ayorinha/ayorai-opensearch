@@ -32,7 +32,7 @@ Limite permanente: quem controla o banco e a chave ativa pode reescrever a cadei
 | Gate | Estado em 2026-11-21 | Falta |
 |---|---|---|
 | G0 — Baseline e governança | `STATUS.md` reflete a `main`; workflows com actions fixadas por SHA; matriz Python 3.11–3.13 no CI | Avaliar 3.14 em job de compatibilidade antes de declarar suporte |
-| G1 — Integridade de código e contratos | PRs antigas encerradas; gates RGC integrados (#580, #584, #576, #577, #600); contratos por rota registrados (ADR-011) | Retificação normativa: o `xfail` em `tests/test_rgc_rectification_properties.py` (texto superado ainda pode apoiar) depende de decisão metodológica |
+| G1 — Integridade de código e contratos | PRs antigas encerradas; gates RGC integrados (#580, #584, #576, #577, #600); contratos por rota registrados (ADR-011) | Marcar `superseded_spans` nas fontes retificadas do corpus, por curadoria humana; o runner já exclui o texto superado (#609) |
 | G2 — Segurança | Itens 1 e 2 acima; CodeQL, Bandit, pip-audit, Grype, Dependency Review e secret scanning no CI | Escopos, expiração e tenant; política de divulgação coordenada revisada por pessoa |
 | G3 — Observabilidade e operação | Logs estruturados sem conteúdo; backup, restauração e rotação documentados (`docs/manual/05-operacao.md`); imagem sem root | Métricas e alertas ligados a uma plataforma; testes de carga e soak |
 | G4 — Cadeia de suprimentos e releases | SBOM CycloneDX, proveniência SLSA assinada, locks com hash | Build reprodutível comparado de forma independente; checklist de release executado na próxima versão |
@@ -48,7 +48,7 @@ O que a `main` tem hoje e o que falta, tema por tema. "Existe" quer dizer códig
 | Autenticação | Chave por HMAC com pepper (`api/auth.py`); limite por IP e por chave | — | Revogação sem reinício |
 | Autorização e escopos | Dono por rastro; 404 para rastro de outro principal | — | Escopos e expiração por chave (§2) |
 | Multi-tenancy e isolamento | Isolamento por principal no `GET /v1/audit/{id}` | Usar um único tenant | Tenant distinto de principal, com ADR e testes entre tenants (§2) |
-| Trilha de auditoria | HMAC, rotação, retenção, `verify_all`, cadeia `verify_chain` e `checkpoint` (#602; transação corrigida na #604, em revisão) | `checkpoint()` diário guardado fora do host | Persistir o veredito do `/v1/verify`; log Merkle; checkpoints assinados; testemunhas; carimbo do tempo (§1) |
+| Trilha de auditoria | HMAC, rotação, retenção, `verify_all`, cadeia `verify_chain` e `checkpoint` (#602; transação corrigida na #604 e na #611) | `checkpoint()` diário guardado fora do host | Persistir o veredito do `/v1/verify`; log Merkle; checkpoints assinados; testemunhas; carimbo do tempo (§1) |
 | Rastreabilidade do veredito | `trace_id` determinístico no `/v1/check`; `adjudication_sha256` no `/v2/audit` (`r2-v4`) | — | Veredito do `/v1/verify` persistido (ADR-009 §15.1) |
 | Evidências | Trechos com offsets e proveniência `client_supplied`/`server_retrieved` | Documentos com `url` ou origem declarada | Armazenamento verificável das evidências, não só dos digests |
 | Logs | Logs estruturados sem conteúdo, com `request_id` (`api/request_context.py`) | — | Envio a uma plataforma, com retenção definida |

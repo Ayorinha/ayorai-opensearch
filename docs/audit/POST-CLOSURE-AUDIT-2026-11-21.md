@@ -8,7 +8,7 @@ Revisão por ferramenta automatizada, publicada pelo mantenedor.
   - reconciliação de PRs, branches e decisões;
   - estado do RGC.
 
-  Somente leitura, exceto as PRs #604 e #605 e a PR que traz este documento, todas aguardando decisão do mantenedor.
+  Somente leitura na auditoria. As correções vieram em PRs próprias (#604, #605, #606, #609, #610 e #611), mescladas por autorização individual do mantenedor.
 - **Não feito:** merge, aprovação, tag, release, exclusão de branch e edição de artefato protegido. Nenhum caso RGC foi aberto, criado, rotulado ou executado. A branch `eval/rgc-pilot` foi só comparada automaticamente com a `main`; seu conteúdo não foi exibido.
 
 ## 1. Repositório
@@ -41,12 +41,27 @@ As PRs foram mescladas por autorização do mantenedor, com CI verde no HEAD fin
 
 - Protocolo **[PROPOSTO]**, não congelado. A Emenda 11 está no pré-registro, mas não no protocolo; a Emenda 12 não está em nenhum dos dois. O texto pronto está na proposta citada acima.
 - O guia `docs/annotation/PROTOCOLO.md` (versão de trabalho de 2026-10-11) não repetia os rótulos do RGC. Ganhou uma remissão às Emendas 2, 3, 4 e 10. Um parágrafo genérico do guia sobre `UNVERIFIED` pode ser lido como divergente da Emenda 4 ("ausência de evidência implica `UNVERIFIED`"); fica registrado para decisão do mantenedor.
-- Limitação do sistema, não do protocolo: `tests/test_rgc_rectification_properties.py` mantém um `xfail` porque o runner ainda não exclui da adjudicação o texto superado por retificação.
+- Texto superado por retificação: o runner o exclui da adjudicação desde a #609 (`rgc-eval/0.14.0`, campo `superseded_spans` do corpus). O `xfail` foi resolvido. Marcar as fontes retificadas é curadoria humana.
 - Não há no repositório evidência de piloto 02, segunda anotação, revisão F-01 ou adjudicação. Esses artefatos devem ficar fora do repositório, então a ausência não prova que não foram feitos.
 
 ## 5. Relatórios com caminhos internos
 
 `reports/f1.2-baseline.json`, `reports/f1.2-candidate.json` e `reports/f1.2-results.json` trazem `package_file` com caminhos absolutos de ambientes de execução (`/tmp/…/scratchpad/…`, `/home/…`). A correção existe na branch `chore/sanitize-benchmark-report-paths` (#498, fechada), mas muda o `report_sha256` desses relatórios e depende de decisão do mantenedor.
+
+## 5a. Situação final das pendências (2026-11-21)
+
+| Pendência | Situação |
+|---|---|
+| Defeito transacional da cadeia (#602) | Resolvido: #604 e #611 |
+| Comentários da revisão da #600 | Resolvidos: #605 |
+| STATUS, índices de ADR e de decisões | Resolvidos: #606 |
+| Texto superado como evidência (`xfail`) | Resolvido: #609 |
+| Caminhos internos nos relatórios F1.2; guia × Emenda 4 | Resolvidos: #610 |
+| Emendas 11 e 12 nos arquivos protegidos | **Do mantenedor:** inserir o texto de `docs/eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md` |
+| Dependabot alerts e security updates | **Do mantenedor:** Settings → Code security |
+| Gates humanos do RGC (piloto 02, 2ª anotação, F-01, congelamento) | **De pessoas** |
+| Revisão humana independente das PRs deste ciclo | **De pessoas** |
+| Exclusão das 22 branches vazias ou incorporadas e triagem das 56 em conflito | **Do mantenedor** (tabela abaixo) |
 
 ## 6. Inventário das branches
 

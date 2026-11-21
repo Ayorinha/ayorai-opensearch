@@ -6,7 +6,7 @@
 
 - **DEC-022** (aprovada em 2026-11-07, opção A) definiu o IC95% de Cohen's kappa por bootstrap de componente. A Emenda 10, nos dois documentos, ainda descreve o bootstrap por caso. A DEC-027 exige que mudanças de texto no pré-registro e no protocolo sejam feitas por emenda datada própria.
 - **DEC-027 D4 e D5** já estão no pré-registro (Emenda 11, 2026-11-14), mas o protocolo termina na Emenda 10.
-- O código já implementa as duas decisões: `evals/ptbr/rgc_agreement.py` publica o IC por componente, e o executor `rgc-eval/0.13.0` o recalcula e o exige. As emendas abaixo apenas transcrevem decisões aprovadas e não acrescentam regra nova.
+- O código já implementa as duas decisões: `evals/ptbr/rgc_agreement.py` publica o IC por componente, e o executor (`rgc-eval/0.13.0` ou posterior) o recalcula e o exige. As emendas abaixo apenas transcrevem decisões aprovadas e não acrescentam regra nova.
 
 ## Texto proposto 1 — fim de `docs/eval/PREREGISTRATION-RGC-v1.md`
 
@@ -22,7 +22,7 @@ Pela decisão do mantenedor registrada na DEC-022, opção A, aprovada em 2026-1
 3. **Componentes.** Os componentes são construídos só com `case_id` e `cited_article_ids` do arquivo de casos aprovado, sem ler rótulos, previsões ou resultados. O relatório de concordância registra o SHA-256 desse arquivo. ID fora da gramática D1 ou lista de citações vazia interrompe o cálculo.
 4. **Sensibilidade.** O IC por bootstrap de casos da Emenda 10 continua reportado, apenas como sensibilidade.
 5. **Preservação.** O gate continua sendo a estimativa pontual `κ ≥ 0,6`; nenhum limite de intervalo é gate. Os demais itens da Emenda 10 não mudam. A redação original da Emenda 10 continua acima, como registro histórico.
-6. **Limites.** Esta emenda não congela o protocolo, não cria nem rotula casos, não calcula concordância real e não autoriza execução do ATTRACTOR sobre casos RGC. A ferramenta que a implementa é `evals/ptbr/rgc_agreement.py`, verificada pelo executor `rgc-eval/0.13.0`.
+6. **Limites.** Esta emenda não congela o protocolo, não cria nem rotula casos, não calcula concordância real e não autoriza execução do ATTRACTOR sobre casos RGC. A ferramenta que a implementa é `evals/ptbr/rgc_agreement.py`, verificada pelo executor `rgc-eval/0.13.0` ou posterior.
 ```
 
 ## Texto proposto 2 — fim de `docs/eval/PROTOCOL-GOLDEN-V1.md`
@@ -50,7 +50,7 @@ Pela decisão do mantenedor registrada na DEC-022, opção A, aprovada em 2026-1
 3. **Componentes.** Os componentes são construídos só com `case_id` e `cited_article_ids` do arquivo de casos aprovado, sem ler rótulos, previsões ou resultados. O relatório de concordância registra o SHA-256 desse arquivo. ID fora da gramática D1 ou lista de citações vazia interrompe o cálculo.
 4. **Sensibilidade.** O IC por bootstrap de casos da Emenda 10 continua reportado, apenas como sensibilidade.
 5. **Preservação.** O gate continua sendo a estimativa pontual `κ ≥ 0,6`; nenhum limite de intervalo é gate. Os demais itens da Emenda 10 não mudam. A redação original da Emenda 10 continua acima, como registro histórico.
-6. **Limites.** Esta emenda não congela o protocolo, não cria nem rotula casos, não calcula concordância real e não autoriza execução do ATTRACTOR sobre casos RGC. A ferramenta que a implementa é `evals/ptbr/rgc_agreement.py`, verificada pelo executor `rgc-eval/0.13.0`.
+6. **Limites.** Esta emenda não congela o protocolo, não cria nem rotula casos, não calcula concordância real e não autoriza execução do ATTRACTOR sobre casos RGC. A ferramenta que a implementa é `evals/ptbr/rgc_agreement.py`, verificada pelo executor `rgc-eval/0.13.0` ou posterior.
 ```
 
 ## Clarificação a confirmar
