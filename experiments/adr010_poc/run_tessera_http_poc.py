@@ -147,10 +147,10 @@ def main() -> None:
             go, storage, environment, work, "server-first"
         )
         try:
-            assigned_indices = [
-                post_entry(first_url, leaf, "same-idempotency-key" if index == 0 else f"key-{index}")
-                for index, leaf in enumerate(leaves)
-            ]
+            assigned_indices = []
+            for index, leaf in enumerate(leaves):
+                key = "same-idempotency-key" if index == 0 else f"key-{index}"
+                assigned_indices.append(post_entry(first_url, leaf, key))
             if assigned_indices != list(range(len(leaves))):
                 raise RuntimeError(f"unexpected initial Tessera indices: {assigned_indices}")
 
