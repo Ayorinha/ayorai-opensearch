@@ -206,14 +206,71 @@ def test_tampering_with_the_database_is_detected(tmp_path: Path, statement: str)
     assert report["problems"]
 
 
-def test_erasure_keeps_the_tree_valid_and_client_receipts_verifiable(log: VerificationLog) -> None:
-    receipt = log.append(_event(1))
+def test_erasure_is_itself_logged_and_keeps_receipts_verifiable(log: VerificationLog) -> None:
+    receipt = log.append(_event(1, client="titular-123"))
     log.append(_event(2))
-    assert log.erase(receipt["index"], "2026-11-22T00:00:00Z") is True
-    assert log.erase(receipt["index"], "2026-11-22T00:00:00Z") is False
+    erasure_index = log.erase(receipt["index"], "2026-11-22T00:00:00Z")
+    assert erasure_index == 2
+    assert log.erase(receipt["index"], "2026-11-22T00:00:00Z") is None  # already erased
+    assert log.erase(erasure_index, "2026-11-22T00:00:00Z") is None  # not an event
+    assert log.erase(99, "2026-11-22T00:00:00Z") is None
     report = log.verify_log()
-    assert report["valid"] is True and report["erased_records"] == 1
+    assert report["valid"] is True and report["erased_records"] == 1 and report["size"] == 3
     assert verify_receipt(receipt, log.verifier_key)  # the client kept salt and record
+    with closing(sqlite3.connect(log.path)) as connection:
+        leaf = connection.execute("SELECT leaf FROM vlog_leaves WHERE idx = 2").fetchone()[0]
+        record = connection.execute(
+            "SELECT record, salt FROM vlog_records WHERE idx = 0"
+        ).fetchone()
+    fields = json.loads(bytes(leaf))
+    assert fields == {
+        "schema": "ayorai.verify-erasure.v1",
+        "erased_index": 0,
+        "erased_at": "2026-11-22T00:00:00Z",
+        "reason": "data_subject_request",
+    }
+    assert "titular-123" not in bytes(leaf).decode()
+    assert record == (None, None)
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        # erased outside the API: no erasure event in the tree
+        "UPDATE vlog_records SET record = NULL, salt = NULL, erased_at = 'x' WHERE idx = 0",
+        # record row removed entirely
+        "DELETE FROM vlog_records WHERE idx = 0",
+    ],
+)
+def test_silent_erasure_is_detected(tmp_path: Path, statement: str) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(1))
+        store.append(_event(2))
+    with closing(sqlite3.connect(path)) as connection:
+        connection.execute(statement)
+        connection.commit()
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        report = store.verify_log()
+    assert report["valid"] is False
+
+
+def test_backup_restores_a_verifiable_log(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    copy = str(tmp_path / "backup" / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        receipt = store.append(_event(1))
+        store.append(_event(2))
+        checkpoint = store.latest_checkpoint()
+        assert store.backup(copy) == 2
+        with pytest.raises(FileExistsError):
+            store.backup(copy)
+    with VerificationLog(copy, NoteSigner(ORIGIN, SEED)) as restored:
+        assert restored.verify_log()["valid"] is True
+        assert restored.latest_checkpoint() == checkpoint
+        assert verify_receipt(receipt, restored.verifier_key)
+        restored.append(_event(3))
+        assert restored.verify_log()["valid"] is True
 
 
 def test_two_writers_on_one_database_stay_consistent(tmp_path: Path) -> None:
@@ -385,3 +442,58 @@ def test_seed_is_never_written_to_the_database(tmp_path: Path) -> None:
     assert SEED.hex().encode() not in path.read_bytes()
     assert SEED not in path.read_bytes()
     assert os.path.getsize(path) > 0
+
+
+def test_external_checkpoints_detect_rollback_and_rewrites(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    old_copy = str(tmp_path / "old.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(1))
+        early = store.latest_checkpoint()
+        store.backup(old_copy)
+        store.append(_event(2))
+        held_by_client = store.latest_checkpoint()
+        assert store.matches_checkpoint(early) and store.matches_checkpoint(held_by_client)
+        foreign = NoteSigner(ORIGIN, bytes(32)).sign(f"{ORIGIN}\n1\n{'A' * 43}=\n")
+        assert not store.matches_checkpoint(foreign)
+    # The operator restores the older copy: the client's newer checkpoint exposes it.
+    with VerificationLog(old_copy, NoteSigner(ORIGIN, SEED)) as restored:
+        assert restored.verify_log()["valid"] is True  # locally consistent
+        assert restored.matches_checkpoint(early)
+        assert not restored.matches_checkpoint(held_by_client)
+        # Rewriting history after the rollback is exposed the same way.
+        restored.append(_event(99))
+        assert not restored.matches_checkpoint(held_by_client)
+
+
+def test_concurrent_writers_produce_one_consistent_tree(tmp_path: Path) -> None:
+    import threading
+
+    path = str(tmp_path / "v.sqlite3")
+    logs = [VerificationLog(path, NoteSigner(ORIGIN, SEED)) for _ in range(2)]
+    receipts: list[dict[str, Any]] = []
+    errors: list[BaseException] = []
+    lock = threading.Lock()
+
+    def worker(offset: int) -> None:
+        try:
+            for n in range(10):
+                receipt = logs[offset % 2].append(_event(offset * 100 + n))
+                with lock:
+                    receipts.append(receipt)
+        except BaseException as exc:  # pragma: no cover - reported below
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker, args=(offset,)) for offset in range(6)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    try:
+        assert errors == []
+        assert sorted(receipt["index"] for receipt in receipts) == list(range(60))
+        assert logs[0].verify_log()["valid"] is True
+        assert all(verify_receipt(receipt, logs[0].verifier_key) for receipt in receipts)
+    finally:
+        for log in logs:
+            log.close()

@@ -49,6 +49,7 @@ from ayorai_attractor.auditlog.note import NoteSigner, parse_checkpoint, verify_
 
 LEAF_SCHEMA = "ayorai.verify-leaf.v1"
 RECORD_SCHEMA = "ayorai.verify-record.v1"
+ERASURE_SCHEMA = "ayorai.verify-erasure.v1"
 RECEIPT_VERSION = "ayorai.verify-receipt.v1"
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _IDEMPOTENCY_KEY = re.compile(r"[\x21-\x7e]{1,128}")
@@ -244,20 +245,15 @@ class VerificationLog:
                 "commitment": commit(record, salt).hex(),
             }
         )
-        index = len(self._hashes)
-        hashed = leaf_hash(leaf)
-        self._connection.execute(
-            "INSERT INTO vlog_leaves (idx, leaf, leaf_hash) VALUES (?, ?, ?)", (index, leaf, hashed)
-        )
+        index = self._append_leaf_locked(leaf)
         self._connection.execute(
             "INSERT INTO vlog_records (idx, salt, record) VALUES (?, ?, ?)",
             (index, salt, json.dumps(record, sort_keys=True, ensure_ascii=False)),
         )
-        self._hashes.append(hashed)
-        size = len(self._hashes)
-        note = self._checkpoint_note(size, tree_root(self._hashes))
-        self._connection.execute(
-            "INSERT INTO vlog_checkpoints (size, note) VALUES (?, ?)", (size, note)
+        note = str(
+            self._connection.execute(
+                "SELECT note FROM vlog_checkpoints WHERE size = ?", (index + 1,)
+            ).fetchone()[0]
         )
         receipt = {
             "receipt_version": RECEIPT_VERSION,
@@ -283,15 +279,96 @@ class VerificationLog:
                 raise ValueError("old_size must be between 1 and the current size")
             return [_b64(node) for node in consistency_proof(old_size, self._hashes)]
 
-    def erase(self, index: int, erased_at: str) -> bool:
-        """Delete salt and record of one event (LGPD); the public tree is unchanged."""
+    def erase(self, index: int, erased_at: str, reason: str = "data_subject_request") -> int | None:
+        """Delete salt and record of one event (LGPD) and log the erasure itself.
+
+        The erasure is a new public leaf ``{schema, erased_index, erased_at, reason}``
+        with no personal data, under a new signed checkpoint. The erased event's leaf
+        stays in the tree, so the tree and every client-held receipt remain valid.
+        Returns the index of the erasure leaf, or ``None`` if there was nothing to
+        erase (unknown index, an erasure leaf, or already erased).
+        """
+        if re.fullmatch(r"[a-z_]{1,64}", reason) is None:
+            raise ValueError("reason must be a short lowercase code")
         with self._lock:
-            cursor = self._connection.execute(
-                "UPDATE vlog_records SET salt = NULL, record = NULL, erased_at = ? "
-                "WHERE idx = ? AND erased_at IS NULL",
-                (erased_at, index),
-            )
-            return cursor.rowcount == 1
+            self._connection.execute("BEGIN IMMEDIATE")
+            try:
+                count = int(
+                    self._connection.execute("SELECT COUNT(*) FROM vlog_leaves").fetchone()[0]
+                )
+                if count != len(self._hashes):
+                    self._reload_hashes()
+                cursor = self._connection.execute(
+                    "UPDATE vlog_records SET salt = NULL, record = NULL, erased_at = ? "
+                    "WHERE idx = ? AND erased_at IS NULL AND record IS NOT NULL",
+                    (erased_at, index),
+                )
+                if cursor.rowcount != 1:
+                    self._connection.execute("ROLLBACK")
+                    return None
+                leaf = rfc8785.dumps(
+                    {
+                        "schema": ERASURE_SCHEMA,
+                        "erased_index": index,
+                        "erased_at": erased_at,
+                        "reason": reason,
+                    }
+                )
+                erasure_index = self._append_leaf_locked(leaf)
+                self._connection.execute("COMMIT")
+            except BaseException:
+                if self._connection.in_transaction:
+                    self._connection.execute("ROLLBACK")
+                self._reload_hashes()
+                raise
+            return erasure_index
+
+    def _append_leaf_locked(self, leaf: bytes) -> int:
+        """Append a public leaf and sign the new checkpoint (inside the caller's transaction)."""
+        index = len(self._hashes)
+        hashed = leaf_hash(leaf)
+        self._connection.execute(
+            "INSERT INTO vlog_leaves (idx, leaf, leaf_hash) VALUES (?, ?, ?)", (index, leaf, hashed)
+        )
+        self._hashes.append(hashed)
+        size = len(self._hashes)
+        note = self._checkpoint_note(size, tree_root(self._hashes))
+        self._connection.execute(
+            "INSERT INTO vlog_checkpoints (size, note) VALUES (?, ?)", (size, note)
+        )
+        return index
+
+    def matches_checkpoint(self, note: str) -> bool:
+        """Is a checkpoint held outside the host (client, witness) part of this log?
+
+        False when the note is not signed by this log, when it covers more leaves
+        than the log now has (truncation or restore of an older copy) or when its
+        root differs from the root of the same prefix here (rewritten history).
+        """
+        body = verify_note(note, self.verifier_key)
+        parsed = parse_checkpoint(body) if body is not None else None
+        if parsed is None or parsed.origin != self.origin:
+            return False
+        with self._lock:
+            if parsed.size > len(self._hashes):
+                return False
+            return tree_root(self._hashes[: parsed.size]) == parsed.root
+
+    def backup(self, destination: str) -> int:
+        """Consistent online copy to a new file (SQLite backup API); returns the tree size."""
+        target = Path(destination)
+        if target.exists():
+            raise FileExistsError(f"backup destination already exists: {destination}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        copy = sqlite3.connect(str(target))
+        try:
+            with self._lock:
+                self._connection.backup(copy)
+            if copy.execute("PRAGMA integrity_check").fetchone() != ("ok",):
+                raise sqlite3.DatabaseError(f"backup failed integrity_check: {destination}")
+            return int(copy.execute("SELECT COUNT(*) FROM vlog_leaves").fetchone()[0])
+        finally:
+            copy.close()
 
     def verify_log(self) -> dict[str, Any]:
         """Re-derive the tree and check every stored checkpoint (signature, size and root)."""
@@ -319,11 +396,38 @@ class VerificationLog:
             latest = int(checkpoints[-1][0]) if checkpoints else 0
             if latest != len(hashes):
                 problems.append(f"latest checkpoint covers {latest} of {len(hashes)} leaves")
-            erased = int(
-                self._connection.execute(
-                    "SELECT COUNT(*) FROM vlog_records WHERE erased_at IS NOT NULL"
-                ).fetchone()[0]
-            )
+            # Every erased record must have its own erasure leaf, logged after the event.
+            erasure_leaves: dict[int, int] = {}
+            event_leaves: list[int] = []
+            for idx, leaf in self._connection.execute(
+                "SELECT idx, leaf FROM vlog_leaves ORDER BY idx"
+            ):
+                try:
+                    fields = json.loads(bytes(leaf))
+                except ValueError:
+                    problems.append(f"leaf {idx} is not JSON")
+                    continue
+                if isinstance(fields, dict) and fields.get("schema") == LEAF_SCHEMA:
+                    event_leaves.append(int(idx))
+                elif isinstance(fields, dict) and fields.get("schema") == ERASURE_SCHEMA:
+                    target = fields.get("erased_index")
+                    if not isinstance(target, int) or not 0 <= target < idx:
+                        problems.append(f"erasure leaf {idx} names an invalid event")
+                    else:
+                        erasure_leaves[target] = idx
+            erased_rows = self._connection.execute(
+                "SELECT idx FROM vlog_records WHERE erased_at IS NOT NULL OR record IS NULL"
+            ).fetchall()
+            for (idx,) in erased_rows:
+                if idx not in erasure_leaves:
+                    problems.append(f"record {idx} erased without an erasure event")
+            with_rows = {
+                int(row[0]) for row in self._connection.execute("SELECT idx FROM vlog_records")
+            }
+            for idx in event_leaves:
+                if idx not in with_rows and idx not in erasure_leaves:
+                    problems.append(f"record {idx} is missing")
+            erased = len(erased_rows)
             return {
                 "valid": not problems,
                 "size": len(hashes),

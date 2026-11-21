@@ -29,7 +29,11 @@ Recorded after implementation, without changing the decisions above.
   - `Idempotency-Key`: same key and input return the same receipt; another input is a 409;
   - in `required` mode, a recording failure is a 503 with no verdict.
 
-  The leaf carries only schema, `rules_sha256`, `software_id` and the salted commitment; the verdict exists only in the record. `erase()` removes salt and record while the tree stays valid.
+  The leaf carries only schema, `rules_sha256`, `software_id` and the salted commitment; the verdict exists only in the record.
+- **Erasure, backup and recovery.**
+  - `erase()` removes salt and record **and appends an erasure leaf** (`ayorai.verify-erasure.v1`, no personal data) under a new signed checkpoint. `verify_log()` flags any record erased or removed without its erasure leaf.
+  - `backup()` makes a consistent copy.
+  - `matches_checkpoint()` checks a checkpoint held outside the host against the log, exposing a restored older copy or rewritten history.
 - **Acceptance criteria still open:**
   - 1: key-custody threat model;
   - 4: cross-verification of inclusion and consistency proofs with an independent implementation;
