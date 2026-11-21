@@ -7,7 +7,7 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
-from ayorai_attractor.auditlog import HASH_SIZE
+from ayorai_attractor.auditlog import HASH_SIZE, verify_inclusion
 
 from .python_writer import CorruptStoreError, IdempotencyConflict, WriterError
 
@@ -24,6 +24,7 @@ class OutboxRecord:
     tree_size: int | None
     root_hash: bytes | None
     checkpoint_note: bytes | None
+    inclusion_proof: tuple[bytes, ...] | None
     replayed: bool = False
 
 
@@ -77,6 +78,7 @@ class SQLiteIdempotencyOutbox:
                     tree_size INTEGER,
                     root_hash BLOB,
                     checkpoint_note BLOB,
+                    inclusion_proof BLOB,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     CHECK (
@@ -84,14 +86,16 @@ class SQLiteIdempotencyOutbox:
                             AND tessera_index IS NULL
                             AND tree_size IS NULL
                             AND root_hash IS NULL
-                            AND checkpoint_note IS NULL)
+                            AND checkpoint_note IS NULL
+                            AND inclusion_proof IS NULL)
                         OR
                         (state = 'ASSIGNED'
                             AND tessera_index IS NOT NULL
                             AND tessera_index >= 0
                             AND tree_size IS NULL
                             AND root_hash IS NULL
-                            AND checkpoint_note IS NULL)
+                            AND checkpoint_note IS NULL
+                            AND inclusion_proof IS NULL)
                         OR
                         (state = 'RECORDED'
                             AND tessera_index IS NOT NULL
@@ -101,7 +105,9 @@ class SQLiteIdempotencyOutbox:
                             AND root_hash IS NOT NULL
                             AND length(root_hash) = 32
                             AND checkpoint_note IS NOT NULL
-                            AND length(checkpoint_note) > 0)
+                            AND length(checkpoint_note) > 0
+                            AND inclusion_proof IS NOT NULL
+                            AND length(inclusion_proof) % 32 = 0)
                     )
                 );
 
@@ -126,16 +132,18 @@ class SQLiteIdempotencyOutbox:
 
     @staticmethod
     def _row_to_record(row: tuple[object, ...], replayed: bool = False) -> OutboxRecord:
-        key, leaf, state, index, size, root, note = row
+        key, leaf, state, index, size, root, note, proof_blob = row
         if not isinstance(key, str) or not isinstance(leaf, bytes) or len(leaf) != HASH_SIZE:
             raise CorruptStoreError("outbox key or leaf hash is malformed")
         if state not in {"PENDING", "ASSIGNED", "RECORDED"}:
             raise CorruptStoreError("outbox state is unknown")
-        if state == "PENDING" and any(value is not None for value in (index, size, root, note)):
+        if state == "PENDING" and any(
+            value is not None for value in (index, size, root, note, proof_blob)
+        ):
             raise CorruptStoreError("PENDING outbox row contains remote receipt fields")
         if state == "ASSIGNED" and (
             isinstance(index, bool) or not isinstance(index, int) or index < 0
-            or any(value is not None for value in (size, root, note))
+            or any(value is not None for value in (size, root, note, proof_blob))
         ):
             raise CorruptStoreError("ASSIGNED outbox row is malformed")
         if state == "RECORDED" and (
@@ -150,8 +158,14 @@ class SQLiteIdempotencyOutbox:
             or not isinstance(note, bytes)
             or not note
             or len(note) > MAX_CHECKPOINT_NOTE_BYTES
+            or not isinstance(proof_blob, bytes)
+            or len(proof_blob) % HASH_SIZE != 0
         ):
             raise CorruptStoreError("RECORDED outbox row is malformed")
+        proof = tuple(
+            proof_blob[offset : offset + HASH_SIZE]
+            for offset in range(0, len(proof_blob), HASH_SIZE)
+        )
         return OutboxRecord(
             idempotency_key=key,
             leaf_hash=leaf,
@@ -160,6 +174,7 @@ class SQLiteIdempotencyOutbox:
             tree_size=size,
             root_hash=root,
             checkpoint_note=note,
+            inclusion_proof=proof if state == "RECORDED" else None,
             replayed=replayed,
         )
 
@@ -184,7 +199,7 @@ class SQLiteIdempotencyOutbox:
             row = connection.execute(
                 """
                 SELECT idempotency_key, leaf_hash, state, tessera_index,
-                       tree_size, root_hash, checkpoint_note
+                       tree_size, root_hash, checkpoint_note, inclusion_proof
                 FROM adr010_idempotency_outbox
                 WHERE idempotency_key = ?
                 """,
@@ -244,7 +259,7 @@ class SQLiteIdempotencyOutbox:
             row = connection.execute(
                 """
                 SELECT idempotency_key, leaf_hash, state, tessera_index,
-                       tree_size, root_hash, checkpoint_note
+                       tree_size, root_hash, checkpoint_note, inclusion_proof
                 FROM adr010_idempotency_outbox
                 WHERE idempotency_key = ?
                 """,
@@ -285,6 +300,7 @@ class SQLiteIdempotencyOutbox:
                 tree_size=record.tree_size,
                 root_hash=record.root_hash,
                 checkpoint_note=record.checkpoint_note,
+                inclusion_proof=record.inclusion_proof,
                 replayed=True,
             )
         except sqlite3.IntegrityError as error:
@@ -310,6 +326,7 @@ class SQLiteIdempotencyOutbox:
         tree_size: int,
         root_hash: bytes,
         checkpoint_note: bytes,
+        inclusion_proof: tuple[bytes, ...],
     ) -> OutboxRecord:
         """Commit a verified checkpoint, or reconcile a PENDING row after restart."""
         self._validate_key_and_leaf(idempotency_key, leaf_hash)
@@ -333,6 +350,20 @@ class SQLiteIdempotencyOutbox:
             or len(checkpoint_note) > MAX_CHECKPOINT_NOTE_BYTES
         ):
             raise ValueError("checkpoint_note must contain 1–65536 bytes")
+        if not isinstance(inclusion_proof, tuple) or any(
+            not isinstance(node, bytes) or len(node) != HASH_SIZE
+            for node in inclusion_proof
+        ):
+            raise ValueError("inclusion_proof must be a tuple of 32-byte hashes")
+        if not verify_inclusion(
+            tessera_index,
+            tree_size,
+            leaf_hash,
+            inclusion_proof,
+            root_hash,
+        ):
+            raise ValueError("inclusion_proof does not verify against the checkpoint root")
+        proof_blob = b"".join(inclusion_proof)
 
         connection = self._connect()
         try:
@@ -340,7 +371,7 @@ class SQLiteIdempotencyOutbox:
             row = connection.execute(
                 """
                 SELECT idempotency_key, leaf_hash, state, tessera_index,
-                       tree_size, root_hash, checkpoint_note
+                       tree_size, root_hash, checkpoint_note, inclusion_proof
                 FROM adr010_idempotency_outbox
                 WHERE idempotency_key = ?
                 """,
@@ -360,6 +391,7 @@ class SQLiteIdempotencyOutbox:
                     or record.root_hash is None
                     or not hmac.compare_digest(record.root_hash, root_hash)
                     or record.checkpoint_note != checkpoint_note
+                    or record.inclusion_proof != inclusion_proof
                 ):
                     raise CorruptStoreError("recorded checkpoint cannot be silently replaced")
                 connection.commit()
@@ -382,10 +414,18 @@ class SQLiteIdempotencyOutbox:
                     tree_size = ?,
                     root_hash = ?,
                     checkpoint_note = ?,
+                    inclusion_proof = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE idempotency_key = ?
                 """,
-                (tessera_index, tree_size, root_hash, checkpoint_note, idempotency_key),
+                (
+                    tessera_index,
+                    tree_size,
+                    root_hash,
+                    checkpoint_note,
+                    proof_blob,
+                    idempotency_key,
+                ),
             )
             connection.commit()
             return OutboxRecord(
@@ -396,6 +436,7 @@ class SQLiteIdempotencyOutbox:
                 tree_size=tree_size,
                 root_hash=root_hash,
                 checkpoint_note=checkpoint_note,
+                inclusion_proof=inclusion_proof,
             )
         except sqlite3.IntegrityError as error:
             connection.rollback()
@@ -420,7 +461,7 @@ class SQLiteIdempotencyOutbox:
             row = connection.execute(
                 """
                 SELECT idempotency_key, leaf_hash, state, tessera_index,
-                       tree_size, root_hash, checkpoint_note
+                       tree_size, root_hash, checkpoint_note, inclusion_proof
                 FROM adr010_idempotency_outbox
                 WHERE idempotency_key = ?
                 """,
@@ -437,7 +478,7 @@ class SQLiteIdempotencyOutbox:
             rows = connection.execute(
                 """
                 SELECT idempotency_key, leaf_hash, state, tessera_index,
-                       tree_size, root_hash, checkpoint_note
+                       tree_size, root_hash, checkpoint_note, inclusion_proof
                 FROM adr010_idempotency_outbox
                 WHERE state IN ('PENDING', 'ASSIGNED')
                 ORDER BY created_at, idempotency_key
