@@ -77,6 +77,18 @@ O workflow geral [CI — run 44917649782](https://github.com/Ayorinha/ayorai-ope
 
 **Interpretação:** a POC isolada e os checks de regressão do repositório estão aprovados. Isso comprova os cenários exercitados, não capacidade de produção, resistência contra operador privilegiado, conformidade LGPD ou desempenho em escala. Nenhum benchmark de capacidade foi executado.
 
+### Variante incremental Python — frontier Merkle
+
+Foi adicionada uma segunda variante isolada em experiments/adr010_poc/frontier_writer.py. Ela mantém os picos da árvore RFC 6962 em uma tabela SQLite compacta. Cada append combina apenas os subárvores indicados pelos bits setados do tamanho anterior e persiste a nova fronteira na mesma transação da entrada, do tamanho e da raiz do recibo.
+
+- Atualização de frontier por append: O(log n) hashes de nó.
+- Reconstrução e validação completa no restart: O(n) folhas, comparada também com tree_root da implementação existente.
+- Geração de prova de inclusão: lê o prefixo de folhas e continua O(n) no protótipo.
+- A raiz atual pode ser obtida da frontier em O(log n); raízes históricas são comparadas com o root_hash_at_append persistido.
+- O writer serializa append com BEGIN IMMEDIATE e mantém a chave de idempotência na mesma transação do append local.
+
+A variante é deliberadamente separada do writer de recomputação completa, que permanece como baseline simples. Nenhuma das duas implementa checkpoint assinado, tlog-tiles, testemunhas ou integração API. O frontier local não é âncora externa; a detecção de reescrita completa continua dependendo de checkpoint guardado fora do banco.
+
 ## 4. Limites de segurança e interpretação
 
 O protótipo não assina checkpoints e não cria estado externo confiável. A raiz devolvida pelo processo é apenas uma estrutura local. Se um operador puder reescrever o banco e todos os recibos/checkpoints armazenados junto dele, o protótipo não detectará a reescrita. Essa limitação é consistente com a ADR-010: resistência a operador privilegiado exige recibos mantidos por clientes, testemunhas independentes ou ancoragem externa.
@@ -114,7 +126,7 @@ A POC SQLite evita essa janela porque a chave, o índice e a raiz são gravados 
 | Witnesses | Integrar e operar | Suporte declarado no projeto |
 | Dependências de runtime Python | Potencialmente nenhuma além do conjunto atual | Processo/binário Go adicional |
 | Complexidade operacional | Menos processos, mais código criptográfico/armazenamento próprio | Mais uma fronteira operacional, menos protocolo próprio |
-| Evidência atual | POC SQLite isolada; sem benchmark de capacidade | Runner isolado criado para Tessera v1.0.4, usando posix-oneshot + fsck e os mesmos vetores públicos; execução CI pendente |
+| Evidência atual | Baseline SQLite O(n) + variante frontier O(log n) por append; ambas isoladas e sem benchmark de capacidade | Runner Tessera v1.0.4 POSIX one-shot + fsck aprovado nos mesmos vetores públicos |
 | Decisão | **Não decidida** | **Não decidida** |
 
 ## 7. Experimento comparativo obrigatório antes da decisão 5
