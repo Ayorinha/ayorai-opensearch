@@ -341,6 +341,11 @@ class AuditTraceStore:
         with self._lock:
             self._connection.close()
 
+    def _rollback_open_transaction(self) -> None:
+        """Undo a write left half done by an exception, so a later commit cannot keep it."""
+        if self._connection.in_transaction:
+            self._connection.rollback()
+
     def _create_schema_v2(self, connection: sqlite3.Connection) -> None:
         self._create_schema_v2_named(connection, "audit_traces")
 
@@ -538,7 +543,13 @@ class AuditTraceStore:
             if check_trace_id is not None and not check_trace_id.strip():
                 raise ValueError("check_trace_id must be non-empty when present")
         with self._lock:
-            return self._record_locked(response, report, owner, adjudication)
+            try:
+                return self._record_locked(response, report, owner, adjudication)
+            except BaseException:
+                # The trace and its chain entry are written in one transaction:
+                # if either fails, neither may be committed by a later call.
+                self._rollback_open_transaction()
+                raise
 
     def _record_locked(
         self,
@@ -660,7 +671,11 @@ class AuditTraceStore:
         here: their age is unknown.
         """
         with self._lock:
-            return self._purge_locked(cutoff, "purge_recorded_before")
+            try:
+                return self._purge_locked(cutoff, "purge_recorded_before")
+            except BaseException:
+                self._rollback_open_transaction()
+                raise
 
     def _purge_locked(self, cutoff: datetime, reason: str) -> int:
         """Delete traces recorded before ``cutoff`` and record the purge in the chain."""
@@ -848,18 +863,22 @@ class AuditTraceStore:
         not prove what happened before it. Invalid traces are left out.
         """
         with self._lock:
-            rows = self._connection.execute(
-                "SELECT t.trace_id, t.replay_digest FROM audit_traces t "
-                "LEFT JOIN audit_chain c ON c.trace_id = t.trace_id "
-                "WHERE c.seq IS NULL ORDER BY t.trace_id"
-            ).fetchall()
-            appended = 0
-            for trace_id, digest in rows:
-                if self._verify_locked(str(trace_id)) != "valid":
-                    continue
-                self._append_chain_locked("trace", str(trace_id), str(digest), None)
-                appended += 1
-            self._connection.commit()
+            try:
+                rows = self._connection.execute(
+                    "SELECT t.trace_id, t.replay_digest FROM audit_traces t "
+                    "LEFT JOIN audit_chain c ON c.trace_id = t.trace_id "
+                    "WHERE c.seq IS NULL ORDER BY t.trace_id"
+                ).fetchall()
+                appended = 0
+                for trace_id, digest in rows:
+                    if self._verify_locked(str(trace_id)) != "valid":
+                        continue
+                    self._append_chain_locked("trace", str(trace_id), str(digest), None)
+                    appended += 1
+                self._connection.commit()
+            except BaseException:
+                self._rollback_open_transaction()
+                raise
         return appended
 
     def _relink_chain_locked(self) -> bool:
@@ -980,31 +999,35 @@ class AuditTraceStore:
         key_id, key = self._mac_keys[0]
         sealed = 0
         with self._lock:
-            rows = self._connection.execute(
-                "SELECT trace_id, replay_digest, replay_version, "
-                "legacy_verification, verification, operation_status, evidence_count, "
-                "independent_evidence_count, verified_evidence_count, failure_count, "
-                "finding_count, schema_version, owner, recorded_at, software_version "
-                "FROM audit_traces "
-                "WHERE replay_version IN (?, ?, ?, ?) AND replay_mac IS NULL "
-                "AND mac_key_id IS NULL ORDER BY trace_id",
-                (_R2_V1, _R2_V2, _R2_V3, _R2_V4),
-            ).fetchall()
-            saved_keys, self._mac_keys = self._mac_keys, ()
             try:
-                valid = [row for row in rows if self._verify_locked(str(row[0])) == "valid"]
-            finally:
-                self._mac_keys = saved_keys
-            for row in valid:
-                trace_id, digest, version, *field_values = row
-                fields = dict(zip(_R2_V3_FIELDS, field_values, strict=True))
-                replay_mac = _mac_for_trace(key, str(version), str(digest), fields)
-                self._connection.execute(
-                    "UPDATE audit_traces SET replay_mac = ?, mac_key_id = ? WHERE trace_id = ?",
-                    (replay_mac, key_id, trace_id),
-                )
-                sealed += 1
-            self._connection.commit()
+                rows = self._connection.execute(
+                    "SELECT trace_id, replay_digest, replay_version, "
+                    "legacy_verification, verification, operation_status, evidence_count, "
+                    "independent_evidence_count, verified_evidence_count, failure_count, "
+                    "finding_count, schema_version, owner, recorded_at, software_version "
+                    "FROM audit_traces "
+                    "WHERE replay_version IN (?, ?, ?, ?) AND replay_mac IS NULL "
+                    "AND mac_key_id IS NULL ORDER BY trace_id",
+                    (_R2_V1, _R2_V2, _R2_V3, _R2_V4),
+                ).fetchall()
+                saved_keys, self._mac_keys = self._mac_keys, ()
+                try:
+                    valid = [row for row in rows if self._verify_locked(str(row[0])) == "valid"]
+                finally:
+                    self._mac_keys = saved_keys
+                for row in valid:
+                    trace_id, digest, version, *field_values = row
+                    fields = dict(zip(_R2_V3_FIELDS, field_values, strict=True))
+                    replay_mac = _mac_for_trace(key, str(version), str(digest), fields)
+                    self._connection.execute(
+                        "UPDATE audit_traces SET replay_mac = ?, mac_key_id = ? WHERE trace_id = ?",
+                        (replay_mac, key_id, trace_id),
+                    )
+                    sealed += 1
+                self._connection.commit()
+            except BaseException:
+                self._rollback_open_transaction()
+                raise
         return sealed
 
     def reseal_with_active_key(self) -> dict[str, int]:
@@ -1025,32 +1048,37 @@ class AuditTraceStore:
         counts = {"resealed": 0, "skipped_invalid": 0}
         # The sequence chain moves to the active key too, but only if it verifies
         # under the configured keys: a broken chain is never re-signed.
-        chain_intact = self.verify_chain()["intact"]
         with self._lock:
-            if chain_intact:
-                self._relink_chain_locked()
-            rows = self._connection.execute(
-                "SELECT trace_id, replay_digest, replay_version, "
-                "legacy_verification, verification, operation_status, evidence_count, "
-                "independent_evidence_count, verified_evidence_count, failure_count, "
-                "finding_count, schema_version, owner, recorded_at, software_version "
-                "FROM audit_traces WHERE mac_key_id IS NOT NULL AND mac_key_id != ? "
-                "ORDER BY trace_id",
-                (key_id,),
-            ).fetchall()
-            for row in rows:
-                trace_id, digest, version, *field_values = row
-                if self._verify_locked(str(trace_id)) != "valid":
-                    counts["skipped_invalid"] += 1
-                    continue
-                fields = dict(zip(_R2_V3_FIELDS, field_values, strict=True))
-                replay_mac = _mac_for_trace(key, str(version), str(digest), fields)
-                self._connection.execute(
-                    "UPDATE audit_traces SET replay_mac = ?, mac_key_id = ? WHERE trace_id = ?",
-                    (replay_mac, key_id, trace_id),
-                )
-                counts["resealed"] += 1
-            self._connection.commit()
+            try:
+                # Checked under the same lock as the re-link, so no write can slip
+                # in between the check and the re-signing.
+                if self.verify_chain()["intact"]:
+                    self._relink_chain_locked()
+                rows = self._connection.execute(
+                    "SELECT trace_id, replay_digest, replay_version, "
+                    "legacy_verification, verification, operation_status, evidence_count, "
+                    "independent_evidence_count, verified_evidence_count, failure_count, "
+                    "finding_count, schema_version, owner, recorded_at, software_version "
+                    "FROM audit_traces WHERE mac_key_id IS NOT NULL AND mac_key_id != ? "
+                    "ORDER BY trace_id",
+                    (key_id,),
+                ).fetchall()
+                for row in rows:
+                    trace_id, digest, version, *field_values = row
+                    if self._verify_locked(str(trace_id)) != "valid":
+                        counts["skipped_invalid"] += 1
+                        continue
+                    fields = dict(zip(_R2_V3_FIELDS, field_values, strict=True))
+                    replay_mac = _mac_for_trace(key, str(version), str(digest), fields)
+                    self._connection.execute(
+                        "UPDATE audit_traces SET replay_mac = ?, mac_key_id = ? WHERE trace_id = ?",
+                        (replay_mac, key_id, trace_id),
+                    )
+                    counts["resealed"] += 1
+                self._connection.commit()
+            except BaseException:
+                self._rollback_open_transaction()
+                raise
         return counts
 
     def get(self, trace_id: str, requester: str | None = None) -> AuditTraceResponse | None:
