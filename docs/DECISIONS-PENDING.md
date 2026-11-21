@@ -12,12 +12,12 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 
 | ID | Assunto | Estado | Registro |
 |---|---|---|---|
-| DEC-001 | `uv.lock` e digests de imagens Docker | Pendente | Este arquivo |
+| DEC-001 | `uv.lock` e digests de imagens Docker | Decidida (2026-11-21): lock com hashes e imagem por digest; sem `uv.lock` | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#decisões-de-2026-11-21) |
 | DEC-002 | Licença e proveniência das fontes | Aprovada (2026-10-13) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-002--política-de-licença-e-proveniência-das-fontes) |
-| DEC-003 | ADR-001 → `Accepted` | Pendente | Este arquivo |
-| DEC-004 | Documentação comercial e nome do repositório | Pendente | Este arquivo |
+| DEC-003 | ADR-001 → `Accepted` | Decidida (2026-11-21): ADR-001 aceito | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#decisões-de-2026-11-21) |
+| DEC-004 | Documentação comercial e nome do repositório | Decidida (2026-11-21): manter o nome | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#decisões-de-2026-11-21) |
 | DEC-005 | r1-a: entrada inválida retorna 422 | Aprovada (2026-10-11); implementada na PR #139 (v0.4.0) | Este arquivo |
-| DEC-006 | Prioridade do motor de stance em português | Pendente | Este arquivo |
+| DEC-006 | Prioridade do motor de stance em português | Decidida (2026-11-21): opção A | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#decisões-de-2026-11-21) |
 | DEC-007 (release) | Publicar v0.4.0 | Aprovada (2026-10-11) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md) |
 | DEC-007 (RGC) | Vocabulário de cinco vereditos do RGC | Aprovada (2026-10-15); Emenda 2 mesclada na PR #193 | Este arquivo |
 | DEC-008 (release) | Publicar v0.5.0 | Aprovada (2026-10-13) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md) |

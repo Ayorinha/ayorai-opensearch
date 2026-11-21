@@ -4,7 +4,7 @@
 
 | Número | Título | Status declarado no arquivo | Data | Caminho |
 |---|---|---|---|---|
-| ADR-001 | Isolated Python Namespace | Proposed in A1 PR | 2026-09-30 | [`docs/adr/ADR-001-namespace.md`](ADR-001-namespace.md) |
+| ADR-001 | Isolated Python Namespace | Accepted — 2026-11-21, decisão do mantenedor (DEC-003) | 2026-09-30 | [`docs/adr/ADR-001-namespace.md`](ADR-001-namespace.md) |
 | ADR-002 | Judge Rules and Evidence Verification | Accepted — 2026-09-30, approved by the maintainer together with Golden v0 (PR #12, merge b7df480) | 2026-09-30 | [`docs/adr/ADR-002-judge-rules.md`](ADR-002-judge-rules.md) |
 | ADR-003 | Three-state stance semantics | Accepted | 2026-10-03 | [`docs/adr/ADR-003-three-state-stance.md`](ADR-003-three-state-stance.md) |
 | ADR-004 | Claim as Verification Input | Accepted | 2026-10-03 | [`docs/adr/ADR-004-claim-as-input.md`](ADR-004-claim-as-input.md) |

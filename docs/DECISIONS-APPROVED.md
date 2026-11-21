@@ -2,6 +2,64 @@
 
 Este arquivo registra decisões explícitas do mantenedor já aprovadas. Não substitui ADRs normativas; mantém a trilha de governança e autorização.
 
+## Índice das aprovações registradas em DECISIONS-PENDING.md
+
+Por razões históricas, várias decisões aprovadas têm o texto e o registro de aprovação em [DECISIONS-PENDING.md](DECISIONS-PENDING.md), e não neste arquivo. A tabela abaixo só as localiza; ela transcreve o estado e a data já registrados lá e não cria, amplia nem altera nenhuma aprovação. O texto de cada decisão continua sendo a fonte.
+
+| ID | Assunto | Estado registrado |
+|---|---|---|
+| DEC-005 | r1-a: entrada inválida retorna 422 | Aprovada (2026-10-11) |
+| DEC-007 (RGC) | Vocabulário de cinco vereditos do RGC | Aprovada (2026-10-15) |
+| DEC-008 (RGC) | Autoria dos casos do RGC | Aprovada (2026-10-15) |
+| DEC-009 | Abstenção avaliada como `UNVERIFIED` | Aprovada (2026-10-15) |
+| DEC-010 | Afirmações compostas (opção A) | Aprovada (2026-10-16) |
+| DEC-011 | Guia de anotação após o piloto 01 | Aprovada (2026-10-17) |
+| DEC-013 | Autorização de execução e merge por agente naquele ciclo | Aprovada (2026-10-18); escopo limitado |
+| DEC-014 | Baseline primário e descritivo do RGC | Aprovada (2026-10-18) |
+| DEC-015 | Autorização da Etapa 2 (manual técnico) | Aprovada (2026-10-18) |
+| DEC-016 | Trabalho autônomo e ratificação documental | Aprovada (2026-10-21) |
+| DEC-017 | Registro ausente versus `INVALID_PREDICTION` | Aprovada (2026-10-21), opção A |
+| DEC-018 | Escopo confirmatório de H1 | Aprovada (2026-10-21), opção A |
+| DEC-019 | Bootstrap agrupado por artigo | Aprovada (2026-10-21), opção A |
+| DEC-020 | Concordância entre anotadores | Aprovada (2026-10-21), opção A |
+| DEC-021 | Teste confirmatório de H1 por componentes | Aprovada (2026-11-07), opção A |
+| DEC-022 | IC95% de Cohen's kappa por componentes | Aprovada (2026-11-07), opção A |
+| DEC-023 | Componentes conectados por artigos citados | Aprovada (2026-11-07), opção A |
+| DEC-024 | Calibração e combinação de sinais no LLM-AggreFact | Aprovada (2026-11-08), opção B |
+| DEC-027 | Reconciliação estatística do RGC | Aprovada (2026-11-14) |
+
+As quatro que restavam pendentes nesse registro (DEC-001, DEC-003, DEC-004 e DEC-006) foram decididas em 2026-11-21; ver a seção abaixo.
+
+## Decisões de 2026-11-21
+
+- **Data da decisão:** 2026-11-21
+- **Decisor e mantenedor:** Anderson Leon Ayora
+- **Forma:** resposta explícita do mantenedor às quatro perguntas, cada uma com a opção recomendada escolhida.
+
+### DEC-001 — Lockfile e digests de imagem: encerrada como atendida
+
+- A reprodutibilidade fica com o que já está implementado: `docker/Dockerfile` usa `python:3.12-slim` fixada por digest, e as dependências vêm de `docker/requirements.lock` com hashes (`pip install --require-hashes --only-binary=:all:`).
+- `uv.lock` não é adotado. Mudar a ferramenta de lock exige nova decisão.
+
+### DEC-003 — ADR-001: aceito
+
+- O ADR-001 passa a `Accepted` em 2026-11-21. A conferência feita na aceitação está na nota datada do próprio ADR.
+
+### DEC-004 — Nome do repositório e documentação comercial
+
+- O repositório continua `ayorai-opensearch`; links, DOI e badges não mudam.
+- Material comercial só descreve o que testes e avaliações demonstram, conforme a política de alegações do `CONTRIBUTING.md`.
+
+### DEC-006 — Prioridade do motor de stance em português: opção A
+
+- O motor de stance em português (ADR-008) é a próxima prioridade técnica.
+- Condições:
+  - medição estratificada com tamanho amostral e IC95%;
+  - nada é ajustado ao Golden;
+  - o benchmark RGC e seu protocolo não mudam;
+  - o Judge não passa a fazer interpretação jurídica.
+- Esta decisão define prioridade; não aprova implementação, modelo ou dependência, que seguem em PRs próprias.
+
 ## DEC-012 — Registro de auditoria verificável: decisões 1–4 da ADR-010
 
 - **Data da decisão:** 2026-10-17

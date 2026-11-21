@@ -55,6 +55,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - A revisão técnica dessas mudanças foi feita por ferramenta automatizada; a revisão humana independente prevista no `CONTRIBUTING.md` continua pendente. O protocolo RGC continua [PROPOSTO]; nenhuma execução RGC foi feita.
 
 ### Documentação
+- ADR-011 (família de regras do Judge por rota), ADR-001 aceito, decisões DEC-001, DEC-003, DEC-004 e DEC-006 registradas, índice das aprovações em `DECISIONS-APPROVED.md`, roteiro de longo prazo (`docs/ROADMAP.md`) e política dos pins históricos (`docs/security/HISTORICAL-PINS.md`, com teste de isolamento).
 - `/v1/check`, `/v1/fields`, dono dos rastros, backup e novas variáveis documentados (#566); status de engenharia atualizado (#572, #578).
 
 ### Limites
