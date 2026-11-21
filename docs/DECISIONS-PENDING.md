@@ -44,6 +44,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-028 | ADR-010, decisão 5: escritor Python | Decidida (2026-11-21) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-028--adr-010-decisão-5-escritor-python) |
 | DEC-029 | ADR-010, decisão 6: testemunhas em duas etapas | Decidida (2026-11-21) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-029--adr-010-decisão-6-testemunhas-em-duas-etapas) |
 | DEC-030 | ADR-010, decisão 7: carimbo do tempo ICP-Brasil adiado | Decidida (2026-11-21) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-030--adr-010-decisão-7-carimbo-do-tempo-icp-brasil-adiado) |
+| DEC-031 | Chaves de API: escopos, expiração e revogação sem reinício (ADR-012) | Decidida (2026-11-21) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-031--chaves-de-api-escopos-expiração-e-revogação-sem-reinício-adr-012) |
 
 ## Decisões aprovadas
 
