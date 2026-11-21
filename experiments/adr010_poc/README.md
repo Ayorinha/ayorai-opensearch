@@ -59,6 +59,6 @@ A successful test run proves only the tested SQLite mechanics and vector compati
 
 The Python prototype is the baseline for a separate Tessera adapter experiment. The comparison must use the same public leaf vector, the same POSIX storage class, the same append/restart/concurrency workload, and documented hardware. It must report latency distributions, throughput, CPU, memory, storage growth, proof interoperability, restart behavior, and failure recovery.
 
-Tessera is a Go library, not a turnkey HTTP microservice. A Python deployment would need a small Go adapter/process boundary or a deliberate Go integration. That boundary and its operational cost must be included in the comparison.
+Tessera itself is a Go library; the upstream project also provides POSIX conformance and one-shot personalities. A Python deployment would still need a small Go adapter/process boundary or a deliberate Go integration for AYORAI-specific authentication, strict idempotency and receipt semantics. That boundary and its operational cost must be included in the comparison.
 
 No architecture choice is made here. ADR-010 owner decision 5 remains open.
