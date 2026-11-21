@@ -6,12 +6,16 @@ import argparse
 import hashlib
 import json
 import sys
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 if __package__ in (None, ""):  # run as a script: make the repository importable
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from evals.ptbr.rgc_components import (  # noqa: E402
+    bootstrap_cohen_kappa_by_component,
+    build_connected_article_components,
+)
 from evals.ptbr.rgc_random import LABEL_CASE_KAPPA, RGC_SEED, RgcPrng, percentile_ci95  # noqa: E402
 
 VOCABULARY = (
@@ -74,6 +78,52 @@ def load_annotations(path: Path) -> dict[str, str]:
     return _load_annotations_bytes(path.read_bytes(), path)
 
 
+def component_ids_from_cases(cases: Iterable[Mapping[str, object]]) -> dict[str, str]:
+    """DEC-023 component of every case, built from case_id and cited_article_ids only.
+
+    No label, prediction or result is read, so the mapping can be computed from the
+    approved case inventory before or after annotation without exposing outcomes.
+    """
+    inventory = [
+        {"case_id": case.get("case_id"), "cited_article_ids": case.get("cited_article_ids")}
+        for case in cases
+    ]
+    return {
+        case_id: component.component_id
+        for component in build_connected_article_components(inventory)
+        for case_id in component.case_ids
+    }
+
+
+def _component_ids_from_cases_bytes(content: bytes, source: Path) -> dict[str, str]:
+    """Parse the strict JSONL case inventory from one byte snapshot."""
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"{source}: case file must be UTF-8") from exc
+    cases: list[dict[str, Any]] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            raise ValueError(f"{source}:{line_number}: blank lines are not allowed")
+        try:
+            row = json.loads(line, object_pairs_hook=_reject_duplicate_json_keys)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{source}:{line_number}: invalid JSON") from exc
+        except ValueError as exc:
+            raise ValueError(f"{source}:{line_number}: {exc}") from exc
+        if not isinstance(row, dict):
+            raise ValueError(f"{source}:{line_number}: expected a JSON object")
+        cases.append(row)
+    if not cases:
+        raise ValueError(f"{source}: case file is empty")
+    return component_ids_from_cases(cases)
+
+
+def load_component_ids(path: Path) -> dict[str, str]:
+    """DEC-023 component of every case in a JSONL case file, from one byte snapshot."""
+    return _component_ids_from_cases_bytes(path.read_bytes(), path)
+
+
 def _cohen_kappa(
     labels_a: Sequence[str], labels_b: Sequence[str]
 ) -> tuple[float | None, float, dict[str, dict[str, int]]]:
@@ -103,8 +153,17 @@ def compute_agreement(
     *,
     iterations: int = DEFAULT_ITERATIONS,
     seed: int = DEFAULT_SEED,
+    component_by_case: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Report unweighted Cohen's kappa; RULE_GAP pairs are excluded by prior rule."""
+    """Report unweighted Cohen's kappa; RULE_GAP pairs are excluded by prior rule.
+
+    With ``component_by_case`` (DEC-023 component of every annotated case), the
+    report adds the DEC-022 interval: percentile bootstrap over components,
+    10,000 resamples, RGC-PRNG-1 stream ``dec022-kappa-bootstrap``. That interval
+    is primary; the case bootstrap stays as sensitivity. Neither changes the gate,
+    which is the point estimate (DEC-020). The protocol-facing CLI and the RGC
+    runner always pass the components.
+    """
     if type(iterations) is not int or iterations < 1:
         raise ValueError("iterations must be positive")
     ids_a, ids_b = set(annotations_a), set(annotations_b)
@@ -163,6 +222,39 @@ def compute_agreement(
     excluded_disagreements = sum(
         annotations_a[case_id] != annotations_b[case_id] for case_id in excluded_ids
     )
+    component_fields: dict[str, Any] = {}
+    if component_by_case is not None:
+        component = bootstrap_cohen_kappa_by_component(
+            annotations_a, annotations_b, component_by_case
+        )
+        point_differs = (component.kappa is None) != (kappa is None) or (
+            component.kappa is not None
+            and kappa is not None
+            and abs(component.kappa - kappa) > 1e-9
+        )
+        if point_differs:  # pragma: no cover - two exact formulas of the same estimate
+            raise ValueError("component and case kappa point estimates disagree")
+        component_fields = {
+            "ci95_component_bootstrap": (
+                [round(value, 6) for value in component.ci95]
+                if component.ci95 is not None
+                else None
+            ),
+            "component_bootstrap": {
+                "decision": "DEC-022",
+                "method": component.method,
+                "iterations": component.iterations,
+                "seed": component.seed,
+                "generator": component.generator,
+                "stream": "dec022-kappa-bootstrap",
+                "percentile": component.percentile,
+                "component_count": component.component_count,
+                "valid_replicates": component.valid_replicates,
+                "undefined_replicates": component.undefined_replicates,
+                "undefined_fraction": round(component.undefined_fraction, 6),
+                "unstable": component.unstable,
+            },
+        }
     return {
         "method": "cohen_kappa_unweighted",
         "n_eligible": n,
@@ -185,6 +277,7 @@ def compute_agreement(
         "confusion_matrix": matrix,
         "class_distribution": class_distribution,
         "rule_gap_excluded_case_ids": excluded_ids,
+        **component_fields,
     }
 
 
@@ -192,6 +285,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--annotation-a", type=Path, required=True)
     parser.add_argument("--annotation-b", type=Path, required=True)
+    parser.add_argument(
+        "--cases",
+        type=Path,
+        required=True,
+        help="approved JSONL case file; only case_id and cited_article_ids are read (DEC-022)",
+    )
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     # The protocol-facing CLI always uses DEC-020/DEC-027 canonical parameters.
@@ -200,18 +299,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     # must all refer to the same bytes even if a path changes during execution.
     annotation_a_bytes = args.annotation_a.read_bytes()
     annotation_b_bytes = args.annotation_b.read_bytes()
+    cases_bytes = args.cases.read_bytes()
     result = compute_agreement(
         _load_annotations_bytes(annotation_a_bytes, args.annotation_a),
         _load_annotations_bytes(annotation_b_bytes, args.annotation_b),
+        component_by_case=_component_ids_from_cases_bytes(cases_bytes, args.cases),
     )
     result["inputs"] = {
         "annotation_a_sha256": hashlib.sha256(annotation_a_bytes).hexdigest(),
         "annotation_b_sha256": hashlib.sha256(annotation_b_bytes).hexdigest(),
+        "cases_sha256": hashlib.sha256(cases_bytes).hexdigest(),
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(
         f"n={result['n_eligible']} kappa={result['cohen_kappa']} "
+        f"ci95_component={result['ci95_component_bootstrap']} "
         f"gate_passed={result['gate_passed']} out={args.out}"
     )
     return 0
