@@ -1,12 +1,12 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-21 — `main` @ `3798be64e8ae6e4d8dac2a35b7c3611c8194ee17` (merge PR #614). This reconciliation is proposed in [PR #615](https://github.com/Ayorinha/ayorai-opensearch/pull/615) and is not yet merged. CI, Security and CodeQL passed on this exact `main` SHA; see runs [CI 44912288739](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44912288739), [Security 44912288756](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44912288756) and [CodeQL 44912288735](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44912288735). Post-closure audit: [audit/POST-CLOSURE-AUDIT-2026-11-21.md](audit/POST-CLOSURE-AUDIT-2026-11-21.md)
+Updated: 2026-11-21 — `main` @ `a91da0fb6d451b20433f0952516ec6d5e733bc39` (merge PR #621), before the merge of this status update. Post-closure audit: [audit/POST-CLOSURE-AUDIT-2026-11-21.md](audit/POST-CLOSURE-AUDIT-2026-11-21.md). Next-release preparation: [engineering/RELEASE-PREP-NEXT.md](engineering/RELEASE-PREP-NEXT.md).
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-11-21 (fim do ciclo de encerramento)
+## Estado atual — 2026-11-21 (operação, homologação local e preparação de release)
 
 - **Integradas em 2026-11-21, por autorização do mantenedor e com CI verde no HEAD final de cada PR:**
   - #598: coerência da documentação RGC;
@@ -21,7 +21,12 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
   - #609: texto superado por retificação não é evidência (`rgc-eval/0.14.0`); a suíte não tem mais nenhum `xfail`;
   - #610: relatórios F1.2 sem caminhos internos (hashes recalculados e registrados); guia de anotação alinhado à Emenda 4;
   - #611: falha da retenção depois do commit não vira erro de gravação;
-  - #614: reconciliação documental final do ciclo, com atualização do STATUS, ROADMAP, auditoria pós-encerramento e referência à proposta de emenda DEC-022.
+  - #614: reconciliação documental do ciclo;
+  - #615: reconciliação documental da v0.8.0 (de outra sessão do mantenedor); #616 atualizou o site em `gh-pages`;
+  - #619: integração de inferência do AYORAI-PT-NLI (EuroBERT, ADR-008), com falha fechada, sem treinamento nem ligação com a API;
+  - #620: `GET /ready`, `GET /metrics`, regras de alerta, SLOs propostos e roteiro de recuperação ([observability/SLO-AND-ALERTS.md](observability/SLO-AND-ALERTS.md));
+  - #621: homologação local da imagem ([audit/HOMOLOGATION-LOCAL-2026-11-21.md](audit/HOMOLOGATION-LOCAL-2026-11-21.md)), medição de capacidade ([benchmarks/CAPACITY-2026-11-21.md](benchmarks/CAPACITY-2026-11-21.md)) e Compose endurecido.
+- **Distribuição:** os artefatos do CI da `main` @ `f1c7621` foram reconstruídos de forma independente com SHA-256 idênticos e têm atestação SLSA ([engineering/RELEASE-PREP-NEXT.md](engineering/RELEASE-PREP-NEXT.md), §5).
 - **Verificação na `main` `3798be6` (SHA completo no cabeçalho):**
   - CI, Security e CodeQL passaram no SHA exato;
   - jobs de teste Python 3.11, 3.12 e 3.13, regressões Judge/Golden, lint e build de distribuições concluíram com sucesso;
@@ -40,7 +45,7 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
   Nenhuma decisão continua pendente no registro.
 - **Issues:** #433, #434 e #435 foram fechadas. O que falta delas é roteiro, não defeito, e está em [ROADMAP.md](ROADMAP.md).
 - **Pins históricos (P3-1):** mantidos e isolados em workflows manuais, com regra testada; ver [security/HISTORICAL-PINS.md](security/HISTORICAL-PINS.md).
-- **PRs abertas verificadas em 2026-11-21:** #613 (Draft, atualização de STATUS superada pela #614; permanece aberta e aguarda decisão do mantenedor) e #615 (esta reconciliação ampliada de versão e documentação). Não há issues abertas (`0`).
+- **PRs abertas em 2026-11-21, de outra sessão do mantenedor:** #617 (STATUS da v0.8.0, superada por esta atualização) e #618 (prova de conceito do escritor da ADR-010; o teste em Python 3.11 falha e ela altera a ADR-010, que é protegida). Nenhuma das duas foi mesclada por esta sessão. A #613 foi fechada. Não há issues abertas (`0`).
 - **Release:** v0.8.0 publicada em 2026-11-13; tag `v0.8.0` aponta para `92ea5eb86b69724b05834d98c326e8315bb6b655`, commit com assinatura verificada pelo GitHub; [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0). CI, Security e CodeQL da tag passaram. O Version DOI v0.8.0 ainda não estava registrado no Zenodo em 2026-11-21. DOI de conceito: `10.5281/zenodo.23125082`; Version DOI v0.7.0: `10.5281/zenodo.24045951`.
 
 ### Classificação do estado
