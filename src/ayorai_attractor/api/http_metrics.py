@@ -19,6 +19,11 @@ from ayorai_attractor import __version__
 LATENCY_BUCKETS: tuple[float, ...] = (0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
 
 
+# The method comes from the client; anything else is folded into "OTHER" so a
+# client cannot create an unbounded number of series.
+_KNOWN_METHODS = frozenset({"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
+
+
 def _escape(value: str) -> str:
     return value.replace("\\", "\\\\").replace("\n", "\\n").replace('"', '\\"')
 
@@ -44,6 +49,8 @@ class HttpMetrics:
 
     def observe(self, route: str, method: str, status: int, duration_seconds: float) -> None:
         duration = max(0.0, duration_seconds)
+        method = method if method in _KNOWN_METHODS else "OTHER"
+        status = status if 100 <= status <= 599 else 0
         with self._lock:
             key = (route, method, status)
             self._requests[key] = self._requests.get(key, 0) + 1

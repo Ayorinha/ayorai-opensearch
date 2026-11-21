@@ -125,3 +125,12 @@ def test_histogram_buckets_are_cumulative() -> None:
 def test_invalid_buckets_are_rejected() -> None:
     with pytest.raises(ValueError):
         HttpMetrics(buckets=(1.0, 0.5))
+
+
+def test_client_chosen_methods_cannot_create_unbounded_series() -> None:
+    metrics = HttpMetrics()
+    for index in range(50):
+        metrics.observe("unmatched", f"X-METHOD-{index}", 405, 0.001)
+    text = metrics.render()
+    assert 'method="OTHER",status="405"} 50' in text
+    assert "X-METHOD" not in text
