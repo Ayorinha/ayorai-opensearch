@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from pathlib import Path
@@ -120,6 +122,38 @@ def test_deleted_entry_is_detected_without_silent_repair(tmp_path: Path) -> None
 
     with pytest.raises(CorruptStoreError, match="entry count"):
         SQLiteMerkleWriter(database)
+
+
+
+def test_process_crash_before_commit_does_not_leave_partial_entry(tmp_path: Path) -> None:
+    database = tmp_path / "crash-recovery.sqlite3"
+    SQLiteMerkleWriter(database)
+    child_code = """
+import os
+import sqlite3
+import sys
+
+connection = sqlite3.connect(sys.argv[1], isolation_level=None)
+connection.execute("BEGIN IMMEDIATE")
+connection.execute(
+    "INSERT INTO adr010_poc_entries "
+    "(leaf_index, idempotency_key, leaf_hash, tree_size_at_append, root_hash_at_append) "
+    "VALUES (0, 'crash-before-commit', ?, 1, ?)",
+    (bytes(32), bytes(32)),
+)
+os._exit(23)
+"""
+    crashed = subprocess.run(
+        [sys.executable, "-c", child_code, str(database)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert crashed.returncode == 23
+    recovered = SQLiteMerkleWriter(database)
+    assert recovered.tree_head().tree_size == 0
+    assert recovered.matches_checkpoint(0, recovered.tree_head().root_hash)
 
 
 def test_concurrent_appends_are_serialized_without_lost_indices(tmp_path: Path) -> None:
