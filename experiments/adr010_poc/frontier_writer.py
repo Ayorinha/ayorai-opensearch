@@ -455,7 +455,7 @@ class SQLiteFrontierWriter:
         )
 
     def matches_checkpoint(self, tree_size: int, root_hash: bytes) -> bool:
-        """Compare the local frontier with a caller-held checkpoint."""
+        """Compare a current or historical tree root with a caller-held checkpoint."""
         if (
             isinstance(tree_size, bool)
             or not isinstance(tree_size, int)
@@ -464,7 +464,39 @@ class SQLiteFrontierWriter:
             or len(root_hash) != HASH_SIZE
         ):
             return False
-        head = self.tree_head()
-        if tree_size != head.tree_size:
+
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN")
+            metadata = connection.execute(
+                """
+                SELECT schema_version, tree_size
+                FROM adr010_frontier_metadata
+                WHERE singleton = 1
+                """
+            ).fetchone()
+            if metadata is None or metadata[0] != 1 or tree_size > metadata[1]:
+                connection.rollback()
+                return False
+            if tree_size == 0:
+                expected_root = empty_root()
+            else:
+                row = connection.execute(
+                    """
+                    SELECT root_hash_at_append
+                    FROM adr010_frontier_entries
+                    WHERE leaf_index = ?
+                    """,
+                    (tree_size - 1,),
+                ).fetchone()
+                if row is None or not isinstance(row[0], bytes):
+                    connection.rollback()
+                    return False
+                expected_root = row[0]
+            connection.commit()
+        except sqlite3.Error:
+            connection.rollback()
             return False
-        return hmac.compare_digest(head.root_hash, root_hash)
+        finally:
+            connection.close()
+        return hmac.compare_digest(expected_root, root_hash)
