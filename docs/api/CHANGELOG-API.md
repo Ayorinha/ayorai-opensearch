@@ -2,6 +2,11 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — `/v1/check` rule detector v13 (scale words)
+
+- A number followed by a scale word without a currency is read with its scale: "1,2 bilhão" and "1.200 milhões" are the same quantity (previously 1.2 against 1200, a false contradiction). A count noun right after the scale ("2,0 milhões de clientes", "3 mil funcionários") makes it a scaled count that compares with the same noun at any scale ("3000 funcionários").
+- The component version is now `13`; `11`, reserved for this change while it waited, is not used. Golden v0.1 changes in one case (`x02`, now correct); the reference update and its rationale are in `docs/eval/SEMANTIC-DIGEST-V1-REFERENCE.md`.
+
 ## Unreleased — provider errors no longer expose internal URLs (security fix)
 
 - **Fix:** a failed search or research provider call returned the exception text in `failures[].message`. For an HTTP error from OpenSearch this included the full internal request URL (host, port and index name), e.g. `Server error '503 Service Unavailable' for url 'https://<host>:<port>/<index>/_search'`. The message is now `"External search failed (<ErrorType>); details are in the server log."` (or `Research provider failed …`), and the detail is logged at WARNING by `ayorai_attractor.agents.core`. API keys were not part of the message before or after.
@@ -10,7 +15,7 @@ All public API contract changes are additive unless explicitly identified otherw
 
 - A sentence that states the claim as a question ("…in 2024?"), opens with a condition ("Se…", "Caso…", "Supondo que…", "If…"), or states a goal or intention ("a meta é atingir…", "pretende", "plans to") is `neutral` for it. A correction notice ("Retificação", "errata", "o valor correto") in the claim sentence or in the sentence right before or after it, within the same paragraph, makes it `neutral`, because the figure it qualifies may be the superseded one; a notice elsewhere in the document does not. Previously all of these supported the claim.
 - When the trigger word belongs to the claim itself ("A meta de inflação foi de 3%", "A correção monetária foi de 5%"), the passage still supports it.
-- The component version is now `12`; `11` is reserved for the pending scale-word change (#571). Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
+- The component version is now `12`; `11` was reserved for the scale-word change (#571), which ships as `13`. Golden v0 and v0.1 predictions are unchanged. No request or response field changed.
 
 ## Unreleased — search results are separate sources (behavior fix)
 

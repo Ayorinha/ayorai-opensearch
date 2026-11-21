@@ -82,15 +82,15 @@ jobs:
           assert r["case_count"] == 34
           assert r["corpus_document_count"] == 52
           assert r["cases_with_global_verdict"] == 30
-          assert r["global_accuracy"] == {"correct": 10, "total": 30, "accuracy": 0.333333}
-          assert r["balanced_accuracy"] == 0.481838
+          assert r["global_accuracy"] == {"correct": 11, "total": 30, "accuracy": 0.366667}
+          assert r["balanced_accuracy"] == 0.502671
           assert r["legacy_accuracy"] == {"correct": 13, "total": 30, "accuracy": 0.433333}
           assert r["mcnemar_vs_legacy"]["legacy_correct_new_wrong"] == 9
-          assert r["mcnemar_vs_legacy"]["new_correct_legacy_wrong"] == 6
-          assert r["mcnemar_vs_legacy"]["exact_p"] == 0.60723876953125
+          assert r["mcnemar_vs_legacy"]["new_correct_legacy_wrong"] == 7
+          assert r["mcnemar_vs_legacy"]["exact_p"] == 0.803619384765625
           assert len(r["content_sha256"]) == 64
           assert r["semantic_digest_version"] == "1"
-          assert r["semantic_sha256"] == "64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608"
+          assert r["semantic_sha256"] == "1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180"
           print("GOLDEN_V0_1: PASS", r["global_accuracy"], r["balanced_accuracy"], r["mcnemar_vs_legacy"], "content_sha256=" + r["content_sha256"], "semantic_sha256=" + r["semantic_sha256"])
           PY
       - name: Upload reproducible evaluation report
