@@ -316,7 +316,8 @@ def test_no_digest_or_key_in_logs_or_metrics(key_file: Path, caplog: Any, monkey
         key_file.write_text("{broken")
         _call(client, "POST", "/v1/check", key)
         monkeypatch.setattr("sys.stdin", io.StringIO(_key() + "\n"))
-        keys_module.main(["new", "--id", "next", "--scope", "verify"])
+        with pytest.raises(SystemExit, match="invalid key file"):
+            keys_module.main(["new", "--id", "next", "--scope", "verify", "--file", str(key_file)])
     text = "\n".join(record.getMessage() for record in caplog.records) + http_metrics.render()
     assert _digest(key) not in text and key not in text and PEPPER not in text
 
@@ -345,7 +346,7 @@ def test_new_command_reads_the_key_and_stores_only_its_digest(
 def test_new_command_rejects_a_short_key(key_file: Path, monkeypatch: Any) -> None:
     monkeypatch.setattr("sys.stdin", io.StringIO("short\n"))
     with pytest.raises(SystemExit, match="at least"):
-        keys_module.main(["new", "--id", "x", "--scope", "verify"])
+        keys_module.main(["new", "--id", "x", "--scope", "verify", "--file", "unused.json"])
 
 
 def test_revoke_unknown_or_twice_fails(key_file: Path) -> None:

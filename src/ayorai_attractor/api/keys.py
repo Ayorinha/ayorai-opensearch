@@ -18,7 +18,7 @@ generated, displayed or stored, only its digest)::
 
     python -c "import secrets; print(secrets.token_urlsafe(32))"   # into the secret manager
     <secret-manager read> | python -m ayorai_attractor.api.keys new --id ops --scope verify \
-        [--expires 2027-01-01T00:00:00Z] [--file keys.json]
+        --file keys.json [--expires 2027-01-01T00:00:00Z]
     python -m ayorai_attractor.api.keys revoke --file keys.json --id ops --by "Anderson"
 """
 
@@ -298,6 +298,13 @@ def _write_atomic(path: Path, document: dict[str, Any]) -> None:
         raise
 
 
+def _load_document(path: Path) -> dict[str, Any]:
+    raw = path.read_bytes()
+    parse_registry(raw)  # RegistryError before anything is changed
+    document: dict[str, Any] = json.loads(raw)
+    return document
+
+
 def _command_new(args: argparse.Namespace) -> int:
     from ayorai_attractor.api.auth import MIN_API_KEY_LENGTH, _api_key_digest
 
@@ -318,24 +325,19 @@ def _command_new(args: argparse.Namespace) -> int:
         "revoked_at": None,
         "revoked_by": None,
     }
-    if args.file is not None:
-        path = Path(args.file)
-        document: dict[str, Any] = (
-            json.loads(path.read_text("utf-8")) if path.exists() else {"schema": SCHEMA, "keys": []}
-        )
-        parse_registry(json.dumps(document).encode())
-        document["keys"].append(entry)
-        _write_atomic(path, document)
-        print(f"entry {args.id} added to {path}", file=sys.stderr)
-    else:
-        print(json.dumps(entry, indent=2))
+    path = Path(args.file)
+    document: dict[str, Any] = (
+        _load_document(path) if path.exists() else {"schema": SCHEMA, "keys": []}
+    )
+    document["keys"].append(entry)
+    _write_atomic(path, document)
+    print(f"entry {args.id} added to {path}", file=sys.stderr)
     return 0
 
 
 def _command_revoke(args: argparse.Namespace) -> int:
+    document = _load_document(Path(args.file))
     path = Path(args.file)
-    document = json.loads(path.read_text("utf-8"))
-    parse_registry(json.dumps(document).encode())
     for item in document["keys"]:
         if item["id"] == args.id:
             if item["revoked_at"] is not None:
@@ -355,7 +357,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     new.add_argument("--id", required=True)
     new.add_argument("--scope", action="append", choices=sorted(SCOPES), required=True)
     new.add_argument("--expires", help="UTC, YYYY-MM-DDTHH:MM:SSZ")
-    new.add_argument("--file", help="append the entry to this key file (atomic write)")
+    new.add_argument("--file", required=True, help="key file to append the entry to (atomic)")
     revoke = commands.add_parser("revoke", help="mark a key as revoked in the key file")
     revoke.add_argument("--file", required=True)
     revoke.add_argument("--id", required=True)

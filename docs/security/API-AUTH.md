@@ -65,7 +65,7 @@ The placeholders above are intentionally invalid and must be replaced. In `api_k
 python -m ayorai_attractor.api.keys revoke --file keys.json --id metrics-bot --by "maintainer name"
 ~~~
 
-- `new` never generates, displays or stores the key, only its digest. Keys shorter than 32 characters are refused.
+- `new` requires `--file`. It never generates, displays or stores the key, and it prints no registry entry: it only appends the digest to the file. Keys shorter than 32 characters are refused, and an invalid key file is reported without being changed.
 - This differs from ADR-012 §4, which had the tool generate and show the key once. Code scanning flags any program output of a secret, so the key now stays in the secret manager.
 - Both commands validate the whole file and write it atomically, so the service never reads a half-written file.
 - The service logs every revocation it applies with the key `id`, `revoked_by` and time, never digests.
