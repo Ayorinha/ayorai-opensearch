@@ -17,6 +17,7 @@ Status and limits: v0.8.0 adds document APIs POST /v1/check (claim verification 
 - [Official website](https://ayorinha.github.io/ayorai-opensearch/): project overview (Portuguese)
 - [Guia de auditoria de inteligência artificial (PT)](https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/): what AI auditing is, what to audit, step-by-step verification of AI answers, open-source tools
 - [Alucinação de IA: como detectar e verificar respostas (PT)](https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/): what AI hallucination is, warning signs, step-by-step verification of ChatGPT and other AI answers
+- [Verificação de afirmações em respostas de IA (PT)](https://ayorinha.github.io/ayorai-opensearch/verificacao-de-afirmacoes-ia/): what claim verification is, how it detects hallucinations step by step, and a comparison of open-source verifiers and fact-checking systems (MiniCheck, FactCG, HallOumi, OpenFactCheck, Veracity, VerifAI) and where AYORAI ATTRACTOR fits
 - [Official GitHub repository](https://github.com/Ayorinha/ayorai-opensearch): source code, documentation, ADRs, evaluation
 - [Current release v0.8.0](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0): release notes and version scope
 - [Technical status](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md): current deliveries, checks and limitations
