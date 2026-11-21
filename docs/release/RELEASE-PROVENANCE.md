@@ -1,6 +1,6 @@
 # Proveniência de artefatos de release
 
-Este documento distingue controles configurados de evidências observadas. A v0.6.0 foi publicada; o registro abaixo identifica os artefatos do CI e a relação declarada com a tag e o depósito Zenodo.
+Este documento distingue controles configurados de evidências observadas e mantém registros por versão. A seção v0.6.0 é histórica; a seção v0.8.0 registra a tag, a GitHub Release e os workflows observados, sem inferir publicação no Zenodo.
 
 ## Verificação registrada da v0.6.0 — 2026-10-25
 
@@ -46,6 +46,18 @@ Os itens seguintes continuam sendo requisitos futuros e não são declarados com
 4. Assinaturas: assinar os artefatos e publicar metadados de verificação.
 5. Replayabilidade: manter commit de origem, hashes, SBOM, proveniência e provas temporais juntos para verificação independente.
 
-## Estado atual
+## Estado registrado para v0.6.0 (histórico)
 
 A v0.6.0 está publicada e a tag `v0.6.0` aponta para o SHA de origem registrado acima. O artefato CI e o manifesto de hashes foram baixados e verificados. O DOI de versão e o DOI de conceito estão registrados em `CITATION.cff`; não houve criação ou alteração de tag, release ou DOI nesta atualização.
+
+
+## Verificação registrada da v0.8.0 — 2026-11-21
+
+- **Versão:** `v0.8.0`; data oficial da versão: 2026-11-13.
+- **Tag e commit:** `v0.8.0` aponta para `92ea5eb86b69724b05834d98c326e8315bb6b655`. A verificação de assinatura do commit retornada pelo GitHub é `verified: true`, motivo `valid`; o autor registrado no payload é ANDERSON AYORA <ayora.anderson@gmail.com>.
+- **GitHub Release:** publicada em 2026-11-13T12:51:50Z; [página oficial da release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0). A consulta da release retornou zero assets anexados.
+- **Workflows da tag:** [CI 43419722784](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/43419722784), [Security 43419722670](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/43419722670) e [CodeQL 43419722631](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/43419722631) concluíram com sucesso no SHA exato da tag. O job `build-distributions` passou; o artefato de distribuição foi listado pelo GitHub Actions como `distributions-92ea5eb86b69724b05834d98c326e8315bb6b655-attempt-1` (366.214 bytes) na consulta de 2026-11-21. Este documento não declara hashes individuais de sdist/wheel sem conferência dos arquivos e do manifesto.
+- **Zenodo:** não foi confirmado um depósito de versão v0.8.0 nem um Version DOI específico até 2026-11-21. O DOI de conceito permanece `10.5281/zenodo.23125082`; o Version DOI confirmado da versão anterior v0.7.0 é `10.5281/zenodo.24045951`. O DOI da v0.8.0 deve ser acrescentado somente após o Zenodo efetivamente publicar o registro.
+- **Citação:** `CITATION.cff` mantém o campo `doi` apontando para o DOI de conceito e conserva o identificador de versão v0.7.0. A ausência do DOI v0.8.0 não deve ser preenchida com placeholder nem com o DOI de conceito duplicado.
+
+Esta seção registra metadados verificáveis da release, não cria nem publica DOI, não altera tag ou GitHub Release e não afirma validação científica ou prontidão de produção.
