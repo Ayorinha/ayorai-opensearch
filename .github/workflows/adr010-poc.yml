@@ -1,0 +1,54 @@
+name: ADR-010 isolated persistence POC
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "experiments/adr010_poc/**"
+      - "tests/auditlog_poc/**"
+      - "tests/auditlog/vectors/rfc6962-transparency-dev.json"
+      - "src/ayorai_attractor/auditlog/**"
+      - ".github/workflows/adr010-poc.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: adr010-poc-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-sqlite-poc:
+    name: Python SQLite persistence prototype
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest tests/auditlog_poc -q
+      - run: ruff check experiments/adr010_poc tests/auditlog_poc
+
+  tessera-posix-conformance:
+    name: Tessera v1.0.4 POSIX conformance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.24.0"
+          cache: false
+      - name: Run upstream Tessera POSIX writer and independent fsck
+        run: python3 experiments/adr010_poc/run_tessera_poc.py
+      - name: Exercise upstream Tessera POSIX HTTP conformance personality
+        run: python3 experiments/adr010_poc/run_tessera_http_poc.py
