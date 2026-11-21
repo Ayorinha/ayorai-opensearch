@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from ayorai_attractor.auditlog import inclusion_proof, tree_root
 from experiments.adr010_poc.idempotency_outbox import SQLiteIdempotencyOutbox
 from experiments.adr010_poc.python_writer import CorruptStoreError, IdempotencyConflict
 
@@ -33,6 +34,7 @@ def test_outbox_transitions_pending_assigned_recorded_and_replays(tmp_path: Path
         tree_size=1,
         root_hash=ROOT,
         checkpoint_note=SIGNED_CHECKPOINT,
+        inclusion_proof=(),
     )
     replay = outbox.reserve("request-1", LEAF)
 
@@ -102,7 +104,7 @@ def test_outbox_record_checkpoint_is_idempotent_and_immutable(tmp_path: Path) ->
     assert replay.replayed
     with pytest.raises(CorruptStoreError, match="silently replaced"):
         outbox.record_checkpoint(
-            "request-1", LEAF, 0, 1, OTHER_LEAF, b"different checkpoint"
+            "request-1", LEAF, 0, 1, ROOT, b"different checkpoint", ()
         )
 
 
@@ -120,13 +122,17 @@ def test_pending_outbox_survives_restart_and_fails_closed_until_reconciled(
     assert replay.tessera_index is None
     assert [row.idempotency_key for row in restarted.list_unresolved()] == ["request-1"]
 
+    pending_leaves = (OTHER_LEAF, OTHER_LEAF, OTHER_LEAF, OTHER_LEAF, LEAF)
+    pending_root = tree_root(pending_leaves)
+    pending_proof = tuple(inclusion_proof(4, pending_leaves))
     reconciled = restarted.record_checkpoint(
         "request-1",
         LEAF,
         tessera_index=4,
         tree_size=5,
-        root_hash=bytes.fromhex("11" * 32),
+        root_hash=pending_root,
         checkpoint_note=SIGNED_CHECKPOINT,
+        inclusion_proof=pending_proof,
     )
     assert reconciled.state == "RECORDED"
     assert reconciled.tessera_index == 4
@@ -147,13 +153,17 @@ def test_assigned_outbox_survives_restart_until_checkpoint_is_published(
     assert unresolved[0].state == "ASSIGNED"
     assert unresolved[0].tessera_index == 3
 
+    assigned_leaves = (OTHER_LEAF, OTHER_LEAF, OTHER_LEAF, LEAF)
+    assigned_root = tree_root(assigned_leaves)
+    assigned_proof = tuple(inclusion_proof(3, assigned_leaves))
     recorded = restarted.record_checkpoint(
         "request-1",
         LEAF,
         tessera_index=3,
         tree_size=4,
-        root_hash=bytes.fromhex("22" * 32),
+        root_hash=assigned_root,
         checkpoint_note=SIGNED_CHECKPOINT,
+        inclusion_proof=assigned_proof,
     )
     assert recorded.state == "RECORDED"
 
@@ -227,14 +237,14 @@ def test_outbox_rejects_invalid_checkpoint_metadata(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="tree_size"):
         outbox.record_checkpoint(
-            "request-1", LEAF, 0, 0, ROOT, SIGNED_CHECKPOINT
+            "request-1", LEAF, 0, 0, ROOT, SIGNED_CHECKPOINT, ()
         )
     with pytest.raises(ValueError, match="root_hash"):
         outbox.record_checkpoint(
-            "request-1", LEAF, 0, 1, b"short", SIGNED_CHECKPOINT
+            "request-1", LEAF, 0, 1, b"short", SIGNED_CHECKPOINT, ()
         )
     with pytest.raises(ValueError, match="checkpoint_note"):
-        outbox.record_checkpoint("request-1", LEAF, 0, 1, ROOT, b"")
+        outbox.record_checkpoint("request-1", LEAF, 0, 1, ROOT, b"", ())
 
 
 def test_outbox_rejects_assign_or_record_without_reservation(tmp_path: Path) -> None:
@@ -244,5 +254,5 @@ def test_outbox_rejects_assign_or_record_without_reservation(tmp_path: Path) -> 
         outbox.assign("missing", LEAF, tessera_index=0)
     with pytest.raises(CorruptStoreError, match="unreserved"):
         outbox.record_checkpoint(
-            "missing", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT
+            "missing", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT, ()
         )
