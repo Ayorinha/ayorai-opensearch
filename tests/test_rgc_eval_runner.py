@@ -1142,7 +1142,7 @@ def test_cli_run_writes_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert code == 0
     assert RUNNER["judge2_module"]._RULES_PATH == missing_rules
     report = json.loads(out.read_text(encoding="utf-8"))
-    assert report["runner_version"] == "rgc-eval/0.13.0"
+    assert report["runner_version"] == "rgc-eval/0.14.0"
     assert set(report["runtime_dependencies"]) == {"pydantic", "pydantic-core", "rfc8785"}
     assert all(
         isinstance(value, str) and value for value in report["runtime_dependencies"].values()

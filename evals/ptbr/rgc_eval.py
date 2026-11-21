@@ -80,7 +80,7 @@ from evals.ptbr.rgc_random import (  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 DOCUMENTS = ROOT / "evals" / "ptbr" / "sources" / "DOCUMENTS.jsonl"
 
-RUNNER_VERSION = "rgc-eval/0.13.0"
+RUNNER_VERSION = "rgc-eval/0.14.0"
 FREEZE_SCHEMA_VERSION = 2
 RUN_MANIFEST_SCHEMA = "rgc-run-manifest/1"
 # Direct and transitive deterministic runtime dependencies loaded by the RGC runner,
@@ -151,6 +151,10 @@ class Document:
     retrieved_at: str
     text: str
     source_license: str
+    # Spans of this text that an official rectification superseded (Protocol
+    # Amendment 4, DEC-011 option A): ``(start, end, superseded_by)``. A passage
+    # touching one of them is never adjudicated. Empty when the corpus declares none.
+    superseded_spans: tuple[tuple[int, int, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -206,14 +210,54 @@ def load_documents(path: Path = DOCUMENTS) -> dict[str, Document]:
                 raise ValueError(f"{path}:{line_number}: text_sha256 mismatch for {source_id!r}")
         if source_id in documents:
             raise ValueError(f"{path}:{line_number}: duplicate document {source_id!r}")
+        superseded = _parse_superseded_spans(raw.get("superseded_spans", []), text)
+        if isinstance(superseded, str):
+            raise ValueError(f"{path}:{line_number}: {source_id!r}: {superseded}")
         documents[source_id] = Document(
             source_id=source_id,
             source_url=raw["source_url"],
             retrieved_at=raw["retrieved_at"],
             text=text,
             source_license=raw["source_license"],
+            superseded_spans=superseded,
         )
+    for document in documents.values():
+        for _, _, replacement in document.superseded_spans:
+            if replacement not in documents:
+                raise ValueError(
+                    f"{path}: {document.source_id!r}: superseded_by {replacement!r} "
+                    "is not a document of the corpus"
+                )
     return documents
+
+
+def _parse_superseded_spans(value: Any, text: str) -> tuple[tuple[int, int, str], ...] | str:
+    """Validate ``superseded_spans`` fail-closed; return the spans or an error message."""
+    if not isinstance(value, list):
+        return "superseded_spans must be a list"
+    spans: list[tuple[int, int, str]] = []
+    for item in value:
+        if not isinstance(item, dict) or set(item) != {"start", "end", "superseded_by"}:
+            return "each superseded span needs exactly start, end and superseded_by"
+        start, end, replacement = item["start"], item["end"], item["superseded_by"]
+        if type(start) is not int or type(end) is not int or not 0 <= start < end <= len(text):
+            return f"superseded span [{start!r}, {end!r}) is outside the text"
+        if not isinstance(replacement, str) or not replacement.strip():
+            return "superseded_by must be a non-empty source_id"
+        spans.append((start, end, replacement))
+    spans.sort()
+    for (_, previous_end, _), (start, _, _) in zip(spans, spans[1:], strict=False):
+        if start < previous_end:
+            return "superseded spans must not overlap"
+    return tuple(spans)
+
+
+def is_superseded(passage: Passage, documents: Mapping[str, Document]) -> bool:
+    """True when the passage overlaps text an official rectification superseded."""
+    document = documents[passage.document_id]
+    return any(
+        passage.start < end and start < passage.end for start, end, _ in document.superseded_spans
+    )
 
 
 def export_strict_corpus(documents: Mapping[str, Document]) -> str:
@@ -445,6 +489,10 @@ def predict(
 ) -> dict[str, Any]:
     claim_id = "c1"
     spans = list(atoms) if atoms else [(0, len(claim_text))]
+    # Amendment 4 (DEC-011, option A): superseded text is never evidence. The
+    # exclusion happens before adjudication, so the Judge itself is unchanged.
+    excluded = [passage for passage in passages if is_superseded(passage, documents)]
+    passages = [passage for passage in passages if not is_superseded(passage, documents)]
     evidence = []
     for index, passage in enumerate(passages, start=1):
         doc = documents[passage.document_id]
@@ -514,6 +562,10 @@ def predict(
         ],
         "atoms": [claim_text[start:end] for start, end in spans],
         "stances": [s["stance"] for s in stances],
+        "excluded_superseded_passages": [
+            {"document_id": p.document_id, "start_offset": p.start, "end_offset": p.end}
+            for p in excluded
+        ],
     }
 
 
