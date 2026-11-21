@@ -1,49 +1,43 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-21 — main @ `2b98ac415e3d56ec851a32f75b9f067424b6f4ee` (merge PR #603); post-closure audit in [audit/POST-CLOSURE-AUDIT-2026-11-21.md](audit/POST-CLOSURE-AUDIT-2026-11-21.md)
+Updated: 2026-11-21 — `main` @ `50ed1cea3b9c2153eee6b01cfc0d70b7fe7ab58e` (merge da PR #609). A comparação GitHub entre `main` e esse SHA retornou `identical`.
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
-Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
+Historical snapshots and the previous execution-cycle merge table are preserved in [STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-11-21 (após a auditoria pós-encerramento)
+## Estado atual — 2026-11-21 (após as integrações #604–#611)
 
-- **Integradas em 2026-11-21, por autorização do mantenedor e com CI verde no HEAD final de cada PR:**
-  - #598: coerência da documentação RGC;
-  - #599: detector v13, escala sem moeda. Substitui a #571, fechada. Muda a referência do Golden v0.1 para `1fd6fdb7…` (11/30), aprovada pelo mantenedor; Golden v0 e smoke-v0 inalterados;
-  - #600: IC de kappa por componente, DEC-022, com o runner `rgc-eval/0.13.0`;
-  - #602: cadeia de sequência da trilha (`verify_chain`, `checkpoint`), parte local do P2-1;
-  - #601: ADR-011, que mantém o Judge do ADR-002 por rota e resolve o P1-3;
-  - #603: decisões de governança, roteiro e STATUS.
-- **Sem revisão registrada antes do merge:** #599, #601, #602 e #603. A #600 recebeu revisão, mas seus dois comentários só são tratados na #605. A revisão pós-merge por ferramenta automatizada está em [audit/POST-CLOSURE-AUDIT-2026-11-21.md](audit/POST-CLOSURE-AUDIT-2026-11-21.md) e encontrou um defeito na #602, corrigido na #604.
-- **Decisões do mantenedor registradas em 2026-11-21** ([DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#decisões-de-2026-11-21)):
-  - DEC-001 encerrada: lock com hashes e imagem por digest;
-  - DEC-003: ADR-001 aceito;
-  - DEC-004: o repositório mantém o nome;
-  - DEC-006: stance em português é a próxima prioridade técnica.
-
-  Nenhuma decisão continua pendente no registro.
-- **Issues:** #433, #434 e #435 foram fechadas. O que falta delas é roteiro, não defeito, e está em [ROADMAP.md](ROADMAP.md).
-- **Pins históricos (P3-1):** mantidos e isolados em workflows manuais, com regra testada; ver [security/HISTORICAL-PINS.md](security/HISTORICAL-PINS.md).
-- **PRs abertas, aguardando decisão do mantenedor:**
-  - #604: rollback da transação da trilha quando a cadeia falha;
-  - #605: tratamento da revisão da #600;
-  - esta atualização.
-- **Release:** versão de código `0.8.0`; nenhuma tag, release ou DOI nova.
+- **Referência da `main`:** `50ed1cea3b9c2153eee6b01cfc0d70b7fe7ab58e`, último commit da sequência atual e integração da #609.
+- **Integrações na `main`:**
+  - [#604](https://github.com/Ayorinha/ayorai-opensearch/pull/604): rollback explícito da transação quando a gravação da cadeia ou do registro de purga falha;
+  - [#605](https://github.com/Ayorinha/ayorai-opensearch/pull/605): complemento documental da revisão da DEC-022, incluindo definição de K e texto proposto da Emenda 12;
+  - [#606](https://github.com/Ayorinha/ayorai-opensearch/pull/606): auditoria pós-encerramento; sua referência é histórica (`main` @ `2b98ac4`), e os follow-ups posteriores estão listados aqui;
+  - [#611](https://github.com/Ayorinha/ayorai-opensearch/pull/611): falha de retenção após o commit deixa de ser reportada como falha da gravação já concluída; purga parcial é desfeita e o log registra somente o tipo da exceção;
+  - [#610](https://github.com/Ayorinha/ayorai-opensearch/pull/610): remove caminhos absolutos de ambientes de execução dos relatórios F1.2, recalcula os hashes semânticos e alinha o guia de anotação à Emenda 4; nenhuma métrica ou predição foi alterada;
+  - [#609](https://github.com/Ayorinha/ayorai-opensearch/pull/609): runner `rgc-eval/0.14.0`; o corpus pode declarar `superseded_spans`, validados com falha fechada, e os trechos superados por retificação são excluídos antes da adjudicação. O Judge, Golden, corpus atual, protocolo e pré-registro não foram alterados.
+- **Atualizações do site (`gh-pages`, não da `main`):**
+  - [#607](https://github.com/Ayorinha/ayorai-opensearch/pull/607): página sobre verificação de afirmações em respostas de IA;
+  - [#608](https://github.com/Ayorinha/ayorai-opensearch/pull/608): banner oficial nos guias;
+  - [#612](https://github.com/Ayorinha/ayorai-opensearch/pull/612): versões em inglês e espanhol dos guias.
+- **PRs abertas:** a busca de PRs abertas no repositório retornou zero antes da abertura desta atualização. Não havia PR de código aguardando revisão nessa consulta.
+- **CI dos HEADs das PRs integradas:** todos os workflows retornados concluíram com sucesso: #604 (8), #605 (8), #606 (8), #609 (9), #610 (8) e #611 (8). São verificações disparadas nos HEADs das PRs, não validação científica.
+- **CI pós-merge da `main`:** não confirmado nesta consulta. Para `50ed1ce`, o conector não retornou workflow runs nem status combinado; portanto, não se afirma que os checks de push pós-merge foram executados ou aprovados.
+- **Release:** versão de código `0.8.0`; esta atualização não cria tag, release ou DOI.
 
 ### Classificação do estado
 
 | Estado | Itens |
 |---|---|
-| **Integrado na `main` e testado** | Judge ADR-002 em `/v1/check`, `/v1/fields`, `/v2/audit` e Judge 2.0 `r2-a` em `/v1/verify`, uma família por rota (ADR-011); detector por regras v13; independência por conteúdo normalizado e proveniência (`document-check-5`); trilha SQLite `r2-v3`/`r2-v4` com HMAC, rotação, retenção e cadeia de sequência; runner RGC `rgc-eval/0.13.0` com IC por componente para acurácia, H1 e kappa; imagem por digest, lock com hash, Grype, SBOM e SLSA |
-| **Integrado sem revisão humana independente** | Runner e ferramenta de concordância do RGC (#576, #577, #580, #584, #600); detector v13 (#599); cadeia de auditoria (#602) |
-| **Texto normativo aguardando o mantenedor** | Emendas datadas da DEC-022 (pré-registro e protocolo) e Emenda 11 no protocolo: texto pronto em [eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md](eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md). Os arquivos são protegidos e não foram editados por ferramenta automatizada |
-| **Configuração do repositório (só pelo mantenedor, em Settings)** | Dependabot alerts e security updates desligados; 92 branches em 2026-11-21 (`main`, `gh-pages` e 90 antigas, sem nenhuma PR aberta associada). O repositório apaga a branch de origem quando a PR é mesclada (`delete_branch_on_merge`); a contagem de 94 incluía branches de PRs que estavam abertas na hora. A classificação por conteúdo de cada branch está no relatório de auditoria: 22 vazias ou já incorporadas, que são as candidatas à exclusão pelo mantenedor, 12 com conteúdo não incorporado e 56 em conflito com a `main`, que pedem triagem. A exigência de aprovação no ruleset continua 0 de propósito: com um único mantenedor, o GitHub não permite aprovar a própria PR, e exigir 1 aprovação bloquearia todo merge |
-| **Roteiro** | [ROADMAP.md](ROADMAP.md): persistir o veredito do `/v1/verify`, log Merkle, escopos e expiração de chaves, tenant, observabilidade, build reprodutível |
-| **Não validado** | Implantação real; POC (proposta); acurácia científica: Golden v0 7/30 e v0.1 11/30, abaixo do baseline de classe majoritária (13/30); RGC sem resultado |
+| **Integrado na `main` e coberto por CI** | Judge ADR-002 em `/v1/check`, `/v1/fields`, `/v2/audit` e Judge 2.0 `r2-a` em `/v1/verify`, por rota (ADR-011); detector por regras v13; independência e proveniência de fontes; trilha SQLite `r2-v3`/`r2-v4` com HMAC, rotação, retenção e cadeia de sequência; runner RGC `rgc-eval/0.14.0`, snapshots E5, isolamento do interpretador, concordância e métricas por componente; exclusão opcional de trechos superados por retificação; imagem por digest, lock com hashes, Grype, SBOM e SLSA. |
+| **Integrado, mas sem revisão humana científica independente** | Linha de runner e concordância RGC (#576, #577, #580, #584, #600 e #609). CI e testes sintéticos não substituem a revisão independente prevista no `CONTRIBUTING.md`. |
+| **Texto normativo aguardando o mantenedor** | Propostas datadas da DEC-022 (Emenda 12) e Emenda 11 no protocolo. O texto está em [AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md](eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md); os artefatos protegidos não foram alterados. |
+| **Configuração do repositório** | O relatório de auditoria de 2026-11-21 registrou alertas e atualizações de segurança do Dependabot desativados. A configuração só pode ser alterada pelo mantenedor em Settings. O último inventário contou 92 branches; essa contagem não foi refeita nesta atualização. Nenhuma branch foi excluída ou limpa. |
+| **Próxima prioridade técnica aprovada** | DEC-006: evolução do motor de stance em português, com medição estratificada, tamanho amostral e IC95%, sem ajuste ao Golden e sem alteração do protocolo RGC. A prioridade não aprova, por si só, novo modelo, dependência ou mudança de limiar. |
+| **Não validado** | Implantação real e POC; acurácia científica externa; benchmark em português. Golden v0: 7/30; Golden v0.1: 11/30, ambos abaixo do baseline de classe majoritária (13/30). RGC sem resultado confirmatório. |
 
-- **RGC:** protocolo **[PROPOSTO]**, não congelado. Só pessoas podem fazer: piloto 02, segunda anotação independente, revisão F-01, inserção das emendas propostas, congelamento e execução única. Nenhum caso RGC foi criado, visto, rotulado ou executado.
-- **Limites de alegações:** sem benchmark em português publicado, validação externa, certificação ou conformidade legal. **INFERÊNCIA:** a evidência não basta para declarar o sistema pronto para produção.
+- **RGC:** protocolo **[PROPOSTO]**, não congelado. Piloto 02, segunda anotação independente, revisão F-01, verificação humana de proveniência/vigência/retificações, inserção das emendas e decisão de congelamento continuam sendo gates humanos. O campo `superseded_spans` é opcional e o corpus atual não o declara; a curadoria de retificações não foi feita por esta execução. Nenhum caso RGC real, anotação humana ou partição oculta foi acessado ou executado.
+- **Limites de alegações:** sem benchmark em português publicado, validação externa, certificação ou conformidade legal automática. **INFERÊNCIA:** a evidência disponível não basta para declarar o sistema pronto para produção.
 
 ## Snapshot — 2026-11-20 (substituído pelo estado de 2026-11-21)
 
