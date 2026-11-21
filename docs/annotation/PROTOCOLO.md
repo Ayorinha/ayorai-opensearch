@@ -88,7 +88,7 @@ Manter separados:
 - **Código de motivo:** identifica de forma estável por que houve rejeição de entrada, rejeição de evidência ou abstenção.
 - **Justificativa:** explicação concisa que aponta para os IDs de átomos e evidências; não substitui o rastro estruturado.
 
-Quando houver falta de evidência, fonte indisponível, ambiguidade não resolvida, escopo não suportado ou âncora temporal necessária ausente, seguir o código de motivo aplicável e abster-se quando as regras assim determinarem. Não usar `UNVERIFIED` como substituto genérico para todos os estados de abstenção ou de entrada inválida.
+Quando as evidências não abordam a afirmação, o rótulo é `UNVERIFIED` (Emenda 4, item 1, do protocolo; DEC-011). Fonte indisponível, ambiguidade não resolvida, escopo não suportado e âncora temporal necessária ausente são estados de decisão: registrar o código de motivo aplicável e abster-se quando as regras assim determinarem. Não usar `UNVERIFIED` como substituto genérico para entrada inválida ou para esses estados de abstenção.
 
 Os anotadores humanos devem usar os rótulos definidos na versão do esquema adotada pelo estudo. Não introduzir rótulos ad hoc. Se o protocolo e o esquema discordarem, suspender a anotação do caso e registrar a incompatibilidade para decisão do mantenedor.
 
@@ -98,7 +98,7 @@ Os anotadores humanos devem usar os rótulos definidos na versão do esquema ado
 - ausência de evidência, contradição explícita, texto retificado e modalidade: Emenda 4 (DEC-011);
 - concordância e o marcador `RULE_GAP`, que só vale em piloto e fica fora do kappa: Emenda 10 (DEC-020).
 
-O parágrafo anterior sobre `UNVERIFIED` é texto genérico deste guia. Para o RGC, a Emenda 4 diz que a ausência de evidência implica `UNVERIFIED`. Se as duas redações parecerem divergir num caso, aplicar a regra acima: suspender o caso e registrar para decisão do mantenedor.
+Em 2026-11-21, o mantenedor autorizou alinhar o parágrafo sobre `UNVERIFIED`, acima, à Emenda 4. Se uma redação deste guia parecer divergir de uma emenda num caso concreto, aplicar a regra acima: suspender o caso e registrar para decisão do mantenedor.
 
 ## 8. Adjudicação entre anotadores
 
