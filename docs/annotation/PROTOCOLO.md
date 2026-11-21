@@ -92,6 +92,14 @@ Quando houver falta de evidência, fonte indisponível, ambiguidade não resolvi
 
 Os anotadores humanos devem usar os rótulos definidos na versão do esquema adotada pelo estudo. Não introduzir rótulos ad hoc. Se o protocolo e o esquema discordarem, suspender a anotação do caso e registrar a incompatibilidade para decisão do mantenedor.
 
+**Remissão para o benchmark RGC (nota de 2026-11-21):** este guia não repete os rótulos nem as regras do RGC. As fontes normativas são:
+- os cinco vereditos `SUPPORTED`, `REFUTED`, `UNVERIFIED`, `PARTIALLY_SUPPORTED` e `CONFLICTING`, com a semântica da ADR-009: Emenda 2 de [`docs/eval/PROTOCOL-GOLDEN-V1.md`](../eval/PROTOCOL-GOLDEN-V1.md);
+- afirmações compostas e átomos: Emenda 3 (DEC-010);
+- ausência de evidência, contradição explícita, texto retificado e modalidade: Emenda 4 (DEC-011);
+- concordância e o marcador `RULE_GAP`, que só vale em piloto e fica fora do kappa: Emenda 10 (DEC-020).
+
+O parágrafo anterior sobre `UNVERIFIED` é texto genérico deste guia. Para o RGC, a Emenda 4 diz que a ausência de evidência implica `UNVERIFIED`. Se as duas redações parecerem divergir num caso, aplicar a regra acima: suspender o caso e registrar para decisão do mantenedor.
+
 ## 8. Adjudicação entre anotadores
 
 1. Cada anotador trabalha independentemente, sem consultar os rótulos dos demais antes de registrar a própria decisão.

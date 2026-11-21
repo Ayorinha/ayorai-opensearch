@@ -6,7 +6,7 @@ Owner and final decision-maker: Anderson Leon Ayora
 Independent reviewer: revisor independente  
 Source: execution plan v5, work queue
 
-## Índice de decisões (atualizado em 2026-11-07)
+## Índice de decisões (atualizado em 2026-11-21)
 
 Este índice só localiza registros; o texto de cada decisão continua sendo a fonte. **Atenção:** os identificadores DEC-007 e DEC-008 foram usados duas vezes, com significados diferentes. Até decisão do mantenedor sobre renumeração, cite sempre o identificador com o qualificador desta tabela.
 
@@ -38,6 +38,8 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-022 | IC95% de Cohen's kappa por componentes | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
 | DEC-023 | Componentes conectados por artigos citados | Aprovada pelo mantenedor (2026-11-07); opção A | Este arquivo |
 | DEC-024 | Limites de calibração e combinação de sinais no LLM-AggreFact | Aprovada pelo mantenedor (2026-11-08); opção B | Este arquivo |
+| DEC-025 | Pré-registro E3 e planejamento LTT (benchmarks exploratórios) | **Só proposta**, na PR #504, fechada sem merge em 2026-11-20; nunca decidida. O ID fica reservado | Branch `docs/e3-confirm-dev-b-prereg` |
+| DEC-026 | Elegibilidade E3 por estados de exposição verificáveis | **Só proposta**, na PR #509, fechada sem merge em 2026-11-20; nunca decidida. O ID fica reservado | Branch `docs/dec-026-proposal` |
 | DEC-027 | Reconciliação estatística do RGC (IDs, percentil, gerador, H1, validação, K) | Aprovada pelo mantenedor (2026-11-14), por delegação às recomendações conjuntas | Este arquivo |
 
 ## Decisões aprovadas
