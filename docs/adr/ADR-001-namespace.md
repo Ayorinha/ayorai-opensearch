@@ -1,6 +1,6 @@
 # ADR-001 — Isolated Python Namespace
 
-**Status:** Proposed in A1 PR  
+**Status:** Accepted — 2026-11-21, decisão do mantenedor (DEC-003, opção 1). Proposed in A1 PR em 2026-09-30.  
 **Date:** 2026-09-30
 
 ## Decision
@@ -52,3 +52,11 @@ Official SDK installation follows the documented package names: `mcp` and `opena
 - The repository uses `src/` packaging.
 - The old top-level generic package directories are removed.
 - Future MCP and Agents SDK adoption can use their official namespaces without local shadowing.
+
+## Nota de aceitação (2026-11-21)
+
+Conferência feita na aceitação, sem alterar a decisão:
+
+- Todo o código de aplicação está em `src/ayorai_attractor`, e nenhum pacote genérico de nível superior permanece.
+- Os pacotes listados acima existem. Depois de 2026-09-30 entraram `ayorai_attractor.verification` (pipeline de verificação e Judges) e `ayorai_attractor.auditlog` (biblioteca da ADR-010), dentro do mesmo namespace, como a decisão prevê.
+- A prova de compatibilidade roda no CI, no job `namespace-compatibility`: `import mcp` e `import agents` resolvem para os SDKs instalados em `site-packages`.
