@@ -81,7 +81,7 @@ A v0.8.0 é uma versão de produto e de segurança da cadeia de dependências. *
 - **Segurança da cadeia:** auditoria estrita de dependências no CI (#533), ambiente NLI separado e SBOM CycloneDX (#536), ausência de persistência de credenciais GitHub em checkout de workflows (#538) e permissões de escrita por job (#540).
 - **Experimentos DEV:** Emenda 2 do Learn then Test e reagregação exploratória pós-hoc (#488, #492), cache DEV cifrado (#496, #508) e ensemble E3 exploratório em DEV-A (#497, #503). Esses itens não constituem evidência confirmatória nem desempenho em produção.
 
-A publicação oficial permanece sem benchmark em português; o protocolo RGC não está congelado; não há certificação nem alegação de conformidade regulatória automática. Consulte a [release v0.8.0](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0) e o [Status técnico](docs/STATUS.md).
+A v0.8.0 não apresenta resultado confirmatório novo de acurácia. O repositório contém a avaliação interna PT-CP-Audit, descrita abaixo, mas o protocolo RGC ainda não está congelado e não há benchmark RGC PT-BR validado, validação externa independente ou certificação. Não se afirma conformidade regulatória automática. Consulte a [release v0.8.0](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0) e o [Status técnico](docs/STATUS.md).
 
 ## O que está comprovado hoje
 
