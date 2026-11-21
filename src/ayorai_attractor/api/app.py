@@ -18,6 +18,7 @@ from ayorai_attractor.api.auth import (
     APIKeyAuthMiddleware,
     validate_auth_configuration,
 )
+from ayorai_attractor.api.http_metrics import http_metrics
 from ayorai_attractor.api.load_control import (
     HeavyRouteConcurrencyLimitMiddleware,
     inflight_scope_from_env,
@@ -297,9 +298,39 @@ def _principal(http_request: Request) -> str | None:
     return value if isinstance(value, str) else None
 
 
+# Liveness: the process answers. It does not check dependencies (see /ready). The
+# docstring is left out on purpose: it would change the published OpenAPI contract.
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "ayorai-attractor"}
+
+
+@app.get("/ready", include_in_schema=False)
+def ready() -> Response:
+    """Readiness: the audit store answers. Unauthenticated, like /health; no details."""
+    if audit_store.ping():
+        return JSONResponse({"status": "ready"})
+    return JSONResponse({"status": "not_ready"}, status_code=503)
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics() -> Response:
+    """Prometheus text exposition; protected by the API key like every other route."""
+    return Response(http_metrics.render(), media_type="text/plain; version=0.0.4")
+
+
+def _record_trace(
+    response: SearchResponse,
+    report: AuditReport,
+    owner: str | None,
+    adjudication: tuple[str | None, str] | None = None,
+) -> None:
+    """Record an audit trace and count the failures for alerting (re-raised)."""
+    try:
+        audit_store.record(response, report, owner=owner, adjudication=adjudication)
+    except Exception:
+        http_metrics.audit_record_failed()
+        raise
 
 
 @app.post(
@@ -332,7 +363,7 @@ def audit(request: SearchRequest, http_request: Request) -> AuditResponse:
     """Run the engine and expose a deterministic audit of its evidence."""
     response = engine.run(request)
     report = AuditReport.from_response(response)
-    audit_store.record(response, report, owner=_principal(http_request))
+    _record_trace(response, report, _principal(http_request))
     return AuditResponse(
         trace_id=report.trace_id,
         verification=None,
@@ -551,12 +582,7 @@ def audit_v2(request: AuditV2Request, http_request: Request) -> AuditV2Response:
     # the trace: the trace is recorded only after adjudication, so it attests the
     # verdicts actually returned (r2-v4), not just the retrieval counts.
     digest = adjudication_sha256(body.model_dump(mode="json"))
-    audit_store.record(
-        response,
-        report,
-        owner=_principal(http_request),
-        adjudication=(check_trace_id, digest),
-    )
+    _record_trace(response, report, _principal(http_request), (check_trace_id, digest))
     return body.model_copy(update={"adjudication_sha256": digest})
 
 

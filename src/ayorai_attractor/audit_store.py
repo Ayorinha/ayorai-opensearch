@@ -749,6 +749,21 @@ class AuditTraceStore:
             (seq, kind, trace_id, replay_digest, payload, link, key_id),
         )
 
+    def ping(self) -> bool:
+        """True when the database answers and both tables exist (readiness probe)."""
+        try:
+            with self._lock:
+                tables = {
+                    str(row[0])
+                    for row in self._connection.execute(
+                        "SELECT name FROM sqlite_master WHERE type = 'table' "
+                        "AND name IN ('audit_traces', 'audit_chain')"
+                    ).fetchall()
+                }
+        except sqlite3.Error:
+            return False
+        return tables == {"audit_traces", "audit_chain"}
+
     def checkpoint(self) -> dict[str, Any]:
         """Head of the chain, to be kept outside this host (detects truncation and rollback).
 
