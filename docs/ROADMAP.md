@@ -38,3 +38,25 @@ Limite permanente: quem controla o banco e a chave ativa pode reescrever a cadei
 | G4 — Cadeia de suprimentos e releases | SBOM CycloneDX, proveniência SLSA assinada, locks com hash | Build reprodutível comparado de forma independente; checklist de release executado na próxima versão |
 | G5 — RGC científico | Runner com snapshots, interpretador isolado, IC e testes por componente (DEC-021 a DEC-023, DEC-027) | Somente humano: piloto 02, segunda anotação, revisão F-01, inserção das emendas propostas em `docs/eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md`, congelamento e execução única |
 | G6 — Prontidão para produção | Proposta de POC em `docs/poc/POC-PROPOSAL.md` | Implantação real de homologação com gateway, TLS e backup testados; avaliação externa |
+
+## 4. Prontidão para POC e para produção (avaliação de 2026-11-21)
+
+O que a `main` tem hoje e o que falta, tema por tema. "Existe" quer dizer código na `main` com teste; nenhuma linha é prova de operação real, porque não houve implantação. A POC é planejada em [poc/POC-PROPOSAL.md](poc/POC-PROPOSAL.md).
+
+| Tema | Existe | Falta para a POC | Falta para produção |
+|---|---|---|---|
+| Autenticação | Chave por HMAC com pepper (`api/auth.py`); limite por IP e por chave | — | Revogação sem reinício |
+| Autorização e escopos | Dono por rastro; 404 para rastro de outro principal | — | Escopos e expiração por chave (§2) |
+| Multi-tenancy e isolamento | Isolamento por principal no `GET /v1/audit/{id}` | Usar um único tenant | Tenant distinto de principal, com ADR e testes entre tenants (§2) |
+| Trilha de auditoria | HMAC, rotação, retenção, `verify_all`, cadeia `verify_chain` e `checkpoint` (#602; transação corrigida na #604, em revisão) | `checkpoint()` diário guardado fora do host | Persistir o veredito do `/v1/verify`; log Merkle; checkpoints assinados; testemunhas; carimbo do tempo (§1) |
+| Rastreabilidade do veredito | `trace_id` determinístico no `/v1/check`; `adjudication_sha256` no `/v2/audit` (`r2-v4`) | — | Veredito do `/v1/verify` persistido (ADR-009 §15.1) |
+| Evidências | Trechos com offsets e proveniência `client_supplied`/`server_retrieved` | Documentos com `url` ou origem declarada | Armazenamento verificável das evidências, não só dos digests |
+| Logs | Logs estruturados sem conteúdo, com `request_id` (`api/request_context.py`) | — | Envio a uma plataforma, com retenção definida |
+| Métricas e alertas | `MetricsCollector` com saída Prometheus (`metrics.py`), sem rota HTTP; adaptador OpenTelemetry opcional | Painel mínimo de 429/503 e falhas de `verify_chain` | Rota de métricas, alertas e SLO |
+| Carga e concorrência | Controle de requisições pesadas em andamento (`test_api_load_control.py`); SQLite serializado por processo | Teste de carga no ambiente da POC | Testes de carga e soak; banco que aceite várias réplicas |
+| TLS e gateway | Guia e exemplo nginx ([security/EDGE-RATE-LIMIT.md](security/EDGE-RATE-LIMIT.md)), testados só localmente | Gateway com TLS na POC | Gateway com contador compartilhado entre instâncias |
+| Backup e recuperação | `backup()` com `integrity_check`; restauração documentada | Teste de restauração antes do início | Plano de recuperação com RPO e RTO definidos e testados |
+| Build e cadeia de suprimentos | Imagem por digest, lock com hashes, SBOM, SLSA, Grype, pip-audit | — | Build reprodutível comparado de forma independente; alertas do Dependabot ligados |
+| Segredos | Variáveis de ambiente; `ATTRACTOR_AUDIT_HMAC_REQUIRED` | Gerenciador de segredos para pepper e chaves HMAC | Rotação periódica documentada para o pepper |
+| Monitoramento de falhas | `HEALTHCHECK` na imagem; `/health` | — | Readiness e liveness distintos; alerta de falha da trilha |
+| Contêiner | Usuário sem privilégios (`USER attractor`) | — | Sistema de arquivos só de leitura e `cap_drop` no Compose |

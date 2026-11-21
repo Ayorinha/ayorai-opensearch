@@ -1,19 +1,21 @@
 # AYORAI ATTRACTOR — Engineering Status
 
-Updated: 2026-11-21 — main @ `8926e53385e515eba8c9e1b05ec15ab8530a3e97` (merge PR #601), before the merge of this status update (#603)
+Updated: 2026-11-21 — main @ `2b98ac415e3d56ec851a32f75b9f067424b6f4ee` (merge PR #603); post-closure audit in [audit/POST-CLOSURE-AUDIT-2026-11-21.md](audit/POST-CLOSURE-AUDIT-2026-11-21.md)
 
 This file is the single source of current project status. Historical documents describe the SHA they audited and must not be treated as a live status dashboard.
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
-## Estado atual — 2026-11-21 (pendências encerradas)
+## Estado atual — 2026-11-21 (após a auditoria pós-encerramento)
 
 - **Integradas em 2026-11-21, por autorização do mantenedor e com CI verde no HEAD final de cada PR:**
   - #598: coerência da documentação RGC;
   - #599: detector v13, escala sem moeda. Substitui a #571, fechada. Muda a referência do Golden v0.1 para `1fd6fdb7…` (11/30), aprovada pelo mantenedor; Golden v0 e smoke-v0 inalterados;
   - #600: IC de kappa por componente, DEC-022, com o runner `rgc-eval/0.13.0`;
   - #602: cadeia de sequência da trilha (`verify_chain`, `checkpoint`), parte local do P2-1;
-  - #601: ADR-011, que mantém o Judge do ADR-002 por rota e resolve o P1-3.
+  - #601: ADR-011, que mantém o Judge do ADR-002 por rota e resolve o P1-3;
+  - #603: decisões de governança, roteiro e STATUS.
+- **Sem revisão registrada antes do merge:** #599, #601, #602 e #603. A #600 recebeu revisão, mas seus dois comentários só são tratados na #605. A revisão pós-merge por ferramenta automatizada está em [audit/POST-CLOSURE-AUDIT-2026-11-21.md](audit/POST-CLOSURE-AUDIT-2026-11-21.md) e encontrou um defeito na #602, corrigido na #604.
 - **Decisões do mantenedor registradas em 2026-11-21** ([DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#decisões-de-2026-11-21)):
   - DEC-001 encerrada: lock com hashes e imagem por digest;
   - DEC-003: ADR-001 aceito;
@@ -23,7 +25,10 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
   Nenhuma decisão continua pendente no registro.
 - **Issues:** #433, #434 e #435 foram fechadas. O que falta delas é roteiro, não defeito, e está em [ROADMAP.md](ROADMAP.md).
 - **Pins históricos (P3-1):** mantidos e isolados em workflows manuais, com regra testada; ver [security/HISTORICAL-PINS.md](security/HISTORICAL-PINS.md).
-- **PRs abertas:** nenhuma além desta atualização.
+- **PRs abertas, aguardando decisão do mantenedor:**
+  - #604: rollback da transação da trilha quando a cadeia falha;
+  - #605: tratamento da revisão da #600;
+  - esta atualização.
 - **Release:** versão de código `0.8.0`; nenhuma tag, release ou DOI nova.
 
 ### Classificação do estado
@@ -31,9 +36,9 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
 | Estado | Itens |
 |---|---|
 | **Integrado na `main` e testado** | Judge ADR-002 em `/v1/check`, `/v1/fields`, `/v2/audit` e Judge 2.0 `r2-a` em `/v1/verify`, uma família por rota (ADR-011); detector por regras v13; independência por conteúdo normalizado e proveniência (`document-check-5`); trilha SQLite `r2-v3`/`r2-v4` com HMAC, rotação, retenção e cadeia de sequência; runner RGC `rgc-eval/0.13.0` com IC por componente para acurácia, H1 e kappa; imagem por digest, lock com hash, Grype, SBOM e SLSA |
-| **Integrado sem revisão humana independente** | Runner e ferramenta de concordância do RGC (#576, #577, #580, #584, #600) |
+| **Integrado sem revisão humana independente** | Runner e ferramenta de concordância do RGC (#576, #577, #580, #584, #600); detector v13 (#599); cadeia de auditoria (#602) |
 | **Texto normativo aguardando o mantenedor** | Emendas datadas da DEC-022 (pré-registro e protocolo) e Emenda 11 no protocolo: texto pronto em [eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md](eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md). Os arquivos são protegidos e não foram editados por ferramenta automatizada |
-| **Configuração do repositório (só pelo mantenedor, em Settings)** | Dependabot security updates desligado; 94 branches antigas, que o workflow de limpeza mantém porque merges por squash não provam a integração e o servidor recusa exclusão por push. A exigência de aprovação no ruleset continua 0 de propósito: com um único mantenedor, o GitHub não permite aprovar a própria PR, e exigir 1 aprovação bloquearia todo merge |
+| **Configuração do repositório (só pelo mantenedor, em Settings)** | Dependabot alerts e security updates desligados; 92 branches em 2026-11-21 (`main`, `gh-pages` e 90 antigas, sem nenhuma PR aberta associada). O repositório apaga a branch de origem quando a PR é mesclada (`delete_branch_on_merge`); a contagem de 94 incluía branches de PRs que estavam abertas na hora. A classificação por conteúdo de cada branch está no relatório de auditoria: 22 vazias ou já incorporadas, que são as candidatas à exclusão pelo mantenedor, 12 com conteúdo não incorporado e 56 em conflito com a `main`, que pedem triagem. A exigência de aprovação no ruleset continua 0 de propósito: com um único mantenedor, o GitHub não permite aprovar a própria PR, e exigir 1 aprovação bloquearia todo merge |
 | **Roteiro** | [ROADMAP.md](ROADMAP.md): persistir o veredito do `/v1/verify`, log Merkle, escopos e expiração de chaves, tenant, observabilidade, build reprodutível |
 | **Não validado** | Implantação real; POC (proposta); acurácia científica: Golden v0 7/30 e v0.1 11/30, abaixo do baseline de classe majoritária (13/30); RGC sem resultado |
 

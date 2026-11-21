@@ -13,6 +13,7 @@
 | ADR-007 | AYORAI-PT-span: detector de trechos não sustentados em português | Proposed | 2026-10-03 | [`docs/eval/ADR-007.md`](../eval/ADR-007.md) |
 | ADR-008 | AYORAI-PT-NLI: NLI comercial para português | Proposed | 2026-10-04 | [`docs/eval/ADR-008.md`](../eval/ADR-008.md) |
 | ADR-009 | Deterministic adjudication contract and claim coverage | Accepted — 2026-10-10, maintainer decision; independent review and implementation pending | 2026-10-10 | [`docs/adr/ADR-009-deterministic-adjudication-contract.md`](ADR-009-deterministic-adjudication-contract.md) |
+| ADR-010 | Verifiable audit log | Accepted in part — decisões 1–4 do mantenedor em 2026-10-17 (DEC-012); decisões 5–7 em aberto | 2026-10-17 | [`docs/adr/ADR-010-verifiable-audit-log.md`](ADR-010-verifiable-audit-log.md) |
 | ADR-011 | Família de regras do Judge por rota (exceção ao prazo do ADR-009 §11) | Accepted — decisão do mantenedor em 2026-11-21 | 2026-11-21 | [`docs/adr/ADR-011-judge-family-per-route.md`](ADR-011-judge-family-per-route.md) |
 
 ## Regras de manutenção
@@ -21,3 +22,5 @@
 - Ao alterar um ADR, atualize este índice na mesma pull request quando necessário.
 - Não inferir aprovação, implementação, treinamento ou promoção a partir da presença de um ADR no índice.
 - ADR-009 foi aprovado pelo mantenedor em 2026-10-10 e substitui ADR-002 §§1 e 4; a revisão independente e a implementação permanecem pendentes.
+- Desde 2026-11-21, a ADR-011 define a família de regras do Judge em cada rota e substitui, para `/v1/check`, `/v1/fields`, `/v2/audit` e `r1-a`, o prazo "até a v0.5.0" do ADR-009 §11. O texto do ADR-009 não foi alterado; leia os dois juntos.
+- ADR-010: o que já existe e o que é futuro está em [ROADMAP.md](../ROADMAP.md), §1.
