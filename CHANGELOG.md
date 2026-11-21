@@ -29,6 +29,16 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - Retenção automática com `ATTRACTOR_AUDIT_RETENTION_DAYS` (desligada por padrão): rastros vencidos são removidos na inicialização e, no máximo, uma vez por hora nas gravações (#586).
 - Correção: o Docker Compose guarda os rastros no volume nomeado `attractor-audit`. Antes, eles se perdiam a cada recriação do contêiner. A imagem cria `/app/.attractor` com dono no usuário do serviço (#586).
 
+### AYORAI-PT-NLI (ADR-008), integração de inferência
+- Novo `ayorai_attractor.verification.pt_nli`: backend EuroBERT para stance por pares (SUPPORTS, CONTRADICTS, NEUTRAL) e `build_pt_nli_detector()`, que se usa em `check_documents(stance_detector=...)`.
+- **Carregamento com falha fechada:**
+  - sem código remoto (`trust_remote_code=False`; exige `transformers>=5.3.0`, com EuroBERT nativo);
+  - revisão como SHA completo;
+  - `model_type` `eurobert`;
+  - três rótulos de NLI exigidos. O modelo base público, sem cabeça NLI, é recusado.
+- **Licença:** pesos `UNAUDITED` só carregam em modo de avaliação ou com opt-in explícito.
+- **Escopo:** sem treinamento, sem dependência nova, sem ligação com a API e sem mudança no Judge, no Golden ou no RGC. Modelo base fixado em `EuroBERT/EuroBERT-210m@39b51e15`.
+
 ### Detector de posição (stance) por regras
 - v8, com erros conhecidos fixados em testes (#565).
 - v9: negação restrita às frases da afirmação e negação relatada classificada como neutra (#570).
