@@ -92,10 +92,10 @@ def test_outbox_record_checkpoint_is_idempotent_and_immutable(tmp_path: Path) ->
     outbox.assign("request-1", LEAF, tessera_index=0)
 
     first = outbox.record_checkpoint(
-        "request-1", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT
+        "request-1", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT, ()
     )
     replay = outbox.record_checkpoint(
-        "request-1", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT
+        "request-1", LEAF, 0, 1, ROOT, SIGNED_CHECKPOINT, ()
     )
 
     assert first.state == "RECORDED"
