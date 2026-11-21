@@ -13,6 +13,7 @@
 | ADR-007 | AYORAI-PT-span: detector de trechos não sustentados em português | Proposed | 2026-10-03 | [`docs/eval/ADR-007.md`](../eval/ADR-007.md) |
 | ADR-008 | AYORAI-PT-NLI: NLI comercial para português | Proposed | 2026-10-04 | [`docs/eval/ADR-008.md`](../eval/ADR-008.md) |
 | ADR-009 | Deterministic adjudication contract and claim coverage | Accepted — 2026-10-10, maintainer decision; independent review and implementation pending | 2026-10-10 | [`docs/adr/ADR-009-deterministic-adjudication-contract.md`](ADR-009-deterministic-adjudication-contract.md) |
+| ADR-011 | Família de regras do Judge por rota (exceção ao prazo do ADR-009 §11) | Accepted — decisão do mantenedor em 2026-11-21 | 2026-11-21 | [`docs/adr/ADR-011-judge-family-per-route.md`](ADR-011-judge-family-per-route.md) |
 
 ## Regras de manutenção
 
