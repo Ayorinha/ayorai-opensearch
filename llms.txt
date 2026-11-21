@@ -18,6 +18,12 @@ Status and limits: v0.8.0 adds document APIs POST /v1/check (claim verification 
 - [Guia de auditoria de inteligência artificial (PT)](https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/): what AI auditing is, what to audit, step-by-step verification of AI answers, open-source tools
 - [Alucinação de IA: como detectar e verificar respostas (PT)](https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/): what AI hallucination is, warning signs, step-by-step verification of ChatGPT and other AI answers
 - [Verificação de afirmações em respostas de IA (PT)](https://ayorinha.github.io/ayorai-opensearch/verificacao-de-afirmacoes-ia/): what claim verification is, how it detects hallucinations step by step, and a comparison of open-source verifiers and fact-checking systems (MiniCheck, FactCG, HallOumi, OpenFactCheck, Veracity, VerifAI) and where AYORAI ATTRACTOR fits
+- [AI auditing: a practical, open-source guide (EN)](https://ayorinha.github.io/ayorai-opensearch/en/ai-auditing/): English version of the AI auditing guide
+- [AI hallucination: how to detect and verify AI answers (EN)](https://ayorinha.github.io/ayorai-opensearch/en/ai-hallucination/): English version of the hallucination guide
+- [Claim verification for AI answers (EN)](https://ayorinha.github.io/ayorai-opensearch/en/claim-verification/): English version of the claim verification guide and open-source tools comparison
+- [Auditoría de inteligencia artificial (ES)](https://ayorinha.github.io/ayorai-opensearch/es/auditoria-de-inteligencia-artificial/): Spanish version of the AI auditing guide
+- [Alucinación de IA (ES)](https://ayorinha.github.io/ayorai-opensearch/es/alucinacion-de-ia/): Spanish version of the hallucination guide
+- [Verificación de afirmaciones en respuestas de IA (ES)](https://ayorinha.github.io/ayorai-opensearch/es/verificacion-de-afirmaciones-ia/): Spanish version of the claim verification guide
 - [Official GitHub repository](https://github.com/Ayorinha/ayorai-opensearch): source code, documentation, ADRs, evaluation
 - [Current release v0.8.0](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0): release notes and version scope
 - [Technical status](https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md): current deliveries, checks and limitations

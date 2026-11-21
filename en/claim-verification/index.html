@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claim Verification for AI Answers: How It Works and Open-Source Tools | AYORAI ATTRACTOR</title>
+<meta name="description" content="What claim verification for AI answers is, how it detects hallucinations, how it works step by step, and which open-source tools and models exist: MiniCheck, FactCG, HallOumi, OpenFactCheck, Veracity, VerifAI and AYORAI ATTRACTOR.">
+<meta name="author" content="Anderson Leon Ayora">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://ayorinha.github.io/ayorai-opensearch/en/claim-verification/">
+<link rel="alternate" hreflang="pt-BR" href="https://ayorinha.github.io/ayorai-opensearch/verificacao-de-afirmacoes-ia/">
+<link rel="alternate" hreflang="en" href="https://ayorinha.github.io/ayorai-opensearch/en/claim-verification/">
+<link rel="alternate" hreflang="es" href="https://ayorinha.github.io/ayorai-opensearch/es/verificacion-de-afirmaciones-ia/">
+<link rel="alternate" hreflang="x-default" href="https://ayorinha.github.io/ayorai-opensearch/verificacao-de-afirmacoes-ia/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="AYORAI ATTRACTOR">
+<meta property="og:title" content="Claim verification for AI answers: guide and open-source tools">
+<meta property="og:description" content="How to check, claim by claim, whether an AI answer is supported by its sources — and which open-source tools do it.">
+<meta property="og:url" content="https://ayorinha.github.io/ayorai-opensearch/en/claim-verification/">
+<meta property="og:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": "Claim verification for AI answers: how it works and open-source tools",
+      "description": "What claim verification for AI answers is, how it detects hallucinations, how it works step by step, and which open-source tools and models exist: MiniCheck, FactCG, HallOumi, OpenFactCheck, Veracity, VerifAI and AYORAI ATTRACTOR.",
+      "inLanguage": "en",
+      "datePublished": "2026-11-21",
+      "dateModified": "2026-11-21",
+      "image": "https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png",
+      "author": {
+        "@type": "Person",
+        "name": "Anderson Leon Ayora",
+        "url": "https://github.com/Ayorinha"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Anderson Leon Ayora",
+        "url": "https://github.com/Ayorinha"
+      },
+      "mainEntityOfPage": "https://ayorinha.github.io/ayorai-opensearch/en/claim-verification/",
+      "about": [
+        "Claim verification",
+        "AI hallucination detection",
+        "AI answer auditing",
+        "Fact-checking"
+      ],
+      "translationOfWork": {
+        "@type": "Article",
+        "url": "https://ayorinha.github.io/ayorai-opensearch/verificacao-de-afirmacoes-ia/",
+        "inLanguage": "pt-BR"
+      },
+      "mentions": {
+        "@type": "SoftwareSourceCode",
+        "name": "AYORAI ATTRACTOR",
+        "url": "https://ayorinha.github.io/ayorai-opensearch/",
+        "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "AYORAI ATTRACTOR",
+          "item": "https://ayorinha.github.io/ayorai-opensearch/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Claim verification for AI answers",
+          "item": "https://ayorinha.github.io/ayorai-opensearch/en/claim-verification/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "inLanguage": "en",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is claim verification in AI?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It is checking, one by one, whether the claims in an AI answer are supported by the sources used, instead of judging the whole text at once."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is claim verification the same as hallucination detection?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It is one of the most direct ways to detect hallucinations: a claim that no source supports, or that the source contradicts, is a sign of hallucination. See also the guide AI hallucination."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there an open-source tool to verify AI claims?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. There are verifier models such as MiniCheck, FactCG and HallOumi, fact-checking systems such as OpenFactCheck and Veracity, and auditing layers such as AYORAI ATTRACTOR, a Brazilian project under the Apache-2.0 license."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does claim verification prove the source is true?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. It shows whether the claim is supported by the evidence provided. If the source itself is wrong or out of date, verification does not fix that."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does this relate to AI auditing?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Claim verification is auditing of the answers layer. The guide AI auditing covers the other layers: data, model and process."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../../">AYORAI ATTRACTOR</a>
+    <nav class="nav" aria-label="Main">
+      <a class="hide-sm" href="../../en/ai-auditing/">AI auditing</a>
+      <a class="hide-sm" href="../../en/ai-hallucination/">AI hallucination</a>
+      <a href="./" aria-current="page"><span class="lg">Claim verification</span><span class="sm">Verification</span></a>
+      <a class="gh" href="https://github.com/Ayorinha/ayorai-opensearch">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap narrow article">
+  <img class="banner" style="display:block;width:100%;height:auto;margin:0 0 1.2rem" src="../../assets/ayorai-attractor-banner.png" width="1600" height="400" alt="AYORAI ATTRACTOR — official logo with a dandelion in place of the I">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="../../">AYORAI ATTRACTOR</a> / Claim verification for AI answers <span style="float:right"><span class="langs" style="display:inline-flex;gap:.5rem;font-size:.85rem"><a href="../../verificacao-de-afirmacoes-ia/" lang="pt-BR" hreflang="pt-BR">PT</a> · <a href="./" aria-current="true" lang="en">EN</a> · <a href="../../es/verificacion-de-afirmaciones-ia/" lang="es" hreflang="es">ES</a></span></span></nav>
+  <h1>Claim verification for AI answers: how it works and open-source tools</h1>
+  <p class="byline">By Anderson Leon Ayora, author of AYORAI ATTRACTOR · Published on November 21, 2026</p>
+
+  <div class="callout"><strong>In short:</strong> claim verification means checking, one by one, whether the claims in an AI answer are supported by the sources used. It is the most direct way to find hallucinations. There are open-source models that do the check, such as MiniCheck and FactCG, and auditing layers, such as <a href="../../">AYORAI ATTRACTOR</a>, that record how each verdict was reached.</div>
+
+  <div class="toc">
+    <strong>In this guide</strong>
+    <ol>
+      <li><a href="#what-is">What claim verification is</a></li>
+      <li><a href="#why">Why verify claim by claim</a></li>
+      <li><a href="#how">How it works, step by step</a></li>
+      <li><a href="#tools">Open-source tools and models</a></li>
+      <li><a href="#choose">How to choose</a></li>
+      <li><a href="#attractor">Where AYORAI ATTRACTOR fits</a></li>
+      <li><a href="#limits">Limits</a></li>
+      <li><a href="#faq">Frequently asked questions</a></li>
+    </ol>
+  </div>
+
+  <h2 id="what-is">What claim verification is</h2>
+  <p>An AI answer is rarely a single sentence. It combines several claims: a number, a date, a name, a rule. Claim verification separates these parts and asks, for each one: <strong>does the source support this, contradict this, or not allow a conclusion?</strong></p>
+  <p>This is different from asking whether the answer "looks right" or whether it "cited a source". An answer can cite a real document and still claim something the document does not say.</p>
+
+  <h2 id="why">Why verify claim by claim</h2>
+  <ul>
+    <li><strong>The error is pinpointed.</strong> Instead of "the answer has a problem", you know which sentence lacks support.</li>
+    <li><strong>A good source does not "vouch" for the whole paragraph.</strong> A correct passage should not automatically lend credibility to the sentences around it.</li>
+    <li><strong>It can be audited later.</strong> Each verdict stays linked to the evidence passage that justified it.</li>
+  </ul>
+
+  <h2 id="how">How it works, step by step</h2>
+  <h3>1. Split out the claims</h3>
+  <p>The answer is broken into short, verifiable claims. Opinions and recommendations are left out: only what can be checked against a source is verified.</p>
+  <h3>2. Gather the evidence</h3>
+  <p>For each claim, the relevant passages are retrieved from the reference documents — the ones the AI used or a trusted knowledge base — keeping the exact position of each passage.</p>
+  <h3>3. Compare claim and evidence</h3>
+  <p>A natural language inference (NLI) model or a specialised verifier estimates whether the passage supports, contradicts or is neutral towards the claim.</p>
+  <h3>4. Decide the verdict</h3>
+  <p>The model's estimate becomes a verdict. This is where approaches differ: in some, the model itself decides; in others, explicit rules decide based on the estimates. When the evidence is not enough, the honest answer is "unverified".</p>
+  <h3>5. Record it</h3>
+  <p>Claim, passage, position, model version and rules version are stored, so someone else can check the result later.</p>
+
+  <h2 id="tools">Open-source tools and models</h2>
+  <p>The tools below solve different parts of the problem. This is not a ranking: each one has a different goal.</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Tool</th><th>Type</th><th>What it does</th></tr>
+    <tr><td><strong>MiniCheck</strong></td><td>Verifier model</td><td>Estimates whether a document supports a claim. Used as a reference verifier on LLM-AggreFact.</td></tr>
+    <tr><td><strong>FactCG</strong></td><td>Verifier model</td><td>Also estimates whether the claim is supported by the reference document.</td></tr>
+    <tr><td><strong>HallOumi</strong> (Oumi)</td><td>Verifier model</td><td>Open-source claim verification model released by Oumi in April 2025.</td></tr>
+    <tr><td><a href="https://github.com/yuxiaw/openfactcheck"><strong>OpenFactCheck</strong></a></td><td>Fact-checking framework</td><td>Decomposes answers, retrieves evidence, verifies, and evaluates automatic factuality checkers.</td></tr>
+    <tr><td><a href="https://arxiv.org/abs/2506.15794"><strong>Veracity</strong></a></td><td>Fact-checking system</td><td>Uses LLMs with web retrieval to analyse how factual a text is, aimed at the general public.</td></tr>
+    <tr><td><a href="https://arxiv.org/abs/2604.08549"><strong>VerifAI</strong></a></td><td>Search with verification</td><td>Biomedical question answering; decomposes the answer into claims and checks them against retrieved evidence.</td></tr>
+    <tr><td><a href="../../"><strong>AYORAI ATTRACTOR</strong></a></td><td>Auditing layer</td><td>Uses verifiers like those above, but the final verdict is issued by a deterministic Judge with versioned rules, and each result stays linked to its evidence and provenance.</td></tr>
+  </table>
+  </div>
+
+  <h2 id="choose">How to choose</h2>
+  <ul>
+    <li><strong>Do you only need a "supported or not" signal?</strong> A verifier model such as MiniCheck or FactCG may be enough.</li>
+    <li><strong>Do you need to check free text against the web?</strong> Systems such as OpenFactCheck or Veracity retrieve the evidence for you.</li>
+    <li><strong>Do you need to explain and reproduce each decision</strong> — for a client, an auditor or a regulator? That is where an auditing layer comes in, recording rules, versions and evidence.</li>
+  </ul>
+
+  <h2 id="attractor">Where AYORAI ATTRACTOR fits</h2>
+  <p>AYORAI ATTRACTOR does not replace verifier models: it uses them. In the v0.7.0 evaluation, three verifiers were measured on the DEV split of LLM-AggreFact (30,420 examples, 11 cohorts), and FactCG was selected by the rule registered before the experiment.</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Verifier</th><th>Cross-fitted balanced accuracy (DEV-A)</th></tr>
+    <tr><td>FactCG</td><td>74.68%</td></tr>
+    <tr><td>MiniCheck</td><td>72.87%</td></tr>
+    <tr><td>mDeBERTa</td><td>62.57%</td></tr>
+  </table>
+  </div>
+  <p>These are development (DEV) metrics, not final test results, and they measure the models, not the overall accuracy of ATTRACTOR's verdicts. Details are in the <a href="https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.7.0">v0.7.0 report</a> (DOI <a href="https://doi.org/10.5281/zenodo.24045951">10.5281/zenodo.24045951</a>).</p>
+  <p>What ATTRACTOR adds is the auditing part:</p>
+  <ul>
+    <li><strong>Verdict by rules, not by the model.</strong> Judge 2.0 applies versioned rules and issues five verdicts:</li>
+  </ul>
+  <div class="verdicts"><span class="chip ok">SUPPORTED</span><span class="chip mid">PARTIALLY_SUPPORTED</span><span class="chip mid">UNVERIFIED</span><span class="chip mid">CONFLICTING</span><span class="chip no">REFUTED</span></div>
+  <ul>
+    <li><strong>Located evidence.</strong> In the <code>POST /v1/check</code> API, evidence comes with its position in the text and page number, including in PDFs with a text layer.</li>
+    <li><strong>Documents treated as data.</strong> Source content is never treated as an instruction to the system.</li>
+    <li><strong>Open source and citable.</strong> Apache-2.0 license and a Zenodo DOI (<a href="https://doi.org/10.5281/zenodo.23125082">10.5281/zenodo.23125082</a>).</li>
+  </ul>
+
+  <div class="callout"><strong>Intelligence ≠ Authorization ≠ Execution.</strong> Models help analyse; explicit rules decide; and whoever consumes the result should not turn a model's estimate into fact without going through those rules.</div>
+
+  <h2 id="limits">Limits</h2>
+  <ul>
+    <li>Verification shows whether the claim is supported <strong>by the evidence provided</strong>. It does not prove that the source is true, complete or up to date.</li>
+    <li>The most widely used benchmarks for verifiers, such as LLM-AggreFact, are in English. ATTRACTOR has no validated result in Portuguese published yet.</li>
+    <li>None of these tools replaces human review in high-impact decisions.</li>
+  </ul>
+
+  <h2 id="faq">Frequently asked questions</h2>
+  <details><summary>What is claim verification in AI?</summary><p>It is checking, one by one, whether the claims in an AI answer are supported by the sources used, instead of judging the whole text at once.</p></details>
+  <details><summary>Is claim verification the same as hallucination detection?</summary><p>It is one of the most direct ways to detect hallucinations: a claim that no source supports, or that the source contradicts, is a sign of hallucination. See also the guide <a href="../../en/ai-hallucination/">AI hallucination</a>.</p></details>
+  <details><summary>Is there an open-source tool to verify AI claims?</summary><p>Yes. There are verifier models such as MiniCheck, FactCG and HallOumi, fact-checking systems such as OpenFactCheck and Veracity, and auditing layers such as AYORAI ATTRACTOR, a Brazilian project under the Apache-2.0 license.</p></details>
+  <details><summary>Does claim verification prove the source is true?</summary><p>No. It shows whether the claim is supported by the evidence provided. If the source itself is wrong or out of date, verification does not fix that.</p></details>
+  <details><summary>How does this relate to AI auditing?</summary><p>Claim verification is auditing of the answers layer. The guide <a href="../../en/ai-auditing/">AI auditing</a> covers the other layers: data, model and process.</p></details>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <p class="fbrand">AYORAI ATTRACTOR</p>
+        <p class="fmotto">Evidence before conclusion.</p>
+        <p>Open-source project for evidence-based technical auditing of artificial intelligence answers. Author and maintainer: Anderson Leon Ayora.</p>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <ul>
+          <li><a href="../../">Home (Portuguese)</a></li>
+          <li><a href="../../en/ai-auditing/">AI auditing</a></li>
+          <li><a href="../../en/ai-hallucination/">AI hallucination</a></li>
+          <li><a href="../../en/claim-verification/">Claim verification</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Technical status</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Code</h4>
+        <ul>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch">GitHub repository</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/releases">Releases</a></li>
+          <li><a href="https://doi.org/10.5281/zenodo.23125082">DOI · Zenodo</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="legal">Released under the Apache-2.0 license. It is not presented as a certification and does not replace human review, internal controls or legal assessment.</p>
+  </div>
+</footer>
+</body>
+</html>

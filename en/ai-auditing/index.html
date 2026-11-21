@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Auditing: A Practical Guide, AI Governance and an Open-Source Tool | AYORAI ATTRACTOR</title>
+<meta name="description" content="What AI auditing is, how it differs from auditing with AI, AI governance and algorithmic auditing, how to audit AI answers step by step, and open-source tools. A guide from the Brazilian open-source project AYORAI ATTRACTOR.">
+<meta name="author" content="Anderson Leon Ayora">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://ayorinha.github.io/ayorai-opensearch/en/ai-auditing/">
+<link rel="alternate" hreflang="pt-BR" href="https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/">
+<link rel="alternate" hreflang="en" href="https://ayorinha.github.io/ayorai-opensearch/en/ai-auditing/">
+<link rel="alternate" hreflang="es" href="https://ayorinha.github.io/ayorai-opensearch/es/auditoria-de-inteligencia-artificial/">
+<link rel="alternate" hreflang="x-default" href="https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="AYORAI ATTRACTOR">
+<meta property="og:title" content="AI auditing: a practical, open-source guide">
+<meta property="og:description" content="What it is, what to audit and how to verify AI answers with evidence and reproducible rules.">
+<meta property="og:url" content="https://ayorinha.github.io/ayorai-opensearch/en/ai-auditing/">
+<meta property="og:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": "AI auditing: a practical, open-source guide",
+      "description": "What AI auditing is, how it differs from auditing with AI, AI governance and algorithmic auditing, how to audit AI answers step by step, and open-source tools. A guide from the Brazilian open-source project AYORAI ATTRACTOR.",
+      "inLanguage": "en",
+      "datePublished": "2026-11-21",
+      "dateModified": "2026-11-21",
+      "image": "https://ayorinha.github.io/ayorai-opensearch/assets/og-image.png",
+      "author": {
+        "@type": "Person",
+        "name": "Anderson Leon Ayora",
+        "url": "https://github.com/Ayorinha"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Anderson Leon Ayora",
+        "url": "https://github.com/Ayorinha"
+      },
+      "mainEntityOfPage": "https://ayorinha.github.io/ayorai-opensearch/en/ai-auditing/",
+      "about": [
+        "AI auditing",
+        "AI governance",
+        "Algorithmic auditing",
+        "AI answer verification"
+      ],
+      "translationOfWork": {
+        "@type": "Article",
+        "url": "https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/",
+        "inLanguage": "pt-BR"
+      },
+      "mentions": {
+        "@type": "SoftwareSourceCode",
+        "name": "AYORAI ATTRACTOR",
+        "url": "https://ayorinha.github.io/ayorai-opensearch/",
+        "codeRepository": "https://github.com/Ayorinha/ayorai-opensearch",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "AYORAI ATTRACTOR",
+          "item": "https://ayorinha.github.io/ayorai-opensearch/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "AI auditing",
+          "item": "https://ayorinha.github.io/ayorai-opensearch/en/ai-auditing/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "inLanguage": "en",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is AI auditing?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It is the process of examining the data, model, answers and usage process of an AI system to check whether it works as claimed and whether its conclusions can be inspected and reproduced."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the difference between auditing AI and auditing with AI?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Auditing with AI uses artificial intelligence as a tool in traditional audits. Auditing AI examines the AI system itself to check whether it can be trusted."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is AI governance?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It is the set of rules, roles and controls for using AI responsibly. AI auditing is how you show that those controls work."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there an open-source tool for auditing AI answers?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes: AYORAI ATTRACTOR, a Brazilian open-source project released under the Apache-2.0 license, created by Anderson Leon Ayora."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do you audit a chatbot's answer?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Isolate the claims, link the evidence, analyse whether it supports or contradicts each claim, decide with explicit rules and keep the artefacts for inspection."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does AI auditing guarantee legal compliance?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Not by itself. It supports governance and compliance, but it does not replace human review, internal controls, legal assessment or certification."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../../">AYORAI ATTRACTOR</a>
+    <nav class="nav" aria-label="Main">
+      <a href="./" aria-current="page"><span class="lg">AI auditing</span><span class="sm">Auditing</span></a>
+      <a class="hide-sm" href="../../en/ai-hallucination/">AI hallucination</a>
+      <a class="hide-sm" href="../../en/claim-verification/">Claim verification</a>
+      <a class="gh" href="https://github.com/Ayorinha/ayorai-opensearch">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap narrow article">
+  <img class="banner" style="display:block;width:100%;height:auto;margin:0 0 1.2rem" src="../../assets/ayorai-attractor-banner.png" width="1600" height="400" alt="AYORAI ATTRACTOR — official logo with a dandelion in place of the I">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="../../">AYORAI ATTRACTOR</a> / AI auditing <span style="float:right"><span class="langs" style="display:inline-flex;gap:.5rem;font-size:.85rem"><a href="../../auditoria-de-inteligencia-artificial/" lang="pt-BR" hreflang="pt-BR">PT</a> · <a href="./" aria-current="true" lang="en">EN</a> · <a href="../../es/auditoria-de-inteligencia-artificial/" lang="es" hreflang="es">ES</a></span></span></nav>
+  <h1>AI auditing: a practical, open-source guide</h1>
+  <p class="byline">By Anderson Leon Ayora, author of AYORAI ATTRACTOR · Published on November 21, 2026</p>
+
+  <div class="callout"><strong>In short:</strong> auditing an AI system means being able to answer, with evidence, the question "why did the system reach this conclusion?". <a href="../../">AYORAI ATTRACTOR</a> is a Brazilian open-source project that applies this idea to AI answers: it examines each claim, links the evidence and issues the verdict with explicit, versioned rules.</div>
+
+  <div class="toc">
+    <strong>In this guide</strong>
+    <ol>
+      <li><a href="#what-is">What AI auditing is</a></li>
+      <li><a href="#of-vs-with">Auditing AI vs. auditing with AI</a></li>
+      <li><a href="#what-to-audit">What to audit in an AI system</a></li>
+      <li><a href="#step-by-step">How to audit AI answers, step by step</a></li>
+      <li><a href="#principles">Principles of a good AI audit</a></li>
+      <li><a href="#governance">AI governance, algorithmic auditing and regulation</a></li>
+      <li><a href="#tools">Open-source tools</a></li>
+      <li><a href="#limits">Limits</a></li>
+      <li><a href="#faq">Frequently asked questions</a></li>
+    </ol>
+  </div>
+
+  <h2 id="what-is">What AI auditing is</h2>
+  <p>AI auditing is the process of examining an artificial intelligence system to check whether it does what it claims to do, whether its conclusions rest on evidence, and whether its decisions can be inspected and reproduced by someone else, later. It is to AI what financial auditing is to accounts: a verifiable record, not a good-faith explanation.</p>
+  <p>Generative AI gave auditing a new focus. Language models write fluent, convincing answers, sometimes citing sources that do not support what is being said. In decisions that require accountability, it is not enough for an answer to look right: you need to be able to examine where it came from.</p>
+
+  <h2 id="of-vs-with">Auditing AI is not the same as auditing with AI</h2>
+  <p>The two expressions sound alike but mean different things. <strong>Auditing with AI</strong> means using artificial intelligence as a tool in traditional audits — financial, tax or internal-control audits. <strong>Auditing AI</strong> is the opposite: examining the AI system itself to find out whether it can be trusted. This guide, and AYORAI ATTRACTOR, deal with the second.</p>
+
+  <h2 id="what-to-audit">What to audit in an AI system</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Layer</th><th>Audit question</th></tr>
+    <tr><td>Data</td><td>Where do the training and query data come from? Is personal data handled in line with data-protection law (such as LGPD in Brazil or GDPR in Europe)?</td></tr>
+    <tr><td>Model</td><td>Which model and which version were used? Was performance measured with a transparent method?</td></tr>
+    <tr><td>Answers</td><td>Is each claim supported by the cited evidence? Are there contradictions or gaps?</td></tr>
+    <tr><td>Process</td><td>Who can decide and who can act on the result? Can each decision be inspected?</td></tr>
+  </table>
+  </div>
+  <p>AYORAI ATTRACTOR works on the <strong>answers</strong> layer: checking each claim against its evidence.</p>
+
+  <h2 id="step-by-step">How to audit AI answers, step by step</h2>
+  <h3>1. Isolate each claim</h3>
+  <p>An AI answer usually combines several claims. Auditing the whole text at once hides errors; auditing claim by claim shows exactly where the problem is.</p>
+  <h3>2. Link the evidence</h3>
+  <p>For each claim, identify the relevant sources and passages, preserving the available provenance references.</p>
+  <h3>3. Analyse the relationship</h3>
+  <p>Does the evidence support, contradict or not clarify the claim? Language models can help with this analysis, but they should not be the authority for the final verdict.</p>
+  <h3>4. Decide with explicit, versioned rules</h3>
+  <p>Deterministic rules select the verdict, so the same structured input leads to the same result. When the evidence is not enough, the honest outcome is "unverified", not a guess; when sources contradict each other, record the conflict instead of silently picking one. In AYORAI ATTRACTOR, Judge 2.0 issues five verdicts:</p>
+  <div class="verdicts"><span class="chip ok">SUPPORTED</span><span class="chip mid">PARTIALLY_SUPPORTED</span><span class="chip mid">UNVERIFIED</span><span class="chip mid">CONFLICTING</span><span class="chip no">REFUTED</span></div>
+  <h3>5. Keep the artefacts for inspection</h3>
+  <p>Store the claims, the evidence, the rules version and the evaluation artefacts. Hashes help show that artefacts were not altered — but they do not prove that the content is true.</p>
+
+  <div class="callout"><strong>Intelligence ≠ Authorization ≠ Execution.</strong> Models can help with the analysis; the deterministic Judge applies the system's explicit contract; and the application consuming the result should not turn a model's suggestion into a factual decision without going through the defined rules.</div>
+
+  <h2 id="principles">Principles of a good AI audit</h2>
+  <ul>
+    <li><strong>Traceability:</strong> every conclusion points to the evidence and references that support it.</li>
+    <li><strong>Separation of duties:</strong> whoever generates the answer is not whoever decides the verdict.</li>
+    <li><strong>Reproducibility:</strong> versioned rules, evaluation sets and artefacts.</li>
+    <li><strong>Stated limits:</strong> distinguish what was measured, what is implemented and what is still under development.</li>
+    <li><strong>Transparency:</strong> code, rules and method open to inspection — which is why open source matters.</li>
+  </ul>
+
+  <h2 id="governance">AI governance, algorithmic auditing and regulation</h2>
+  <p><strong>AI governance</strong> is the set of rules, roles and controls an organisation adopts to use artificial intelligence responsibly. <strong>Algorithmic auditing</strong> is one of its tools: without it, governance stays on paper, because there is no way to show that the controls work.</p>
+  <p>The project was born in Brazil, where the use of personal data by AI systems is subject to the LGPD (Law 13,709/2018). Brazil's AI bill, <a href="https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2487262">PL 2,338/2023</a>, was approved by the Senate and sent to the Chamber of Deputies, where it was still under review according to the official record consulted on 7 November 2026 — so it is a proposal, not law in force. In any regulatory setting, the ability to show <strong>why</strong> a system reached a conclusion — with evidence, explicit rules and reproducible records — is relevant, but it does not replace legal assessment or organisational controls.</p>
+  <p>If you work with generative AI day to day, see also the guide on <a href="../../en/ai-hallucination/">AI hallucination and how to verify answers from ChatGPT and other AIs</a>.</p>
+
+  <h2 id="tools">Open-source tools for AI auditing</h2>
+  <h3>AYORAI ATTRACTOR (Brazil)</h3>
+  <p>Brazilian open-source project, Apache-2.0 license, created by Anderson Leon Ayora. It performs technical auditing of AI answers at the level of each claim, with a deterministic Judge and versioned rules, regression tests and documentation of its status and limits. See the detailed comparison in <a href="../../en/claim-verification/">Claim verification for AI answers</a>.</p>
+  <p><a href="https://github.com/Ayorinha/ayorai-opensearch">Code on GitHub</a> · <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/institutional/AYORAI-ATTRACTOR-Documento-Tecnico-v1.1.pdf">Technical document (PDF, Portuguese)</a> · <a href="https://doi.org/10.5281/zenodo.23125082">DOI on Zenodo</a></p>
+  <h3>Other initiatives</h3>
+  <p>The open AI-auditing ecosystem also includes the open audit tooling programme supported by the <a href="https://www.mozillafoundation.org/en/what-we-fund/oat">Mozilla Foundation</a> and <a href="https://openmined.org/for-ai-auditors/">OpenMined</a>'s resources for auditors. For an academic view of the field, see the study <a href="https://arxiv.org/abs/2206.10613">"The Right Tool for the Job: Open-Source Auditing Tools in Machine Learning"</a>. These initiatives cover different layers and complement each other.</p>
+
+  <h2 id="limits">Limits</h2>
+  <p>No auditing tool, on its own, guarantees regulatory compliance, certification or the detection of every hallucination. AYORAI ATTRACTOR is not presented as a certification, and there is no benchmark result in Portuguese yet — see the <a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Technical status</a> for the latest state. The system supports analysis; it does not replace human review, internal controls or legal assessment.</p>
+
+  <h2 id="faq">Frequently asked questions</h2>
+  <details open><summary>What is AI auditing?</summary><p>It is the process of examining the data, model, answers and usage process of an AI system to check whether it works as claimed and whether its conclusions can be inspected and reproduced.</p></details>
+  <details><summary>What is the difference between auditing AI and auditing with AI?</summary><p>Auditing with AI uses artificial intelligence as a tool in traditional audits. Auditing AI examines the AI system itself to check whether it can be trusted.</p></details>
+  <details><summary>What is AI governance?</summary><p>It is the set of rules, roles and controls for using AI responsibly. AI auditing is how you show that those controls work.</p></details>
+  <details><summary>Is there an open-source tool for auditing AI answers?</summary><p>Yes: AYORAI ATTRACTOR, a Brazilian open-source project released under the Apache-2.0 license, created by Anderson Leon Ayora.</p></details>
+  <details><summary>How do you audit a chatbot's answer?</summary><p>Isolate the claims, link the evidence, analyse whether it supports or contradicts each claim, decide with explicit rules and keep the artefacts for inspection.</p></details>
+  <details><summary>Does AI auditing guarantee legal compliance?</summary><p>Not by itself. It supports governance and compliance, but it does not replace human review, internal controls, legal assessment or certification.</p></details>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <p class="fbrand">AYORAI ATTRACTOR</p>
+        <p class="fmotto">Evidence before conclusion.</p>
+        <p>Open-source project for evidence-based technical auditing of artificial intelligence answers. Author and maintainer: Anderson Leon Ayora.</p>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <ul>
+          <li><a href="../../">Home (Portuguese)</a></li>
+          <li><a href="../../en/ai-auditing/">AI auditing</a></li>
+          <li><a href="../../en/ai-hallucination/">AI hallucination</a></li>
+          <li><a href="../../en/claim-verification/">Claim verification</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/blob/main/docs/STATUS.md">Technical status</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Code</h4>
+        <ul>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch">GitHub repository</a></li>
+          <li><a href="https://github.com/Ayorinha/ayorai-opensearch/releases">Releases</a></li>
+          <li><a href="https://doi.org/10.5281/zenodo.23125082">DOI · Zenodo</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="legal">Released under the Apache-2.0 license. It is not presented as a certification and does not replace human review, internal controls or legal assessment.</p>
+  </div>
+</footer>
+</body>
+</html>
