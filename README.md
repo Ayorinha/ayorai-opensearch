@@ -15,7 +15,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23125082.svg)](https://doi.org/10.5281/zenodo.23125082)
 
-**Versão atual:** `0.8.0` · [Release v0.8.0](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0) · [DOI da versão anterior v0.7.0](https://doi.org/10.5281/zenodo.24045951) · [DOI de conceito](https://doi.org/10.5281/zenodo.23125082)
+**Versão atual:** `0.8.0` · [Release v0.8.0](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0) · **DOI de versão v0.8.0:** pendente de registro no Zenodo (2026-11-21) · [DOI da versão v0.7.0](https://doi.org/10.5281/zenodo.24045951) · [DOI de conceito](https://doi.org/10.5281/zenodo.23125082)
 
 **Site oficial:** [ayorinha.github.io/ayorai-opensearch](https://ayorinha.github.io/ayorai-opensearch/) · [Guia de auditoria de inteligência artificial](https://ayorinha.github.io/ayorai-opensearch/auditoria-de-inteligencia-artificial/) · [Como detectar alucinações de IA](https://ayorinha.github.io/ayorai-opensearch/alucinacao-de-ia/)
 
@@ -109,7 +109,7 @@ A Emenda 2 ao pré-registro foi integrada na PR #488: limiares com menos de 25 r
 - [Relatório exploratório Amendment 2 — DEV e análise de poder LTT](reports/benchmarks/2026-11-08-phase1b-amendment-2-exploratory/README.md)
 - [Status técnico atualizado](docs/STATUS.md)
 
-**Ainda não há resultado de benchmark em português.** O conjunto LLM-AggreFact usado nesta avaliação é em inglês. O protocolo RGC permanece em desenvolvimento e não está congelado; resultados deste benchmark não demonstram generalização para documentos jurídicos brasileiros.
+**Há uma avaliação interna em português, mas ela não deve ser confundida com validação RGC ou validação externa.** O PT-CP-Audit reúne 152 casos sobre o Código Penal brasileiro. No split test só-manuais (n=40), v5→v6 reduziu apoio falso de 25,9% para 14,8% e elevou acurácia de 65,0% para 72,5%; o teste exato de McNemar pareado não foi significativo (p=0,453125). No test completo (n=68, incluindo mutações), acurácia passou de 76,5% para 83,8% e apoio falso de 17,1% para 9,8% (p=0,179688). São resultados internos, específicos do corpus e direcionais; não demonstram generalização externa nem validam o benchmark RGC. Consulte [PT-CP-Audit — resultados v5→v6](evals/pt-cp-audit/RESULTS.md). O conjunto LLM-AggreFact desta avaliação Calibration V2 é em inglês. O protocolo RGC permanece em desenvolvimento e não está congelado.
 
 O projeto **não é apresentado como certificado**, não garante a detecção de toda alucinação e não comprova conformidade regulatória por si só. Hashes ajudam a verificar a integridade de artefatos; não provam a veracidade de seu conteúdo.
 
