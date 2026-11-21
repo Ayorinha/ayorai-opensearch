@@ -19,6 +19,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - Endurecimento do fencing de jobs, da integridade do armazenamento e da segurança dos providers (#555).
 
 ### Trilha de auditoria
+- Correção: uma falha da retenção automática, que roda depois do commit do rastro, deixa de chegar ao chamador como erro de gravação. O rastro já está gravado; a purga parcial é desfeita e o erro vai para o log (só o tipo da exceção), e a retenção roda de novo na próxima gravação após o intervalo.
 - Correção: uma falha ao gravar a entrada da cadeia (ou o registro de uma purga) desfaz a transação inteira. Antes, o rastro ou a exclusão ficavam pendentes na conexão, e a próxima gravação bem-sucedida os confirmava: o chamador recebia erro, mas o rastro ficava gravado sem entrada na cadeia. A selagem, a resselagem e o sequenciamento também desfazem a transação em caso de erro, e a rotação confere a cadeia sob a mesma trava que a reassina.
 - Cadeia de sequência (`audit_chain`, aditiva; rastros, digests e MACs existentes não mudam): todo rastro gravado entra numa sequência com elos encadeados por HMAC. `verify_chain()` detecta rastro apagado no meio da trilha, entrada removida ou reescrita e rastro inserido fora da API; com um `checkpoint()` guardado fora do host, detecta também truncamento e rollback. A retenção registra suas purgas na cadeia. `sequence_unsequenced()` encadeia uma base antiga; `reseal_with_active_key()` reassina a cadeia íntegra. Resolve a parte local do P2-1 (#433).
 - Rotação de chave HMAC: `AuditTraceStore.reseal_with_active_key()` assina de novo, com a chave ativa, os rastros válidos assinados por chaves antigas, para que elas possam ser aposentadas. Rastros inválidos não são re-selados. O procedimento está no manual de operação.
@@ -57,6 +58,8 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - A revisão técnica dessas mudanças foi feita por ferramenta automatizada; a revisão humana independente prevista no `CONTRIBUTING.md` continua pendente. O protocolo RGC continua [PROPOSTO]; nenhuma execução RGC foi feita.
 
 ### Documentação
+- Relatórios F1.2 (`reports/f1.2-*.json`) sem caminhos absolutos de ambientes de execução: `package_file` passa a ser relativo, e os três hashes semânticos foram recalculados e registrados, junto com os antigos, em `docs/eval/F1.2-RESULTS.md`. Nenhuma métrica mudou. O guia de anotação passa a dizer, como a Emenda 4, que ausência de evidência que aborde a afirmação é `UNVERIFIED`.
+- Auditoria pós-encerramento de 2026-11-21 (`docs/audit/POST-CLOSURE-AUDIT-2026-11-21.md`): revisão pós-merge das #599 a #603, inventário das 92 branches por conteúdo, IDs DEC-025 e DEC-026 reservados como propostas não decididas, ADR-010 no índice de ADRs, remissão normativa no guia de anotação e matriz de prontidão para POC e produção no `ROADMAP.md`.
 - ADR-011 (família de regras do Judge por rota), ADR-001 aceito, decisões DEC-001, DEC-003, DEC-004 e DEC-006 registradas, índice das aprovações em `DECISIONS-APPROVED.md`, roteiro de longo prazo (`docs/ROADMAP.md`) e política dos pins históricos (`docs/security/HISTORICAL-PINS.md`, com teste de isolamento).
 - `/v1/check`, `/v1/fields`, dono dos rastros, backup e novas variáveis documentados (#566); status de engenharia atualizado (#572, #578).
 
