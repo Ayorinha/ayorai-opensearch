@@ -64,16 +64,16 @@ A suíte reutiliza os 17 hashes e as 18 raízes do vetor público já mantido no
 
 A primeira execução detectou um defeito real em verify_receipt: para uma árvore de uma única folha, a prova de inclusão é vazia e a implementação inicial não comparava a folha persistida com a folha do recibo. A correção foi aplicada e coberta por teste de regressão.
 
-A POC Python/Tessera foi expandida depois da validação inicial. No SHA 1b55b6620c4c59c63a465d5b4a07932db4f23f43, o workflow [ADR-010 isolated persistence POC — run 44919722764](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44919722764) passou integralmente:
+A POC Python/Tessera foi expandida depois da validação inicial. No SHA de código 97d5cf5f1ece1ffda250f5092dab0728e9cc4bcd, o workflow [ADR-010 isolated persistence POC — run 44920500515](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44920500515) passou integralmente:
 
 - 46 testes Python aprovados, incluindo o estado durável de idempotência, o adaptador fail-closed e a verificação/persistência de provas de inclusão;
 - Ruff check aprovado;
 - Tessera v1.0.4 POSIX one-shot: 17 folhas, tree size 17 e raiz SHA-256 1780178a188d10bf4aa75b1f78378e13c28db181dca036d01a2551000299be62, igual à referência dos vetores públicos;
-- Tessera HTTP: cinco folhas iniciais, índices 0–4, checkpoint size 5 e raiz 4e3bbb1f7b478dcfe71fb631631519a3bca12c9aefca1612bfce4c13a86264d4;
-- no mesmo servidor, a repetição imediata do primeiro corpo retornou índice 0; depois de reiniciar o processo, o mesmo corpo com a mesma Idempotency-Key foi anexado novamente no índice 5; outro corpo com a mesma Idempotency-Key foi aceito no índice 6;
-- checkpoint final size 7, raiz c49c6f0c96c9e8738d63ad3c08ab337f1a775e049ef2d35de13b46e80034e2c3; assinatura, tiles e entry bundles aprovados pelo Tessera fsck.
+- HTTP com antispam padrão em memória: duplicata imediata retornou índice 0; após restart, o mesmo corpo foi anexado novamente no índice 5; outro corpo com a mesma Idempotency-Key foi aceito no índice 6; checkpoint final size 7;
+- HTTP com a opção experimental Badger persistent antispam (--antispam=true): duplicata imediata retornou índice 0 e continuou retornando índice 0 após restart; outro corpo com a mesma Idempotency-Key foi aceito no índice 5; checkpoint final size 6;
+- fsck aprovou assinatura, tiles e entry bundles nos dois logs HTTP, inclusive no modo persistente.
 
-A observação de deduplicação é consistente com o código do [servidor POSIX de conformidade do Tessera v1.0.4](https://github.com/transparency-dev/tessera/blob/v1.0.4/cmd/conformance/posix/main.go): ele instancia antispam em memória. A execução confirma que esse cache não sobrevive ao restart e que o handler de exemplo não implementa semântica de Idempotency-Key. Portanto, o antispam do exemplo não substitui um registro de idempotência durável do AYORAI.
+**Conclusão sobre antispam:** o cache em memória não sobrevive ao restart. O modo Badger experimental sobrevive, mas deduplica pelo conteúdo da folha, não pela Idempotency-Key. Ele não detecta conflito de mesma chave com payload diferente e não substitui o outbox. O modo Badger é explicitamente marcado como experimental no [servidor POSIX Tessera v1.0.4](https://github.com/transparency-dev/tessera/blob/v1.0.4/cmd/conformance/posix/main.go); não deve ser adotado como garantia de produção sem validação independente e decisão do mantenedor.
 
 O CI geral do SHA atual ainda está em execução. A versão anterior, sem a variante frontier, o teste HTTP e o outbox, passou no [CI geral — run 44917649782](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917649782): 2.616 testes aprovados e 1 ignorado em Python 3.11/3.12/3.13, cobertura 94% contra baseline 85%, além de CodeQL, Security, Dependency Review, Golden r2 Migration e contratos API. **O CI geral da extensão atual está em execução; esse resultado anterior não é apresentado como validação do SHA atual.**
 
