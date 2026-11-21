@@ -48,11 +48,26 @@ These metric values were supplied from a local execution of the base-commit code
 - `legacy_accuracy`: 13/30 = `0.433333`.
 - McNemar: `legacy_correct_new_wrong=9`, `new_correct_legacy_wrong=6`, exact p-value `0.60723876953125`.
 
+## Approved reference change — rule detector v13 (approved 2026-11-21)
+
+Three states are kept apart in this document:
+
+| State | Golden v0.1 `semantic_sha256` | Where |
+|---|---|---|
+| Historical (PR 0.9 measurement) | `64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608` | "Recorded output" above; never rewritten |
+| Previous approved reference (detectors up to v12) | `64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608` | normative until 2026-11-21 |
+| Approved reference (detector v13) | `1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180` | "Interpretation and invariants" below |
+
+- **Approval:** the maintainer, Anderson Leon Ayora, approved this reference change on 2026-11-21, choosing to rebuild PR #571 on top of detector v12 and merge it. The change was first proposed in #571 as detector v11; it ships as v13 because v12 (#592) was merged first, and `11` is not used.
+- **Semantic change:** a number followed by a scale word without a currency ("2,0 milhões", "2.0 million", "1,2 bilhão") is read with its scale, and a count noun right after the scale ("2,0 milhões de clientes", "2.0 million active retail customers") makes it a scaled count of that noun. Previously the scale was applied only to money with a currency.
+- **Case-level effect:** exactly one case changes. Golden v0.1 `x02` (expected `CONFLICTING`; claim "A NovaBank tinha 2,0 milhões de clientes de varejo ativos no fim de 2025"; evidence doc-005 "2.0 million active retail customers", doc-018 "2.3 million") goes from `PARTIALLY_SUPPORTED` (wrong) to `CONFLICTING` (correct). Golden v0 and smoke-v0 are unchanged. The candidate digest measured on v10+v11 in #571 is identical to the one measured on v12+v13, so the v12 rules do not interact with this change on the Golden suites.
+- **Golden v0.1 metrics:** `global_accuracy` 11/30 = `0.366667` (previously 10/30); `balanced_accuracy` `0.502671` (previously `0.481838`); `legacy_accuracy` 13/30 unchanged; McNemar `legacy_correct_new_wrong=9`, `new_correct_legacy_wrong=7`, exact p-value `0.803619384765625` (non-significant). Development measurement on 30 cases, rewritten after earlier results were observed; not a confirmatory result.
+
 ## Interpretation and invariants
 
 - Do not change these expected values to make CI pass. If a value differs, investigate the implementation, suite inputs, or execution environment.
 - Do not edit Golden v0/v0.1, the corpus, manifests, or historical reports as part of this change.
 - The older narrative in [BASELINE-v0.md](BASELINE-v0.md) is a historical baseline report and must not be silently rewritten to these later code-version measurements.
 - The legacy `content_sha256` keeps its existing calculation and report placement. It may change between equivalent runs because nested per-result latency remains included.
-- `semantic_sha256` is versioned and its reference values are deliberately fixed in CI for Golden v0 (`21abb816facce73fc924842d12b373b8792abc2e7389e129c35bb58bab806632`), Golden v0.1 (`64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608`), and smoke-v0 (`969ec61a4aee4e4426f5d217819bd185ebba248743e7721714a3123f5df67c3d`). If an intentional change alters any reference digest, it requires a separate PR, an explicit rationale documenting the semantic change and its effect on case-level predictions, and maintainer approval. Do not update these values merely to make CI pass.
+- `semantic_sha256` is versioned and its reference values are deliberately fixed in CI for Golden v0 (`21abb816facce73fc924842d12b373b8792abc2e7389e129c35bb58bab806632`), Golden v0.1 (`1fd6fdb75fabcf95b81c0657053a6ba570f97abde96b9dbf5cdda554bf0a9180` since detector v13; `64f743b3e87553b2eca207cbb60a0ae8f87d619bc968c8ed562f8048f1529608` before — see the section above), and smoke-v0 (`969ec61a4aee4e4426f5d217819bd185ebba248743e7721714a3123f5df67c3d`). If an intentional change alters any reference digest, it requires a separate PR, an explicit rationale documenting the semantic change and its effect on case-level predictions, and maintainer approval. Do not update these values merely to make CI pass.
 - A stable semantic digest is evidence that the canonicalized semantic report is unchanged; it is not, by itself, proof that every replay path or every external dependency is reproducible.

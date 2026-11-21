@@ -1098,6 +1098,14 @@ def _numeric_facts(text: str, *, skip_bounds: bool = False) -> list[tuple[str, s
             unit = "percent"
         elif money is not None:
             unit = f"{money[0]}:{money[1]}"
+        elif following in _SCALES:
+            # "1,2 bilhão" and "1.200 milhões" without a currency: the scale is
+            # part of the value, so both compare as the same quantity. A count
+            # noun shortly after ("2,0 milhões de clientes", "2.0 million active
+            # retail customers") makes it a scaled count of that noun.
+            scale = _SCALES[following][0]
+            noun = _scaled_count_noun(tokens, index + 2)
+            unit = f"count:{noun}:{scale}" if noun else f"scaled:{scale}"
         elif following in _MILLISECOND_WORDS:
             unit = "ms"
         elif following in _COUNT_NOUNS:
@@ -1116,11 +1124,25 @@ def _numeric_facts(text: str, *, skip_bounds: bool = False) -> list[tuple[str, s
         elif unit.startswith("duration:"):
             attribute = unit.rsplit(":", 1)[0]
         elif unit.startswith(("count:", "measure:")):
-            attribute = unit
+            attribute = ":".join(unit.split(":")[:2])
         else:
             attribute = _attribute(tokens, index, entities)
         facts.append((token.replace(" ", ""), unit, attribute))
     return facts
+
+
+_SCALED_COUNT_WINDOW = 3
+
+
+def _scaled_count_noun(tokens: list[str], start: int) -> str | None:
+    """Count noun within a few words after a scale word, before any number."""
+    for position in range(start, min(len(tokens), start + _SCALED_COUNT_WINDOW)):
+        token = tokens[position]
+        if _is_number(token):
+            return None
+        if token in _COUNT_NOUNS:
+            return _COUNT_NOUNS[token]
+    return None
 
 
 def _locale_for(text: str) -> NumericLocale:
@@ -1142,7 +1164,11 @@ def _fact_value(
         return value if as_written else value * Decimal(unit.rsplit(":", 1)[1])
     if unit.startswith("measure:"):
         return value
-    if ":" in unit and not unit.startswith("count:"):
+    if unit.startswith("count:"):
+        parts = unit.split(":")
+        if len(parts) == 3:
+            value *= _SCALE_FACTORS[parts[2]]
+    elif ":" in unit:
         value *= _SCALE_FACTORS.get(unit.split(":", 1)[1], Decimal(1))
     return value
 
@@ -1150,6 +1176,10 @@ def _fact_value(
 def _comparable(left_unit: str, right_unit: str) -> bool:
     if left_unit == right_unit:
         return True
+    if left_unit.startswith("scaled:") and right_unit.startswith("scaled:"):
+        return True
+    if left_unit.startswith("count:") and right_unit.startswith("count:"):
+        return left_unit.split(":")[1] == right_unit.split(":")[1]
     if left_unit.startswith("duration:") and right_unit.startswith("duration:"):
         return left_unit.rsplit(":", 1)[0] == right_unit.rsplit(":", 1)[0]
     left_money = left_unit.split(":", 1)[0] in _CURRENCIES
@@ -1302,14 +1332,23 @@ def _confirmed_as_written(
     evidence_locale: NumericLocale,
     tolerance: Decimal,
 ) -> bool:
-    """A claim duration/scalar equals a bare evidence number as written."""
-    if not (left_unit.startswith("duration:") or left_unit == "scalar"):
+    """A claim duration/scalar equals a bare evidence number as written.
+
+    A scaled claim value ("40 milhões") is confirmed by a scaled evidence value
+    of the same magnitude whose attribute could not be resolved ("versus 40
+    milhões em 2023"), exactly as a bare scalar was before scales were read.
+    """
+    scaled = left_unit.startswith("scaled:")
+    if not (left_unit.startswith("duration:") or left_unit == "scalar" or scaled):
         return False
     written = _fact_value(left, left_unit, claim_locale, as_written=True)
     if written is None:
         return False
     for right, right_unit, _ in evidence_facts:
-        if right_unit not in {"scalar", "year"} and not right_unit.startswith("duration:"):
+        if scaled:
+            if not right_unit.startswith("scaled:"):
+                continue
+        elif right_unit not in {"scalar", "year"} and not right_unit.startswith("duration:"):
             continue
         value = _fact_value(right, right_unit, evidence_locale, as_written=True)
         if value is not None and relative_difference(written, value) <= tolerance:
@@ -1354,7 +1393,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "12"
+    version = "13"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
