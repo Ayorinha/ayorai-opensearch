@@ -8,7 +8,7 @@ from typing import Protocol
 from ayorai_attractor.auditlog import HASH_SIZE
 
 from .idempotency_outbox import OutboxRecord, SQLiteIdempotencyOutbox
-from .python_writer import CorruptStoreError, IdempotencyConflict, WriterError
+from .python_writer import CorruptStoreError, WriterError
 
 
 class ReconciliationRequired(WriterError):
