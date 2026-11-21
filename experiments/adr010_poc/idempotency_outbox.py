@@ -162,9 +162,13 @@ class SQLiteIdempotencyOutbox:
             or len(proof_blob) % HASH_SIZE != 0
         ):
             raise CorruptStoreError("RECORDED outbox row is malformed")
-        proof = tuple(
-            proof_blob[offset : offset + HASH_SIZE]
-            for offset in range(0, len(proof_blob), HASH_SIZE)
+        proof = (
+            tuple(
+                proof_blob[offset : offset + HASH_SIZE]
+                for offset in range(0, len(proof_blob), HASH_SIZE)
+            )
+            if state == "RECORDED"
+            else None
         )
         return OutboxRecord(
             idempotency_key=key,
@@ -231,6 +235,7 @@ class SQLiteIdempotencyOutbox:
                 tree_size=None,
                 root_hash=None,
                 checkpoint_note=None,
+                inclusion_proof=None,
             )
         except Exception:
             connection.rollback()
@@ -288,6 +293,7 @@ class SQLiteIdempotencyOutbox:
                     tree_size=None,
                     root_hash=None,
                     checkpoint_note=None,
+                    inclusion_proof=None,
                 )
             if record.tessera_index != tessera_index:
                 raise CorruptStoreError("Tessera returned a different index for an existing key")
@@ -403,6 +409,7 @@ class SQLiteIdempotencyOutbox:
                     tree_size=record.tree_size,
                     root_hash=record.root_hash,
                     checkpoint_note=record.checkpoint_note,
+                    inclusion_proof=record.inclusion_proof,
                     replayed=True,
                 )
 
