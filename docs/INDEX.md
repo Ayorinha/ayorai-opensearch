@@ -16,6 +16,7 @@ A documentação é organizada por finalidade. Comece pelo README para entender 
 | Tema | Documento principal | Para que serve |
 |---|---|---|
 | Arquitetura | [Visão geral](ARCHITECTURE.md) | Entender o fluxo e as fronteiras de responsabilidade. |
+| Trilha de auditoria verificável | [ADR-010](adr/ADR-010-verifiable-audit-log.md) · [Avaliação da POC](adr/ADR-010-POC-ASSESSMENT-2026-11-21.md) · [Protótipo SQLite](../experiments/adr010-poc/README.md) | Acompanhar a pesquisa Python/Tessera e o experimento de persistência isolado, sem confundir POC com capacidade de produção. |
 | Execução | [Guia passo a passo](GUIA-PASSO-A-PASSO.md) | Preparar o ambiente e executar verificações. |
 | Estado do projeto | [Status técnico](STATUS.md) | Ver o que está concluído, em andamento ou limitado. |
 | Auditoria técnica e POC | [Auditoria de 2026-11-20](audit/ENGINEERING-AUDIT-2026-11-20.md) · [Inventário de PRs e branches](audit/PR-INVENTORY-2026-11-20.md) · [Proposta de POC](poc/POC-PROPOSAL.md) | Achados, correções em PR, matriz de maturidade e proposta de POC controlada (não executada). |
