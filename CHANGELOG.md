@@ -20,6 +20,14 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - Limite de concorrência das rotas pesadas (HTTP 503), opcionalmente compartilhado entre workers do mesmo host com `ATTRACTOR_INFLIGHT_SCOPE=host` (#556, #563).
 - Endurecimento do fencing de jobs, da integridade do armazenamento e da segurança dos providers (#555).
 
+### Autenticação
+- Escopos, expiração e revogação sem reinício das chaves de API (ADR-012, DEC-031).
+  - **Arquivo de chaves:** `ATTRACTOR_API_KEYS_FILE` é relido quando muda; cada chave tem escopos (`verify`, `audit:write`, `audit:read`, `metrics`), `expires_at` e `revoked_at`/`revoked_by`.
+  - **Respostas:** chave desconhecida, expirada ou revogada recebe 401; sem o escopo da rota, 403.
+  - **Arquivo inválido depois da subida:** o serviço mantém o último válido, e a métrica `attractor_api_keys_reload_failures_total` dispara o alerta `AttractorApiKeysReloadFailing`.
+  - **Emissão e revogação:** `python -m ayorai_attractor.api.keys`, com gravação atômica.
+  - **Compatibilidade:** `ATTRACTOR_API_KEYS_HMAC_SHA256` continua como antes, com todos os escopos, e o principal de cada chave não muda.
+
 ### Trilha de auditoria
 - Registro verificável do `/v1/verify` (ADR-010, fases 2 e 3).
   - **O que faz:** com `ATTRACTOR_VERIFY_LOG_MODE=local` ou `required`, cada decisão `r2-a` entra num log Merkle RFC 6962 com checkpoints C2SP assinados em Ed25519, e a resposta ganha `audit_status` e `audit_receipt`. O recibo traz folha, prova de inclusão, checkpoint assinado, sal e registro, e é verificável sem o servidor com a chave publicada em `GET /v1/verify/log`.

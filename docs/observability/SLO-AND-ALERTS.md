@@ -44,6 +44,7 @@ As regras estão em [`docker/observability/prometheus-alerts.yml`](../../docker/
 | `AttractorDown` (coleta falha por 2 min) | page | Ver "Recuperação", passos 1 a 3 |
 | `AttractorHigh5xxRate` (> 1% por 10 min) | page | Logs por `request_id`; reverter a última mudança se coincidir |
 | `AttractorAuditRecordFailures` (qualquer falha em 10 min) | page | Disco, permissões e bloqueio do SQLite; a trilha está incompleta até resolver |
+| `AttractorApiKeysReloadFailing` (qualquer recarga recusada em 10 min) | page | Arquivo de chaves inválido (ADR-012). O serviço usa o último arquivo válido, então uma revogação recente pode não estar valendo. Corrija o arquivo e confira o log `api key registry reloaded` |
 | `AttractorSaturated` (> 5% de 503 por 10 min) | ticket | Aumentar réplicas ou `ATTRACTOR_MAX_INFLIGHT_HEAVY`, conforme a medição de capacidade |
 | `AttractorRateLimited` (> 10% de 429 por 15 min) | ticket | Distinguir abuso de limite mal dimensionado no gateway |
 | `AttractorCheckLatencyHigh` (p95 > 2,5 s por 15 min) | ticket | Tamanho dos documentos recebidos e CPU da réplica |

@@ -35,6 +35,52 @@ uvicorn ayorai_attractor.api.app:app --host 127.0.0.1 --port 8000 --lifespan on
 
 The placeholders above are intentionally invalid and must be replaced. In `api_key` mode, missing or malformed pepper/digest configuration prevents the middleware from starting. Supported modes are `off` and `api_key`; `api_key` is the default. The `/health` endpoint remains public.
 
+## Key file: scopes, expiry and revocation (ADR-012)
+
+`ATTRACTOR_API_KEYS_FILE` replaces `ATTRACTOR_API_KEYS_HMAC_SHA256`. Setting both is a startup error. The file holds digests only, never keys, and gives each key scopes, an optional expiry and a revocation. The service re-reads it when it changes, without a restart, at most once every `ATTRACTOR_API_KEYS_RELOAD_SECONDS` (default 1).
+
+~~~json
+{"schema": "ayorai.api-keys.v1",
+ "keys": [{"id": "ops-2026-11", "digest": "<64 hex>", "scopes": ["verify", "audit:read"],
+           "expires_at": "2027-01-01T00:00:00Z", "revoked_at": null, "revoked_by": null}]}
+~~~
+
+| Scope | Routes |
+|---|---|
+| `verify` | `POST /v1/check`, `/v1/fields`, `/v1/verify`, `/v1/opensearch` |
+| `audit:write` | `POST /v1/audit`, `/v2/audit` |
+| `audit:read` | `GET /v1/audit/{trace_id}`, `GET /v1/verify/log` |
+| `metrics` | `GET /metrics` |
+
+**Responses:**
+- an unknown, expired or revoked key gets the same `401 Unauthorized`;
+- a valid key without the route's scope gets `403 Forbidden`;
+- other routes, such as the OpenAPI pages, need a valid key and no scope;
+- `/health` and `/ready` stay public.
+
+**Issuing and revoking.** `ATTRACTOR_API_KEY_PEPPER` must be set:
+
+~~~bash
+python -m ayorai_attractor.api.keys new --id metrics-bot --scope metrics --expires 2027-01-01T00:00:00Z --file keys.json
+python -m ayorai_attractor.api.keys revoke --file keys.json --id metrics-bot --by "maintainer name"
+~~~
+
+- `new` prints the key once, on standard error. Store it in a secret manager.
+- Both commands validate the whole file and write it atomically, so the service never reads a half-written file.
+- The service logs every revocation it applies with the key `id`, `revoked_by` and time, never digests.
+
+**Failure behaviour (DEC-031):**
+- At startup, a missing or invalid file stops the service.
+- Later, an invalid file is ignored: the last valid registry stays in use, the error is logged and `attractor_api_keys_reload_failures_total` increases. That fires the `AttractorApiKeysReloadFailing` alert.
+- A revocation therefore only takes effect once the file containing it is valid.
+
+**Handling the file:**
+- Treat it as an access-control asset: whoever can edit it grants access.
+- Keep it outside the data volume, readable only by the service user, and mount it read-only in the container.
+- Write it with the command above or another atomic replace.
+- Each process or replica re-reads the file on its own, so give every replica the same file.
+- The principal that owns audit traces is derived from the digest, so moving a key from the variable to the file keeps its traces readable.
+
 ## Sending authenticated requests
 
 Either a Bearer token or the X-API-Key header is accepted:

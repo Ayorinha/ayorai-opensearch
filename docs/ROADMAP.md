@@ -23,9 +23,9 @@ Limite permanente: quem controla o banco e a chave ativa pode reescrever a cadei
 |---|---|---|
 | Chave guardada só como HMAC com pepper | Implementado (`api/auth.py`) | — |
 | Cada chave mapeada a um principal estável; rastro com dono; leitura de rastro de outro principal devolve 404 (sem IDOR) | Implementado (#564) | — |
-| Revogação individual | Parcial: retirar o digest de `ATTRACTOR_API_KEYS_HMAC_SHA256` e reiniciar revoga a chave | Revogação sem reinício, com registro de quem revogou |
-| Escopos (ler rastro, verificar, administrar) e expiração por chave | Não implementado | ADR aprovada; testes negativos por escopo, chave expirada e chave revogada |
-| Tenant distinto de principal e implantação compartilhada | Não implementado | ADR aprovada; testes entre tenants; até lá, a implantação suportada é de um único tenant |
+| Revogação individual | Implementado (ADR-012, DEC-031): `revoked_at` e `revoked_by` no arquivo de chaves, que vale sem reinício; o log registra quem revogou | — |
+| Escopos e expiração por chave | Implementado (ADR-012): escopos `verify`, `audit:write`, `audit:read` e `metrics` (403 sem escopo); `expires_at` (401 depois da data); testes negativos por escopo, chave expirada, revogada e desconhecida | — |
+| Tenant distinto de principal e implantação compartilhada | Não implementado; fica para uma ADR própria (DEC-031) | ADR aprovada; testes entre tenants; até lá, a implantação suportada é de um único tenant |
 
 ## 3. Plano mestre de prontidão (antiga #435)
 
@@ -33,7 +33,7 @@ Limite permanente: quem controla o banco e a chave ativa pode reescrever a cadei
 |---|---|---|
 | G0 — Baseline e governança | `STATUS.md` reflete a `main`; workflows com actions fixadas por SHA; matriz Python 3.11–3.13 no CI | Avaliar 3.14 em job de compatibilidade antes de declarar suporte |
 | G1 — Integridade de código e contratos | PRs antigas encerradas; gates RGC integrados (#580, #584, #576, #577, #600); contratos por rota registrados (ADR-011) | Marcar `superseded_spans` nas fontes retificadas do corpus, por curadoria humana; o runner já exclui o texto superado (#609) |
-| G2 — Segurança | Itens 1 e 2 acima; CodeQL, Bandit, pip-audit, Grype, Dependency Review e secret scanning no CI | Escopos, expiração e tenant; política de divulgação coordenada revisada por pessoa |
+| G2 — Segurança | Itens 1 e 2 acima, inclusive escopos, expiração e revogação sem reinício (ADR-012); CodeQL, Bandit, pip-audit, Grype, Dependency Review e secret scanning no CI | Tenant (ADR própria); política de divulgação coordenada revisada por pessoa |
 | G3 — Observabilidade e operação | Logs estruturados sem conteúdo; backup, restauração e rotação documentados (`docs/manual/05-operacao.md`); imagem sem root | Métricas e alertas ligados a uma plataforma; testes de carga e soak |
 | G4 — Cadeia de suprimentos e releases | SBOM CycloneDX, proveniência SLSA assinada, locks com hash | Build reprodutível comparado de forma independente; checklist de release executado na próxima versão |
 | G5 — RGC científico | Runner com snapshots, interpretador isolado, IC e testes por componente (DEC-021 a DEC-023, DEC-027) | Somente humano: piloto 02, segunda anotação, revisão F-01, inserção das emendas propostas em `docs/eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md`, congelamento e execução única |
@@ -45,11 +45,11 @@ O que a `main` tem hoje e o que falta, tema por tema. "Existe" quer dizer códig
 
 | Tema | Existe | Falta para a POC | Falta para produção |
 |---|---|---|---|
-| Autenticação | Chave por HMAC com pepper (`api/auth.py`); limite por IP e por chave | — | Revogação sem reinício |
-| Autorização e escopos | Dono por rastro; 404 para rastro de outro principal | — | Escopos e expiração por chave (§2) |
+| Autenticação | Chave por HMAC com pepper (`api/auth.py`); limite por IP e por chave; revogação sem reinício (ADR-012) | — | — |
+| Autorização e escopos | Dono por rastro; 404 para rastro de outro principal; escopos e expiração por chave (ADR-012) | — | — |
 | Multi-tenancy e isolamento | Isolamento por principal no `GET /v1/audit/{id}` | Usar um único tenant | Tenant distinto de principal, com ADR e testes entre tenants (§2) |
-| Trilha de auditoria | HMAC, rotação, retenção, `verify_all`, cadeia `verify_chain` e `checkpoint` (#602; transação corrigida na #604 e na #611) | `checkpoint()` diário guardado fora do host | Persistir o veredito do `/v1/verify`; log Merkle; checkpoints assinados; testemunhas; carimbo do tempo (§1) |
-| Rastreabilidade do veredito | `trace_id` determinístico no `/v1/check`; `adjudication_sha256` no `/v2/audit` (`r2-v4`) | — | Veredito do `/v1/verify` persistido (ADR-009 §15.1) |
+| Trilha de auditoria | HMAC, rotação, retenção, `verify_all`, cadeia `verify_chain` e `checkpoint` (#602; transação corrigida na #604 e na #611); log Merkle com checkpoints assinados do `/v1/verify` (ADR-010, #623) | `checkpoint()` diário e checkpoint do log de verificação guardados fora do host (DEC-029, etapa 1) | Testemunhas independentes (DEC-029, etapa 2); carimbo do tempo, adiado (DEC-030) |
+| Rastreabilidade do veredito | `trace_id` determinístico no `/v1/check`; `adjudication_sha256` no `/v2/audit` (`r2-v4`); veredito do `/v1/verify` persistido com recibo (ADR-009 §15.1, #623) | — | — |
 | Evidências | Trechos com offsets e proveniência `client_supplied`/`server_retrieved` | Documentos com `url` ou origem declarada | Armazenamento verificável das evidências, não só dos digests |
 | Logs | Logs estruturados sem conteúdo, com `request_id` (`api/request_context.py`) | — | Envio a uma plataforma, com retenção definida |
 | Métricas e alertas | `GET /metrics` (Prometheus, com chave), regras de alerta e SLOs propostos ([observability/SLO-AND-ALERTS.md](observability/SLO-AND-ALERTS.md)) | Ligar a coleta e os alertas na plataforma da POC | Painel e SLOs confirmados com tráfego real |
