@@ -73,7 +73,7 @@ class SQLiteIdempotencyOutbox:
                     leaf_hash BLOB NOT NULL CHECK (length(leaf_hash) = 32),
                     state TEXT NOT NULL
                         CHECK (state IN ('PENDING', 'ASSIGNED', 'RECORDED')),
-                    tessera_index INTEGER,
+                    tessera_index INTEGER UNIQUE,
                     tree_size INTEGER,
                     root_hash BLOB,
                     checkpoint_note BLOB,
@@ -287,6 +287,11 @@ class SQLiteIdempotencyOutbox:
                 checkpoint_note=record.checkpoint_note,
                 replayed=True,
             )
+        except sqlite3.IntegrityError as error:
+            connection.rollback()
+            if "UNIQUE constraint failed: adr010_idempotency_outbox.tessera_index" in str(error):
+                raise CorruptStoreError("Tessera index is already assigned to another key") from error
+            raise
         except Exception:
             connection.rollback()
             raise
@@ -388,6 +393,11 @@ class SQLiteIdempotencyOutbox:
                 root_hash=root_hash,
                 checkpoint_note=checkpoint_note,
             )
+        except sqlite3.IntegrityError as error:
+            connection.rollback()
+            if "UNIQUE constraint failed: adr010_idempotency_outbox.tessera_index" in str(error):
+                raise CorruptStoreError("Tessera index is already assigned to another key") from error
+            raise
         except Exception:
             connection.rollback()
             raise
