@@ -70,7 +70,20 @@ O Tessera também separa sequenciamento durável, integração à árvore e publ
 
 Nenhum resultado desta POC deve ser descrito como log inviolável, prova de autoria, prova temporal, validação jurídica ou conformidade LGPD.
 
-## 5. Matriz preliminar de decisão
+## 5. Janela crítica de falha: idempotência entre dois armazenamentos
+
+Uma integração Tessera + banco do AYORAI cria dois domínios de persistência: (1) o registro transacional de Idempotency-Key, compromisso e recibo; (2) o sequenciador/armazenamento Tessera. Sem uma transação distribuída ou um protocolo de reconciliação idempotente comprovado, existe uma janela:
+
+1. O AYORAI reserva a chave e calcula/persiste o compromisso.
+2. Tessera aceita a entrada e atribui um índice durável.
+3. O processo cai antes de gravar esse índice no registro de idempotência.
+4. No retry, a camada externa não sabe se a entrada foi sequenciada. O antispam best-effort do Tessera não garante deduplicação.
+
+Portanto, uma tabela de idempotência externa, por si só, ainda não demonstra exactly-once. A POC Tessera precisa incluir encerramento abrupto precisamente nessa janela e provar uma estratégia de reconciliação. Alternativas a avaliar incluem uma personality que controla conjuntamente o estado de idempotência e sequenciamento, um mecanismo de busca/reconciliação por identificador opaco de operação ou um backend transacional integrado. Não se deve declarar o requisito satisfeito com base apenas no índice retornado pelo Add.
+
+A POC SQLite evita essa janela porque a chave, o índice e a raiz são gravados na mesma transação local. Isso não torna SQLite uma solução de produção: a raiz é recalculada O(n), os checkpoints não são assinados e o protocolo tlog-tiles não é servido.
+
+## 6. Matriz preliminar de decisão
 
 | Critério | Writer Python | Tessera via adaptador Go |
 |---|---|---|
@@ -85,7 +98,7 @@ Nenhum resultado desta POC deve ser descrito como log inviolável, prova de auto
 | Evidência atual | POC SQLite isolada; sem benchmark de capacidade | Runner isolado criado para Tessera v1.0.4, usando posix-oneshot + fsck e os mesmos vetores públicos; execução CI pendente |
 | Decisão | **Não decidida** | **Não decidida** |
 
-## 6. Experimento comparativo obrigatório antes da decisão 5
+## 7. Experimento comparativo obrigatório antes da decisão 5
 
 O runner de Tessera em experiments/adr010_poc/run_tessera_poc.py executa o posix-oneshot v1.0.4 sobre os 17 vetores públicos, verifica o tamanho e a raiz do checkpoint contra a referência Go existente e executa Tessera fsck para validar assinatura, tiles e bundles. A suíte automatizada correspondente está em .github/workflows/adr010-poc.yml. O runner usa uma chave de demonstração publicada pelo próprio projeto Tessera, exclusivamente para o log descartável do teste; essa chave nunca pode ser usada em qualquer ambiente real.
 
@@ -103,7 +116,7 @@ A comparação Tessera precisa ser executada em branch e ambiente isolados, com 
 
 Os 17 itens são vetores criptográficos públicos, não casos de negócio, não amostras do benchmark RGC e não estimativa de volume de produção. A medição com esse conjunto é um teste de correção/latência de pequena escala; uma avaliação de capacidade exigirá workload operacional separado e aprovado.
 
-## 7. Recomendação técnica provisória
+## 8. Recomendação técnica provisória
 
 Não escolher Python ou Tessera apenas pela linguagem ou por alegação de maturidade. O Tessera tem vantagem clara em aderência nativa ao ecossistema tlog-tiles, armazenamento e witnesses; o Python tem vantagem de integração e reaproveitamento do core existente. A comparação só será conclusiva depois de construir o adaptador Tessera e medir ambos no mesmo ambiente.
 
