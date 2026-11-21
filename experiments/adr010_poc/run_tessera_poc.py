@@ -150,7 +150,7 @@ def main() -> None:
                 f"--public_key={public_key_path}",
                 "--ui=false",
             ],
-            environment,
+            os.environ.copy(),
         )
         if "fsck failed:" in fsck_output.lower():
             raise RuntimeError(f"Tessera fsck rejected the log:\n{fsck_output}")
