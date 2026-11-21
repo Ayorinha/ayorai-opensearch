@@ -14,6 +14,8 @@ A especificação está na versão estável 1.0.0. Ela define a publicação de 
 
 A consequência de engenharia é importante: implementar apenas uma árvore Merkle e uma API de inclusão não basta para interoperar com tlog-tiles. O writer precisa produzir a estrutura de tiles, os bundles e o checkpoint no formato especificado, com comportamento correto para tiles parciais e consistência entre tamanhos de árvore.
 
+A ADR-010 também registra que C2SP tlog-proof ainda está em desenvolvimento. A maturidade de tlog-tiles 1.0.0 não deve ser confundida com a estabilidade do formato de prova de inclusão transportado ao cliente. A implementação deverá versionar o envelope de prova e exigir interoperabilidade independente antes de fixar esse contrato.
+
 ### C2SP tlog-checkpoint e assinaturas
 
 O checkpoint contém origem, tamanho da árvore e raiz em Base64, em formato de signed note. A especificação define assinatura Ed25519 do log e cosignaturas Ed25519 ou ML-DSA-44; ML-DSA-44 é recomendado para cosignaturas. A escolha de custódia, rotação e recuperação de chaves continua sendo requisito operacional separado.
@@ -100,7 +102,7 @@ A POC SQLite evita essa janela porque a chave, o índice e a raiz são gravados 
 
 ## 7. Experimento comparativo obrigatório antes da decisão 5
 
-O runner de Tessera em experiments/adr010_poc/run_tessera_poc.py executa o posix-oneshot v1.0.4 sobre os 17 vetores públicos, verifica o tamanho e a raiz do checkpoint contra a referência Go existente e executa Tessera fsck para validar assinatura, tiles e bundles. A suíte automatizada correspondente está em .github/workflows/adr010-poc.yml. O runner gera uma chave Ed25519 descartável com OpenSSL em tempo de execução; a chave privada não é versionada e é apagada junto com o diretório temporário.
+O runner de Tessera em experiments/adr010_poc/run_tessera_poc.py executa o posix-oneshot v1.0.4 sobre os 17 vetores públicos, verifica o tamanho e a raiz do checkpoint contra a referência Go existente e executa Tessera fsck para validar assinatura, tiles e bundles. Isso é uma verificação de integridade do log inteiro; ainda não testa o formato de uma prova individual de inclusão nem o recibo entregue ao cliente. A suíte automatizada correspondente está em .github/workflows/adr010-poc.yml. O runner gera uma chave Ed25519 descartável com OpenSSL em tempo de execução; a chave privada não é versionada e é apagada junto com o diretório temporário.
 
 A comparação Tessera precisa ser executada em branch e ambiente isolados, com versões e digests fixados. O protocolo mínimo:
 
