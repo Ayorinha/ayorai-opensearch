@@ -19,9 +19,7 @@ from experiments.adr010_poc.python_writer import (
     SQLiteMerkleWriter,
 )
 
-VECTOR_PATH = (
-    Path(__file__).parents[1] / "auditlog" / "vectors" / "rfc6962-transparency-dev.json"
-)
+VECTOR_PATH = Path(__file__).parents[1] / "auditlog" / "vectors" / "rfc6962-transparency-dev.json"
 VECTORS = json.loads(VECTOR_PATH.read_text(encoding="utf-8"))
 LEAF_HASHES = [bytes.fromhex(value) for value in VECTORS["leaf_hashes"]]
 ROOTS = [bytes.fromhex(value) for value in VECTORS["roots"]]
@@ -189,10 +187,7 @@ os._exit(23)
 
 def test_concurrent_appends_are_serialized_without_lost_indices(tmp_path: Path) -> None:
     writer = SQLiteMerkleWriter(tmp_path / "concurrent.sqlite3")
-    work = [
-        (f"concurrent-{index}", leaf_hash)
-        for index, leaf_hash in enumerate(LEAF_HASHES)
-    ]
+    work = [(f"concurrent-{index}", leaf_hash) for index, leaf_hash in enumerate(LEAF_HASHES)]
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         receipts = list(executor.map(lambda item: writer.append(*item), work))
@@ -228,9 +223,7 @@ def test_concurrent_duplicate_retries_create_only_one_entry(tmp_path: Path) -> N
         ("valid", b"short"),
     ],
 )
-def test_invalid_append_inputs_are_rejected(
-    tmp_path: Path, key: str, leaf_hash: bytes
-) -> None:
+def test_invalid_append_inputs_are_rejected(tmp_path: Path, key: str, leaf_hash: bytes) -> None:
     writer = SQLiteMerkleWriter(tmp_path / "invalid.sqlite3")
 
     with pytest.raises(ValueError):
