@@ -154,3 +154,20 @@ class Judge2VerificationResponse(BaseModel):
     simple_explanation: list[str] = Field(min_length=1, max_length=5)
     technical_explanation: dict[str, object]
     response_policy: ResponsePolicy | None = None
+    audit_status: Literal["recorded", "not_recorded"] | None = Field(
+        default=None,
+        description=(
+            "Present only when the verification event log is on (ADR-009 §15.1, ADR-010). "
+            "`recorded`: the decision is in the log and `audit_receipt` proves it; "
+            "`not_recorded`: local mode could not record it. Never part of `result` "
+            "or of `output_sha256`."
+        ),
+    )
+    audit_receipt: dict[str, object] | None = Field(
+        default=None,
+        description=(
+            "Receipt of the recorded event: leaf, RFC 6962 inclusion proof, signed C2SP "
+            "checkpoint, salt and record. Verifiable offline with the log's verifier key "
+            "(GET /v1/verify/log)."
+        ),
+    )

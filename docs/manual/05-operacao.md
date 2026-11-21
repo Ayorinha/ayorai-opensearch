@@ -133,6 +133,23 @@ O logger de acesso da aplicação não deve registrar corpos, afirmações, trec
 5. Reproduza o problema em ambiente isolado com dados não sensíveis e testes direcionados.
 6. Para mudança de código ou configuração, use revisão, checks obrigatórios e procedimento controlado de implantação; não edite artefatos congelados nem contorne testes para restaurar o serviço.
 
+### Registro verificável do `/v1/verify` (ADR-010)
+
+Com `ATTRACTOR_VERIFY_LOG_MODE=local` ou `required`, cada decisão `r2-a` do `/v1/verify` entra num log Merkle (RFC 6962) com checkpoints assinados em Ed25519 (formato C2SP), e a resposta ganha `audit_status` e `audit_receipt`. O recibo traz a folha, a prova de inclusão, o checkpoint assinado, o sal e o registro. O cliente o verifica sem o servidor, com a chave pública publicada em `GET /v1/verify/log`.
+
+| Variável | Uso |
+|---|---|
+| `ATTRACTOR_VERIFY_LOG_MODE` | `off` (padrão; nada muda), `local` (grava; se falhar, devolve o veredito com `audit_status = "not_recorded"`) ou `required` (sem registro, sem veredito: HTTP 503) |
+| `ATTRACTOR_VERIFY_LOG_KEY` | Semente Ed25519 de 32 bytes em hex, vinda de um gerenciador de segredos. Obrigatória fora do `off`; sem ela, o serviço não sobe |
+| `ATTRACTOR_VERIFY_LOG_ORIGIN` | Nome do log, impresso em todo checkpoint (por exemplo `attractor.suaempresa.com.br/verify-log`). Um banco fica preso à origem e à chave com que foi criado |
+| `ATTRACTOR_VERIFY_LOG_DB` | Banco SQLite do log; padrão `.attractor/verify-log.sqlite3`, no mesmo volume da trilha |
+
+- **Gerar a chave:** `python -c "import secrets; print(secrets.token_hex(32))"`. Guarde-a fora do host. Perder a chave impede novos checkpoints com a mesma identidade; vazá-la permite que outros assinem checkpoints em nome do log.
+- **Reenvio:** o cabeçalho `Idempotency-Key` (1 a 128 caracteres visíveis) faz a mesma chave e a mesma entrada devolverem o mesmo recibo. A mesma chave com outra entrada devolve 409. As chaves são separadas por cliente.
+- **Verificação do servidor:** `VerificationLog.verify_log()` recalcula a árvore e confere todos os checkpoints guardados. Rode diariamente e guarde o checkpoint mais recente (`GET /v1/verify/log`) fora do host.
+- **Apagamento (LGPD):** `VerificationLog.erase(indice, data)` apaga o sal e o registro de um evento. A árvore continua válida, e o recibo que o cliente guardou continua verificável.
+- **Limites:** sem testemunhas nem carimbo do tempo (ADR-010, decisões 6 e 7), quem controla o banco e a chave pode reescrever o log. Recibos e checkpoints guardados fora do host são o que permite detectar isso. O armazenamento é SQLite com um escritor por vez (vários processos no mesmo host podem compartilhar o banco). Ainda não há publicação no formato de tiles nem prova de consistência servida por HTTP; `consistency()` existe na biblioteca.
+
 ### Persistência, backup e restauração dos rastros de auditoria
 
 Os rastros de `POST /v1/audit` ficam no arquivo indicado por `ATTRACTOR_AUDIT_DB`. Sem um volume montado nesse caminho, eles se perdem quando o contêiner é recriado. Exemplo com volume nomeado (o diretório precisa pertencer ao usuário do contêiner, uid 999):

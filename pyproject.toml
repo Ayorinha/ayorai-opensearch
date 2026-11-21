@@ -20,6 +20,9 @@ dependencies = [
   # Reached at runtime through fastapi; the floor excludes releases with known
   # vulnerabilities (pip-audit, PyPI and OSV, 2026-11-15).
   "opentelemetry-api>=1.45.2,<2",
+  # Ed25519 signatures of the verification-log checkpoints (ADR-010 phase 2):
+  # maintained library, no home-grown cryptography. Apache-2.0/BSD (PyCA).
+  "cryptography>=50,<51",
 ]
 
 [project.optional-dependencies]

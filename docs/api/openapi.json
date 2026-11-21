@@ -877,8 +877,39 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Idempotency-Key already used for a different input (verify log on).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "r2-a with the verification log on (ADR-009 §15.1): same key and same input return the same event and receipt; same key with another input is a 409.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ]
       }
     },
     "/v1/audit/{trace_id}": {
@@ -2764,6 +2795,35 @@
                 "type": "null"
               }
             ]
+          },
+          "audit_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "recorded",
+                  "not_recorded"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Status",
+            "description": "Present only when the verification event log is on (ADR-009 §15.1, ADR-010). `recorded`: the decision is in the log and `audit_receipt` proves it; `not_recorded`: local mode could not record it. Never part of `result` or of `output_sha256`."
+          },
+          "audit_receipt": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Receipt",
+            "description": "Receipt of the recorded event: leaf, RFC 6962 inclusion proof, signed C2SP checkpoint, salt and record. Verifiable offline with the log's verifier key (GET /v1/verify/log)."
           }
         },
         "additionalProperties": false,

@@ -10,8 +10,12 @@ anyio==4.16.0 \
     --hash=sha256:c66ae634e0b8228396b801741beb3294326d4b6102f7bba4041c0dfb58c29026
 certifi==2026.10.23 \
     --hash=sha256:e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1
+cffi==2.1.1 \
+    --hash=sha256:c1453022f490d2459a11819d83ad1d586e9ff65a12ac3e705ffebd46d3685dcf
 click==8.5.1 \
     --hash=sha256:8bb5376d2006950386f8c6427613334a2acadc5f559cb80e638d00b4df957e37
+cryptography==50.0.2 \
+    --hash=sha256:9dab55f57c74c3cad24c323bacbbd04be4705ba6eb0d92e920b1fc4837ed5079
 fastapi==0.163.1 \
     --hash=sha256:68f2d8050f5c3583121c0d203046cc7def5c16a7d6c43a0e7707a8ea610fe2d3
 h11==0.16.0 \
@@ -32,6 +36,8 @@ opentelemetry-api==1.45.2 \
     --hash=sha256:2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34
 packaging==26.3 \
     --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
+pycparser==3.12 \
+    --hash=sha256:a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e
 pydantic==2.14.3 \
     --hash=sha256:3f7b347782ab7e4cf4c798496ae3a82787d9f21ec12676a9c564355eeef8daa8
 pydantic_core==2.50.4 \

@@ -11,9 +11,9 @@ Este roteiro substitui as issues de planejamento #433, #434 e #435, fechadas em 
 | HMAC com chave fora do banco, rotação e selagem de bases antigas | Implementado (#564, #575, #594) | — |
 | Rastro do `/v2/audit` vinculado à adjudicação (`r2-v4`) | Implementado (#590) | — |
 | Detecção de exclusão no meio da trilha, de inserção fora da API e, com checkpoint externo, de truncamento e rollback (`verify_chain`) | Implementado (#602) | — |
-| Persistir o veredito do `/v1/verify` (`audit_status`, `audit_receipt`, `Idempotency-Key`, ADR-009 §15.1) | Não implementado | Evento gravado na mesma operação; falha de gravação bloqueia o veredito no modo obrigatório (DEC-012, decisão 3); testes de contrato |
-| Log Merkle (C2SP tlog-tiles) e checkpoints assinados (ADR-010, fases 2 e 3) | Biblioteca isolada da fase 1 em `src/ayorai_attractor/auditlog/` | Escritor escolhido por prova de conceito (decisão aberta da ADR-010); verificação de prova de inclusão por terceiro |
-| Testemunhas independentes e carimbo do tempo ICP-Brasil | Decisão aberta (ADR-010, decisões 5 a 7) | Decisão do mantenedor registrada |
+| Persistir o veredito do `/v1/verify` (`audit_status`, `audit_receipt`, `Idempotency-Key`, ADR-009 §15.1) | Implementado em 2026-11-21 (ADR-010, fase 3): modos `off`, `local` e `required`; falha fechada no `required` | — |
+| Log Merkle e checkpoints assinados (ADR-010, fase 2) | Implementado em 2026-11-21: árvore RFC 6962 em SQLite com escritor único, checkpoints C2SP assinados em Ed25519 (assinatura idêntica ao vetor da referência em Go), recibos verificáveis sem o servidor, idempotência, apagamento e verificação completa | Publicar no formato de tiles (C2SP tlog-tiles) e servir provas de consistência por HTTP, se uma testemunha externa precisar |
+| Testemunhas independentes e carimbo do tempo ICP-Brasil | Decisões 5 a 7 da ADR-010 em aberto. A implementação usa o escritor Python (rota a); o registro formal dessa escolha está proposto em [adr/ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md](adr/ADR-010-IMPLEMENTATION-PROPOSAL-2026-11-21.md) | Escolher testemunhas e uma ACT credenciada; dependem de parceiros externos |
 
 Limite permanente: quem controla o banco e a chave ativa pode reescrever a cadeia local. Só um checkpoint guardado fora do controle desse operador permite detectar isso.
 

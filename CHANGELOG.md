@@ -21,6 +21,12 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - Endurecimento do fencing de jobs, da integridade do armazenamento e da segurança dos providers (#555).
 
 ### Trilha de auditoria
+- Registro verificável do `/v1/verify` (ADR-010, fases 2 e 3).
+  - **O que faz:** com `ATTRACTOR_VERIFY_LOG_MODE=local` ou `required`, cada decisão `r2-a` entra num log Merkle RFC 6962 com checkpoints C2SP assinados em Ed25519, e a resposta ganha `audit_status` e `audit_receipt`. O recibo traz folha, prova de inclusão, checkpoint assinado, sal e registro, e é verificável sem o servidor com a chave publicada em `GET /v1/verify/log`.
+  - **Contrato:** `Idempotency-Key` (mesmo recibo; outra entrada devolve 409); o modo `required` falha fechado com 503, sem veredito.
+  - **Privacidade:** o veredito fica só no compromisso com sal, e `erase()` atende pedidos de apagamento.
+  - **Padrão:** `off`, que não muda nada.
+  - **Dependência nova:** `cryptography` (Ed25519), incluída no lock da imagem com hash.
 - Correção: uma falha da retenção automática, que roda depois do commit do rastro, deixa de chegar ao chamador como erro de gravação. O rastro já está gravado; a purga parcial é desfeita e o erro vai para o log (só o tipo da exceção), e a retenção roda de novo na próxima gravação após o intervalo.
 - Correção: uma falha ao gravar a entrada da cadeia (ou o registro de uma purga) desfaz a transação inteira. Antes, o rastro ou a exclusão ficavam pendentes na conexão, e a próxima gravação bem-sucedida os confirmava: o chamador recebia erro, mas o rastro ficava gravado sem entrada na cadeia. A selagem, a resselagem e o sequenciamento também desfazem a transação em caso de erro, e a rotação confere a cadeia sob a mesma trava que a reassina.
 - Cadeia de sequência (`audit_chain`, aditiva; rastros, digests e MACs existentes não mudam): todo rastro gravado entra numa sequência com elos encadeados por HMAC. `verify_chain()` detecta rastro apagado no meio da trilha, entrada removida ou reescrita e rastro inserido fora da API; com um `checkpoint()` guardado fora do host, detecta também truncamento e rollback. A retenção registra suas purgas na cadeia. `sequence_unsequenced()` encadeia uma base antiga; `reseal_with_active_key()` reassina a cadeia íntegra. Resolve a parte local do P2-1 (#433).
