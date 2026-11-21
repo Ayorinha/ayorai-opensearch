@@ -142,7 +142,7 @@ Com `ATTRACTOR_VERIFY_LOG_MODE=local` ou `required`, cada decisão `r2-a` do `/v
 | `ATTRACTOR_VERIFY_LOG_MODE` | `off` (padrão; nada muda), `local` (grava; se falhar, devolve o veredito com `audit_status = "not_recorded"`) ou `required` (sem registro, sem veredito: HTTP 503) |
 | `ATTRACTOR_VERIFY_LOG_KEY` | Semente Ed25519 de 32 bytes em hex, vinda de um gerenciador de segredos. Obrigatória fora do `off`; sem ela, o serviço não sobe |
 | `ATTRACTOR_VERIFY_LOG_ORIGIN` | Nome do log, impresso em todo checkpoint (por exemplo `attractor.suaempresa.com.br/verify-log`). Um banco fica preso à origem e à chave com que foi criado |
-| `ATTRACTOR_VERIFY_LOG_DB` | Banco SQLite do log; padrão `.attractor/verify-log.sqlite3`, no mesmo volume da trilha |
+| `ATTRACTOR_VERIFY_LOG_DB` | Banco SQLite do log; padrão `.attractor/verify-log.sqlite3`, no mesmo volume da trilha. Na imagem, use o volume `/app/.attractor`, que pertence ao usuário sem privilégio do serviço. Um diretório sem permissão de escrita faz o modo `required` responder 503 em toda verificação |
 
 - **Gerar a chave:** `python -c "import secrets; print(secrets.token_hex(32))"`. Guarde-a fora do host. Perder a chave impede novos checkpoints com a mesma identidade; vazá-la permite que outros assinem checkpoints em nome do log.
 - **Reenvio:** o cabeçalho `Idempotency-Key` (1 a 128 caracteres visíveis) faz a mesma chave e a mesma entrada devolverem o mesmo recibo. A mesma chave com outra entrada devolve 409. As chaves são separadas por cliente.
