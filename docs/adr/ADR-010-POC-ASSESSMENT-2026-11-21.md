@@ -66,7 +66,7 @@ A primeira execução detectou um defeito real em verify_receipt: para uma árvo
 
 A POC Python/Tessera foi expandida depois da validação inicial. No SHA 1b55b6620c4c59c63a465d5b4a07932db4f23f43, o workflow [ADR-010 isolated persistence POC — run 44919722764](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44919722764) passou integralmente:
 
-- 37 testes Python aprovados, incluindo o estado durável de idempotência e recuperação;
+- 46 testes Python aprovados, incluindo o estado durável de idempotência, o adaptador fail-closed e a verificação/persistência de provas de inclusão;
 - Ruff check aprovado;
 - Tessera v1.0.4 POSIX one-shot: 17 folhas, tree size 17 e raiz SHA-256 1780178a188d10bf4aa75b1f78378e13c28db181dca036d01a2551000299be62, igual à referência dos vetores públicos;
 - Tessera HTTP: cinco folhas iniciais, índices 0–4, checkpoint size 5 e raiz 4e3bbb1f7b478dcfe71fb631631519a3bca12c9aefca1612bfce4c13a86264d4;
@@ -103,8 +103,25 @@ Foi adicionada em experiments/adr010_poc/idempotency_outbox.py uma máquina de e
 - Índices Tessera são únicos entre as chaves.
 - PENDING e ASSIGNED são expostos por list_unresolved(); não há reenvio automático após restart.
 - record_checkpoint() permite reconciliar uma linha PENDING quando um processo externo de recuperação localiza o índice correspondente no log durável.
+- RECORDED persiste o checkpoint note e a prova de inclusão; a prova RFC 6962 é verificada contra o leaf hash, o índice, o tamanho e a raiz antes do commit.
+- O contrato TesseraOutboxAdapter exige um VerifiedCheckpoint cuja assinatura e origem já tenham sido verificadas pelo cliente; a camada outbox valida a prova de inclusão.
 
-A suíte inclui encerramento abrupto depois da reserva e depois da atribuição, restart, transições repetidas, conflitos, concorrência e colisão de índice. **Limite:** o scanner que localiza um append no Tessera quando o processo cai entre Add e assign ainda não foi implementado. Até a reconciliação, a solicitação permanece pendente e o serviço deve falhar fechado. O módulo também não verifica a assinatura do checkpoint: exige que o chamador a valide antes de persistir o note. A chave Idempotency-Key é armazenada em texto no banco experimental; produção precisa definir proteção, HMAC/derivação, retenção e controle de acesso.
+A suíte inclui encerramento abrupto depois da reserva e depois da atribuição, restart, transições repetidas, conflitos, concorrência, colisão de índice e provas inválidas. **Limite:** o scanner que localiza um append no Tessera quando o processo cai entre Add e assign ainda não foi implementado. Até a reconciliação, a solicitação permanece pendente e o serviço deve falhar fechado. O módulo não verifica a assinatura do checkpoint: exige que o cliente a valide antes de persistir o note. A chave Idempotency-Key é armazenada em texto no banco experimental; produção precisa definir proteção, HMAC/derivação, retenção e controle de acesso.
+
+
+
+### Contrato do adaptador — reconciliação fail-closed
+
+experiments/adr010_poc/tessera_adapter.py define a interface mínima esperada do cliente Tessera: append(), find_entries() e wait_for_checkpoint(). O submit() coordena o outbox:
+
+1. Uma reserva nova pode executar append() uma única vez.
+2. Uma linha PENDING recuperada após restart nunca chama append() cegamente; exige exatamente um índice encontrado pelo scanner durável.
+3. Zero ou múltiplos resultados deixam a operação pendente e geram ReconciliationRequired.
+4. Uma linha ASSIGNED apenas aguarda um checkpoint que inclua o índice.
+5. Uma linha RECORDED devolve o recibo persistido, incluindo prova de inclusão, sem nova gravação.
+6. A prova é validada por verify_inclusion() antes do recibo ser persistido.
+
+Os testes usam um cliente Tessera simulado para injetar crashes em cada fronteira e verificar que o adaptador não duplica gravações. O contrato é executável e testável, mas ainda não é o cliente HTTP real: find_entries() e a obtenção de provas a partir dos tiles/bundles do Tessera permanecem trabalho pendente.
 
 
 ## 4. Limites de segurança e interpretação
