@@ -167,7 +167,7 @@ def main() -> None:
             final_tree_size = int(final_checkpoint_lines[1])
             final_root_hash = base64.b64decode(final_checkpoint_lines[2], validate=True)
             if final_root_hash == initial_root_hash:
-                raise RuntimeError("duplicate append unexpectedly left the checkpoint root unchanged")
+                raise RuntimeError("duplicate append did not change the checkpoint root")
         finally:
             try:
                 os.killpg(process.pid, signal.SIGTERM)
