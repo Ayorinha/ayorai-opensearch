@@ -60,6 +60,18 @@ A cada append, o protótipo recalcula a raiz inteira e armazena a raiz/tamanho a
 
 A suíte reutiliza os 17 hashes e as 18 raízes do vetor público já mantido no repositório, produzido pela implementação Go independente. Também testa reabertura do banco, idempotência, conflito, concorrência, exclusão de linha e alteração de folha contra um checkpoint guardado pelo chamador. Dois testes adicionais encerram um processo abruptamente: um antes do commit, para verificar rollback; outro depois do commit e antes da resposta, para verificar que o retry retorna o recibo original sem criar uma segunda entrada.
 
+### Resultado inicial de execução (21/11/2026)
+
+O job Tessera v1.0.4 POSIX conformance passou no workflow [ADR-010 isolated persistence POC — run 44917079201](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/44917079201), no SHA 12a328e7fb5c1f7dc1c94540c64c6b7dab106b8b. Resultado observado:
+
+- 17 folhas dos vetores públicos;
+- checkpoint com tree size 17;
+- raiz SHA-256 1780178a188d10bf4aa75b1f78378e13c28db181dca036d01a2551000299be62, igual à raiz esperada do vetor independente;
+- assinatura do checkpoint verificada pelo Tessera fsck;
+- integridade de tiles e entry bundles verificada pelo fsck.
+
+O job Python da mesma execução falhou em um teste de adulteração: para uma árvore de uma única folha, verify_receipt gerava a prova vazia e não comparava a folha persistida com a folha contida no recibo. A falha foi corrigida no código da PR #618 (verificação agora compara a folha armazenada antes de validar a prova). A suíte Python está aguardando nova execução no SHA atualizado; portanto, a POC completa ainda não está aprovada.
+
 ## 4. Limites de segurança e interpretação
 
 O protótipo não assina checkpoints e não cria estado externo confiável. A raiz devolvida pelo processo é apenas uma estrutura local. Se um operador puder reescrever o banco e todos os recibos/checkpoints armazenados junto dele, o protótipo não detectará a reescrita. Essa limitação é consistente com a ADR-010: resistência a operador privilegiado exige recibos mantidos por clientes, testemunhas independentes ou ancoragem externa.
