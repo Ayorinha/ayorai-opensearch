@@ -385,3 +385,27 @@ def test_component_mapping_must_cover_exactly_the_annotated_cases() -> None:
         AGREEMENT["compute_agreement"](
             labels, labels, component_by_case={"a": "component:lei-sintetica:art-1"}
         )
+
+
+def test_component_whose_pairs_are_all_rule_gap_is_not_resampled() -> None:
+    # K counts only components with at least one eligible pair (review of #600):
+    # a component whose every pair is excluded by RULE_GAP is not drawn.
+    labels_a = {"x1": "SUPPORTED", "x2": "REFUTED", "y1": "RULE_GAP", "z1": "SUPPORTED"}
+    labels_b = {"x1": "SUPPORTED", "x2": "REFUTED", "y1": "SUPPORTED", "z1": "REFUTED"}
+    components = {
+        "x1": "component:lei-sintetica:art-1",
+        "x2": "component:lei-sintetica:art-1",
+        "y1": "component:lei-sintetica:art-2",
+        "z1": "component:lei-sintetica:art-3",
+    }
+    result = AGREEMENT["compute_agreement"](labels_a, labels_b, component_by_case=components)
+    assert result["component_bootstrap"]["component_count"] == 2
+    assert result["n_eligible"] == 3
+    assert result["n_rule_gap_excluded"] == 1
+    # The same data without the excluded component gives the same interval.
+    reduced = AGREEMENT["compute_agreement"](
+        {k: v for k, v in labels_a.items() if k != "y1"},
+        {k: v for k, v in labels_b.items() if k != "y1"},
+        component_by_case={k: v for k, v in components.items() if k != "y1"},
+    )
+    assert result["ci95_component_bootstrap"] == reduced["ci95_component_bootstrap"]
