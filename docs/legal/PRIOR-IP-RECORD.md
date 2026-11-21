@@ -27,6 +27,14 @@ Cada item abaixo pode ser conferido de forma independente, sem depender deste do
 | Release v0.8.0 | 2026-11-13 | tag `v0.8.0` (`92ea5eb`) · DOI da versão ainda não registrado no Zenodo |
 | DOI de conceito (todas as versões) | — | 10.5281/zenodo.23125082 |
 
+### Aditivo documental — 2026-11-21
+
+Este aditivo amplia a cronologia verificável de versões publicada em 2026-10-13; não altera retroativamente a declaração original nem substitui análise jurídica. A tag e a GitHub Release da v0.8.0 foram verificadas no GitHub. O DOI específico da v0.8.0 ainda não estava registrado no Zenodo nesta data; portanto, nenhum identificador foi inferido ou criado neste registro. A versão DOI anterior confirmada continua sendo a da v0.7.0.
+
+- **v0.7.0:** tag `43bbe8e562375d3160851610f3e7b0bc05437900`; Version DOI `10.5281/zenodo.24045951`.
+- **v0.8.0:** tag `92ea5eb86b69724b05834d98c326e8315bb6b655`; GitHub Release publicada em 2026-11-13; Version DOI pendente de registro no Zenodo.
+- **Concept DOI:** `10.5281/zenodo.23125082`, identificador persistente do projeto em todas as versões.
+
 Os registros no Zenodo (CERN) são depósitos com data e conteúdo arquivados por terceiro independente; os hashes de commit do Git ligam cada versão ao seu conteúdo exato.
 
 **Autoria no histórico:** em 2026-10-13, dos 823 commits da branch `main`, 813 têm como autor Anderson Leon Ayora; 3 são atualizações automáticas de dependências (Dependabot); 7 foram registrados com atribuição de ferramenta de IA (ver seção 4).
@@ -46,7 +54,7 @@ Ferramentas de IA foram usadas como assistentes de implementação, revisão e p
 
 Recomendações de boa prática, a confirmar com assessoria jurídica e com o NIT da instituição, no âmbito da Lei nº 10.973/2004 (Lei de Inovação) e da política de inovação da instituição:
 
-1. **Listar o AYORAI ATTRACTOR como propriedade intelectual pré-existente** do autor, referenciando a tag `v0.5.0` (ou a última tag anterior à assinatura) e os DOIs acima.
+1. **Listar o AYORAI ATTRACTOR como propriedade intelectual pré-existente** do autor, referenciando a última tag anterior à assinatura do acordo (na data deste aditivo, `v0.8.0`, commit `92ea5eb86b69724b05834d98c326e8315bb6b655`), o DOI de conceito `10.5281/zenodo.23125082` e os DOIs de versão efetivamente registrados. Não apresentar DOI pendente como identificador publicado.
 2. **Definir por escrito**, antes de começar, a titularidade dos resultados novos produzidos no projeto conjunto, separando-os da base pré-existente.
 3. **Manter o trabalho financiado pela instituição identificável** (branches, PRs ou repositório próprio), para que a fronteira entre o pré-existente e o novo seja auditável.
 4. **Exigir DCO** (já previsto em `CONTRIBUTING.md`) de todo contribuidor externo e, se houver licenciamento comercial futuro, adotar um CLA revisado juridicamente (`docs/legal/CLA-DRAFT.md`).
