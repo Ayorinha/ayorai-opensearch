@@ -127,6 +127,19 @@ As quatro que restavam pendentes nesse registro (DEC-001, DEC-003, DEC-004 e DEC
   - autorização expressa do mantenedor para o gasto.
 - **Consequências:** até lá, `received_at` e os checkpoints têm hora declarada pelo operador, e não se afirma hora certificada.
 
+## DEC-031 — Chaves de API: escopos, expiração e revogação sem reinício (ADR-012)
+
+- **Data da decisão:** 2026-11-21
+- **Decisor e mantenedor:** Anderson Leon Ayora
+- **Forma:** resposta explícita do mantenedor a quatro perguntas, com as opções recomendadas.
+- **Decisão:**
+  1. Registro de chaves num arquivo JSON (`ATTRACTOR_API_KEYS_FILE`), relido sem reinício. A variável atual continua válida como modo legado.
+  2. Arquivo inválido depois da subida: o serviço mantém o último válido, registra o erro e alerta. Na subida, não inicia.
+  3. Quatro escopos: `verify`, `audit:write`, `audit:read` e `metrics`. Sem o escopo, 403.
+  4. Tenant distinto de principal fica para uma ADR própria.
+- **Autorização:** abrir as PRs da ADR-012 e da implementação e mesclar cada uma com CI verde e o diff revisado.
+- **Registro normativo:** [adr/ADR-012-api-key-scopes-expiry-revocation.md](adr/ADR-012-api-key-scopes-expiry-revocation.md).
+
 ## DEC-008 — Publicar a release v0.5.0?
 
 - **Data da decisão:** 2026-10-13

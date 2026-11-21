@@ -15,6 +15,7 @@
 | ADR-009 | Deterministic adjudication contract and claim coverage | Accepted — 2026-10-10, maintainer decision; independent review and implementation pending | 2026-10-10 | [`docs/adr/ADR-009-deterministic-adjudication-contract.md`](ADR-009-deterministic-adjudication-contract.md) |
 | ADR-010 | Verifiable audit log | Accepted — decisões 1–4 em 2026-10-17 (DEC-012) e 5–7 em 2026-11-21 (DEC-028 a DEC-030); fases 1–3 implementadas (PR #623) | 2026-10-17 | [`docs/adr/ADR-010-verifiable-audit-log.md`](ADR-010-verifiable-audit-log.md) |
 | ADR-011 | Família de regras do Judge por rota (exceção ao prazo do ADR-009 §11) | Accepted — decisão do mantenedor em 2026-11-21 | 2026-11-21 | [`docs/adr/ADR-011-judge-family-per-route.md`](ADR-011-judge-family-per-route.md) |
+| ADR-012 | Escopos, expiração e revogação sem reinício das chaves de API | Accepted — decisão do mantenedor em 2026-11-21 (DEC-031); implementação em PR própria | 2026-11-21 | [`docs/adr/ADR-012-api-key-scopes-expiry-revocation.md`](ADR-012-api-key-scopes-expiry-revocation.md) |
 
 ## Regras de manutenção
 
