@@ -29,20 +29,24 @@ def start_server(
     environment: dict[str, str],
     work: Path,
     label: str,
+    persistent_antispam: bool = False,
 ) -> tuple[subprocess.Popen[bytes], BinaryIO, str]:
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
     base_url = f"http://127.0.0.1:{port}"
     server_log = (work / f"{label}.log").open("w+b")
+    command = [
+        go,
+        "run",
+        f"github.com/transparency-dev/tessera/cmd/conformance/posix@{TESSERA_VERSION}",
+        f"--storage_dir={storage}",
+        f"--listen=127.0.0.1:{port}",
+    ]
+    if persistent_antispam:
+        command.append("--antispam=true")
     process = subprocess.Popen(
-        [
-            go,
-            "run",
-            f"github.com/transparency-dev/tessera/cmd/conformance/posix@{TESSERA_VERSION}",
-            f"--storage_dir={storage}",
-            f"--listen=127.0.0.1:{port}",
-        ],
+        command,
         env=environment,
         stdout=server_log,
         stderr=subprocess.STDOUT,
@@ -238,6 +242,96 @@ def main() -> None:
         print(f"HTTP_FINAL_CHECKPOINT_ROOT_SHA256={final_root.hex()}")
         print("HTTP_CHECKPOINT_SIGNATURE=VERIFIED_BY_TESSERA_FSCK")
         print("HTTP_TILE_AND_ENTRY_BUNDLE_INTEGRITY=VERIFIED_BY_TESSERA_FSCK")
+
+        persistent_storage = work / "persistent-log"
+        persistent_storage.mkdir()
+        persistent_first, persistent_first_log, persistent_first_url = start_server(
+            go, persistent_storage, environment, work, "server-persistent-first", True
+        )
+        try:
+            persistent_indices = []
+            for index, leaf in enumerate(leaves):
+                key = "same-idempotency-key" if index == 0 else f"key-{index}"
+                persistent_indices.append(post_entry(persistent_first_url, leaf, key))
+            if persistent_indices != list(range(len(leaves))):
+                raise RuntimeError("persistent antispam initial indices are not contiguous")
+            persistent_origin, persistent_initial_size, persistent_initial_root = (
+                wait_for_checkpoint(persistent_first_url, len(leaves))
+            )
+            if (
+                persistent_origin != origin
+                or persistent_initial_size != len(leaves)
+                or persistent_initial_root != expected_root
+            ):
+                raise RuntimeError("persistent antispam initial checkpoint differs from vector")
+            persistent_immediate_duplicate = post_entry(
+                persistent_first_url, leaves[0], "same-idempotency-key"
+            )
+            if persistent_immediate_duplicate != 0:
+                raise RuntimeError("persistent antispam did not suppress immediate duplicate")
+        finally:
+            stop_server(persistent_first, persistent_first_log)
+
+        persistent_second, persistent_second_log, persistent_second_url = start_server(
+            go, persistent_storage, environment, work, "server-persistent-restarted", True
+        )
+        try:
+            persistent_restart_duplicate = post_entry(
+                persistent_second_url, leaves[0], "same-idempotency-key"
+            )
+            if persistent_restart_duplicate != 0:
+                raise RuntimeError(
+                    "persistent antispam did not suppress duplicate after restart; "
+                    f"got index {persistent_restart_duplicate}"
+                )
+            persistent_same_key_different_body = post_entry(
+                persistent_second_url, leaves[1], "same-idempotency-key"
+            )
+            if persistent_same_key_different_body != len(leaves):
+                raise RuntimeError(
+                    "persistent antispam should deduplicate by body, not Idempotency-Key"
+                )
+            persistent_final_origin, persistent_final_size, persistent_final_root = (
+                wait_for_checkpoint(persistent_second_url, len(leaves) + 1)
+            )
+            if (
+                persistent_final_origin != persistent_origin
+                or persistent_final_size != len(leaves) + 1
+                or persistent_final_root == persistent_initial_root
+            ):
+                raise RuntimeError("persistent antispam final checkpoint is inconsistent")
+        finally:
+            stop_server(persistent_second, persistent_second_log)
+
+        persistent_fsck_output = run(
+            [
+                go,
+                "run",
+                f"github.com/transparency-dev/tessera/cmd/fsck@{TESSERA_VERSION}",
+                f"--storage_url={persistent_storage.as_uri()}/",
+                f"--public_key={public_key_path}",
+                "--ui=false",
+            ],
+            os.environ.copy(),
+        )
+        if "fsck failed:" in persistent_fsck_output.lower():
+            raise RuntimeError(
+                f"Tessera persistent-antispam log failed fsck:\n{persistent_fsck_output}"
+            )
+
+        print("HTTP_PERSISTENT_ANTISPAM_ENABLED=true")
+        print(f"HTTP_PERSISTENT_INITIAL_TREE_SIZE={persistent_initial_size}")
+        print(f"HTTP_PERSISTENT_IMMEDIATE_DUPLICATE_INDEX={persistent_immediate_duplicate}")
+        print(f"HTTP_PERSISTENT_RESTART_DUPLICATE_INDEX={persistent_restart_duplicate}")
+        print(
+            "HTTP_PERSISTENT_SAME_KEY_DIFFERENT_BODY_INDEX="
+            f"{persistent_same_key_different_body}"
+        )
+        print("HTTP_PERSISTENT_ANTISPAM_SURVIVES_RESTART=true")
+        print("HTTP_PERSISTENT_IDEMPOTENCY_KEY_CONTRACT_ENFORCED=false")
+        print(f"HTTP_PERSISTENT_FINAL_TREE_SIZE={persistent_final_size}")
+        print(f"HTTP_PERSISTENT_FINAL_ROOT_SHA256={persistent_final_root.hex()}")
+        print("HTTP_PERSISTENT_FSCK=PASS")
 
 
 if __name__ == "__main__":
