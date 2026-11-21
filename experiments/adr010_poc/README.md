@@ -43,7 +43,9 @@ access to download pinned Go modules are required):
 The first runs the upstream Tessera v1.0.4 POSIX one-shot personality and fsck
 against the same 17 public vector leaves. The second starts the upstream POSIX
 HTTP conformance personality on loopback, POSTs five public vector leaves,
-checks assigned indices and the published checkpoint, then runs fsck. The HTTP
+checks assigned indices and the published checkpoint, then repeats one leaf as
+a negative control. The repeated body receives a new index, demonstrating that
+the upstream conformance endpoint does not provide strict deduplication. The HTTP
 personality is an upstream conformance example only: it has no AYORAI API-key
 authentication, no strict Idempotency-Key contract and no /v1/verify integration.
 Both scripts generate disposable Ed25519 signing keys with OpenSSL at runtime;
