@@ -23,4 +23,4 @@
 - Não inferir aprovação, implementação, treinamento ou promoção a partir da presença de um ADR no índice.
 - ADR-009 foi aprovado pelo mantenedor em 2026-10-10 e substitui ADR-002 §§1 e 4; a revisão independente e a implementação permanecem pendentes.
 - Desde 2026-11-21, a ADR-011 define a família de regras do Judge em cada rota e substitui, para `/v1/check`, `/v1/fields`, `/v2/audit` e `r1-a`, o prazo "até a v0.5.0" do ADR-009 §11. O texto do ADR-009 não foi alterado; leia os dois juntos.
-- ADR-010: o que já existe e o que é futuro está em [ROADMAP.md](../ROADMAP.md), §1. A avaliação técnica da comparação Python/Tessera e a POC isolada estão em [ADR-010-POC-ASSESSMENT-2026-11-21.md](ADR-010-POC-ASSESSMENT-2026-11-21.md) e [experiments/adr010-poc](../../experiments/adr010-poc/README.md); nenhuma decisão 5–7 foi fechada.
+- ADR-010: o que já existe e o que é futuro está em [ROADMAP.md](../ROADMAP.md), §1. A avaliação técnica da comparação Python/Tessera e a POC isolada estão em [ADR-010-POC-ASSESSMENT-2026-11-21.md](ADR-010-POC-ASSESSMENT-2026-11-21.md) e [experiments/adr010-poc](../../experiments/adr010_poc/README.md); nenhuma decisão 5–7 foi fechada.
