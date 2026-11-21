@@ -44,6 +44,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - Documentação da integridade da auditoria e dos controles de admissão (#574) e guia de limite de requisições compartilhado entre réplicas (`docs/security/EDGE-RATE-LIMIT.md`).
 
 ### RGC e avaliação (sem resultado)
+- Texto superado por retificação não é evidência (Emenda 4, DEC-011 opção A): o corpus pode declarar `superseded_spans` por documento, validados com falha fechada, e o runner `rgc-eval/0.14.0` retira da adjudicação os trechos que os tocam, listando-os em `excluded_superseded_passages`. O teste de propriedade que era `xfail` passa a ser normal; o Judge não muda; o corpus atual não declara o campo.
 - DEC-027: reconciliação estatística do RGC (#548). O runner `rgc-eval/0.8.0` e a ferramenta de concordância entre anotadores sorteiam toda amostra bootstrap com o RGC-PRNG-1 (gerador SHA-256 especificado byte a byte, com vetores de referência publicados) e calculam intervalos de 95% pelo percentil tipo 7 de Hyndman–Fan. Os intervalos deixam de ser numericamente comparáveis com `rgc-eval/0.7.0` (#549).
 - Gramática canônica única de ID de artigo (E1, #550); componentes de artigos conectados determinísticos (#532); gate de resolução de componentes antes da anotação (E4/D7, #551); H1 por sign-flip de componentes e IC por componente no runner (Emenda 11, #552).
 - Protocolo de relação entre passagens (proposto) e harness para contradições de `/v1/check` (#547).
