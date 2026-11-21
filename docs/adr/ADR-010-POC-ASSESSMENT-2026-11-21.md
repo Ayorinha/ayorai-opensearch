@@ -20,9 +20,9 @@ O checkpoint contém origem, tamanho da árvore e raiz em Base64, em formato de 
 
 ### Tessera
 
-O projeto oficial descreve Tessera como uma biblioteca Go para construir logs em tiles, sucessora lógica da abordagem Trillian v1. A documentação declara suporte a drivers POSIX, AWS e GCP e classifica o projeto como geralmente disponível e pronto para produção. Tessera implementa o modelo tlog-tiles e oferece recursos de log, armazenamento e witnesses.
+O projeto oficial descreve Tessera como uma biblioteca Go para construir logs em tiles, sucessora lógica da abordagem Trillian v1. A documentação declara suporte a drivers POSIX, AWS e GCP e classifica o projeto como geralmente disponível e pronto para produção. Tessera implementa o modelo tlog-tiles e oferece recursos de log, armazenamento e witnesses. A versão estável consultada para o experimento é v1.0.4. O upstream fornece tanto uma personalidade de conformidade POSIX com endpoint HTTP quanto a ferramenta posix-oneshot para gravar em disco local. Isso permite testar a implementação oficial sem criar um servidor próprio nesta primeira etapa.
 
-**Correção arquitetural:** Tessera não deve ser descrito como um microserviço HTTP genérico pronto para executar ao lado do FastAPI. É uma biblioteca Go. Para manter a aplicação principal em Python, será necessário avaliar um adaptador/processo Go com contrato de comunicação explícito, ou assumir uma integração mais profunda em Go. O custo desse limite operacional precisa entrar na comparação.
+**Correção arquitetural:** Tessera não é, em si, um microserviço HTTP genérico pronto para conectar ao FastAPI; é uma biblioteca Go. O upstream fornece personalidades de exemplo/conformidade, que podem servir como ponto de partida. Para manter a aplicação principal em Python, ainda será necessário avaliar um adaptador/processo Go com contrato de comunicação explícito ou assumir uma integração mais profunda em Go. O custo desse limite operacional precisa entrar na comparação.
 
 ### Trillian
 
@@ -64,6 +64,10 @@ O protótipo não assina checkpoints e não cria estado externo confiável. A ra
 
 A chave de idempotência e a folha já comprometida são apenas dados de teste/controle do protótipo. O modelo de produção ainda precisa resolver atomicamente a geração e retenção do salt, o registro restrito, a devolução do recibo e a repetição da mesma requisição sem criar outro compromisso.
 
+A documentação do Tessera classifica o antispam como best-effort: ele não garante supressão de todas as duplicatas. Portanto, ele não satisfaz sozinho a regra forte da ADR-010 para Idempotency-Key (mesma chave e mesma entrada → mesmo evento/recibo; mesma chave e entrada diferente → conflito). Essa semântica deverá ser imposta por uma camada transacional de personalidade/adapter do AYORAI, independentemente do antispam Tessera.
+
+O Tessera também separa sequenciamento durável, integração à árvore e publicação do checkpoint. O futuro de Appender.Add pode devolver um índice durável antes de o item estar verificável na árvore. A ferramenta oficial posix-oneshot usa PublicationAwaiter e só conclui após o checkpoint incluir os itens; a integração do AYORAI deverá preservar esse requisito se a resposta precisar conter prova de inclusão.
+
 Nenhum resultado desta POC deve ser descrito como log inviolável, prova de autoria, prova temporal, validação jurídica ou conformidade LGPD.
 
 ## 5. Matriz preliminar de decisão
@@ -78,10 +82,12 @@ Nenhum resultado desta POC deve ser descrito como log inviolável, prova de auto
 | Witnesses | Integrar e operar | Suporte declarado no projeto |
 | Dependências de runtime Python | Potencialmente nenhuma além do conjunto atual | Processo/binário Go adicional |
 | Complexidade operacional | Menos processos, mais código criptográfico/armazenamento próprio | Mais uma fronteira operacional, menos protocolo próprio |
-| Evidência atual | POC SQLite isolada; ainda sem benchmark | Pesquisa documental; ainda sem adapter POC |
+| Evidência atual | POC SQLite isolada; sem benchmark de capacidade | Runner isolado criado para Tessera v1.0.4, usando posix-oneshot + fsck e os mesmos vetores públicos; execução CI pendente |
 | Decisão | **Não decidida** | **Não decidida** |
 
 ## 6. Experimento comparativo obrigatório antes da decisão 5
+
+O runner de Tessera em experiments/adr010-poc/run_tessera_poc.py executa o posix-oneshot v1.0.4 sobre os 17 vetores públicos, verifica o tamanho e a raiz do checkpoint contra a referência Go existente e executa Tessera fsck para validar assinatura, tiles e bundles. A suíte automatizada correspondente está em .github/workflows/adr010-poc.yml. O runner usa uma chave de demonstração publicada pelo próprio projeto Tessera, exclusivamente para o log descartável do teste; essa chave nunca pode ser usada em qualquer ambiente real.
 
 A comparação Tessera precisa ser executada em branch e ambiente isolados, com versões e digests fixados. O protocolo mínimo:
 
@@ -108,6 +114,8 @@ Não escolher Python ou Tessera apenas pela linguagem ou por alegação de matur
 - C2SP, [Tiled Transparency Logs / tlog-tiles](https://c2sp.org/tlog-tiles) — versão estável 1.0.0.
 - C2SP, [Transparency Log Checkpoints](https://c2sp.org/tlog-checkpoint) — formato e assinaturas de checkpoints.
 - C2SP, [Transparency Log Proofs](https://c2sp.org/tlog-proof) — composição de provas offline.
-- [Tessera — documentação oficial](https://github.com/transparency-dev/tessera) — biblioteca Go, drivers e roadmap.
+- [Tessera v1.0.4 — documentação oficial](https://github.com/transparency-dev/tessera/tree/v1.0.4) — biblioteca Go, drivers, batching, publicação e witnesses.
+- [Tessera POSIX one-shot](https://github.com/transparency-dev/tessera/tree/v1.0.4/cmd/examples/posix-oneshot) — exemplo oficial com PublicationAwaiter.
+- [Tessera fsck](https://github.com/transparency-dev/tessera/tree/v1.0.4/cmd/fsck) — verificação de checkpoint, tiles e bundles.
 - [Trillian — documentação oficial](https://github.com/google/trillian) — modo de manutenção e recomendação de avaliar Tessera.
 - [RFC 6962](https://www.rfc-editor.org/rfc/rfc6962) — hashing Merkle e provas.
