@@ -99,8 +99,8 @@ class WitnessClient:
                     raise WitnessError("checkpoint is not consistent with previous state")
                 old_size = old.size
 
-            proof_lines = "".join(base64.b64encode(node).decode("ascii") + "\\n" for node in consistency_proof)
-            request_body = f"{old_size}\\n{proof_lines}\\n{checkpoint_note}"
+            proof_lines = "".join(base64.b64encode(node).decode("ascii") + "\n" for node in consistency_proof)
+            request_body = f"{old_size}\n{proof_lines}\n{checkpoint_note}"
             response = self._client.post(
                 self.submission_url,
                 content=request_body.encode("utf-8"),
@@ -111,7 +111,7 @@ class WitnessClient:
             if response.status_code != 200:
                 raise WitnessError(f"witness returned HTTP {response.status_code}")
             signatures = response.text
-            if not signatures or not signatures.endswith("\\n"):
+            if not signatures or not signatures.endswith("\n"):
                 raise WitnessError("witness response contains no complete signature lines")
             cosigned = checkpoint_note + signatures
             if not verify_cosignature(cosigned, self.witness.name, self.witness.public_key):
