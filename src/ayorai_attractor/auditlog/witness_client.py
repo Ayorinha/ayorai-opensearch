@@ -72,7 +72,12 @@ class WitnessClient:
         timeout: float = 5.0,
     ) -> None:
         parsed_url = httpx.URL(submission_url)
-        if parsed_url.scheme != "https" or not parsed_url.host or parsed_url.query or parsed_url.fragment:
+        if (
+            parsed_url.scheme != "https"
+            or not parsed_url.host
+            or parsed_url.query
+            or parsed_url.fragment
+        ):
             raise ValueError("submission_url must be an HTTPS URL without query or fragment")
         if parsed_url.username or parsed_url.password:
             raise ValueError("submission_url must not contain embedded credentials")
