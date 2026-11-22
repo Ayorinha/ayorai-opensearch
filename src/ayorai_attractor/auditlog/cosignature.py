@@ -8,7 +8,7 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
-import re
+
 import time
 
 from cryptography.exceptions import InvalidSignature
@@ -43,12 +43,18 @@ def signed_message(checkpoint_body: str, timestamp: int) -> bytes:
     """Build the C2SP cosignature/v1 message; body includes its final newline."""
     if not isinstance(checkpoint_body, str) or not checkpoint_body.endswith("\n"):
         raise ValueError("checkpoint body must end with a newline")
-    if not isinstance(timestamp, int) or isinstance(timestamp, bool) or not 0 <= timestamp <= _MAX_TIMESTAMP:
+    if (
+        not isinstance(timestamp, int)
+        or isinstance(timestamp, bool)
+        or not 0 <= timestamp <= _MAX_TIMESTAMP
+    ):
         raise ValueError("timestamp must be an unsigned POSIX integer no greater than 2^63-1")
     return f"cosignature/v1\ntime {timestamp}\n{checkpoint_body}".encode("utf-8")
 
 
-def sign_cosignature(name: str, seed: bytes, checkpoint_body: str, timestamp: int | None = None) -> str:
+def sign_cosignature(
+    name: str, seed: bytes, checkpoint_body: str, timestamp: int | None = None
+) -> str:
     """Create one C2SP Ed25519 (0x04) signature line for a checkpoint body."""
     _validate_name(name)
     if not isinstance(seed, bytes) or len(seed) != 32:
