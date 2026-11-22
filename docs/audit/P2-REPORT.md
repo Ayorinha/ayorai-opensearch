@@ -130,3 +130,14 @@ Os testes direcionados, suíte completa, Ruff, mypy e CI remoto **ainda não for
 A revisão complementar também passou a exigir que a origem declarada no checkpoint corresponda ao nome da identidade presente na chave verificadora configurada. Foi acrescentado teste negativo para checkpoint corretamente assinado, mas com origem divergente; a requisição deve ser recusada antes de contatar a testemunha.
 
 **Estado do código em `f481077` (HEAD de código antes desta atualização documental):** não havia execução de workflow nem status de commit reportado. Portanto, os ajustes das seções 8 e 9 permanecem sem validação automatizada remota. A CI aprovada em commit anterior não valida estas alterações. Esta atualização documental não altera o código.
+
+## 10. Primeiro contato e checkpoint de tamanho zero — 2026-11-22
+
+A revisão do verificador Merkle mostrou que `verify_consistency()` rejeita corretamente provas cujo tamanho anterior é zero: pela especificação, o primeiro contato usa tamanho zero e prova vazia, sem invocar a verificação RFC 6962 de prefixo não vazio. O cliente agora trata explicitamente esse estado especial, exige a raiz vazia correta e aceita a evolução posterior para um checkpoint maior somente com prova vazia. Checkpoints repetidos de tamanho zero também precisam preservar a mesma raiz.
+
+Foram adicionados testes para:
+- registrar um checkpoint assinado de tamanho zero e avançar depois para tamanho um;
+- rejeitar uma raiz conflitante em checkpoint repetido de tamanho zero;
+- simular a regra correspondente no witness de teste.
+
+**Último commit de código desta rodada:** `c6dc0aa48e48bf8bdaeb24fe107e6135d3ab5b64`. Esses testes e correções ainda aguardam execução automatizada; não há status remoto novo disponível para o HEAD atual.
