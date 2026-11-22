@@ -6,6 +6,6 @@
   "public_key_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
   "key_id_hex": "2bc8585a",
   "timestamp": 1700000000,
-  "checkpoint_body": "example.com/verify-log\\n3\\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\\n",
-  "signature_line": "— witness.example/test K8hYWgAAAABlU/EAzAzCPOckJUJ/COgkltNKK60KIc+Wz0aFRjSSE4TUUy4bgf+6o67jSXZ41ER2phxnKKvzY6+FjfjNLN7qFij/Cg==\\n"
+  "checkpoint_body": "example.com/verify-log\n3\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n",
+  "signature_line": "— witness.example/test K8hYWgAAAABlU/EAzAzCPOckJUJ/COgkltNKK60KIc+Wz0aFRjSSE4TUUy4bgf+6o67jSXZ41ER2phxnKKvzY6+FjfjNLN7qFij/Cg==\n"
 }
