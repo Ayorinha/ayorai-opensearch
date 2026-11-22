@@ -99,13 +99,16 @@ def test_cosignature_skips_malformed_and_noncanonical_lines() -> None:
     noncanonical = canonical[:-3] + alphabet[(last_index & ~15) | 1] + "=="
     assert base64.b64decode(noncanonical, validate=True) == bytes(76)
     newline = chr(10)
-    malformed = newline.join(
-        [
-            "— witness.example !!!",
-            "— witness.example AA==",
-            "— witness.example " + noncanonical,
-        ]
-    ) + newline
+    malformed = (
+        newline.join(
+            [
+                "— witness.example !!!",
+                "— witness.example AA==",
+                "— witness.example " + noncanonical,
+            ]
+        )
+        + newline
+    )
     assert verify_cosignature(BODY + "\n" + malformed + good, WITNESS, PUB, now=100)
 
 
@@ -195,11 +198,7 @@ def test_witness_rejects_incomplete_or_invalid_signature_response(
 ) -> None:
     signer = NoteSigner(LOG, LOG_SEED)
     note = signer.sign(Checkpoint(LOG, 0, empty_root()).body())
-    http = httpx.Client(
-        transport=httpx.MockTransport(
-            lambda request: httpx.Response(200, text=response_text)
-        )
-    )
+    http = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, text=response_text)))
     client = WitnessClient(
         "https://witness.example",
         signer.verifier_key,
