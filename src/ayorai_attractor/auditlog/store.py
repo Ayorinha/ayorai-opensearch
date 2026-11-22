@@ -402,38 +402,65 @@ class VerificationLog:
             latest = int(checkpoints[-1][0]) if checkpoints else 0
             if latest != len(tree):
                 problems.append(f"latest checkpoint covers {latest} of {len(tree)} leaves")
-            # Every erased record must have its own erasure leaf, logged after the event.
+            # Bind every restricted record to its public event commitment. The
+            # Merkle tree authenticates the leaf, not the mutable record table.
             erasure_leaves: dict[int, int] = {}
-            event_leaves: list[int] = []
+            event_leaves: set[int] = set()
+            event_fields: dict[int, dict[str, Any]] = {}
             for idx, leaf in self._connection.execute(
                 "SELECT idx, leaf FROM vlog_leaves ORDER BY idx"
             ):
                 try:
                     fields = json.loads(bytes(leaf))
-                except ValueError:
+                except (TypeError, ValueError):
                     problems.append(f"leaf {idx} is not JSON")
                     continue
                 if isinstance(fields, dict) and fields.get("schema") == LEAF_SCHEMA:
-                    event_leaves.append(int(idx))
+                    event_index = int(idx)
+                    event_leaves.add(event_index)
+                    event_fields[event_index] = fields
                 elif isinstance(fields, dict) and fields.get("schema") == ERASURE_SCHEMA:
                     target = fields.get("erased_index")
-                    if not isinstance(target, int) or not 0 <= target < idx:
+                    if type(target) is not int or not 0 <= target < idx or target not in event_leaves:
                         problems.append(f"erasure leaf {idx} names an invalid event")
+                    elif target in erasure_leaves:
+                        problems.append(f"event {target} has multiple erasure leaves")
                     else:
-                        erasure_leaves[target] = idx
-            erased_rows = self._connection.execute(
-                "SELECT idx FROM vlog_records WHERE erased_at IS NOT NULL OR record IS NULL"
+                        erasure_leaves[target] = int(idx)
+
+            record_rows = self._connection.execute(
+                "SELECT idx, salt, record, erased_at FROM vlog_records ORDER BY idx"
             ).fetchall()
-            for (idx,) in erased_rows:
-                if idx not in erasure_leaves:
-                    problems.append(f"record {idx} erased without an erasure event")
-            with_rows = {
-                int(row[0]) for row in self._connection.execute("SELECT idx FROM vlog_records")
-            }
-            for idx in event_leaves:
-                if idx not in with_rows and idx not in erasure_leaves:
-                    problems.append(f"record {idx} is missing")
-            erased = len(erased_rows)
+            record_indices: set[int] = set()
+            erased = 0
+            for idx, salt, record_text, erased_at in record_rows:
+                record_index = int(idx)
+                record_indices.add(record_index)
+                if record_index not in event_leaves:
+                    problems.append(f"record {record_index} has no event leaf")
+                    continue
+                if erased_at is not None:
+                    erased += 1
+                    if salt is not None or record_text is not None:
+                        problems.append(f"record {record_index} has residual data after erasure")
+                    if record_index not in erasure_leaves:
+                        problems.append(f"record {record_index} erased without an erasure event")
+                    continue
+                if salt is None or record_text is None:
+                    problems.append(f"record {record_index} is incomplete or partially erased")
+                    continue
+                try:
+                    record_value = json.loads(str(record_text))
+                    commitment = bytes.fromhex(str(event_fields[record_index].get("commitment", "")))
+                    valid_commitment = verify_commitment(commitment, record_value, salt)
+                except (KeyError, TypeError, ValueError):
+                    valid_commitment = False
+                if not valid_commitment:
+                    problems.append(f"record {record_index} commitment mismatch")
+
+            for event_index in event_leaves:
+                if event_index not in record_indices and event_index not in erasure_leaves:
+                    problems.append(f"record {event_index} is missing")
             return {
                 "valid": not problems,
                 "size": len(tree),
