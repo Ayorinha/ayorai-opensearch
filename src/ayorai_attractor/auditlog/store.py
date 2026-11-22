@@ -283,8 +283,11 @@ class VerificationLog:
     def consistency(self, old_size: int) -> list[str]:
         """RFC 6962 consistency proof from ``old_size`` to the current tree (for witnesses)."""
         with self._lock:
-            if not 0 < old_size <= len(self._tree):
-                raise ValueError("old_size must be between 1 and the current size")
+            if not isinstance(old_size, int) or isinstance(old_size, bool) or not 0 <= old_size <= len(self._tree):
+                raise ValueError("old_size must be between 0 and the current size")
+            if old_size == 0:
+                # C2SP tlog-witness uses size 0 and an empty proof on first contact.
+                return []
             return [_b64(node) for node in self._tree.consistency_proof(old_size)]
 
     def erase(self, index: int, erased_at: str, reason: str = "data_subject_request") -> int | None:
@@ -392,6 +395,10 @@ class VerificationLog:
             checkpoints = self._connection.execute(
                 "SELECT size, note FROM vlog_checkpoints ORDER BY size"
             ).fetchall()
+            checkpoint_sizes = {int(size) for size, _note in checkpoints}
+            for expected_size in range(1, len(tree) + 1):
+                if expected_size not in checkpoint_sizes:
+                    problems.append(f"checkpoint {expected_size}: missing")
             for size, note in checkpoints:
                 body = verify_note(str(note), self.verifier_key)
                 parsed = parse_checkpoint(body) if body is not None else None
