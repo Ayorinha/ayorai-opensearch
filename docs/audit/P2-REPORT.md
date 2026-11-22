@@ -196,3 +196,52 @@ A cobertura total do pacote era 95%, com 3.040 testes aprovados nessa execução
 **[PENDENTE — não declarar como aprovado]** Ainda não há resultado de CI associado ao HEAD desta expansão. Portanto, não afirmar que a cobertura atual chegou a 100%, nem que os testes passaram. A próxima validação obrigatória é executar Ruff check/format, mypy e a suíte completa com cobertura em Python 3.11, 3.12 e 3.13; então usar o novo relatório `coverage.json`/saída `term-missing` para corrigir qualquer lacuna residual.
 
 A meta é 100% de cobertura de linhas nos módulos críticos da P2, sem excluir código nem alterar o escopo de cobertura para inflar o indicador. Cobertura de linhas não substitui branch coverage, testes de mutação, revisão de protocolo ou validação com testemunhas externas reais.
+
+
+## 13. Validação completa da cobertura P2 — 2026-11-22
+
+**[FATO VERIFICADO — GitHub Actions, HEAD `2a24a6a42c64af9238e6d6f564c984965554a37a`, PR #634]**
+
+A execução completa da CI terminou com sucesso em Python 3.11, 3.12 e 3.13. Em cada versão, a suíte aprovou **3.112 testes** e o relatório de cobertura apresentou os seis módulos de `auditlog` com **100% de cobertura de linhas**:
+
+| Módulo | Statements | Missing | Line coverage |
+|---|---:|---:|---:|
+| `commitment.py` | 34 | 0 | 100% |
+| `cosignature.py` | 76 | 0 | 100% |
+| `merkle.py` | 179 | 0 | 100% |
+| `note.py` | 106 | 0 | 100% |
+| `store.py` | 313 | 0 | 100% |
+| `witness_client.py` | 123 | 0 | 100% |
+| **Total auditlog** | **831** | **0** | **100%** |
+
+Cobertura global do pacote: **96%** (7.619 statements, 340 não cobertos). O baseline do repositório continua em 85%; a CI registrou melhoria para 96%, sem alterar o baseline.
+
+### Resultados por versão
+
+- Python 3.11: 3.112 testes aprovados em 83,90 s; cobertura global 96%.
+- Python 3.12: 3.112 testes aprovados em 96,25 s; cobertura global 96%.
+- Python 3.13: 3.112 testes aprovados em 74,58 s; cobertura global 96%.
+
+### Demais verificações
+
+Concluíram com sucesso: Ruff check, Ruff format, mypy, strict mypy não bloqueante, Golden Regression, Golden Smoke, Golden Lint, Judge Regression, workflow lint, build distributions, Security, CodeQL, Dependency Review, API Contract Guard, Schemathesis API e full contract, OpenAPI compatibility, ADR-010 isolated persistence POC e Tessera POSIX conformance.
+
+Execuções relevantes:
+- CI: `45058044270`
+- Security: `45058044207`
+- CodeQL: `45058044280`
+- API Contract Guard: `45058044202`
+- Schemathesis Full API Contract: `45058044369`
+- ADR-010 isolated persistence POC: `45058044306`
+- Dependency Review: `45058044285`
+- Golden r2 Migration: `45058044366`
+
+### Interpretação e limites
+
+- **100% significa cobertura de linhas executáveis dos seis módulos auditlog**, confirmada nos três runtimes Python; não significa 100% de cobertura do projeto inteiro.
+- A configuração executada não mede branch coverage; 100% de linhas não garante que toda combinação de decisão tenha sido testada.
+- Testes de mutação não foram executados nesta rodada.
+- A suíte não substitui revisão criptográfica/protocolar independente nem prova operação com testemunhas externas reais.
+- Permanecem pendentes a persistência durável do estado do cliente, a seleção e integração de duas testemunhas independentes e a política operacional de quórum.
+
+**Conclusão de engenharia:** a meta de 100% de cobertura de linhas da P2 foi atingida nos seis módulos de auditoria e a suíte passou em Python 3.11, 3.12 e 3.13. A implementação continua candidata a revisão independente; a PR #634 permanece Draft e não foi mesclada.
