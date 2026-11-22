@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import threading
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import httpx
@@ -33,6 +35,29 @@ class WitnessIdentity:
             raise ValueError("witness Ed25519 public key must be 32 bytes")
 
 
+def _decode_consistency_proof(proof: Sequence[bytes | str]) -> list[bytes]:
+    """Accept raw Merkle nodes or the canonical base64 strings returned by VerificationLog."""
+    if isinstance(proof, (str, bytes, bytearray)):
+        raise WitnessError("consistency proof must be a sequence of 32-byte nodes")
+    decoded: list[bytes] = []
+    try:
+        for node in proof:
+            if isinstance(node, bytes):
+                raw = node
+            elif isinstance(node, str):
+                raw = base64.b64decode(node, validate=True)
+                if base64.b64encode(raw).decode("ascii") != node:
+                    raise WitnessError("consistency proof contains non-canonical base64")
+            else:
+                raise WitnessError("consistency proof nodes must be bytes or base64 strings")
+            if len(raw) != 32:
+                raise WitnessError("consistency proof nodes must be exactly 32 bytes")
+            decoded.append(raw)
+    except (ValueError, binascii.Error) as exc:
+        raise WitnessError("consistency proof contains invalid base64") from exc
+    return decoded
+
+
 class WitnessClient:
     """Submit signed checkpoints and verify returned C2SP witness cosignatures."""
 
@@ -45,9 +70,14 @@ class WitnessClient:
         client: httpx.Client | None = None,
         timeout: float = 5.0,
     ) -> None:
-        if not submission_url.startswith(("https://", "http://")):
-            raise ValueError("submission_url must be HTTP(S)")
-        self.submission_url = submission_url.rstrip("/") + "/add-checkpoint"
+        parsed_url = httpx.URL(submission_url)
+        if parsed_url.scheme != "https" or not parsed_url.host or parsed_url.query or parsed_url.fragment:
+            raise ValueError("submission_url must be an HTTPS URL without query or fragment")
+        if parsed_url.username or parsed_url.password:
+            raise ValueError("submission_url must not contain embedded credentials")
+        if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout <= 0:
+            raise ValueError("timeout must be a positive number")
+        self.submission_url = str(parsed_url).rstrip("/") + "/add-checkpoint"
         self.log_verifier_key = log_verifier_key
         self.witness = witness
         self._client = client or httpx.Client(timeout=timeout)
@@ -67,16 +97,19 @@ class WitnessClient:
     def submit(
         self,
         checkpoint_note: str,
-        consistency_proof: list[bytes] | tuple[bytes, ...],
+        consistency_proof: Sequence[bytes | str],
         *,
         previous_checkpoint: str | None = None,
     ) -> str:
         """Submit a checkpoint; return it with a verified witness signature.
 
+        Proof nodes may be raw 32-byte hashes or canonical base64 strings. The
+        latter matches VerificationLog.consistency() and the C2SP wire format.
         For first contact, omit previous_checkpoint and use an empty proof.
         The witness's persisted state remains authoritative.
         """
         with self._lock:
+            proof_nodes = _decode_consistency_proof(consistency_proof)
             if (
                 self._last_checkpoint is not None
                 and previous_checkpoint is not None
@@ -92,7 +125,7 @@ class WitnessClient:
                 raise WitnessError("checkpoint is not signed by the configured log key")
             if previous is None:
                 old_size = 0
-                if consistency_proof:
+                if proof_nodes:
                     raise WitnessError("the initial checkpoint must use an empty consistency proof")
             else:
                 old_body = verify_note(previous, self.log_verifier_key)
@@ -102,23 +135,26 @@ class WitnessClient:
                 if current.size < old.size:
                     raise WitnessError("checkpoint rollback refused")
                 if current.size == old.size:
-                    if current.root != old.root or consistency_proof:
+                    if current.root != old.root or proof_nodes:
                         raise WitnessError("same-size checkpoint does not match previous state")
                 elif not verify_consistency(
-                    old.size, current.size, old.root, current.root, consistency_proof
+                    old.size, current.size, old.root, current.root, proof_nodes
                 ):
                     raise WitnessError("checkpoint is not consistent with previous state")
                 old_size = old.size
 
             proof_lines = "".join(
-                base64.b64encode(node).decode("ascii") + "\n" for node in consistency_proof
+                base64.b64encode(node).decode("ascii") + "\n" for node in proof_nodes
             )
             request_body = f"{old_size}\n{proof_lines}\n{checkpoint_note}"
-            response = self._client.post(
-                self.submission_url,
-                content=request_body.encode("utf-8"),
-                headers={"Content-Type": "text/plain; charset=utf-8"},
-            )
+            try:
+                response = self._client.post(
+                    self.submission_url,
+                    content=request_body.encode("utf-8"),
+                    headers={"Content-Type": "text/plain; charset=utf-8"},
+                )
+            except httpx.HTTPError as exc:
+                raise WitnessError("witness request failed") from exc
             if response.status_code == 409:
                 raise WitnessConflict(
                     "witness state conflicts with the submitted previous checkpoint"
