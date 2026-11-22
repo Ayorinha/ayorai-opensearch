@@ -76,6 +76,14 @@ class WitnessClient:
         The witness's persisted state remains authoritative.
         """
         with self._lock:
+            if (
+                self._last_checkpoint is not None
+                and previous_checkpoint is not None
+                and previous_checkpoint != self._last_checkpoint
+            ):
+                raise WitnessError(
+                    "explicit previous checkpoint cannot override locally observed state"
+                )
             previous = self._last_checkpoint if previous_checkpoint is None else previous_checkpoint
             body = verify_note(checkpoint_note, self.log_verifier_key)
             current = parse_checkpoint(body) if body is not None else None
