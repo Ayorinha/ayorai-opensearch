@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -124,26 +125,38 @@ class _WitnessHarness:
         if not separator:
             return httpx.Response(422)
         lines = header.splitlines()
+        # C2SP tlog-witness: the first line is "old <size>" in decimal without leading
+        # zeros; at most 63 proof lines follow. Anything else is a bad request.
+        if not lines or re.fullmatch(r"old (0|[1-9][0-9]*)", lines[0]) is None:
+            return httpx.Response(400)
+        if len(lines) - 1 > 63:
+            return httpx.Response(400)
         try:
-            old_size = int(lines[0])
+            old_size = int(lines[0][len("old ") :])
             proof = [base64.b64decode(line, validate=True) for line in lines[1:]]
-        except (ValueError, IndexError):
-            return httpx.Response(422)
+        except ValueError:
+            return httpx.Response(400)
         body = verify_note(checkpoint_note, self.signer.verifier_key)
         current = parse_checkpoint(body) if body is not None else None
         if current is None or current.origin != LOG_NAME:
             return httpx.Response(422)
+        if old_size > current.size:
+            return httpx.Response(400)
         with self.lock:
             previous = None
             if self.latest:
                 previous_body = verify_note(self.latest, self.signer.verifier_key)
                 previous = parse_checkpoint(previous_body) if previous_body is not None else None
+            latest_size = previous.size if previous is not None else 0
+            conflict = httpx.Response(
+                409, text=f"{latest_size}\n", headers={"Content-Type": "text/x.tlog.size"}
+            )
             if previous is None:
                 if old_size != 0:
-                    return httpx.Response(409)
+                    return conflict
             else:
                 if old_size != previous.size or current.size < previous.size:
-                    return httpx.Response(409)
+                    return conflict
                 if previous.size == 0:
                     if previous.root != empty_root() or proof:
                         return httpx.Response(422)
@@ -324,3 +337,88 @@ def test_concurrent_submissions_cannot_roll_witness_state_back() -> None:
     assert results.count("conflict") == 1
     latest = parse_checkpoint(verify_note(harness.latest, signer.verifier_key))
     assert latest is not None and latest.size in (1, 2)
+
+
+# --- C2SP tlog-witness request and 409 format (review of PR #634) ----------------------
+
+
+class _RecordingHarness(_WitnessHarness):
+    def __init__(self) -> None:
+        super().__init__()
+        self.bodies: list[str] = []
+
+    def handle(self, request: httpx.Request) -> httpx.Response:
+        self.bodies.append(request.content.decode())
+        return super().handle(request)
+
+
+def test_request_body_follows_the_c2sp_add_checkpoint_format() -> None:
+    # Spec: "old <size>" line, base64 proof lines, an empty line, then the checkpoint.
+    harness = _RecordingHarness()
+    client = _client(harness)
+    signer = NoteSigner(LOG_NAME, LOG_SEED)
+    first = _checkpoint(signer, [b"one"])
+    client.submit(first, [])
+    grown = [b"one", b"two"]
+    second = _checkpoint(signer, grown)
+    proof = consistency_proof(1, [leaf_hash(leaf) for leaf in grown])
+    client.submit(second, proof)
+    assert harness.bodies[0] == "old 0\n\n" + first
+    expected_proof = "".join(base64.b64encode(node).decode("ascii") + "\n" for node in proof)
+    assert harness.bodies[1] == "old 1\n" + expected_proof + "\n" + second
+
+
+@pytest.mark.parametrize("first_line", ["0", "old 01", "old -1", "OLD 0", "old  0"])
+def test_reference_witness_rejects_a_malformed_old_size_line(first_line: str) -> None:
+    harness = _WitnessHarness()
+    note = _checkpoint(NoteSigner(LOG_NAME, LOG_SEED), [b"one"])
+    request = httpx.Request("POST", "https://witness.example/add-checkpoint")
+    request._content = f"{first_line}\n\n{note}".encode()
+    assert harness.handle(request).status_code == 400
+
+
+def test_http_409_reports_the_witness_tree_size() -> None:
+    harness = _WitnessHarness()
+    signer = NoteSigner(LOG_NAME, LOG_SEED)
+    harness.latest = _checkpoint(signer, [b"a", b"b", b"c"])
+    client = _client(harness)
+    with pytest.raises(WitnessConflict) as caught:
+        client.submit(_checkpoint(signer, [b"x"]), [])
+    assert caught.value.witness_size == 3
+    assert client.last_checkpoint is None
+
+
+@pytest.mark.parametrize(
+    ("headers", "text"),
+    [
+        ({"Content-Type": "text/plain"}, "3\n"),
+        ({"Content-Type": "text/x.tlog.size"}, "03\n"),
+        ({"Content-Type": "text/x.tlog.size"}, "3"),
+        ({"Content-Type": "text/x.tlog.size"}, "three\n"),
+        ({"Content-Type": "text/x.tlog.size"}, "\n"),
+    ],
+)
+def test_http_409_with_a_malformed_size_body_has_no_size(
+    headers: dict[str, str], text: str
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(409, text=text, headers=headers)
+
+    client = WitnessClient(
+        "https://witness.example/submit",
+        NoteSigner(LOG_NAME, LOG_SEED).verifier_key,
+        WitnessIdentity(WITNESS_NAME, _pub(WITNESS_SEED)),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    with pytest.raises(WitnessConflict) as caught:
+        client.submit(_checkpoint(NoteSigner(LOG_NAME, LOG_SEED), [b"x"]), [])
+    assert caught.value.witness_size is None
+
+
+def test_more_than_63_proof_nodes_are_refused_before_any_request() -> None:
+    harness = _WitnessHarness()
+    client = _client(harness)
+    note = _checkpoint(NoteSigner(LOG_NAME, LOG_SEED), [b"one"])
+    with pytest.raises(WitnessError, match="more than 63"):
+        client.submit(note, [bytes(32)] * 64)
+    assert harness.requests == 0

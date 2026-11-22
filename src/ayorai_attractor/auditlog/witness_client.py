@@ -21,7 +21,32 @@ class WitnessError(RuntimeError):
 
 
 class WitnessConflict(WitnessError):
-    """The witness has a newer or incompatible checkpoint (HTTP 409)."""
+    """The witness has a newer or incompatible checkpoint (HTTP 409).
+
+    ``witness_size`` is the size of the latest checkpoint the witness cosigned, as it
+    reports in a ``text/x.tlog.size`` body, or ``None`` when the body is not that.
+    """
+
+    def __init__(self, message: str, witness_size: int | None = None) -> None:
+        super().__init__(message)
+        self.witness_size = witness_size
+
+
+# C2SP tlog-witness: at most 63 consistency proof lines per add-checkpoint request.
+_MAX_PROOF_LINES = 63
+_TLOG_SIZE_MEDIA_TYPE = "text/x.tlog.size"
+
+
+def _reported_size(response: httpx.Response) -> int | None:
+    """Tree size in a 409 body: ASCII decimal without leading zeros, then a newline."""
+    media_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
+    text = response.text
+    if media_type != _TLOG_SIZE_MEDIA_TYPE or not text.endswith("\n"):
+        return None
+    digits = text[:-1]
+    if not digits.isascii() or not digits.isdigit() or (len(digits) > 1 and digits[0] == "0"):
+        return None
+    return int(digits)
 
 
 @dataclass(frozen=True)
@@ -57,6 +82,8 @@ def _decode_consistency_proof(proof: Sequence[bytes | str]) -> list[bytes]:
             decoded.append(raw)
     except (ValueError, binascii.Error) as exc:
         raise WitnessError("consistency proof contains invalid base64") from exc
+    if len(decoded) > _MAX_PROOF_LINES:
+        raise WitnessError("consistency proof has more than 63 nodes")
     return decoded
 
 
@@ -169,7 +196,8 @@ class WitnessClient:
             proof_lines = "".join(
                 base64.b64encode(node).decode("ascii") + "\n" for node in proof_nodes
             )
-            request_body = f"{old_size}\n{proof_lines}\n{checkpoint_note}"
+            # C2SP tlog-witness: "old <size>", the proof lines, an empty line, the checkpoint.
+            request_body = f"old {old_size}\n{proof_lines}\n{checkpoint_note}"
             try:
                 response = self._client.post(
                     self.submission_url,
@@ -180,7 +208,8 @@ class WitnessClient:
                 raise WitnessError("witness request failed") from exc
             if response.status_code == 409:
                 raise WitnessConflict(
-                    "witness state conflicts with the submitted previous checkpoint"
+                    "witness state conflicts with the submitted previous checkpoint",
+                    witness_size=_reported_size(response),
                 )
             if response.status_code != 200:
                 raise WitnessError(f"witness returned HTTP {response.status_code}")

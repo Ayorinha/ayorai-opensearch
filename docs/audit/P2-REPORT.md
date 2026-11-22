@@ -245,3 +245,51 @@ Execuções relevantes:
 - Permanecem pendentes a persistência durável do estado do cliente, a seleção e integração de duas testemunhas independentes e a política operacional de quórum.
 
 **Conclusão de engenharia:** a meta de 100% de cobertura de linhas da P2 foi atingida nos seis módulos de auditoria e a suíte passou em Python 3.11, 3.12 e 3.13. A implementação continua candidata a revisão independente; a PR #634 permanece Draft e não foi mesclada.
+
+
+## 14. Revisão independente e correção do pedido `add-checkpoint` — 2026-11-22
+
+**[FATO VERIFICADO — reprodução e testes]** A revisão independente da P2 encontrou um defeito de interoperabilidade no cliente de testemunha.
+
+**Defeito.** A especificação C2SP `tlog-witness` exige que a primeira linha do corpo de `add-checkpoint` seja `old <tamanho>` (por exemplo, `old 20852014`). O cliente enviava só o tamanho (`0`, `1`, …). Uma testemunha real recusaria todos os pedidos como malformados.
+
+Os testes não detectavam o defeito porque a testemunha simulada lia `int(lines[0])`, ou seja, aceitava o mesmo formato errado. A cobertura de 100% não pega esse tipo de erro.
+
+**Correções nesta branch:**
+- **Formato do pedido:** o cliente envia `old <tamanho>`, depois as linhas da prova, uma linha vazia e o checkpoint.
+- **Limite da prova:** o cliente recusa, antes de qualquer pedido, provas com mais de 63 nós, que é o limite da especificação.
+- **409 Conflict:** `WitnessConflict.witness_size` passa a trazer o tamanho informado pela testemunha no corpo `text/x.tlog.size`. Se o corpo não tem esse formato, o valor é `None`. O estado local continua sem avançar.
+- **Testemunha simulada dos testes:**
+  - passa a seguir a especificação;
+  - exige `old <tamanho>` em decimal sem zeros à esquerda;
+  - responde 400 a linha `old` malformada, a mais de 63 linhas de prova e a `old` maior que o checkpoint;
+  - responde ao 409 com o tamanho em `text/x.tlog.size`.
+- **Testes novos:**
+  - corpo exato do pedido no primeiro contato e com prova;
+  - 5 formas malformadas da linha `old`;
+  - tamanho devolvido no 409;
+  - 5 corpos de 409 malformados;
+  - limite de 63 nós.
+
+**Evidência de que o defeito era real:** com a testemunha simulada corrigida, o cliente original falha em 8 testes já existentes. O cliente corrigido passa em todos.
+
+**Validação local (Python 3.13):**
+- suíte completa: 3125 testes aprovados;
+- Ruff check e format: sem problemas;
+- mypy: sem problemas;
+- Bandit: nenhum problema;
+- `witness_client.py`: 100% das linhas e 1 ramo parcial em 66;
+- hashes do Golden inalterados (smoke-v0 `969ec61a…`, v0 `21abb816…`, v0.1 `1fd6fdb7…`).
+
+**Benchmark de adulteração** (14 classes, 20 instâncias cada, mais 60 logs íntegros):
+- a P2 detecta as 13 classes ao alcance do servidor, contra 7 na `main`;
+- não há falso alarme.
+
+**Verificação independente da cosignatura:** uma implementação escrita a partir do texto da especificação, sem usar `cosignature.py`, produz linhas idênticas byte a byte, inclusive o vetor commitado.
+
+**Limites que continuam valendo:**
+- a especificação lida foi a cópia do editor no GitHub, porque `c2sp.org` está bloqueado neste ambiente;
+- não há vetor oficial do C2SP;
+- testemunhas que usem só ML-DSA-44 (recomendado pela especificação) não são aceitas pelo cliente, que verifica Ed25519;
+- o estado do cliente continua em memória;
+- nenhuma testemunha real foi testada.
