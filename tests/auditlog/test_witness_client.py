@@ -13,7 +13,12 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from ayorai_attractor.auditlog.cosignature import sign_cosignature, verify_cosignature
-from ayorai_attractor.auditlog.merkle import consistency_proof, leaf_hash, tree_root, verify_consistency
+from ayorai_attractor.auditlog.merkle import (
+    consistency_proof,
+    leaf_hash,
+    tree_root,
+    verify_consistency,
+)
 from ayorai_attractor.auditlog.note import Checkpoint, NoteSigner, parse_checkpoint, verify_note
 from ayorai_attractor.auditlog.witness_client import (
     WitnessClient,
@@ -35,7 +40,9 @@ def _pub(seed: bytes) -> bytes:
 
 
 def _checkpoint(signer: NoteSigner, leaves: list[bytes]) -> str:
-    return signer.sign(Checkpoint(signer.name, len(leaves), tree_root([leaf_hash(x) for x in leaves])).body())
+    root = tree_root([leaf_hash(leaf) for leaf in leaves])
+    checkpoint = Checkpoint(signer.name, len(leaves), root)
+    return signer.sign(checkpoint.body())
 
 
 def test_c2sp_v1_1_ed25519_vector_matches_exact_wire_bytes() -> None:
@@ -46,7 +53,10 @@ def test_c2sp_v1_1_ed25519_vector_matches_exact_wire_bytes() -> None:
     line = sign_cosignature(vector["cosigner_name"], seed, body, vector["timestamp"])
     assert line == vector["signature_line"]
     note = body + "\n" + "— log.example " + "AA==" + "\n" + line
-    assert verify_cosignature(note, vector["cosigner_name"], bytes.fromhex(vector["public_key_hex"]), now=vector["timestamp"])
+    public_key = bytes.fromhex(vector["public_key_hex"])
+    assert verify_cosignature(
+        note, vector["cosigner_name"], public_key, now=vector["timestamp"]
+    )
 
 
 def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
@@ -55,14 +65,16 @@ def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
     note = body + "\n" + "— log.example AA==\n" + line
     assert verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
     assert not verify_cosignature(note.replace("1\n", "2\n", 1), WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
-    assert not verify_cosignature(note, WITNESS_NAME, _pub(bytes(reversed(WITNESS_SEED))), now=1_700_000_000)
+    wrong_key = _pub(bytes(reversed(WITNESS_SEED)))
+    assert not verify_cosignature(note, WITNESS_NAME, wrong_key, now=1_700_000_000)
     assert not verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_699_999_000)
 
 
 def test_cosignature_ignores_unknown_cosigner_lines() -> None:
     body = f"{LOG_NAME}\n1\n{base64.b64encode(bytes(32)).decode()}\n"
     good = sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, 1_700_000_000)
-    unknown = sign_cosignature("other.example/w", bytes(reversed(WITNESS_SEED)), body, 1_700_000_000)
+    unknown_seed = bytes(reversed(WITNESS_SEED))
+    unknown = sign_cosignature("other.example/w", unknown_seed, body, 1_700_000_000)
     note = body + "\n" + unknown + good
     assert verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
 
@@ -95,7 +107,10 @@ class _WitnessHarness:
         if current is None or current.origin != LOG_NAME:
             return httpx.Response(422)
         with self.lock:
-            previous = parse_checkpoint(verify_note(self.latest, self.signer.verifier_key)) if self.latest else None
+            previous = None
+            if self.latest:
+                previous_body = verify_note(self.latest, self.signer.verifier_key)
+                previous = parse_checkpoint(previous_body) if previous_body is not None else None
             if previous is None:
                 if old_size != 0:
                     return httpx.Response(409)
@@ -105,7 +120,9 @@ class _WitnessHarness:
                 if current.size == previous.size:
                     if current.root != previous.root or proof:
                         return httpx.Response(422)
-                elif not verify_consistency(previous.size, current.size, previous.root, current.root, proof):
+                elif not verify_consistency(
+                    previous.size, current.size, previous.root, current.root, proof
+                ):
                     return httpx.Response(422)
             self.latest = checkpoint_note
             line = sign_cosignature(self.witness_name, self.witness_seed, body, 1_700_000_000)
