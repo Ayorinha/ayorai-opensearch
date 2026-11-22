@@ -152,7 +152,9 @@ class WitnessClient:
                     if old.root != empty_root() or proof_nodes:
                         raise WitnessError("size-zero checkpoint must use the empty root and proof")
                     if current.size == 0 and current.root != old.root:
-                        raise WitnessError("same-size empty checkpoint does not match previous state")
+                        raise WitnessError(
+                            "same-size empty checkpoint does not match previous state"
+                        )
                 elif current.size == old.size:
                     if current.root != old.root or proof_nodes:
                         raise WitnessError("same-size checkpoint does not match previous state")
