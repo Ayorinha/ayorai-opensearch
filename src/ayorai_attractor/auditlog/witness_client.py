@@ -124,6 +124,9 @@ class WitnessClient:
             current = parse_checkpoint(body) if body is not None else None
             if current is None:
                 raise WitnessError("checkpoint is not signed by the configured log key")
+            expected_origin = self.log_verifier_key.partition("+")[0]
+            if current.origin != expected_origin:
+                raise WitnessError("checkpoint origin does not match the configured log identity")
             if previous is None:
                 old_size = 0
                 if proof_nodes:
