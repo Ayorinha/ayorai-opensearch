@@ -48,7 +48,7 @@ def signed_message(checkpoint_body: str, timestamp: int) -> bytes:
     if (
         not isinstance(timestamp, int)
         or isinstance(timestamp, bool)
-        or not 0 <= timestamp <= _MAX_TIMESTAMP
+        or not 0 < timestamp <= _MAX_TIMESTAMP
     ):
         raise ValueError("timestamp must be an unsigned POSIX integer no greater than 2^63-1")
     return f"cosignature/v1\ntime {timestamp}\n{checkpoint_body}".encode("utf-8")
@@ -104,7 +104,7 @@ def verify_cosignature(
             if len(raw) != 4 + 8 + 64 or raw[:4] != expected_id:
                 continue
             timestamp = int.from_bytes(raw[4:12], "big")
-            if timestamp > _MAX_TIMESTAMP or timestamp > current_time + max_future_skew:
+            if timestamp == 0 or timestamp > _MAX_TIMESTAMP or timestamp > current_time + max_future_skew:
                 continue
             verifier.verify(raw[12:], signed_message(body, timestamp))
             return True
