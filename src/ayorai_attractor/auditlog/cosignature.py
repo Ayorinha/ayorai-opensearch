@@ -15,7 +15,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
-COSIGNATURE_TYPE = b"\\x04"
+COSIGNATURE_TYPE = b"\x04"
 _SIGNATURE_PREFIX = "— "
 _MAX_TIMESTAMP = (1 << 63) - 1
 
@@ -36,16 +36,16 @@ def key_id(name: str, public_key: bytes) -> bytes:
     _validate_name(name)
     if not isinstance(public_key, bytes) or len(public_key) != 32:
         raise ValueError("Ed25519 public key must be 32 bytes")
-    return hashlib.sha256(name.encode("utf-8") + b"\\n" + COSIGNATURE_TYPE + public_key).digest()[:4]
+    return hashlib.sha256(name.encode("utf-8") + b"\n" + COSIGNATURE_TYPE + public_key).digest()[:4]
 
 
 def signed_message(checkpoint_body: str, timestamp: int) -> bytes:
     """Build the C2SP cosignature/v1 message; body includes its final newline."""
-    if not isinstance(checkpoint_body, str) or not checkpoint_body.endswith("\\n"):
+    if not isinstance(checkpoint_body, str) or not checkpoint_body.endswith("\n"):
         raise ValueError("checkpoint body must end with a newline")
     if not isinstance(timestamp, int) or isinstance(timestamp, bool) or not 0 <= timestamp <= _MAX_TIMESTAMP:
         raise ValueError("timestamp must be an unsigned POSIX integer no greater than 2^63-1")
-    return f"cosignature/v1\\ntime {timestamp}\\n{checkpoint_body}".encode("utf-8")
+    return f"cosignature/v1\ntime {timestamp}\n{checkpoint_body}".encode("utf-8")
 
 
 def sign_cosignature(name: str, seed: bytes, checkpoint_body: str, timestamp: int | None = None) -> str:
@@ -58,7 +58,7 @@ def sign_cosignature(name: str, seed: bytes, checkpoint_body: str, timestamp: in
     private_key = Ed25519PrivateKey.from_private_bytes(seed)
     public_key = _public_bytes(private_key.public_key())
     payload = key_id(name, public_key) + timestamp.to_bytes(8, "big") + private_key.sign(message)
-    return f"{_SIGNATURE_PREFIX}{name} {base64.b64encode(payload).decode('ascii')}\\n"
+    return f"{_SIGNATURE_PREFIX}{name} {base64.b64encode(payload).decode('ascii')}\n"
 
 
 def verify_cosignature(
@@ -74,16 +74,16 @@ def verify_cosignature(
         expected_id = key_id(name, public_key)
         if not isinstance(note, str) or not isinstance(max_future_skew, int) or max_future_skew < 0:
             return False
-        separator = note.rfind("\\n\\n")
+        separator = note.rfind("\n\n")
         if separator < 0:
             return False
         body = note[: separator + 1]
         signature_text = note[separator + 2 :]
-        if not signature_text.endswith("\\n"):
+        if not signature_text.endswith("\n"):
             return False
         verifier = Ed25519PublicKey.from_public_bytes(public_key)
         current_time = int(time.time()) if now is None else now
-        for line in signature_text[:-1].split("\\n"):
+        for line in signature_text[:-1].split("\n"):
             if not line.startswith(_SIGNATURE_PREFIX):
                 continue
             fields = line[len(_SIGNATURE_PREFIX) :].split(" ")
