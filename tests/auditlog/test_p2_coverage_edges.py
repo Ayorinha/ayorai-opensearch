@@ -198,9 +198,7 @@ def test_witness_rejects_incomplete_or_invalid_signature_response(
 ) -> None:
     signer = NoteSigner(LOG, LOG_SEED)
     note = signer.sign(Checkpoint(LOG, 0, empty_root()).body())
-    transport = httpx.MockTransport(
-        lambda request: httpx.Response(200, text=response_text)
-    )
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, text=response_text))
     http = httpx.Client(transport=transport)
     client = WitnessClient(
         "https://witness.example",
