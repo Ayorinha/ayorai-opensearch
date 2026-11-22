@@ -104,7 +104,11 @@ def verify_cosignature(
             if len(raw) != 4 + 8 + 64 or raw[:4] != expected_id:
                 continue
             timestamp = int.from_bytes(raw[4:12], "big")
-            if timestamp == 0 or timestamp > _MAX_TIMESTAMP or timestamp > current_time + max_future_skew:
+            if (
+                timestamp == 0
+                or timestamp > _MAX_TIMESTAMP
+                or timestamp > current_time + max_future_skew
+            ):
                 continue
             verifier.verify(raw[12:], signed_message(body, timestamp))
             return True
