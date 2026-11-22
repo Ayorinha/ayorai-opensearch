@@ -39,7 +39,7 @@ class WitnessIdentity:
 
 def _decode_consistency_proof(proof: Sequence[bytes | str]) -> list[bytes]:
     """Accept raw Merkle nodes or the canonical base64 strings returned by VerificationLog."""
-    if isinstance(proof, (str, bytes, bytearray)):
+    if isinstance(proof, (str, bytes, bytearray)) or not isinstance(proof, Sequence):
         raise WitnessError("consistency proof must be a sequence of 32-byte nodes")
     decoded: list[bytes] = []
     try:
@@ -82,13 +82,14 @@ class WitnessClient:
             raise ValueError("submission_url must be an HTTPS URL without query or fragment")
         if parsed_url.username or parsed_url.password:
             raise ValueError("submission_url must not contain embedded credentials")
-        if (
-            not isinstance(timeout, (int, float))
-            or isinstance(timeout, bool)
-            or not math.isfinite(timeout)
-            or timeout <= 0
-        ):
+        if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout <= 0:
             raise ValueError("timeout must be a positive number")
+        try:
+            finite_timeout = math.isfinite(float(timeout))
+        except (OverflowError, ValueError):
+            finite_timeout = False
+        if not finite_timeout:
+            raise ValueError("timeout must be a finite positive number")
         self.submission_url = str(parsed_url).rstrip("/") + "/add-checkpoint"
         self.log_verifier_key = log_verifier_key
         self.witness = witness
