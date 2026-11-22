@@ -95,11 +95,15 @@ class WitnessClient:
                 if current.size == old.size:
                     if current.root != old.root or consistency_proof:
                         raise WitnessError("same-size checkpoint does not match previous state")
-                elif not verify_consistency(old.size, current.size, old.root, current.root, consistency_proof):
+                elif not verify_consistency(
+                    old.size, current.size, old.root, current.root, consistency_proof
+                ):
                     raise WitnessError("checkpoint is not consistent with previous state")
                 old_size = old.size
 
-            proof_lines = "".join(base64.b64encode(node).decode("ascii") + "\n" for node in consistency_proof)
+            proof_lines = "".join(
+                base64.b64encode(node).decode("ascii") + "\n" for node in consistency_proof
+            )
             request_body = f"{old_size}\n{proof_lines}\n{checkpoint_note}"
             response = self._client.post(
                 self.submission_url,
