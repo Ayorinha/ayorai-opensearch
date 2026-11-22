@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from ayorai_attractor.auditlog.cosignature import sign_cosignature, verify_cosignature
-from ayorai_attractor.auditlog.merkle import leaf_hash, tree_root, consistency_proof, verify_consistency
+from ayorai_attractor.auditlog.merkle import consistency_proof, leaf_hash, tree_root, verify_consistency
 from ayorai_attractor.auditlog.note import Checkpoint, NoteSigner, parse_checkpoint, verify_note
 from ayorai_attractor.auditlog.witness_client import (
     WitnessClient,
