@@ -1,4 +1,5 @@
 """C2SP Ed25519 cosignature vectors and witness-client adversarial tests."""
+
 from __future__ import annotations
 
 import base64
@@ -34,8 +35,10 @@ WITNESS_SEED = bytes(range(32, 64))
 
 
 def _pub(seed: bytes) -> bytes:
-    return Ed25519PrivateKey.from_private_bytes(seed).public_key().public_bytes(
-        serialization.Encoding.Raw, serialization.PublicFormat.Raw
+    return (
+        Ed25519PrivateKey.from_private_bytes(seed)
+        .public_key()
+        .public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
     )
 
 
@@ -54,9 +57,7 @@ def test_c2sp_v1_1_ed25519_vector_matches_exact_wire_bytes() -> None:
     assert line == vector["signature_line"]
     note = body + "\n" + "— log.example " + "AA==" + "\n" + line
     public_key = bytes.fromhex(vector["public_key_hex"])
-    assert verify_cosignature(
-        note, vector["cosigner_name"], public_key, now=vector["timestamp"]
-    )
+    assert verify_cosignature(note, vector["cosigner_name"], public_key, now=vector["timestamp"])
 
 
 def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
@@ -65,9 +66,7 @@ def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
     note = body + "\n" + "— log.example AA==\n" + line
     assert verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
     tampered = note.replace("1\n", "2\n", 1)
-    assert not verify_cosignature(
-        tampered, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000
-    )
+    assert not verify_cosignature(tampered, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
     wrong_key = _pub(bytes(reversed(WITNESS_SEED)))
     assert not verify_cosignature(note, WITNESS_NAME, wrong_key, now=1_700_000_000)
     assert not verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_699_999_000)
@@ -75,13 +74,9 @@ def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
     zero_message = f"cosignature/v1\ntime 0\n{body}".encode()
     zero_payload = key_id(WITNESS_NAME, _pub(WITNESS_SEED)) + bytes(8)
     zero_payload += private_key.sign(zero_message)
-    zero_line = (
-        f"— {WITNESS_NAME} {base64.b64encode(zero_payload).decode('ascii')}\n"
-    )
+    zero_line = f"— {WITNESS_NAME} {base64.b64encode(zero_payload).decode('ascii')}\n"
     zero_note = body + "\n" + zero_line
-    assert verify_cosignature(
-        zero_note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000
-    )
+    assert verify_cosignature(zero_note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
     assert sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, 0) == zero_line
 
 
@@ -95,9 +90,7 @@ def test_cosignature_name_rejects_unicode_whitespace_and_accepts_uint64_timestam
     assert verify_cosignature(
         note, WITNESS_NAME, _pub(WITNESS_SEED), now=maximum, max_future_skew=0
     )
-    assert not verify_cosignature(
-        note, WITNESS_NAME, _pub(WITNESS_SEED), now=True
-    )
+    assert not verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=True)
     assert not verify_cosignature(
         note, WITNESS_NAME, _pub(WITNESS_SEED), now=maximum, max_future_skew=True
     )
