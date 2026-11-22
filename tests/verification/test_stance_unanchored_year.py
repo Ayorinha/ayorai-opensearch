@@ -65,7 +65,6 @@ def test_a_year_of_another_event_abstains_instead_of_refuting(claim: str, docume
     [
         (FOUNDED, "A Vértice foi fundada em 2001."),  # the year is the claimed fact
         (REVENUE, "Segundo o balanço auditado, a receita da Vértice foi de 55 milhões em 2024."),
-        (REVENUE, "A receita da Vértice foi de 40 milhões em 2023."),  # year anchored by revenue
         (REVENUE, "A receita da Vértice foi de 55 milhões."),
     ],
 )
@@ -126,10 +125,76 @@ def test_divergent_documents_are_still_conflicting() -> None:
         (FOUNDED, "A receita da Vértice foi de 40 milhões.", False),  # only the name is shared
         ("A Vértice foi fundada em 1998.", "Vértice, empresa de Curitiba.", False),
         ("Fundada em 1998, a Vértice cresceu.", "A Vértice foi fundada em 2001.", True),
+        ("Vértice foi fundada em 1998.", "A receita da Vértice foi de 40 milhões.", False),
+        ("A Vértice tem sede desde 1998.", "A Vértice tem 40 lojas.", False),
     ],
 )
 def test_shares_predicate_ignores_proper_nouns(claim: str, evidence: str, expected: bool) -> None:
     assert _shares_predicate(claim, evidence) is expected
+
+
+# --- another period: the evidence describes a different year -----------------------
+
+
+@pytest.mark.parametrize(
+    "document",
+    [
+        "A receita da Vértice foi de 40 milhões em 2023.",  # same value, other year
+        "A receita da Vértice foi de 55 milhões em 2023.",  # other value, other year
+    ],
+)
+def test_the_same_fact_in_another_year_abstains(document: str) -> None:
+    result = _check(REVENUE, document)
+    assert result["verdict"] is None
+    assert result["abstention_reason"] == "insufficient_evidence"
+
+
+def test_the_claimed_year_among_others_still_decides() -> None:
+    supported = _check(
+        REVENUE, "A receita da Vértice foi de 31 milhões em 2023 e de 40 milhões em 2024."
+    )
+    assert supported["verdict"] == "partially_supported"
+    assert (
+        _check(REVENUE, "A receita da Vértice foi de 55 milhões em 2024.")["verdict"] == "refuted"
+    )
+
+
+def test_a_fact_without_a_year_in_the_evidence_is_still_compared() -> None:
+    # No period in the evidence: the claimed value is compared as before.
+    assert _check(REVENUE, "A receita da Vértice foi de 55 milhões.")["verdict"] == "refuted"
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "known limitation, also on main: numbers are not bound to their own year inside a "
+        "sentence, so 40 matches the 2023 value and the claim about 2024 is supported"
+    ),
+)
+def test_a_value_of_another_year_in_the_same_sentence_does_not_support() -> None:
+    result = _check(
+        REVENUE, "A receita da Vértice foi de 40 milhões em 2023 e de 55 milhões em 2024."
+    )
+    assert result["verdict"] == "refuted"
+
+
+# --- names that open a sentence and generic verbs are not predicates -------------------
+
+
+@pytest.mark.parametrize(
+    ("claim", "document"),
+    [
+        ("Vértice foi fundada em 1998.", "A receita da Vértice foi de 40 milhões em 2024."),
+        (
+            "A Vértice tem sede em Curitiba desde 1998.",
+            "A Vértice tem 40 lojas e abriu a filial em 2010.",
+        ),
+    ],
+)
+def test_a_leading_name_or_a_generic_verb_does_not_anchor_a_year(claim: str, document: str) -> None:
+    result = _check(claim, document)
+    assert result["verdict"] is None
+    assert result["abstention_reason"] == "insufficient_evidence"
 
 
 def test_detector_version_is_14() -> None:

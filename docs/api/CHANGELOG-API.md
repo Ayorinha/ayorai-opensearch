@@ -25,6 +25,9 @@ All public API contract changes are additive unless explicitly identified otherw
 
 - A calendar year that belongs to another event no longer refutes a claim. Example: "A receita da Vértice foi de 40 milhões em 2024." against "A Vértice foi fundada em 1998 e tem sede em Curitiba." was `refuted`; it is now an abstention (`insufficient_evidence`).
 - A year conflict counts only when the year is anchored to the claim's proposition: another claim fact is compared in the same passage, or the claim states only years and shares a non-proper-noun predicate word with the passage.
+- Another period is not a contradiction: when the claim ties a fact to a year ("40 milhões em 2024") and the passage names only other years ("40 milhões em 2023"), the passage neither confirms nor contradicts the claim. A passage without any year is still compared as before.
+- A name that opens a sentence and generic verbs ("ter", "ser", "estar") do not count as a shared predicate.
+- Known limitation, unchanged from v13: numbers are not bound to their own year inside one sentence ("40 milhões em 2023 e 55 milhões em 2024" still supports a claim of 40 milhões em 2024).
 - `engine.stance_detector` reports `inner=stance_detector.rule/14`. Golden v0, v0.1 and smoke-v0 semantic digests are unchanged.
 
 ## Unreleased — `/v1/check` rule detector v13 (scale words)

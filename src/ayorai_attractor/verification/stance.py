@@ -738,13 +738,27 @@ def _proper_nouns(text: str) -> set[str]:
     return names
 
 
+# Auxiliary and possession verbs: shared, they say nothing about which event
+# two sentences describe ("tem sede" and "tem 40 lojas").
+_GENERIC_VERBS = frozenset(
+    """
+    ter tem tens temos teem tinha tinham teve tiveram tera teria possui possuem possuia
+    possuiam ser foi foram era eram sao sera seria estar esta estao estava estavam
+    ficou ficaram haver houve havia
+    """.split()
+)
+
+
 def _shares_predicate(claim_text: str, evidence_text: str) -> bool:
-    """Claim and evidence share a content word that is not a proper noun.
+    """Claim and evidence share a content word that is neither a name nor a generic verb.
 
     The subject's name alone ("Vértice") does not make two sentences talk about
-    the same event; a shared predicate word ("fundada", "receita") does.
+    the same event; a shared predicate word ("fundada", "receita") does. A name is
+    recognized when it is capitalized inside a sentence in either text, so a name
+    that opens the claim ("Vértice foi fundada…") is still a name.
     """
-    claim_words = _content_words(claim_text) - _proper_nouns(claim_text)
+    names = _proper_nouns(claim_text) | _proper_nouns(evidence_text)
+    claim_words = _content_words(claim_text) - names - _GENERIC_VERBS
     return bool(claim_words & _content_words(evidence_text))
 
 
@@ -1308,6 +1322,22 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     )
     claim_locale = _locale_for(claim_text)
     evidence_locale = _locale_for(evidence_text)
+
+    # Another period: the claim ties a typed fact (revenue, count, amount) to a
+    # year and the evidence names only other years. "40 milhões em 2023" says
+    # nothing about 2024, so it neither confirms nor contradicts the claim.
+    claim_periods = {value for value, unit, _ in claim_facts if unit == "year"}
+    evidence_periods = {value for value, unit, _ in evidence_facts if unit == "year"}
+    claim_has_typed_fact = any(
+        unit != "year" and attribute != "unknown" for _, unit, attribute in claim_facts
+    )
+    if (
+        claim_has_typed_fact
+        and claim_periods
+        and evidence_periods
+        and claim_periods.isdisjoint(evidence_periods)
+    ):
+        return NumericAlignment(all_matched=False)
 
     flags = {
         "specific_conflict": False,
