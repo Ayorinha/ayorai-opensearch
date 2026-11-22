@@ -193,10 +193,11 @@ Todos medidos localmente, Python 3.13, no commit `5c4448f6`:
    - Abstêm porque a camada conservadora (`document_check`) exige o número afirmado no trecho.
    - Afrouxar essa garantia é decisão de política.
 5. **Substantivo comum que abre as duas frases e nunca aparece em minúscula** ("Inauguração foi em 1990." × "… em 1992.") é tratado como nome. O resultado é abstenção, não refutação. Limitação conhecida, registrada no CHANGELOG-API.
-6. **Publicação:**
-   - a branch `ap1-consolidation` está só local;
-   - push e PR dependem de autorização;
-   - na PR, o CI completo roda automaticamente, porque a base é `main`.
+6. **Publicação e integração:**
+   - a branch `ap1-consolidation` foi publicada no GitHub;
+   - a PR [#632](https://github.com/Ayorinha/ayorai-opensearch/pull/632) foi aberta contra `main`;
+   - o CI completo da PR foi executado no commit `e8b5a650b7795f131d8f5649a0cffaf0e18079f7`, com todos os checks concluídos com sucesso;
+   - o merge permanece condicionado à conferência final e à autorização explícita do mantenedor.
 
 ## 7. Evidências
 
