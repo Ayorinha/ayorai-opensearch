@@ -1116,16 +1116,129 @@ def _has_bound(text: str) -> bool:
     )
 
 
+_EN_MONTHS = frozenset(
+    {
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+    }
+)
+_NAME_SCAN_RE = re.compile(r"\d+(?:[.,]\d+)*|[A-Za-zÀ-ÿ]+|[.!?%]")
+_TITLE_WORD_RE = re.compile(r"[A-ZÀ-Ý][a-zà-ÿ]+")
+
+
+def _number_word_value(word: str) -> str | None:
+    """Digits of a single Portuguese number word ("Três" -> "3"), else None."""
+    value = normalize_numerals(word.casefold())
+    return value if value.isdigit() else None
+
+
+def _mask_name_numerals(text: str) -> tuple[str, list[str]]:
+    """Blank out numerals that belong to a proper name and return their values.
+
+    A name is a run of capitalized words. A capitalized number word belongs to it
+    when the next word is a capitalized word ("Três Rios") or the previous one is
+    a capitalized word that does not open the sentence ("Holding Três"). Digits
+    belong to it when they follow such a word ("Construtora 2000") and are not
+    followed by a percent, scale, currency or unit ("Vértice 40 milhões").
+    Capitalized means an initial capital followed by lowercase letters, so codes
+    (USD, MW, Q3) do not form names; month names do not either ("March 2024").
+    """
+    tokens = list(_NAME_SCAN_RE.finditer(text))
+    sentence_start = [True] * len(tokens)
+    for index in range(1, len(tokens)):
+        sentence_start[index] = tokens[index - 1].group(0) in {".", "!", "?"}
+
+    def adjacent(left: int, right: int) -> bool:
+        return (
+            0 <= left
+            and right < len(tokens)
+            and (text[tokens[left].end() : tokens[right].start()].isspace())
+        )
+
+    def name_word(index: int) -> bool:
+        if not 0 <= index < len(tokens):
+            return False
+        word = tokens[index].group(0)
+        folded = word.casefold()
+        return (
+            _TITLE_WORD_RE.fullmatch(word) is not None
+            and _number_word_value(word) is None
+            and folded not in _PT_MONTHS
+            and folded not in _EN_MONTHS
+        )
+
+    def quantity_after(index: int) -> bool:
+        if index + 1 >= len(tokens):
+            return False
+        following = tokens[index + 1].group(0).casefold()
+        return (
+            following == "%"
+            or following in _PERCENT_WORDS
+            or following in _SCALES
+            or following in _CURRENCIES
+            or following in _MILLISECOND_WORDS
+            or following in _COUNT_NOUNS
+            or following in _DURATION_WORDS
+            or following in _MEASURE_WORDS
+            or following in _UNIT_WORDS
+            or following == "por"
+        )
+
+    def named_before(index: int) -> bool:
+        return name_word(index - 1) and not sentence_start[index - 1] and adjacent(index - 1, index)
+
+    values: list[str] = []
+    spans: list[tuple[int, int]] = []
+    for index, match in enumerate(tokens):
+        token = match.group(0)
+        if token[:1].isdigit():
+            is_name = named_before(index) and not quantity_after(index)
+            value = token.replace(".", "").replace(",", "")
+        else:
+            number = _number_word_value(token) if _TITLE_WORD_RE.fullmatch(token) else None
+            is_name = number is not None and (
+                (name_word(index + 1) and adjacent(index, index + 1)) or named_before(index)
+            )
+            value = number or ""
+        if is_name:
+            values.append(value)
+            spans.append(match.span())
+    if not spans:
+        return text, values
+    pieces: list[str] = []
+    cursor = 0
+    for start, end in spans:
+        pieces.append(text[cursor:start])
+        pieces.append(" " * (end - start))
+        cursor = end
+    pieces.append(text[cursor:])
+    return "".join(pieces), values
+
+
 def _numeric_facts(text: str, *, skip_bounds: bool = False) -> list[tuple[str, str, str]]:
     """Extract (raw value, unit, attribute) facts deterministically.
 
     `unit` is `currency:scale` for money, `percent`, `year`, `ms`,
-    `count:<noun>` or `scalar`. Extraction never raises on free text.
+    `count:<noun>`, `scalar`, or `name` for a numeral that belongs to a proper
+    name ("Holding Três Rios", "Construtora 2000"). Extraction never raises on
+    free text.
     """
+    text, name_values = _mask_name_numerals(text)
     quantity_facts, remaining = extract_quantities(_DAY_FINE_RE.sub(" diasmulta ", text))
     tokens = _fact_tokens(normalize_numerals(remaining))
     entities = _entities(text)
-    facts: list[tuple[str, str, str]] = list(quantity_facts)
+    facts: list[tuple[str, str, str]] = [(value, "name", "name") for value in name_values]
+    facts.extend(quantity_facts)
     for index, token in enumerate(tokens):
         if not _is_number(token):
             continue
@@ -1326,13 +1439,22 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     claim_locale = _locale_for(claim_text)
     evidence_locale = _locale_for(evidence_text)
 
+    # Name numerals identify the entity, as "Company X" does above: when both
+    # sides name an entity by numeral and the numerals differ ("Holding Três Rios"
+    # vs "Holding Quatro Rios"), the evidence is about another entity.
+    claim_names = {value for value, unit, _ in claim_facts if unit == "name"}
+    evidence_names = {value for value, unit, _ in evidence_facts if unit == "name"}
+    if claim_names and evidence_names and claim_names.isdisjoint(evidence_names):
+        return NumericAlignment(all_matched=False)
+
     # Another period: the claim ties a typed fact (revenue, count, amount) to a
     # year and the evidence names only other years. "40 milhões em 2023" says
     # nothing about 2024, so it neither confirms nor contradicts the claim.
     claim_periods = {value for value, unit, _ in claim_facts if unit == "year"}
     evidence_periods = {value for value, unit, _ in evidence_facts if unit == "year"}
     claim_has_typed_fact = any(
-        unit != "year" and attribute != "unknown" for _, unit, attribute in claim_facts
+        unit not in {"year", "name"} and attribute != "unknown"
+        for _, unit, attribute in claim_facts
     )
     if (
         claim_has_typed_fact
@@ -1357,6 +1479,11 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     anchored = False
     only_years = True
     for left, left_unit, left_attribute in claim_facts:
+        if left_unit == "name":
+            # A numeral of the claim's name identifies the entity: it must be named
+            # in the evidence, but it neither confirms nor contradicts a fact.
+            matched += left in evidence_names
+            continue
         left_value = _fact_value(left, left_unit, claim_locale)
         if left_value is None or left_attribute == "unknown":
             continue
@@ -1508,7 +1635,13 @@ class RuleStanceDetector:
                     alignment.generic_agreement and shares_proposition
                 )
                 numeric_matched = alignment.all_matched
-                claim_has_numeric = bool(_numeric_facts(claim_item.claim.text))
+                claim_facts = _numeric_facts(claim_item.claim.text)
+                claim_has_numeric = any(unit != "name" for _, unit, _ in claim_facts)
+                # A numeral of a name ("Holding Três Rios") is not a quantity, but
+                # evidence about another name ("Holding Quatro Rios") is unverified.
+                claim_name_unmatched = not numeric_matched and any(
+                    unit == "name" for _, unit, _ in claim_facts
+                )
                 claim_has_date = bool(_extract_dates(claim_item.claim.text))
                 claim_entities = _entities(claim_item.claim.text)
                 evidence_entities = _entities(item.excerpt)
@@ -1523,6 +1656,7 @@ class RuleStanceDetector:
                 direction_conflict = _direction_conflict(claim_item.claim.text, item.excerpt)
                 unverified_structured_fact = (
                     (claim_has_numeric and (not numeric_matched or not numeric_agreement))
+                    or claim_name_unmatched
                     or (claim_has_date and not evidence_has_date)
                     or entity_mismatch
                 )
