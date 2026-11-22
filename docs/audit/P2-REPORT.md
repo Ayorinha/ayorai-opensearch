@@ -140,4 +140,4 @@ Foram adicionados testes para:
 - rejeitar uma raiz conflitante em checkpoint repetido de tamanho zero;
 - simular a regra correspondente no witness de teste.
 
-**Último commit de código desta rodada:** `c6dc0aa48e48bf8bdaeb24fe107e6135d3ab5b64`. Esses testes e correções ainda aguardam execução automatizada; não há status remoto novo disponível para o HEAD atual.
+**Último commit de código desta rodada:** `cf6a9f637d194379ec51e664b038f9b1dac3bb7f`. A identidade da testemunha também é validada na construção, antes de qualquer requisição. Esses testes e correções ainda aguardam execução automatizada; não há status remoto novo disponível para o HEAD atual.
