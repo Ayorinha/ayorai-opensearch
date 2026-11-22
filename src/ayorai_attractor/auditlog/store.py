@@ -427,6 +427,8 @@ class VerificationLog:
                         problems.append(f"event {target} has multiple erasure leaves")
                     else:
                         erasure_leaves[target] = int(idx)
+                else:
+                    problems.append(f"leaf {idx} has an unknown schema")
 
             record_rows = self._connection.execute(
                 "SELECT idx, salt, record, erased_at FROM vlog_records ORDER BY idx"
