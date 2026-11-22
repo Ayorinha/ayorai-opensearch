@@ -58,7 +58,7 @@ The placeholders above are intentionally invalid and must be replaced. In `api_k
 - other routes, such as the OpenAPI pages, need a valid key and no scope;
 - `/health` and `/ready` stay public.
 
-**Issuing and revoking.** `ATTRACTOR_API_KEY_PEPPER` must be set. Create the key in the secret manager, for example with `python -c "import secrets; print(secrets.token_urlsafe(32))"`, then pass it on standard input. Without a pipe, `new` prompts for it without echo:
+**Issuing and revoking.** `ATTRACTOR_API_KEY_PEPPER` must be set. Create the key in the secret manager, for example with `python -c "import secrets; print(secrets.token_urlsafe(32))"`, then pipe it on standard input. `new` refuses to run without a pipe, so the key never goes through a terminal prompt:
 
 ~~~bash
 <read the key from the secret manager> | python -m ayorai_attractor.api.keys new --id metrics-bot --scope metrics --expires 2027-01-01T00:00:00Z --file keys.json

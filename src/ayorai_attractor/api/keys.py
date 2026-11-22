@@ -13,8 +13,8 @@ once every ``ATTRACTOR_API_KEYS_RELOAD_SECONDS``. An invalid file at startup
 stops the service; an invalid file later keeps the last valid registry and is
 counted in ``attractor_api_keys_reload_failures_total`` (owner decision DEC-031).
 
-Command line (the key is read from standard input or a prompt; it is never
-generated, displayed or stored, only its digest)::
+Command line (the key is piped from the secret manager on standard input; it is
+never generated, displayed or stored, only its digest)::
 
     python -c "import secrets; print(secrets.token_urlsafe(32))"   # into the secret manager
     <secret-manager read> | python -m ayorai_attractor.api.keys new --id ops --scope verify \
@@ -25,7 +25,6 @@ generated, displayed or stored, only its digest)::
 from __future__ import annotations
 
 import argparse
-import getpass
 import json
 import logging
 import os
@@ -312,9 +311,11 @@ def _command_new(args: argparse.Namespace) -> int:
         raise SystemExit("--id must match [a-z0-9][a-z0-9._-]{0,63}")
     if args.expires is not None:
         _parse_time(args.expires, "expires_at", 0)
-    # The tool never generates or displays a key: it reads one created in the
-    # secret manager (or with secrets.token_urlsafe(32)) and stores only its digest.
-    key = (getpass.getpass("API key: ") if sys.stdin.isatty() else sys.stdin.readline()).strip()
+    # The tool never generates or displays a key: the key comes on a pipe from the
+    # secret manager (it is a random token, not a password) and only its digest is stored.
+    if sys.stdin.isatty():
+        raise SystemExit("pipe the API key from the secret manager on standard input")
+    key = sys.stdin.readline().strip()
     if len(key) < MIN_API_KEY_LENGTH:
         raise SystemExit(f"the API key must have at least {MIN_API_KEY_LENGTH} characters")
     entry = {

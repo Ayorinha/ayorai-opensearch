@@ -349,6 +349,16 @@ def test_new_command_rejects_a_short_key(key_file: Path, monkeypatch: Any) -> No
         keys_module.main(["new", "--id", "x", "--scope", "verify", "--file", "unused.json"])
 
 
+def test_new_command_refuses_a_terminal(key_file: Path, monkeypatch: Any) -> None:
+    class Terminal(io.StringIO):
+        def isatty(self) -> bool:
+            return True
+
+    monkeypatch.setattr("sys.stdin", Terminal(_key() + "\n"))
+    with pytest.raises(SystemExit, match="pipe the API key"):
+        keys_module.main(["new", "--id", "x", "--scope", "verify", "--file", str(key_file)])
+
+
 def test_revoke_unknown_or_twice_fails(key_file: Path) -> None:
     _write(key_file, [_entry("a", _key(), ["verify"])])
     with pytest.raises(SystemExit, match="no key"):
