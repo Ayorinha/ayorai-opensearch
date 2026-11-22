@@ -208,6 +208,28 @@ def test_an_erasure_leaf_naming_an_invalid_event_is_reported(
     assert "record 0 erased without an erasure event" in problems
 
 
+def test_duplicate_erasure_leaves_are_reported(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        store.append(_event(1))
+        duplicate = json.dumps(
+            {
+                "schema": "ayorai.verify-erasure.v1",
+                "erased_index": 0,
+                "erased_at": "2026-11-22T00:00:00Z",
+                "reason": "data_subject_request",
+            }
+        ).encode()
+        _sql(
+            path,
+            "UPDATE vlog_leaves SET leaf = ?, leaf_hash = ? WHERE idx = 2",
+            (duplicate, leaf_hash(duplicate)),
+        )
+        assert "event 0 has multiple erasure leaves" in _problems(store)
+
+
 def test_erasure_timestamp_mutation_is_reported(tmp_path: Path) -> None:
     path = str(tmp_path / "v.sqlite3")
     with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
