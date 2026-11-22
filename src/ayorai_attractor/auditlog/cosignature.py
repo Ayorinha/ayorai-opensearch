@@ -87,7 +87,20 @@ def verify_cosignature(
     """Verify a matching 0x04 line; unknown cosigners and malformed lines are ignored."""
     try:
         expected_id = key_id(name, public_key)
-        if not isinstance(note, str) or not isinstance(max_future_skew, int) or max_future_skew < 0:
+        if (
+            not isinstance(note, str)
+            or not isinstance(max_future_skew, int)
+            or isinstance(max_future_skew, bool)
+            or max_future_skew < 0
+            or (
+                now is not None
+                and (
+                    not isinstance(now, int)
+                    or isinstance(now, bool)
+                    or not 0 <= now <= _MAX_TIMESTAMP
+                )
+            )
+        ):
             return False
         separator = note.rfind("\n\n")
         if separator < 0:
