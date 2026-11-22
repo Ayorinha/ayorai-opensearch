@@ -141,3 +141,26 @@ Foram adicionados testes para:
 - simular a regra correspondente no witness de teste.
 
 **Último commit de código desta rodada:** `cf6a9f637d194379ec51e664b038f9b1dac3bb7f`. A identidade da testemunha também é validada na construção, antes de qualquer requisição. Esses testes e correções ainda aguardam execução automatizada; não há status remoto novo disponível para o HEAD atual.
+
+## 11. Validação remota após correção de formatação — 2026-11-22
+
+**[FATO VERIFICADO — GitHub Actions, PR #634, HEAD de código `c84c5ab75c02efed2a326caec0411a2a79d8b4af`]**
+
+A primeira execução no HEAD anterior falhou somente em `ruff format --check`, por espaçamento em `tests/auditlog/test_witness_client.py`. A formatação foi corrigida e a nova execução completa terminou com sucesso.
+
+Resultados confirmados:
+- CI principal: sucesso, incluindo Python 3.11, 3.12 e 3.13.
+- Suíte completa em Python 3.11: **3.040 testes aprovados**, cobertura total **95%**.
+- Ruff check, Ruff format e mypy: sucesso na matriz.
+- Guardas de cobertura por módulo e baseline: sucesso.
+- Golden Regression, Golden Smoke, Judge Regression e Golden Lint: sucesso.
+- Security, Dependency Review e CodeQL: sucesso.
+- API Contract Guard e Schemathesis Full API Contract: sucesso.
+- ADR-010 isolated persistence POC e Tessera POSIX conformance: sucesso.
+- Build distributions e workflow lint: sucesso.
+
+A aprovação da CI demonstra que o conjunto de código testado passou nas verificações automatizadas. Ela não substitui revisão independente de protocolo nem valida testemunhas externas reais.
+
+### Situação de encerramento
+
+A implementação candidata da P2 e sua CI estão aprovadas. Permanecem fora deste incremento: persistência operacional durável do estado do cliente, quórum de duas testemunhas reais e configuração de testemunhas independentes. A PR continua Draft e sem aprovação independente registrada; portanto, não foi mesclada.
