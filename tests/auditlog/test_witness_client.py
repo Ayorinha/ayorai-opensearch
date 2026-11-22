@@ -172,6 +172,11 @@ def _client(harness: _WitnessHarness) -> WitnessClient:
     )
 
 
+def test_witness_identity_rejects_invalid_cosigner_name() -> None:
+    with pytest.raises(ValueError, match="Unicode spaces"):
+        WitnessIdentity("witness example", _pub(WITNESS_SEED))
+
+
 def test_witness_client_accepts_cosigned_checkpoint_and_advances_state() -> None:
     harness = _WitnessHarness()
     client = _client(harness)
