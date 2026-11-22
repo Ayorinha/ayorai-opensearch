@@ -64,7 +64,10 @@ def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
     line = sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, 1_700_000_000)
     note = body + "\n" + "— log.example AA==\n" + line
     assert verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
-    assert not verify_cosignature(note.replace("1\n", "2\n", 1), WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
+    tampered = note.replace("1\n", "2\n", 1)
+    assert not verify_cosignature(
+        tampered, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000
+    )
     wrong_key = _pub(bytes(reversed(WITNESS_SEED)))
     assert not verify_cosignature(note, WITNESS_NAME, wrong_key, now=1_700_000_000)
     assert not verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_699_999_000)
