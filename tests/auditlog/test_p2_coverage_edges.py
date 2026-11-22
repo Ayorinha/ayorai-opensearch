@@ -71,6 +71,8 @@ def test_cosignature_default_timestamp_and_malformed_notes(
     line = sign_cosignature(WITNESS, WITNESS_SEED, BODY)
     valid = BODY + "\n" + line
     assert verify_cosignature(valid, WITNESS, PUB, now=1234)
+    with_unrelated_line = BODY + "\\n" + "ordinary text\\n" + line
+    assert verify_cosignature(with_unrelated_line, WITNESS, PUB, now=1234)
     for note in (
         None,
         BODY,
