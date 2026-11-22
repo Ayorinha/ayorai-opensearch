@@ -65,6 +65,65 @@ def test_changed_leaf_with_stale_hash_is_reported(open_log: tuple[VerificationLo
     _sql(path, "UPDATE vlog_leaves SET leaf = X'7b7d' WHERE idx = 1")
     assert "leaf 1 hash mismatch" in _problems(store)
 
+def test_record_mutation_is_detected_against_the_leaf_commitment(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(path, "UPDATE vlog_records SET record = ? WHERE idx = 1", ('{"verdict":"SUPPORTED"}',))
+    assert "record 1 commitment mismatch" in _problems(store)
+
+
+def test_salt_mutation_is_detected_against_the_leaf_commitment(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(path, "UPDATE vlog_records SET salt = X'00' WHERE idx = 1")
+    assert "record 1 commitment mismatch" in _problems(store)
+
+
+def test_partial_record_erasure_is_reported(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(path, "UPDATE vlog_records SET salt = NULL WHERE idx = 1")
+    assert "record 1 is incomplete or partially erased" in _problems(store)
+
+
+def test_orphan_record_row_is_reported(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(
+        path,
+        "INSERT INTO vlog_records (idx, salt, record, erased_at) VALUES (99, X'00', '{}', NULL)",
+    )
+    assert "record 99 has no event leaf" in _problems(store)
+
+
+def test_erasure_leaf_cannot_target_another_erasure_leaf(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        store.append(_event(1))
+        store.erase(2, "2026-11-22T00:00:00Z")
+        erasure = json.dumps(
+            {
+                "schema": "ayorai.verify-erasure.v1",
+                "erased_index": 1,
+                "erased_at": "2026-11-22T00:00:00Z",
+                "reason": "data_subject_request",
+            }
+        ).encode()
+        _sql(
+            path,
+            "UPDATE vlog_leaves SET leaf = ?, leaf_hash = ? WHERE idx = 3",
+            (erasure, leaf_hash(erasure)),
+        )
+        problems = _problems(store)
+    assert "erasure leaf 3 names an invalid event" in problems
+    assert "record 2 erased without an erasure event" in problems
+
 
 def test_changed_leaf_with_recomputed_hash_breaks_the_signed_roots(
     open_log: tuple[VerificationLog, str],
