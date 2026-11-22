@@ -1,0 +1,180 @@
+{
+ "label": "main",
+ "results": {
+  "CLEAN_no_false_alarm": {
+   "n": 60,
+   "ok": 60
+  },
+  "T01_record_field_changed": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "T02_salt_changed": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "T03_record_row_deleted": {
+   "n": 20,
+   "detected": 20,
+   "examples": [
+    [
+     "record 1 is missing"
+    ],
+    [
+     "record 12 is missing"
+    ]
+   ]
+  },
+  "T04_record_nulled_without_erasure": {
+   "n": 20,
+   "detected": 20,
+   "examples": [
+    [
+     "record 1 erased without an erasure event"
+    ],
+    [
+     "record 3 erased without an erasure event"
+    ]
+   ]
+  },
+  "T05_fake_erasure_marker": {
+   "n": 20,
+   "detected": 20,
+   "examples": [
+    [
+     "record 9 erased without an erasure event"
+    ],
+    [
+     "record 17 erased without an erasure event"
+    ]
+   ]
+  },
+  "T06_orphan_record_row": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "T07_erased_record_restored": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "T08_erased_at_changed": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "T09_leaf_changed_stale_hash": {
+   "n": 20,
+   "detected": 20,
+   "examples": [
+    [
+     "leaf 8 hash mismatch",
+     "checkpoint 9: root does not match the tree"
+    ],
+    [
+     "leaf 8 hash mismatch",
+     "checkpoint 9: root does not match the tree"
+    ]
+   ]
+  },
+  "T10_leaf_changed_rehashed": {
+   "n": 20,
+   "detected": 20,
+   "examples": [
+    [
+     "checkpoint 1: root does not match the tree",
+     "checkpoint 2: root does not match the tree"
+    ],
+    [
+     "checkpoint 12: root does not match the tree",
+     "checkpoint 13: root does not match the tree"
+    ]
+   ]
+  },
+  "T11_checkpoint_deleted": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "T12_checkpoint_root_forged": {
+   "n": 20,
+   "detected": 20,
+   "examples": [
+    [
+     "checkpoint 8: bad signature or body"
+    ],
+    [
+     "checkpoint 15: bad signature or body"
+    ]
+   ]
+  },
+  "T13_unsigned_leaf_appended": {
+   "n": 20,
+   "detected": 20,
+   "examples": [
+    [
+     "latest checkpoint covers 22 of 23 leaves"
+    ],
+    [
+     "latest checkpoint covers 28 of 29 leaves"
+    ]
+   ]
+  },
+  "T14_tail_truncated_consistently": {
+   "n": 20,
+   "detected": 20,
+   "examples": [
+    [
+     "record 11 erased without an erasure event"
+    ],
+    [
+     "record 11 erased without an erasure event"
+    ]
+   ]
+  },
+  "I01_receipts_swapped_between_events": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "I02_row_index_changed": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "I03_receipt_verdict_changed": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "I04_receipt_emptied": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "I05_row_names_missing_event": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "I06_two_keys_one_event": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "I07_erased_record_kept_in_receipt": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "I08_rows_swapped_between_keys_OUT_OF_SCOPE": {
+   "n": 20,
+   "detected": 0,
+   "examples": []
+  },
+  "_seconds": 26.58
+ }
+}

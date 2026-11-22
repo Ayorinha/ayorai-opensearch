@@ -1,0 +1,8 @@
+# before gap tests
+src/ayorai_attractor/auditlog/store.py killed 163/182 survivors: [('bool', 170), ('int', 447), ('bool_const', 110), ('int', 178), ('bool', 643), ('bool_const', 301), ('bool_const', 74), ('int', 538), ('bool_const', 409), ('cmp', 109), ('bool_const', 640), ('bool_const', 360), ('bool_const', 281), ('cmp', 480), ('int', 178), ('int', 437), ('bool_const', 641), ('bool_const', 651), ('bool_const', 281)]
+src/ayorai_attractor/auditlog/witness_client.py killed 73/79 survivors: [('int', 58), ('int', 112), ('bool', 217), ('cmp', 58), ('bool_const', 52), ('bool', 110)]
+src/ayorai_attractor/auditlog/cosignature.py killed 70/81 survivors: [('cmp', 100), ('bool', 126), ('int', 100), ('bool', 118), ('cmp', 106), ('bool_const', 121), ('int', 85), ('int', 106), ('bool', 98), ('cmp', 31), ('int', 31)]
+# final
+src/ayorai_attractor/auditlog/store.py killed 171/182 survivors: [('int', 447), ('int', 178), ('bool', 643), ('bool_const', 301), ('int', 538), ('bool_const', 409), ('bool_const', 360), ('bool_const', 281), ('cmp', 480), ('int', 178), ('bool_const', 281)]
+src/ayorai_attractor/auditlog/witness_client.py killed 78/79 survivors: [('int', 58)]
+src/ayorai_attractor/auditlog/cosignature.py killed 76/81 survivors: [('cmp', 106), ('bool_const', 121), ('int', 106), ('cmp', 31), ('int', 31)]

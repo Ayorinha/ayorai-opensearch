@@ -66,6 +66,70 @@ def test_changed_leaf_with_stale_hash_is_reported(open_log: tuple[VerificationLo
     assert "leaf 1 hash mismatch" in _problems(store)
 
 
+def test_record_mutation_is_detected_against_the_leaf_commitment(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(
+        path,
+        "UPDATE vlog_records SET record = ? WHERE idx = 1",
+        ('{"verdict":"SUPPORTED"}',),
+    )
+    assert "record 1 commitment mismatch" in _problems(store)
+
+
+def test_salt_mutation_is_detected_against_the_leaf_commitment(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(path, "UPDATE vlog_records SET salt = X'00' WHERE idx = 1")
+    assert "record 1 commitment mismatch" in _problems(store)
+
+
+def test_partial_record_erasure_is_reported(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(path, "UPDATE vlog_records SET salt = NULL WHERE idx = 1")
+    assert "record 1 is incomplete or partially erased" in _problems(store)
+
+
+def test_orphan_record_row_is_reported(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(
+        path,
+        "INSERT INTO vlog_records (idx, salt, record, erased_at) VALUES (99, X'00', '{}', NULL)",
+    )
+    assert "record 99 has no event leaf" in _problems(store)
+
+
+def test_erasure_leaf_cannot_target_another_erasure_leaf(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        store.append(_event(1))
+        store.erase(2, "2026-11-22T00:00:00Z")
+        erasure = json.dumps(
+            {
+                "schema": "ayorai.verify-erasure.v1",
+                "erased_index": 1,
+                "erased_at": "2026-11-22T00:00:00Z",
+                "reason": "data_subject_request",
+            }
+        ).encode()
+        _sql(
+            path,
+            "UPDATE vlog_leaves SET leaf = ?, leaf_hash = ? WHERE idx = 3",
+            (erasure, leaf_hash(erasure)),
+        )
+        problems = _problems(store)
+    assert "erasure leaf 3 names an invalid event" in problems
+    assert "record 2 erased without an erasure event" in problems
+
+
 def test_changed_leaf_with_recomputed_hash_breaks_the_signed_roots(
     open_log: tuple[VerificationLog, str],
 ) -> None:
@@ -101,6 +165,21 @@ def test_a_leaf_that_is_not_json_is_reported(open_log: tuple[VerificationLog, st
     assert "leaf 0 is not JSON" in _problems(store)
 
 
+def test_an_unknown_public_leaf_schema_is_reported(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    unknown = b'{"schema":"ayorai.unknown.v1"}'
+    _sql(
+        path,
+        "UPDATE vlog_leaves SET leaf = ?, leaf_hash = ? WHERE idx = 1",
+        (unknown, leaf_hash(unknown)),
+    )
+    problems = _problems(store)
+    assert "leaf 1 has an unknown schema" in problems
+    assert "record 1 has no event leaf" in problems
+
+
 @pytest.mark.parametrize("target", [5, -1, "0", None])
 def test_an_erasure_leaf_naming_an_invalid_event_is_reported(
     tmp_path: Path, target: object
@@ -126,6 +205,77 @@ def test_an_erasure_leaf_naming_an_invalid_event_is_reported(
         problems = _problems(store)
     assert "erasure leaf 1 names an invalid event" in problems
     assert "record 0 erased without an erasure event" in problems
+
+
+def test_duplicate_erasure_leaves_are_reported(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        store.append(_event(1))
+        duplicate = json.dumps(
+            {
+                "schema": "ayorai.verify-erasure.v1",
+                "erased_index": 0,
+                "erased_at": "2026-11-22T00:00:00Z",
+                "reason": "data_subject_request",
+            }
+        ).encode()
+        _sql(
+            path,
+            "UPDATE vlog_leaves SET leaf = ?, leaf_hash = ? WHERE idx = 2",
+            (duplicate, leaf_hash(duplicate)),
+        )
+        assert "event 0 has multiple erasure leaves" in _problems(store)
+
+
+def test_erasure_timestamp_mutation_is_reported(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        _sql(
+            path,
+            "UPDATE vlog_records SET erased_at = ? WHERE idx = 0",
+            ("2026-11-23T00:00:00Z",),
+        )
+        assert "record 0 erasure timestamp mismatch" in _problems(store)
+
+
+def test_record_cannot_be_restored_after_its_erasure_event(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        receipt = store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        salt = base64.b64decode(receipt["salt"])
+        record = json.dumps(receipt["record"], sort_keys=True, ensure_ascii=False)
+        _sql(
+            path,
+            "UPDATE vlog_records SET salt = ?, record = ?, erased_at = NULL WHERE idx = 0",
+            (salt, record),
+        )
+        assert "record 0 remains after its erasure event" in _problems(store)
+
+
+def test_erasure_leaf_with_invalid_reason_is_reported(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        leaf = json.dumps(
+            {
+                "schema": "ayorai.verify-erasure.v1",
+                "erased_index": 0,
+                "erased_at": "2026-11-22T00:00:00Z",
+                "reason": "INVALID REASON",
+            }
+        ).encode()
+        _sql(
+            path,
+            "UPDATE vlog_leaves SET leaf = ?, leaf_hash = ? WHERE idx = 1",
+            (leaf, leaf_hash(leaf)),
+        )
+        assert "erasure leaf 1 has invalid fields" in _problems(store)
 
 
 def test_a_checkpoint_signed_by_another_key_is_reported(
@@ -185,13 +335,28 @@ def test_erasure_reason_must_be_a_short_code(
 # --- argument validation ---------------------------------------------------------
 
 
-@pytest.mark.parametrize("old_size", [0, -1, 4])
+@pytest.mark.parametrize("old_size", [-1, 4])
 def test_consistency_rejects_sizes_outside_the_tree(
     open_log: tuple[VerificationLog, str], old_size: int
 ) -> None:
     store, _ = open_log
     with pytest.raises(ValueError, match="old_size"):
         store.consistency(old_size)
+
+
+def test_consistency_from_empty_tree_is_an_empty_proof(tmp_path: Path) -> None:
+    with VerificationLog(str(tmp_path / "v.sqlite3"), NoteSigner(ORIGIN, SEED)) as store:
+        assert store.consistency(0) == []
+        store.append(_event(0))
+        assert store.consistency(0) == []
+
+
+def test_missing_intermediate_checkpoint_is_reported(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(path, "DELETE FROM vlog_checkpoints WHERE size = 2")
+    assert "checkpoint 2: missing" in _problems(store)
 
 
 def test_empty_log_publishes_a_signed_size_zero_checkpoint(tmp_path: Path) -> None:
@@ -265,3 +430,50 @@ def test_receipts_for_erasure_leaves_or_with_bad_index_types_do_not_verify(
         "checkpoint": store.latest_checkpoint(),
     }
     assert not verify_receipt(forged, vkey)
+
+
+def test_residual_data_after_erasure_is_reported(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        _sql(path, "UPDATE vlog_records SET salt = X'00' WHERE idx = 0")
+        assert "record 0 has residual data after erasure" in _problems(store)
+
+
+def test_malformed_record_json_is_reported_as_commitment_mismatch(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(path, "UPDATE vlog_records SET record = ? WHERE idx = 0", ("{",))
+    assert "record 0 commitment mismatch" in _problems(store)
+
+
+def test_backup_rejects_a_copy_that_fails_integrity_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ayorai_attractor.auditlog.store as store_module
+
+    class _FailedIntegrityResult:
+        def fetchone(self) -> tuple[str]:
+            return ("corrupt",)
+
+    class _BadIntegrityConnection(sqlite3.Connection):
+        def execute(self, sql: str, parameters: tuple[Any, ...] = ()) -> Any:
+            if sql == "PRAGMA integrity_check":
+                return _FailedIntegrityResult()
+            return super().execute(sql, parameters)
+
+    real_connect = sqlite3.connect
+
+    def connect_with_bad_integrity(database: str, *args: Any, **kwargs: Any) -> sqlite3.Connection:
+        kwargs["factory"] = _BadIntegrityConnection
+        return real_connect(database, *args, **kwargs)
+
+    path = str(tmp_path / "v.sqlite3")
+    destination = str(tmp_path / "backup.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        monkeypatch.setattr(store_module.sqlite3, "connect", connect_with_bad_integrity)
+        with pytest.raises(sqlite3.DatabaseError, match="backup failed integrity_check"):
+            store.backup(destination)

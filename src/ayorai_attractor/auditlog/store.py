@@ -59,6 +59,14 @@ class IdempotencyConflict(ValueError):
     """The idempotency key was already used for a different input."""
 
 
+class IdempotencyErased(IdempotencyConflict):
+    """The idempotency key names an event whose record was erased (LGPD).
+
+    Its receipt held the record and the salt, so it was redacted with the record;
+    a retry is refused instead of returning erased data or logging the event again.
+    """
+
+
 class LogCorruption(RuntimeError):
     """The stored log does not match its own signed checkpoints."""
 
@@ -208,16 +216,30 @@ class VerificationLog:
             try:
                 if key_digest is not None:
                     row = self._connection.execute(
-                        "SELECT input_sha256, receipt FROM vlog_idempotency WHERE key_digest = ?",
+                        "SELECT input_sha256, idx, receipt FROM vlog_idempotency "
+                        "WHERE key_digest = ?",
                         (key_digest,),
                     ).fetchone()
                     if row is not None:
-                        self._connection.execute("COMMIT")
                         if row[0] != event.input_sha256:
+                            self._connection.execute("COMMIT")
                             raise IdempotencyConflict(
                                 "Idempotency-Key was already used for a different input"
                             )
-                        stored: dict[str, Any] = json.loads(row[1])
+                        # The stored receipt is mutable storage: it is returned only if it
+                        # still opens to this request's event (leaf, signature, inclusion,
+                        # commitment and input), so a swapped receipt is never served.
+                        problems = self._idempotency_problems(row[1], row[0], row[2])
+                        self._connection.execute("COMMIT")
+                        if problems:
+                            raise LogCorruption(
+                                "stored idempotency receipt is invalid: " + "; ".join(problems)
+                            )
+                        stored: dict[str, Any] = json.loads(row[2])
+                        if stored.get("redacted") is True:
+                            raise IdempotencyErased(
+                                "Idempotency-Key names an event whose record was erased"
+                            )
                         return stored
                 # Another process may have appended since this one last read the tree.
                 count = self._stored_size()
@@ -283,8 +305,15 @@ class VerificationLog:
     def consistency(self, old_size: int) -> list[str]:
         """RFC 6962 consistency proof from ``old_size`` to the current tree (for witnesses)."""
         with self._lock:
-            if not 0 < old_size <= len(self._tree):
-                raise ValueError("old_size must be between 1 and the current size")
+            if (
+                not isinstance(old_size, int)
+                or isinstance(old_size, bool)
+                or not 0 <= old_size <= len(self._tree)
+            ):
+                raise ValueError("old_size must be between 0 and the current size")
+            if old_size == 0:
+                # C2SP tlog-witness uses size 0 and an empty proof on first contact.
+                return []
             return [_b64(node) for node in self._tree.consistency_proof(old_size)]
 
     def erase(self, index: int, erased_at: str, reason: str = "data_subject_request") -> int | None:
@@ -321,6 +350,18 @@ class VerificationLog:
                     }
                 )
                 erasure_index = self._append_leaf_locked(leaf)
+                # The idempotency receipt carries the record and the salt: redact it
+                # with them, keeping the key so a retry cannot log the event again.
+                self._connection.execute(
+                    "UPDATE vlog_idempotency SET receipt = ? WHERE idx = ?",
+                    (
+                        json.dumps(
+                            {"redacted": True, "index": index, "erasure_index": erasure_index},
+                            sort_keys=True,
+                        ),
+                        index,
+                    ),
+                )
                 self._connection.execute("COMMIT")
             except BaseException:
                 if self._connection.in_transaction:
@@ -392,6 +433,10 @@ class VerificationLog:
             checkpoints = self._connection.execute(
                 "SELECT size, note FROM vlog_checkpoints ORDER BY size"
             ).fetchall()
+            checkpoint_sizes = {int(size) for size, _note in checkpoints}
+            for expected_size in range(1, len(tree) + 1):
+                if expected_size not in checkpoint_sizes:
+                    problems.append(f"checkpoint {expected_size}: missing")
             for size, note in checkpoints:
                 body = verify_note(str(note), self.verifier_key)
                 parsed = parse_checkpoint(body) if body is not None else None
@@ -402,38 +447,105 @@ class VerificationLog:
             latest = int(checkpoints[-1][0]) if checkpoints else 0
             if latest != len(tree):
                 problems.append(f"latest checkpoint covers {latest} of {len(tree)} leaves")
-            # Every erased record must have its own erasure leaf, logged after the event.
+            # Bind every restricted record to its public event commitment. The
+            # Merkle tree authenticates the leaf, not the mutable record table.
             erasure_leaves: dict[int, int] = {}
-            event_leaves: list[int] = []
+            erasure_fields: dict[int, dict[str, Any]] = {}
+            event_leaves: set[int] = set()
+            event_fields: dict[int, dict[str, Any]] = {}
             for idx, leaf in self._connection.execute(
                 "SELECT idx, leaf FROM vlog_leaves ORDER BY idx"
             ):
                 try:
                     fields = json.loads(bytes(leaf))
-                except ValueError:
+                except (TypeError, ValueError):
                     problems.append(f"leaf {idx} is not JSON")
                     continue
                 if isinstance(fields, dict) and fields.get("schema") == LEAF_SCHEMA:
-                    event_leaves.append(int(idx))
+                    event_index = int(idx)
+                    event_leaves.add(event_index)
+                    event_fields[event_index] = fields
                 elif isinstance(fields, dict) and fields.get("schema") == ERASURE_SCHEMA:
                     target = fields.get("erased_index")
-                    if not isinstance(target, int) or not 0 <= target < idx:
+                    if (
+                        set(fields) != {"schema", "erased_index", "erased_at", "reason"}
+                        or not isinstance(fields.get("erased_at"), str)
+                        or not isinstance(fields.get("reason"), str)
+                        or re.fullmatch(r"[a-z_]{1,64}", fields.get("reason", "")) is None
+                    ):
+                        problems.append(f"erasure leaf {idx} has invalid fields")
+                        continue
+                    if (
+                        type(target) is not int
+                        or not 0 <= target < idx
+                        or target not in event_leaves
+                    ):
                         problems.append(f"erasure leaf {idx} names an invalid event")
+                    elif target in erasure_leaves:
+                        problems.append(f"event {target} has multiple erasure leaves")
                     else:
-                        erasure_leaves[target] = idx
-            erased_rows = self._connection.execute(
-                "SELECT idx FROM vlog_records WHERE erased_at IS NOT NULL OR record IS NULL"
+                        erasure_leaves[target] = int(idx)
+                        erasure_fields[target] = fields
+                else:
+                    problems.append(f"leaf {idx} has an unknown schema")
+
+            record_rows = self._connection.execute(
+                "SELECT idx, salt, record, erased_at FROM vlog_records ORDER BY idx"
             ).fetchall()
-            for (idx,) in erased_rows:
-                if idx not in erasure_leaves:
-                    problems.append(f"record {idx} erased without an erasure event")
-            with_rows = {
-                int(row[0]) for row in self._connection.execute("SELECT idx FROM vlog_records")
-            }
-            for idx in event_leaves:
-                if idx not in with_rows and idx not in erasure_leaves:
-                    problems.append(f"record {idx} is missing")
-            erased = len(erased_rows)
+            record_indices: set[int] = set()
+            erased = 0
+            for idx, salt, record_text, erased_at in record_rows:
+                record_index = int(idx)
+                record_indices.add(record_index)
+                if record_index not in event_leaves:
+                    problems.append(f"record {record_index} has no event leaf")
+                    continue
+                if erased_at is not None:
+                    erased += 1
+                    if salt is not None or record_text is not None:
+                        problems.append(f"record {record_index} has residual data after erasure")
+                    if record_index not in erasure_leaves:
+                        problems.append(f"record {record_index} erased without an erasure event")
+                    elif erased_at != erasure_fields[record_index]["erased_at"]:
+                        problems.append(f"record {record_index} erasure timestamp mismatch")
+                    continue
+                if record_index in erasure_leaves:
+                    problems.append(f"record {record_index} remains after its erasure event")
+                if salt is None or record_text is None:
+                    problems.append(f"record {record_index} is incomplete or partially erased")
+                    continue
+                try:
+                    record_value = json.loads(str(record_text))
+                    commitment_hex = str(event_fields[record_index].get("commitment", ""))
+                    commitment = bytes.fromhex(commitment_hex)
+                    valid_commitment = verify_commitment(commitment, record_value, salt)
+                except (KeyError, TypeError, ValueError):
+                    valid_commitment = False
+                if not valid_commitment:
+                    problems.append(f"record {record_index} commitment mismatch")
+
+            for event_index in event_leaves:
+                if event_index not in record_indices and event_index not in erasure_leaves:
+                    problems.append(f"record {event_index} is missing")
+
+            # Idempotency rows: each stored receipt must open to its own event, and
+            # one event can be named by at most one key.
+            keyed_events: set[int] = set()
+            for key_digest, input_sha256, idx, receipt_text in self._connection.execute(
+                "SELECT key_digest, input_sha256, idx, receipt FROM vlog_idempotency "
+                "ORDER BY key_digest"
+            ).fetchall():
+                label = f"idempotency key {str(key_digest)[:12]}"
+                if not isinstance(key_digest, str) or _SHA256.fullmatch(key_digest) is None:
+                    problems.append(f"{label}: malformed key digest")
+                if type(idx) is int and idx in keyed_events:
+                    problems.append(f"{label}: event {idx} is named by more than one key")
+                if type(idx) is int:
+                    keyed_events.add(idx)
+                problems.extend(
+                    f"{label}: {problem}"
+                    for problem in self._idempotency_problems(idx, input_sha256, receipt_text)
+                )
             return {
                 "valid": not problems,
                 "size": len(tree),
@@ -441,6 +553,75 @@ class VerificationLog:
                 "erased_records": erased,
                 "problems": problems,
             }
+
+    def _idempotency_problems(self, idx: Any, input_sha256: Any, receipt_text: Any) -> list[str]:
+        """Why a stored idempotency receipt does not belong to its row ([] if it does).
+
+        The row's event index must name an event leaf; a full receipt must be a valid
+        receipt of that very leaf (signature, inclusion, commitment) whose record has
+        the row's input; once the event is erased, only a redacted receipt pointing to
+        its erasure leaf is allowed (no record or salt may remain).
+        """
+        if type(idx) is not int or not isinstance(input_sha256, str):
+            return ["malformed row"]
+        try:
+            receipt = json.loads(str(receipt_text))
+        except (TypeError, ValueError):
+            return ["receipt is not JSON"]
+        if not isinstance(receipt, dict):
+            return ["receipt is not a JSON object"]
+        leaf_row = self._connection.execute(
+            "SELECT leaf FROM vlog_leaves WHERE idx = ?", (idx,)
+        ).fetchone()
+        if leaf_row is None:
+            return [f"names missing event {idx}"]
+        try:
+            leaf_fields = json.loads(bytes(leaf_row[0]))
+        except (TypeError, ValueError):
+            leaf_fields = None
+        if not isinstance(leaf_fields, dict) or leaf_fields.get("schema") != LEAF_SCHEMA:
+            return [f"leaf {idx} is not an event"]
+        record_row = self._connection.execute(
+            "SELECT erased_at FROM vlog_records WHERE idx = ?", (idx,)
+        ).fetchone()
+        erased = record_row is not None and record_row[0] is not None
+        if receipt.get("redacted") is True:
+            if set(receipt) != {"redacted", "index", "erasure_index"} or receipt["index"] != idx:
+                return ["malformed redacted receipt"]
+            if not erased:
+                return [f"redacted receipt for event {idx}, which is not erased"]
+            erasure_index = receipt["erasure_index"]
+            erasure_row = (
+                self._connection.execute(
+                    "SELECT leaf FROM vlog_leaves WHERE idx = ?", (erasure_index,)
+                ).fetchone()
+                if type(erasure_index) is int
+                else None
+            )
+            try:
+                erasure_fields = json.loads(bytes(erasure_row[0])) if erasure_row else None
+            except (TypeError, ValueError):
+                erasure_fields = None
+            if (
+                not isinstance(erasure_fields, dict)
+                or erasure_fields.get("schema") != ERASURE_SCHEMA
+                or erasure_fields.get("erased_index") != idx
+            ):
+                return [f"redacted receipt does not point to the erasure of event {idx}"]
+            return []
+        if erased:
+            return [f"receipt keeps the record and salt of erased event {idx}"]
+        problems: list[str] = []
+        if receipt.get("index") != idx:
+            problems.append(f"receipt names event {receipt.get('index')!r}, row names {idx}")
+        if receipt.get("leaf") != _b64(bytes(leaf_row[0])):
+            problems.append(f"receipt leaf differs from stored leaf {idx}")
+        if not verify_receipt(receipt, self.verifier_key):
+            problems.append("receipt does not verify (signature, inclusion or commitment)")
+        record = receipt.get("record")
+        if not isinstance(record, Mapping) or record.get("input_sha256") != input_sha256:
+            problems.append("receipt record input differs from the request input")
+        return problems
 
 
 def verify_receipt(receipt: Mapping[str, Any], vkey: str) -> bool:

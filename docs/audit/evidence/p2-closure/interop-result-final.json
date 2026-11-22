@@ -1,0 +1,72 @@
+[
+ {
+  "check": "witness verifier key is C2SP type 0x04 Ed25519",
+  "ok": true,
+  "detail": "witness.example/interop+2a412d0a+BDK1PoguParBgNel9iJNYbZAG0P5AdsJ8OTYTOTkonGL"
+ },
+ {
+  "check": "S1 first contact (old 0, size 1) cosigned",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "S2 progression 1->3 with consistency proof cosigned",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "S3 repetition of size 3 (old 3, empty proof) cosigned",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "S4 gap 3->9 cosigned",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "S5 stale client gets 409 with witness size 9",
+  "ok": true,
+  "detail": "9"
+ },
+ {
+  "check": "S5 409 does not advance local state",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "S6 resume from witness checkpoint 9->10 cosigned",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "S7 legacy first line without 'old ' is rejected (400)",
+  "ok": true,
+  "detail": "400"
+ },
+ {
+  "check": "S8 64 proof lines rejected (400)",
+  "ok": true,
+  "detail": "400"
+ },
+ {
+  "check": "S9 split-view checkpoint rejected (422)",
+  "ok": true,
+  "detail": "422"
+ },
+ {
+  "check": "S9b client refuses the split view locally",
+  "ok": true,
+  "detail": "checkpoint is not consistent with previous state"
+ },
+ {
+  "check": "S10 checkpoint signed by an unknown key rejected (403)",
+  "ok": true,
+  "detail": "403"
+ },
+ {
+  "check": "S11 wrong old size gives 409 text/x.tlog.size '10\\n'",
+  "ok": true,
+  "detail": "(409, 'text/x.tlog.size', '10\\n')"
+ }
+]

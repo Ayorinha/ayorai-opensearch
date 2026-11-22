@@ -1,0 +1,10 @@
+PASS valid-0 (verified=true)
+PASS valid-1 (verified=true)
+PASS tampered-body (verified=false)
+PASS tampered-cosignature (verified=false)
+PASS tampered-timestamp (verified=false)
+PASS other-cosigner-key (verified=false)
+PASS valid-2 (verified=true)
+PASS valid-3 (verified=true)
+PASS valid-4 (verified=true)
+9/9 cases as expected
