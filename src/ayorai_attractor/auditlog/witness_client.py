@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import httpx
 
 from ayorai_attractor.auditlog.cosignature import verify_cosignature
-from ayorai_attractor.auditlog.merkle import verify_consistency
+from ayorai_attractor.auditlog.merkle import empty_root, verify_consistency
 from ayorai_attractor.auditlog.note import parse_checkpoint, verify_note
 
 
@@ -148,7 +148,10 @@ class WitnessClient:
                     raise WitnessError("previous checkpoint is invalid or belongs to another log")
                 if current.size < old.size:
                     raise WitnessError("checkpoint rollback refused")
-                if current.size == old.size:
+                if old.size == 0:
+                    if old.root != empty_root() or proof_nodes:
+                        raise WitnessError("size-zero checkpoint must use the empty root and proof")
+                elif current.size == old.size:
                     if current.root != old.root or proof_nodes:
                         raise WitnessError("same-size checkpoint does not match previous state")
                 elif not verify_consistency(
