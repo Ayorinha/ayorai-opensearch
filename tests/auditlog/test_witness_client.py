@@ -72,18 +72,29 @@ def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
     assert not verify_cosignature(note, WITNESS_NAME, wrong_key, now=1_700_000_000)
     assert not verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_699_999_000)
     private_key = Ed25519PrivateKey.from_private_bytes(WITNESS_SEED)
-    zero_message = f"cosignature/v1\ntime 0\n{body}".encode("utf-8")
+    zero_message = f"cosignature/v1\ntime 0\n{body}".encode()
     zero_payload = key_id(WITNESS_NAME, _pub(WITNESS_SEED)) + bytes(8)
     zero_payload += private_key.sign(zero_message)
     zero_line = (
         f"— {WITNESS_NAME} {base64.b64encode(zero_payload).decode('ascii')}\n"
     )
     zero_note = body + "\n" + zero_line
-    assert not verify_cosignature(
+    assert verify_cosignature(
         zero_note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000
     )
-    with pytest.raises(ValueError, match="timestamp"):
-        sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, 0)
+    assert sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, 0) == zero_line
+
+
+def test_cosignature_name_rejects_unicode_whitespace_and_accepts_uint64_timestamp() -> None:
+    body = f"{LOG_NAME}\n1\n{base64.b64encode(bytes(32)).decode()}\n"
+    with pytest.raises(ValueError, match="Unicode spaces"):
+        sign_cosignature("witness\\u00a0example", WITNESS_SEED, body, 1)
+    maximum = (1 << 64) - 1
+    line = sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, maximum)
+    note = body + "\n" + line
+    assert verify_cosignature(
+        note, WITNESS_NAME, _pub(WITNESS_SEED), now=maximum, max_future_skew=0
+    )
 
 
 def test_cosignature_ignores_unknown_cosigner_lines() -> None:
