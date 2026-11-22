@@ -102,7 +102,7 @@ As 402 linhas não cobertas concentram-se assim:
 ## 6. Pendências
 
 **Problemas reais, fora do escopo autorizado:**
-1. Os módulos do Judge 2.0 (`judge2/adjudication.py` com 87%, `gates.py` e `__init__.py`) têm ramos de validação sem teste. Os testes podem ser escritos sem tocar nas regras, mas precisam de casos sintéticos revisados contra a ADR-009. Fica proposto como tarefa própria.
+1. Os módulos do Judge 2.0 (`judge2/adjudication.py` com 87% de cobertura de linhas na medição local registrada nesta auditoria; a cobertura de branches desse módulo não foi discriminada aqui, além de `gates.py` e `__init__.py`) têm ramos de validação sem teste. O valor de 90% citado no resumo da revisão não está sustentado por este relatório e não deve ser usado sem uma nova medição reproduzível. Os testes podem ser escritos sem tocar nas regras, mas precisam de casos sintéticos revisados contra a ADR-009. Fica proposto como tarefa própria.
 2. `evaluation/international_cli.py` está com 0%. É uma CLI exploratória e pede um teste de fumaça.
 3. A catraca de cobertura do CI está em 85% e só mede linhas. Recomendação, que depende de decisão do mantenedor:
    - medir branches (`--cov-branch`);
