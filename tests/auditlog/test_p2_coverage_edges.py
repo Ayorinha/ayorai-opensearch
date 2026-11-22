@@ -116,12 +116,16 @@ def test_witness_rejects_malformed_proof_nodes(proof: object) -> None:
         "https://witness.example/submit",
         signer.verifier_key,
         WitnessIdentity(WITNESS, PUB),
-        client=httpx.Client(
-            transport=httpx.MockTransport(lambda request: httpx.Response(500))
-        ),
     )
     with pytest.raises(WitnessError):
         client.submit(note, proof)  # type: ignore[arg-type]
+    client.close()
+
+
+@pytest.mark.parametrize("name", [None, 7, "", "white space"])
+def test_witness_identity_rejects_invalid_name_types_and_values(name: object) -> None:
+    with pytest.raises(ValueError):
+        WitnessIdentity(name, PUB)  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize(
@@ -141,7 +145,7 @@ def test_witness_rejects_insecure_or_ambiguous_urls(url: str) -> None:
 
 @pytest.mark.parametrize(
     "timeout",
-    [0, -1, True, float("nan"), float("inf"), "5", 10**1000],
+    [0, -1, True, float("nan"), float("inf"), "5", pytest.param(10**1000, id="integer-overflow")],
 )
 def test_witness_rejects_invalid_timeouts(timeout: object) -> None:
     signer = NoteSigner(LOG, LOG_SEED)
