@@ -33,7 +33,9 @@ def _validate_name(name: str) -> None:
         or unicodedata.category(char) == "Zs"
         for char in name
     ):
-        raise ValueError("cosigner name must not contain Unicode spaces, '+', or control characters")
+        raise ValueError(
+            "cosigner name must not contain Unicode spaces, '+', or control characters"
+        )
 
 
 def _public_bytes(key: Ed25519PublicKey) -> bytes:
