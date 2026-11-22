@@ -87,10 +87,15 @@ def test_cosignature_default_timestamp_and_malformed_notes(
 
 def test_cosignature_skips_malformed_and_noncanonical_lines() -> None:
     good = sign_cosignature(WITNESS, WITNESS_SEED, BODY, 100)
+    canonical = base64.b64encode(bytes(76)).decode("ascii")
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    last_index = alphabet.index(canonical[-3])
+    noncanonical = canonical[:-3] + alphabet[(last_index & ~15) | 1] + "=="
+    assert base64.b64decode(noncanonical, validate=True) == bytes(76)
     malformed = (
-        "— witness.example !!!\n"
-        "— witness.example AA==\n"
-        "— witness.example " + base64.b64encode(bytes(76)).decode().rstrip("=") + "\n"
+        "— witness.example !!!\\n"
+        "— witness.example AA==\\n"
+        + "— witness.example " + noncanonical + "\\n"
     )
     assert verify_cosignature(BODY + "\n" + malformed + good, WITNESS, PUB, now=100)
 
