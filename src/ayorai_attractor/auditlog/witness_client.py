@@ -111,7 +111,9 @@ class WitnessClient:
                 headers={"Content-Type": "text/plain; charset=utf-8"},
             )
             if response.status_code == 409:
-                raise WitnessConflict("witness state conflicts with the submitted previous checkpoint")
+                raise WitnessConflict(
+                    "witness state conflicts with the submitted previous checkpoint"
+                )
             if response.status_code != 200:
                 raise WitnessError(f"witness returned HTTP {response.status_code}")
             signatures = response.text
