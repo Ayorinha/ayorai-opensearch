@@ -21,6 +21,16 @@ All public API contract changes are additive unless explicitly identified otherw
 - `GET /metrics`: Prometheus text format; requires the API key like every other route.
 - Both routes are operational and are not in the OpenAPI document. No existing request or response changed.
 
+## Unreleased — `/v1/check` rule detector v14 (year of another event)
+
+- A calendar year that belongs to another event no longer refutes a claim. Example: "A receita da Vértice foi de 40 milhões em 2024." against "A Vértice foi fundada em 1998 e tem sede em Curitiba." was `refuted`; it is now an abstention (`insufficient_evidence`).
+- A year conflict counts only when the year is anchored to the claim's proposition: another claim fact is compared in the same passage, or the claim states only years and shares a non-proper-noun predicate word with the passage.
+- Another period is not a contradiction: when the claim ties a fact to a year ("40 milhões em 2024") and the passage names only other years ("40 milhões em 2023"), the passage neither confirms nor contradicts the claim. A passage without any year is still compared as before.
+- A name that opens a sentence and generic verbs ("ter", "ser", "estar") do not count as a shared predicate. When the same name opens both sentences ("Vértice foi fundada em 1998." against "Vértice abriu filial em 2001."), a capitalized word that never appears in lowercase in either text is treated as a name, so the year is not anchored and the passage abstains.
+- A numeral inside a proper name ("Holding Três Rios", "Construtora 2000") is a name identifier, not a quantity or a year: it must appear in the passage for a numeric match, never supports or contradicts on its own, and a passage that names the entity with another numeral, or without the numeral, neither confirms nor contradicts. A year-shaped name numeral in the passage ("Relatório Anual 2023") still dates what it reports. Limitations: a name with digits that opens the sentence is not recognized; only the first word of a compound number word is recognized; a year in a title can lead to an abstention.
+- Known limitation, unchanged from v13: numbers are not bound to their own year inside one sentence ("40 milhões em 2023 e 55 milhões em 2024" still supports a claim of 40 milhões em 2024).
+- `engine.stance_detector` reports `inner=stance_detector.rule/14`. Golden v0, v0.1 and smoke-v0 semantic digests are unchanged.
+
 ## Unreleased — `/v1/check` rule detector v13 (scale words)
 
 - A number followed by a scale word without a currency is read with its scale: "1,2 bilhão" and "1.200 milhões" are the same quantity (previously 1.2 against 1200, a false contradiction). A count noun right after the scale ("2,0 milhões de clientes", "3 mil funcionários") makes it a scaled count that compares with the same noun at any scale ("3000 funcionários").

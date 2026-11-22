@@ -46,10 +46,13 @@ CASES = [
     ("Revenue was 100 million USD.", "Profit was 100 million USD.", N),
     ("Revenue was 100 million USD.", "Revenue was 100.5 million USD.", S),
     ("Revenue was 100 million USD.", "Revenue was 102 million USD.", C),
+    # Years are exact, so 2024 never confirms 2025. Since detector v14 the
+    # evidence about another period is also not a contradiction: it says nothing
+    # about 2025 (maintainer decision, 2026-11-22, case 3 of the C2 validation).
     (
         "AtlasGrid revenue was USD 120 million in 2025.",
         "AtlasGrid revenue was USD 120 million in fiscal year 2024.",
-        C,
+        N,
     ),
     ("AtlasGrid had 800 employees.", "AtlasGrid had 900 employees.", C),
     ("AtlasGrid had 800 employees.", "AtlasGrid had 800 customers.", N),
