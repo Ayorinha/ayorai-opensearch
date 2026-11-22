@@ -273,7 +273,6 @@ def test_witness_close_only_closes_owned_http_client() -> None:
     supplied_http.close()
 
 
-
 @pytest.mark.parametrize("public_key", [b"", bytes(31), bytearray(32), None])
 def test_witness_identity_rejects_invalid_public_keys(public_key: object) -> None:
     with pytest.raises(ValueError, match="public key"):
