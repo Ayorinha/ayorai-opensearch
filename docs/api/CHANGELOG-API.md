@@ -21,6 +21,11 @@ All public API contract changes are additive unless explicitly identified otherw
 - `GET /metrics`: Prometheus text format; requires the API key like every other route.
 - Both routes are operational and are not in the OpenAPI document. No existing request or response changed.
 
+## Unreleased — `/v1/check` rule detector v16 (value bound to its year, AP1)
+
+- When a passage gives one value per year in separate clauses ("40 milhões em 2023 e 55 milhões em 2024"), the claimed year's value is now bound to the subject and attribute of the sentence, so a claim of 40 milhões in 2024 is refuted (v15 abstained). When the other year's clause opens the sentence, its words before the first value are kept and its own numbers and year are dropped.
+- `engine.stance_detector` reports `inner=stance_detector.rule/16`. Golden v0, v0.1 and smoke-v0 semantic digests are unchanged.
+
 ## Unreleased — `/v1/check` rule detector v15 (cross-domain robustness)
 
 Fixes found by the synthetic cross-domain robustness battery of 2026-11-22. Golden v0, v0.1 and smoke-v0 semantic digests are unchanged.
@@ -32,7 +37,7 @@ Fixes found by the synthetic cross-domain robustness battery of 2026-11-22. Gold
 - **Compound claims:** when every year of the passage is also a claimed year, the claim's other years are not contradicted; "lucro em 2024 e fundação em 1987" against the 2024 profit alone is an abstention.
 - **Entity-type nouns:** "município", "estudo", "sistema", "região" and similar nouns right before a name are part of the subject and do not count as a shared predicate.
 - **Historical years:** a four-digit year from 1000 to 1899 after "em", "desde", "in", "since" or "no ano de" is a calendar year, compared exactly and as a period.
-- Known limitations: the value of the claimed year's clause is not always bound to its attribute, so "40 em 2023 e 55 em 2024" against a claim of 40 in 2024 abstains instead of refuting; equivalent quantities written with different numbers ("2,5 km" and "2.500 m", "2 anos" and "24 meses") abstain, because a supporting passage must contain the claimed number; synonyms of attributes ("patrimônio líquido" and "capital próprio") abstain; "37" against "37 mil" without a currency abstains.
+- Known limitations: equivalent quantities written with different numbers ("2,5 km" and "2.500 m", "2 anos" and "24 meses") abstain, because a supporting passage must contain the claimed number; synonyms of attributes ("patrimônio líquido" and "capital próprio") abstain; "37" against "37 mil" without a currency abstains.
 - `engine.stance_detector` reports `inner=stance_detector.rule/15`.
 
 ## Unreleased — `/v1/check` rule detector v14 (year of another event)

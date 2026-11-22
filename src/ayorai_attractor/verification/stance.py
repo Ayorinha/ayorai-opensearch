@@ -1700,14 +1700,27 @@ def _keep_claimed_period(evidence_text: str, claim_years: set[str]) -> str:
             claimed_clause_has_value = claimed_clause_has_value or bool(numbers)
     if not claimed_clause_has_value:
         return evidence_text
-    kept = []
+    # The clause of another year is dropped. When it opens the sentence, its words
+    # before the first number are kept: they carry the subject and the attribute
+    # ("A receita da Vértice foi de"), so the claimed year's value stays bound to them.
+    kept: list[str] = []
     for index, part in enumerate(parts):
-        if index % 2 == 0:
-            years = _period_years(part)
-            if years and not years & claimed:
-                part = _CLAUSE_NUMBER_RE.sub(" ", part)
+        if index % 2:
+            continue
+        years = _period_years(part)
+        if years and not years & claimed:
+            if index == 0:
+                values = [
+                    match
+                    for match in _CLAUSE_NUMBER_RE.finditer(part)
+                    if match.group(0) not in years
+                ]
+                prefix = part[: values[0].start()] if values else part
+                # The year of the dropped clause must not survive in its prefix.
+                kept.append(_YEAR_TOKEN_RE.sub(" ", prefix) if values else "")
+            continue
         kept.append(part)
-    return "".join(kept)
+    return " ".join(piece.strip() for piece in kept if piece.strip())
 
 
 def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
@@ -1912,7 +1925,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "15"
+    version = "16"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:

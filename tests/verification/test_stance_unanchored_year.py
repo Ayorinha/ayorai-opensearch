@@ -164,14 +164,7 @@ def test_a_fact_without_a_year_in_the_evidence_is_still_compared() -> None:
     assert _check(REVENUE, "A receita da Vértice foi de 55 milhões.")["verdict"] == "refuted"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "known limitation: since detector v15 the value of another year's clause no longer "
-        "supports (see test_stance_cross_domain.py), but 55 is not bound to its attribute "
-        "after the 2023 clause is dropped, so the passage abstains instead of refuting"
-    ),
-)
+# Fixed in AP1: the value of the claimed year's clause is bound to the subject.
 def test_a_value_of_another_year_in_the_same_sentence_does_not_support() -> None:
     result = _check(
         REVENUE, "A receita da Vértice foi de 40 milhões em 2023 e de 55 milhões em 2024."
@@ -199,7 +192,7 @@ def test_a_leading_name_or_a_generic_verb_does_not_anchor_a_year(claim: str, doc
 
 
 def test_detector_version_is_14() -> None:
-    assert RuleStanceDetector.version in {"14", "15"}
+    assert RuleStanceDetector.version in {"14", "15", "16"}
 
 
 # --- the same name opens both sentences (review of PR #630) ----------------------------
