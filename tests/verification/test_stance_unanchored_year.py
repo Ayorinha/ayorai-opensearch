@@ -200,3 +200,48 @@ def test_a_leading_name_or_a_generic_verb_does_not_anchor_a_year(claim: str, doc
 
 def test_detector_version_is_14() -> None:
     assert RuleStanceDetector.version in {"14", "15"}
+
+
+# --- the same name opens both sentences (review of PR #630) ----------------------------
+
+
+@pytest.mark.parametrize(
+    ("claim", "evidence", "expected"),
+    [
+        ("Vértice foi fundada em 1998.", "Vértice abriu filial em 2001.", False),
+        ("Petrobras foi criada em 1953.", "Petrobras lucrou 40 bilhões em 2024.", False),
+        ("Vértice foi fundada em 1998.", "Vértice foi fundada em 2001.", True),
+        # A word written in lowercase elsewhere is a common word, not a name.
+        ("Fundada em 1998, a Vértice cresceu.", "A Vértice foi fundada em 2001.", True),
+    ],
+)
+def test_a_name_that_opens_both_sentences_is_not_a_predicate(
+    claim: str, evidence: str, expected: bool
+) -> None:
+    assert _shares_predicate(claim, evidence) is expected
+
+
+@pytest.mark.parametrize(
+    ("claim", "document"),
+    [
+        ("Vértice foi fundada em 1998.", "Vértice abriu filial em 2001."),
+        ("Vértice abriu filial em 2001.", "Vértice foi fundada em 1998."),
+        ("Petrobras foi criada em 1953.", "Petrobras lucrou 40 bilhões em 2024."),
+    ],
+)
+def test_a_name_that_opens_both_sentences_does_not_anchor_a_year(claim: str, document: str) -> None:
+    result = _check(claim, document)
+    assert result["verdict"] is None
+    assert result["status"] == "abstain/no_answer"
+    assert result["abstention_reason"] == "insufficient_evidence"
+
+
+@pytest.mark.parametrize(
+    ("claim", "document"),
+    [
+        ("Vértice foi fundada em 1998.", "Vértice foi fundada em 2001."),
+        ("Atlas inaugurou a fábrica em 2010.", "Atlas inaugurou a fábrica em 2012."),
+    ],
+)
+def test_the_same_event_with_a_leading_name_still_refutes(claim: str, document: str) -> None:
+    assert _check(claim, document)["verdict"] == "refuted"
