@@ -27,7 +27,7 @@ import logging
 import os
 import re
 import sqlite3
-from collections.abc import Callable
+from collections.abc import Callable, Collection, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import RLock
@@ -1108,8 +1108,16 @@ class AuditTraceStore:
                 raise
         return counts
 
-    def get(self, trace_id: str, requester: str | None = None) -> AuditTraceResponse | None:
-        """Return the trace only to its owner.
+    def get(
+        self,
+        trace_id: str,
+        requester: str | None = None,
+        tenant_principals: Collection[str] | None = None,
+    ) -> AuditTraceResponse | None:
+        """Return the trace only to its owner or to a principal of the owner's tenant.
+
+        ``tenant_principals`` (ADR-013) are the principals of the requester's tenant;
+        a trace owned by any of them is readable. ``None`` means only the requester.
 
         ``requester`` is the authenticated principal, or None when authentication
         is off (single tenant: only traces without an owner exist to read). Traces
@@ -1117,21 +1125,29 @@ class AuditTraceStore:
         "shared" legacy policy. A trace the requester may not read is reported as
         missing (None), so the lookup does not reveal that it exists.
         """
+        owners = sorted(
+            {owner for owner in (requester, *(tenant_principals or ())) if owner is not None}
+        )
         with self._lock:
-            return self._get_locked(trace_id, requester)
+            return self._get_locked(trace_id, requester, owners)
 
-    def _get_locked(self, trace_id: str, requester: str | None) -> AuditTraceResponse | None:
+    def _get_locked(
+        self, trace_id: str, requester: str | None, owners: Sequence[str]
+    ) -> AuditTraceResponse | None:
+        # One bound parameter per owner; owners come from the key registry, never
+        # from the request, and the SQL text has no data in it.
+        placeholders = ", ".join("?" for _ in owners) or "NULL"
         row = self._connection.execute(
-            """
+            f"""
             SELECT trace_id, operation_status, evidence_count,
                    independent_evidence_count, verified_evidence_count,
                    failure_count, finding_count, replay_digest,
                    legacy_verification, replay_version, check_trace_id, adjudication_sha256
             FROM audit_traces WHERE trace_id = ? AND (
-                (owner IS NULL AND (? IS NULL OR ? = 'shared')) OR owner = ?
+                (owner IS NULL AND (? IS NULL OR ? = 'shared')) OR owner IN ({placeholders})
             )
-            """,
-            (trace_id, requester, self._legacy_policy, requester),
+            """,  # nosec B608 - placeholders only
+            (trace_id, requester, self._legacy_policy, *owners),
         ).fetchone()
         if row is None:
             return None

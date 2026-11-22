@@ -59,7 +59,8 @@ Historical snapshots and the previous execution-cycle merge table are preserved 
   - medição no hardware de produção.
 
   Até haver duas testemunhas independentes, o log não resiste ao operador que detém a chave.
-- **ADR-012, chaves de API (2026-11-21):** escopos, expiração e revogação sem reinício, por arquivo de chaves relido quando muda (DEC-031). O modo legado, só com a variável, não muda. O tenant fica para uma ADR própria; até lá, a implantação suportada é de um único tenant.
+- **ADR-012, chaves de API (2026-11-21):** escopos, expiração e revogação sem reinício, por arquivo de chaves relido quando muda (DEC-031). O modo legado, só com a variável, não muda.
+- **ADR-013, tenant (2026-11-22):** cada chave do arquivo pode ter `tenant`. Uma equipe lê a própria trilha com `audit:read`, e entre tenants a resposta é 404. O registro do log de verificação traz o tenant (`ayorai.verify-record.v2`). O esquema assinado da trilha não mudou (DEC-032).
 - **Release:** v0.8.0 publicada em 2026-11-13; tag `v0.8.0` aponta para `92ea5eb86b69724b05834d98c326e8315bb6b655`, commit com assinatura verificada pelo GitHub; [GitHub Release](https://github.com/Ayorinha/ayorai-opensearch/releases/tag/v0.8.0). CI, Security e CodeQL da tag passaram. O Version DOI v0.8.0 ainda não estava registrado no Zenodo em 2026-11-21. DOI de conceito: `10.5281/zenodo.23125082`; Version DOI v0.7.0: `10.5281/zenodo.24045951`.
 
 ### Classificação do estado

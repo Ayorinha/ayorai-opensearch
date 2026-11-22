@@ -2,6 +2,11 @@
 
 All public API contract changes are additive unless explicitly identified otherwise.
 
+## Unreleased — tenants (ADR-013, additive)
+
+- `GET /v1/audit/{trace_id}` returns a trace to any key of the owner's tenant that has `audit:read`; other tenants get `404`. In legacy key mode, nothing changes.
+- `audit_receipt.record` of new `/v1/verify` events uses `ayorai.verify-record.v2`, which is `v1` plus `tenant` (`default` without a key file). Receipts with `v1` records stay valid; the leaf and the receipt format are unchanged.
+
 ## Unreleased — `/v1/verify` r2-a: verification-event log (additive, opt-in)
 
 - With `ATTRACTOR_VERIFY_LOG_MODE=local|required`, the r2-a response adds `audit_status` (`recorded` | `not_recorded`) and `audit_receipt` (`ayorai.verify-receipt.v1`). Both are outside `result`; `output_sha256` is unchanged. With the default `off`, the response is byte-identical to before.

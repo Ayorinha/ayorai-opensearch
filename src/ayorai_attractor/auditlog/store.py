@@ -47,11 +47,12 @@ from ayorai_attractor.auditlog.merkle import (
 from ayorai_attractor.auditlog.note import NoteSigner, parse_checkpoint, verify_note
 
 LEAF_SCHEMA = "ayorai.verify-leaf.v1"
-RECORD_SCHEMA = "ayorai.verify-record.v1"
+RECORD_SCHEMA = "ayorai.verify-record.v2"  # v1 plus tenant (ADR-013)
 ERASURE_SCHEMA = "ayorai.verify-erasure.v1"
 RECEIPT_VERSION = "ayorai.verify-receipt.v1"
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _IDEMPOTENCY_KEY = re.compile(r"[\x21-\x7e]{1,128}")
+_TENANT = re.compile(r"[a-z0-9][a-z0-9._-]{0,63}")
 
 
 class IdempotencyConflict(ValueError):
@@ -72,6 +73,7 @@ class VerificationEvent:
     client: str
     received_at: str
     software_id: str
+    tenant: str = "default"
 
     def __post_init__(self) -> None:
         for name in ("input_sha256", "output_sha256", "rules_sha256"):
@@ -79,6 +81,8 @@ class VerificationEvent:
                 raise ValueError(f"{name} must be 64 lowercase hex characters")
         if not self.decision_state or not self.client or not self.software_id:
             raise ValueError("decision_state, client and software_id are required")
+        if _TENANT.fullmatch(self.tenant) is None:
+            raise ValueError("tenant must match [a-z0-9][a-z0-9._-]{0,63}")
 
 
 def valid_idempotency_key(value: str) -> bool:
@@ -236,6 +240,7 @@ class VerificationLog:
             "decision_state": event.decision_state,
             "verdict": event.verdict,
             "client": event.client,
+            "tenant": event.tenant,
             "received_at": event.received_at,
             "time_source": "server_clock",
         }

@@ -17,10 +17,13 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from ayorai_attractor import __version__
 from ayorai_attractor.api.auth import (
     PRINCIPAL_STATE_KEY,
+    TENANT_PRINCIPALS_STATE_KEY,
+    TENANT_STATE_KEY,
     APIKeyAuthMiddleware,
     validate_auth_configuration,
 )
 from ayorai_attractor.api.http_metrics import http_metrics
+from ayorai_attractor.api.keys import DEFAULT_TENANT
 from ayorai_attractor.api.load_control import (
     HeavyRouteConcurrencyLimitMiddleware,
     inflight_scope_from_env,
@@ -313,6 +316,17 @@ def _principal(http_request: Request) -> str | None:
     return value if isinstance(value, str) else None
 
 
+def _tenant_principals(http_request: Request) -> frozenset[str] | None:
+    """Principals of the requester's tenant (ADR-013), set by APIKeyAuthMiddleware."""
+    value = getattr(http_request.state, TENANT_PRINCIPALS_STATE_KEY, None)
+    return value if isinstance(value, frozenset) else None
+
+
+def _tenant(http_request: Request) -> str:
+    value = getattr(http_request.state, TENANT_STATE_KEY, None)
+    return value if isinstance(value, str) else DEFAULT_TENANT
+
+
 # Liveness: the process answers. It does not check dependencies (see /ready). The
 # docstring is left out on purpose: it would change the published OpenAPI contract.
 @app.get("/health")
@@ -354,6 +368,7 @@ def _record_verification(
             else None
         ),
         client=_principal(http_request) or "anonymous",
+        tenant=_tenant(http_request),
         received_at=datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
         software_id=f"ayorai-opensearch/{__version__}",
     )
@@ -946,7 +961,11 @@ def verify(payload: Annotated[Any, Body()], http_request: Request) -> Any:
 )
 def audit_trace(trace_id: str, http_request: Request) -> AuditTraceResponse:
     """Return persisted audit metadata without exposing raw evidence or prompts."""
-    saved = audit_store.get(trace_id, requester=_principal(http_request))
+    saved = audit_store.get(
+        trace_id,
+        requester=_principal(http_request),
+        tenant_principals=_tenant_principals(http_request),
+    )
     if saved is None:
         from fastapi import HTTPException
 

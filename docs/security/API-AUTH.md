@@ -75,6 +75,13 @@ python -m ayorai_attractor.api.keys revoke --file keys.json --id metrics-bot --b
 - Later, an invalid file is ignored: the last valid registry stays in use, the error is logged and `attractor_api_keys_reload_failures_total` increases. That fires the `AttractorApiKeysReloadFailing` alert.
 - A revocation therefore only takes effect once the file containing it is valid.
 
+**Tenants (ADR-013).** An entry may carry `"tenant": "acme"` (same format as `id`). Without it, the key belongs to the tenant `default`.
+- Any key of a tenant with `audit:read` reads the audit traces of every key of the same tenant. A key of another tenant gets `404`, the same answer as for an unknown trace.
+- Tenants are resolved from the current file at each request. Moving a key to another tenant moves, from the next reload, who can read the traces it wrote.
+- Keep revoked entries in the file, so their traces stay readable by their tenant.
+- `new --tenant acme` sets the field.
+- In legacy mode (`ATTRACTOR_API_KEYS_HMAC_SHA256`), there are no tenants: each key reads only its own traces.
+
 **Handling the file:**
 - Treat it as an access-control asset: whoever can edit it grants access.
 - Keep it outside the data volume, readable only by the service user, and mount it read-only in the container.
