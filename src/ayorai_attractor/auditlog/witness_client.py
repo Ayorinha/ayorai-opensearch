@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 import httpx
 
-from ayorai_attractor.auditlog.cosignature import verify_cosignature
+from ayorai_attractor.auditlog.cosignature import key_id, verify_cosignature
 from ayorai_attractor.auditlog.merkle import empty_root, verify_consistency
 from ayorai_attractor.auditlog.note import parse_checkpoint, verify_note
 
@@ -34,6 +34,7 @@ class WitnessIdentity:
             raise ValueError("invalid witness name")
         if not isinstance(self.public_key, bytes) or len(self.public_key) != 32:
             raise ValueError("witness Ed25519 public key must be 32 bytes")
+        key_id(self.name, self.public_key)
 
 
 def _decode_consistency_proof(proof: Sequence[bytes | str]) -> list[bytes]:
