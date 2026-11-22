@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import math
 import threading
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -75,7 +76,7 @@ class WitnessClient:
             raise ValueError("submission_url must be an HTTPS URL without query or fragment")
         if parsed_url.username or parsed_url.password:
             raise ValueError("submission_url must not contain embedded credentials")
-        if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout <= 0:
+        if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or not math.isfinite(timeout) or timeout <= 0:
             raise ValueError("timeout must be a positive number")
         self.submission_url = str(parsed_url).rstrip("/") + "/add-checkpoint"
         self.log_verifier_key = log_verifier_key
