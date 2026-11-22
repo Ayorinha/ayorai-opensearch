@@ -615,7 +615,10 @@ def _has_token_negation(text: str) -> bool:
         return True
     pt, en = _language_scores(text)
     pt += len(tokens & _PT_FUNCTION_WORDS)
-    if en >= pt:
+    # "no" is an English negator only in a sentence that shows English: with no
+    # marker on either side ("A Holding Rios investe no setor têxtil.") it is the
+    # Portuguese contraction "em + o".
+    if en > pt or (en == pt and en > 0):
         return bool(tokens & _NEGATION_TOKENS_EN)
     return bool(tokens & (_NEGATION_TOKENS_EN - {"no"}))
 
@@ -765,8 +768,47 @@ def _shares_predicate(claim_text: str, evidence_text: str) -> bool:
         | _proper_nouns(evidence_text)
         | _initial_names(claim_text, evidence_text)
     )
-    claim_words = _content_words(claim_text) - names - _GENERIC_VERBS
+    heads = _name_heads(claim_text) | _name_heads(evidence_text)
+    claim_words = _content_words(claim_text) - names - heads - _GENERIC_VERBS
     return bool(claim_words & _content_words(evidence_text))
+
+
+# Common nouns that only name the kind of a named entity when they stand right
+# before its name: "o município de Serra Alta", "o estudo Coorte Aurora". In that
+# position they belong to the subject, not to the predicate.
+_ENTITY_TYPE_NOUNS = frozenset(
+    {
+        "municipio",
+        "cidade",
+        "estado",
+        "regiao",
+        "pais",
+        "distrito",
+        "bairro",
+        "estudo",
+        "sistema",
+        "programa",
+        "projeto",
+        "city",
+        "state",
+        "region",
+        "country",
+        "study",
+        "system",
+        "program",
+        "project",
+    }
+)
+_NAME_HEAD_RE = re.compile(r"\b([a-zà-ÿ]+)\s+(?:(?:de|do|da|dos|das|of)\s+)?[A-ZÀ-Ý][\wÀ-ÿ]*")
+
+
+def _name_heads(text: str) -> set[str]:
+    """Entity-type nouns standing right before a capitalized name."""
+    return {
+        word
+        for word in (strip_accents(m.group(1).casefold()) for m in _NAME_HEAD_RE.finditer(text))
+        if word in _ENTITY_TYPE_NOUNS
+    }
 
 
 def _initial_names(claim_text: str, evidence_text: str) -> set[str]:
@@ -829,6 +871,93 @@ def _competing_entity(claim_text: str, evidence_text: str) -> bool:
         return bool(distinctive) and all(word in evidence_words for word in distinctive)
 
     return not any(present(name) for name in claim_names)
+
+
+# Nouns that name a part of an organization or place. "o lucro da agência de
+# Belém do Banco Horizonte" reports the branch, not the bank.
+_SUBUNIT_WORDS = frozenset(
+    {
+        "filial",
+        "filiais",
+        "agencia",
+        "agencias",
+        "unidade",
+        "unidades",
+        "posto",
+        "sucursal",
+        "subsidiaria",
+        "campus",
+        "anexo",
+        "loja",
+        "armazem",
+        "terminal",
+        "ramal",
+        "distrito",
+        "subprefeitura",
+        "diretoria",
+        "nucleo",
+        "modulo",
+        "bloco",
+        "braco",
+        "subestudo",
+        "escritorio",
+        "fabrica",
+        "planta",
+        "branch",
+        "subsidiary",
+        "division",
+        "divisao",
+    }
+)
+_SUBUNIT_WINDOW = 8
+
+
+_SUBUNIT_PHRASE_BREAKS = frozenset({"o", "a", "os", "as", "the"})
+
+
+def _subunit_before(prefix: str, claim_words: set[str]) -> bool:
+    """A subunit noun heads the noun phrase that ends with the claim's name.
+
+    "agência de Belém do Banco Horizonte" qualifies; in "com 300 agências, o lucro
+    do Banco Horizonte" the comma and the article open another phrase.
+    """
+    clause = re.split(r"[,;:.!?()]", prefix)[-1]
+    words = _TOKEN_RE.findall(clause)[-_SUBUNIT_WINDOW:]
+    for index, word in enumerate(words):
+        if word in _SUBUNIT_WORDS and word not in claim_words:
+            if not _SUBUNIT_PHRASE_BREAKS.intersection(words[index + 1 :]):
+                return True
+    return False
+
+
+def _entity_variant(claim_text: str, evidence_text: str) -> bool:
+    """The passage names a part or a longer-named sibling of the claim's entity.
+
+    For each multi-word name of the claim found in the passage: a longer name that
+    starts with it ("Banco Horizonte Sul" for "Banco Horizonte"), or a subunit noun
+    just before it that the claim does not use ("posto de Lages da Cooperativa
+    Serra Azul"), means the passage reports another entity.
+    """
+    claim_folded = strip_accents(claim_text.casefold())
+    claim_words = set(_TOKEN_RE.findall(claim_folded))
+    evidence_folded = strip_accents(evidence_text.casefold())
+    evidence_names = named_entities(evidence_text)
+    for name in named_entities(claim_text):
+        position = evidence_folded.find(name)
+        if position < 0:
+            continue
+        for other in evidence_names:
+            if not other.startswith(name + " ") or other in claim_folded:
+                continue
+            extra = other[len(name) :].split()
+            if any(
+                word not in GENERIC_NAME_WORDS and word not in {"de", "do", "da", "dos", "das", "e"}
+                for word in extra
+            ):
+                return True
+        if _subunit_before(evidence_folded[:position], claim_words):
+            return True
+    return False
 
 
 def _directions(text: str) -> dict[str, set[int]]:
@@ -1006,14 +1135,68 @@ _DURATION_WORDS: dict[str, tuple[str, Decimal]] = {
     "meses": ("months", Decimal(1)),
     "month": ("months", Decimal(1)),
     "months": ("months", Decimal(1)),
-    "dia": ("days", Decimal(1)),
-    "dias": ("days", Decimal(1)),
-    "day": ("days", Decimal(1)),
-    "days": ("days", Decimal(1)),
+    "dia": ("hours", Decimal(24)),
+    "dias": ("hours", Decimal(24)),
+    "day": ("hours", Decimal(24)),
+    "days": ("hours", Decimal(24)),
     "hora": ("hours", Decimal(1)),
     "horas": ("hours", Decimal(1)),
     "hour": ("hours", Decimal(1)),
     "hours": ("hours", Decimal(1)),
+}
+# Physical units share the duration machinery: a family (the dimension) and a
+# factor to its base unit, so "120 MW" and "120.000 kW" are the same quantity and
+# "120 MW" against "120 kW" is a conflict, never a match of the bare number 120.
+# Ambiguous words are left out: "segundo" is also "according to", "second" an
+# ordinal, and a bare "g" too short to be safe.
+_PHYSICAL_UNITS: dict[str, tuple[str, Decimal]] = {
+    "w": ("power", Decimal(1)),
+    "watt": ("power", Decimal(1)),
+    "watts": ("power", Decimal(1)),
+    "kw": ("power", Decimal(10) ** 3),
+    "quilowatt": ("power", Decimal(10) ** 3),
+    "quilowatts": ("power", Decimal(10) ** 3),
+    "kilowatt": ("power", Decimal(10) ** 3),
+    "kilowatts": ("power", Decimal(10) ** 3),
+    "mw": ("power", Decimal(10) ** 6),
+    "megawatt": ("power", Decimal(10) ** 6),
+    "megawatts": ("power", Decimal(10) ** 6),
+    "gw": ("power", Decimal(10) ** 9),
+    "gigawatt": ("power", Decimal(10) ** 9),
+    "gigawatts": ("power", Decimal(10) ** 9),
+    "kwh": ("energy", Decimal(10) ** 3),
+    "mwh": ("energy", Decimal(10) ** 6),
+    "gwh": ("energy", Decimal(10) ** 9),
+    "twh": ("energy", Decimal(10) ** 12),
+    "m": ("length", Decimal(1)),
+    "metro": ("length", Decimal(1)),
+    "metros": ("length", Decimal(1)),
+    "meter": ("length", Decimal(1)),
+    "meters": ("length", Decimal(1)),
+    "km": ("length", Decimal(10) ** 3),
+    "quilômetro": ("length", Decimal(10) ** 3),
+    "quilômetros": ("length", Decimal(10) ** 3),
+    "quilometro": ("length", Decimal(10) ** 3),
+    "quilometros": ("length", Decimal(10) ** 3),
+    "kilometer": ("length", Decimal(10) ** 3),
+    "kilometers": ("length", Decimal(10) ** 3),
+    "grama": ("mass", Decimal(1)),
+    "gramas": ("mass", Decimal(1)),
+    "kg": ("mass", Decimal(10) ** 3),
+    "quilo": ("mass", Decimal(10) ** 3),
+    "quilos": ("mass", Decimal(10) ** 3),
+    "quilograma": ("mass", Decimal(10) ** 3),
+    "quilogramas": ("mass", Decimal(10) ** 3),
+    "tonelada": ("mass", Decimal(10) ** 6),
+    "toneladas": ("mass", Decimal(10) ** 6),
+    "ton": ("mass", Decimal(10) ** 6),
+    "tons": ("mass", Decimal(10) ** 6),
+    "segundos": ("seconds", Decimal(1)),
+    "seconds": ("seconds", Decimal(1)),
+    "minuto": ("seconds", Decimal(60)),
+    "minutos": ("seconds", Decimal(60)),
+    "minute": ("seconds", Decimal(60)),
+    "minutes": ("seconds", Decimal(60)),
 }
 _MEASURE_WORDS = {
     "vez": "times",
@@ -1136,6 +1319,27 @@ def _is_bound(tokens: list[str], index: int) -> bool:
     return position >= 0 and index - position <= 3 and tokens[position] in _BOUND_WORDS
 
 
+_HISTORICAL_YEAR_MIN = 1000
+_TEMPORAL_PREPOSITIONS = frozenset({"em", "desde", "in", "since"})
+
+
+def _is_historical_year(tokens: list[str], index: int) -> bool:
+    """A four-digit year before 1900, introduced by a temporal preposition.
+
+    "fundada em 1745" and "no ano de 1872" are calendar years and compare
+    exactly; a bare "1745" may be a quantity, so it stays a scalar.
+    """
+    token = tokens[index]
+    if not (token.isdigit() and len(token) == 4):
+        return False
+    if not _HISTORICAL_YEAR_MIN <= int(token) < _YEAR_MIN:
+        return False
+    before = tokens[index - 1] if index >= 1 else ""
+    if before in _TEMPORAL_PREPOSITIONS:
+        return True
+    return before in {"de", "of"} and index >= 2 and tokens[index - 2] in {"ano", "year"}
+
+
 def _is_year_token(token: str) -> bool:
     return token.isdigit() and len(token) == 4 and _YEAR_MIN <= int(token) <= _YEAR_MAX
 
@@ -1222,6 +1426,7 @@ def _mask_name_numerals(text: str) -> tuple[str, list[str]]:
             or following in _MILLISECOND_WORDS
             or following in _COUNT_NOUNS
             or following in _DURATION_WORDS
+            or following in _PHYSICAL_UNITS
             or following in _MEASURE_WORDS
             or following in _UNIT_WORDS
             or following == "por"
@@ -1302,9 +1507,14 @@ def _numeric_facts(text: str, *, skip_bounds: bool = False) -> list[tuple[str, s
         elif following in _DURATION_WORDS:
             family, factor = _DURATION_WORDS[following]
             unit = f"duration:{family}:{factor}"
+        elif following in _PHYSICAL_UNITS:
+            family, factor = _PHYSICAL_UNITS[following]
+            unit = f"duration:{family}:{factor}"
         elif following in _MEASURE_WORDS:
             unit = f"measure:{_MEASURE_WORDS[following]}"
         elif token.isdigit() and len(token) == 4 and _YEAR_MIN <= int(token) <= _YEAR_MAX:
+            unit = "year"
+        elif _is_historical_year(tokens, index):
             unit = "year"
         else:
             unit = "scalar"
@@ -1447,6 +1657,59 @@ def _baseline_years(text: str, start: int) -> set[str]:
     return years
 
 
+_PERIOD_CLAUSE_SPLIT_RE = re.compile(r"(;|\s+e\s+|\s+and\s+)", re.IGNORECASE)
+_RESPECTIVELY_RE = re.compile(r"\b(?:respectivamente|respectively)\b", re.IGNORECASE)
+_CLAUSE_NUMBER_RE = re.compile(r"(?<![\w-])\d+(?:[.,]\d+)*(?:\s*%)?")
+
+
+_HISTORICAL_PERIOD_RE = re.compile(r"\b(?:em|desde|in|since)\s+(1\d{3})\b", re.IGNORECASE)
+
+
+def _period_years(text: str) -> set[str]:
+    """Calendar years of a text: 1900-2099, and earlier years after "em"/"in"."""
+    years = set(_YEAR_TOKEN_RE.findall(text))
+    years.update(
+        year
+        for year in _HISTORICAL_PERIOD_RE.findall(text)
+        if _HISTORICAL_YEAR_MIN <= int(year) < _YEAR_MIN
+    )
+    return years
+
+
+def _keep_claimed_period(evidence_text: str, claim_years: set[str]) -> str:
+    """Drop the numbers of clauses that belong to another year.
+
+    In "a receita foi de 120 milhões em 2023 e de 95 milhões em 2024" each value is
+    bound to the year of its own clause, so for a claim about 2024 only "95 milhões
+    em 2024" is compared. Applied only when the passage names the claimed year and
+    another one, the claimed year's clause has a value of its own, and the passage
+    does not pair values and years with "respectivamente". Words are kept, so
+    attributes ("receita") still resolve.
+    """
+    evidence_years = _period_years(evidence_text)
+    claimed = evidence_years & claim_years
+    if not claimed or len(evidence_years) < 2 or _RESPECTIVELY_RE.search(evidence_text):
+        return evidence_text
+    parts = _PERIOD_CLAUSE_SPLIT_RE.split(evidence_text)
+    clauses = parts[0::2]
+    claimed_clause_has_value = False
+    for clause in clauses:
+        years = _period_years(clause)
+        if years & claimed and not years - claimed:
+            numbers = [n for n in _CLAUSE_NUMBER_RE.findall(clause) if n not in years]
+            claimed_clause_has_value = claimed_clause_has_value or bool(numbers)
+    if not claimed_clause_has_value:
+        return evidence_text
+    kept = []
+    for index, part in enumerate(parts):
+        if index % 2 == 0:
+            years = _period_years(part)
+            if years and not years & claimed:
+                part = _CLAUSE_NUMBER_RE.sub(" ", part)
+        kept.append(part)
+    return "".join(kept)
+
+
 def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     """Compare every claim fact with the evidence facts (set semantics).
 
@@ -1466,7 +1729,9 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
         return NumericAlignment()
     claim_years = frozenset(_YEAR_TOKEN_RE.findall(claim_text))
     evidence_facts = _numeric_facts(
-        _mask_comparison_baselines(evidence_text, claim_years),
+        _mask_comparison_baselines(
+            _keep_claimed_period(evidence_text, _period_years(claim_text)), claim_years
+        ),
         skip_bounds=not _has_bound(claim_text),
     )
     claim_locale = _locale_for(claim_text)
@@ -1552,7 +1817,11 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
             pending_confirmations += 1
             continue
         if matches and left_unit == "year":
-            year_conflicts += 1
+            # Every year of the passage is also a claimed year: the passage dates
+            # only part of a compound claim ("receita em 2024 e fundação em 1987"
+            # against the 2024 revenue alone). The other year is not addressed.
+            if not evidence_periods <= claim_periods:
+                year_conflicts += 1
         elif matches:
             matched += 1
             flags[f"{kind}_conflict"] = True
@@ -1593,7 +1862,12 @@ def _confirmed_as_written(
         if scaled:
             if not right_unit.startswith("scaled:"):
                 continue
-        elif right_unit not in {"scalar", "year"} and not right_unit.startswith("duration:"):
+        elif right_unit.startswith("duration:"):
+            # Two values with units were already compared after normalization:
+            # "120 kW" never confirms "120 MW", nor "15 horas" "15 dias", as written.
+            if left_unit.startswith("duration:"):
+                continue
+        elif right_unit not in {"scalar", "year"}:
             continue
         value = _fact_value(right, right_unit, evidence_locale, as_written=True)
         if value is not None and relative_difference(written, value) <= tolerance:
@@ -1638,7 +1912,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "14"
+    version = "15"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
@@ -1689,6 +1963,12 @@ class RuleStanceDetector:
                 entity_mismatch = bool(
                     claim_entities and not claim_entities.intersection(evidence_entities)
                 ) or _competing_entity(claim_item.claim.text, item.excerpt)
+                # Another named actor, a part of the entity or a longer-named sibling:
+                # the passage reports another entity, so it cannot contradict either.
+                other_entity = _competing_entity(
+                    claim_item.claim.text, item.excerpt
+                ) or _entity_variant(claim_item.claim.text, item.excerpt)
+                entity_mismatch = entity_mismatch or other_entity
                 date_conflict = self._date_conflict(claim_item.claim.text, item.excerpt)
                 evidence_has_date = bool(_extract_dates(item.excerpt))
                 negation_conflict = _has_negation(claim_item.claim.text) != _has_negation(
@@ -1711,6 +1991,8 @@ class RuleStanceDetector:
                     # "X negou que P", "P pode ter ocorrido", "estima-se que P",
                     # "não se sabe se P": the document neither asserts P nor
                     # establishes that P is false.
+                    stance = Stance.NEUTRAL
+                elif other_entity:
                     stance = Stance.NEUTRAL
                 elif numeric_conflict or (
                     same_proposition and (date_conflict or negation_conflict or direction_conflict)
