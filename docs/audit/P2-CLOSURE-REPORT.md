@@ -233,25 +233,72 @@ Nenhum defeito crítico ou alto pendente foi encontrado. Nenhuma mudança de alg
 
 | medida | revisão (`9e957cd5`) | final |
 |---|---|---|
-| suíte completa, Python 3.13 | 3.125 | **3.243 aprovados**, 0 falhas |
-| Python 3.11 e 3.12, local | — | ver seção 9 |
+| suíte completa | 3.125 | **3.267 aprovados**, 0 falhas, em Python 3.11.18, 3.12.3 e 3.13.18 (local, venv limpo por versão) |
 | cobertura de linhas, 7 arquivos `auditlog` | 100% | **100%** (915 linhas) |
-| cobertura de ramos | 99% | **99%**: 380 ramos, 2 parciais (`store.py` 109→111 caminho `:memory:`, 367→369 rollback fora de transação), ambos preexistentes |
-| Ruff check / format (0.17.5) | limpo | **limpo** (563 arquivos) |
+| cobertura de ramos | 99% | **99%**: 380 ramos, 2 parciais (`store.py` 109→111, caminho `:memory:`; 367→369, rollback fora de transação), ambos preexistentes |
+| Ruff check / format (0.17.5) | limpo | **limpo** (569 arquivos) |
 | mypy `src/ayorai_attractor` | limpo | **limpo** (107 arquivos); `--strict` em `auditlog` também limpo |
 | Bandit `src/ayorai_attractor` | limpo | **limpo** (0 médio, 0 alto) |
+| build `sdist` + `wheel` | — | gerados localmente (`ayorai_opensearch-0.8.0`) |
 
-Os 118 testes a mais são os novos casos M1, M2, B1, B2, B3 e HTTP. Nenhum teste foi removido ou alterado para passar.
+**Os 142 testes a mais:**
+- 47 de M1 e M2;
+- 2 de HTTP;
+- 82 de B1, B2 e B3;
+- 24 das lacunas apontadas pela mutação (`tests/auditlog/test_p2_mutation_gaps.py`).
+
+Nenhum teste foi removido ou alterado para passar.
 
 ## 8. Mutação
 
-Ver a tabela no fim desta seção. A ferramenta é a mesma da revisão: troca de operadores por AST em cópia temporária. Desta vez:
-- todos os pontos de mutação dos três arquivos foram rodados, não uma amostra;
-- a suíte de mutação inclui o novo arquivo de testes.
+**Ferramenta:** a mesma da revisão, troca de operadores por AST em cópia temporária.
+- Comparações, `and`/`or`, `not`, constantes inteiras e booleanas.
+- Desta vez rodaram **todos** os pontos de mutação dos três arquivos, não uma amostra.
+
+**[FATO VERIFICADO]**
+
+| arquivo | revisão (amostra) | completa, antes dos testes de lacuna | completa, final |
+|---|---|---|---|
+| `store.py` | 50/53 | 163/182 | **171/182** |
+| `witness_client.py` | 52/60 | 73/79 | **78/79** |
+| `cosignature.py` | 44/50 | 70/81 | **76/81** |
+| total | 146/163 (89,6%) | 306/342 (89,5%) | **325/342 (95,0%)** |
+
+**Diferença em relação à revisão:** a revisão sorteou 163 mutantes. Aqui foram os 342. A taxa intermediária é a mesma; a final sobe porque 19 sobreviventes eram lacunas reais e ganharam testes:
+- checkpoint 1 ausente;
+- base64 não estrito no recibo;
+- reabertura com lacuna ou com hash divergente, isoladamente;
+- `frozen`;
+- diretório pai;
+- usuário sem senha na URL;
+- timeout menor que 1 s;
+- linha sem LF final;
+- janela padrão de 300 s;
+- `now` negativo, zero ou máximo;
+- linha com campo extra;
+- linha curta antes de uma válida.
+
+**Classificação dos 17 sobreviventes finais:**
+
+| linha | mutante | classe | motivo |
+|---|---|---|---|
+| `store.py` 281, 301, 360 (4) | `sort_keys` True→False | equivalente comprovado | o JSON é relido com `json.loads`; o compromisso usa RFC 8785, não essa ordem |
+| `store.py` 178 (2) | `0`→`1`, `+1`→`+2` em `_stored_size` | equivalente comprovado | só força uma recarga a mais da árvore (desempenho), sem mudar resultado |
+| `store.py` 480 | `<`→`<=` no alvo do apagamento | equivalente comprovado | alvo igual ao próprio índice é recusado logo depois por `target not in event_leaves` |
+| `store.py` 538 | `[:12]`→`[:13]` no rótulo | equivalente comprovado | só muda o texto da mensagem |
+| `store.py` 643 | `or`→`and` no teste de `bool` | equivalente comprovado | `verify_inclusion` recusa índice `bool` por conta própria (defesa em profundidade) |
+| `store.py` 447 | `else 0`→`else 1` | comportamento não alcançável | o log sempre publica o checkpoint de tamanho 0, então a lista nunca está vazia em operação |
+| `store.py` 409 | `parents=True`→`False` em `backup()` | lacuna de teste (baixa) | backup para diretório com avô inexistente; não afeta integridade |
+| `witness_client.py` 58 | `255`→`256` | equivalente comprovado | `key_id` recusa nome acima de 255 bytes logo depois |
+| `cosignature.py` 31 (2) | `< 0x20`→`<=`, `0x20`→`0x21` | equivalente comprovado | 0x20 é espaço e já é recusado por `isspace()` |
+| `cosignature.py` 106 (2) | `< 0`→`<= 0`, `0`→`1` | comportamento não alcançável | separador na posição 0 exige nota que começa com linha vazia, sem corpo de checkpoint |
+| `cosignature.py` 121 | `validate=True`→`False` | equivalente comprovado | a recodificação canônica na linha seguinte recusa o mesmo conjunto |
+
+Não há sobrevivente inconclusivo.
 
 ## 9. CI
 
-Ver o fim do relatório (preenchido depois da execução no SHA final).
+Ver o adendo no fim do relatório.
 
 ## 10. Golden e Judge
 
@@ -295,8 +342,45 @@ Nenhuma delas é defeito de segurança dentro do escopo da P2. **[INFERÊNCIA]**
 
 ## 13. SHA final
 
-Ver o fim do relatório.
+**Commits nesta etapa, sobre `9e957cd5`:**
+- `3d9d77ff` fix: recibos de idempotência auditados e redigidos no apagamento;
+- `ea9f73c7` test: B1, B2, B3 e lacunas da mutação;
+- `2ea2e2fa` docs: relatório e evidências;
+- o commit deste texto final, que só altera documentação.
+
+O SHA final e o resultado da CI nele constam da descrição da PR #634. Um relatório versionado não pode citar o hash do próprio commit.
 
 ## 14. Veredito técnico
 
-Ver o fim do relatório.
+**APROVADA COM RESSALVAS.** [INFERÊNCIA, a partir dos fatos das seções 3 a 10]
+
+**Critérios atendidos:**
+- M1 corrigido: o ataque original é detectado por `verify_log()`, e o reenvio não devolve recibo alheio;
+- M2 corrigido;
+- B1, B2 e B3 com testes específicos;
+- suíte completa aprovada em 3.11, 3.12 e 3.13;
+- Ruff, mypy e Bandit limpos;
+- Golden e Judge intactos;
+- nenhum defeito crítico ou alto pendente;
+- interoperabilidade executada contra a testemunha de referência.
+
+**Ressalvas, que não são defeitos do código entregue:**
+1. o vínculo chave → evento não é ancorado na árvore. A correção completa muda o contrato do recibo e depende de decisão do mantenedor (seção 12);
+2. bancos com apagamentos anteriores precisam de remediação operacional;
+3. limitações operacionais da seção 11: nenhuma testemunha configurada, só Ed25519, estado em memória e sem quórum;
+4. interoperabilidade testada com uma única implementação, em loopback.
+
+Código corrigido, testes aprovados, conformidade normativa e interoperabilidade prática estão demonstrados nos níveis descritos acima. **Prontidão para produção não está demonstrada:** depende das decisões das seções 11 e 12.
+
+## Evidências (`docs/audit/evidence/p2-closure/`)
+
+| arquivo | conteúdo |
+|---|---|
+| `interop.py`, `interopwitness-main.go` | roteiro de interoperabilidade e servidor da testemunha torchwood |
+| `interop-result-final.json`, `witness-final.log` | resultado 14/14 e pedidos registrados pela testemunha |
+| `witness-original-head-7e078bc1.log` | recusa `invalid input` do pedido sem `old ` |
+| `tamper_bench.py`, `truncate_pure.py`, `bench-*.json` | benchmark de adulteração (`main`, P2 antes, P2 final) |
+| `perf_idem.py` | desempenho com chaves de idempotência |
+| `mutate.py`, `mutation-results.txt` | ferramenta e resultados da mutação |
+
+Reprodução: `PYTHONPATH=<árvore>/src python -P <script> <rótulo> <saída>`.
