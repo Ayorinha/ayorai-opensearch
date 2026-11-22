@@ -30,7 +30,7 @@ class WitnessIdentity:
     public_key: bytes
 
     def __post_init__(self) -> None:
-        if not self.name or len(self.name.encode("utf-8")) > 255:
+        if not isinstance(self.name, str) or not self.name or len(self.name.encode("utf-8")) > 255:
             raise ValueError("invalid witness name")
         if not isinstance(self.public_key, bytes) or len(self.public_key) != 32:
             raise ValueError("witness Ed25519 public key must be 32 bytes")
