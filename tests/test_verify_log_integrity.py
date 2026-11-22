@@ -70,7 +70,11 @@ def test_record_mutation_is_detected_against_the_leaf_commitment(
     open_log: tuple[VerificationLog, str],
 ) -> None:
     store, path = open_log
-    _sql(path, "UPDATE vlog_records SET record = ? WHERE idx = 1", ('{"verdict":"SUPPORTED"}',))
+    _sql(
+        path,
+        "UPDATE vlog_records SET record = ? WHERE idx = 1",
+        ('{"verdict":"SUPPORTED"}',),
+    )
     assert "record 1 commitment mismatch" in _problems(store)
 
 
