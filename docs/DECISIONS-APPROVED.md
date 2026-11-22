@@ -127,6 +127,18 @@ As quatro que restavam pendentes nesse registro (DEC-001, DEC-003, DEC-004 e DEC
   - autorização expressa do mantenedor para o gasto.
 - **Consequências:** até lá, `received_at` e os checkpoints têm hora declarada pelo operador, e não se afirma hora certificada.
 
+## DEC-032 — Tenant distinto de principal (ADR-013)
+
+- **Data da decisão:** 2026-11-22
+- **Decisor e mantenedor:** Anderson Leon Ayora
+- **Forma:** resposta explícita do mantenedor a quatro perguntas, com as opções recomendadas.
+- **Decisão:**
+  1. O tenant é um campo do arquivo de chaves, resolvido na leitura. O esquema da trilha não muda.
+  2. Lê um rastro qualquer chave do mesmo tenant com `audit:read`. Entre tenants, 404.
+  3. O log de verificação continua único, com o tenant no registro salgado (`ayorai.verify-record.v2`).
+- **Autorização:** abrir as PRs da ADR-013 e da implementação e mesclar cada uma com CI verde, inclusive o CodeQL.
+- **Registro normativo:** [adr/ADR-013-tenant.md](adr/ADR-013-tenant.md).
+
 ## DEC-031 — Chaves de API: escopos, expiração e revogação sem reinício (ADR-012)
 
 - **Data da decisão:** 2026-11-21
