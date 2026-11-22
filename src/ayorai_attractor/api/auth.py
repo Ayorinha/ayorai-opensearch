@@ -8,10 +8,20 @@ import os
 import time
 from collections import OrderedDict
 from collections.abc import Iterable
+from datetime import UTC, datetime
 from math import ceil
 
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
+
+from ayorai_attractor.api.http_metrics import http_metrics
+from ayorai_attractor.api.keys import (
+    KeyEntry,
+    KeyRegistry,
+    legacy_entries,
+    reload_interval,
+    required_scope,
+)
 
 # API keys are machine-generated bearer tokens, not human passwords. A key
 # shorter than this is rejected before any digest is computed, so every key
@@ -49,6 +59,12 @@ def _load_configuration() -> tuple[str, tuple[str, ...], bytes | None]:
         raise ValueError(
             "ATTRACTOR_API_KEYS_HMAC_SHA256 must contain only HMAC-SHA-256 hex digests"
         )
+    key_file = _key_file()
+    if key_file is not None and hashes:
+        # One source of truth (ADR-012 §1).
+        raise ValueError(
+            "set either ATTRACTOR_API_KEYS_FILE or ATTRACTOR_API_KEYS_HMAC_SHA256, not both"
+        )
 
     pepper_hex = os.getenv("ATTRACTOR_API_KEY_PEPPER", "").strip()
     pepper: bytes | None = None
@@ -59,12 +75,17 @@ def _load_configuration() -> tuple[str, tuple[str, ...], bytes | None]:
                 "when ATTRACTOR_AUTH_MODE=api_key"
             )
         pepper = bytes.fromhex(pepper_hex)
-        if not hashes:
+        if not hashes and key_file is None:
             raise ValueError(
                 "ATTRACTOR_API_KEYS_HMAC_SHA256 must contain at least one HMAC-SHA-256 digest "
                 "when ATTRACTOR_AUTH_MODE=api_key"
             )
     return mode, hashes, pepper
+
+
+def _key_file() -> str | None:
+    value = os.getenv("ATTRACTOR_API_KEYS_FILE", "").strip()
+    return value or None
 
 
 def _is_sha256_hex(value: str) -> bool:
@@ -96,7 +117,10 @@ def principal_for_digest(key_digest: str, pepper: bytes) -> str:
 
 def validate_auth_configuration() -> None:
     """Validate auth and rate-limit environment settings during application startup."""
-    _load_configuration()
+    mode, _, _ = _load_configuration()
+    key_file = _key_file()
+    if mode == "api_key" and key_file is not None:
+        KeyRegistry(key_file, interval=reload_interval())  # invalid file: no startup
     _positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS)
     _positive_int_env("ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS)
     _positive_int_env("ATTRACTOR_RATE_LIMIT_MAX_CLIENTS", _DEFAULT_RATE_LIMIT_MAX_CLIENTS)
@@ -162,6 +186,11 @@ class APIKeyAuthMiddleware:
     and ATTRACTOR_API_KEY_PEPPER with a separately managed 32-byte secret.
     Raw API keys are never read from configuration or written to logs.
 
+    With ATTRACTOR_API_KEYS_FILE (ADR-012), each key also has scopes, an
+    optional expiry and a revocation, and the file is re-read without restart.
+    Unknown, expired or revoked keys get 401; a valid key without the route's
+    scope gets 403.
+
     Independent bounded IP and authenticated-key rate limits apply in both
     authentication modes. Raw API keys are never used as limiter identities.
     The limiters are process-local; multi-worker or multi-replica deployments
@@ -171,13 +200,20 @@ class APIKeyAuthMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
         self.mode, self.key_hashes, self.pepper = _load_configuration()
-        # Principals are derived once, from the configured digests: the request
-        # path only selects one, it never hashes data derived from the presented key.
-        self.principals = (
-            {digest: principal_for_digest(digest, self.pepper) for digest in self.key_hashes}
-            if self.pepper is not None
-            else {}
+        key_file = _key_file()
+        self.registry: KeyRegistry | None = (
+            KeyRegistry(
+                key_file,
+                interval=reload_interval(),
+                on_failure=http_metrics.api_keys_reload_failed,
+            )
+            if self.mode == "api_key" and key_file is not None
+            else None
         )
+        self._legacy = legacy_entries(self.key_hashes)
+        # Principals come from configured digests only: the request path selects
+        # one, it never hashes data derived from the presented key.
+        self.principals: dict[str, str] = {}
         limit = _positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS)
         window_seconds = _positive_int_env(
             "ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS
@@ -193,8 +229,20 @@ class APIKeyAuthMiddleware:
         self.key_rate_limiter = _FixedWindowRateLimiter(
             limit=limit,
             window_seconds=window_seconds,
-            max_clients=max(1, len(set(self.key_hashes))),
+            max_clients=max(1, len(self._entries())),
         )
+
+    def _entries(self) -> tuple[KeyEntry, ...]:
+        return self.registry.current() if self.registry is not None else self._legacy
+
+    def _principal(self, digest: str) -> str:
+        principal = self.principals.get(digest)
+        if principal is None:
+            if self.pepper is None:  # unreachable: api_key mode always has a pepper
+                raise RuntimeError("principal requested without a pepper")
+            principal = principal_for_digest(digest, self.pepper)
+            self.principals[digest] = principal
+        return principal
 
     @staticmethod
     def _client_identity(scope: Scope) -> str:
@@ -274,20 +322,28 @@ class APIKeyAuthMiddleware:
             await self._reject(scope, receive, send, 401, "Unauthorized")
             return
         presented_digest = _api_key_digest(presented_key, self.pepper)
+        entries = self._entries()
         # Compare every configured digest so the matching key's position
         # in a rotation list does not short-circuit the loop.
-        matched: str | None = None
-        for configured_digest in self.key_hashes:
-            if hmac.compare_digest(presented_digest, configured_digest):
-                matched = configured_digest
-        if matched is None:
+        matched: KeyEntry | None = None
+        for entry in entries:
+            if hmac.compare_digest(presented_digest, entry.digest):
+                matched = entry
+        # Unknown, expired and revoked keys get the same answer (ADR-012 §3).
+        if matched is None or not matched.is_active(datetime.now(UTC)):
             await self._reject(scope, receive, send, 401, "Unauthorized")
             return
 
+        self.key_rate_limiter.max_clients = max(1, len(entries))
         key_allowed, retry_after = self.key_rate_limiter.allow(presented_digest)
         if not key_allowed:
             await self._reject(scope, receive, send, 429, "Rate limit exceeded", retry_after)
             return
 
-        scope.setdefault("state", {})[PRINCIPAL_STATE_KEY] = self.principals[matched]
+        needed = required_scope(str(scope.get("method", "")), str(scope.get("path", "")))
+        if needed is not None and needed not in matched.scopes:
+            await self._reject(scope, receive, send, 403, "Forbidden")
+            return
+
+        scope.setdefault("state", {})[PRINCIPAL_STATE_KEY] = self._principal(matched.digest)
         await self.app(scope, receive, send)

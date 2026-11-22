@@ -61,3 +61,11 @@ groups:
         annotations:
           summary: "Audit traces failed to record: the trail is incomplete."
           runbook: "docs/manual/05-operacao.md#persistência-backup-e-restauração-dos-rastros-de-auditoria"
+
+      - alert: AttractorApiKeysReloadFailing
+        expr: increase(attractor_api_keys_reload_failures_total[10m]) > 0
+        labels:
+          severity: page
+        annotations:
+          summary: "The API key file is invalid: the last valid registry is in use and recent revocations may not be in effect."
+          runbook: "docs/security/API-AUTH.md#key-file-scopes-expiry-and-revocation-adr-012"

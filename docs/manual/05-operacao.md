@@ -240,6 +240,7 @@ Este capítulo não define alta disponibilidade, SLO, rotação automatizada de 
 | `OPENAI_BASE_URL`, `ATTRACTOR_MODEL` | Parâmetros opcionais do adaptador, conforme `docs/providers.md`. |
 | `ATTRACTOR_AUTH_MODE` | `api_key` por padrão; `off` apenas para desenvolvimento local isolado. |
 | `ATTRACTOR_API_KEY_PEPPER`, `ATTRACTOR_API_KEYS_HMAC_SHA256` | Segredos/digests exigidos no modo `api_key`; consulte `docs/security/API-AUTH.md`. |
+| `ATTRACTOR_API_KEYS_FILE`, `ATTRACTOR_API_KEYS_RELOAD_SECONDS` | Arquivo de chaves com escopos, expiração e revogação sem reinício (ADR-012), no lugar de `ATTRACTOR_API_KEYS_HMAC_SHA256`. Emissão e revogação: `python -m ayorai_attractor.api.keys`; consulte `docs/security/API-AUTH.md`. |
 | `ATTRACTOR_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL`; padrão `INFO`. |
 | `ATTRACTOR_MAX_BODY_BYTES` | Limite inteiro positivo do corpo HTTP; padrão 2 MiB. |
 | `ATTRACTOR_MAX_INFLIGHT_HEAVY` | Máximo de requisições `POST /v1/*` em execução simultânea; padrão 2. Acima disso a API responde HTTP 503 com `Retry-After: 1`. Inteiro positivo; valor inválido impede a inicialização. |

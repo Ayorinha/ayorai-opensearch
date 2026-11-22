@@ -45,6 +45,7 @@ class HttpMetrics:
         self._duration_sum: dict[str, float] = {}
         self._duration_count: dict[str, int] = {}
         self._audit_record_failures = 0
+        self._api_keys_reload_failures = 0
         self._started = time.time()
 
     def observe(self, route: str, method: str, status: int, duration_seconds: float) -> None:
@@ -64,6 +65,10 @@ class HttpMetrics:
     def audit_record_failed(self) -> None:
         with self._lock:
             self._audit_record_failures += 1
+
+    def api_keys_reload_failed(self) -> None:
+        with self._lock:
+            self._api_keys_reload_failures += 1
 
     def render(self) -> str:
         with self._lock:
@@ -109,6 +114,10 @@ class HttpMetrics:
                 "# HELP attractor_audit_record_failures_total Audit traces that failed to record.",
                 "# TYPE attractor_audit_record_failures_total counter",
                 f"attractor_audit_record_failures_total {self._audit_record_failures}",
+                "# HELP attractor_api_keys_reload_failures_total Key-file reloads rejected as "
+                "invalid; the last valid registry stays in use.",
+                "# TYPE attractor_api_keys_reload_failures_total counter",
+                f"attractor_api_keys_reload_failures_total {self._api_keys_reload_failures}",
             ]
         return "\n".join(lines) + "\n"
 
