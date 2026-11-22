@@ -144,7 +144,7 @@ Todos medidos localmente, Python 3.13, no commit `5c4448f6`:
 |---|---|
 | suíte completa | **3013 passed**, nenhuma falha, nenhum `xfail` |
 | `ruff check .` (0.17.5) | All checks passed |
-| `ruff format --check .` | 554 arquivos formatados |
+| `ruff format --check .` | 555 arquivos formatados (o relatório dizia 554; ver seção 5.1) |
 | `mypy src/ayorai_attractor` | sem problemas (105 arquivos) |
 | `bandit -r src/ayorai_attractor` | No issues identified |
 | Golden smoke-v0 | `969ec61a4aee4e4426f5d217819bd185ebba248743e7721714a3123f5df67c3d` (inalterado) |
@@ -168,6 +168,18 @@ Todos medidos localmente, Python 3.13, no commit `5c4448f6`:
 - Duas execuções dão resultado idêntico byte a byte.
 - Casos escritos depois das correções da v15: 30/32 → **31/32**.
 - Sondas adversariais: 17/22, sem regressão.
+
+### 5.1 Correção final (autorizada pelo mantenedor)
+
+- **Comentário falso removido.** Em `src/ayorai_attractor/verification/stance.py`, no ramo de `_MILLISECOND_WORDS`, ficou um comentário da tentativa A3 revertida. Ele dizia que "50 ms" e "0,05 segundos" são a mesma quantidade, mas o código continua com `unit = "ms"` e não compara milissegundos com segundos. O comentário foi removido. Não houve mudança de lógica.
+- **Contagem do ruff corrigida.** A primeira versão deste relatório registrou "554 arquivos formatados". A execução no HEAD que já inclui este relatório mostra 555.
+- **Validação depois da correção:**
+  - suíte completa: 3013 aprovados, 0 falhas, 0 `xfail`;
+  - `ruff check .`: sem problemas;
+  - `ruff format --check .`: 555 arquivos já formatados;
+  - mypy: sem problemas (105 arquivos);
+  - bandit: nenhum problema;
+  - hashes do Golden inalterados: smoke-v0 `969ec61a…7c3d`, v0 `21abb816…6632`, v0.1 `1fd6fdb7…9180`.
 
 ## 6. Pendências (dependem do mantenedor)
 

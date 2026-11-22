@@ -1501,7 +1501,6 @@ def _numeric_facts(text: str, *, skip_bounds: bool = False) -> list[tuple[str, s
             noun = _scaled_count_noun(tokens, index + 2)
             unit = f"count:{noun}:{scale}" if noun else f"scaled:{scale}"
         elif following in _MILLISECOND_WORDS:
-            # Milliseconds are time: "50 ms" and "0,05 segundos" are the same quantity.
             unit = "ms"
         elif following in _COUNT_NOUNS:
             unit = f"count:{_COUNT_NOUNS[following]}"
