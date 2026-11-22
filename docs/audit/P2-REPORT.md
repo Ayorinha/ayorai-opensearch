@@ -3,7 +3,7 @@
 - **Data:** 2026-11-22
 - **Branch:** `p2-auditlog-hardening`
 - **Base:** `main` em `76876bb70abcffe488176bb9b3b324942227aaad` (merge da AP1 #632)
-- **HEAD de código/documentação inicial:** `2075216df7319ce9f58ab694fc6dc2dc7326cb4a`
+- **HEAD de referência do primeiro relatório:** `b8c66a30003ef633efd417282fe6f964c5236a47`
 - **Estado:** trabalho em andamento; sem PR, merge, release, tag ou DOI.
 
 ## Objetivo
@@ -24,7 +24,10 @@ Consequência: uma alteração isolada na tabela restrita podia deixar o Merkle 
 - detecta alteração do registro, alteração do sal e apagamento parcial;
 - detecta linha restrita órfã ou sem folha de evento;
 - exige que a folha de apagamento aponte para uma folha de evento anterior, não para outra folha de apagamento;
-- detecta mais de uma folha de apagamento para o mesmo evento.
+- detecta mais de uma folha de apagamento para o mesmo evento;
+- valida a estrutura e o motivo da folha de apagamento;
+- confere se o timestamp do registro restrito corresponde ao timestamp imutável da folha;
+- detecta registro restaurado depois de seu evento de apagamento.
 
 ### P2-02 — esquemas de folha desconhecidos eram ignorados
 
@@ -40,7 +43,11 @@ Em `tests/test_verify_log_integrity.py`:
 - apagamento parcial do registro;
 - linha de registro órfã;
 - folha de apagamento apontando para outra folha de apagamento;
-- esquema público desconhecido.
+- esquema público desconhecido;
+- adulteração do timestamp de apagamento;
+- restauração do registro depois do apagamento;
+- motivo inválido em folha de apagamento;
+- folhas de apagamento duplicadas para o mesmo evento.
 
 Esses testes foram adicionados, mas **a suíte ainda precisa ser executada em ambiente com as dependências do projeto**. A branch não foi aberta como PR, portanto ainda não há CI remoto associado a este HEAD. Nenhum resultado de teste é declarado como aprovado nesta etapa.
 
