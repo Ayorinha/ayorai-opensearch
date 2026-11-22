@@ -39,7 +39,7 @@ def _checkpoint(signer: NoteSigner, leaves: list[bytes]) -> str:
 
 
 def test_c2sp_v1_1_ed25519_vector_matches_exact_wire_bytes() -> None:
-    vector_path = Path(__file__).parent / "auditlog/vectors/c2sp-cosignature-ed25519-v1.1.0.json"
+    vector_path = Path(__file__).parent / "vectors/c2sp-cosignature-ed25519-v1.1.0.json"
     vector = json.loads(vector_path.read_text(encoding="utf-8"))
     seed = bytes.fromhex(vector["seed_hex"])
     body = vector["checkpoint_body"]
