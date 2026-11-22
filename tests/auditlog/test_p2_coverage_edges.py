@@ -30,10 +30,10 @@ WITNESS_SEED = bytes(range(32, 64))
 PUB = Ed25519PrivateKey.from_private_bytes(WITNESS_SEED).public_key().public_bytes(
     serialization.Encoding.Raw, serialization.PublicFormat.Raw
 )
-BODY = f"{LOG}\\n0\\n{base64.b64encode(empty_root()).decode()}\\n"
+BODY = f"{LOG}\n0\n{base64.b64encode(empty_root()).decode()}\n"
 
 
-@pytest.mark.parametrize("name", ["", "x" * 256, "white space", "bad+name", "bad\\x01name", None])
+@pytest.mark.parametrize("name", ["", "x" * 256, "white space", "bad+name", "bad\x01name", None])
 def test_cosignature_rejects_invalid_names(name: object) -> None:
     with pytest.raises(ValueError):
         key_id(name, PUB)  # type: ignore[arg-type]
@@ -69,13 +69,13 @@ def test_cosignature_default_timestamp_and_malformed_notes(
 
     monkeypatch.setattr(module.time, "time", lambda: 1234)
     line = sign_cosignature(WITNESS, WITNESS_SEED, BODY)
-    valid = BODY + "\\n" + line
+    valid = BODY + "\n" + line
     assert verify_cosignature(valid, WITNESS, PUB, now=1234)
     for note in (
         None,
         BODY,
-        BODY + "\\n" + line.rstrip("\\n"),
-        BODY + "\\n— other AA==\\n",
+        BODY + "\n" + line.rstrip("\n"),
+        BODY + "\n— other AA==\n",
     ):
         assert not verify_cosignature(note, WITNESS, PUB, now=1234)  # type: ignore[arg-type]
     assert not verify_cosignature(valid, WITNESS, PUB, now=-1)
@@ -88,11 +88,11 @@ def test_cosignature_default_timestamp_and_malformed_notes(
 def test_cosignature_skips_malformed_and_noncanonical_lines() -> None:
     good = sign_cosignature(WITNESS, WITNESS_SEED, BODY, 100)
     malformed = (
-        "— witness.example !!!\\n"
-        "— witness.example AA==\\n"
-        "— witness.example " + base64.b64encode(bytes(76)).decode().rstrip("=") + "\\n"
+        "— witness.example !!!\n"
+        "— witness.example AA==\n"
+        "— witness.example " + base64.b64encode(bytes(76)).decode().rstrip("=") + "\n"
     )
-    assert verify_cosignature(BODY + "\\n" + malformed + good, WITNESS, PUB, now=100)
+    assert verify_cosignature(BODY + "\n" + malformed + good, WITNESS, PUB, now=100)
 
 
 @pytest.mark.parametrize(
@@ -173,7 +173,7 @@ def test_witness_rejects_non_200_status(status: int) -> None:
     http.close()
 
 
-@pytest.mark.parametrize("response_text", ["", "incomplete", "— wrong AA==\\n"])
+@pytest.mark.parametrize("response_text", ["", "incomplete", "— wrong AA==\n"])
 def test_witness_rejects_incomplete_or_invalid_signature_response(
     response_text: str,
 ) -> None:
