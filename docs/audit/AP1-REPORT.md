@@ -8,8 +8,8 @@
 | Commit da correção funcional P2 | `5c4448f6` |
 | Commit da validação final de código/documentação | `e8b5a650b7795f131d8f5649a0cffaf0e18079f7` |
 | PR de integração | [#632](https://github.com/Ayorinha/ayorai-opensearch/pull/632), aberta contra `main` |
-| HEAD da PR na última conferência | `b57392cbfc65b2c8ce6241494af8e45e579a8b54` |
-| Estado de integração nesta revisão | PR aberta; ainda não mesclada |
+| Último HEAD com CI integral concluído | `b57392cbfc65b2c8ce6241494af8e45e579a8b54` |
+| Estado de integração | PR aberta; ainda não mesclada |
 
 **Escopo deste relatório:** consolidação técnica AP1 e registro de sua revisão/integração. Não houve release, tag ou DOI nesta etapa. O SHA de referência acima identifica a `main` usada como base; os SHAs de validação e da PR identificam commits posteriores distintos.
 
@@ -201,8 +201,9 @@ Os resultados abaixo foram reportados pela execução local em Python 3.13. A co
    - a branch `ap1-consolidation` está publicada no GitHub e a PR [#632](https://github.com/Ayorinha/ayorai-opensearch/pull/632) está aberta contra `main`;
    - o HEAD atual conferido nesta revisão é `b57392cbfc65b2c8ce6241494af8e45e579a8b54`; a base da PR permanece `0acc7dc9540048d8340347655a62d7fa7b156741`;
    - no HEAD `b57392cb...`, a API do GitHub retornou **37 check-runs concluídos com sucesso, 0 falhas e 0 pendentes**. A matriz incluiu CI Python 3.11/3.12/3.13, Judge/Golden regression, segurança, CodeQL, Dependency Review, Schemathesis, compatibilidade FastAPI/Pydantic, migração Golden e guardas OpenAPI;
-   - a PR foi reportada como `open`, `mergeable=true`, com 9 arquivos alterados. O diff permanece restrito ao escopo AP1, incluindo a atualização documental desta seção;
-   - **não houve merge nesta conferência**. A integração depende da revisão final do diff e da autorização condicional do mantenedor, registrada na conversa. Não houve release, tag ou DOI.
+   - a PR foi reportada como `open`, `mergeable=true`, com 9 arquivos alterados. O diff permaneceu restrito ao escopo AP1;
+   - após essa conferência, foi criado um commit exclusivamente documental para corrigir o cabeçalho e a seção de publicação deste relatório. **Os 37 checks acima pertencem ao SHA `b57392cb...`, não devem ser atribuídos automaticamente ao novo HEAD**; o CI precisa concluir novamente no commit desta atualização;
+   - **não houve merge nesta conferência**. A integração permanece condicionada ao CI do HEAD final e à autorização condicional do mantenedor, registrada na conversa. Não houve release, tag ou DOI.
 
 ## 7. Evidências
 
