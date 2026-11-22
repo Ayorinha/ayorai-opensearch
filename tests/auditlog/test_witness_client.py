@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from ayorai_attractor.auditlog.cosignature import key_id, sign_cosignature, verify_cosignature
 from ayorai_attractor.auditlog.merkle import (
     consistency_proof,
+    empty_root,
     leaf_hash,
     tree_root,
     verify_consistency,
@@ -143,7 +144,10 @@ class _WitnessHarness:
             else:
                 if old_size != previous.size or current.size < previous.size:
                     return httpx.Response(409)
-                if current.size == previous.size:
+                if previous.size == 0:
+                    if previous.root != empty_root() or proof:
+                        return httpx.Response(422)
+                elif current.size == previous.size:
                     if current.root != previous.root or proof:
                         return httpx.Response(422)
                 elif not verify_consistency(
@@ -217,6 +221,19 @@ def test_witness_client_rejects_signed_checkpoint_with_wrong_origin() -> None:
         client.submit(wrong_origin, [])
     assert harness.requests == 0
     assert client.last_checkpoint is None
+
+
+def test_witness_client_advances_from_a_signed_empty_checkpoint() -> None:
+    harness = _WitnessHarness()
+    client = _client(harness)
+    signer = NoteSigner(LOG_NAME, LOG_SEED)
+    empty = signer.sign(Checkpoint(LOG_NAME, 0, empty_root()).body())
+    client.submit(empty, [])
+    first = _checkpoint(signer, [b"first-event"])
+    result = client.submit(first, [])
+    parsed = parse_checkpoint(verify_note(result, signer.verifier_key))
+    assert parsed is not None and parsed.size == 1
+    assert harness.requests == 2
 
 
 def test_witness_client_rejects_rollback_before_network_call() -> None:
