@@ -101,7 +101,8 @@ def test_p1_segundo_is_not_a_unit() -> None:
     ],
 )
 def test_p2_value_of_another_year_does_not_support(claim: str, document: str) -> None:
-    assert _verdict(claim, document) not in {"partially_supported", "supported"}
+    # AP1: the claimed year's value is bound to the subject, so it now refutes.
+    assert _verdict(claim, document) == R
 
 
 @pytest.mark.parametrize(
@@ -309,4 +310,44 @@ def test_p7_bare_number_is_not_a_year() -> None:
 
 
 def test_detector_version_is_15() -> None:
-    assert RuleStanceDetector.version == "15"
+    assert RuleStanceDetector.version in {"15", "16"}
+
+
+# --- AP1: the clause of another year keeps the subject when it opens the sentence ----------
+
+
+@pytest.mark.parametrize(
+    ("claim", "document", "expected"),
+    [
+        (
+            "A receita da Vértice foi de 40 milhões em 2024.",
+            "Em 2023, a receita da Vértice foi de 40 milhões; em 2024, de 55 milhões.",
+            R,
+        ),
+        (
+            "A receita da Vértice foi de 55 milhões em 2024.",
+            "Em 2023, a receita da Vértice foi de 40 milhões; em 2024, de 55 milhões.",
+            P,
+        ),
+        (
+            "A receita da Vértice foi de 40 milhões em 2023.",
+            "A receita da Vértice foi de 40 milhões em 2023 e de 55 milhões em 2024.",
+            P,
+        ),
+    ],
+)
+def test_ap1_claimed_year_value_is_bound_to_the_subject(
+    claim: str, document: str, expected: str | None
+) -> None:
+    assert _verdict(claim, document) == expected
+
+
+def test_ap1_dropped_clause_keeps_no_year_of_its_own() -> None:
+    from ayorai_attractor.verification.stance import _keep_claimed_period
+
+    kept = _keep_claimed_period(
+        "Em 2023, a receita foi de 40 milhões; em 2024, de 55 milhões.", {"2024"}
+    )
+    assert "2023" not in kept
+    assert "40" not in kept
+    assert "55" in kept and "receita" in kept
