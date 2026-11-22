@@ -1444,14 +1444,22 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     # vs "Holding Quatro Rios"), the evidence is about another entity.
     claim_names = {value for value, unit, _ in claim_facts if unit == "name"}
     evidence_names = {value for value, unit, _ in evidence_facts if unit == "name"}
-    if claim_names and evidence_names and claim_names.isdisjoint(evidence_names):
+    if claim_names - evidence_names:
+        # The evidence does not name the claim's entity by its numeral ("Plano
+        # Safra 2024", "Holding Três Rios"): it can neither confirm nor contradict.
         return NumericAlignment(all_matched=False)
 
     # Another period: the claim ties a typed fact (revenue, count, amount) to a
     # year and the evidence names only other years. "40 milhões em 2023" says
     # nothing about 2024, so it neither confirms nor contradicts the claim.
     claim_periods = {value for value, unit, _ in claim_facts if unit == "year"}
-    evidence_periods = {value for value, unit, _ in evidence_facts if unit == "year"}
+    # A year-shaped name numeral in the evidence ("Relatório Anual 2023") still
+    # dates what it reports, so it counts as an evidence period here.
+    evidence_periods = {
+        value
+        for value, unit, _ in evidence_facts
+        if unit == "year" or (unit == "name" and _is_year_token(value))
+    }
     claim_has_typed_fact = any(
         unit not in {"year", "name"} and attribute != "unknown"
         for _, unit, attribute in claim_facts

@@ -247,3 +247,53 @@ def test_p8h_each_number_keeps_its_role() -> None:
 )
 def test_p8h_combined_claim(document: str, expected: str | None) -> None:
     assert _check(COMBINED, document)["verdict"] == expected
+
+
+# --- a year inside a name still dates the fact (review of the P8 fix) -------------------
+
+
+@pytest.mark.parametrize(
+    ("claim", "document"),
+    [
+        # The claim names its period in a title; the passage is about another one.
+        (
+            "O Plano Safra 2024 liberou R$ 40 bilhões.",
+            "O Plano Safra liberou R$ 55 bilhões em 2023.",
+        ),
+        ("A Copa 2014 teve 64 jogos.", "A Copa teve 70 jogos em 2018."),
+        (
+            "O Censo 2022 contou 203 milhões de habitantes.",
+            "O Censo contou 190 milhões de habitantes em 2010.",
+        ),
+        # The passage does not name the claim's entity by its numeral.
+        (
+            "A receita da Construtora 2000 foi de 40 milhões.",
+            "A receita da construtora foi de 55 milhões em 2024.",
+        ),
+        (
+            "A Holding Três Rios teve receita de 40 milhões.",
+            "A holding teve receita de 55 milhões.",
+        ),
+        # The passage dates its figure in a title: another period.
+        (
+            "A receita da AtlasGrid foi de 40 milhões em 2024.",
+            "No Relatório Anual 2023, a receita da AtlasGrid foi de 55 milhões.",
+        ),
+    ],
+)
+def test_a_year_in_a_name_is_not_lost_as_a_period(claim: str, document: str) -> None:
+    assert _abstains(_check(claim, document))
+
+
+@pytest.mark.parametrize(
+    ("claim", "document"),
+    [
+        ("O Plano Safra 2024 liberou R$ 40 bilhões.", "O Plano Safra 2024 liberou R$ 55 bilhões."),
+        (
+            "A receita da AtlasGrid foi de 40 milhões em 2024.",
+            "No Relatório Anual 2024, a receita da AtlasGrid foi de 55 milhões.",
+        ),
+    ],
+)
+def test_a_year_in_a_name_still_allows_a_genuine_contradiction(claim: str, document: str) -> None:
+    assert _check(claim, document)["verdict"] == "refuted"
