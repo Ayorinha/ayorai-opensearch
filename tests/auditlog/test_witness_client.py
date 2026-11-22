@@ -147,6 +147,8 @@ class _WitnessHarness:
                 if previous.size == 0:
                     if previous.root != empty_root() or proof:
                         return httpx.Response(422)
+                    if current.size == 0 and current.root != previous.root:
+                        return httpx.Response(422)
                 elif current.size == previous.size:
                     if current.root != previous.root or proof:
                         return httpx.Response(422)
@@ -221,6 +223,18 @@ def test_witness_client_rejects_signed_checkpoint_with_wrong_origin() -> None:
         client.submit(wrong_origin, [])
     assert harness.requests == 0
     assert client.last_checkpoint is None
+
+
+def test_witness_client_rejects_conflicting_empty_checkpoint() -> None:
+    harness = _WitnessHarness()
+    client = _client(harness)
+    signer = NoteSigner(LOG_NAME, LOG_SEED)
+    empty = signer.sign(Checkpoint(LOG_NAME, 0, empty_root()).body())
+    client.submit(empty, [])
+    conflicting = signer.sign(Checkpoint(LOG_NAME, 0, bytes(32)).body())
+    with pytest.raises(WitnessError, match="same-size empty checkpoint"):
+        client.submit(conflicting, [])
+    assert harness.requests == 1
 
 
 def test_witness_client_advances_from_a_signed_empty_checkpoint() -> None:
