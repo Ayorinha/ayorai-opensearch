@@ -205,6 +205,21 @@ def test_witness_client_rejects_rollback_before_network_call() -> None:
     assert client.last_checkpoint == cosigned
 
 
+def test_explicit_previous_checkpoint_cannot_bypass_local_monotonic_state() -> None:
+    harness = _WitnessHarness()
+    client = _client(harness)
+    signer = NoteSigner(LOG_NAME, LOG_SEED)
+    first = _checkpoint(signer, [b"one"])
+    client.submit(first, [])
+    stale_previous = _checkpoint(signer, [])
+    candidate = _checkpoint(signer, [b"one", b"two"])
+    proof = consistency_proof(1, [leaf_hash(b"one"), leaf_hash(b"two")])
+    with pytest.raises(WitnessError, match="cannot override locally observed state"):
+        client.submit(candidate, proof, previous_checkpoint=stale_previous)
+    assert harness.requests == 1
+    assert client.last_checkpoint is not None
+
+
 def test_http_409_does_not_advance_local_checkpoint() -> None:
     harness = _WitnessHarness()
     signer = NoteSigner(LOG_NAME, LOG_SEED)
