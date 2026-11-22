@@ -164,3 +164,35 @@ A aprovação da CI demonstra que o conjunto de código testado passou nas verif
 ### Situação de encerramento
 
 A implementação candidata da P2 e sua CI estão aprovadas. Permanecem fora deste incremento: persistência operacional durável do estado do cliente, quórum de duas testemunhas reais e configuração de testemunhas independentes. A PR continua Draft e sem aprovação independente registrada; portanto, não foi mesclada.
+
+
+## 12. Expansão dirigida da cobertura e endurecimento final — 2026-11-22
+
+**[FATO VERIFICADO — relatório de cobertura da CI no commit `eb46a5a4a2381c2b6e6c7549503a9a79224ac90c`]** A cobertura anterior específica da trilha era:
+- `cosignature.py`: 86% (11 linhas não cobertas);
+- `witness_client.py`: 81% (22 linhas não cobertas);
+- `store.py`: 99% (4 linhas não cobertas);
+- `merkle.py`: 99% (1 linha não coberta);
+- `note.py` e `commitment.py`: 100%.
+
+A cobertura total do pacote era 95%, com 3.040 testes aprovados nessa execução. Esses números são uma linha de base histórica; não representam a cobertura dos commits posteriores desta seção.
+
+### Correções de implementação
+
+- `WitnessClient` rejeita contêineres de prova que não sejam sequências, antes de tentar iterá-los ou enviar requisições.
+- A validação de timeout também trata números inteiros tão grandes que não podem ser convertidos para float, recusando-os como valores não finitos em vez de deixar escapar `OverflowError`.
+- `WitnessIdentity` valida explicitamente que o nome é texto antes de codificar e validar o identificador C2SP.
+
+### Testes acrescentados
+
+- `tests/auditlog/test_p2_coverage_edges.py`: entradas inválidas para nomes, chaves, timestamps, seeds, notas, base64 não canônico, provas, URLs, timeouts, respostas HTTP, erros de transporte, checkpoints inválidos, rollback, origem divergente, tamanho zero e checkpoint de mesmo tamanho com raiz conflitante.
+- `tests/auditlog/test_p2_merkle_boundaries.py`: rejeição de hashes de folha com tamanho/tipo inválido pela árvore incremental.
+- `tests/test_verify_log_integrity.py`: dados residuais após apagamento, JSON restrito malformado e falha simulada de integridade na cópia de backup.
+
+### Estado de validação
+
+**[FATO VERIFICADO]** Os commits desta expansão foram gravados somente em `p2-auditlog-review`; a `main` não foi alterada. Os testes foram desenhados para cobrir as linhas que constavam como ausentes no relatório anterior.
+
+**[PENDENTE — não declarar como aprovado]** Ainda não há resultado de CI associado ao HEAD desta expansão. Portanto, não afirmar que a cobertura atual chegou a 100%, nem que os testes passaram. A próxima validação obrigatória é executar Ruff check/format, mypy e a suíte completa com cobertura em Python 3.11, 3.12 e 3.13; então usar o novo relatório `coverage.json`/saída `term-missing` para corrigir qualquer lacuna residual.
+
+A meta é 100% de cobertura de linhas nos módulos críticos da P2, sem excluir código nem alterar o escopo de cobertura para inflar o indicador. Cobertura de linhas não substitui branch coverage, testes de mutação, revisão de protocolo ou validação com testemunhas externas reais.
