@@ -45,25 +45,25 @@ def test_c2sp_v1_1_ed25519_vector_matches_exact_wire_bytes() -> None:
     body = vector["checkpoint_body"]
     line = sign_cosignature(vector["cosigner_name"], seed, body, vector["timestamp"])
     assert line == vector["signature_line"]
-    note = body + "\\n" + "— log.example " + "AA==" + "\\n" + line
+    note = body + "\n" + "— log.example " + "AA==" + "\n" + line
     assert verify_cosignature(note, vector["cosigner_name"], bytes.fromhex(vector["public_key_hex"]), now=vector["timestamp"])
 
 
 def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
-    body = f"{LOG_NAME}\\n1\\n{base64.b64encode(bytes(32)).decode()}\\n"
+    body = f"{LOG_NAME}\n1\n{base64.b64encode(bytes(32)).decode()}\n"
     line = sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, 1_700_000_000)
-    note = body + "\\n" + "— log.example AA==\\n" + line
+    note = body + "\n" + "— log.example AA==\n" + line
     assert verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
-    assert not verify_cosignature(note.replace("1\\n", "2\\n", 1), WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
+    assert not verify_cosignature(note.replace("1\n", "2\n", 1), WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
     assert not verify_cosignature(note, WITNESS_NAME, _pub(bytes(reversed(WITNESS_SEED))), now=1_700_000_000)
     assert not verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_699_999_000)
 
 
 def test_cosignature_ignores_unknown_cosigner_lines() -> None:
-    body = f"{LOG_NAME}\\n1\\n{base64.b64encode(bytes(32)).decode()}\\n"
+    body = f"{LOG_NAME}\n1\n{base64.b64encode(bytes(32)).decode()}\n"
     good = sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, 1_700_000_000)
     unknown = sign_cosignature("other.example/w", bytes(reversed(WITNESS_SEED)), body, 1_700_000_000)
-    note = body + "\\n" + unknown + good
+    note = body + "\n" + unknown + good
     assert verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
 
 
@@ -81,7 +81,7 @@ class _WitnessHarness:
     def handle(self, request: httpx.Request) -> httpx.Response:
         assert request.method == "POST"
         self.requests += 1
-        header, separator, checkpoint_note = request.content.decode().partition("\\n\\n")
+        header, separator, checkpoint_note = request.content.decode().partition("\n\n")
         if not separator:
             return httpx.Response(422)
         lines = header.splitlines()
