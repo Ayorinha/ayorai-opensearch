@@ -387,6 +387,37 @@ def test_idempotency_key_over_http(api: Any) -> None:
     assert invalid.status_code == 422
 
 
+def test_idempotent_retry_of_an_erased_event_is_409_over_http(api: Any) -> None:
+    client = api("local")
+    headers = {"Idempotency-Key": "req-erased"}
+    first = client.post("/v1/verify", json=_r2a(), headers=headers).json()["audit_receipt"]
+    store = verify_log_module.get_verify_log()
+    store.erase(first["index"], "2026-11-22T00:00:00Z")
+    size = store.size()
+    retry = client.post("/v1/verify", json=_r2a(), headers=headers)
+    assert retry.status_code == 409
+    assert "erased" in retry.json()["detail"]
+    assert store.size() == size
+
+
+def test_idempotent_retry_with_a_tampered_receipt_is_never_served_over_http(
+    api: Any, tmp_path: Path
+) -> None:
+    client = api("required")
+    headers = {"Idempotency-Key": "req-tamper"}
+    first = client.post("/v1/verify", json=_r2a(), headers=headers).json()["audit_receipt"]
+    with closing(sqlite3.connect(str(tmp_path / "api-log.sqlite3"))) as connection:
+        forged = dict(first, record=dict(first["record"], verdict="REFUTED"))
+        connection.execute("UPDATE vlog_idempotency SET receipt = ?", (json.dumps(forged),))
+        connection.commit()
+    retry = client.post("/v1/verify", json=_r2a(), headers=headers)
+    assert retry.status_code == 503
+    assert "audit_receipt" not in retry.json()
+    local = api("local").post("/v1/verify", json=_r2a(), headers=headers).json()
+    assert local["audit_status"] == "not_recorded"
+    assert "audit_receipt" not in local
+
+
 def test_required_mode_fails_closed_and_local_mode_reports_not_recorded(
     api: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:

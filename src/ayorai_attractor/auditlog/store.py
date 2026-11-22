@@ -59,6 +59,14 @@ class IdempotencyConflict(ValueError):
     """The idempotency key was already used for a different input."""
 
 
+class IdempotencyErased(IdempotencyConflict):
+    """The idempotency key names an event whose record was erased (LGPD).
+
+    Its receipt held the record and the salt, so it was redacted with the record;
+    a retry is refused instead of returning erased data or logging the event again.
+    """
+
+
 class LogCorruption(RuntimeError):
     """The stored log does not match its own signed checkpoints."""
 
@@ -208,16 +216,30 @@ class VerificationLog:
             try:
                 if key_digest is not None:
                     row = self._connection.execute(
-                        "SELECT input_sha256, receipt FROM vlog_idempotency WHERE key_digest = ?",
+                        "SELECT input_sha256, idx, receipt FROM vlog_idempotency "
+                        "WHERE key_digest = ?",
                         (key_digest,),
                     ).fetchone()
                     if row is not None:
-                        self._connection.execute("COMMIT")
                         if row[0] != event.input_sha256:
+                            self._connection.execute("COMMIT")
                             raise IdempotencyConflict(
                                 "Idempotency-Key was already used for a different input"
                             )
-                        stored: dict[str, Any] = json.loads(row[1])
+                        # The stored receipt is mutable storage: it is returned only if it
+                        # still opens to this request's event (leaf, signature, inclusion,
+                        # commitment and input), so a swapped receipt is never served.
+                        problems = self._idempotency_problems(row[1], row[0], row[2])
+                        self._connection.execute("COMMIT")
+                        if problems:
+                            raise LogCorruption(
+                                "stored idempotency receipt is invalid: " + "; ".join(problems)
+                            )
+                        stored: dict[str, Any] = json.loads(row[2])
+                        if stored.get("redacted") is True:
+                            raise IdempotencyErased(
+                                "Idempotency-Key names an event whose record was erased"
+                            )
                         return stored
                 # Another process may have appended since this one last read the tree.
                 count = self._stored_size()
@@ -328,6 +350,18 @@ class VerificationLog:
                     }
                 )
                 erasure_index = self._append_leaf_locked(leaf)
+                # The idempotency receipt carries the record and the salt: redact it
+                # with them, keeping the key so a retry cannot log the event again.
+                self._connection.execute(
+                    "UPDATE vlog_idempotency SET receipt = ? WHERE idx = ?",
+                    (
+                        json.dumps(
+                            {"redacted": True, "index": index, "erasure_index": erasure_index},
+                            sort_keys=True,
+                        ),
+                        index,
+                    ),
+                )
                 self._connection.execute("COMMIT")
             except BaseException:
                 if self._connection.in_transaction:
@@ -493,6 +527,25 @@ class VerificationLog:
             for event_index in event_leaves:
                 if event_index not in record_indices and event_index not in erasure_leaves:
                     problems.append(f"record {event_index} is missing")
+
+            # Idempotency rows: each stored receipt must open to its own event, and
+            # one event can be named by at most one key.
+            keyed_events: set[int] = set()
+            for key_digest, input_sha256, idx, receipt_text in self._connection.execute(
+                "SELECT key_digest, input_sha256, idx, receipt FROM vlog_idempotency "
+                "ORDER BY key_digest"
+            ).fetchall():
+                label = f"idempotency key {str(key_digest)[:12]}"
+                if not isinstance(key_digest, str) or _SHA256.fullmatch(key_digest) is None:
+                    problems.append(f"{label}: malformed key digest")
+                if type(idx) is int and idx in keyed_events:
+                    problems.append(f"{label}: event {idx} is named by more than one key")
+                if type(idx) is int:
+                    keyed_events.add(idx)
+                problems.extend(
+                    f"{label}: {problem}"
+                    for problem in self._idempotency_problems(idx, input_sha256, receipt_text)
+                )
             return {
                 "valid": not problems,
                 "size": len(tree),
@@ -500,6 +553,75 @@ class VerificationLog:
                 "erased_records": erased,
                 "problems": problems,
             }
+
+    def _idempotency_problems(self, idx: Any, input_sha256: Any, receipt_text: Any) -> list[str]:
+        """Why a stored idempotency receipt does not belong to its row ([] if it does).
+
+        The row's event index must name an event leaf; a full receipt must be a valid
+        receipt of that very leaf (signature, inclusion, commitment) whose record has
+        the row's input; once the event is erased, only a redacted receipt pointing to
+        its erasure leaf is allowed (no record or salt may remain).
+        """
+        if type(idx) is not int or not isinstance(input_sha256, str):
+            return ["malformed row"]
+        try:
+            receipt = json.loads(str(receipt_text))
+        except (TypeError, ValueError):
+            return ["receipt is not JSON"]
+        if not isinstance(receipt, dict):
+            return ["receipt is not a JSON object"]
+        leaf_row = self._connection.execute(
+            "SELECT leaf FROM vlog_leaves WHERE idx = ?", (idx,)
+        ).fetchone()
+        if leaf_row is None:
+            return [f"names missing event {idx}"]
+        try:
+            leaf_fields = json.loads(bytes(leaf_row[0]))
+        except (TypeError, ValueError):
+            leaf_fields = None
+        if not isinstance(leaf_fields, dict) or leaf_fields.get("schema") != LEAF_SCHEMA:
+            return [f"leaf {idx} is not an event"]
+        record_row = self._connection.execute(
+            "SELECT erased_at FROM vlog_records WHERE idx = ?", (idx,)
+        ).fetchone()
+        erased = record_row is not None and record_row[0] is not None
+        if receipt.get("redacted") is True:
+            if set(receipt) != {"redacted", "index", "erasure_index"} or receipt["index"] != idx:
+                return ["malformed redacted receipt"]
+            if not erased:
+                return [f"redacted receipt for event {idx}, which is not erased"]
+            erasure_index = receipt["erasure_index"]
+            erasure_row = (
+                self._connection.execute(
+                    "SELECT leaf FROM vlog_leaves WHERE idx = ?", (erasure_index,)
+                ).fetchone()
+                if type(erasure_index) is int
+                else None
+            )
+            try:
+                erasure_fields = json.loads(bytes(erasure_row[0])) if erasure_row else None
+            except (TypeError, ValueError):
+                erasure_fields = None
+            if (
+                not isinstance(erasure_fields, dict)
+                or erasure_fields.get("schema") != ERASURE_SCHEMA
+                or erasure_fields.get("erased_index") != idx
+            ):
+                return [f"redacted receipt does not point to the erasure of event {idx}"]
+            return []
+        if erased:
+            return [f"receipt keeps the record and salt of erased event {idx}"]
+        problems: list[str] = []
+        if receipt.get("index") != idx:
+            problems.append(f"receipt names event {receipt.get('index')!r}, row names {idx}")
+        if receipt.get("leaf") != _b64(bytes(leaf_row[0])):
+            problems.append(f"receipt leaf differs from stored leaf {idx}")
+        if not verify_receipt(receipt, self.verifier_key):
+            problems.append("receipt does not verify (signature, inclusion or commitment)")
+        record = receipt.get("record")
+        if not isinstance(record, Mapping) or record.get("input_sha256") != input_sha256:
+            problems.append("receipt record input differs from the request input")
+        return problems
 
 
 def verify_receipt(receipt: Mapping[str, Any], vkey: str) -> bool:
