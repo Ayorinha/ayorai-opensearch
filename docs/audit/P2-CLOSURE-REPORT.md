@@ -368,9 +368,59 @@ O SHA final e o resultado da CI nele constam da descrição da PR #634. Um relat
 1. o vínculo chave → evento não é ancorado na árvore. A correção completa muda o contrato do recibo e depende de decisão do mantenedor (seção 12);
 2. bancos com apagamentos anteriores precisam de remediação operacional;
 3. limitações operacionais da seção 11: nenhuma testemunha configurada, só Ed25519, estado em memória e sem quórum;
-4. interoperabilidade testada com uma única implementação, em loopback.
+4. interoperabilidade testada com implementações de terceiros (torchwood, `sumdb/note`, `transparency-dev/merkle`), mas não com um serviço de testemunha público, que exige cadastro (adendo B).
 
 Código corrigido, testes aprovados, conformidade normativa e interoperabilidade prática estão demonstrados nos níveis descritos acima. **Prontidão para produção não está demonstrada:** depende das decisões das seções 11 e 12.
+
+## Adendo — questões de fechamento (2026-11-22)
+
+### A. Interoperabilidade criptográfica independente
+
+Cada formato foi conferido contra uma implementação de terceiros, e nos dois sentidos quando o formato tem produtor e verificador.
+
+| formato | produzido por | verificado por | evidência |
+|---|---|---|---|
+| hashes, raízes, provas de inclusão e de consistência RFC 6962 | `transparency-dev/merkle` (Go) | Python, byte a byte | `tests/auditlog/vectors/rfc6962-transparency-dev.json`, na CI [FATO VERIFICADO] |
+| checkpoint assinado (signed note Ed25519) e recibos | Python | `golang.org/x/mod/sumdb/note` (Go) | `tests/auditlog/vectors/verify_receipts.go.txt` (critério 4 da ADR-010) [FATO VERIFICADO] |
+| checkpoint assinado e provas de consistência no pedido `add-checkpoint` | Python | testemunha torchwood v0.10.0 em execução | seção 5, 14/14 [FATO VERIFICADO] |
+| cossignatura C2SP Ed25519 (tipo 0x04) | torchwood (testemunha real) | Python (`verify_cosignature`) | seção 5, cenários S1–S6 [FATO VERIFICADO] |
+| cossignatura C2SP Ed25519 e chave do cossignatário | Python (`sign_cosignature`, `key_id`) | `torchwood.NewCosignatureVerifier` com `sumdb/note.Open` (Go) | `evidence/p2-closure/xverify-*`: 9/9 [FATO VERIFICADO] |
+
+**Detalhe da última linha:**
+- **Casos aceitos (5):** timestamps 0, 1,7·10⁹, 1,8·10⁹, 2⁶³−1 e 42; nomes com `/`, `-`, `_` e `oid/`; árvores de 0 a 1.000 folhas.
+- **Casos recusados (4):** corpo alterado, assinatura alterada, timestamp alterado e chave de outro cossignatário.
+- **Integridade do binário:** `xverify` tem sha256 `74b9d494…`; foi compilado de `filippo.io/torchwood@v0.10.0` e `golang.org/x/mod` sem modificação.
+
+**Conclusão [INFERÊNCIA]:** não há formato criptográfico da P2 validado apenas contra a própria implementação.
+
+### B. Testemunha: serviço externo real ou ambiente simulado
+
+Há três níveis, e só os dois primeiros foram atingidos:
+
+1. **Simulado** (testemunha em memória nos testes): sim, segue a especificação. [FATO VERIFICADO]
+2. **Implementação real de terceiros em execução** (torchwood v0.10.0, o código das testemunhas públicas do ecossistema C2SP): sim, em TLS local. [FATO VERIFICADO]
+3. **Serviço externo independente na internet:** não, por dois motivos.
+   - Uma testemunha pública só cossigna logs que o operador dela cadastrou, com origem e chave pública. Nenhum log do AYORAI está cadastrado. [FATO VERIFICADO: pela especificação `tlog-witness`, origem desconhecida dá 404; no cenário S10, assinatura de chave não cadastrada deu 403.]
+   - Escolher e contatar testemunhas independentes é a etapa 2 da DEC-029, que depende de decisão do mantenedor e de instituições externas.
+   - Isso não é lacuna de código: o cliente que falaria com esse serviço é o mesmo que passou no nível 2.
+
+### C. Registro v3: o formato atual é suficiente?
+
+**Determinação [INFERÊNCIA, a partir dos fatos das seções 3 e 12]: o formato atual é suficiente para integridade, rastreabilidade e compatibilidade da P2. A v3 não é necessária agora.**
+
+1. **Integridade da evidência.** Toda decisão gravada é uma folha assinada, com compromisso salgado e inclusão verificável sem o servidor. A tabela de idempotência não é evidência: é um cache para entrega única. Nenhuma manipulação dela altera, apaga ou forja uma decisão registrada. [FATO VERIFICADO: benchmark T01–T13 e I01–I07, recibos conferidos com Go]
+2. **O que a v3 acrescentaria.** Só a detecção de uma linha de idempotência trocada inteira entre chaves, ou apagada, por quem tem escrita no banco (I08 e caso 5).
+   - Com a correção M1, o pior efeito disso é o reenvio recusado com 409 ou gravado como evento novo.
+   - Um evento duplicado continua visível no log, com o mesmo `input_sha256` em dois índices assinados.
+   - O servidor nunca devolve o recibo de outra entrada. [FATO VERIFICADO: `test_m1_02`, `test_m1_05`]
+3. **Rastreabilidade.** Requisição → evento → recibo é rastreável pela entrada (`input_sha256`) gravada no registro comprometido. A chave de idempotência é um detalhe de transporte do cliente e não precisa entrar na evidência.
+4. **Compatibilidade.** A v3 mudaria o registro devolvido ao cliente no recibo (`record.schema`). Como na v2 (ADR-013, DEC-032), isso exige ADR e decisão própria. Manter a v2 não muda nada para quem já verifica recibos.
+5. **Gatilhos para reabrir a questão:**
+   - exigência contratual de entrega exatamente única auditável por terceiros;
+   - mais de um escritor (migração para o Tessera, DEC-028);
+   - a chave de idempotência passar a ter valor probatório.
+
+**Status:** é uma recomendação técnica. O registro formal da decisão em `DECISIONS-APPROVED.md` cabe ao mantenedor, porque o arquivo é protegido.
 
 ## Evidências (`docs/audit/evidence/p2-closure/`)
 
@@ -382,5 +432,6 @@ Código corrigido, testes aprovados, conformidade normativa e interoperabilidade
 | `tamper_bench.py`, `truncate_pure.py`, `bench-*.json` | benchmark de adulteração (`main`, P2 antes, P2 final) |
 | `perf_idem.py` | desempenho com chaves de idempotência |
 | `mutate.py`, `mutation-results.txt` | ferramenta e resultados da mutação |
+| `xverify-main.go`, `xverify_cases.py`, `xverify-result.txt` | verificação em Go (torchwood e `sumdb/note`) das cossignaturas e checkpoints produzidos em Python |
 
 Reprodução: `PYTHONPATH=<árvore>/src python -P <script> <rótulo> <saída>`.
