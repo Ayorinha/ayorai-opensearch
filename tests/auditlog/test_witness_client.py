@@ -205,7 +205,6 @@ def test_witness_client_advances_with_a_valid_consistency_proof() -> None:
     assert parsed is not None and parsed.size == 2
 
 
-
 def test_witness_client_rejects_malformed_base64_proof_before_network_call() -> None:
     harness = _WitnessHarness()
     client = _client(harness)
