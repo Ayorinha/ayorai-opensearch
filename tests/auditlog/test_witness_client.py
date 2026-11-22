@@ -12,7 +12,7 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from ayorai_attractor.auditlog.cosignature import sign_cosignature, verify_cosignature
+from ayorai_attractor.auditlog.cosignature import key_id, sign_cosignature, verify_cosignature
 from ayorai_attractor.auditlog.merkle import (
     consistency_proof,
     leaf_hash,
@@ -71,11 +71,19 @@ def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
     wrong_key = _pub(bytes(reversed(WITNESS_SEED)))
     assert not verify_cosignature(note, WITNESS_NAME, wrong_key, now=1_700_000_000)
     assert not verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_699_999_000)
-    zero_line = sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, 0)
+    private_key = Ed25519PrivateKey.from_private_bytes(WITNESS_SEED)
+    zero_message = f"cosignature/v1\\ntime 0\\n{body}".encode("utf-8")
+    zero_payload = key_id(WITNESS_NAME, _pub(WITNESS_SEED)) + bytes(8)
+    zero_payload += private_key.sign(zero_message)
+    zero_line = (
+        f"— {WITNESS_NAME} {base64.b64encode(zero_payload).decode('ascii')}\\n"
+    )
     zero_note = body + "\\n" + zero_line
     assert not verify_cosignature(
         zero_note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000
     )
+    with pytest.raises(ValueError, match="timestamp"):
+        sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, 0)
 
 
 def test_cosignature_ignores_unknown_cosigner_lines() -> None:
