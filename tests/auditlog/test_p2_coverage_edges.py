@@ -263,3 +263,98 @@ def test_witness_close_only_closes_owned_http_client() -> None:
     supplied.close()
     assert not supplied_http.is_closed
     supplied_http.close()
+
+
+
+@pytest.mark.parametrize("public_key", [b"", bytes(31), bytearray(32), None])
+def test_witness_identity_rejects_invalid_public_keys(public_key: object) -> None:
+    with pytest.raises(ValueError, match="public key"):
+        WitnessIdentity(WITNESS, public_key)  # type: ignore[arg-type]
+
+
+def test_witness_rejects_noncanonical_base64_proof_before_network_call() -> None:
+    signer = NoteSigner(LOG, LOG_SEED)
+    note = signer.sign(Checkpoint(LOG, 0, empty_root()).body())
+    canonical = base64.b64encode(bytes(32)).decode("ascii")
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    last_index = alphabet.index(canonical[-2])
+    noncanonical = canonical[:-2] + alphabet[(last_index & ~3) | 1] + "="
+    assert base64.b64decode(noncanonical, validate=True) == bytes(32)
+    client = WitnessClient(
+        "https://witness.example",
+        signer.verifier_key,
+        WitnessIdentity(WITNESS, PUB),
+    )
+    with pytest.raises(WitnessError, match="non-canonical"):
+        client.submit(note, [noncanonical])
+    assert client.last_checkpoint is None
+    client.close()
+
+
+def test_witness_rejects_unsigned_checkpoint_before_network_call() -> None:
+    signer = NoteSigner(LOG, LOG_SEED)
+    client = WitnessClient(
+        "https://witness.example",
+        signer.verifier_key,
+        WitnessIdentity(WITNESS, PUB),
+    )
+    with pytest.raises(WitnessError, match="not signed"):
+        client.submit("not a signed checkpoint", [])
+    assert client.last_checkpoint is None
+    client.close()
+
+
+def test_witness_rejects_nonempty_initial_proof_before_network_call() -> None:
+    signer = NoteSigner(LOG, LOG_SEED)
+    note = signer.sign(Checkpoint(LOG, 0, empty_root()).body())
+    client = WitnessClient(
+        "https://witness.example",
+        signer.verifier_key,
+        WitnessIdentity(WITNESS, PUB),
+    )
+    with pytest.raises(WitnessError, match="initial checkpoint"):
+        client.submit(note, [bytes(32)])
+    assert client.last_checkpoint is None
+    client.close()
+
+
+def test_witness_rejects_previous_checkpoint_from_another_origin() -> None:
+    signer = NoteSigner(LOG, LOG_SEED)
+    current = signer.sign(Checkpoint(LOG, 0, empty_root()).body())
+    previous = signer.sign(Checkpoint("other.example/log", 0, empty_root()).body())
+    client = WitnessClient(
+        "https://witness.example",
+        signer.verifier_key,
+        WitnessIdentity(WITNESS, PUB),
+    )
+    with pytest.raises(WitnessError, match="previous checkpoint"):
+        client.submit(current, [], previous_checkpoint=previous)
+    client.close()
+
+
+def test_witness_rejects_nonempty_root_for_previous_size_zero() -> None:
+    signer = NoteSigner(LOG, LOG_SEED)
+    current = signer.sign(Checkpoint(LOG, 0, empty_root()).body())
+    previous = signer.sign(Checkpoint(LOG, 0, bytes(32)).body())
+    client = WitnessClient(
+        "https://witness.example",
+        signer.verifier_key,
+        WitnessIdentity(WITNESS, PUB),
+    )
+    with pytest.raises(WitnessError, match="size-zero"):
+        client.submit(current, [], previous_checkpoint=previous)
+    client.close()
+
+
+def test_witness_rejects_same_size_checkpoint_with_different_root() -> None:
+    signer = NoteSigner(LOG, LOG_SEED)
+    previous = signer.sign(Checkpoint(LOG, 1, bytes([1]) * 32).body())
+    current = signer.sign(Checkpoint(LOG, 1, bytes([2]) * 32).body())
+    client = WitnessClient(
+        "https://witness.example",
+        signer.verifier_key,
+        WitnessIdentity(WITNESS, PUB),
+    )
+    with pytest.raises(WitnessError, match="same-size checkpoint"):
+        client.submit(current, [], previous_checkpoint=previous)
+    client.close()
