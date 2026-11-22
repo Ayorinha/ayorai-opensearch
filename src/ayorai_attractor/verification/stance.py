@@ -696,30 +696,56 @@ _FUNCTION_WORDS = frozenset(
 )
 
 
+def _content_words(text: str) -> set[str]:
+    """Content words: numbers, number words, units and function words excluded."""
+    return {
+        word
+        for word in (strip_accents(t.casefold()) for t in _TOKEN_RE.findall(text))
+        if len(word) > 2
+        and not word.isdigit()
+        and word not in _STOPWORDS
+        and word not in _FUNCTION_WORDS
+        and word not in _DURATION_WORDS
+        and word not in _MEASURE_WORDS
+        and normalize_numerals(word) == word
+    }
+
+
 def _content_overlap(claim_text: str, evidence_text: str) -> float:
     """Share of claim content words found in the evidence.
 
     Numbers, number words, units and function words are excluded, so a shared
     quantity ("seis meses") does not count as a shared subject.
     """
-
-    def content(text: str) -> set[str]:
-        return {
-            word
-            for word in (strip_accents(t.casefold()) for t in _TOKEN_RE.findall(text))
-            if len(word) > 2
-            and not word.isdigit()
-            and word not in _STOPWORDS
-            and word not in _FUNCTION_WORDS
-            and word not in _DURATION_WORDS
-            and word not in _MEASURE_WORDS
-            and normalize_numerals(word) == word
-        }
-
-    claim_words = content(claim_text)
+    claim_words = _content_words(claim_text)
     if not claim_words:
         return 0.0
-    return len(claim_words & content(evidence_text)) / len(claim_words)
+    return len(claim_words & _content_words(evidence_text)) / len(claim_words)
+
+
+def _proper_nouns(text: str) -> set[str]:
+    """Capitalized words that do not open a sentence (names such as "Vértice")."""
+    names: set[str] = set()
+    sentence_start = True
+    for match in re.finditer(r"[\wÀ-ÿ]+|[.!?]", text):
+        token = match.group(0)
+        if token in ".!?":
+            sentence_start = True
+            continue
+        if token[:1].isupper() and not sentence_start:
+            names.add(strip_accents(token.casefold()))
+        sentence_start = False
+    return names
+
+
+def _shares_predicate(claim_text: str, evidence_text: str) -> bool:
+    """Claim and evidence share a content word that is not a proper noun.
+
+    The subject's name alone ("Vértice") does not make two sentences talk about
+    the same event; a shared predicate word ("fundada", "receita") does.
+    """
+    claim_words = _content_words(claim_text) - _proper_nouns(claim_text)
+    return bool(claim_words & _content_words(evidence_text))
 
 
 def _predicate_negators(text: str) -> set[str]:
@@ -1291,6 +1317,12 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
     }
     matched = 0
     pending_confirmations = 0
+    # A calendar year carries no subject: "em 2024" in a revenue claim and "em 1998"
+    # in a founding date are different facts. Year conflicts are kept aside and count
+    # only when the year is anchored to the claim's proposition (see below).
+    year_conflicts = 0
+    anchored = False
+    only_years = True
     for left, left_unit, left_attribute in claim_facts:
         left_value = _fact_value(left, left_unit, claim_locale)
         if left_value is None or left_attribute == "unknown":
@@ -1302,6 +1334,9 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
             for value in [_fact_value(right, right_unit, evidence_locale)]
             if value is not None
         ]
+        if left_unit != "year":
+            only_years = False
+            anchored = anchored or bool(matches)
         # Calendar years, fractions and multipliers are exact; magnitudes allow
         # the ADR-002 relative tolerance.
         tolerance = Decimal(0) if left_unit in _EXACT_UNITS else DEFAULT_RELATIVE_TOLERANCE
@@ -1315,9 +1350,18 @@ def _numeric_alignment(claim_text: str, evidence_text: str) -> NumericAlignment:
         ):
             pending_confirmations += 1
             continue
-        if matches:
+        if matches and left_unit == "year":
+            year_conflicts += 1
+        elif matches:
             matched += 1
             flags[f"{kind}_conflict"] = True
+    # Anchored: another claim fact (revenue, count, amount) is compared in the same
+    # evidence, or the claim states only years and shares a predicate word with it.
+    if year_conflicts and (
+        anchored or (only_years and _shares_predicate(claim_text, evidence_text))
+    ):
+        matched += year_conflicts
+        flags["specific_conflict"] = True
     typed_agreement = flags["specific_agreement"] or flags["generic_agreement"]
     if typed_agreement:
         matched += pending_confirmations
