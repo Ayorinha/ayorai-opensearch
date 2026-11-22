@@ -7,14 +7,37 @@ for what they say, not only for how they are linked.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import sqlite3
 from contextlib import closing
 from pathlib import Path
 
 import pytest
 
-from ayorai_attractor.audit_store import _CHAIN_GENESIS, AuditTraceStore, _chain_link
+from ayorai_attractor.audit_store import AuditTraceStore
 from tests.test_audit_chain import OLD, _record
+
+GENESIS = "genesis"
+
+
+def _unkeyed_link(seq: int, kind: str, payload: str | None, previous: str) -> str:
+    """The documented chain link (ayorai.audit.chain.v1), written independently of the
+    implementation, as a writer with database access would compute it."""
+    canonical = json.dumps(
+        {
+            "domain": "ayorai.audit.chain.v1",
+            "seq": seq,
+            "kind": kind,
+            "trace_id": None,
+            "replay_digest": None,
+            "payload": payload,
+            "previous": previous,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
 
 
 def _append_forged_entry(path: str, kind: str, payload: str | None) -> None:
@@ -23,16 +46,8 @@ def _append_forged_entry(path: str, kind: str, payload: str | None) -> None:
         row = connection.execute(
             "SELECT seq, link FROM audit_chain ORDER BY seq DESC LIMIT 1"
         ).fetchone()
-        seq, previous = (int(row[0]) + 1, str(row[1])) if row else (1, _CHAIN_GENESIS)
-        link = _chain_link(
-            None,
-            seq=seq,
-            kind=kind,
-            trace_id=None,
-            replay_digest=None,
-            payload=payload,
-            previous=previous,
-        )
+        seq, previous = (int(row[0]) + 1, str(row[1])) if row else (1, GENESIS)
+        link = _unkeyed_link(seq, kind, payload, previous)
         connection.execute(
             "INSERT INTO audit_chain (seq, kind, trace_id, replay_digest, payload, link, key_id)"
             " VALUES (?, ?, NULL, NULL, ?, ?, NULL)",
@@ -158,7 +173,7 @@ def test_a_checkpoint_of_the_empty_store_is_checked_too(tmp_path: Path) -> None:
     path = str(tmp_path / "a.sqlite3")
     with AuditTraceStore(path) as store:
         empty = store.checkpoint()
-        assert empty == {"seq": 0, "link": _CHAIN_GENESIS}
+        assert empty == {"seq": 0, "link": GENESIS}
         _record(store)
         assert store.verify_chain(empty)["checkpoint_mismatch"] is False
         forged = {"seq": 0, "link": "0" * 64}

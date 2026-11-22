@@ -18,7 +18,7 @@ from typing import Any
 
 import pytest
 
-from ayorai_attractor.auditlog.merkle import leaf_hash
+from ayorai_attractor.auditlog.merkle import inclusion_proof, leaf_hash
 from ayorai_attractor.auditlog.note import NoteSigner
 from ayorai_attractor.auditlog.store import VerificationEvent, VerificationLog, verify_receipt
 from tests.test_verify_log import ORIGIN, SEED, _event
@@ -250,15 +250,17 @@ def test_receipts_for_erasure_leaves_or_with_bad_index_types_do_not_verify(
     erasure_index = store.erase(receipt["index"], "2026-11-22T00:00:00Z")
     assert erasure_index is not None
     with closing(sqlite3.connect(store.path)) as connection:
-        (leaf,) = connection.execute(
-            "SELECT leaf FROM vlog_leaves WHERE idx = ?", (erasure_index,)
-        ).fetchone()
+        leaves = [
+            bytes(row[0]) for row in connection.execute("SELECT leaf FROM vlog_leaves ORDER BY idx")
+        ]
+    leaf = leaves[erasure_index]
     forged = {
         **receipt,
         "index": erasure_index,
         "leaf": base64.b64encode(bytes(leaf)).decode(),
         "inclusion_proof": [
-            base64.b64encode(node).decode() for node in store._tree.inclusion_proof(erasure_index)
+            base64.b64encode(node).decode()
+            for node in inclusion_proof(erasure_index, [leaf_hash(x) for x in leaves])
         ],
         "checkpoint": store.latest_checkpoint(),
     }
