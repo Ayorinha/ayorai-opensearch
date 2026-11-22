@@ -1,0 +1,1 @@
+time=2026-11-22T19:51:42.290Z level=DEBUG msg="processed add-checkpoint request" request="0\n\ninterop.example/verify-log\n1\nZzTbOxm2Tcg3A/mh9K7naX37KS+04IJ8xj+KNRsbNgk=\n\n— interop.example/verify-log 1n/Wp6IGoskBfLtYesCadIe4POXwAkOEVbwGDHWb3Zn32prbsuyaupaPDBkbIkc+rcqYVbAYjfK7ixJPpUgl3IV85Q4=\n" error="invalid input"

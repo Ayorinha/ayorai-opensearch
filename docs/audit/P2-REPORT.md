@@ -293,3 +293,9 @@ Os testes não detectavam o defeito porque a testemunha simulada lia `int(lines[
 - testemunhas que usem só ML-DSA-44 (recomendado pela especificação) não são aceitas pelo cliente, que verifica Ed25519;
 - o estado do cliente continua em memória;
 - nenhuma testemunha real foi testada.
+
+## 15. Conclusão técnica — 2026-11-22
+
+As pendências da revisão independente (M1, B1, B2 e B3) e um defeito novo, M2 (resíduo de dados apagados no recibo de idempotência), foram corrigidos e testados. A testemunha de referência torchwood v0.10.0 foi executada contra o cliente.
+
+Detalhes, evidências e veredito: `docs/audit/P2-CLOSURE-REPORT.md`. Scripts e resultados: `docs/audit/evidence/p2-closure/`.

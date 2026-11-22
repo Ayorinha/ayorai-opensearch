@@ -48,6 +48,16 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
   - **Desempenho:** árvore incremental, com gravação de cerca de 1,2 ms até 50 mil eventos e `verify_log()` linear.
   - **Decisões 5 a 7 da ADR-010 registradas em 2026-11-21:** escritor Python (DEC-028), testemunhas em duas etapas (DEC-029) e carimbo do tempo ICP-Brasil adiado (DEC-030). Ficam registradas na ADR-010, no ADR-009 §15.1 e no `DECISIONS-APPROVED.md`.
   - **Verificação independente:** recibos, checkpoints e provas de consistência conferidos com `golang.org/x/mod/sumdb/note` e `transparency-dev/merkle` (`tests/auditlog/vectors/`).
+- Endurecimento do log verificável (P2, ADR-010). Relatórios: `docs/audit/P2-REPORT.md` e `docs/audit/P2-CLOSURE-REPORT.md`.
+  - **`verify_log()`:**
+    - reabre o compromisso de cada registro com o sal guardado;
+    - aponta registro órfão, restaurado ou parcialmente apagado;
+    - aponta checkpoint ausente e folha de esquema desconhecido.
+  - **Idempotência:**
+    - um reenvio só devolve o recibo guardado se ele ainda abre o próprio evento (folha, assinatura, inclusão, compromisso e entrada); se não abre, o modo `required` responde 503 e o `local` responde `not_recorded`;
+    - `verify_log()` audita a tabela de idempotência;
+    - o apagamento LGPD também apaga o registro e o sal do recibo guardado, e o reenvio de um evento apagado recebe 409.
+  - **Testemunhas C2SP:** cliente `tlog-witness` e verificação de cossignaturas Ed25519, sem testemunha configurada. Foi testado contra a testemunha de referência torchwood v0.10.0, executada localmente.
 - Correção: uma falha da retenção automática, que roda depois do commit do rastro, deixa de chegar ao chamador como erro de gravação. O rastro já está gravado; a purga parcial é desfeita e o erro vai para o log (só o tipo da exceção), e a retenção roda de novo na próxima gravação após o intervalo.
 - Correção: uma falha ao gravar a entrada da cadeia (ou o registro de uma purga) desfaz a transação inteira. Antes, o rastro ou a exclusão ficavam pendentes na conexão, e a próxima gravação bem-sucedida os confirmava: o chamador recebia erro, mas o rastro ficava gravado sem entrada na cadeia. A selagem, a resselagem e o sequenciamento também desfazem a transação em caso de erro, e a rotação confere a cadeia sob a mesma trava que a reassina.
 - Cadeia de sequência (`audit_chain`, aditiva; rastros, digests e MACs existentes não mudam): todo rastro gravado entra numa sequência com elos encadeados por HMAC. `verify_chain()` detecta rastro apagado no meio da trilha, entrada removida ou reescrita e rastro inserido fora da API; com um `checkpoint()` guardado fora do host, detecta também truncamento e rollback. A retenção registra suas purgas na cadeia. `sequence_unsequenced()` encadeia uma base antiga; `reseal_with_active_key()` reassina a cadeia íntegra. Resolve a parte local do P2-1 (#433).
