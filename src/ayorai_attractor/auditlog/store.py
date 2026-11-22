@@ -472,7 +472,9 @@ class VerificationLog:
                         problems.append(f"record {record_index} has residual data after erasure")
                     if record_index not in erasure_leaves:
                         problems.append(f"record {record_index} erased without an erasure event")
-                    elif erased_at != erasure_fields[record_index]["erased_at"]:
+                    elif (
+                        erased_at != erasure_fields[record_index]["erased_at"]
+                    ):
                         problems.append(f"record {record_index} erasure timestamp mismatch")
                     continue
                 if record_index in erasure_leaves:
