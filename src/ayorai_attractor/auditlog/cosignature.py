@@ -57,7 +57,7 @@ def signed_message(checkpoint_body: str, timestamp: int) -> bytes:
         or isinstance(timestamp, bool)
         or not 0 <= timestamp <= _MAX_TIMESTAMP
     ):
-        raise ValueError("timestamp must be an unsigned POSIX integer no greater than 2^63-1")
+        raise ValueError("timestamp must be an unsigned 64-bit POSIX integer")
     return f"cosignature/v1\ntime {timestamp}\n{checkpoint_body}".encode()
 
 
