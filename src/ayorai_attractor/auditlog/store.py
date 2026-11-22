@@ -405,6 +405,7 @@ class VerificationLog:
             # Bind every restricted record to its public event commitment. The
             # Merkle tree authenticates the leaf, not the mutable record table.
             erasure_leaves: dict[int, int] = {}
+            erasure_fields: dict[int, dict[str, Any]] = {}
             event_leaves: set[int] = set()
             event_fields: dict[int, dict[str, Any]] = {}
             for idx, leaf in self._connection.execute(
@@ -421,12 +422,21 @@ class VerificationLog:
                     event_fields[event_index] = fields
                 elif isinstance(fields, dict) and fields.get("schema") == ERASURE_SCHEMA:
                     target = fields.get("erased_index")
+                    if (
+                        set(fields) != {"schema", "erased_index", "erased_at", "reason"}
+                        or not isinstance(fields.get("erased_at"), str)
+                        or not isinstance(fields.get("reason"), str)
+                        or re.fullmatch(r"[a-z_]{1,64}", fields.get("reason", "")) is None
+                    ):
+                        problems.append(f"erasure leaf {idx} has invalid fields")
+                        continue
                     if type(target) is not int or not 0 <= target < idx or target not in event_leaves:
                         problems.append(f"erasure leaf {idx} names an invalid event")
                     elif target in erasure_leaves:
                         problems.append(f"event {target} has multiple erasure leaves")
                     else:
                         erasure_leaves[target] = int(idx)
+                        erasure_fields[target] = fields
                 else:
                     problems.append(f"leaf {idx} has an unknown schema")
 
@@ -447,7 +457,11 @@ class VerificationLog:
                         problems.append(f"record {record_index} has residual data after erasure")
                     if record_index not in erasure_leaves:
                         problems.append(f"record {record_index} erased without an erasure event")
+                    elif erased_at != erasure_fields[record_index]["erased_at"]:
+                        problems.append(f"record {record_index} erasure timestamp mismatch")
                     continue
+                if record_index in erasure_leaves:
+                    problems.append(f"record {record_index} remains after its erasure event")
                 if salt is None or record_text is None:
                     problems.append(f"record {record_index} is incomplete or partially erased")
                     continue
