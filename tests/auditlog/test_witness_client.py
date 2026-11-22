@@ -72,13 +72,13 @@ def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
     assert not verify_cosignature(note, WITNESS_NAME, wrong_key, now=1_700_000_000)
     assert not verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_699_999_000)
     private_key = Ed25519PrivateKey.from_private_bytes(WITNESS_SEED)
-    zero_message = f"cosignature/v1\\ntime 0\\n{body}".encode("utf-8")
+    zero_message = f"cosignature/v1\ntime 0\n{body}".encode("utf-8")
     zero_payload = key_id(WITNESS_NAME, _pub(WITNESS_SEED)) + bytes(8)
     zero_payload += private_key.sign(zero_message)
     zero_line = (
-        f"— {WITNESS_NAME} {base64.b64encode(zero_payload).decode('ascii')}\\n"
+        f"— {WITNESS_NAME} {base64.b64encode(zero_payload).decode('ascii')}\n"
     )
-    zero_note = body + "\\n" + zero_line
+    zero_note = body + "\n" + zero_line
     assert not verify_cosignature(
         zero_note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000
     )
