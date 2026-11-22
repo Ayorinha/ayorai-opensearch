@@ -42,6 +42,8 @@ from typing import Any, Final
 SCHEMA: Final = "ayorai.api-keys.v1"
 SCOPES: Final = frozenset({"verify", "audit:write", "audit:read", "metrics"})
 _KEY_FIELDS: Final = frozenset({"id", "digest", "scopes", "expires_at", "revoked_at", "revoked_by"})
+_OPTIONAL_KEY_FIELDS: Final = frozenset({"tenant"})  # ADR-013
+DEFAULT_TENANT: Final = "default"
 _ID = re.compile(r"[a-z0-9][a-z0-9._-]{0,63}")
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 _TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
@@ -98,6 +100,7 @@ class KeyEntry:
     expires_at: datetime | None = None
     revoked_at: datetime | None = None
     revoked_by: str | None = None
+    tenant: str = DEFAULT_TENANT
 
     def is_active(self, now: datetime) -> bool:
         if self.revoked_at is not None and self.revoked_at <= now:
@@ -122,8 +125,18 @@ def parse_registry(raw: bytes) -> tuple[KeyEntry, ...]:
     seen_ids: set[str] = set()
     seen_digests: set[str] = set()
     for index, item in enumerate(keys):
-        if not isinstance(item, dict) or set(item) != _KEY_FIELDS:
-            raise RegistryError(f"keys[{index}] must have exactly {sorted(_KEY_FIELDS)}")
+        if (
+            not isinstance(item, dict)
+            or not _KEY_FIELDS <= set(item)
+            or not set(item) <= _KEY_FIELDS | _OPTIONAL_KEY_FIELDS
+        ):
+            raise RegistryError(
+                f"keys[{index}] must have exactly {sorted(_KEY_FIELDS)}"
+                f" and optionally {sorted(_OPTIONAL_KEY_FIELDS)}"
+            )
+        tenant = item.get("tenant", DEFAULT_TENANT)
+        if not isinstance(tenant, str) or _ID.fullmatch(tenant) is None:
+            raise RegistryError(f"keys[{index}].tenant is invalid")
         key_id, digest, scopes = item["id"], item["digest"], item["scopes"]
         if not isinstance(key_id, str) or _ID.fullmatch(key_id) is None:
             raise RegistryError(f"keys[{index}].id is invalid")
@@ -158,6 +171,7 @@ def parse_registry(raw: bytes) -> tuple[KeyEntry, ...]:
                 expires_at=_parse_time(item["expires_at"], "expires_at", index),
                 revoked_at=revoked_at,
                 revoked_by=revoked_by,
+                tenant=tenant,
             )
         )
     return tuple(entries)
@@ -326,6 +340,8 @@ def _command_new(args: argparse.Namespace) -> int:
         "revoked_at": None,
         "revoked_by": None,
     }
+    if args.tenant is not None:
+        entry["tenant"] = args.tenant
     path = Path(args.file)
     document: dict[str, Any] = (
         _load_document(path) if path.exists() else {"schema": SCHEMA, "keys": []}
@@ -358,6 +374,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     new.add_argument("--id", required=True)
     new.add_argument("--scope", action="append", choices=sorted(SCOPES), required=True)
     new.add_argument("--expires", help="UTC, YYYY-MM-DDTHH:MM:SSZ")
+    new.add_argument("--tenant", help="tenant of the key (ADR-013); default 'default'")
     new.add_argument("--file", required=True, help="key file to append the entry to (atomic)")
     revoke = commands.add_parser("revoke", help="mark a key as revoked in the key file")
     revoke.add_argument("--file", required=True)

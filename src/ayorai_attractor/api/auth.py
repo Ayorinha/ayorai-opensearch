@@ -98,6 +98,10 @@ def _api_key_digest(presented_key: str, pepper: bytes) -> str:
 
 
 PRINCIPAL_STATE_KEY = "ayorai_principal"
+# ADR-013: the requester's tenant and every principal of that tenant (owners whose
+# traces the requester may read). Legacy mode has no tenants: only the principal.
+TENANT_STATE_KEY = "ayorai_tenant"
+TENANT_PRINCIPALS_STATE_KEY = "ayorai_tenant_principals"
 
 
 _PRINCIPAL_LABEL = b"ayorai-attractor/principal/v1\x00"
@@ -214,6 +218,7 @@ class APIKeyAuthMiddleware:
         # Principals come from configured digests only: the request path selects
         # one, it never hashes data derived from the presented key.
         self.principals: dict[str, str] = {}
+        self._tenant_cache: tuple[tuple[KeyEntry, ...], dict[str, frozenset[str]]] | None = None
         limit = _positive_int_env("ATTRACTOR_RATE_LIMIT_REQUESTS", _DEFAULT_RATE_LIMIT_REQUESTS)
         window_seconds = _positive_int_env(
             "ATTRACTOR_RATE_LIMIT_WINDOW_SECONDS", _DEFAULT_RATE_LIMIT_WINDOW_SECONDS
@@ -234,6 +239,17 @@ class APIKeyAuthMiddleware:
 
     def _entries(self) -> tuple[KeyEntry, ...]:
         return self.registry.current() if self.registry is not None else self._legacy
+
+    def _tenant_principals(self, entries: tuple[KeyEntry, ...], tenant: str) -> frozenset[str]:
+        """Principals of every key of ``tenant``, revoked or expired ones included."""
+        cache = self._tenant_cache
+        if cache is None or cache[0] is not entries:
+            members: dict[str, set[str]] = {}
+            for entry in entries:
+                members.setdefault(entry.tenant, set()).add(self._principal(entry.digest))
+            cache = (entries, {name: frozenset(group) for name, group in members.items()})
+            self._tenant_cache = cache
+        return cache[1].get(tenant, frozenset())
 
     def _principal(self, digest: str) -> str:
         principal = self.principals.get(digest)
@@ -345,5 +361,12 @@ class APIKeyAuthMiddleware:
             await self._reject(scope, receive, send, 403, "Forbidden")
             return
 
-        scope.setdefault("state", {})[PRINCIPAL_STATE_KEY] = self._principal(matched.digest)
+        principal = self._principal(matched.digest)
+        state = scope.setdefault("state", {})
+        state[PRINCIPAL_STATE_KEY] = principal
+        if self.registry is not None:
+            state[TENANT_STATE_KEY] = matched.tenant
+            state[TENANT_PRINCIPALS_STATE_KEY] = self._tenant_principals(entries, matched.tenant)
+        else:
+            state[TENANT_PRINCIPALS_STATE_KEY] = frozenset({principal})
         await self.app(scope, receive, send)

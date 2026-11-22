@@ -28,6 +28,13 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
   - **Emissão e revogação:** `python -m ayorai_attractor.api.keys`, com gravação atômica. A ferramenta lê a chave por stdin e grava só o digest; nunca gera nem exibe a chave.
   - **Compatibilidade:** `ATTRACTOR_API_KEYS_HMAC_SHA256` continua como antes, com todos os escopos, e o principal de cada chave não muda.
 
+### Tenant
+- Tenant distinto de principal (ADR-013, DEC-032).
+  - **Campo `tenant`** no arquivo de chaves, opcional; sem ele, a chave fica no tenant `default`.
+  - **Leitura:** rastros legíveis por qualquer chave do mesmo tenant com `audit:read`; 404 entre tenants. O modo legado continua só com o dono.
+  - **Log de verificação:** o tenant entra no registro salgado (`ayorai.verify-record.v2`), nunca na folha pública.
+  - **Sem migração:** o esquema assinado da trilha não mudou.
+
 ### Trilha de auditoria
 - Registro verificável do `/v1/verify` (ADR-010, fases 2 e 3).
   - **O que faz:** com `ATTRACTOR_VERIFY_LOG_MODE=local` ou `required`, cada decisão `r2-a` entra num log Merkle RFC 6962 com checkpoints C2SP assinados em Ed25519, e a resposta ganha `audit_status` e `audit_receipt`. O recibo traz folha, prova de inclusão, checkpoint assinado, sal e registro, e é verificável sem o servidor com a chave publicada em `GET /v1/verify/log`.
