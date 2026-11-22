@@ -1,10 +1,10 @@
 # P2 — Hardening da trilha verificável
 
 - **Data:** 2026-11-22
-- **Branch:** `p2-auditlog-hardening`
+- **Branch:** `p2-auditlog-review`
 - **Base:** `main` em `76876bb70abcffe488176bb9b3b324942227aaad` (merge da AP1 #632)
 - **HEAD de referência do primeiro relatório:** `b8c66a30003ef633efd417282fe6f964c5236a47`
-- **Estado:** trabalho em andamento; sem PR, merge, release, tag ou DOI.
+- **PR:** #634 (draft, aberta para revisão); sem merge, release, tag ou DOI.
 
 ## Objetivo
 
@@ -49,7 +49,7 @@ Em `tests/test_verify_log_integrity.py`:
 - motivo inválido em folha de apagamento;
 - folhas de apagamento duplicadas para o mesmo evento.
 
-Esses testes foram adicionados, mas **a suíte ainda precisa ser executada em ambiente com as dependências do projeto**. A branch não foi aberta como PR, portanto ainda não há CI remoto associado a este HEAD. Nenhum resultado de teste é declarado como aprovado nesta etapa.
+Os testes foram adicionados à PR #634. A primeira execução da CI encontrou duas violações Ruff de UP012 em `cosignature.py` e `test_witness_client.py`; as correções foram aplicadas nesta branch e precisam ser revalidadas por nova execução completa. Os resultados parciais da execução anterior não constituem aprovação da suíte principal.
 
 ## 3. Testemunhas externas — escopo e limites
 
@@ -62,18 +62,16 @@ A especificação C2SP `tlog-witness` v1.1.0 define `POST <submission-prefix>/ad
 - https://c2sp.org/tlog-cosignature@v1.1.0
 - https://c2sp.org/tlog-checkpoint@v1.1.0
 
-A cosignatura Ed25519 C2SP usa o tipo de assinatura `0x04`, inclui timestamp POSIX de 8 bytes e assina uma mensagem com separação de domínio `cosignature/v1`. Ela não é a assinatura Ed25519 padrão `0x01` que o módulo atual usa para o checkpoint do log. A implementação deve tratar os dois tipos separadamente e verificar um quórum configurado de chaves independentes; não basta aceitar qualquer linha adicional de assinatura.
+A cosignatura Ed25519 C2SP usa o tipo de assinatura `0x04`, inclui timestamp POSIX de 8 bytes (uint64, incluindo zero) e assina a mensagem com separação de domínio `cosignature/v1`, seguida do checkpoint completo. O key ID inclui o nome do cosigner, LF, tipo `0x04` e chave pública. Ela não é a assinatura Ed25519 padrão `0x01` do checkpoint do log. O cliente valida uma identidade de testemunha configurada; isso ainda não implementa quórum de duas testemunhas.
 
 **Limite de decisão:** não foram escolhidas ou contatadas testemunhas. Não será configurado endpoint real, política de quórum, chave de terceiro ou afirmação de independência sem uma seleção verificável e sem validar a compatibilidade operacional. O carimbo RFC 3161/ICP-Brasil continua adiado pela DEC-030; esta P2 não contrata serviço nem cria afirmação temporal.
 
 ## 4. Próximos passos técnicos
 
-1. Executar a suíte direcionada e a suíte completa em ambiente de desenvolvimento; corrigir qualquer falha antes de ampliar o escopo.
-2. Adicionar vetores independentes e testes negativos para cosignaturas C2SP Ed25519 `0x04`, incluindo timestamp, nome, key ID, corpo do checkpoint e assinaturas desconhecidas/malformadas.
-3. Implementar cliente de testemunha com estado monotônico, retry seguro e tratamento de HTTP 409 sem rebaixar o checkpoint local.
-4. Definir persistência das cosignaturas e política de quórum sem alterar o contrato de resposta existente por acidente.
-5. Projetar o monitoramento/recuperação contra split-view e concorrência; provar comportamento com testemunhas simuladas antes de qualquer conexão externa.
-6. Só então propor integração com duas testemunhas reais independentes e validar os critérios da ADR-010.
+1. Reexecutar CI completa em Python 3.11, 3.12 e 3.13, Ruff, mypy, suíte integral, cobertura e verificações de regressão após os ajustes C2SP.
+2. Realizar revisão técnica independente do formato de cosignatura, parsing do checkpoint e semântica de concorrência/rollback.
+3. Tratar persistência durável do último checkpoint, armazenamento das cosignaturas e política de quórum como fase operacional separada, com desenho e testes de recuperação.
+4. Selecionar e validar pelo menos duas testemunhas reais independentes antes de qualquer alegação de proteção operacional contra split-view.
 
 ## 5. Restrições preservadas
 
@@ -104,3 +102,12 @@ A cosignatura Ed25519 C2SP usa o tipo de assinatura `0x04`, inclui timestamp POS
 ### Evidência de validação
 
 Os testes direcionados, suíte completa, Ruff, mypy e CI remoto **ainda não foram executados/confirmados neste registro**. O código deve ser tratado como implementação candidata até a conclusão da CI e revisão independente. Não declarar a P2 pronta para produção antes dessa evidência.
+
+
+## 7. Correções de conformidade C2SP após análise da CI — 2026-11-22
+
+- A primeira CI apontou duas regras Ruff UP012, corrigidas sem supressões.
+- A leitura da especificação C2SP confirmou timestamp como uint64 não negativo; o código e os testes agora aceitam timestamp zero e o limite uint64.
+- A validação do nome foi ampliada para rejeitar whitespace Unicode, além de `+` e controles ASCII abaixo de U+0020.
+- A decodificação da cosignatura agora exige base64 canônico.
+- A CI precisa ser executada novamente após esses commits; nenhum desses ajustes é considerado validado até a conclusão dos jobs.
