@@ -88,7 +88,7 @@ def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
 def test_cosignature_name_rejects_unicode_whitespace_and_accepts_uint64_timestamp() -> None:
     body = f"{LOG_NAME}\n1\n{base64.b64encode(bytes(32)).decode()}\n"
     with pytest.raises(ValueError, match="Unicode spaces"):
-        sign_cosignature("witness\\u00a0example", WITNESS_SEED, body, 1)
+        sign_cosignature("witness example", WITNESS_SEED, body, 1)
     maximum = (1 << 64) - 1
     line = sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, maximum)
     note = body + "\n" + line
