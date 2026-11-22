@@ -188,6 +188,14 @@ jobs:
       - run: pip install -e ".[dev]"
       - name: Lint Golden v0 closed-world contract
         run: python scripts/lint_golden.py
+      - name: Install poppler for the source-text reproducibility test
+        # tests/test_source_derived_text.py checks that the derived RGC source text
+        # is reproduced byte for byte by pdftotext 24.02.0 (Ubuntu 24.04's version);
+        # without poppler that test is skipped.
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends poppler-utils
+          pdftotext -v
       - run: python -c "import mcp, agents, ayorai_attractor; print(mcp.__file__); print(agents.__file__); print(ayorai_attractor.__file__)"
       - run: ruff check .
       - run: ruff format --check .
