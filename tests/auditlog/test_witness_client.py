@@ -71,6 +71,11 @@ def test_cosignature_rejects_tampering_wrong_key_and_future_timestamp() -> None:
     wrong_key = _pub(bytes(reversed(WITNESS_SEED)))
     assert not verify_cosignature(note, WITNESS_NAME, wrong_key, now=1_700_000_000)
     assert not verify_cosignature(note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_699_999_000)
+    zero_line = sign_cosignature(WITNESS_NAME, WITNESS_SEED, body, 0)
+    zero_note = body + "\\n" + zero_line
+    assert not verify_cosignature(
+        zero_note, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000
+    )
 
 
 def test_cosignature_ignores_unknown_cosigner_lines() -> None:
@@ -150,6 +155,22 @@ def test_witness_client_accepts_cosigned_checkpoint_and_advances_state() -> None
     result = client.submit(note, [])
     assert result == client.last_checkpoint
     assert verify_cosignature(result, WITNESS_NAME, _pub(WITNESS_SEED), now=1_700_000_000)
+
+
+def test_witness_client_advances_with_a_valid_consistency_proof() -> None:
+    harness = _WitnessHarness()
+    client = _client(harness)
+    signer = NoteSigner(LOG_NAME, LOG_SEED)
+    leaves = [b"one"]
+    first = _checkpoint(signer, leaves)
+    client.submit(first, [])
+    grown = [*leaves, b"two"]
+    second = _checkpoint(signer, grown)
+    proof = consistency_proof(1, [leaf_hash(leaf) for leaf in grown])
+    result = client.submit(second, proof)
+    checkpoint_body = verify_note(result, signer.verifier_key)
+    parsed = parse_checkpoint(checkpoint_body) if checkpoint_body is not None else None
+    assert parsed is not None and parsed.size == 2
 
 
 def test_witness_client_rejects_rollback_before_network_call() -> None:
