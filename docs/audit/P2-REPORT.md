@@ -129,4 +129,4 @@ Os testes direcionados, suíte completa, Ruff, mypy e CI remoto **ainda não for
 
 A revisão complementar também passou a exigir que a origem declarada no checkpoint corresponda ao nome da identidade presente na chave verificadora configurada. Foi acrescentado teste negativo para checkpoint corretamente assinado, mas com origem divergente; a requisição deve ser recusada antes de contatar a testemunha.
 
-**Estado do HEAD `f481077`:** não há execução de workflow nem status de commit reportado para este HEAD. Portanto, os ajustes desta seção permanecem sem validação automatizada remota. A CI aprovada em commit anterior não valida estas alterações.
+**Estado do código em `f481077` (HEAD de código antes desta atualização documental):** não havia execução de workflow nem status de commit reportado. Portanto, os ajustes das seções 8 e 9 permanecem sem validação automatizada remota. A CI aprovada em commit anterior não valida estas alterações. Esta atualização documental não altera o código.
