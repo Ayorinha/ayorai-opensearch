@@ -159,6 +159,21 @@ def test_a_leaf_that_is_not_json_is_reported(open_log: tuple[VerificationLog, st
     )
     assert "leaf 0 is not JSON" in _problems(store)
 
+def test_an_unknown_public_leaf_schema_is_reported(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    unknown = b'{"schema":"ayorai.unknown.v1"}'
+    _sql(
+        path,
+        "UPDATE vlog_leaves SET leaf = ?, leaf_hash = ? WHERE idx = 1",
+        (unknown, leaf_hash(unknown)),
+    )
+    problems = _problems(store)
+    assert "leaf 1 has an unknown schema" in problems
+    assert "record 1 has no event leaf" in problems
+
+
 
 @pytest.mark.parametrize("target", [5, -1, "0", None])
 def test_an_erasure_leaf_naming_an_invalid_event_is_reported(
