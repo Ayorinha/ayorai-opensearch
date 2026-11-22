@@ -1,4 +1,5 @@
 """C2SP tlog-witness HTTP client with monotonic local checkpoint state."""
+
 from __future__ import annotations
 
 import base64
