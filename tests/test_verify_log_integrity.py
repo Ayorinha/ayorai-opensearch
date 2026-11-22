@@ -432,7 +432,6 @@ def test_receipts_for_erasure_leaves_or_with_bad_index_types_do_not_verify(
     assert not verify_receipt(forged, vkey)
 
 
-
 def test_residual_data_after_erasure_is_reported(tmp_path: Path) -> None:
     path = str(tmp_path / "v.sqlite3")
     with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
