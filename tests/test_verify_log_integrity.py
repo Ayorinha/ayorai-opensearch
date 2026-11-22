@@ -336,13 +336,28 @@ def test_erasure_reason_must_be_a_short_code(
 # --- argument validation ---------------------------------------------------------
 
 
-@pytest.mark.parametrize("old_size", [0, -1, 4])
+@pytest.mark.parametrize("old_size", [-1, 4])
 def test_consistency_rejects_sizes_outside_the_tree(
     open_log: tuple[VerificationLog, str], old_size: int
 ) -> None:
     store, _ = open_log
     with pytest.raises(ValueError, match="old_size"):
         store.consistency(old_size)
+
+
+def test_consistency_from_empty_tree_is_an_empty_proof(tmp_path: Path) -> None:
+    with VerificationLog(str(tmp_path / "v.sqlite3"), NoteSigner(ORIGIN, SEED)) as store:
+        assert store.consistency(0) == []
+        store.append(_event(0))
+        assert store.consistency(0) == []
+
+
+def test_missing_intermediate_checkpoint_is_reported(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(path, "DELETE FROM vlog_checkpoints WHERE size = 2")
+    assert "checkpoint 2: missing" in _problems(store)
 
 
 def test_empty_log_publishes_a_signed_size_zero_checkpoint(tmp_path: Path) -> None:

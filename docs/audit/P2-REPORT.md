@@ -81,3 +81,26 @@ A cosignatura Ed25519 C2SP usa o tipo de assinatura `0x04`, inclui timestamp POS
 - Nenhuma alteração no Judge, nos vereditos, nos contratos HTTP ou nos hashes Golden.
 - Nenhuma publicação, merge, tag, release ou DOI.
 - A resistência ao operador que controla simultaneamente banco e chave **não** é alegada sem duas cosignaturas independentes ativas.
+
+
+## 6. Implementação complementar — 2026-11-22
+
+**[FATO VERIFICADO — código presente na branch]**
+
+- **P2-03:** `VerificationLog.consistency(0)` agora retorna uma prova vazia, conforme o primeiro contato do protocolo de testemunhas; valores negativos, booleanos e tamanhos maiores que a árvore continuam inválidos.
+- **P2-04:** `verify_log()` agora exige a presença de cada checkpoint esperado entre 1 e o tamanho atual da árvore e reporta lacunas individualmente.
+- **Cosignaturas:** novo módulo `auditlog/cosignature.py`, separado de `note.py`, implementa Ed25519 C2SP tipo `0x04`, key ID específico, timestamp POSIX de 8 bytes e separação de domínio `cosignature/v1`. A assinatura de log tipo `0x01` permanece inalterada.
+- **Cliente:** novo `auditlog/witness_client.py` envia `add-checkpoint`, valida a assinatura do log e a cosignatura configurada, mantém checkpoint local monotônico e não avança o estado em HTTP 409 ou resposta inválida.
+- **Vetores e testes:** foi adicionado um vetor determinístico de interoperabilidade derivado das regras publicadas C2SP v1.1.0 (explicitamente não apresentado como vetor oficial mantido pelo C2SP), além de testes para adulteração, chave incorreta, timestamp futuro, rollback, HTTP 409, prova inconsistente/split-view e concorrência simulada.
+
+### Limites ainda explícitos
+
+- O cliente é uma implementação de protocolo; não configura nem contata testemunhas reais.
+- A simulação em memória é exclusivamente teste e não é um serviço de testemunha implantável.
+- A política de quórum de duas testemunhas e o armazenamento durável da lista de cosignaturas continuam pendentes de desenho e decisão própria.
+- O estado monotônico do cliente é em memória; a persistência durável do último checkpoint observado pelo cliente ainda precisa ser integrada a um armazenamento operacional.
+- Nenhum carimbo RFC 3161/ICP-Brasil foi implementado ou contratado.
+
+### Evidência de validação
+
+Os testes direcionados, suíte completa, Ruff, mypy e CI remoto **ainda não foram executados/confirmados neste registro**. O código deve ser tratado como implementação candidata até a conclusão da CI e revisão independente. Não declarar a P2 pronta para produção antes dessa evidência.
