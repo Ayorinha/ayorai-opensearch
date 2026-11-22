@@ -199,7 +199,7 @@ Os resultados abaixo foram reportados pela execução local em Python 3.13. A co
 5. **Substantivo comum que abre as duas frases e nunca aparece em minúscula** ("Inauguração foi em 1990." × "… em 1992.") é tratado como nome. O resultado é abstenção, não refutação. Limitação conhecida, registrada no CHANGELOG-API.
 6. **Publicação, CI e integração (estado verificado em 2026-11-22):**
    - a branch `ap1-consolidation` está publicada no GitHub e a PR [#632](https://github.com/Ayorinha/ayorai-opensearch/pull/632) está aberta contra `main`;
-   - o HEAD atual conferido nesta revisão é `b57392cbfc65b2c8ce6241494af8e45e579a8b54`; a base da PR permanece `0acc7dc9540048d8340347655a62d7fa7b156741`;
+   - o HEAD do snapshot de CI conferido antes das atualizações documentais finais é `b57392cbfc65b2c8ce6241494af8e45e579a8b54`; a base da PR permanece `0acc7dc9540048d8340347655a62d7fa7b156741`;
    - no HEAD `b57392cb...`, a API do GitHub retornou **37 check-runs concluídos com sucesso, 0 falhas e 0 pendentes**. A matriz incluiu CI Python 3.11/3.12/3.13, Judge/Golden regression, segurança, CodeQL, Dependency Review, Schemathesis, compatibilidade FastAPI/Pydantic, migração Golden e guardas OpenAPI;
    - a PR foi reportada como `open`, `mergeable=true`, com 9 arquivos alterados. O diff permaneceu restrito ao escopo AP1;
    - após essa conferência, foi criado um commit exclusivamente documental para corrigir o cabeçalho e a seção de publicação deste relatório. **Os 37 checks acima pertencem ao SHA `b57392cb...`, não devem ser atribuídos automaticamente ao novo HEAD**; o CI precisa concluir novamente no commit desta atualização;
