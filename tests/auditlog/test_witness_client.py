@@ -95,6 +95,12 @@ def test_cosignature_name_rejects_unicode_whitespace_and_accepts_uint64_timestam
     assert verify_cosignature(
         note, WITNESS_NAME, _pub(WITNESS_SEED), now=maximum, max_future_skew=0
     )
+    assert not verify_cosignature(
+        note, WITNESS_NAME, _pub(WITNESS_SEED), now=True
+    )
+    assert not verify_cosignature(
+        note, WITNESS_NAME, _pub(WITNESS_SEED), now=maximum, max_future_skew=True
+    )
 
 
 def test_cosignature_ignores_unknown_cosigner_lines() -> None:
