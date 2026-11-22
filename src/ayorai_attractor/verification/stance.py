@@ -760,9 +760,42 @@ def _shares_predicate(claim_text: str, evidence_text: str) -> bool:
     recognized when it is capitalized inside a sentence in either text, so a name
     that opens the claim ("Vértice foi fundada…") is still a name.
     """
-    names = _proper_nouns(claim_text) | _proper_nouns(evidence_text)
+    names = (
+        _proper_nouns(claim_text)
+        | _proper_nouns(evidence_text)
+        | _initial_names(claim_text, evidence_text)
+    )
     claim_words = _content_words(claim_text) - names - _GENERIC_VERBS
     return bool(claim_words & _content_words(evidence_text))
+
+
+def _initial_names(claim_text: str, evidence_text: str) -> set[str]:
+    """Capitalized words that open a sentence and never appear in lowercase.
+
+    "Vértice foi fundada em 1998." against "Vértice abriu filial em 2001." names
+    Vértice only at the start of both sentences, so ``_proper_nouns`` cannot tell it
+    from a common word. A word written in lowercase anywhere in either text
+    ("Fundada em 1998, …" next to "foi fundada") is a common word and stays a
+    possible predicate; one that is only ever capitalized is treated as a name, so
+    it cannot anchor a year conflict on its own. When the doubt remains, the year
+    is not anchored and the passage abstains instead of refuting.
+    """
+    initials: set[str] = set()
+    lowercase: set[str] = set()
+    for text in (claim_text, evidence_text):
+        sentence_start = True
+        for match in re.finditer(r"[\wÀ-ÿ]+|[.!?]", text):
+            word = match.group(0)
+            if word in _SENTENCE_ENDS:
+                sentence_start = True
+                continue
+            folded = strip_accents(word.casefold())
+            if sentence_start and word[:1].isupper():
+                initials.add(folded)
+            elif word[:1].islower():
+                lowercase.add(folded)
+            sentence_start = False
+    return initials - lowercase
 
 
 def _predicate_negators(text: str) -> set[str]:
