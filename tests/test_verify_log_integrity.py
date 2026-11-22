@@ -65,6 +65,7 @@ def test_changed_leaf_with_stale_hash_is_reported(open_log: tuple[VerificationLo
     _sql(path, "UPDATE vlog_leaves SET leaf = X'7b7d' WHERE idx = 1")
     assert "leaf 1 hash mismatch" in _problems(store)
 
+
 def test_record_mutation_is_detected_against_the_leaf_commitment(
     open_log: tuple[VerificationLog, str],
 ) -> None:
@@ -159,6 +160,7 @@ def test_a_leaf_that_is_not_json_is_reported(open_log: tuple[VerificationLog, st
     )
     assert "leaf 0 is not JSON" in _problems(store)
 
+
 def test_an_unknown_public_leaf_schema_is_reported(
     open_log: tuple[VerificationLog, str],
 ) -> None:
@@ -207,7 +209,11 @@ def test_erasure_timestamp_mutation_is_reported(tmp_path: Path) -> None:
     with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
         store.append(_event(0))
         store.erase(0, "2026-11-22T00:00:00Z")
-        _sql(path, "UPDATE vlog_records SET erased_at = ? WHERE idx = 0", ("2026-11-23T00:00:00Z",))
+        _sql(
+            path,
+            "UPDATE vlog_records SET erased_at = ? WHERE idx = 0",
+            ("2026-11-23T00:00:00Z",),
+        )
         assert "record 0 erasure timestamp mismatch" in _problems(store)
 
 
