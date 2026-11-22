@@ -22,8 +22,9 @@ Comando local: `pytest -W error::ResourceWarning -W error::pytest.PytestUnraisab
 
 - **Teste:** `tests/test_source_derived_text.py::test_extraction_is_reproducible_with_same_poppler_version`.
 - **Como foi identificado (fato):**
-  - no log do CI, a linha com o `s` termina em 75% e tem o `s` na 32ª posição, o que corresponde ao teste de índice 2048 da coleta;
-  - o teste de índice 2048 na coleta local é este, e ele é o único com skip dependente de ambiente que roda no Linux.
+  - no log do CI, a linha com o `s` termina em 75% e tem o `s` na 32ª posição. Com 72 testes por linha, isso é o teste de posição 2.048 da coleta, contando a partir de 1;
+  - na coleta local, que segue a mesma ordem, a posição 2.048 é este teste;
+  - os outros skips condicionais da suíte (`importorskip` de `numpy` e `pypdf`, e dois `skipif` só para Windows) não disparam no runner, porque as dependências estão instaladas e o sistema é Linux.
 - **Condição do skip:** `skipif(shutil.which("pdftotext") is None)` ou versão do poppler diferente de 24.02.0.
 - **Causa:** o runner `ubuntu-24.04` do GitHub não tem o `poppler-utils` instalado.
 - **O que o teste garante:** que o texto derivado das fontes oficiais do RGC (`evals/ptbr/sources/`, artefato protegido) é reproduzido byte a byte a partir dos PDFs capturados.
@@ -37,9 +38,10 @@ As 402 linhas não cobertas concentram-se assim:
 | Classe | Módulos | Linhas não cobertas (antes) | Natureza |
 |---|---|---|---|
 | Crítica | `auditlog/note.py`, `auditlog/store.py`, `api/keys.py`, `api/auth.py`, `audit_store.py` | 86 | Caminhos de rejeição: assinatura, chave de verificação, adulteração, arquivo de chaves e limite por chave |
-| Alta | `verification/judge2/*`, `verification/document_check.py`, `verification/field_check.py` | cerca de 110 | Ramos de validação do Judge 2.0. **Não alterados:** são artefatos protegidos e não podem ser mudados para fazer teste passar |
-| Média | `evaluation/international.py`, `evaluation/international_cli.py`, `evaluation/golden.py` | cerca de 85 | Ferramentas de avaliação exploratória e CLI sem teste |
-| Baixa | `durable.py`, `hybrid.py`, `observability/tracing.py` e outros | restante | Inicialização, adaptadores opcionais, mensagens de erro de configuração |
+| Alta | `verification/judge2/*` (72), `verification/document_check.py` (10), `verification/field_check.py` (26) | 108 | Ramos de validação do Judge. O `judge2/` é protegido (AGENTS.md §4): podem entrar testes, mas as regras não mudam. `document_check.py` e `field_check.py` (Judge do ADR-002) não são protegidos |
+| Média | `evaluation/international.py`, `evaluation/international_cli.py`, `evaluation/golden.py` | 83 | Ferramentas de avaliação exploratória e CLI sem teste |
+| Baixa | `durable.py`, `hybrid.py`, `observability/tracing.py` e outros | 125 | Inicialização, adaptadores opcionais, mensagens de erro de configuração |
+| **Total** | | **402** | |
 
 ### Lacunas críticas encontradas (fato verificado)
 
@@ -96,13 +98,24 @@ As 402 linhas não cobertas concentram-se assim:
 | `auditlog/store.py` | 99,6% | 96,7% | `backup()` com `integrity_check` falhando: exige corromper a cópia durante a API de backup do SQLite |
 | `api/keys.py` | 98,4% | 94,7% | Leitura que falha entre o `stat` e o `read` (corrida); `__main__` |
 | `api/auth.py` | 97,6% | 91,9% | Pepper ausente no modo `api_key` (inalcançável: a subida recusa); poda periódica do limitador; cliente sem endereço |
-| `audit_store.py` | 97,0% | 95,1% | Rollback depois de exceção do SQLite em retenção e nova selagem; exige falha de disco simulada |
+| `audit_store.py` | 97,0% | 95,1% | Rollback depois de exceção do SQLite em retenção e nova selagem (exige falha de disco simulada); `backup()` com `integrity_check` falhando; validação de `check_trace_id` vazio e de chaves HMAC ausentes ao selar |
 | `tenant.py` / `tenancy.py` | 94–100% | 67–83% | Primitivas do runtime de agentes (R13), fora do caminho HTTP da ADR-013 |
 
 ## 6. Pendências
 
 **Problemas reais, fora do escopo autorizado:**
-1. Os módulos do Judge 2.0 (`judge2/adjudication.py` com 87% de cobertura de linhas na medição local registrada nesta auditoria; a cobertura de branches desse módulo não foi discriminada aqui, além de `gates.py` e `__init__.py`) têm ramos de validação sem teste. O valor de 90% citado no resumo da revisão não está sustentado por este relatório e não deve ser usado sem uma nova medição reproduzível. Os testes podem ser escritos sem tocar nas regras, mas precisam de casos sintéticos revisados contra a ADR-009. Fica proposto como tarefa própria.
+1. Os módulos do Judge 2.0 têm ramos de validação sem teste. Medição local, idêntica no início e no fim desta auditoria, porque os testes novos não tocam no Judge:
+
+   | Módulo | Linhas | Branches |
+   |---|---|---|
+   | `judge2/adjudication.py` | 89,9% (34 de 337 sem teste) | 81,4% (140 de 172) |
+   | `judge2/gates.py` | 91,4% (17 de 197) | 82,4% (84 de 102) |
+   | `judge2/__init__.py` | 86,9% (18 de 137) | 80,2% (69 de 86) |
+   | `judge2/explanations.py` | 90,6% (3 de 32) | 75,0% (9 de 12) |
+
+   Os números de linhas coincidem com o CI, que mostra 90%, 91%, 87% e 91%. O CI não mede branches. Uma versão anterior deste relatório trazia "87%" para o `adjudication.py`: era a medida combinada de linhas e branches (87,0%), rotulada errado.
+
+   Os testes podem ser escritos sem tocar nas regras, mas precisam de casos sintéticos revisados contra a ADR-009. Fica proposto como tarefa própria.
 2. `evaluation/international_cli.py` está com 0%. É uma CLI exploratória e pede um teste de fumaça.
 3. A catraca de cobertura do CI está em 85% e só mede linhas. Recomendação, que depende de decisão do mantenedor:
    - medir branches (`--cov-branch`);
@@ -112,6 +125,18 @@ As 402 linhas não cobertas concentram-se assim:
 - Rollback depois de falha de disco do SQLite.
 - Corrida entre `stat` e `read` do arquivo de chaves.
 - Linhas inalcançáveis mantidas como defesa em profundidade.
+
+## 6a. Confirmação no CI remoto
+
+| Medida | CI da PR #629, HEAD `f3e7b202`, job `test (3.12)` |
+|---|---|
+| Testes | 2.891 aprovados, 0 ignorados, 0 falhas |
+| Teste do poppler | Executado e aprovado. A etapa de instalação do `poppler-utils` passou |
+| Linhas, global | 95% (7.170 instruções, 341 não cobertas, 95,24%), igual à medição local |
+| Branches | Não medidos pelo CI |
+| Checks | 20 de 20 verdes, entre eles CodeQL, `security` e `dependency-review` |
+
+A cobertura local foi medida de novo no HEAD `b8ea47de` e é idêntica, arquivo a arquivo, à usada neste relatório.
 
 ## 7. Parecer
 
