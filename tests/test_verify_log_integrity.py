@@ -180,7 +180,6 @@ def test_an_unknown_public_leaf_schema_is_reported(
     assert "record 1 has no event leaf" in problems
 
 
-
 @pytest.mark.parametrize("target", [5, -1, "0", None])
 def test_an_erasure_leaf_naming_an_invalid_event_is_reported(
     tmp_path: Path, target: object
