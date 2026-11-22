@@ -208,6 +208,17 @@ def test_witness_client_rejects_malformed_base64_proof_before_network_call() -> 
     assert client.last_checkpoint is not None
 
 
+def test_witness_client_rejects_signed_checkpoint_with_wrong_origin() -> None:
+    harness = _WitnessHarness()
+    client = _client(harness)
+    signer = NoteSigner(LOG_NAME, LOG_SEED)
+    wrong_origin = signer.sign(Checkpoint("other.example/log", 0, tree_root([])).body())
+    with pytest.raises(WitnessError, match="origin"):
+        client.submit(wrong_origin, [])
+    assert harness.requests == 0
+    assert client.last_checkpoint is None
+
+
 def test_witness_client_rejects_rollback_before_network_call() -> None:
     harness = _WitnessHarness()
     client = _client(harness)
