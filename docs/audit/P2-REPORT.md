@@ -126,3 +126,7 @@ Os testes direcionados, suíte completa, Ruff, mypy e CI remoto **ainda não for
 - o teste de avanço do checkpoint agora usa o mesmo formato Base64 produzido por `VerificationLog.consistency()`, e foi acrescentado teste negativo para Base64 inválido.
 
 **Status:** correção implementada nos commits posteriores a `6100731`. A validação automatizada desses commits ainda precisa ser observada. Não declarar aprovação da CI, cobertura ou revisão independente com base apenas na implementação.
+
+A revisão complementar também passou a exigir que a origem declarada no checkpoint corresponda ao nome da identidade presente na chave verificadora configurada. Foi acrescentado teste negativo para checkpoint corretamente assinado, mas com origem divergente; a requisição deve ser recusada antes de contatar a testemunha.
+
+**Estado do HEAD `f481077`:** não há execução de workflow nem status de commit reportado para este HEAD. Portanto, os ajustes desta seção permanecem sem validação automatizada remota. A CI aprovada em commit anterior não valida estas alterações.
