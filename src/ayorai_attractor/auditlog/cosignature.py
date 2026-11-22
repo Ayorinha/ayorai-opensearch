@@ -3,6 +3,7 @@
 Separate from note.py: log signatures use type 0x01; witness signatures use
 type 0x04 and a timestamped signature structure.
 """
+
 from __future__ import annotations
 
 import base64
@@ -27,10 +28,7 @@ def _validate_name(name: str) -> None:
     if not isinstance(name, str) or not name or len(name.encode("utf-8")) > 255:
         raise ValueError("cosigner name must be 1-255 UTF-8 bytes")
     if any(
-        char.isspace()
-        or char == "+"
-        or ord(char) < 0x20
-        or unicodedata.category(char) == "Zs"
+        char.isspace() or char == "+" or ord(char) < 0x20 or unicodedata.category(char) == "Zs"
         for char in name
     ):
         raise ValueError(
@@ -128,10 +126,7 @@ def verify_cosignature(
             if len(raw) != 4 + 8 + 64 or raw[:4] != expected_id:
                 continue
             timestamp = int.from_bytes(raw[4:12], "big")
-            if (
-                timestamp > _MAX_TIMESTAMP
-                or timestamp > current_time + max_future_skew
-            ):
+            if timestamp > _MAX_TIMESTAMP or timestamp > current_time + max_future_skew:
                 continue
             verifier.verify(raw[12:], signed_message(body, timestamp))
             return True
