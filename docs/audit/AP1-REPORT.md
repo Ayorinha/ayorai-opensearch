@@ -2,12 +2,16 @@
 
 | item | valor |
 |---|---|
-| Data | 2026-11-22 |
-| SHA auditado (`main`) | `0acc7dc9540048d8340347655a62d7fa7b156741` |
-| Branch de trabalho | `ap1-consolidation` (local) |
-| Commit da correção | `5c4448f6` |
+| Data da auditoria | 2026-11-22 |
+| SHA de referência da `main` (base da AP1) | `0acc7dc9540048d8340347655a62d7fa7b156741` |
+| Branch de trabalho | `ap1-consolidation` (publicada no GitHub) |
+| Commit da correção funcional P2 | `5c4448f6` |
+| Commit da validação final de código/documentação | `e8b5a650b7795f131d8f5649a0cffaf0e18079f7` |
+| PR de integração | [#632](https://github.com/Ayorinha/ayorai-opensearch/pull/632), aberta contra `main` |
+| HEAD da PR na última conferência | `b57392cbfc65b2c8ce6241494af8e45e579a8b54` |
+| Estado de integração nesta revisão | PR aberta; ainda não mesclada |
 
-Não houve push, PR, merge, release, tag nem DOI.
+**Escopo deste relatório:** consolidação técnica AP1 e registro de sua revisão/integração. Não houve release, tag ou DOI nesta etapa. O SHA de referência acima identifica a `main` usada como base; os SHAs de validação e da PR identificam commits posteriores distintos.
 
 **Normas lidas:**
 - `AGENTS.md`;
@@ -138,7 +142,7 @@ Não houve push, PR, merge, release, tag nem DOI.
 
 ## 5. Resultados depois da correção
 
-Todos medidos localmente, Python 3.13, no commit `5c4448f6`:
+Os resultados abaixo foram reportados pela execução local em Python 3.13. A correção funcional foi introduzida em `5c4448f6`; a validação final após a remoção do comentário incorreto foi repetida no commit `e8b5a650b7795f131d8f5649a0cffaf0e18079f7`. O CI da PR foi executado separadamente no HEAD documental `b57392cbfc65b2c8ce6241494af8e45e579a8b54` (detalhado na seção 6).
 
 | verificação | resultado |
 |---|---|
@@ -172,7 +176,7 @@ Todos medidos localmente, Python 3.13, no commit `5c4448f6`:
 ### 5.1 Correção final (autorizada pelo mantenedor)
 
 - **Comentário falso removido.** Em `src/ayorai_attractor/verification/stance.py`, no ramo de `_MILLISECOND_WORDS`, ficou um comentário da tentativa A3 revertida. Ele dizia que "50 ms" e "0,05 segundos" são a mesma quantidade, mas o código continua com `unit = "ms"` e não compara milissegundos com segundos. O comentário foi removido. Não houve mudança de lógica.
-- **Contagem do ruff corrigida.** A primeira versão deste relatório registrou "554 arquivos formatados". A execução no HEAD que já inclui este relatório mostra 555.
+- **Contagem do Ruff corrigida.** A primeira versão deste relatório registrou "554 arquivos formatados"; a validação final reportou 555 arquivos já formatados.
 - **Validação depois da correção:**
   - suíte completa: 3013 aprovados, 0 falhas, 0 `xfail`;
   - `ruff check .`: sem problemas;
@@ -193,15 +197,16 @@ Todos medidos localmente, Python 3.13, no commit `5c4448f6`:
    - Abstêm porque a camada conservadora (`document_check`) exige o número afirmado no trecho.
    - Afrouxar essa garantia é decisão de política.
 5. **Substantivo comum que abre as duas frases e nunca aparece em minúscula** ("Inauguração foi em 1990." × "… em 1992.") é tratado como nome. O resultado é abstenção, não refutação. Limitação conhecida, registrada no CHANGELOG-API.
-6. **Publicação e integração:**
-   - a branch `ap1-consolidation` foi publicada no GitHub;
-   - a PR [#632](https://github.com/Ayorinha/ayorai-opensearch/pull/632) foi aberta contra `main`;
-   - o CI completo da PR foi executado no commit `e8b5a650b7795f131d8f5649a0cffaf0e18079f7`, com todos os checks concluídos com sucesso;
-   - o merge permanece condicionado à conferência final e à autorização explícita do mantenedor.
+6. **Publicação, CI e integração (estado verificado em 2026-11-22):**
+   - a branch `ap1-consolidation` está publicada no GitHub e a PR [#632](https://github.com/Ayorinha/ayorai-opensearch/pull/632) está aberta contra `main`;
+   - o HEAD atual conferido nesta revisão é `b57392cbfc65b2c8ce6241494af8e45e579a8b54`; a base da PR permanece `0acc7dc9540048d8340347655a62d7fa7b156741`;
+   - no HEAD `b57392cb...`, a API do GitHub retornou **37 check-runs concluídos com sucesso, 0 falhas e 0 pendentes**. A matriz incluiu CI Python 3.11/3.12/3.13, Judge/Golden regression, segurança, CodeQL, Dependency Review, Schemathesis, compatibilidade FastAPI/Pydantic, migração Golden e guardas OpenAPI;
+   - a PR foi reportada como `open`, `mergeable=true`, com 9 arquivos alterados. O diff permanece restrito ao escopo AP1, incluindo a atualização documental desta seção;
+   - **não houve merge nesta conferência**. A integração depende da revisão final do diff e da autorização condicional do mantenedor, registrada na conversa. Não houve release, tag ou DOI.
 
 ## 7. Evidências
 
-Os arquivos de trabalho ficam fora do repositório, no diretório de sessão do agente:
+Os arquivos de trabalho abaixo foram reportados como existentes no diretório de sessão da execução que realizou a validação; não fazem parte do repositório e sua disponibilidade não é garantida fora daquela sessão. Portanto, os resultados resumidos na seção 5 devem ser tratados como evidência de execução reportada, enquanto os checks da PR na seção 6 são verificáveis diretamente no GitHub:
 
 | arquivo | conteúdo |
 |---|---|
