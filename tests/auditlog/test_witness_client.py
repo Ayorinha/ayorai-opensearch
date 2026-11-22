@@ -184,11 +184,28 @@ def test_witness_client_advances_with_a_valid_consistency_proof() -> None:
     client.submit(first, [])
     grown = [*leaves, b"two"]
     second = _checkpoint(signer, grown)
-    proof = consistency_proof(1, [leaf_hash(leaf) for leaf in grown])
+    proof = [
+        base64.b64encode(node).decode("ascii")
+        for node in consistency_proof(1, [leaf_hash(leaf) for leaf in grown])
+    ]
     result = client.submit(second, proof)
     checkpoint_body = verify_note(result, signer.verifier_key)
     parsed = parse_checkpoint(checkpoint_body) if checkpoint_body is not None else None
     assert parsed is not None and parsed.size == 2
+
+
+
+def test_witness_client_rejects_malformed_base64_proof_before_network_call() -> None:
+    harness = _WitnessHarness()
+    client = _client(harness)
+    signer = NoteSigner(LOG_NAME, LOG_SEED)
+    first = _checkpoint(signer, [b"one"])
+    client.submit(first, [])
+    grown = _checkpoint(signer, [b"one", b"two"])
+    with pytest.raises(WitnessError, match="invalid base64"):
+        client.submit(grown, ["not-base64!"])
+    assert harness.requests == 1
+    assert client.last_checkpoint is not None
 
 
 def test_witness_client_rejects_rollback_before_network_call() -> None:
