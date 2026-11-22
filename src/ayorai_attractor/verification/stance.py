@@ -723,17 +723,20 @@ def _content_overlap(claim_text: str, evidence_text: str) -> float:
     return len(claim_words & _content_words(evidence_text)) / len(claim_words)
 
 
+_SENTENCE_ENDS = frozenset({".", "!", "?"})
+
+
 def _proper_nouns(text: str) -> set[str]:
     """Capitalized words that do not open a sentence (names such as "Vértice")."""
     names: set[str] = set()
     sentence_start = True
     for match in re.finditer(r"[\wÀ-ÿ]+|[.!?]", text):
-        token = match.group(0)
-        if token in ".!?":
+        word = match.group(0)
+        if word in _SENTENCE_ENDS:
             sentence_start = True
             continue
-        if token[:1].isupper() and not sentence_start:
-            names.add(strip_accents(token.casefold()))
+        if word[:1].isupper() and not sentence_start:
+            names.add(strip_accents(word.casefold()))
         sentence_start = False
     return names
 
