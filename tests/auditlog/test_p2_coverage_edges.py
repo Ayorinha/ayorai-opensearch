@@ -27,8 +27,10 @@ LOG = "example.com/log"
 LOG_SEED = bytes(range(32))
 WITNESS = "witness.example"
 WITNESS_SEED = bytes(range(32, 64))
-PUB = Ed25519PrivateKey.from_private_bytes(WITNESS_SEED).public_key().public_bytes(
-    serialization.Encoding.Raw, serialization.PublicFormat.Raw
+PUB = (
+    Ed25519PrivateKey.from_private_bytes(WITNESS_SEED)
+    .public_key()
+    .public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
 )
 BODY = f"{LOG}\n0\n{base64.b64encode(empty_root()).decode()}\n"
 
@@ -49,9 +51,7 @@ def test_cosignature_rejects_invalid_public_key(public_key: object) -> None:
     ("body", "timestamp"),
     [(BODY[:-1], 1), (BODY, -1), (BODY, True), (BODY, 1 << 64), (None, 1)],
 )
-def test_cosignature_rejects_invalid_message_inputs(
-    body: object, timestamp: object
-) -> None:
+def test_cosignature_rejects_invalid_message_inputs(body: object, timestamp: object) -> None:
     with pytest.raises(ValueError):
         signed_message(body, timestamp)  # type: ignore[arg-type]
 
@@ -83,7 +83,10 @@ def test_cosignature_default_timestamp_and_malformed_notes(
     assert not verify_cosignature(valid, WITNESS, PUB, now=-1)
     assert not verify_cosignature(valid, WITNESS, PUB, max_future_skew=-1)
     assert not verify_cosignature(
-        valid, WITNESS, PUB, max_future_skew=1.5  # type: ignore[arg-type]
+        valid,
+        WITNESS,
+        PUB,
+        max_future_skew=1.5,  # type: ignore[arg-type]
     )
 
 
@@ -169,9 +172,7 @@ def test_witness_rejects_invalid_timeouts(timeout: object) -> None:
 def test_witness_rejects_non_200_status(status: int) -> None:
     signer = NoteSigner(LOG, LOG_SEED)
     note = signer.sign(Checkpoint(LOG, 0, empty_root()).body())
-    http = httpx.Client(
-        transport=httpx.MockTransport(lambda request: httpx.Response(status))
-    )
+    http = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(status)))
     client = WitnessClient(
         "https://witness.example",
         signer.verifier_key,
@@ -190,11 +191,7 @@ def test_witness_rejects_incomplete_or_invalid_signature_response(
 ) -> None:
     signer = NoteSigner(LOG, LOG_SEED)
     note = signer.sign(Checkpoint(LOG, 0, empty_root()).body())
-    http = httpx.Client(
-        transport=httpx.MockTransport(
-            lambda request: httpx.Response(200, text=response_text)
-        )
-    )
+    http = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, text=response_text)))
     client = WitnessClient(
         "https://witness.example",
         signer.verifier_key,
@@ -230,9 +227,7 @@ def test_witness_wraps_transport_errors_without_advancing_state() -> None:
 def test_witness_rejects_invalid_previous_checkpoint_and_rollback() -> None:
     signer = NoteSigner(LOG, LOG_SEED)
     note = signer.sign(Checkpoint(LOG, 0, empty_root()).body())
-    http = httpx.Client(
-        transport=httpx.MockTransport(lambda request: httpx.Response(500))
-    )
+    http = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(500)))
     client = WitnessClient(
         "https://witness.example",
         signer.verifier_key,
@@ -258,9 +253,7 @@ def test_witness_close_only_closes_owned_http_client() -> None:
     owned.close()
     assert owned_http.is_closed
 
-    supplied_http = httpx.Client(
-        transport=httpx.MockTransport(lambda request: httpx.Response(500))
-    )
+    supplied_http = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(500)))
     supplied = WitnessClient(
         "https://witness.example",
         signer.verifier_key,
