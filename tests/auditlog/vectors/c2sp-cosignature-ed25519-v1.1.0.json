@@ -1,0 +1,11 @@
+{
+  "specification": "C2SP tlog-cosignature v1.1.0, Ed25519 type 0x04",
+  "source": "Deterministic interoperability vector generated from the published C2SP serialization and signed-message rules; not an upstream-maintained vector.",
+  "cosigner_name": "witness.example/test",
+  "seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "public_key_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+  "key_id_hex": "2bc8585a",
+  "timestamp": 1700000000,
+  "checkpoint_body": "example.com/verify-log\\n3\\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\\n",
+  "signature_line": "— witness.example/test K8hYWgAAAABlU/EAzAzCPOckJUJ/COgkltNKK60KIc+Wz0aFRjSSE4TUUy4bgf+6o67jSXZ41ER2phxnKKvzY6+FjfjNLN7qFij/Cg==\\n"
+}
