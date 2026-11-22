@@ -8,12 +8,14 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
-
 import time
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import (\n    Ed25519PrivateKey,\n    Ed25519PublicKey,\n)
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
 
 COSIGNATURE_TYPE = b"\x04"
 _SIGNATURE_PREFIX = "— "
