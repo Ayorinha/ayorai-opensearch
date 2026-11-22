@@ -430,3 +430,51 @@ def test_receipts_for_erasure_leaves_or_with_bad_index_types_do_not_verify(
         "checkpoint": store.latest_checkpoint(),
     }
     assert not verify_receipt(forged, vkey)
+
+
+
+def test_residual_data_after_erasure_is_reported(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        _sql(path, "UPDATE vlog_records SET salt = X'00' WHERE idx = 0")
+        assert "record 0 has residual data after erasure" in _problems(store)
+
+
+def test_malformed_record_json_is_reported_as_commitment_mismatch(
+    open_log: tuple[VerificationLog, str],
+) -> None:
+    store, path = open_log
+    _sql(path, "UPDATE vlog_records SET record = ? WHERE idx = 0", ("{",))
+    assert "record 0 commitment mismatch" in _problems(store)
+
+
+def test_backup_rejects_a_copy_that_fails_integrity_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ayorai_attractor.auditlog.store as store_module
+
+    class _FailedIntegrityResult:
+        def fetchone(self) -> tuple[str]:
+            return ("corrupt",)
+
+    class _BadIntegrityConnection(sqlite3.Connection):
+        def execute(self, sql: str, parameters: tuple[Any, ...] = ()) -> Any:
+            if sql == "PRAGMA integrity_check":
+                return _FailedIntegrityResult()
+            return super().execute(sql, parameters)
+
+    real_connect = sqlite3.connect
+
+    def connect_with_bad_integrity(database: str, *args: Any, **kwargs: Any) -> sqlite3.Connection:
+        kwargs["factory"] = _BadIntegrityConnection
+        return real_connect(database, *args, **kwargs)
+
+    path = str(tmp_path / "v.sqlite3")
+    destination = str(tmp_path / "backup.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        monkeypatch.setattr(store_module.sqlite3, "connect", connect_with_bad_integrity)
+        with pytest.raises(sqlite3.DatabaseError, match="backup failed integrity_check"):
+            store.backup(destination)
