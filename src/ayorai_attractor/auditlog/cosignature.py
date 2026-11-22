@@ -9,6 +9,7 @@ import base64
 import binascii
 import hashlib
 import time
+import unicodedata
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
@@ -19,14 +20,20 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 COSIGNATURE_TYPE = b"\x04"
 _SIGNATURE_PREFIX = "— "
-_MAX_TIMESTAMP = (1 << 63) - 1
+_MAX_TIMESTAMP = (1 << 64) - 1
 
 
 def _validate_name(name: str) -> None:
     if not isinstance(name, str) or not name or len(name.encode("utf-8")) > 255:
         raise ValueError("cosigner name must be 1-255 UTF-8 bytes")
-    if any(ord(char) < 0x21 or ord(char) == 0x7F or char == "+" for char in name):
-        raise ValueError("cosigner name must not contain spaces, '+', or control characters")
+    if any(
+        char.isspace()
+        or char == "+"
+        or ord(char) < 0x20
+        or unicodedata.category(char) == "Zs"
+        for char in name
+    ):
+        raise ValueError("cosigner name must not contain Unicode spaces, '+', or control characters")
 
 
 def _public_bytes(key: Ed25519PublicKey) -> bytes:
@@ -48,10 +55,10 @@ def signed_message(checkpoint_body: str, timestamp: int) -> bytes:
     if (
         not isinstance(timestamp, int)
         or isinstance(timestamp, bool)
-        or not 0 < timestamp <= _MAX_TIMESTAMP
+        or not 0 <= timestamp <= _MAX_TIMESTAMP
     ):
         raise ValueError("timestamp must be an unsigned POSIX integer no greater than 2^63-1")
-    return f"cosignature/v1\ntime {timestamp}\n{checkpoint_body}".encode("utf-8")
+    return f"cosignature/v1\ntime {timestamp}\n{checkpoint_body}".encode()
 
 
 def sign_cosignature(
@@ -101,12 +108,13 @@ def verify_cosignature(
                 raw = base64.b64decode(fields[1], validate=True)
             except (ValueError, binascii.Error):
                 continue
+            if base64.b64encode(raw).decode("ascii") != fields[1]:
+                continue
             if len(raw) != 4 + 8 + 64 or raw[:4] != expected_id:
                 continue
             timestamp = int.from_bytes(raw[4:12], "big")
             if (
-                timestamp == 0
-                or timestamp > _MAX_TIMESTAMP
+                timestamp > _MAX_TIMESTAMP
                 or timestamp > current_time + max_future_skew
             ):
                 continue
