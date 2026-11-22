@@ -283,7 +283,11 @@ class VerificationLog:
     def consistency(self, old_size: int) -> list[str]:
         """RFC 6962 consistency proof from ``old_size`` to the current tree (for witnesses)."""
         with self._lock:
-            if not isinstance(old_size, int) or isinstance(old_size, bool) or not 0 <= old_size <= len(self._tree):
+            if (
+                not isinstance(old_size, int)
+                or isinstance(old_size, bool)
+                or not 0 <= old_size <= len(self._tree)
+            ):
                 raise ValueError("old_size must be between 0 and the current size")
             if old_size == 0:
                 # C2SP tlog-witness uses size 0 and an empty proof on first contact.
@@ -437,7 +441,11 @@ class VerificationLog:
                     ):
                         problems.append(f"erasure leaf {idx} has invalid fields")
                         continue
-                    if type(target) is not int or not 0 <= target < idx or target not in event_leaves:
+                    if (
+                        type(target) is not int
+                        or not 0 <= target < idx
+                        or target not in event_leaves
+                    ):
                         problems.append(f"erasure leaf {idx} names an invalid event")
                     elif target in erasure_leaves:
                         problems.append(f"event {target} has multiple erasure leaves")
@@ -474,7 +482,8 @@ class VerificationLog:
                     continue
                 try:
                     record_value = json.loads(str(record_text))
-                    commitment = bytes.fromhex(str(event_fields[record_index].get("commitment", "")))
+                    commitment_hex = str(event_fields[record_index].get("commitment", ""))
+                    commitment = bytes.fromhex(commitment_hex)
                     valid_commitment = verify_commitment(commitment, record_value, salt)
                 except (KeyError, TypeError, ValueError):
                     valid_commitment = False
