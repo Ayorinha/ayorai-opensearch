@@ -111,3 +111,18 @@ Os testes direcionados, suíte completa, Ruff, mypy e CI remoto **ainda não for
 - A validação do nome foi ampliada para rejeitar whitespace Unicode, além de `+` e controles ASCII abaixo de U+0020.
 - A decodificação da cosignatura agora exige base64 canônico.
 - A CI precisa ser executada novamente após esses commits; nenhum desses ajustes é considerado validado até a conclusão dos jobs.
+
+## 8. Integração do cliente com a API de prova — 2026-11-22
+
+**[FATO VERIFICADO — revisão de código]** A inspeção da integração entre `VerificationLog.consistency()` e `WitnessClient.submit()` encontrou uma incompatibilidade de tipos: o armazenamento entrega nós da prova em strings Base64, enquanto o cliente aceitava apenas bytes e tentava codificar novamente cada nó. A chamada direta do fluxo de produção falharia antes do envio HTTP.
+
+**Correção aplicada nesta branch:**
+- o cliente agora aceita nós brutos de 32 bytes ou strings Base64 canônicas de 32 bytes;
+- valida tipo, tamanho e canonicalidade antes de qualquer requisição;
+- converte os dois formatos para bytes para verificar a prova e serializa o formato C2SP uma única vez;
+- erros de transporte HTTP são convertidos em `WitnessError`, sem avançar o checkpoint local;
+- o endpoint exige HTTPS e rejeita credenciais embutidas, query e fragmento;
+- o timeout exige valor positivo e finito;
+- o teste de avanço do checkpoint agora usa o mesmo formato Base64 produzido por `VerificationLog.consistency()`, e foi acrescentado teste negativo para Base64 inválido.
+
+**Status:** correção implementada nos commits posteriores a `6100731`. A validação automatizada desses commits ainda precisa ser observada. Não declarar aprovação da CI, cobertura ou revisão independente com base apenas na implementação.
