@@ -202,6 +202,51 @@ def test_an_erasure_leaf_naming_an_invalid_event_is_reported(
     assert "record 0 erased without an erasure event" in problems
 
 
+def test_erasure_timestamp_mutation_is_reported(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        _sql(path, "UPDATE vlog_records SET erased_at = ? WHERE idx = 0", ("2026-11-23T00:00:00Z",))
+        assert "record 0 erasure timestamp mismatch" in _problems(store)
+
+
+def test_record_cannot_be_restored_after_its_erasure_event(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        receipt = store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        salt = base64.b64decode(receipt["salt"])
+        record = json.dumps(receipt["record"], sort_keys=True, ensure_ascii=False)
+        _sql(
+            path,
+            "UPDATE vlog_records SET salt = ?, record = ?, erased_at = NULL WHERE idx = 0",
+            (salt, record),
+        )
+        assert "record 0 remains after its erasure event" in _problems(store)
+
+
+def test_erasure_leaf_with_invalid_reason_is_reported(tmp_path: Path) -> None:
+    path = str(tmp_path / "v.sqlite3")
+    with VerificationLog(path, NoteSigner(ORIGIN, SEED)) as store:
+        store.append(_event(0))
+        store.erase(0, "2026-11-22T00:00:00Z")
+        leaf = json.dumps(
+            {
+                "schema": "ayorai.verify-erasure.v1",
+                "erased_index": 0,
+                "erased_at": "2026-11-22T00:00:00Z",
+                "reason": "INVALID REASON",
+            }
+        ).encode()
+        _sql(
+            path,
+            "UPDATE vlog_leaves SET leaf = ?, leaf_hash = ? WHERE idx = 1",
+            (leaf, leaf_hash(leaf)),
+        )
+        assert "erasure leaf 1 has invalid fields" in _problems(store)
+
+
 def test_a_checkpoint_signed_by_another_key_is_reported(
     open_log: tuple[VerificationLog, str],
 ) -> None:
