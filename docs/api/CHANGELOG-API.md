@@ -21,6 +21,20 @@ All public API contract changes are additive unless explicitly identified otherw
 - `GET /metrics`: Prometheus text format; requires the API key like every other route.
 - Both routes are operational and are not in the OpenAPI document. No existing request or response changed.
 
+## Unreleased — `/v1/check` rule detector v15 (cross-domain robustness)
+
+Fixes found by the synthetic cross-domain robustness battery of 2026-11-22. Golden v0, v0.1 and smoke-v0 semantic digests are unchanged.
+
+- **Units:** power, energy, length, mass and time units (W/kW/MW/GW, kWh/MWh/GWh/TWh, m/km, g/kg/t, s/min/h/dias) are compared after normalization to their base unit. "120 MW" against "120 kW" and "15 dias" against "15 horas" are contradictions; previously the bare number confirmed the claim. Two values with units are never confirmed "as written" by the bare number. "segundo" ("according to") is not a unit.
+- **Value bound to its year:** when a passage names the claimed year and another one in separate clauses ("120 milhões em 2023 e 95 milhões em 2024"), the numbers of the other year's clause are not compared. A value of another year no longer supports the claim. Passages that pair values and years with "respectivamente" are left as they were.
+- **Portuguese "no":** the token "no" counts as English negation only in a sentence that shows English markers; "investe no setor têxtil" is not a negation.
+- **Another entity:** a passage about another named actor, a part of the entity ("agência de Belém do Banco Horizonte") or a longer-named sibling ("Banco Horizonte Sul") neither confirms nor contradicts the claim; previously a different value refuted it. A subunit noun counts only in the noun phrase that ends with the claim's name.
+- **Compound claims:** when every year of the passage is also a claimed year, the claim's other years are not contradicted; "lucro em 2024 e fundação em 1987" against the 2024 profit alone is an abstention.
+- **Entity-type nouns:** "município", "estudo", "sistema", "região" and similar nouns right before a name are part of the subject and do not count as a shared predicate.
+- **Historical years:** a four-digit year from 1000 to 1899 after "em", "desde", "in", "since" or "no ano de" is a calendar year, compared exactly and as a period.
+- Known limitations: the value of the claimed year's clause is not always bound to its attribute, so "40 em 2023 e 55 em 2024" against a claim of 40 in 2024 abstains instead of refuting; equivalent quantities written with different numbers ("2,5 km" and "2.500 m", "2 anos" and "24 meses") abstain, because a supporting passage must contain the claimed number; synonyms of attributes ("patrimônio líquido" and "capital próprio") abstain; "37" against "37 mil" without a currency abstains.
+- `engine.stance_detector` reports `inner=stance_detector.rule/15`.
+
 ## Unreleased — `/v1/check` rule detector v14 (year of another event)
 
 - A calendar year that belongs to another event no longer refutes a claim. Example: "A receita da Vértice foi de 40 milhões em 2024." against "A Vértice foi fundada em 1998 e tem sede em Curitiba." was `refuted`; it is now an abstention (`insufficient_evidence`).
