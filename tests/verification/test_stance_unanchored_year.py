@@ -14,7 +14,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from ayorai_attractor.api.app import app
-from ayorai_attractor.verification.stance import _numeric_alignment, _shares_predicate
+from ayorai_attractor.verification.stance import (
+    RuleStanceDetector,
+    _numeric_alignment,
+    _shares_predicate,
+)
 
 REVENUE = "A receita da Vértice foi de 40 milhões em 2024."
 FOUNDED = "A Vértice foi fundada em 1998."
@@ -126,3 +130,7 @@ def test_divergent_documents_are_still_conflicting() -> None:
 )
 def test_shares_predicate_ignores_proper_nouns(claim: str, evidence: str, expected: bool) -> None:
     assert _shares_predicate(claim, evidence) is expected
+
+
+def test_detector_version_is_14() -> None:
+    assert RuleStanceDetector.version == "14"

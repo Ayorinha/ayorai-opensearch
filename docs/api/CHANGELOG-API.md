@@ -21,6 +21,12 @@ All public API contract changes are additive unless explicitly identified otherw
 - `GET /metrics`: Prometheus text format; requires the API key like every other route.
 - Both routes are operational and are not in the OpenAPI document. No existing request or response changed.
 
+## Unreleased — `/v1/check` rule detector v14 (year of another event)
+
+- A calendar year that belongs to another event no longer refutes a claim. Example: "A receita da Vértice foi de 40 milhões em 2024." against "A Vértice foi fundada em 1998 e tem sede em Curitiba." was `refuted`; it is now an abstention (`insufficient_evidence`).
+- A year conflict counts only when the year is anchored to the claim's proposition: another claim fact is compared in the same passage, or the claim states only years and shares a non-proper-noun predicate word with the passage.
+- `engine.stance_detector` reports `inner=stance_detector.rule/14`. Golden v0, v0.1 and smoke-v0 semantic digests are unchanged.
+
 ## Unreleased — `/v1/check` rule detector v13 (scale words)
 
 - A number followed by a scale word without a currency is read with its scale: "1,2 bilhão" and "1.200 milhões" are the same quantity (previously 1.2 against 1200, a false contradiction). A count noun right after the scale ("2,0 milhões de clientes", "3 mil funcionários") makes it a scaled count that compares with the same noun at any scale ("3000 funcionários").

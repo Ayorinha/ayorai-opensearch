@@ -67,4 +67,4 @@ def test_different_count_nouns_never_compare() -> None:
 
 
 def test_detector_version_is_11() -> None:
-    assert RuleStanceDetector.version == "13"
+    assert RuleStanceDetector.version in {"13", "14"}

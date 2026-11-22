@@ -1437,7 +1437,7 @@ class StanceDetector(Protocol):
 class RuleStanceDetector:
     component = "stance_detector.rule"
     model = "rule-fixture"
-    version = "13"
+    version = "14"
 
     @staticmethod
     def _numeric_conflict(claim_text: str, evidence_text: str) -> bool:
