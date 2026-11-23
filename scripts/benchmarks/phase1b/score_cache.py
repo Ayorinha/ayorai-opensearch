@@ -32,6 +32,7 @@ except ImportError:  # direct script execution
     from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 
 SCORE_SCHEMA_VERSION = "phase1b-dev-score-cache-v3"
+SCORE_SCHEMA_VERSION_V2 = "phase1b-dev-score-cache-v4"
 LABEL_SCHEMA_VERSION = "phase1b-dev-gold-label-cache-v1"
 SCORE_CACHE_SHARD_ID = "dev-score-cache"
 GOLD_LABEL_CACHE_SHARD_ID = "dev-gold-labels"
@@ -157,8 +158,8 @@ def _cache_metadata(
 def encrypt_score_cache(
     cache: dict[str, Any], *, key: bytes, dataset_revision: str, code_sha: str
 ) -> dict[str, Any]:
-    if cache.get("schema_version") != SCORE_SCHEMA_VERSION or cache.get("split") != "dev":
-        raise ValueError("only v3 DEV score caches may be encrypted")
+    if cache.get("schema_version") not in {SCORE_SCHEMA_VERSION, SCORE_SCHEMA_VERSION_V2} or cache.get("split") != "dev":
+        raise ValueError("only supported DEV score caches may be encrypted")
     metadata = _cache_metadata(
         source_run_id=cache["source_run_id"], shard_id=SCORE_CACHE_SHARD_ID,
         model_revision="multi-model-score-cache", dataset_revision=dataset_revision, code_sha=code_sha
@@ -171,12 +172,15 @@ def decrypt_score_cache(envelope: dict[str, Any], *, key: bytes) -> dict[str, An
     if metadata.get("shard_id") != SCORE_CACHE_SHARD_ID or metadata.get("split") != "dev":
         raise ValueError("envelope is not a DEV score cache")
     cache = json.loads(decrypt_bytes(envelope, key=key))
-    if cache.get("schema_version") != SCORE_SCHEMA_VERSION or cache.get("split") != "dev":
+    schema = cache.get("schema_version")
+    if schema not in {SCORE_SCHEMA_VERSION, SCORE_SCHEMA_VERSION_V2} or cache.get("split") != "dev":
         raise ValueError("unsupported score cache payload; legacy caches must be regenerated")
     if str(cache.get("source_run_id")) != str(metadata.get("run_id")):
         raise ValueError("score cache payload does not match its envelope metadata")
     for model, entry in cache["models"].items():
         records = _unique_sorted(entry["records"], _clean_score_record, f"score cache for {model}")
+        if schema == SCORE_SCHEMA_VERSION_V2 and any("doc_id" not in record for record in records):
+            raise ValueError("cache v4 record is missing doc_id")
         if len(records) != cache["record_count"]:
             raise ValueError(f"score cache for {model} has an unexpected record count")
         entry["records"] = records
