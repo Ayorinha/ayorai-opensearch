@@ -73,8 +73,6 @@ def select_shard(
         record_id = row["record_id"]
         if not isinstance(record_id, str) or not record_id:
             raise ValueError("inference record_id must be a non-empty string")
-        if stable_record_id(row) != record_id:
-            raise ValueError("inference record_id does not match its content")
         if record_id in indexed:
             raise ValueError("duplicate inference record_id")
         indexed[record_id] = row
@@ -87,7 +85,10 @@ def select_shard(
     for rid in shard["record_ids"]:
         if rid not in indexed:
             raise ValueError("manifest row digest is absent from pinned DEV data")
-        selected.append((rid, indexed[rid]))
+        row = indexed[rid]
+        if stable_record_id(row) != rid:
+            raise ValueError("inference record_id does not match its content")
+        selected.append((rid, row))
     return selected
 
 
