@@ -84,3 +84,9 @@ def test_full_dev_workflow_is_separate_from_minimal_workflow() -> None:
     assert WORKFLOW_PATH != MINIMAL_PATH
     assert WORKFLOW_PATH.is_file()
     assert MINIMAL_PATH.is_file()
+    minimal = yaml.load(MINIMAL_PATH.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+    minimal_text = MINIMAL_PATH.read_text(encoding="utf-8")
+    assert "prepare_dev_artifacts.py" in minimal_text
+    assert "phase1b-dev-minimal-inference-data" in minimal_text
+    assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in minimal_text
+    assert "fetch_dev.py" not in str(minimal["jobs"]["shard"])
