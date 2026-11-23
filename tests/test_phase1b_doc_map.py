@@ -56,7 +56,7 @@ def _clustered_rows() -> list[dict]:
 def _pin_for(path: Path, tmp_path: Path, *, file: str = EXPECTED_DEV_FILE) -> Path:
     pin = {
         "dataset": "lytang/LLM-AggreFact",
-        "revision": "a" * 40,
+        "revision": "synthetic-revision",
         "file": file,
         "size_bytes": path.stat().st_size,
         "sha256": sha256_file(path),
