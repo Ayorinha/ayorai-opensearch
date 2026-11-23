@@ -131,7 +131,13 @@ def _write_synthetic_inputs(
 def _run_aggregator(
     tmp_path: Path, *extra: str, rows: list[dict] | None = None
 ) -> tuple[subprocess.CompletedProcess, Path, dict]:
-    manifest_path, encrypted_dir, env, rows_by_id, gold_label_cache_path = _write_synthetic_inputs(tmp_path, rows)
+    (
+        manifest_path,
+        encrypted_dir,
+        env,
+        rows_by_id,
+        gold_label_cache_path,
+    ) = _write_synthetic_inputs(tmp_path, rows)
     output_path = tmp_path / "aggregate.json"
     cache_args = list(extra)
     completed = subprocess.run(
