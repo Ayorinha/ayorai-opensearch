@@ -57,6 +57,8 @@ def decrypt_inference_file(
     expected_metadata: dict[str, str],
 ) -> None:
     envelope = json.loads(input_path.read_text(encoding="utf-8"))
+    if envelope.get("schema_version") != "phase1b-aes256gcm-v1":
+        raise ValueError("unsupported encrypted inference artifact schema")
     if envelope.get("metadata") != expected_metadata:
         raise ValueError("encrypted inference metadata does not match expected provenance")
     plaintext = decrypt_bytes(envelope, key=key, aad_metadata=expected_metadata)
