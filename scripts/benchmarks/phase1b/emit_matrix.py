@@ -5,9 +5,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
-from scripts.benchmarks.phase1b.common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD
+try:
+    from .common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD
+except ImportError:  # direct script execution
+    _REPOSITORY_ROOT = str(Path(__file__).resolve().parents[3])
+    if _REPOSITORY_ROOT not in sys.path:
+        sys.path.insert(0, _REPOSITORY_ROOT)
+    from scripts.benchmarks.phase1b.common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD
 
 
 def emit_matrix(manifest: dict, *, minimal: bool = False) -> dict:
