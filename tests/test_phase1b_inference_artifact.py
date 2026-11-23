@@ -15,7 +15,11 @@ from scripts.benchmarks.phase1b.inference_artifact import (
 
 
 def test_shared_inference_artifact_roundtrip_hides_plaintext(tmp_path: Path) -> None:
-    manifest = {"split": "dev", "dataset_revision": "synthetic-dataset-revision", "code_sha": "synthetic-sha"}
+    manifest = {
+        "split": "dev",
+        "dataset_revision": "synthetic-dataset-revision",
+        "code_sha": "synthetic-sha",
+    }
     metadata = inference_metadata(manifest, run_id="synthetic-run", code_sha="synthetic-sha")
     source = tmp_path / "inference.jsonl"
     encrypted = tmp_path / "inference.jsonl.aesgcm"
@@ -34,7 +38,11 @@ def test_shared_inference_artifact_roundtrip_hides_plaintext(tmp_path: Path) -> 
 
 
 def test_shared_inference_artifact_rejects_changed_provenance(tmp_path: Path) -> None:
-    manifest = {"split": "dev", "dataset_revision": "synthetic-dataset-revision", "code_sha": "synthetic-sha"}
+    manifest = {
+        "split": "dev",
+        "dataset_revision": "synthetic-dataset-revision",
+        "code_sha": "synthetic-sha",
+    }
     metadata = inference_metadata(manifest, run_id="synthetic-run", code_sha="synthetic-sha")
     source = tmp_path / "inference.jsonl"
     encrypted = tmp_path / "inference.jsonl.aesgcm"
@@ -44,11 +52,20 @@ def test_shared_inference_artifact_rejects_changed_provenance(tmp_path: Path) ->
 
     changed = dict(metadata, code_sha="different-sha")
     with pytest.raises(ValueError, match="metadata does not match"):
-        decrypt_inference_file(encrypted, tmp_path / "out.jsonl", key=key, expected_metadata=changed)
+        decrypt_inference_file(
+            encrypted,
+            tmp_path / "out.jsonl",
+            key=key,
+            expected_metadata=changed,
+        )
 
 
 def test_shared_inference_artifact_rejects_wrong_key(tmp_path: Path) -> None:
-    manifest = {"split": "dev", "dataset_revision": "synthetic-dataset-revision", "code_sha": "synthetic-sha"}
+    manifest = {
+        "split": "dev",
+        "dataset_revision": "synthetic-dataset-revision",
+        "code_sha": "synthetic-sha",
+    }
     metadata = inference_metadata(manifest, run_id="synthetic-run", code_sha="synthetic-sha")
     source = tmp_path / "inference.jsonl"
     encrypted = tmp_path / "inference.jsonl.aesgcm"
