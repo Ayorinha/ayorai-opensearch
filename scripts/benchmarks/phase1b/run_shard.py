@@ -17,7 +17,9 @@ try:
         MANIFEST_SCHEMA_VERSION,
         MODELS,
         RECORD_ID_METHOD,
+        canonical_json,
         load_records,
+        sha256_bytes,
         sha256_file,
     )
     from .nltk_resources import load_pin as load_nltk_pin
@@ -34,7 +36,9 @@ except ImportError:  # direct script execution
         MANIFEST_SCHEMA_VERSION,
         MODELS,
         RECORD_ID_METHOD,
+        canonical_json,
         load_records,
+        sha256_bytes,
         sha256_file,
     )
     from nltk_resources import load_pin as load_nltk_pin
@@ -327,6 +331,11 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=4)
     args = parser.parse_args()
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    manifest_body = {
+        key: value for key, value in manifest.items() if key != "manifest_sha256"
+    }
+    if manifest.get("manifest_sha256") != sha256_bytes(canonical_json(manifest_body)):
+        raise ValueError("DEV manifest digest verification failed")
     if sha256_file(args.dataset_path) != manifest.get("inference_dataset_sha256"):
         raise ValueError("inference-only DEV dataset SHA-256 does not match the manifest")
     selected = select_shard(manifest, load_records(args.dataset_path), args.shard_id)
