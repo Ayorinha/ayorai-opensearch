@@ -155,6 +155,9 @@ def main() -> None:
     if not raw_key:
         raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
     gold_key = decode_key(raw_key)
+    score_key = decode_key()
+    if gold_key == score_key:
+        raise ValueError("gold-label and prediction encryption keys must be distinct")
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     if sha256_file(args.dataset_path) != manifest.get("dataset_sha256"):
         raise ValueError("source DEV dataset SHA-256 does not match the manifest")
