@@ -25,7 +25,6 @@ from scripts.benchmarks.phase1b.doc_map import (
     verify_v2_matches_v1,
 )
 from scripts.benchmarks.phase1b.score_cache import (
-    build_gold_label_cache,
     build_score_cache,
     decrypt_score_cache,
     encrypt_score_cache,
