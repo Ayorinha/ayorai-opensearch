@@ -66,9 +66,7 @@ def _caches() -> tuple[dict, dict]:
         source_run_id="123",
         calibration_v2={"synthetic": True},
     )
-    labels = build_gold_label_cache(
-        _labels(raw_a), manifest_sha256="m" * 64, source_run_id="123"
-    )
+    labels = build_gold_label_cache(_labels(raw_a), manifest_sha256="m" * 64, source_run_id="123")
     return scores, labels
 
 
@@ -125,9 +123,7 @@ def test_separate_envelopes_round_trip_and_authenticate_metadata() -> None:
 def test_join_occurs_only_after_both_caches_are_decrypted() -> None:
     scores, labels = _caches()
     joined = join_scores_with_gold(scores, labels)
-    assert joined["models"]["model-a"]["records"][0]["gold"] in {
-        "SUPPORTED", "NOT_SUPPORTED"
-    }
+    assert joined["models"]["model-a"]["records"][0]["gold"] in {"SUPPORTED", "NOT_SUPPORTED"}
     assert "gold" not in json.dumps(scores)
     assert "gold" in json.dumps(labels)
 
