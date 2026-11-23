@@ -249,7 +249,7 @@ jobs:
 
   aggregate:
     needs: [plan, shard]
-    if: ${{ always() && needs.plan.result == 'success' && needs.shard.result == 'success' }}
+    if: ${{ always() && github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.shard.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     environment: international-benchmark-maintainer-approval
