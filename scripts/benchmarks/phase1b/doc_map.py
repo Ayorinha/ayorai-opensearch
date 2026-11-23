@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
-"""Rebuild the record → document association for the DEV score cache (cache v2).
+"""Rebuild the record → document association for the prediction-only DEV score cache.
 
-Bootstrapping whole documents needs to know which claims share a document. The v1
-cache keeps only ``record_id`` (``sha256`` of the canonical JSON of the full dataset
-row), ``cohort``, ``gold`` and ``score``. Because ``record_id`` is a content address,
-re-reading the *pinned public DEV file* with the same loader and recomputing
-``record_id`` recovers each record's row without the expired inference shards:
+Gold labels live in a separate encrypted cache. This tool decrypts both caches only
+inside the protected evaluation process, uses the label cache to verify record
+identity against the pinned public DEV file, and adds doc_id only to the prediction
+cache. The two caches remain separate on disk; joining occurs only for replay.
 
-- ``doc_id = sha256(canonical_json({"cohort": ..., "doc": ...}))`` — the document text
-  exactly as stored (no normalisation), scoped by cohort so the same text in two
-  cohorts is never treated as one cluster;
-- every cached ``record_id`` must be found (a SHA-256 match on the whole row is a
-  cryptographic check that the loader and serialisation are identical);
-- the cohort and gold label of every match must agree with the cache;
+- doc_id is a SHA-256 of canonical JSON containing cohort and document text;
+- every cached record_id must be found in the pinned DEV file;
+- cohort and gold labels are checked against the separately encrypted label cache;
 - the map is built twice and must be identical (determinism);
-- the v2 cache must hold exactly the v1 records plus ``doc_id``.
+- the v4 prediction cache contains the original prediction fields plus doc_id.
 
-Privacy: only the DEV file is read; the TEST split is never loaded. Dataset text is
-used in memory only. The map lives only inside the encrypted v2 cache; the public
-summary holds per-cohort aggregate counts.
+Privacy: only the DEV file is read; TEST is never loaded. Dataset text is used in
+memory only. The map remains in the encrypted prediction cache; the public summary
+contains aggregate counts only.
 """
 
 from __future__ import annotations
