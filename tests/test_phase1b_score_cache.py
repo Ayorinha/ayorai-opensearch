@@ -223,4 +223,4 @@ def test_score_cache_output_requires_calibration_v2(tmp_path: Path) -> None:
         check=False,
     )
     assert completed.returncode != 0
-    assert "require --calibration-v2" in completed.stderr
+    assert "--score-cache-output requires --calibration-v2" in completed.stderr
