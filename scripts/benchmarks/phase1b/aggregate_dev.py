@@ -327,6 +327,8 @@ def main() -> None:
         if not gold_key_raw:
             raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
         gold_key = decode_key(gold_key_raw)
+        if gold_key == key:
+            raise ValueError("gold-label and prediction encryption keys must be distinct")
         try:
             from .score_cache import decrypt_gold_label_cache
         except ImportError:  # direct script execution
