@@ -34,8 +34,10 @@ def test_producers_upload_only_the_encrypted_cache() -> None:
     for path in PRODUCERS:
         text = path.read_text(encoding="utf-8")
         workflow = yaml.safe_load(text)
-        steps = next(iter(workflow["jobs"][job] for job in workflow["jobs"] if "aggregate" in job))[
-            "steps"
+        steps = [
+            step
+            for job in workflow["jobs"].values()
+            for step in job["steps"]
         ]
         uploads = [step for step in steps if "upload-artifact" in str(step.get("uses", ""))]
         cache_uploads = {
