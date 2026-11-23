@@ -80,9 +80,9 @@ jobs:
             --inference-output "$INFERENCE_DATA" \
             --gold-label-cache-output /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json \
             --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
-          python scripts/benchmarks/phase1b/inference_artifact.py encrypt \\
-            --input "$INFERENCE_DATA" --output "$INFERENCE_ENCRYPTED" \\
-            --manifest /tmp/phase1b-manifest.json \\
+          python scripts/benchmarks/phase1b/inference_artifact.py encrypt \
+            --input "$INFERENCE_DATA" --output "$INFERENCE_ENCRYPTED" \
+            --manifest /tmp/phase1b-manifest.json \
             --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
           rm -f "$DEV_PARQUET" "$INFERENCE_DATA"
       - id: matrix
@@ -157,9 +157,9 @@ jobs:
           CODE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          python scripts/benchmarks/phase1b/inference_artifact.py decrypt \\
-            --input "$INFERENCE_ENCRYPTED" --output "$INFERENCE_DATA" \\
-            --manifest /tmp/phase1b-manifest/phase1b-manifest.json \\
+          python scripts/benchmarks/phase1b/inference_artifact.py decrypt \
+            --input "$INFERENCE_ENCRYPTED" --output "$INFERENCE_DATA" \
+            --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
             --run-id "$RUN_ID" --code-sha "$CODE_SHA"
           rm -f "$INFERENCE_ENCRYPTED"
       - name: Run pinned mDeBERTa on this shard (private local output)
