@@ -108,7 +108,9 @@ def aggregate_packages(
         record_ids = []
         for record in records:
             if not isinstance(record, dict) or set(record) != {"record_id", "cohort", "score"}:
-                raise ValueError("inference shard records must contain only record_id, cohort and score")
+                raise ValueError(
+                    "inference shard records must contain only record_id, cohort and score"
+                )
             record_id, cohort, score = record["record_id"], record["cohort"], record["score"]
             if not isinstance(record_id, str) or not record_id:
                 raise ValueError("inference shard record_id must be a non-empty string")
