@@ -200,7 +200,10 @@ def aggregate_packages(
             raise ValueError("gold-label cache record count does not match DEV manifest")
         evaluation_rows: dict[str, list[dict[str, Any]]] = {}
         for model, predictions in calibration_rows.items():
-            if {row["record_id"] for row in predictions} != set(labels):
+            prediction_ids = [row["record_id"] for row in predictions]
+            if len(prediction_ids) != len(set(prediction_ids)):
+                raise ValueError(f"duplicate prediction record_id for {model}")
+            if len(prediction_ids) != len(labels) or set(prediction_ids) != set(labels):
                 raise ValueError(f"gold labels do not cover the same DEV records as {model}")
             joined = []
             for prediction in predictions:
