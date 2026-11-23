@@ -138,8 +138,7 @@ def build_doc_map(
 
 def _expected_from_labels(label_cache: dict[str, Any]) -> dict[str, tuple[str, str]]:
     return {
-        record["record_id"]: (record["cohort"], record["gold"])
-        for record in label_cache["records"]
+        record["record_id"]: (record["cohort"], record["gold"]) for record in label_cache["records"]
     }
 
 
@@ -257,10 +256,9 @@ def main() -> None:
     gold_key = decode_key(gold_key_raw)
     score_envelope = json.loads(args.cache.read_text(encoding="utf-8"))
     label_envelope = json.loads(args.gold_labels.read_text(encoding="utf-8"))
-    if (
-        score_envelope.get("metadata", {}).get("dataset_revision") != pin.get("revision")
-        or label_envelope.get("metadata", {}).get("dataset_revision") != pin.get("revision")
-    ):
+    if score_envelope.get("metadata", {}).get("dataset_revision") != pin.get(
+        "revision"
+    ) or label_envelope.get("metadata", {}).get("dataset_revision") != pin.get("revision"):
         raise ValueError("score, gold-label and pinned DEV dataset revisions differ")
     cache = decrypt_score_cache(score_envelope, key=key)
     label_cache = decrypt_gold_label_cache(label_envelope, key=gold_key)
