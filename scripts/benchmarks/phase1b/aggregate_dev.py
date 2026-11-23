@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import canonical_json, sha256_bytes
+    from .common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD, canonical_json, sha256_bytes
     from .encrypt_artifact import decode_key, decrypt_bytes
 except ImportError:  # direct script execution
     # Workflows run this file by path, so the repository root is not on sys.path.
@@ -21,7 +21,7 @@ except ImportError:  # direct script execution
     _REPOSITORY_ROOT = str(Path(__file__).resolve().parents[3])
     if _REPOSITORY_ROOT not in sys.path:
         sys.path.insert(0, _REPOSITORY_ROOT)
-    from common import canonical_json, sha256_bytes
+    from common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD, canonical_json, sha256_bytes
     from encrypt_artifact import decode_key, decrypt_bytes
 
 
@@ -55,8 +55,12 @@ def aggregate_packages(
     per-instance rows, protocols and source run id so the caller can build the
     encrypted score cache (A1). Nothing from the sink is written to the report.
     """
-    if manifest.get("split") != "dev":
-        raise ValueError("aggregator accepts DEV manifests only")
+    if (
+        manifest.get("split") != "dev"
+        or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION
+        or manifest.get("record_id_method") != RECORD_ID_METHOD
+    ):
+        raise ValueError("aggregator accepts only current inference-only DEV manifests")
     manifest_body = {
         key_name: value for key_name, value in manifest.items() if key_name != "manifest_sha256"
     }
