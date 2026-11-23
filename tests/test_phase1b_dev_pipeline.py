@@ -51,9 +51,7 @@ def manifest_for(rows: list[dict], shard_size: int = 10) -> dict:
 
 def test_record_identity_does_not_depend_on_gold_label() -> None:
     row = synthetic_rows()[0]
-    assert stable_record_id(row) == stable_record_id(
-        dict(row, label=1 - row["label"])
-    )
+    assert stable_record_id(row) == stable_record_id(dict(row, label=1 - row["label"]))
 
 
 def test_manifest_is_deterministic_and_contains_no_instance_text() -> None:
