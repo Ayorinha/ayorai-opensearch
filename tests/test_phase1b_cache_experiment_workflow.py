@@ -24,7 +24,9 @@ def test_experiment_workflow_is_manual_gated_and_inference_free() -> None:
     assert workflow["jobs"]["experiment"]["environment"] == APPROVAL_ENVIRONMENT
     for forbidden in ("run_shard.py", "fetch_dev.py", "--split test"):
         assert forbidden not in text
-    assert "run-id: ${{ inputs.cache_run_id }}" in text
+    assert text.count("run-id: ${{ inputs.cache_run_id }}") == 2
+    assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in text
+    assert "--gold-labels" in text
     assert "replay_matches_source" in text
 
 
@@ -36,9 +38,21 @@ def test_producers_upload_only_the_encrypted_cache() -> None:
             "steps"
         ]
         uploads = [step for step in steps if "upload-artifact" in str(step.get("uses", ""))]
-        cache_uploads = [
-            step for step in uploads if step["with"]["name"] == "phase1b-dev-score-cache"
-        ]
-        assert len(cache_uploads) == 1, path
-        assert cache_uploads[0]["with"]["path"].endswith("phase1b-dev-score-cache.json")
+        cache_uploads = {
+            step["with"]["name"]: step for step in uploads
+            if step["with"]["name"] in {
+                "phase1b-dev-score-cache", "phase1b-dev-gold-label-cache"
+            }
+        }
+        assert set(cache_uploads) == {
+            "phase1b-dev-score-cache", "phase1b-dev-gold-label-cache"
+        }, path
+        assert cache_uploads["phase1b-dev-score-cache"]["with"]["path"].endswith(
+            "phase1b-dev-score-cache.json"
+        )
+        assert cache_uploads["phase1b-dev-gold-label-cache"]["with"]["path"].endswith(
+            "phase1b-dev-gold-label-cache.json"
+        )
+        assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in text
         assert "--score-cache-output" in text
+        assert "--gold-label-cache-output" in text
