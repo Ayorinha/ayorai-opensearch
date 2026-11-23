@@ -26,7 +26,8 @@ def test_full_dev_workflow_is_manual_and_environment_gated() -> None:
     shard_text = str(shard)
     assert "fetch_dev.py" not in shard_text
     assert "HF_TOKEN" not in shard_text
-    assert "phase1b-dev-inference-data" in shard_text
+    assert "phase1b-dev-inference-data-encrypted" in shard_text
+    assert "inference_artifact.py decrypt" in shard_text
     assert int(shard["timeout-minutes"]) >= 180
     assert shard["strategy"]["fail-fast"] == "false"
     assert int(shard["strategy"]["max-parallel"]) == 20
@@ -48,7 +49,9 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
     assert 'assert report["calibration_v2"]["certification_model_count"] == 1' in workflow_text
     assert "phase1b-dev-full-encrypted-*" in workflow_text
     assert "prepare_dev_artifacts.py" in workflow_text
-    assert "phase1b-dev-inference-data" in workflow_text
+    assert "phase1b-dev-inference-data-encrypted" in workflow_text
+    assert "inference_artifact.py encrypt" in workflow_text
+    assert "path: /tmp/phase1b-dev-inference.jsonl.aesgcm" in workflow_text
     assert "phase1b-dev-gold-label-cache" in workflow_text
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in workflow_text
     assert "--gold-label-cache-input" in workflow_text
@@ -87,6 +90,9 @@ def test_full_dev_workflow_is_separate_from_minimal_workflow() -> None:
     minimal = yaml.load(MINIMAL_PATH.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     minimal_text = MINIMAL_PATH.read_text(encoding="utf-8")
     assert "prepare_dev_artifacts.py" in minimal_text
-    assert "phase1b-dev-minimal-inference-data" in minimal_text
+    assert "phase1b-dev-minimal-inference-data-encrypted" in minimal_text
+    assert "inference_artifact.py encrypt" in minimal_text
+    assert "inference_artifact.py decrypt" in minimal_text
+    assert "path: /tmp/phase1b-dev-inference.jsonl.aesgcm" in minimal_text
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in minimal_text
     assert "fetch_dev.py" not in str(minimal["jobs"]["shard"])
