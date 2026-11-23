@@ -25,7 +25,7 @@ from scripts.benchmarks.phase1b.doc_map import (
     verify_v2_matches_v1,
 )
 from scripts.benchmarks.phase1b.score_cache import (
-    SCHEMA_VERSION_V2,
+    build_gold_label_cache,
     build_score_cache,
     decrypt_score_cache,
     encrypt_score_cache,
@@ -157,7 +157,6 @@ def _v1_cache(rows: list[dict]) -> dict:
         {
             "record_id": stable_record_id(row),
             "cohort": row["dataset"],
-            "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED",
             "score": 0.25 + 0.5 * row["label"],
         }
         for row in rows
@@ -176,15 +175,17 @@ def test_cache_v2_keeps_v1_records_and_round_trips() -> None:
     v1 = _v1_cache(rows)
     pin = {"revision": "a" * 40, "sha256": "b" * 64}
     v2 = build_cache_v2(v1, build_doc_map(rows, _expected(rows)), pin=pin)
-    assert v2["schema_version"] == SCHEMA_VERSION_V2
+    assert v2["schema_version"] == "phase1b-dev-score-cache-v4"
     assert v2["calibration_v2_sha256"] == v1["calibration_v2_sha256"]
     envelope = encrypt_score_cache(v2, key=KEY, dataset_revision="a" * 40, code_sha="sha")
     assert "SYNTHETIC" not in json.dumps(envelope)
     decrypted = decrypt_score_cache(envelope, key=KEY)
     assert all("doc_id" in r for r in decrypted["models"]["factcg"]["records"])
-    # v1 envelopes still decrypt unchanged.
+    # The prediction-only parent cache remains decryptable and contains no gold.
     v1_env = encrypt_score_cache(v1, key=KEY, dataset_revision="a" * 40, code_sha="sha")
-    assert "doc_id" not in decrypt_score_cache(v1_env, key=KEY)["models"]["factcg"]["records"][0]
+    parent = decrypt_score_cache(v1_env, key=KEY)
+    assert "doc_id" not in parent["models"]["factcg"]["records"][0]
+    assert "gold" not in parent["models"]["factcg"]["records"][0]
 
 
 def test_cache_v2_detects_tampering_and_bad_doc_ids() -> None:
@@ -243,6 +244,8 @@ def test_cli_builds_v2_with_identical_calibration_replay(tmp_path: Path) -> None
             str(DOC_MAP),
             "--cache",
             str(cache_v1),
+            "--gold-labels",
+            str(context["gold_label_cache_path"]),
             "--dataset-path",
             str(dataset),
             "--pin",
@@ -273,6 +276,8 @@ def test_cli_builds_v2_with_identical_calibration_replay(tmp_path: Path) -> None
             str(SCORE_CACHE),
             "--cache",
             str(cache_v2),
+            "--gold-labels",
+            str(context["gold_label_cache_path"]),
             "--experiment",
             "replay-calibration-v2",
             "--output",
