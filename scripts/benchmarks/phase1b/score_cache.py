@@ -342,10 +342,11 @@ def main() -> None:
     label_envelope = json.loads(args.gold_labels.read_text(encoding="utf-8"))
     scores = decrypt_score_cache(score_envelope, key=score_key)
     labels = decrypt_gold_label_cache(label_envelope, key=gold_key)
-    if score_envelope["metadata"].get("dataset_revision") != label_envelope["metadata"].get(
-        "dataset_revision"
-    ):
-        raise ValueError("score and gold-label envelope dataset revisions differ")
+    score_metadata = score_envelope.get("metadata") or {}
+    label_metadata = label_envelope.get("metadata") or {}
+    for field in ("run_id", "split", "dataset_revision", "code_sha"):
+        if score_metadata.get(field) != label_metadata.get(field):
+            raise ValueError(f"score and gold-label envelope {field} differs")
     joined = join_scores_with_gold(scores, labels)
     report = EXPERIMENTS[args.experiment](joined)
     args.output.parent.mkdir(parents=True, exist_ok=True)
