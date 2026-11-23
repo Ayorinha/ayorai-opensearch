@@ -84,6 +84,16 @@ def test_full_dev_workflow_reuses_exact_minimal_action_pins() -> None:
         assert full_pins == minimal_pins
 
 
+def test_every_secret_bearing_job_is_restricted_to_main() -> None:
+    for path in (WORKFLOW_PATH, MINIMAL_PATH):
+        workflow = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+        for job_name, job in workflow["jobs"].items():
+            assert job["environment"] == APPROVAL_ENVIRONMENT
+            assert "github.ref == 'refs/heads/main'" in job.get("if", ""), (
+                f"{path}:{job_name} must be restricted to main"
+            )
+
+
 def test_full_dev_workflow_is_separate_from_minimal_workflow() -> None:
     assert WORKFLOW_PATH != MINIMAL_PATH
     assert WORKFLOW_PATH.is_file()
