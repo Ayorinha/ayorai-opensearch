@@ -12,7 +12,6 @@ The label cache contains only record_id, cohort and gold. Both are DEV-only.
 from __future__ import annotations
 
 import argparse
-import base64
 import json
 import math
 import os
