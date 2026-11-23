@@ -162,11 +162,15 @@ def _run_aggregator(
         check=False,
     )
 
-    return completed, output_path, {
-        "env": env,
-        "rows_by_id": rows_by_id,
-        "gold_label_cache_path": gold_label_cache_path,
-    }
+    return (
+        completed,
+        output_path,
+        {
+            "env": env,
+            "rows_by_id": rows_by_id,
+            "gold_label_cache_path": gold_label_cache_path,
+        },
+    )
 
 
 def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
