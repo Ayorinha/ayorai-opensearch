@@ -284,9 +284,7 @@ def _write_score_cache(
         code_sha=code_sha,
     )
     args.score_cache_output.parent.mkdir(parents=True, exist_ok=True)
-    args.score_cache_output.write_text(
-        json.dumps(envelope, sort_keys=True), encoding="utf-8"
-    )
+    args.score_cache_output.write_text(json.dumps(envelope, sort_keys=True), encoding="utf-8")
 
 
 def main() -> None:
@@ -335,10 +333,9 @@ def main() -> None:
             from score_cache import decrypt_gold_label_cache
         gold_envelope = json.loads(args.gold_label_cache_input.read_text(encoding="utf-8"))
         metadata = gold_envelope.get("metadata", {})
-        if (
-            metadata.get("dataset_revision") != manifest.get("dataset_revision")
-            or metadata.get("code_sha") != manifest.get("code_sha")
-        ):
+        if metadata.get("dataset_revision") != manifest.get("dataset_revision") or metadata.get(
+            "code_sha"
+        ) != manifest.get("code_sha"):
             raise ValueError("gold-label envelope provenance does not match DEV manifest")
         gold_label_cache = decrypt_gold_label_cache(gold_envelope, key=gold_key)
     envelopes = [
