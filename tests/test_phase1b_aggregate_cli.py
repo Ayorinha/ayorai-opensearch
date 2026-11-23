@@ -43,7 +43,7 @@ def _synthetic_rows() -> list[dict]:
 
 def _write_synthetic_inputs(
     tmp_path: Path, rows: list[dict] | None = None
-) -> tuple[Path, Path, dict[str, str], dict]:
+) -> tuple[Path, Path, dict[str, str], dict, Path]:
     rows = rows if rows is not None else _synthetic_rows()
     manifest = build_manifest(
         rows,
@@ -133,10 +133,7 @@ def _run_aggregator(
 ) -> tuple[subprocess.CompletedProcess, Path, dict]:
     manifest_path, encrypted_dir, env, rows_by_id, gold_label_cache_path = _write_synthetic_inputs(tmp_path, rows)
     output_path = tmp_path / "aggregate.json"
-    gold_label_cache_path = tmp_path / "gold-label-cache.json"
     cache_args = list(extra)
-    if "--score-cache-output" in cache_args and "--gold-label-cache-output" not in cache_args:
-        cache_args.extend(["--gold-label-cache-output", str(gold_label_cache_path)])
     completed = subprocess.run(
         [
             sys.executable,
