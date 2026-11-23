@@ -113,8 +113,7 @@ def prepare(
     inference_output.parent.mkdir(parents=True, exist_ok=True)
     inference_output.write_text(
         "".join(
-            json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n"
-            for row in inference_rows
+            json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in inference_rows
         ),
         encoding="utf-8",
     )
