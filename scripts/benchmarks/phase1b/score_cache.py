@@ -336,6 +336,8 @@ def main() -> None:
 
     score_key = decode_key()
     gold_key = _decode_gold_key()
+    if score_key == gold_key:
+        raise ValueError("gold-label and prediction encryption keys must be distinct")
     score_envelope = json.loads(args.cache.read_text(encoding="utf-8"))
     label_envelope = json.loads(args.gold_labels.read_text(encoding="utf-8"))
     scores = decrypt_score_cache(score_envelope, key=score_key)
