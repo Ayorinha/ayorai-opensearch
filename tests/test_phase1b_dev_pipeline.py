@@ -78,6 +78,15 @@ def test_shards_are_exact_disjoint_and_complete() -> None:
     assert set(flattened) == {stable_record_id(row) for row in synthetic_rows(23)}
 
 
+def test_inference_shard_rejects_any_gold_label_field() -> None:
+    rows = synthetic_rows(10)
+    manifest = manifest_for(rows)
+    contaminated = inference_rows(rows)
+    contaminated[0]["label"] = rows[0]["label"]
+    with pytest.raises(ValueError, match="only record_id"):
+        select_shard(manifest, contaminated, "dev-0000")
+
+
 def test_length_sorting_does_not_change_record_association() -> None:
     rows = synthetic_rows(10)
     manifest = manifest_for(rows)
