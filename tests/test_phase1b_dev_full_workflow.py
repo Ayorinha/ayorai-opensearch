@@ -23,6 +23,10 @@ def test_full_dev_workflow_is_manual_and_environment_gated() -> None:
     assert set(workflow["jobs"]) == {"plan", "shard", "aggregate"}
     assert all(job["environment"] == APPROVAL_ENVIRONMENT for job in workflow["jobs"].values())
     shard = workflow["jobs"]["shard"]
+    shard_text = str(shard)
+    assert "fetch_dev.py" not in shard_text
+    assert "HF_TOKEN" not in shard_text
+    assert "phase1b-dev-inference-data" in shard_text
     assert int(shard["timeout-minutes"]) >= 180
     assert shard["strategy"]["fail-fast"] == "false"
     assert int(shard["strategy"]["max-parallel"]) == 20
@@ -43,6 +47,11 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
     assert 'assert manifest["sample_count"] == 30420' in workflow_text
     assert 'assert report["calibration_v2"]["certification_model_count"] == 1' in workflow_text
     assert "phase1b-dev-full-encrypted-*" in workflow_text
+    assert "prepare_dev_artifacts.py" in workflow_text
+    assert "phase1b-dev-inference-data" in workflow_text
+    assert "phase1b-dev-gold-label-cache" in workflow_text
+    assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in workflow_text
+    assert "--gold-label-cache-input" in workflow_text
     assert "retention-days: 30" in workflow_text
 
 
