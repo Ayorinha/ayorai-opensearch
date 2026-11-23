@@ -235,6 +235,7 @@ jobs:
       - name: Decrypt, compute Calibration V2, and validate aggregate-only report
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           trap 'rm -rf /tmp/phase1b-encrypted' EXIT
@@ -242,7 +243,8 @@ jobs:
             --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
             --encrypted-dir /tmp/phase1b-encrypted \
             --output /tmp/phase1b-aggregate.json --calibration-v2 \
-            --score-cache-output /tmp/phase1b-score-cache/phase1b-dev-score-cache.json
+            --score-cache-output /tmp/phase1b-score-cache/phase1b-dev-score-cache.json \
+            --gold-label-cache-output /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json
           python - <<'PY'
           import json
           from pathlib import Path
@@ -261,11 +263,18 @@ jobs:
           path: /tmp/phase1b-aggregate.json
           if-no-files-found: error
           retention-days: 30
-      # A1: encrypted per-instance DEV score cache (AES-256-GCM; never published in plaintext).
+      # A1: predictions and gold labels are encrypted separately with distinct secrets.
+      # Artifact access remains restricted to the protected workflow/repository permissions.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: phase1b-dev-score-cache
           path: /tmp/phase1b-score-cache/phase1b-dev-score-cache.json
+          if-no-files-found: error
+          retention-days: 90
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-gold-label-cache
+          path: /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json
           if-no-files-found: error
           retention-days: 90
 
