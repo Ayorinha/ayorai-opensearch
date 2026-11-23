@@ -24,7 +24,7 @@ env:
 
 jobs:
   plan:
-    if: ${{ inputs.confirmation == 'full-dev-calibration-v2' }}
+    if: ${{ github.ref == 'refs/heads/main' && inputs.confirmation == 'full-dev-calibration-v2' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: international-benchmark-maintainer-approval
