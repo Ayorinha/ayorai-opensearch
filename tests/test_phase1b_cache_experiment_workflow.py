@@ -34,21 +34,16 @@ def test_producers_upload_only_the_encrypted_cache() -> None:
     for path in PRODUCERS:
         text = path.read_text(encoding="utf-8")
         workflow = yaml.safe_load(text)
-        steps = [
-            step
-            for job in workflow["jobs"].values()
-            for step in job["steps"]
-        ]
+        steps = [step for job in workflow["jobs"].values() for step in job["steps"]]
         uploads = [step for step in steps if "upload-artifact" in str(step.get("uses", ""))]
         cache_uploads = {
-            step["with"]["name"]: step for step in uploads
-            if step["with"]["name"] in {
-                "phase1b-dev-score-cache", "phase1b-dev-gold-label-cache"
-            }
+            step["with"]["name"]: step
+            for step in uploads
+            if step["with"]["name"] in {"phase1b-dev-score-cache", "phase1b-dev-gold-label-cache"}
         }
-        assert set(cache_uploads) == {
-            "phase1b-dev-score-cache", "phase1b-dev-gold-label-cache"
-        }, path
+        assert set(cache_uploads) == {"phase1b-dev-score-cache", "phase1b-dev-gold-label-cache"}, (
+            path
+        )
         assert cache_uploads["phase1b-dev-score-cache"]["with"]["path"].endswith(
             "phase1b-dev-score-cache.json"
         )
