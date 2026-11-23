@@ -20,6 +20,7 @@ def test_full_dev_workflow_is_manual_and_environment_gated() -> None:
     confirmation = workflow["on"]["workflow_dispatch"]["inputs"]["confirmation"]
     assert confirmation["required"] == "true"
     assert confirmation["options"] == ["full-dev-calibration-v2"]
+    assert "github.ref == 'refs/heads/main'" in workflow["jobs"]["plan"]["if"]
     assert set(workflow["jobs"]) == {"plan", "shard", "aggregate"}
     assert all(job["environment"] == APPROVAL_ENVIRONMENT for job in workflow["jobs"].values())
     shard = workflow["jobs"]["shard"]
@@ -96,3 +97,4 @@ def test_full_dev_workflow_is_separate_from_minimal_workflow() -> None:
     assert "path: /tmp/phase1b-dev-inference.jsonl.aesgcm" in minimal_text
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in minimal_text
     assert "fetch_dev.py" not in str(minimal["jobs"]["shard"])
+    assert "github.ref == 'refs/heads/main'" in minimal["jobs"]["plan"]["if"]
