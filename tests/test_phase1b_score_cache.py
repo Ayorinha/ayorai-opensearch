@@ -129,14 +129,18 @@ def test_join_occurs_only_after_both_caches_are_decrypted() -> None:
         "SUPPORTED", "NOT_SUPPORTED"
     }
     assert "gold" not in json.dumps(scores)
-    assert "gold" not in json.dumps(labels).split('"gold":')[0]
+    assert "gold" in json.dumps(labels)
 
 
 def test_join_rejects_run_manifest_count_and_cohort_mismatches() -> None:
     scores, labels = _caches()
     with pytest.raises(ValueError, match="source_run_id mismatch"):
         join_scores_with_gold(scores, {**labels, "source_run_id": "other"})
-    bad_labels = dict(labels, records=[dict(labels["records"][0], cohort="other"), *labels["records"][1:]])
+    bad_records = [
+        dict(labels["records"][0], cohort="other"),
+        *labels["records"][1:],
+    ]
+    bad_labels = dict(labels, records=bad_records)
     with pytest.raises(ValueError, match="cohort mismatch"):
         join_scores_with_gold(scores, bad_labels)
 
