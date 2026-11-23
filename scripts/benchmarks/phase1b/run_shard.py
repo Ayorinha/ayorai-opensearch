@@ -13,7 +13,13 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import MODELS, load_records, sha256_file
+    from .common import (
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
+        MODELS,
+        load_records,
+        sha256_file,
+    )
     from .nltk_resources import load_pin as load_nltk_pin
     from .nltk_resources import prepare_runtime as prepare_nltk_runtime
     from .protocols import (
@@ -24,7 +30,13 @@ try:
         get_protocol,
     )
 except ImportError:  # direct script execution
-    from common import MODELS, load_records, sha256_file
+    from common import (
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
+        MODELS,
+        load_records,
+        sha256_file,
+    )
     from nltk_resources import load_pin as load_nltk_pin
     from nltk_resources import prepare_runtime as prepare_nltk_runtime
     from protocols import (
@@ -41,8 +53,12 @@ def select_shard(
     rows: list[dict[str, Any]],
     shard_id: str,
 ) -> list[tuple[str, dict[str, Any]]]:
-    if manifest.get("split") != "dev":
-        raise ValueError("TEST execution is forbidden in the Phase 1b DEV runner")
+    if (
+        manifest.get("split") != "dev"
+        or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION
+        or manifest.get("record_id_method") != RECORD_ID_METHOD
+    ):
+        raise ValueError("runner accepts only current inference-only DEV manifests")
     indexed: dict[str, dict[str, Any]] = {}
     allowed_fields = {"record_id", "doc", "claim", "dataset"}
     for row in rows:
