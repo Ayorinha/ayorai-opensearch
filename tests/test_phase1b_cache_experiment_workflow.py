@@ -57,4 +57,6 @@ def test_producers_upload_only_the_encrypted_cache() -> None:
         )
         assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in text
         assert "--score-cache-output" in text
-        assert "--gold-label-cache-output" in text
+        assert "--gold-label-cache-input" in text
+        if path.name == "phase1b-dev-full.yml":
+            assert "--gold-label-cache-output" in text
