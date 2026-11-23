@@ -22,6 +22,7 @@ def test_experiment_workflow_is_manual_gated_and_inference_free() -> None:
     assert workflow["permissions"] == {"contents": "read", "actions": "read"}
     assert set(workflow["jobs"]) == {"experiment"}
     assert workflow["jobs"]["experiment"]["environment"] == APPROVAL_ENVIRONMENT
+    assert "github.ref == 'refs/heads/main'" in workflow["jobs"]["experiment"]["if"]
     for forbidden in ("run_shard.py", "fetch_dev.py", "--split test"):
         assert forbidden not in text
     assert text.count("run-id: ${{ inputs.cache_run_id }}") == 2
