@@ -175,7 +175,11 @@ def encrypt_score_cache(
 
 def decrypt_score_cache(envelope: dict[str, Any], *, key: bytes) -> dict[str, Any]:
     metadata = envelope.get("metadata") or {}
-    if metadata.get("shard_id") != SCORE_CACHE_SHARD_ID or metadata.get("split") != "dev":
+    if (
+        metadata.get("shard_id") != SCORE_CACHE_SHARD_ID
+        or metadata.get("split") != "dev"
+        or metadata.get("model_revision") != "multi-model-score-cache"
+    ):
         raise ValueError("envelope is not a DEV score cache")
     cache = json.loads(decrypt_bytes(envelope, key=key))
     schema = cache.get("schema_version")
@@ -207,7 +211,11 @@ def encrypt_gold_label_cache(
 
 def decrypt_gold_label_cache(envelope: dict[str, Any], *, key: bytes) -> dict[str, Any]:
     metadata = envelope.get("metadata") or {}
-    if metadata.get("shard_id") != GOLD_LABEL_CACHE_SHARD_ID or metadata.get("split") != "dev":
+    if (
+        metadata.get("shard_id") != GOLD_LABEL_CACHE_SHARD_ID
+        or metadata.get("split") != "dev"
+        or metadata.get("model_revision") != "gold-labels"
+    ):
         raise ValueError("envelope is not a DEV gold-label cache")
     cache = json.loads(decrypt_bytes(envelope, key=key))
     if cache.get("schema_version") != LABEL_SCHEMA_VERSION or cache.get("split") != "dev":
@@ -327,6 +335,11 @@ def main() -> None:
     label_envelope = json.loads(args.gold_labels.read_text(encoding="utf-8"))
     scores = decrypt_score_cache(score_envelope, key=score_key)
     labels = decrypt_gold_label_cache(label_envelope, key=gold_key)
+    if (
+        score_envelope["metadata"].get("dataset_revision")
+        != label_envelope["metadata"].get("dataset_revision")
+    ):
+        raise ValueError("score and gold-label envelope dataset revisions differ")
     joined = join_scores_with_gold(scores, labels)
     report = EXPERIMENTS[args.experiment](joined)
     args.output.parent.mkdir(parents=True, exist_ok=True)
