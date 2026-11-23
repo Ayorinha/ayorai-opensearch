@@ -255,10 +255,15 @@ def main() -> None:
     if not gold_key_raw:
         raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
     gold_key = decode_key(gold_key_raw)
-    cache = decrypt_score_cache(json.loads(args.cache.read_text(encoding="utf-8")), key=key)
-    label_cache = decrypt_gold_label_cache(
-        json.loads(args.gold_labels.read_text(encoding="utf-8")), key=gold_key
-    )
+    score_envelope = json.loads(args.cache.read_text(encoding="utf-8"))
+    label_envelope = json.loads(args.gold_labels.read_text(encoding="utf-8"))
+    if (
+        score_envelope.get("metadata", {}).get("dataset_revision") != pin.get("revision")
+        or label_envelope.get("metadata", {}).get("dataset_revision") != pin.get("revision")
+    ):
+        raise ValueError("score, gold-label and pinned DEV dataset revisions differ")
+    cache = decrypt_score_cache(score_envelope, key=key)
+    label_cache = decrypt_gold_label_cache(label_envelope, key=gold_key)
     join_scores_with_gold(cache, label_cache)  # fail closed on cross-cache provenance mismatch
     expected = _expected_from_labels(label_cache)
 
