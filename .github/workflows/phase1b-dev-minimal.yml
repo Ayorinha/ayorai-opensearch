@@ -67,12 +67,12 @@ jobs:
             --sample-size 10 --shard-size 5 --max-shards 2 \
             --seed 20261106 --output /tmp/phase1b-manifest.json
           python scripts/benchmarks/phase1b/prepare_dev_artifacts.py \
-            --dataset-path "$INFERENCE_DATA" \
+            --dataset-path "$DEV_PARQUET" \
             --manifest /tmp/phase1b-manifest.json \
             --inference-output "$INFERENCE_DATA" \
             --gold-label-cache-output /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json \
             --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
-          rm -f "$INFERENCE_DATA"
+          rm -f "$DEV_PARQUET"
       - id: matrix
         name: Emit minimal matrix
         run: |
@@ -99,6 +99,8 @@ jobs:
           path: /tmp/phase1b-dev-inference.jsonl
           if-no-files-found: error
           retention-days: 1
+
+  shard:
     needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -143,11 +145,11 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/benchmarks/phase1b/run_shard.py \
-            --dataset-path "$DEV_PARQUET" \
+            --dataset-path "$INFERENCE_DATA" \
             --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
             --shard-id "$SHARD_ID" --model-id mdeberta \
             --order-by-length --output /tmp/phase1b-private.json
-          rm -f "$DEV_PARQUET"
+          rm -f "$INFERENCE_DATA"
       - name: Encrypt private output before artifact handling
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
