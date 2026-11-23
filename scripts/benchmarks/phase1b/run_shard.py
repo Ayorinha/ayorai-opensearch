@@ -15,8 +15,8 @@ from typing import Any
 try:
     from .common import (
         MANIFEST_SCHEMA_VERSION,
-        RECORD_ID_METHOD,
         MODELS,
+        RECORD_ID_METHOD,
         load_records,
         sha256_file,
     )
@@ -32,8 +32,8 @@ try:
 except ImportError:  # direct script execution
     from common import (
         MANIFEST_SCHEMA_VERSION,
-        RECORD_ID_METHOD,
         MODELS,
+        RECORD_ID_METHOD,
         load_records,
         sha256_file,
     )
