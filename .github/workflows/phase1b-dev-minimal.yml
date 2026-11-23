@@ -114,6 +114,7 @@ jobs:
 
   shard:
     needs: plan
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     environment: international-benchmark-maintainer-approval
@@ -200,7 +201,7 @@ jobs:
 
   aggregate:
     needs: [plan, shard]
-    if: ${{ always() && needs.plan.result == 'success' }}
+    if: ${{ always() && github.ref == 'refs/heads/main' && needs.plan.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: international-benchmark-maintainer-approval
