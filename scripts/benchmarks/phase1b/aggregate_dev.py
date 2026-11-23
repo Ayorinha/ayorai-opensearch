@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 from collections import defaultdict
@@ -101,6 +102,26 @@ def aggregate_packages(
             raise ValueError("operational document count does not match shard manifest")
         if private.get("split") != "dev":
             raise ValueError("private package is not DEV-only")
+        records = private.get("records")
+        if not isinstance(records, list) or len(records) != expected_count:
+            raise ValueError("inference shard must contain one prediction per manifest record")
+        record_ids = []
+        for record in records:
+            if not isinstance(record, dict) or set(record) != {"record_id", "cohort", "score"}:
+                raise ValueError("inference shard records must contain only record_id, cohort and score")
+            record_id, cohort, score = record["record_id"], record["cohort"], record["score"]
+            if not isinstance(record_id, str) or not record_id:
+                raise ValueError("inference shard record_id must be a non-empty string")
+            if not isinstance(cohort, str) or not cohort:
+                raise ValueError("inference shard cohort must be a non-empty string")
+            if isinstance(score, bool) or not isinstance(score, (int, float)):
+                raise ValueError("inference shard score must be numeric")
+            if not math.isfinite(float(score)) or not 0.0 <= float(score) <= 1.0:
+                raise ValueError("inference shard score must be finite and within [0, 1]")
+            record_ids.append(record_id)
+        expected_record_ids = set(expected[shard_id]["record_ids"])
+        if len(record_ids) != len(set(record_ids)) or set(record_ids) != expected_record_ids:
+            raise ValueError("inference shard predictions do not match manifest record IDs")
 
         package_key = (str(model_id), str(shard_id))
         if package_key in packages:
