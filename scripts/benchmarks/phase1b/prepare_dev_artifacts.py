@@ -64,9 +64,7 @@ def prepare(
         or manifest.get("record_id_method") != RECORD_ID_METHOD
     ):
         raise ValueError("only current inference-only DEV manifests may be prepared")
-    manifest_body = {
-        key: value for key, value in manifest.items() if key != "manifest_sha256"
-    }
+    manifest_body = {key: value for key, value in manifest.items() if key != "manifest_sha256"}
     if manifest.get("manifest_sha256") != sha256_bytes(canonical_json(manifest_body)):
         raise ValueError("source DEV manifest digest verification failed")
     if manifest.get("code_sha") != code_sha:
@@ -85,9 +83,8 @@ def prepare(
         for shard in manifest.get("shards", [])
         for record_id in shard.get("record_ids", [])
     ]
-    if (
-        len(selected_ids) != manifest.get("sample_count")
-        or len(set(selected_ids)) != len(selected_ids)
+    if len(selected_ids) != manifest.get("sample_count") or len(set(selected_ids)) != len(
+        selected_ids
     ):
         raise ValueError("manifest record coverage is inconsistent")
     if set(selected_ids) - set(indexed):
@@ -97,17 +94,21 @@ def prepare(
     gold_rows = []
     for record_id in sorted(selected_ids):
         row = indexed[record_id]
-        inference_rows.append({
-            "record_id": record_id,
-            "doc": str(row["doc"]),
-            "claim": str(row["claim"]),
-            "dataset": str(row["dataset"]),
-        })
-        gold_rows.append({
-            "record_id": record_id,
-            "cohort": str(row["dataset"]),
-            "gold": "SUPPORTED" if str(row["label"]) == "1" else "NOT_SUPPORTED",
-        })
+        inference_rows.append(
+            {
+                "record_id": record_id,
+                "doc": str(row["doc"]),
+                "claim": str(row["claim"]),
+                "dataset": str(row["dataset"]),
+            }
+        )
+        gold_rows.append(
+            {
+                "record_id": record_id,
+                "cohort": str(row["dataset"]),
+                "gold": "SUPPORTED" if str(row["label"]) == "1" else "NOT_SUPPORTED",
+            }
+        )
 
     inference_output.parent.mkdir(parents=True, exist_ok=True)
     inference_output.write_text(
@@ -167,15 +168,20 @@ def main() -> None:
         gold_label_output=args.gold_label_cache_output,
     )
     args.manifest.write_bytes(canonical_json(prepared) + b"\n")
-    print(json.dumps({
-        "status": "dev_inputs_separated",
-        "split": "dev",
-        "record_count": prepared["sample_count"],
-        "manifest_sha256": prepared["manifest_sha256"],
-        "inference_dataset_sha256": prepared["inference_dataset_sha256"],
-        "gold_labels_encrypted": True,
-        "labels_in_inference_input": False,
-    }, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "status": "dev_inputs_separated",
+                "split": "dev",
+                "record_count": prepared["sample_count"],
+                "manifest_sha256": prepared["manifest_sha256"],
+                "inference_dataset_sha256": prepared["inference_dataset_sha256"],
+                "gold_labels_encrypted": True,
+                "labels_in_inference_input": False,
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":
