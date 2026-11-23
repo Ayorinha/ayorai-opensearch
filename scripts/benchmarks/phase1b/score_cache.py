@@ -101,7 +101,9 @@ def build_score_cache(
     models: dict[str, Any] = {}
     reference_ids: set[str] | None = None
     for model in sorted(rows_by_model):
-        records = _unique_sorted(rows_by_model[model], _clean_score_record, f"score cache for {model}")
+        records = _unique_sorted(
+            rows_by_model[model], _clean_score_record, f"score cache for {model}"
+        )
         ids = {record["record_id"] for record in records}
         if reference_ids is None:
             reference_ids = ids
@@ -157,11 +159,16 @@ def _cache_metadata(
 def encrypt_score_cache(
     cache: dict[str, Any], *, key: bytes, dataset_revision: str, code_sha: str
 ) -> dict[str, Any]:
-    if cache.get("schema_version") not in {SCORE_SCHEMA_VERSION, SCORE_SCHEMA_VERSION_V2} or cache.get("split") != "dev":
+    if (
+        cache.get("schema_version") not in {SCORE_SCHEMA_VERSION, SCORE_SCHEMA_VERSION_V2}
+        or cache.get("split") != "dev"
+    ):
         raise ValueError("only supported DEV score caches may be encrypted")
     metadata = _cache_metadata(
         source_run_id=cache["source_run_id"], shard_id=SCORE_CACHE_SHARD_ID,
-        model_revision="multi-model-score-cache", dataset_revision=dataset_revision, code_sha=code_sha
+        model_revision="multi-model-score-cache",
+        dataset_revision=dataset_revision,
+        code_sha=code_sha,
     )
     return encrypt_bytes(canonical_json(cache), key=key, metadata=metadata)
 
@@ -238,7 +245,11 @@ def join_scores_with_gold(
                 raise ValueError("score and gold-label cohort mismatch")
             records.append({**score, "gold": label["gold"]})
         joined_models[model] = {"protocol": entry.get("protocol"), "records": records}
-    return {**score_cache, "models": joined_models, "record_fields": ["record_id", "cohort", "gold", "score"]}
+    return {
+        **score_cache,
+        "models": joined_models,
+        "record_fields": ["record_id", "cohort", "gold", "score"],
+    }
 
 
 def replay_calibration_v2(cache: dict[str, Any]) -> dict[str, Any]:
@@ -247,7 +258,12 @@ def replay_calibration_v2(cache: dict[str, Any]) -> dict[str, Any]:
 
     rows = {
         model: [
-            {"record_id": r["record_id"], "cohort": r["cohort"], "gold": r["gold"], "score": r["score"]}
+            {
+                "record_id": r["record_id"],
+                "cohort": r["cohort"],
+                "gold": r["gold"],
+                "score": r["score"],
+            }
             for r in entry["records"]
         ]
         for model, entry in cache["models"].items()
@@ -295,7 +311,12 @@ def _decode_gold_key() -> bytes:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--cache", required=True, type=Path, help="encrypted prediction cache")
-    parser.add_argument("--gold-labels", required=True, type=Path, help="separately encrypted gold-label cache")
+    parser.add_argument(
+        "--gold-labels",
+        required=True,
+        type=Path,
+        help="separately encrypted gold-label cache",
+    )
     parser.add_argument("--experiment", required=True, choices=sorted(EXPERIMENTS))
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
