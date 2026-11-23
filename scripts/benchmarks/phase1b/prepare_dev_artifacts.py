@@ -45,6 +45,11 @@ def prepare(
 ) -> dict[str, Any]:
     if manifest.get("split") != "dev":
         raise ValueError("only DEV manifests may be prepared")
+    manifest_body = {
+        key: value for key, value in manifest.items() if key != "manifest_sha256"
+    }
+    if manifest.get("manifest_sha256") != sha256_bytes(canonical_json(manifest_body)):
+        raise ValueError("source DEV manifest digest verification failed")
     if manifest.get("code_sha") != code_sha:
         raise ValueError("manifest code SHA does not match preparation code SHA")
     indexed: dict[str, dict[str, Any]] = {}
@@ -125,6 +130,8 @@ def main() -> None:
         raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
     gold_key = decode_key(raw_key)
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    if sha256_file(args.dataset_path) != manifest.get("dataset_sha256"):
+        raise ValueError("source DEV dataset SHA-256 does not match the manifest")
     prepared = prepare(
         load_records(args.dataset_path),
         manifest,
