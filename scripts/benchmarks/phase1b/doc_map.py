@@ -230,7 +230,12 @@ def cluster_summary(cache_v2: dict[str, Any], *, replay_status: str) -> dict[str
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--cache", required=True, type=Path, help="encrypted prediction-only cache")
-    parser.add_argument("--gold-labels", required=True, type=Path, help="separately encrypted gold-label cache")
+    parser.add_argument(
+        "--gold-labels",
+        required=True,
+        type=Path,
+        help="separately encrypted gold-label cache",
+    )
     parser.add_argument("--dataset-path", required=True, type=Path, help="pinned DEV parquet")
     parser.add_argument("--pin", type=Path, default=DEV_PIN_PATH)
     parser.add_argument("--output-cache", required=True, type=Path)
