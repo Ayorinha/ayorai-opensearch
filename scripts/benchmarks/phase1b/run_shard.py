@@ -21,6 +21,7 @@ try:
         load_records,
         sha256_bytes,
         sha256_file,
+        stable_record_id,
     )
     from .nltk_resources import load_pin as load_nltk_pin
     from .nltk_resources import prepare_runtime as prepare_nltk_runtime
@@ -40,6 +41,7 @@ except ImportError:  # direct script execution
         load_records,
         sha256_bytes,
         sha256_file,
+        stable_record_id,
     )
     from nltk_resources import load_pin as load_nltk_pin
     from nltk_resources import prepare_runtime as prepare_nltk_runtime
@@ -71,6 +73,8 @@ def select_shard(
         record_id = row["record_id"]
         if not isinstance(record_id, str) or not record_id:
             raise ValueError("inference record_id must be a non-empty string")
+        if stable_record_id(row) != record_id:
+            raise ValueError("inference record_id does not match its content")
         if record_id in indexed:
             raise ValueError("duplicate inference record_id")
         indexed[record_id] = row
