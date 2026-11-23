@@ -165,7 +165,8 @@ def encrypt_score_cache(
     ):
         raise ValueError("only supported DEV score caches may be encrypted")
     metadata = _cache_metadata(
-        source_run_id=cache["source_run_id"], shard_id=SCORE_CACHE_SHARD_ID,
+        source_run_id=cache["source_run_id"],
+        shard_id=SCORE_CACHE_SHARD_ID,
         model_revision="multi-model-score-cache",
         dataset_revision=dataset_revision,
         code_sha=code_sha,
@@ -203,8 +204,11 @@ def encrypt_gold_label_cache(
     if cache.get("schema_version") != LABEL_SCHEMA_VERSION or cache.get("split") != "dev":
         raise ValueError("only DEV gold-label caches may be encrypted")
     metadata = _cache_metadata(
-        source_run_id=cache["source_run_id"], shard_id=GOLD_LABEL_CACHE_SHARD_ID,
-        model_revision="gold-labels", dataset_revision=dataset_revision, code_sha=code_sha
+        source_run_id=cache["source_run_id"],
+        shard_id=GOLD_LABEL_CACHE_SHARD_ID,
+        model_revision="gold-labels",
+        dataset_revision=dataset_revision,
+        code_sha=code_sha,
     )
     return encrypt_bytes(canonical_json(cache), key=key, metadata=metadata)
 
@@ -300,6 +304,7 @@ def replay_calibration_v2(cache: dict[str, Any]) -> dict[str, Any]:
 def run_e3_fixed_rule_ensemble(cache: dict[str, Any]) -> dict[str, Any]:
     """E3 under DEC-024 option B; see scripts/benchmarks/phase1b/e3_ensemble.py."""
     from scripts.benchmarks.phase1b.e3_ensemble import run_e3
+
     return run_e3(cache)
 
 
@@ -335,20 +340,26 @@ def main() -> None:
     label_envelope = json.loads(args.gold_labels.read_text(encoding="utf-8"))
     scores = decrypt_score_cache(score_envelope, key=score_key)
     labels = decrypt_gold_label_cache(label_envelope, key=gold_key)
-    if (
-        score_envelope["metadata"].get("dataset_revision")
-        != label_envelope["metadata"].get("dataset_revision")
+    if score_envelope["metadata"].get("dataset_revision") != label_envelope["metadata"].get(
+        "dataset_revision"
     ):
         raise ValueError("score and gold-label envelope dataset revisions differ")
     joined = join_scores_with_gold(scores, labels)
     report = EXPERIMENTS[args.experiment](joined)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(canonical_json(report) + b"\n")
-    print(json.dumps({
-        "experiment": args.experiment, "split": "dev", "record_count": report["record_count"],
-        "replay_matches_source": report.get("replay_matches_source"),
-        "instance_level_output_published": False,
-    }, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "experiment": args.experiment,
+                "split": "dev",
+                "record_count": report["record_count"],
+                "replay_matches_source": report.get("replay_matches_source"),
+                "instance_level_output_published": False,
+            },
+            sort_keys=True,
+        )
+    )
     if report.get("replay_matches_source") is False:
         raise SystemExit(3)
 
