@@ -254,7 +254,7 @@ def main() -> None:
     label_cache = decrypt_gold_label_cache(
         json.loads(args.gold_labels.read_text(encoding="utf-8")), key=gold_key
     )
-    joined_cache = join_scores_with_gold(cache, label_cache)
+    join_scores_with_gold(cache, label_cache)  # fail closed on cross-cache provenance mismatch
     expected = _expected_from_labels(label_cache)
 
     first = build_doc_map(load_records(args.dataset_path), expected)
