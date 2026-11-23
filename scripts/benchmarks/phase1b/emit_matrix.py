@@ -9,12 +9,22 @@ import sys
 from pathlib import Path
 
 try:
-    from .common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD
+    from .common import (
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
+        canonical_json,
+        sha256_bytes,
+    )
 except ImportError:  # direct script execution
     _REPOSITORY_ROOT = str(Path(__file__).resolve().parents[3])
     if _REPOSITORY_ROOT not in sys.path:
         sys.path.insert(0, _REPOSITORY_ROOT)
-    from scripts.benchmarks.phase1b.common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD
+    from scripts.benchmarks.phase1b.common import (
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
+        canonical_json,
+        sha256_bytes,
+    )
 
 
 def emit_matrix(manifest: dict, *, minimal: bool = False) -> dict:
@@ -24,6 +34,11 @@ def emit_matrix(manifest: dict, *, minimal: bool = False) -> dict:
         or manifest.get("record_id_method") != RECORD_ID_METHOD
     ):
         raise ValueError("matrix generation requires a current inference-only DEV manifest")
+    manifest_body = {
+        key: value for key, value in manifest.items() if key != "manifest_sha256"
+    }
+    if manifest.get("manifest_sha256") != sha256_bytes(canonical_json(manifest_body)):
+        raise ValueError("DEV manifest digest verification failed")
     shards = manifest.get("shards")
     if not isinstance(shards, list) or not shards:
         raise ValueError("manifest has no shards")
