@@ -27,6 +27,7 @@ permissions:
 
 jobs:
   experiment:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     environment: international-benchmark-maintainer-approval
