@@ -85,6 +85,16 @@ def test_inference_shard_rejects_any_gold_label_field() -> None:
         select_shard(manifest, contaminated, "dev-0000")
 
 
+@pytest.mark.parametrize("field", ["doc", "claim", "dataset"])
+def test_inference_shard_rejects_record_id_content_mismatch(field: str) -> None:
+    rows = synthetic_rows(10)
+    manifest = manifest_for(rows)
+    tampered = inference_rows(rows)
+    tampered[0][field] = f"{tampered[0][field]} altered"
+    with pytest.raises(ValueError, match="record_id does not match its content"):
+        select_shard(manifest, tampered, "dev-0000")
+
+
 def test_length_sorting_does_not_change_record_association() -> None:
     rows = synthetic_rows(10)
     manifest = manifest_for(rows)
