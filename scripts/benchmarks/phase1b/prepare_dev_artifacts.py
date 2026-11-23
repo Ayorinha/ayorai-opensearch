@@ -43,7 +43,8 @@ except ImportError:  # direct script execution
     )
     from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
     from scripts.benchmarks.phase1b.score_cache import (
-        build_gold_label_cache, encrypt_gold_label_cache
+        build_gold_label_cache,
+        encrypt_gold_label_cache,
     )
 
 
