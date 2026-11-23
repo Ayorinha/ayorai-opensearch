@@ -69,8 +69,13 @@ def load_records(path: Path) -> list[dict[str, Any]]:
 
 
 def stable_record_id(row: dict[str, Any]) -> str:
-    """Content-address a row; raw claim/document/label never enter the manifest."""
-    return sha256_bytes(canonical_json(row))
+    """Hash inference inputs only; the gold label never influences the record ID."""
+    identity = {
+        "doc": row["doc"],
+        "claim": row["claim"],
+        "dataset": row["dataset"],
+    }
+    return sha256_bytes(canonical_json(identity))
 
 
 def safe_failure(exc: BaseException) -> dict[str, str]:
