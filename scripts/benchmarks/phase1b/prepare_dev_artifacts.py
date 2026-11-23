@@ -66,7 +66,10 @@ def prepare(
         for shard in manifest.get("shards", [])
         for record_id in shard.get("record_ids", [])
     ]
-    if len(selected_ids) != manifest.get("sample_count") or len(set(selected_ids)) != len(selected_ids):
+    if (
+        len(selected_ids) != manifest.get("sample_count")
+        or len(set(selected_ids)) != len(selected_ids)
+    ):
         raise ValueError("manifest record coverage is inconsistent")
     if set(selected_ids) - set(indexed):
         raise ValueError("manifest contains records absent from pinned DEV source")
@@ -89,7 +92,10 @@ def prepare(
 
     inference_output.parent.mkdir(parents=True, exist_ok=True)
     inference_output.write_text(
-        "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in inference_rows),
+        "".join(
+            json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n"
+            for row in inference_rows
+        ),
         encoding="utf-8",
     )
     manifest = dict(manifest)
