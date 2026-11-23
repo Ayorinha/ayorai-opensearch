@@ -331,9 +331,7 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=4)
     args = parser.parse_args()
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
-    manifest_body = {
-        key: value for key, value in manifest.items() if key != "manifest_sha256"
-    }
+    manifest_body = {key: value for key, value in manifest.items() if key != "manifest_sha256"}
     if manifest.get("manifest_sha256") != sha256_bytes(canonical_json(manifest_body)):
         raise ValueError("DEV manifest digest verification failed")
     if sha256_file(args.dataset_path) != manifest.get("inference_dataset_sha256"):
