@@ -22,6 +22,7 @@ permissions:
 env:
   DEV_PARQUET: /tmp/phase1b-dev.parquet
   INFERENCE_DATA: /tmp/phase1b-dev-inference.jsonl
+  INFERENCE_ENCRYPTED: /tmp/phase1b-dev-inference.jsonl.aesgcm
   NLTK_DATA_DIR: /tmp/phase1b-nltk-data
 
 jobs:
@@ -79,7 +80,11 @@ jobs:
             --inference-output "$INFERENCE_DATA" \
             --gold-label-cache-output /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json \
             --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
-          rm -f "$DEV_PARQUET"
+          python scripts/benchmarks/phase1b/inference_artifact.py encrypt \\
+            --input "$INFERENCE_DATA" --output "$INFERENCE_ENCRYPTED" \\
+            --manifest /tmp/phase1b-manifest.json \\
+            --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
+          rm -f "$DEV_PARQUET" "$INFERENCE_DATA"
       - id: matrix
         name: Emit minimal matrix
         run: |
@@ -102,8 +107,8 @@ jobs:
           retention-days: 1
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: phase1b-dev-minimal-inference-data
-          path: /tmp/phase1b-dev-inference.jsonl
+          name: phase1b-dev-minimal-inference-data-encrypted
+          path: /tmp/phase1b-dev-inference.jsonl.aesgcm
           if-no-files-found: error
           retention-days: 1
 
@@ -143,8 +148,20 @@ jobs:
           path: /tmp/phase1b-manifest
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: phase1b-dev-minimal-inference-data
+          name: phase1b-dev-minimal-inference-data-encrypted
           path: /tmp
+      - name: Decrypt shared DEV inference input inside protected shard
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          RUN_ID: ${{ github.run_id }}
+          CODE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/inference_artifact.py decrypt \\
+            --input "$INFERENCE_ENCRYPTED" --output "$INFERENCE_DATA" \\
+            --manifest /tmp/phase1b-manifest/phase1b-manifest.json \\
+            --run-id "$RUN_ID" --code-sha "$CODE_SHA"
+          rm -f "$INFERENCE_ENCRYPTED"
       - name: Run pinned mDeBERTa on this shard (private local output)
         env:
           SHARD_ID: ${{ matrix.shard_id }}
