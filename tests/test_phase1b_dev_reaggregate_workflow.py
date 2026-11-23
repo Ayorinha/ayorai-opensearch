@@ -20,6 +20,7 @@ def test_reaggregate_is_manual_gated_and_aggregate_only() -> None:
     assert set(workflow["jobs"]) == {"aggregate"}
     job = workflow["jobs"]["aggregate"]
     assert job["environment"] == APPROVAL_ENVIRONMENT
+    assert "github.ref == 'refs/heads/main'" in job["if"]
     assert "run_shard.py" not in text
     assert "fetch_dev.py" not in text
     assert "--split test" not in text.lower()
