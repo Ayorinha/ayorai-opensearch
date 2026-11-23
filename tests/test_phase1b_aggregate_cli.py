@@ -101,6 +101,7 @@ def _write_synthetic_inputs(
     manifest_path.write_text(json.dumps(manifest))
     env = {key_name: value for key_name, value in os.environ.items() if key_name != "PYTHONPATH"}
     env["PHASE1B_ARTIFACT_ENCRYPTION_KEY"] = base64.b64encode(key).decode()
+    env["PHASE1B_GOLD_LABEL_ENCRYPTION_KEY"] = base64.b64encode(bytes(reversed(range(32)))).decode()
 
     return manifest_path, encrypted_dir, env, rows_by_id
 
@@ -110,6 +111,10 @@ def _run_aggregator(
 ) -> tuple[subprocess.CompletedProcess, Path, dict]:
     manifest_path, encrypted_dir, env, rows_by_id = _write_synthetic_inputs(tmp_path, rows)
     output_path = tmp_path / "aggregate.json"
+    gold_label_cache_path = tmp_path / "gold-label-cache.json"
+    cache_args = list(extra)
+    if "--score-cache-output" in cache_args and "--gold-label-cache-output" not in cache_args:
+        cache_args.extend(["--gold-label-cache-output", str(gold_label_cache_path)])
     completed = subprocess.run(
         [
             sys.executable,
@@ -121,7 +126,7 @@ def _run_aggregator(
             "--output",
             str(output_path),
             "--calibration-v2",
-            *extra,
+            *cache_args,
         ],
         cwd=tmp_path,
         env=env,
@@ -130,7 +135,11 @@ def _run_aggregator(
         check=False,
     )
 
-    return completed, output_path, {"env": env, "rows_by_id": rows_by_id}
+    return completed, output_path, {
+        "env": env,
+        "rows_by_id": rows_by_id,
+        "gold_label_cache_path": gold_label_cache_path,
+    }
 
 
 def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
