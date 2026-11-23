@@ -7,7 +7,7 @@ import json
 import pytest
 
 from scripts.benchmarks.phase1b.build_manifest import build_manifest
-from scripts.benchmarks.phase1b.common import stable_record_id
+from scripts.benchmarks.phase1b.common import canonical_json, sha256_bytes, stable_record_id
 from scripts.benchmarks.phase1b.prepare_dev_artifacts import prepare
 from scripts.benchmarks.phase1b.score_cache import decrypt_gold_label_cache
 
@@ -89,6 +89,8 @@ def test_preparation_fails_closed_on_wrong_code_or_missing_manifest_record(tmp_p
     truncated = dict(manifest)
     truncated["shards"] = [dict(manifest["shards"][0], record_ids=["f" * 64], count=1)]
     truncated["sample_count"] = 1
+    truncated.pop("manifest_sha256")
+    truncated["manifest_sha256"] = sha256_bytes(canonical_json(truncated))
     with pytest.raises(ValueError, match="absent"):
         prepare(
             rows,
