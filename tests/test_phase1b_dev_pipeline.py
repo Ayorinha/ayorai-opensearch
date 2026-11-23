@@ -174,6 +174,49 @@ def test_aggregator_marks_missing_shard_as_incomplete() -> None:
     ]
 
 
+def test_aggregator_rejects_gold_labels_in_private_inference_shards() -> None:
+    rows = synthetic_rows(10)
+    manifest = manifest_for(rows)
+    key = bytes(range(32))
+    metadata = {
+        "run_id": "run-gold-rejected",
+        "split": "dev",
+        "model_revision": "model-rev",
+        "shard_id": "dev-0000",
+        "dataset_revision": "synthetic-revision",
+        "code_sha": "synthetic-code-sha",
+    }
+    private = {
+        "split": "dev",
+        "shard_id": "dev-0000",
+        "model_id": "synthetic-model",
+        "model_revision": "model-rev",
+        "dataset_revision": "synthetic-revision",
+        "dataset_sha256": "a" * 64,
+        "code_sha": "synthetic-code-sha",
+        "document_count": len(rows),
+        "block_count": len(rows),
+        "token_count_by_unit": {"synthetic_tokens": 0},
+        "records": [
+            {
+                "record_id": stable_record_id(row),
+                "cohort": row["dataset"],
+                "score": 0.9,
+                "gold": "SUPPORTED",
+            }
+            for row in rows
+        ],
+    }
+    envelope = encrypt_bytes(
+        json.dumps(private).encode(),
+        key=key,
+        metadata=metadata,
+        nonce=b"g" * 12,
+    )
+    with pytest.raises(ValueError, match="only record_id"):
+        aggregate_packages(manifest, [envelope], key=key)
+
+
 def test_report_has_no_per_instance_output() -> None:
     rows = synthetic_rows(10)
     manifest = manifest_for(rows)
