@@ -27,7 +27,7 @@ env:
 
 jobs:
   plan:
-    if: ${{ inputs.mode == 'minimal' }}
+    if: ${{ github.ref == 'refs/heads/main' && inputs.mode == 'minimal' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: international-benchmark-maintainer-approval
