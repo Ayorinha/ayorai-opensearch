@@ -141,6 +141,33 @@ def test_join_rejects_run_manifest_count_and_cohort_mismatches() -> None:
         join_scores_with_gold(scores, bad_labels)
 
 
+def test_replay_rejects_valid_envelopes_from_different_code_shas(tmp_path: Path) -> None:
+    scores, labels = _caches()
+    score_envelope = encrypt_score_cache(
+        scores, key=SCORE_KEY, dataset_revision="rev", code_sha="code-a"
+    )
+    label_envelope = encrypt_gold_label_cache(
+        labels, key=GOLD_KEY, dataset_revision="rev", code_sha="code-b"
+    )
+    score_path = tmp_path / "score.json"
+    label_path = tmp_path / "labels.json"
+    output_path = tmp_path / "report.json"
+    score_path.write_text(json.dumps(score_envelope), encoding="utf-8")
+    label_path.write_text(json.dumps(label_envelope), encoding="utf-8")
+    env = {
+        "PHASE1B_ARTIFACT_ENCRYPTION_KEY": base64.b64encode(SCORE_KEY).decode(),
+        "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY": base64.b64encode(GOLD_KEY).decode(),
+    }
+    completed = subprocess.run(
+        [sys.executable, str(SCORE_CACHE), "--cache", str(score_path), "--gold-labels",
+         str(label_path), "--experiment", "replay-calibration-v2", "--output", str(output_path)],
+        cwd=tmp_path, env=env, capture_output=True, text=True, check=False,
+    )
+    assert completed.returncode != 0
+    assert "envelope code_sha differs" in completed.stderr
+    assert not output_path.exists()
+
+
 def test_cache_rejects_non_dev_payload() -> None:
     scores, labels = _caches()
     with pytest.raises(ValueError, match="DEV"):
