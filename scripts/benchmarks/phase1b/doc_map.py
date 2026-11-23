@@ -170,7 +170,7 @@ def build_cache_v2(
 
 
 def verify_v2_matches_v1(v1: dict[str, Any], v2: dict[str, Any]) -> None:
-    """v2 must hold exactly the v1 records (ids, cohorts, golds, scores) plus doc_id."""
+    """v4 must hold exactly the v3 prediction records plus doc_id."""
 
     if set(v1["models"]) != set(v2["models"]) or v1["record_count"] != v2["record_count"]:
         raise ValueError("cache v2 does not cover the same models and record count")
@@ -254,6 +254,7 @@ def main() -> None:
     label_cache = decrypt_gold_label_cache(
         json.loads(args.gold_labels.read_text(encoding="utf-8")), key=gold_key
     )
+    joined_cache = join_scores_with_gold(cache, label_cache)
     expected = _expected_from_labels(label_cache)
 
     first = build_doc_map(load_records(args.dataset_path), expected)
