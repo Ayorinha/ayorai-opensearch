@@ -51,9 +51,13 @@ jobs:
           PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
         run: |
           python - <<'PY'
+          import os
           from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
-          assert len(decode_key()) == 32
-          print("ENCRYPTION_SECRET: VALID (value not displayed)")
+          score_key = decode_key()
+          gold_key = decode_key(os.environ["PHASE1B_GOLD_LABEL_ENCRYPTION_KEY"])
+          assert len(score_key) == len(gold_key) == 32
+          assert score_key != gold_key
+          print("ENCRYPTION_SECRETS: VALID AND DISTINCT (values not displayed)")
           PY
       - name: Download and verify immutable DEV parquet
         env:
@@ -61,6 +65,7 @@ jobs:
         run: python scripts/benchmarks/phase1b/fetch_dev.py --output "$DEV_PARQUET"
       - name: Build manifest (2 shards x 5 DEV examples)
         env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
           PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
