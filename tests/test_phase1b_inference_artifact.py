@@ -1,6 +1,7 @@
 """Synthetic-only tests for encryption of the shared DEV inference input."""
 
 from __future__ import annotations
+
 from pathlib import Path
 
 import pytest
