@@ -60,6 +60,8 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python scripts/benchmarks/phase1b/fetch_dev.py --output "$DEV_PARQUET"
       - name: Build manifest (2 shards x 5 DEV examples)
+        env:
+          PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           python scripts/benchmarks/phase1b/build_manifest.py \
