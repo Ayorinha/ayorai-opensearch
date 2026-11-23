@@ -114,11 +114,37 @@ def test_fp32_guard_rejects_any_non_fp32_parameter() -> None:
 def test_minimal_matrix_is_two_shards_of_five_mdeberta_only() -> None:
     from scripts.benchmarks.phase1b.emit_matrix import emit_matrix
 
-    shards = [{"shard_id": f"dev-000{i}", "count": 5} for i in range(2)]
-    matrix = emit_matrix({"split": "dev", "shards": shards}, minimal=True)
+    from scripts.benchmarks.phase1b.build_manifest import build_manifest
+
+    rows = [
+        {
+            "doc": f"synthetic document {index}",
+            "claim": f"synthetic claim {index}",
+            "label": str(index % 2),
+            "dataset": "synthetic-cohort",
+        }
+        for index in range(10)
+    ]
+    manifest = build_manifest(
+        rows,
+        dataset_sha256="a" * 64,
+        dataset_revision="synthetic-revision",
+        code_sha="synthetic-code-sha",
+        shard_size=5,
+    )
+    matrix = emit_matrix(manifest, minimal=True)
     assert matrix["shard_ids"] == ["dev-0000", "dev-0001"]
     assert matrix["model_ids"] == ["mdeberta"]
-    with pytest.raises(ValueError):
-        emit_matrix({"split": "dev", "shards": shards[:1]}, minimal=True)
-    with pytest.raises(ValueError):
-        emit_matrix({"split": "test", "shards": shards}, minimal=True)
+
+    one_shard_manifest = build_manifest(
+        rows,
+        dataset_sha256="a" * 64,
+        dataset_revision="synthetic-revision",
+        code_sha="synthetic-code-sha",
+        shard_size=5,
+        max_shards=1,
+    )
+    with pytest.raises(ValueError, match="exactly two shards"):
+        emit_matrix(one_shard_manifest, minimal=True)
+    with pytest.raises(ValueError, match="current inference-only DEV manifest"):
+        emit_matrix({**manifest, "split": "test"}, minimal=True)
