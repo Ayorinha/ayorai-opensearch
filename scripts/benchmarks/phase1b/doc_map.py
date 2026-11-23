@@ -44,11 +44,12 @@ try:
     )
     from .encrypt_artifact import decode_key
     from .score_cache import (
-        RECORD_FIELDS,
-        SCHEMA_VERSION,
-        SCHEMA_VERSION_V2,
+        SCORE_RECORD_FIELDS,
+        SCORE_SCHEMA_VERSION,
+        decrypt_gold_label_cache,
         decrypt_score_cache,
         encrypt_score_cache,
+        join_scores_with_gold,
         replay_calibration_v2,
     )
 except ImportError:  # direct script execution
@@ -65,11 +66,12 @@ except ImportError:  # direct script execution
     )
     from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
     from scripts.benchmarks.phase1b.score_cache import (
-        RECORD_FIELDS,
-        SCHEMA_VERSION,
-        SCHEMA_VERSION_V2,
+        SCORE_RECORD_FIELDS,
+        SCORE_SCHEMA_VERSION,
+        decrypt_gold_label_cache,
         decrypt_score_cache,
         encrypt_score_cache,
+        join_scores_with_gold,
         replay_calibration_v2,
     )
 
@@ -138,37 +140,33 @@ def build_doc_map(
     return dict(sorted(mapping.items()))
 
 
-def _expected_from_cache(cache: dict[str, Any]) -> dict[str, tuple[str, str]]:
-    expected: dict[str, tuple[str, str]] = {}
-    for model, entry in sorted(cache["models"].items()):
-        for record in entry["records"]:
-            key = (record["cohort"], record["gold"])
-            previous = expected.setdefault(record["record_id"], key)
-            if previous != key:
-                raise ValueError(f"{model} disagrees with another member on a record's labels")
-    return expected
+def _expected_from_labels(label_cache: dict[str, Any]) -> dict[str, tuple[str, str]]:
+    return {
+        record["record_id"]: (record["cohort"], record["gold"])
+        for record in label_cache["records"]
+    }
 
 
 def build_cache_v2(
     cache: dict[str, Any], mapping: dict[str, str], *, pin: dict[str, Any]
 ) -> dict[str, Any]:
-    if cache.get("schema_version") != SCHEMA_VERSION:
-        raise ValueError("cache v2 is built only from a v1 cache")
+    if cache.get("schema_version") != SCORE_SCHEMA_VERSION:
+        raise ValueError("cache v2 is built only from the current prediction-only score cache")
     models: dict[str, Any] = {}
     for model, entry in sorted(cache["models"].items()):
         records = [dict(record, doc_id=mapping[record["record_id"]]) for record in entry["records"]]
         models[model] = {"protocol": entry.get("protocol"), "records": records}
     v2 = {key: value for key, value in cache.items() if key != "models"}
     v2.update(
-        schema_version=SCHEMA_VERSION_V2,
-        record_fields=[*RECORD_FIELDS, "doc_id"],
+        schema_version="phase1b-dev-score-cache-v4",
+        record_fields=[*SCORE_RECORD_FIELDS, "doc_id"],
         models=models,
         doc_map={
             "method": DOC_ID_METHOD,
             "dataset_revision": pin["revision"],
             "dataset_sha256": pin["sha256"],
             "doc_map_sha256": sha256_bytes(canonical_json(mapping)),
-            "parent_schema_version": SCHEMA_VERSION,
+            "parent_schema_version": SCORE_SCHEMA_VERSION,
         },
     )
     verify_v2_matches_v1(cache, v2)
@@ -182,7 +180,7 @@ def verify_v2_matches_v1(v1: dict[str, Any], v2: dict[str, Any]) -> None:
         raise ValueError("cache v2 does not cover the same models and record count")
     for model, entry in v1["models"].items():
         stripped = [
-            {field: record[field] for field in RECORD_FIELDS}
+            {field: record[field] for field in SCORE_RECORD_FIELDS}
             for record in v2["models"][model]["records"]
         ]
         if stripped != entry["records"]:
@@ -235,7 +233,8 @@ def cluster_summary(cache_v2: dict[str, Any], *, replay_status: str) -> dict[str
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--cache", required=True, type=Path, help="encrypted v1 cache")
+    parser.add_argument("--cache", required=True, type=Path, help="encrypted prediction-only cache")
+    parser.add_argument("--gold-labels", required=True, type=Path, help="separately encrypted gold-label cache")
     parser.add_argument("--dataset-path", required=True, type=Path, help="pinned DEV parquet")
     parser.add_argument("--pin", type=Path, default=DEV_PIN_PATH)
     parser.add_argument("--output-cache", required=True, type=Path)
@@ -251,8 +250,15 @@ def main() -> None:
     pin = json.loads(args.pin.read_text(encoding="utf-8"))
     validate_dev_file(args.dataset_path, pin)
     key = decode_key()
+    gold_key_raw = os.environ.get("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY")
+    if not gold_key_raw:
+        raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
+    gold_key = decode_key(gold_key_raw)
     cache = decrypt_score_cache(json.loads(args.cache.read_text(encoding="utf-8")), key=key)
-    expected = _expected_from_cache(cache)
+    label_cache = decrypt_gold_label_cache(
+        json.loads(args.gold_labels.read_text(encoding="utf-8")), key=gold_key
+    )
+    expected = _expected_from_labels(label_cache)
 
     first = build_doc_map(load_records(args.dataset_path), expected)
     second = build_doc_map(load_records(args.dataset_path), expected)
@@ -262,7 +268,7 @@ def main() -> None:
 
     replay_status = "skipped"
     if not args.skip_replay:
-        replay = replay_calibration_v2(cache_v2)
+        replay = replay_calibration_v2(join_scores_with_gold(cache_v2, label_cache))
         if replay["replay_matches_source"] is not True:
             raise SystemExit(3)
         replay_status = "matches_source"
