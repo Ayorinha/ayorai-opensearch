@@ -14,6 +14,8 @@ from typing import Any
 try:
     from .common import (
         DEV_PIN_PATH,
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
         canonical_json,
         load_records,
         sha256_bytes,
@@ -23,6 +25,8 @@ try:
 except ImportError:  # direct script execution
     from common import (
         DEV_PIN_PATH,
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
         canonical_json,
         load_records,
         sha256_bytes,
@@ -120,7 +124,8 @@ def build_manifest(
         selected = [rid for shard in shards for rid in shard["record_ids"]]
     cohort_counts = Counter(str(indexed[rid]["dataset"]) for rid in selected)
     manifest: dict[str, Any] = {
-        "schema_version": "phase1b-dev-manifest-v1",
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "record_id_method": RECORD_ID_METHOD,
         "split": "dev",
         "dataset": "lytang/LLM-AggreFact",
         "dataset_revision": dataset_revision,
