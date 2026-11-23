@@ -112,9 +112,8 @@ def test_fp32_guard_rejects_any_non_fp32_parameter() -> None:
 
 
 def test_minimal_matrix_is_two_shards_of_five_mdeberta_only() -> None:
-    from scripts.benchmarks.phase1b.emit_matrix import emit_matrix
-
     from scripts.benchmarks.phase1b.build_manifest import build_manifest
+    from scripts.benchmarks.phase1b.emit_matrix import emit_matrix
 
     rows = [
         {
