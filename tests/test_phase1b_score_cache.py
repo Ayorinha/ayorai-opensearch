@@ -141,13 +141,33 @@ def test_join_rejects_run_manifest_count_and_cohort_mismatches() -> None:
         join_scores_with_gold(scores, bad_labels)
 
 
-def test_replay_rejects_valid_envelopes_from_different_code_shas(tmp_path: Path) -> None:
+@pytest.mark.parametrize("mismatch", ["run_id", "dataset_revision", "code_sha"])
+def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
+    tmp_path: Path, mismatch: str
+) -> None:
     scores, labels = _caches()
+    score_run_id = "123"
+    label_run_id = "123"
+    score_revision = "rev"
+    label_revision = "rev"
+    score_code_sha = "code-a"
+    label_code_sha = "code-a"
+    if mismatch == "run_id":
+        label_run_id = "other-run"
+        labels = build_gold_label_cache(
+            _labels(_rows([0.1, 0.9, 0.2])),
+            manifest_sha256="m" * 64,
+            source_run_id=label_run_id,
+        )
+    elif mismatch == "dataset_revision":
+        label_revision = "other-revision"
+    else:
+        label_code_sha = "code-b"
     score_envelope = encrypt_score_cache(
-        scores, key=SCORE_KEY, dataset_revision="rev", code_sha="code-a"
+        scores, key=SCORE_KEY, dataset_revision=score_revision, code_sha=score_code_sha
     )
     label_envelope = encrypt_gold_label_cache(
-        labels, key=GOLD_KEY, dataset_revision="rev", code_sha="code-b"
+        labels, key=GOLD_KEY, dataset_revision=label_revision, code_sha=label_code_sha
     )
     score_path = tmp_path / "score.json"
     label_path = tmp_path / "labels.json"
@@ -159,12 +179,15 @@ def test_replay_rejects_valid_envelopes_from_different_code_shas(tmp_path: Path)
         "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY": base64.b64encode(GOLD_KEY).decode(),
     }
     completed = subprocess.run(
-        [sys.executable, str(SCORE_CACHE), "--cache", str(score_path), "--gold-labels",
-         str(label_path), "--experiment", "replay-calibration-v2", "--output", str(output_path)],
+        [
+            sys.executable, str(SCORE_CACHE), "--cache", str(score_path),
+            "--gold-labels", str(label_path), "--experiment", "replay-calibration-v2",
+            "--output", str(output_path),
+        ],
         cwd=tmp_path, env=env, capture_output=True, text=True, check=False,
     )
     assert completed.returncode != 0
-    assert "envelope code_sha differs" in completed.stderr
+    assert f"envelope {mismatch} differs" in completed.stderr
     assert not output_path.exists()
 
 
