@@ -261,6 +261,7 @@ def _write_score_cache(
         json.dumps(envelope, sort_keys=True), encoding="utf-8"
     )
 
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", required=True, type=Path)
