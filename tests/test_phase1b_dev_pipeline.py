@@ -26,6 +26,18 @@ def synthetic_rows(count: int = 10) -> list[dict]:
     ]
 
 
+def inference_rows(rows: list[dict]) -> list[dict]:
+    return [
+        {
+            "record_id": stable_record_id(row),
+            "doc": row["doc"],
+            "claim": row["claim"],
+            "dataset": row["dataset"],
+        }
+        for row in rows
+    ]
+
+
 def manifest_for(rows: list[dict], shard_size: int = 10) -> dict:
     return build_manifest(
         rows,
@@ -62,7 +74,7 @@ def test_shards_are_exact_disjoint_and_complete() -> None:
 def test_length_sorting_does_not_change_record_association() -> None:
     rows = synthetic_rows(10)
     manifest = manifest_for(rows)
-    selected = select_shard(manifest, rows, "dev-0000")
+    selected = select_shard(manifest, inference_rows(rows), "dev-0000")
     by_id = {record_id: row["claim"] for record_id, row in selected}
     reordered = sorted(selected, key=lambda item: (len(item[1]["doc"]), item[0]))
     assert {record_id: row["claim"] for record_id, row in reordered} == by_id
@@ -127,7 +139,7 @@ def test_aggregator_marks_missing_shard_as_incomplete() -> None:
         "records": [
             {
                 "record_id": record_id,
-                "gold": ("SUPPORTED" if rows_by_id[record_id]["label"] else "NOT_SUPPORTED"),
+                "cohort": rows_by_id[record_id]["dataset"],
                 "score": 0.9 if rows_by_id[record_id]["label"] else 0.1,
             }
             for record_id in first_shard_ids
@@ -172,7 +184,7 @@ def test_report_has_no_per_instance_output() -> None:
         "records": [
             {
                 "record_id": stable_record_id(row),
-                "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED",
+                "cohort": row["dataset"],
                 "score": 0.9 if row["label"] else 0.1,
             }
             for row in rows
