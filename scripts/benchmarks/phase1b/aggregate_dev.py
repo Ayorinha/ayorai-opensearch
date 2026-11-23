@@ -294,6 +294,7 @@ def main() -> None:
 
     # Fail closed before opening encrypted artifacts if the secret is absent/invalid.
     key = decode_key()
+    manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     gold_label_cache = None
     if args.gold_label_cache_input is not None:
         gold_key_raw = os.environ.get("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY")
@@ -305,8 +306,13 @@ def main() -> None:
         except ImportError:  # direct script execution
             from score_cache import decrypt_gold_label_cache
         gold_envelope = json.loads(args.gold_label_cache_input.read_text(encoding="utf-8"))
+        metadata = gold_envelope.get("metadata", {})
+        if (
+            metadata.get("dataset_revision") != manifest.get("dataset_revision")
+            or metadata.get("code_sha") != manifest.get("code_sha")
+        ):
+            raise ValueError("gold-label envelope provenance does not match DEV manifest")
         gold_label_cache = decrypt_gold_label_cache(gold_envelope, key=gold_key)
-    manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     envelopes = [
         json.loads(path.read_text(encoding="utf-8"))
         for path in sorted(args.encrypted_dir.glob("*.json"))
