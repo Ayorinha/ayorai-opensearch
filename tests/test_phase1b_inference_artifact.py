@@ -81,7 +81,6 @@ def test_shared_inference_artifact_rejects_wrong_key(tmp_path: Path) -> None:
         )
 
 
-
 def test_shared_inference_metadata_rejects_code_sha_mismatch() -> None:
     with pytest.raises(ValueError, match="code SHA does not match"):
         inference_metadata(
@@ -93,6 +92,7 @@ def test_shared_inference_metadata_rejects_code_sha_mismatch() -> None:
             run_id="synthetic-run",
             code_sha="different-sha",
         )
+
 
 def test_shared_inference_metadata_rejects_non_dev_manifest() -> None:
     with pytest.raises(ValueError, match="only DEV"):
