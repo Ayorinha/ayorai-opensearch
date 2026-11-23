@@ -7,10 +7,16 @@ import argparse
 import json
 from pathlib import Path
 
+from scripts.benchmarks.phase1b.common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD
+
 
 def emit_matrix(manifest: dict, *, minimal: bool = False) -> dict:
-    if manifest.get("split") != "dev":
-        raise ValueError("matrix generation is DEV-only")
+    if (
+        manifest.get("split") != "dev"
+        or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION
+        or manifest.get("record_id_method") != RECORD_ID_METHOD
+    ):
+        raise ValueError("matrix generation requires a current inference-only DEV manifest")
     shards = manifest.get("shards")
     if not isinstance(shards, list) or not shards:
         raise ValueError("manifest has no shards")
