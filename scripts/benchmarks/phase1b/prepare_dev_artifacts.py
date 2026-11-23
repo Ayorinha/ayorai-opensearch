@@ -15,7 +15,15 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import canonical_json, load_records, sha256_bytes, sha256_file, stable_record_id
+    from .common import (
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
+        canonical_json,
+        load_records,
+        sha256_bytes,
+        sha256_file,
+        stable_record_id,
+    )
     from .encrypt_artifact import decode_key
     from .score_cache import build_gold_label_cache, encrypt_gold_label_cache
 except ImportError:  # direct script execution
@@ -25,7 +33,13 @@ except ImportError:  # direct script execution
     if _REPOSITORY_ROOT not in sys.path:
         sys.path.insert(0, _REPOSITORY_ROOT)
     from scripts.benchmarks.phase1b.common import (
-        canonical_json, load_records, sha256_bytes, sha256_file, stable_record_id
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
+        canonical_json,
+        load_records,
+        sha256_bytes,
+        sha256_file,
+        stable_record_id,
     )
     from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
     from scripts.benchmarks.phase1b.score_cache import (
@@ -43,8 +57,12 @@ def prepare(
     inference_output: Path,
     gold_label_output: Path,
 ) -> dict[str, Any]:
-    if manifest.get("split") != "dev":
-        raise ValueError("only DEV manifests may be prepared")
+    if (
+        manifest.get("split") != "dev"
+        or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION
+        or manifest.get("record_id_method") != RECORD_ID_METHOD
+    ):
+        raise ValueError("only current inference-only DEV manifests may be prepared")
     manifest_body = {
         key: value for key, value in manifest.items() if key != "manifest_sha256"
     }
