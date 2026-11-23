@@ -43,6 +43,8 @@ _HEX64 = re.compile(r"[0-9a-f]{64}")
 
 
 def _clean_score_record(record: dict[str, Any]) -> dict[str, Any]:
+    if "gold" in record:
+        raise ValueError("gold labels must never be included in the score cache")
     required = set(SCORE_RECORD_FIELDS)
     if not required.issubset(record):
         raise ValueError(f"score record is missing fields: {sorted(required - set(record))}")
