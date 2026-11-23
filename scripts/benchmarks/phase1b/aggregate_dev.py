@@ -208,26 +208,90 @@ def _write_score_cache(
     key: bytes,
 ) -> None:
     try:
-        from .score_cache import build_score_cache, encrypt_score_cache
+        from .score_cache import (
+            build_gold_label_cache,
+            build_score_cache,
+            encrypt_gold_label_cache,
+            encrypt_score_cache,
+        )
     except ImportError:  # direct script execution
-        from score_cache import build_score_cache, encrypt_score_cache
+        from score_cache import (
+            build_gold_label_cache,
+            build_score_cache,
+            encrypt_gold_label_cache,
+            encrypt_score_cache,
+        )
 
     code_sha = args.code_sha or os.environ.get("GITHUB_SHA") or "local-unversioned"
-    cache = build_score_cache(
-        score_sink["rows_by_model"],
+    rows_by_model = score_sink["rows_by_model"]
+    first_model = sorted(rows_by_model)[0]
+    labels_by_id = {
+        record["record_id"]: {
+            "record_id": record["record_id"],
+            "cohort": record["cohort"],
+            "gold": record["gold"],
+        }
+        for record in rows_by_model[first_model]
+    }
+    for model, rows in rows_by_model.items():
+        candidate = {
+            record["record_id"]: (record["cohort"], record["gold"])
+            for record in rows
+        }
+        expected = {
+            record_id: (record["cohort"], record["gold"])
+            for record_id, record in labels_by_id.items()
+        }
+        if candidate != expected:
+            raise ValueError(f"gold labels differ across model outputs: {model}")
+
+    score_rows_by_model = {
+        model: [
+            {
+                key_name: record[key_name]
+                for key_name in ("record_id", "cohort", "score", "doc_id")
+                if key_name in record
+            }
+            for record in rows
+        ]
+        for model, rows in rows_by_model.items()
+    }
+    score_cache = build_score_cache(
+        score_rows_by_model,
         protocols=score_sink["protocols"],
         manifest_sha256=str(manifest.get("manifest_sha256")),
         source_run_id=score_sink["source_run_id"],
         calibration_v2=report.get("calibration_v2"),
     )
-    envelope = encrypt_score_cache(
-        cache,
+    labels_cache = build_gold_label_cache(
+        list(labels_by_id.values()),
+        manifest_sha256=str(manifest.get("manifest_sha256")),
+        source_run_id=score_sink["source_run_id"],
+    )
+    score_envelope = encrypt_score_cache(
+        score_cache,
         key=key,
         dataset_revision=str(manifest.get("dataset_revision")),
         code_sha=code_sha,
     )
+    gold_key_raw = os.environ.get("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY")
+    if not gold_key_raw:
+        raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
+    gold_key = decode_key(gold_key_raw)
+    gold_envelope = encrypt_gold_label_cache(
+        labels_cache,
+        key=gold_key,
+        dataset_revision=str(manifest.get("dataset_revision")),
+        code_sha=code_sha,
+    )
     args.score_cache_output.parent.mkdir(parents=True, exist_ok=True)
-    args.score_cache_output.write_text(json.dumps(envelope, sort_keys=True), encoding="utf-8")
+    args.gold_label_cache_output.parent.mkdir(parents=True, exist_ok=True)
+    args.score_cache_output.write_text(
+        json.dumps(score_envelope, sort_keys=True), encoding="utf-8"
+    )
+    args.gold_label_cache_output.write_text(
+        json.dumps(gold_envelope, sort_keys=True), encoding="utf-8"
+    )
 
 
 def main() -> None:
@@ -243,7 +307,12 @@ def main() -> None:
     parser.add_argument(
         "--score-cache-output",
         type=Path,
-        help="Write the encrypted per-instance DEV score cache (A1); requires --calibration-v2",
+        help="Write the encrypted prediction-only DEV score cache (A1); requires --calibration-v2",
+    )
+    parser.add_argument(
+        "--gold-label-cache-output",
+        type=Path,
+        help="Write the separately encrypted DEV gold-label cache (A1); requires --calibration-v2",
     )
     parser.add_argument(
         "--code-sha",
@@ -251,8 +320,10 @@ def main() -> None:
         help="Code SHA bound into the score cache envelope (defaults to $GITHUB_SHA)",
     )
     args = parser.parse_args()
-    if args.score_cache_output is not None and not args.calibration_v2:
-        parser.error("--score-cache-output requires --calibration-v2")
+    if (args.score_cache_output is not None or args.gold_label_cache_output is not None) and not args.calibration_v2:
+        parser.error("score/gold cache outputs require --calibration-v2")
+    if (args.score_cache_output is None) != (args.gold_label_cache_output is None):
+        parser.error("--score-cache-output and --gold-label-cache-output must be provided together")
 
     # Fail closed before opening encrypted artifacts if the secret is absent/invalid.
     key = decode_key()
