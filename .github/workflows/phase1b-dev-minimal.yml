@@ -168,6 +168,7 @@ jobs:
           PHASE1B_NLTK_DATA: /tmp/phase1b-nltk-data
         run: |
           set -euo pipefail
+          trap 'rm -f "$INFERENCE_DATA" "$INFERENCE_ENCRYPTED"' EXIT
           python scripts/benchmarks/phase1b/run_shard.py \
             --dataset-path "$INFERENCE_DATA" \
             --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
