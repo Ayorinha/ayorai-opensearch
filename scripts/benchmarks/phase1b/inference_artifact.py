@@ -22,6 +22,8 @@ def inference_metadata(manifest: dict[str, Any], *, run_id: str, code_sha: str) 
         raise ValueError("DEV manifest dataset_revision is required")
     if not run_id or not code_sha:
         raise ValueError("run_id and code_sha are required")
+    if manifest.get("code_sha") != code_sha:
+        raise ValueError("inference artifact code SHA does not match DEV manifest")
     return {
         "run_id": run_id,
         "split": "dev",
