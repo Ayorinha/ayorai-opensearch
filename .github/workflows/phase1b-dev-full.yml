@@ -177,7 +177,6 @@ jobs:
           name: phase1b-dev-full-manifest-encrypted
           path: /tmp/phase1b-manifest
           github-token: ${{ github.token }}
-          github-token: ${{ github.token }}
       - name: Decrypt private DEV manifest inside protected shard
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
@@ -294,6 +293,7 @@ jobs:
         with:
           name: phase1b-dev-full-manifest-encrypted
           path: /tmp/phase1b-manifest
+          github-token: ${{ github.token }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: phase1b-dev-full-encrypted-*
