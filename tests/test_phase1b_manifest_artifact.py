@@ -32,6 +32,7 @@ def _manifest() -> dict:
                 "shard_id": "dev-0000",
                 "count": 2,
                 "record_ids": ["b" * 64, "c" * 64],
+                "record_ids_sha256": sha256_bytes(canonical_json(["b" * 64, "c" * 64])),
             }
         ],
     }
@@ -41,8 +42,8 @@ def _manifest() -> dict:
 
 def _metadata(monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
     monkeypatch.setattr(
-        "scripts.benchmarks.phase1b.manifest_artifact._pinned_dataset_revision",
-        lambda: "synthetic-pinned-revision",
+        "scripts.benchmarks.phase1b.manifest_artifact._pinned_dataset",
+        lambda: {"revision": "synthetic-pinned-revision", "sha256": "a" * 64},
     )
     return manifest_metadata(run_id="synthetic-run", code_sha="synthetic-code-sha")
 
