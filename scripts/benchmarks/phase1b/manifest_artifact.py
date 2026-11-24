@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +25,7 @@ def _pinned_dataset() -> dict[str, str]:
     revision, digest = pin.get("revision"), pin.get("sha256")
     if not isinstance(revision, str) or not revision:
         raise ValueError("pinned DEV dataset revision is unavailable")
-    if not isinstance(digest, str) or len(digest) != 64:
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
         raise ValueError("pinned DEV dataset digest is unavailable")
     return {"revision": revision, "sha256": digest}
 
@@ -56,9 +57,18 @@ def validate_manifest(manifest: dict[str, Any], *, code_sha: str) -> None:
         count = shard.get("count")
         if not isinstance(shard_id, str) or not shard_id or shard_id in shard_ids:
             raise ValueError("DEV manifest shard identity is invalid or duplicated")
-        if not isinstance(ids, list) or not isinstance(count, int) or count != len(ids):
+        if (
+            not isinstance(ids, list)
+            or isinstance(count, bool)
+            or not isinstance(count, int)
+            or count != len(ids)
+        ):
             raise ValueError("DEV manifest shard record count is inconsistent")
-        if any(not isinstance(record_id, str) or len(record_id) != 64 for record_id in ids):
+        if any(
+            not isinstance(record_id, str)
+            or re.fullmatch(r"[0-9a-f]{64}", record_id) is None
+            for record_id in ids
+        ):
             raise ValueError("DEV manifest contains an invalid record identifier")
         if len(set(ids)) != len(ids) or record_ids.intersection(ids):
             raise ValueError("DEV manifest contains duplicate record identifiers")
@@ -67,7 +77,7 @@ def validate_manifest(manifest: dict[str, Any], *, code_sha: str) -> None:
         shard_ids.add(shard_id)
         record_ids.update(ids)
         total_records += count
-    if manifest.get("sample_count") != total_records:
+    if isinstance(manifest.get("sample_count"), bool) or manifest.get("sample_count") != total_records:
         raise ValueError("DEV manifest total record count is inconsistent")
     body = {key: value for key, value in manifest.items() if key != "manifest_sha256"}
     expected = sha256_bytes(canonical_json(body))
