@@ -179,11 +179,22 @@ def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
     }
     completed = subprocess.run(
         [
-            sys.executable, str(SCORE_CACHE), "--cache", str(score_path),
-            "--gold-labels", str(label_path), "--experiment", "replay-calibration-v2",
-            "--output", str(output_path),
+            sys.executable,
+            str(SCORE_CACHE),
+            "--cache",
+            str(score_path),
+            "--gold-labels",
+            str(label_path),
+            "--experiment",
+            "replay-calibration-v2",
+            "--output",
+            str(output_path),
         ],
-        cwd=tmp_path, env=env, capture_output=True, text=True, check=False,
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     assert completed.returncode != 0
     assert f"envelope {mismatch} differs" in completed.stderr
