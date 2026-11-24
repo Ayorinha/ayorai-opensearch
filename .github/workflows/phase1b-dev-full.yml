@@ -228,7 +228,7 @@ jobs:
           CODE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          trap 'rm -f /tmp/phase1b-private.json "$INFERENCE_DATA"' EXIT
+          trap 'rm -f /tmp/phase1b-private.json "$INFERENCE_DATA" /tmp/phase1b-manifest/phase1b-manifest.json' EXIT
           mkdir -p /tmp/phase1b-encrypted
           python - <<'PY'
           import json
