@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""Encrypt and decrypt the DEV manifest so per-record identifiers stay private."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any
+
+try:
+    from .common import DEV_PIN_PATH, MANIFEST_SCHEMA_VERSION, canonical_json, sha256_bytes
+    from .encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
+except ImportError:  # direct script execution
+    from common import DEV_PIN_PATH, MANIFEST_SCHEMA_VERSION, canonical_json, sha256_bytes
+    from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
+
+MANIFEST_ARTIFACT_SCHEMA = "phase1b-dev-manifest-aes256gcm-v1"
+MANIFEST_MODEL_REVISION = "shared-dev-manifest-v1"
+
+
+def _pinned_dataset_revision() -> str:
+    pin = json.loads(DEV_PIN_PATH.read_text(encoding="utf-8"))
+    revision = pin.get("revision")
+    if not isinstance(revision, str) or not revision:
+        raise ValueError("pinned DEV dataset revision is unavailable")
+    return revision
+
+
+def validate_manifest(manifest: dict[str, Any], *, code_sha: str) -> None:
+    if (
+        manifest.get("split") != "dev"
+        or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION
+    ):
+        raise ValueError("only current DEV manifests may be encrypted or decrypted")
+    revision = _pinned_dataset_revision()
+    if manifest.get("dataset_revision") != revision:
+        raise ValueError("DEV manifest dataset revision does not match the immutable pin")
+    if not code_sha or manifest.get("code_sha") != code_sha:
+        raise ValueError("DEV manifest code SHA does not match expected provenance")
+    body = {key: value for key, value in manifest.items() if key != "manifest_sha256"}
+    expected = sha256_bytes(canonical_json(body))
+    if manifest.get("manifest_sha256") != expected:
+        raise ValueError("DEV manifest digest verification failed")
+
+
+def manifest_metadata(*, run_id: str, code_sha: str) -> dict[str, str]:
+    if not run_id or not code_sha:
+        raise ValueError("run_id and code_sha are required")
+    return {
+        "run_id": run_id,
+        "split": "dev",
+        "model_revision": MANIFEST_MODEL_REVISION,
+        "shard_id": "all",
+        "dataset_revision": _pinned_dataset_revision(),
+        "code_sha": code_sha,
+    }
+
+
+def encrypt_manifest_file(
+    input_path: Path,
+    output_path: Path,
+    *,
+    key: bytes,
+    metadata: dict[str, str],
+) -> None:
+    manifest = json.loads(input_path.read_text(encoding="utf-8"))
+    validate_manifest(manifest, code_sha=metadata["code_sha"])
+    if manifest["dataset_revision"] != metadata["dataset_revision"]:
+        raise ValueError("manifest dataset revision does not match envelope metadata")
+    envelope = encrypt_bytes(canonical_json(manifest), key=key, metadata=metadata)
+    envelope["artifact_schema"] = MANIFEST_ARTIFACT_SCHEMA
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(envelope, sort_keys=True, separators=(",", ":")),
+        encoding="utf-8",
+    )
+
+
+def decrypt_manifest_file(
+    input_path: Path,
+    output_path: Path,
+    *,
+    key: bytes,
+    expected_metadata: dict[str, str],
+) -> None:
+    envelope = json.loads(input_path.read_text(encoding="utf-8"))
+    if envelope.get("artifact_schema") != MANIFEST_ARTIFACT_SCHEMA:
+        raise ValueError("unsupported encrypted DEV manifest schema")
+    if envelope.get("metadata") != expected_metadata:
+        raise ValueError("encrypted DEV manifest metadata does not match expected provenance")
+    plaintext = decrypt_bytes(envelope, key=key, aad_metadata=expected_metadata)
+    manifest = json.loads(plaintext)
+    validate_manifest(manifest, code_sha=expected_metadata["code_sha"])
+    if manifest["dataset_revision"] != expected_metadata["dataset_revision"]:
+        raise ValueError("decrypted DEV manifest dataset revision mismatch")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(canonical_json(manifest) + b"\n")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("mode", choices=("encrypt", "decrypt"))
+    parser.add_argument("--input", required=True, type=Path)
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--run-id", required=True)
+    parser.add_argument("--code-sha", required=True)
+    args = parser.parse_args()
+
+    key = decode_key()
+    metadata = manifest_metadata(run_id=args.run_id, code_sha=args.code_sha)
+    if args.mode == "encrypt":
+        encrypt_manifest_file(args.input, args.output, key=key, metadata=metadata)
+        print(json.dumps({"status": "encrypted", "split": "dev", "artifact": "manifest"}))
+    else:
+        decrypt_manifest_file(args.input, args.output, key=key, expected_metadata=metadata)
+        print(json.dumps({"status": "decrypted", "split": "dev", "artifact": "manifest"}))
+
+
+if __name__ == "__main__":
+    main()
