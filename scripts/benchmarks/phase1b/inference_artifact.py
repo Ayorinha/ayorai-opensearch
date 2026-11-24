@@ -28,7 +28,10 @@ def inference_metadata(manifest: dict[str, Any], *, run_id: str, code_sha: str) 
     if manifest.get("code_sha") != code_sha:
         raise ValueError("inference artifact code SHA does not match DEV manifest")
     inference_digest = manifest.get("inference_dataset_sha256")
-    if not isinstance(inference_digest, str) or re.fullmatch(r"[0-9a-f]{64}", inference_digest) is None:
+    if (
+        not isinstance(inference_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", inference_digest) is None
+    ):
         raise ValueError("DEV manifest inference dataset digest is invalid or unavailable")
     return {
         "run_id": run_id,
