@@ -21,13 +21,13 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import canonical_json, sha256_bytes
+    from .common import atomic_write_bytes, canonical_json, sha256_bytes
     from .encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 except ImportError:  # direct script execution
     _REPOSITORY_ROOT = str(Path(__file__).resolve().parents[3])
     if _REPOSITORY_ROOT not in sys.path:
         sys.path.insert(0, _REPOSITORY_ROOT)
-    from common import canonical_json, sha256_bytes
+    from common import atomic_write_bytes, canonical_json, sha256_bytes
     from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 
 SCORE_SCHEMA_VERSION = "phase1b-dev-score-cache-v3"

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD, canonical_json, sha256_bytes
+    from .common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD, atomic_write_bytes, canonical_json, sha256_bytes
     from .encrypt_artifact import decode_key, decrypt_bytes
 except ImportError:  # direct script execution
     # Workflows run this file by path, so the repository root is not on sys.path.
@@ -21,7 +21,7 @@ except ImportError:  # direct script execution
     _REPOSITORY_ROOT = str(Path(__file__).resolve().parents[3])
     if _REPOSITORY_ROOT not in sys.path:
         sys.path.insert(0, _REPOSITORY_ROOT)
-    from common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD, canonical_json, sha256_bytes
+    from common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD, atomic_write_bytes, canonical_json, sha256_bytes
     from encrypt_artifact import decode_key, decrypt_bytes
 
 
