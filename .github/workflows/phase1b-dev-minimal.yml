@@ -23,6 +23,7 @@ env:
   DEV_PARQUET: /tmp/phase1b-dev.parquet
   INFERENCE_DATA: /tmp/phase1b-dev-inference.jsonl
   INFERENCE_ENCRYPTED: /tmp/phase1b-dev-inference.jsonl.aesgcm
+  MANIFEST_ENCRYPTED: /tmp/phase1b-manifest.json.aesgcm
   NLTK_DATA_DIR: /tmp/phase1b-nltk-data
 
 jobs:
@@ -99,10 +100,14 @@ jobs:
           assert len(matrix["shard_ids"]) == 2
           print("shard_ids=" + json.dumps(matrix["shard_ids"]))
           PY
+          python scripts/benchmarks/phase1b/manifest_artifact.py encrypt \
+            --input /tmp/phase1b-manifest.json --output "$MANIFEST_ENCRYPTED" \
+            --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
+          rm -f /tmp/phase1b-manifest.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: phase1b-dev-minimal-manifest
-          path: /tmp/phase1b-manifest.json
+          name: phase1b-dev-minimal-manifest-encrypted
+          path: /tmp/phase1b-manifest.json.aesgcm
           if-no-files-found: error
           retention-days: 1
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -145,8 +150,20 @@ jobs:
         run: python scripts/benchmarks/phase1b/nltk_resources.py --data-dir "$NLTK_DATA_DIR"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: phase1b-dev-minimal-manifest
+          name: phase1b-dev-minimal-manifest-encrypted
           path: /tmp/phase1b-manifest
+      - name: Decrypt private DEV manifest inside protected shard
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          RUN_ID: ${{ github.run_id }}
+          CODE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/manifest_artifact.py decrypt \
+            --input /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm \
+            --output /tmp/phase1b-manifest/phase1b-manifest.json \
+            --run-id "$RUN_ID" --code-sha "$CODE_SHA"
+          rm -f /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: phase1b-dev-minimal-inference-data-encrypted
@@ -220,7 +237,7 @@ jobs:
           python -m pip install --index-url https://pypi.org/simple cryptography==46.0.3
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: phase1b-dev-minimal-manifest
+          name: phase1b-dev-minimal-manifest-encrypted
           path: /tmp/phase1b-manifest
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -232,6 +249,11 @@ jobs:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
+          python scripts/benchmarks/phase1b/manifest_artifact.py decrypt \
+            --input /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm \
+            --output /tmp/phase1b-manifest/phase1b-manifest.json \
+            --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
+          rm -f /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm
           python scripts/benchmarks/phase1b/aggregate_dev.py \
             --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
             --encrypted-dir /tmp/phase1b-encrypted \
