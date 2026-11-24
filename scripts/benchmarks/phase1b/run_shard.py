@@ -16,8 +16,8 @@ try:
     from .common import (
         MANIFEST_SCHEMA_VERSION,
         MODELS,
-        atomic_write_bytes,
         RECORD_ID_METHOD,
+        atomic_write_bytes,
         canonical_json,
         load_records,
         sha256_bytes,
