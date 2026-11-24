@@ -31,10 +31,7 @@ def _pinned_dataset() -> dict[str, str]:
 
 
 def validate_manifest(manifest: dict[str, Any], *, code_sha: str) -> None:
-    if (
-        manifest.get("split") != "dev"
-        or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION
-    ):
+    if manifest.get("split") != "dev" or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION:
         raise ValueError("only current DEV manifests may be encrypted or decrypted")
     pin = _pinned_dataset()
     if manifest.get("dataset_revision") != pin["revision"]:
@@ -65,8 +62,7 @@ def validate_manifest(manifest: dict[str, Any], *, code_sha: str) -> None:
         ):
             raise ValueError("DEV manifest shard record count is inconsistent")
         if any(
-            not isinstance(record_id, str)
-            or re.fullmatch(r"[0-9a-f]{64}", record_id) is None
+            not isinstance(record_id, str) or re.fullmatch(r"[0-9a-f]{64}", record_id) is None
             for record_id in ids
         ):
             raise ValueError("DEV manifest contains an invalid record identifier")
@@ -132,7 +128,11 @@ def decrypt_manifest_file(
     if envelope.get("schema_version") != "phase1b-aes256gcm-v1":
         raise ValueError("unsupported AES-256-GCM envelope schema")
     if set(envelope) != {
-        "artifact_schema", "schema_version", "metadata", "nonce_b64", "ciphertext_b64"
+        "artifact_schema",
+        "schema_version",
+        "metadata",
+        "nonce_b64",
+        "ciphertext_b64",
     }:
         raise ValueError("encrypted DEV manifest envelope has unexpected fields")
     if envelope.get("metadata") != expected_metadata:
