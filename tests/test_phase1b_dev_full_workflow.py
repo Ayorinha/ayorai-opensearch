@@ -21,6 +21,15 @@ def test_full_dev_workflow_is_manual_and_environment_gated() -> None:
     assert confirmation["required"] == "true"
     assert confirmation["options"] == ["full-dev-calibration-v2"]
     assert "github.ref == 'refs/heads/main'" in workflow["jobs"]["plan"]["if"]
+    downloads = [
+        step
+        for job in workflow["jobs"].values()
+        for step in job["steps"]
+        if "download-artifact" in str(step.get("uses", ""))
+    ]
+    assert downloads and all(
+        step["with"].get("github-token") == "${{ github.token }}" for step in downloads
+    )
     assert set(workflow["jobs"]) == {"plan", "shard", "aggregate"}
     assert all(job["environment"] == APPROVAL_ENVIRONMENT for job in workflow["jobs"].values())
     shard = workflow["jobs"]["shard"]
@@ -58,6 +67,7 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
     assert "manifest_artifact.py encrypt" in workflow_text
     assert "inference_artifact.py encrypt" in workflow_text
     assert "path: /tmp/phase1b-manifest.json.aesgcm" in workflow_text
+    assert "path: /tmp/phase1b-manifest.json\\n" not in workflow_text
     assert "path: /tmp/phase1b-dev-inference.jsonl.aesgcm" in workflow_text
     assert "phase1b-dev-gold-label-cache" in workflow_text
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in workflow_text
@@ -68,6 +78,15 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
 def test_full_dev_workflow_reuses_exact_minimal_action_pins() -> None:
     full_text = WORKFLOW_PATH.read_text(encoding="utf-8")
     minimal_text = MINIMAL_PATH.read_text(encoding="utf-8")
+    minimal_downloads = [
+        step
+        for job in minimal["jobs"].values()
+        for step in job["steps"]
+        if "download-artifact" in str(step.get("uses", ""))
+    ]
+    assert minimal_downloads and all(
+        step["with"].get("github-token") == "${{ github.token }}" for step in minimal_downloads
+    )
     action_prefixes = (
         "actions/checkout@",
         "actions/setup-python@",
