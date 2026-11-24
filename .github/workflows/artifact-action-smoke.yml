@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   artifact-roundtrip:
@@ -36,6 +37,7 @@ jobs:
         with:
           name: synthetic-artifact-action-smoke
           path: /tmp/artifact-smoke-downloaded
+          github-token: ${{ github.token }}
       - name: Verify exact artifact contents and digest
         run: |
           set -euo pipefail
