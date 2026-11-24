@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 env:
   DEV_PARQUET: /tmp/phase1b-dev.parquet
@@ -154,6 +155,8 @@ jobs:
         with:
           name: phase1b-dev-minimal-manifest-encrypted
           path: /tmp/phase1b-manifest
+          github-token: ${{ github.token }}
+          github-token: ${{ github.token }}
       - name: Decrypt private DEV manifest inside protected shard
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
@@ -170,6 +173,7 @@ jobs:
         with:
           name: phase1b-dev-minimal-inference-data-encrypted
           path: /tmp
+          github-token: ${{ github.token }}
       - name: Decrypt shared DEV inference input inside protected shard
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
@@ -245,6 +249,7 @@ jobs:
         with:
           pattern: phase1b-dev-minimal-encrypted-*
           path: /tmp/phase1b-encrypted
+          github-token: ${{ github.token }}
           merge-multiple: true
       - name: Decrypt in protected job and publish operational aggregate only
         env:
