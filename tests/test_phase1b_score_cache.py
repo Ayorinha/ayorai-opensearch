@@ -146,7 +146,6 @@ def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
     tmp_path: Path, mismatch: str
 ) -> None:
     scores, labels = _caches()
-    score_run_id = "123"
     label_run_id = "123"
     score_revision = "rev"
     label_revision = "rev"
