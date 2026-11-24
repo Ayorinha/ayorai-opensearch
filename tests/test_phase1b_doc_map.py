@@ -253,6 +253,8 @@ def test_cli_builds_v2_with_identical_calibration_replay(tmp_path: Path) -> None
             str(cache_v2),
             "--summary-output",
             str(summary_path),
+            "--code-sha",
+            "synthetic",
         ],
         cwd=tmp_path,
         env=context["env"],
