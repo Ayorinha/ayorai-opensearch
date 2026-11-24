@@ -67,7 +67,7 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
     assert "manifest_artifact.py encrypt" in workflow_text
     assert "inference_artifact.py encrypt" in workflow_text
     assert "path: /tmp/phase1b-manifest.json.aesgcm" in workflow_text
-    assert "path: /tmp/phase1b-manifest.json\\n" not in workflow_text
+    assert "path: /tmp/phase1b-manifest.json" not in workflow_text
     assert "path: /tmp/phase1b-dev-inference.jsonl.aesgcm" in workflow_text
     assert "phase1b-dev-gold-label-cache" in workflow_text
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in workflow_text
@@ -78,6 +78,7 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
 def test_full_dev_workflow_reuses_exact_minimal_action_pins() -> None:
     full_text = WORKFLOW_PATH.read_text(encoding="utf-8")
     minimal_text = MINIMAL_PATH.read_text(encoding="utf-8")
+    minimal = yaml.load(minimal_text, Loader=yaml.BaseLoader)
     minimal_downloads = [
         step
         for job in minimal["jobs"].values()
