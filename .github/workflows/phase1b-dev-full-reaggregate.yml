@@ -72,7 +72,7 @@ jobs:
           PY
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: phase1b-dev-full-manifest
+          name: phase1b-dev-full-manifest-encrypted
           path: /tmp/phase1b-manifest
           run-id: ${{ inputs.source_run_id }}
           github-token: ${{ github.token }}
@@ -96,8 +96,14 @@ jobs:
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}
         run: |
           set -euo pipefail
-          trap 'rm -rf /tmp/phase1b-encrypted' EXIT
+          trap 'rm -rf /tmp/phase1b-encrypted /tmp/phase1b-manifest' EXIT
           mkdir -p /tmp/phase1b-output
+          SOURCE_CODE_SHA="$(python -c 'import json; print(json.load(open("/tmp/source-run.json"))["head_sha"])')"
+          python scripts/benchmarks/phase1b/manifest_artifact.py decrypt \
+            --input /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm \
+            --output /tmp/phase1b-manifest/phase1b-manifest.json \
+            --run-id "$SOURCE_RUN_ID" --code-sha "$SOURCE_CODE_SHA"
+          rm -f /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm
           test "$(find /tmp/phase1b-encrypted -name '*.json' | wc -l)" -eq 93
           python scripts/benchmarks/phase1b/aggregate_dev.py \
             --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
