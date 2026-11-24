@@ -97,6 +97,8 @@ jobs:
           rm -f "$DEV_PARQUET" "$INFERENCE_DATA"
       - id: matrix
         name: Emit and validate full DEV matrix
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           python scripts/benchmarks/phase1b/emit_matrix.py \
