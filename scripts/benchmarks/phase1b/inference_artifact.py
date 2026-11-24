@@ -9,8 +9,10 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from .common import atomic_write_bytes
     from .encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 except ImportError:  # direct script execution
+    from common import atomic_write_bytes
     from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 
 
@@ -42,11 +44,7 @@ def encrypt_inference_file(
     metadata: dict[str, str],
 ) -> None:
     envelope = encrypt_bytes(input_path.read_bytes(), key=key, metadata=metadata)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        json.dumps(envelope, sort_keys=True, separators=(",", ":")),
-        encoding="utf-8",
-    )
+    atomic_write_bytes(output_path, json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode("utf-8"))
 
 
 def decrypt_inference_file(
@@ -62,8 +60,7 @@ def decrypt_inference_file(
     if envelope.get("metadata") != expected_metadata:
         raise ValueError("encrypted inference metadata does not match expected provenance")
     plaintext = decrypt_bytes(envelope, key=key, aad_metadata=expected_metadata)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_bytes(plaintext)
+    atomic_write_bytes(output_path, plaintext)
 
 
 def main() -> None:

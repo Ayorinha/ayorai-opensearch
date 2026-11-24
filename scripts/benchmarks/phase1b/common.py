@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -83,3 +85,32 @@ def stable_record_id(row: dict[str, Any]) -> str:
 def safe_failure(exc: BaseException) -> dict[str, str]:
     """Return only a non-sensitive exception class; never stringify exceptions."""
     return {"error_type": type(exc).__name__}
+
+
+def atomic_write_bytes(path: Path, payload: bytes, *, mode: int = 0o600) -> None:
+    """Atomically replace a file with restrictive permissions and durable contents."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    temporary_path = Path(temporary_name)
+    try:
+        os.fchmod(descriptor, mode)
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_path, path)
+        try:
+            directory_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        except OSError:
+            pass
+    except BaseException:
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        temporary_path.unlink(missing_ok=True)
+        raise

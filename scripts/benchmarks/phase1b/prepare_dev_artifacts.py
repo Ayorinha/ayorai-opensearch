@@ -18,6 +18,7 @@ try:
     from .common import (
         MANIFEST_SCHEMA_VERSION,
         RECORD_ID_METHOD,
+        atomic_write_bytes,
         canonical_json,
         load_records,
         sha256_bytes,
@@ -133,10 +134,7 @@ def prepare(
         dataset_revision=str(manifest["dataset_revision"]),
         code_sha=code_sha,
     )
-    gold_label_output.parent.mkdir(parents=True, exist_ok=True)
-    gold_label_output.write_text(
-        json.dumps(envelope, sort_keys=True, separators=(",", ":")), encoding="utf-8"
-    )
+    atomic_write_bytes(gold_label_output, json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode("utf-8"))
     return manifest
 
 

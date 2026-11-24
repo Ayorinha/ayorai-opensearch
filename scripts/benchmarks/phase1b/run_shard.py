@@ -16,6 +16,7 @@ try:
     from .common import (
         MANIFEST_SCHEMA_VERSION,
         MODELS,
+        atomic_write_bytes,
         RECORD_ID_METHOD,
         canonical_json,
         load_records,
@@ -360,9 +361,8 @@ def main() -> None:
         **operational,
         "records": result,
     }
-    args.output.parent.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps(package, sort_keys=True, separators=(",", ":"))
-    args.output.write_text(serialized, encoding="utf-8")
+    atomic_write_bytes(args.output, serialized.encode("utf-8"))
     print(
         json.dumps(
             {
