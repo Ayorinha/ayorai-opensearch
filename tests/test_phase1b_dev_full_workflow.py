@@ -67,7 +67,16 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
     assert "manifest_artifact.py encrypt" in workflow_text
     assert "inference_artifact.py encrypt" in workflow_text
     assert "path: /tmp/phase1b-manifest.json.aesgcm" in workflow_text
-    assert "path: /tmp/phase1b-manifest.json\\n" not in workflow_text
+    workflow = yaml.load(workflow_text, Loader=yaml.BaseLoader)
+    manifest_uploads = [
+        step
+        for job in workflow["jobs"].values()
+        for step in job["steps"]
+        if "upload-artifact" in str(step.get("uses", ""))
+        and step["with"].get("name") == "phase1b-dev-full-manifest-encrypted"
+    ]
+    assert len(manifest_uploads) == 1
+    assert manifest_uploads[0]["with"]["path"] == "/tmp/phase1b-manifest.json.aesgcm"
     assert "path: /tmp/phase1b-dev-inference.jsonl.aesgcm" in workflow_text
     assert "phase1b-dev-gold-label-cache" in workflow_text
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in workflow_text
