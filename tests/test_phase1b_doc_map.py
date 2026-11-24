@@ -228,7 +228,7 @@ def test_cli_builds_v2_with_identical_calibration_replay(tmp_path: Path) -> None
     rows = _clustered_rows()
     cache_v1 = tmp_path / "cache" / "phase1b-dev-score-cache.json"
     completed, _, context = _run_aggregator(
-        tmp_path, "--score-cache-output", str(cache_v1), "--code-sha", "synthetic", rows=rows
+        tmp_path, "--score-cache-output", str(cache_v1), "--code-sha", "synthetic-code-sha", rows=rows
     )
     assert completed.returncode == 0, completed.stderr
 
@@ -254,7 +254,7 @@ def test_cli_builds_v2_with_identical_calibration_replay(tmp_path: Path) -> None
             "--summary-output",
             str(summary_path),
             "--code-sha",
-            "synthetic",
+            "synthetic-code-sha",
         ],
         cwd=tmp_path,
         env=context["env"],
