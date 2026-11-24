@@ -29,6 +29,8 @@ def test_reaggregate_is_manual_gated_and_aggregate_only() -> None:
     assert '".github/workflows/phase1b-dev-full.yml"' in text
     assert "numpy==2.2.6" in text
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in text
+    assert "phase1b-dev-full-manifest-encrypted" in text
+    assert "manifest_artifact.py decrypt" in text
     assert "phase1b-dev-gold-label-cache" in text
     assert "--gold-label-cache-input" in text
 
