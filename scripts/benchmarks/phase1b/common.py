@@ -102,9 +102,7 @@ def atomic_write_bytes(path: Path, payload: bytes, *, mode: int = 0o600) -> None
             os.fsync(stream.fileno())
         os.replace(temporary_path, path)
         try:
-            directory_fd = os.open(
-                path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
-            )
+            directory_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
             try:
                 os.fsync(directory_fd)
             finally:
