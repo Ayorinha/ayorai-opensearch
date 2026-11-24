@@ -16,7 +16,7 @@ def test_full_dev_workflow_is_manual_and_environment_gated() -> None:
     workflow = yaml.load(workflow_text, Loader=yaml.BaseLoader)
 
     assert set(workflow["on"]) == {"workflow_dispatch"}
-    assert workflow["permissions"] == {"contents": "read"}
+    assert workflow["permissions"] == {"contents": "read", "actions": "read"}
     confirmation = workflow["on"]["workflow_dispatch"]["inputs"]["confirmation"]
     assert confirmation["required"] == "true"
     assert confirmation["options"] == ["full-dev-calibration-v2"]
@@ -30,6 +30,7 @@ def test_full_dev_workflow_is_manual_and_environment_gated() -> None:
     assert "phase1b-dev-inference-data-encrypted" in shard_text
     assert "phase1b-dev-full-manifest-encrypted" in shard_text
     assert "manifest_artifact.py decrypt" in shard_text
+    assert "github-token: ${{ github.token }}" in workflow_text
     assert "inference_artifact.py decrypt" in shard_text
     assert int(shard["timeout-minutes"]) >= 180
     assert shard["strategy"]["fail-fast"] == "false"
