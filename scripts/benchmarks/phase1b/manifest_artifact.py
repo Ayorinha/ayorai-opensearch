@@ -77,7 +77,8 @@ def validate_manifest(manifest: dict[str, Any], *, code_sha: str) -> None:
         shard_ids.add(shard_id)
         record_ids.update(ids)
         total_records += count
-    if isinstance(manifest.get("sample_count"), bool) or manifest.get("sample_count") != total_records:
+    sample_count = manifest.get("sample_count")
+    if isinstance(sample_count, bool) or sample_count != total_records:
         raise ValueError("DEV manifest total record count is inconsistent")
     body = {key: value for key, value in manifest.items() if key != "manifest_sha256"}
     expected = sha256_bytes(canonical_json(body))
