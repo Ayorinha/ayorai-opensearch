@@ -139,7 +139,7 @@ def decrypt_manifest_file(
     if manifest["dataset_revision"] != expected_metadata["dataset_revision"]:
         raise ValueError("decrypted DEV manifest dataset revision mismatch")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_bytes(canonical_json(manifest) + b"\n")
+    atomic_write_bytes(output_path, canonical_json(manifest) + b"\\n")
 
 
 def main() -> None:

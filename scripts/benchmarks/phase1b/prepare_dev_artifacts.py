@@ -112,11 +112,11 @@ def prepare(
         )
 
     inference_output.parent.mkdir(parents=True, exist_ok=True)
-    inference_output.write_text(
+    atomic_write_bytes(
+        inference_output,
         "".join(
-            json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in inference_rows
-        ),
-        encoding="utf-8",
+            json.dumps(row, ensure_ascii=False, sort_keys=True) + "\\n" for row in inference_rows
+        ).encode("utf-8"),
     )
     manifest = dict(manifest)
     manifest["inference_dataset_sha256"] = sha256_file(inference_output)
@@ -167,7 +167,7 @@ def main() -> None:
         inference_output=args.inference_output,
         gold_label_output=args.gold_label_cache_output,
     )
-    args.manifest.write_bytes(canonical_json(prepared) + b"\n")
+    atomic_write_bytes(args.manifest, canonical_json(prepared) + b"\\n")
     print(
         json.dumps(
             {
