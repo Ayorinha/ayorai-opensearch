@@ -36,6 +36,7 @@ except ImportError:  # direct script execution
     from scripts.benchmarks.phase1b.common import (
         MANIFEST_SCHEMA_VERSION,
         RECORD_ID_METHOD,
+        atomic_write_bytes,
         canonical_json,
         load_records,
         sha256_bytes,

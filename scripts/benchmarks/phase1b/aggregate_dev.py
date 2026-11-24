@@ -284,7 +284,7 @@ def _write_score_cache(
         code_sha=code_sha,
     )
     args.score_cache_output.parent.mkdir(parents=True, exist_ok=True)
-    args.score_cache_output.write_text(json.dumps(envelope, sort_keys=True), encoding="utf-8")
+    atomic_write_bytes(args.score_cache_output, json.dumps(envelope, sort_keys=True).encode("utf-8"))
 
 
 def main() -> None:
@@ -354,7 +354,7 @@ def main() -> None:
         gold_label_cache=gold_label_cache,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_bytes(canonical_json(report) + b"\n")
+    atomic_write_bytes(args.output, canonical_json(report) + b"\n")
     if score_sink is not None:
         if not score_sink:
             raise SystemExit("score cache requested but no Calibration V2 rows were produced")

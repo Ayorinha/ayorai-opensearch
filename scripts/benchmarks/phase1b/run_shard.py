@@ -37,6 +37,7 @@ except ImportError:  # direct script execution
     from common import (
         MANIFEST_SCHEMA_VERSION,
         MODELS,
+        atomic_write_bytes,
         RECORD_ID_METHOD,
         canonical_json,
         load_records,

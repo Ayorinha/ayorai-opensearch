@@ -350,7 +350,7 @@ def main() -> None:
     joined = join_scores_with_gold(scores, labels)
     report = EXPERIMENTS[args.experiment](joined)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_bytes(canonical_json(report) + b"\n")
+    atomic_write_bytes(args.output, canonical_json(report) + b"\n")
     print(
         json.dumps(
             {
