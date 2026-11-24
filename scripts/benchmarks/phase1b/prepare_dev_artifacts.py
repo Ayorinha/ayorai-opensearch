@@ -116,7 +116,7 @@ def prepare(
     atomic_write_bytes(
         inference_output,
         "".join(
-            json.dumps(row, ensure_ascii=False, sort_keys=True) + "\\n" for row in inference_rows
+            json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in inference_rows
         ).encode("utf-8"),
     )
     manifest = dict(manifest)
@@ -135,7 +135,10 @@ def prepare(
         dataset_revision=str(manifest["dataset_revision"]),
         code_sha=code_sha,
     )
-    atomic_write_bytes(gold_label_output, json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+    atomic_write_bytes(
+        gold_label_output,
+        json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode("utf-8"),
+    )
     return manifest
 
 
@@ -168,7 +171,7 @@ def main() -> None:
         inference_output=args.inference_output,
         gold_label_output=args.gold_label_cache_output,
     )
-    atomic_write_bytes(args.manifest, canonical_json(prepared) + b"\\n")
+    atomic_write_bytes(args.manifest, canonical_json(prepared) + b"\n")
     print(
         json.dumps(
             {

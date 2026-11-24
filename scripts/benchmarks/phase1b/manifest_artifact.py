@@ -10,10 +10,22 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import DEV_PIN_PATH, MANIFEST_SCHEMA_VERSION, atomic_write_bytes, canonical_json, sha256_bytes
+    from .common import (
+        DEV_PIN_PATH,
+        MANIFEST_SCHEMA_VERSION,
+        atomic_write_bytes,
+        canonical_json,
+        sha256_bytes,
+    )
     from .encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 except ImportError:  # direct script execution
-    from common import DEV_PIN_PATH, MANIFEST_SCHEMA_VERSION, atomic_write_bytes, canonical_json, sha256_bytes
+    from common import (
+        DEV_PIN_PATH,
+        MANIFEST_SCHEMA_VERSION,
+        atomic_write_bytes,
+        canonical_json,
+        sha256_bytes,
+    )
     from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 
 MANIFEST_ARTIFACT_SCHEMA = "phase1b-dev-manifest-aes256gcm-v1"
@@ -108,7 +120,10 @@ def encrypt_manifest_file(
         raise ValueError("manifest dataset revision does not match envelope metadata")
     envelope = encrypt_bytes(canonical_json(manifest), key=key, metadata=metadata)
     envelope["artifact_schema"] = MANIFEST_ARTIFACT_SCHEMA
-    atomic_write_bytes(output_path, json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+    atomic_write_bytes(
+        output_path,
+        json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode("utf-8"),
+    )
 
 
 def decrypt_manifest_file(
@@ -139,7 +154,7 @@ def decrypt_manifest_file(
     if manifest["dataset_revision"] != expected_metadata["dataset_revision"]:
         raise ValueError("decrypted DEV manifest dataset revision mismatch")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_bytes(output_path, canonical_json(manifest) + b"\\n")
+    atomic_write_bytes(output_path, canonical_json(manifest) + b"\n")
 
 
 def main() -> None:

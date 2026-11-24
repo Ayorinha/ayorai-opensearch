@@ -13,7 +13,13 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD, atomic_write_bytes, canonical_json, sha256_bytes
+    from .common import (
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
+        atomic_write_bytes,
+        canonical_json,
+        sha256_bytes,
+    )
     from .encrypt_artifact import decode_key, decrypt_bytes
 except ImportError:  # direct script execution
     # Workflows run this file by path, so the repository root is not on sys.path.
@@ -21,7 +27,13 @@ except ImportError:  # direct script execution
     _REPOSITORY_ROOT = str(Path(__file__).resolve().parents[3])
     if _REPOSITORY_ROOT not in sys.path:
         sys.path.insert(0, _REPOSITORY_ROOT)
-    from common import MANIFEST_SCHEMA_VERSION, RECORD_ID_METHOD, atomic_write_bytes, canonical_json, sha256_bytes
+    from common import (
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
+        atomic_write_bytes,
+        canonical_json,
+        sha256_bytes,
+    )
     from encrypt_artifact import decode_key, decrypt_bytes
 
 
@@ -284,7 +296,9 @@ def _write_score_cache(
         code_sha=code_sha,
     )
     args.score_cache_output.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_bytes(args.score_cache_output, json.dumps(envelope, sort_keys=True).encode("utf-8"))
+    atomic_write_bytes(
+        args.score_cache_output, json.dumps(envelope, sort_keys=True).encode("utf-8")
+    )
 
 
 def main() -> None:

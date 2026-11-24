@@ -90,7 +90,9 @@ def safe_failure(exc: BaseException) -> dict[str, str]:
 def atomic_write_bytes(path: Path, payload: bytes, *, mode: int = 0o600) -> None:
     """Atomically replace a file with restrictive permissions and durable contents."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
     temporary_path = Path(temporary_name)
     try:
         os.fchmod(descriptor, mode)
@@ -100,7 +102,9 @@ def atomic_write_bytes(path: Path, payload: bytes, *, mode: int = 0o600) -> None
             os.fsync(stream.fileno())
         os.replace(temporary_path, path)
         try:
-            directory_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+            directory_fd = os.open(
+                path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+            )
             try:
                 os.fsync(directory_fd)
             finally:

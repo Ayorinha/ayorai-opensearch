@@ -44,7 +44,10 @@ def encrypt_inference_file(
     metadata: dict[str, str],
 ) -> None:
     envelope = encrypt_bytes(input_path.read_bytes(), key=key, metadata=metadata)
-    atomic_write_bytes(output_path, json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+    atomic_write_bytes(
+        output_path,
+        json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode("utf-8"),
+    )
 
 
 def decrypt_inference_file(
