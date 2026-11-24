@@ -206,6 +206,7 @@ jobs:
           CODE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          trap 'rm -f /tmp/phase1b-private.json /tmp/phase1b-manifest/phase1b-manifest.json' EXIT
           mkdir -p /tmp/phase1b-encrypted
           python scripts/benchmarks/phase1b/encrypt_artifact.py \
             --input /tmp/phase1b-private.json \
