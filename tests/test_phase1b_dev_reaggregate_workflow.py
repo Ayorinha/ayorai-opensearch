@@ -33,6 +33,22 @@ def test_reaggregate_is_manual_gated_and_aggregate_only() -> None:
     assert "manifest_artifact.py decrypt" in text
     assert "phase1b-dev-gold-label-cache" in text
     assert "--gold-label-cache-input" in text
+    workflow = yaml.safe_load(text)
+    cache_uploads = {
+        step["with"]["name"]: step
+        for job in workflow["jobs"].values()
+        for step in job["steps"]
+        if "upload-artifact" in str(step.get("uses", ""))
+        and step["with"].get("name") in {
+            "phase1b-dev-gold-label-cache",
+            "phase1b-dev-score-cache",
+        }
+    }
+    assert set(cache_uploads) == {
+        "phase1b-dev-gold-label-cache",
+        "phase1b-dev-score-cache",
+    }
+    assert all(step["with"]["retention-days"] == 30 for step in cache_uploads.values())
 
 
 def test_full_workflow_aggregate_installs_numpy() -> None:
