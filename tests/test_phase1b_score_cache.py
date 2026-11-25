@@ -177,7 +177,7 @@ def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
     score_revision = "rev"
     label_revision = "rev"
     score_code_sha = "aggregate-code"
-    label_code_sha = "source-code-a"
+    label_code_sha = "source-code-sha"
     if mismatch == "run_id":
         label_run_id = "other-run"
         labels = build_gold_label_cache(
