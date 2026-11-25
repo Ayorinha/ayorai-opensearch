@@ -152,13 +152,13 @@ jobs:
           name: phase1b-dev-gold-label-cache
           path: /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
       # A1: prediction and gold-label caches use distinct AES-256-GCM keys.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: phase1b-dev-score-cache
           path: /tmp/phase1b-score-cache/phase1b-dev-score-cache.json
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
 
 # No inference, no TEST split/job, no dispatch from repository tooling, no automatic trigger.
