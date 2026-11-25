@@ -116,14 +116,16 @@ def test_inference_artifact_rejects_digest_mismatch_before_encryption(tmp_path: 
         code_sha="synthetic-sha",
     )
 
+    encrypted = tmp_path / "inference.jsonl.aesgcm"
     with pytest.raises(ValueError, match="does not match the encrypted manifest"):
         encrypt_inference_file(
             source,
-            tmp_path / "inference.jsonl.aesgcm",
+            encrypted,
             key=bytes(range(32)),
             metadata=metadata,
             expected_sha256=hashlib.sha256(b'{"record_id":"expected"}\n').hexdigest(),
         )
+    assert not encrypted.exists()
 
 
 def test_inference_artifact_rejects_digest_mismatch_after_decryption(tmp_path: Path) -> None:
