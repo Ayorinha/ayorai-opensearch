@@ -212,7 +212,9 @@ def decrypt_score_cache(envelope: dict[str, Any], *, key: bytes) -> dict[str, An
         raise ValueError("score cache source_code_sha is missing")
     for model, entry in cache["models"].items():
         records = _unique_sorted(entry["records"], _clean_score_record, f"score cache for {model}")
-        if schema in {SCORE_SCHEMA_VERSION_V2, SCORE_SCHEMA_VERSION_V4} and any("doc_id" not in record for record in records):
+        if schema in {SCORE_SCHEMA_VERSION_V2, SCORE_SCHEMA_VERSION_V4} and any(
+            "doc_id" not in record for record in records
+        ):
             raise ValueError("cache v4 record is missing doc_id")
         if len(records) != cache["record_count"]:
             raise ValueError(f"score cache for {model} has an unexpected record count")
@@ -371,7 +373,9 @@ def main() -> None:
             raise ValueError(f"score and gold-label envelope {field} differs")
     if scores.get("schema_version") in {SCORE_SCHEMA_VERSION_V3, SCORE_SCHEMA_VERSION_V4}:
         if scores.get("source_code_sha") != label_metadata.get("code_sha"):
-            raise ValueError("score cache source_code_sha does not match gold-label source code_sha")
+            raise ValueError(
+                "score cache source_code_sha does not match gold-label source code_sha"
+            )
     elif score_metadata.get("code_sha") != label_metadata.get("code_sha"):
         raise ValueError("score and gold-label envelope code_sha differs")
     joined = join_scores_with_gold(scores, labels)
