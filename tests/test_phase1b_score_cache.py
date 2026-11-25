@@ -82,6 +82,28 @@ def test_prediction_cache_contains_no_gold_or_text() -> None:
     assert scores["record_fields"] == ["record_id", "cohort", "score"]
 
 
+def test_score_cache_requires_source_code_sha() -> None:
+    with pytest.raises(ValueError, match="source_code_sha is required"):
+        build_score_cache(
+            {"model-a": _score_rows(_rows([0.1]))},
+            protocols={},
+            manifest_sha256="m" * 64,
+            source_run_id="1",
+            source_code_sha="",
+            calibration_v2=None,
+        )
+    scores, _ = _caches()
+    scores_without_source_sha = dict(scores)
+    scores_without_source_sha.pop("source_code_sha")
+    with pytest.raises(ValueError, match="source_code_sha is missing"):
+        encrypt_score_cache(
+            scores_without_source_sha,
+            key=SCORE_KEY,
+            dataset_revision="rev",
+            code_sha="aggregate-code-sha",
+        )
+
+
 def test_score_cache_rejects_gold_labels_at_construction() -> None:
     with pytest.raises(ValueError, match="gold labels must never"):
         build_score_cache(
