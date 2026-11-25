@@ -165,16 +165,18 @@ def _cache_metadata(
 def encrypt_score_cache(
     cache: dict[str, Any], *, key: bytes, dataset_revision: str, code_sha: str
 ) -> dict[str, Any]:
-    if (
-        cache.get("schema_version") not in {
-            SCORE_SCHEMA_VERSION,
-            SCORE_SCHEMA_VERSION_V2,
-            SCORE_SCHEMA_VERSION_V3,
-            SCORE_SCHEMA_VERSION_V4,
-        }
-        or cache.get("split") != "dev"
-    ):
+    schema = cache.get("schema_version")
+    if schema not in {
+        SCORE_SCHEMA_VERSION,
+        SCORE_SCHEMA_VERSION_V2,
+        SCORE_SCHEMA_VERSION_V3,
+        SCORE_SCHEMA_VERSION_V4,
+    } or cache.get("split") != "dev":
         raise ValueError("only supported DEV score caches may be encrypted")
+    if schema in {SCORE_SCHEMA_VERSION_V3, SCORE_SCHEMA_VERSION_V4} and (
+        not isinstance(cache.get("source_code_sha"), str) or not cache["source_code_sha"]
+    ):
+        raise ValueError("score cache source_code_sha is missing")
     metadata = _cache_metadata(
         source_run_id=cache["source_run_id"],
         shard_id=SCORE_CACHE_SHARD_ID,
