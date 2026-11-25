@@ -1,3 +1,18 @@
+# Incremental status — P3/A1 (2026-11-25)
+
+**Reference main SHA:** `3932d171fa5b4554684ec247555d3eaa8081e568`. This update records the current P3/A1 review without changing the protected benchmark data, Judge, Golden, manifests, hashes, or execution workflows.
+
+- **PR #635 — DEV gold-label isolation:** open Draft; HEAD `119a219f8be420af2ab12b427b05cac8f7ab4e56`; 8/8 GitHub Actions workflow runs completed successfully on this exact SHA (CI, Security, CodeQL, Dependency Review, Schemathesis Full API Contract, API Contract Guard, Artifact Download Action Smoke, Golden r2 Migration). These are automated checks, not an independent human review or authorization to execute.
+- **PR #636 — inference artifact SHA-256 verification:** open Draft; HEAD `b8854d389f640670cc2bf7a0f9b7357f723f6110`; no workflow runs or commit status contexts were returned for this exact SHA at the time of this update. The passing checks on #635 do not validate #636.
+- **P3/A1 implementation status:** static review confirms separate inference-only input, separately encrypted gold-label cache, separately encrypted score cache, encrypted manifest transport, main-ref guards on the four privileged DEV workflows, and SHA-256 verification before encryption and after decryption in #636. No local test execution or real DEV/TEST run was performed in this review.
+- **Human decisions/gates still open:** independent review of #635/#636; retention decision for gold-label and score caches (currently 90 days in the full/reaggregate workflows); confirmation of required secrets and protected GitHub Environment settings by the maintainer; and explicit maintainer authorization before any protected DEV dispatch.
+- **Safety boundary:** no workflow was dispatched; no secrets were read or changed; no real benchmark data was accessed; no inference, DEV experiment, or TEST run was performed; no PR was approved or merged.
+- **Review record:** [P3/A1 technical review — 2026-11-25](audit/P3-A1-TECHNICAL-REVIEW-2026-11-25.md).
+
+This status update does not declare P3/A1 complete. Completion requires the missing CI evidence for #636, independent review, resolution of the retention decision, and maintainer authorization for the remaining operational gates.
+
+---
+
 # AYORAI ATTRACTOR — Engineering Status
 
 Updated: 2026-11-21 — `main` @ `a91da0fb6d451b20433f0952516ec6d5e733bc39` (merge PR #621), before the merge of this status update. Post-closure audit: [audit/POST-CLOSURE-AUDIT-2026-11-21.md](audit/POST-CLOSURE-AUDIT-2026-11-21.md). Next-release preparation: [engineering/RELEASE-PREP-NEXT.md](engineering/RELEASE-PREP-NEXT.md).
