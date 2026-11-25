@@ -129,8 +129,7 @@ def test_separate_envelopes_round_trip_and_authenticate_metadata() -> None:
     assert score_envelope["metadata"]["code_sha"] == "aggregate-code-sha"
     assert label_envelope["metadata"]["code_sha"] == "source-code-sha"
     assert (
-        decrypt_score_cache(score_envelope, key=SCORE_KEY)["source_code_sha"]
-        == "source-code-sha"
+        decrypt_score_cache(score_envelope, key=SCORE_KEY)["source_code_sha"] == "source-code-sha"
     )
     assert score_envelope["metadata"] != label_envelope["metadata"]
     assert "rid-000" not in json.dumps(score_envelope)
