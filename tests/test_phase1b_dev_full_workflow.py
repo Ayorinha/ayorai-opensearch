@@ -162,3 +162,46 @@ def test_full_dev_workflow_is_separate_from_minimal_workflow() -> None:
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in minimal_text
     assert "fetch_dev.py" not in str(minimal["jobs"]["shard"])
     assert "github.ref == 'refs/heads/main'" in minimal["jobs"]["plan"]["if"]
+
+def test_dev_plan_jobs_clean_local_inputs_after_all_upload_attempts() -> None:
+    sensitive_paths = (
+        "$DEV_PARQUET",
+        "$INFERENCE_DATA",
+        "$INFERENCE_ENCRYPTED",
+        "$MANIFEST_ENCRYPTED",
+        "/tmp/phase1b-manifest.json",
+        "/tmp/phase1b-matrix.json",
+        "/tmp/phase1b-gold-labels",
+    )
+
+    for path in (WORKFLOW_PATH, MINIMAL_PATH):
+        workflow = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+        steps = workflow["jobs"]["plan"]["steps"]
+        cleanup = [
+            (index, step)
+            for index, step in enumerate(steps)
+            if step.get("name") == "Remove local DEV inputs and encrypted intermediates"
+        ]
+        assert len(cleanup) == 1
+        cleanup_index, cleanup_step = cleanup[0]
+        assert cleanup_step["if"] == "${{ always() }}"
+        assert all(item in cleanup_step["run"] for item in sensitive_paths)
+
+        upload_indexes = [
+            index
+            for index, step in enumerate(steps)
+            if "upload-artifact" in str(step.get("uses", ""))
+        ]
+        assert upload_indexes
+        assert cleanup_index > max(upload_indexes)
+
+
+def test_minimal_aggregate_removes_decrypted_inputs_on_failure() -> None:
+    workflow = yaml.load(MINIMAL_PATH.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+    aggregate_steps = workflow["jobs"]["aggregate"]["steps"]
+    decrypt_step = next(
+        step
+        for step in aggregate_steps
+        if step.get("name") == "Decrypt in protected job and publish operational aggregate only"
+    )
+    assert "trap 'rm -rf /tmp/phase1b-encrypted /tmp/phase1b-manifest' EXIT" in decrypt_step["run"]

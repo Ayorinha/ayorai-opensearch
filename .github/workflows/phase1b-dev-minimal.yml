@@ -119,6 +119,19 @@ jobs:
           path: /tmp/phase1b-dev-inference.jsonl.aesgcm
           if-no-files-found: error
           retention-days: 1
+      - name: Remove local DEV inputs and encrypted intermediates
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          rm -rf \
+            "$DEV_PARQUET" \
+            "$INFERENCE_DATA" \
+            "$INFERENCE_ENCRYPTED" \
+            "$MANIFEST_ENCRYPTED" \
+            /tmp/phase1b-manifest.json \
+            /tmp/phase1b-matrix.json \
+            /tmp/phase1b-gold-labels
+
 
   shard:
     needs: plan
@@ -257,6 +270,7 @@ jobs:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
+          trap 'rm -rf /tmp/phase1b-encrypted /tmp/phase1b-manifest' EXIT
           python scripts/benchmarks/phase1b/manifest_artifact.py decrypt \
             --input /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm \
             --output /tmp/phase1b-manifest/phase1b-manifest.json \
