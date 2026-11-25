@@ -32,6 +32,8 @@ except ImportError:  # direct script execution
 
 SCORE_SCHEMA_VERSION = "phase1b-dev-score-cache-v3"
 SCORE_SCHEMA_VERSION_V2 = "phase1b-dev-score-cache-v4"
+SCORE_SCHEMA_VERSION_V3 = "phase1b-dev-score-cache-v5"
+SCORE_SCHEMA_VERSION_V4 = "phase1b-dev-score-cache-v6"
 LABEL_SCHEMA_VERSION = "phase1b-dev-gold-label-cache-v1"
 SCORE_CACHE_SHARD_ID = "dev-score-cache"
 GOLD_LABEL_CACHE_SHARD_ID = "dev-gold-labels"
@@ -93,9 +95,12 @@ def build_score_cache(
     protocols: dict[str, Any],
     manifest_sha256: str,
     source_run_id: str,
+    source_code_sha: str,
     calibration_v2: dict[str, Any] | None,
 ) -> dict[str, Any]:
     """Build prediction-only cache payload; gold labels are rejected, not copied."""
+    if not isinstance(source_code_sha, str) or not source_code_sha:
+        raise ValueError("source_code_sha is required for score-cache provenance")
     if not rows_by_model:
         raise ValueError("score cache requires at least one model")
     models: dict[str, Any] = {}
@@ -111,9 +116,10 @@ def build_score_cache(
             raise ValueError("all models must cover the same DEV records")
         models[model] = {"protocol": protocols.get(model), "records": records}
     return {
-        "schema_version": SCORE_SCHEMA_VERSION,
+        "schema_version": SCORE_SCHEMA_VERSION_V3,
         "split": "dev",
         "source_run_id": str(source_run_id),
+        "source_code_sha": source_code_sha,
         "manifest_sha256": manifest_sha256,
         "record_count": len(reference_ids or ()),
         "record_fields": list(SCORE_RECORD_FIELDS),
@@ -159,11 +165,18 @@ def _cache_metadata(
 def encrypt_score_cache(
     cache: dict[str, Any], *, key: bytes, dataset_revision: str, code_sha: str
 ) -> dict[str, Any]:
-    if (
-        cache.get("schema_version") not in {SCORE_SCHEMA_VERSION, SCORE_SCHEMA_VERSION_V2}
-        or cache.get("split") != "dev"
-    ):
+    schema = cache.get("schema_version")
+    if schema not in {
+        SCORE_SCHEMA_VERSION,
+        SCORE_SCHEMA_VERSION_V2,
+        SCORE_SCHEMA_VERSION_V3,
+        SCORE_SCHEMA_VERSION_V4,
+    } or cache.get("split") != "dev":
         raise ValueError("only supported DEV score caches may be encrypted")
+    if schema in {SCORE_SCHEMA_VERSION_V3, SCORE_SCHEMA_VERSION_V4} and (
+        not isinstance(cache.get("source_code_sha"), str) or not cache["source_code_sha"]
+    ):
+        raise ValueError("score cache source_code_sha is missing")
     metadata = _cache_metadata(
         source_run_id=cache["source_run_id"],
         shard_id=SCORE_CACHE_SHARD_ID,
@@ -184,13 +197,22 @@ def decrypt_score_cache(envelope: dict[str, Any], *, key: bytes) -> dict[str, An
         raise ValueError("envelope is not a DEV score cache")
     cache = json.loads(decrypt_bytes(envelope, key=key))
     schema = cache.get("schema_version")
-    if schema not in {SCORE_SCHEMA_VERSION, SCORE_SCHEMA_VERSION_V2} or cache.get("split") != "dev":
+    if schema not in {
+        SCORE_SCHEMA_VERSION,
+        SCORE_SCHEMA_VERSION_V2,
+        SCORE_SCHEMA_VERSION_V3,
+        SCORE_SCHEMA_VERSION_V4,
+    } or cache.get("split") != "dev":
         raise ValueError("unsupported score cache payload; legacy caches must be regenerated")
     if str(cache.get("source_run_id")) != str(metadata.get("run_id")):
         raise ValueError("score cache payload does not match its envelope metadata")
+    if schema in {SCORE_SCHEMA_VERSION_V3, SCORE_SCHEMA_VERSION_V4} and (
+        not isinstance(cache.get("source_code_sha"), str) or not cache["source_code_sha"]
+    ):
+        raise ValueError("score cache source_code_sha is missing")
     for model, entry in cache["models"].items():
         records = _unique_sorted(entry["records"], _clean_score_record, f"score cache for {model}")
-        if schema == SCORE_SCHEMA_VERSION_V2 and any("doc_id" not in record for record in records):
+        if schema in {SCORE_SCHEMA_VERSION_V2, SCORE_SCHEMA_VERSION_V4} and any("doc_id" not in record for record in records):
             raise ValueError("cache v4 record is missing doc_id")
         if len(records) != cache["record_count"]:
             raise ValueError(f"score cache for {model} has an unexpected record count")
@@ -344,9 +366,14 @@ def main() -> None:
     labels = decrypt_gold_label_cache(label_envelope, key=gold_key)
     score_metadata = score_envelope.get("metadata") or {}
     label_metadata = label_envelope.get("metadata") or {}
-    for field in ("run_id", "split", "dataset_revision", "code_sha"):
+    for field in ("run_id", "split", "dataset_revision"):
         if score_metadata.get(field) != label_metadata.get(field):
             raise ValueError(f"score and gold-label envelope {field} differs")
+    if scores.get("schema_version") in {SCORE_SCHEMA_VERSION_V3, SCORE_SCHEMA_VERSION_V4}:
+        if scores.get("source_code_sha") != label_metadata.get("code_sha"):
+            raise ValueError("score cache source_code_sha does not match gold-label source code_sha")
+    elif score_metadata.get("code_sha") != label_metadata.get("code_sha"):
+        raise ValueError("score and gold-label envelope code_sha differs")
     joined = join_scores_with_gold(scores, labels)
     report = EXPERIMENTS[args.experiment](joined)
     args.output.parent.mkdir(parents=True, exist_ok=True)

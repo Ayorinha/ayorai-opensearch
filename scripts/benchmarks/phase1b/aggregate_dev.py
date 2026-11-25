@@ -287,6 +287,7 @@ def _write_score_cache(
         protocols=score_sink["protocols"],
         manifest_sha256=str(manifest.get("manifest_sha256")),
         source_run_id=score_sink["source_run_id"],
+        source_code_sha=str(manifest.get("code_sha") or ""),
         calibration_v2=report.get("calibration_v2"),
     )
     envelope = encrypt_score_cache(

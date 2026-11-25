@@ -64,6 +64,7 @@ def _caches() -> tuple[dict, dict]:
         protocols={"model-a": {"name": "p"}, "model-b": {"name": "q"}},
         manifest_sha256="m" * 64,
         source_run_id="123",
+        source_code_sha="source-code-sha",
         calibration_v2={"synthetic": True},
     )
     labels = build_gold_label_cache(_labels(raw_a), manifest_sha256="m" * 64, source_run_id="123")
@@ -81,6 +82,28 @@ def test_prediction_cache_contains_no_gold_or_text() -> None:
     assert scores["record_fields"] == ["record_id", "cohort", "score"]
 
 
+def test_score_cache_requires_source_code_sha() -> None:
+    with pytest.raises(ValueError, match="source_code_sha is required"):
+        build_score_cache(
+            {"model-a": _score_rows(_rows([0.1]))},
+            protocols={},
+            manifest_sha256="m" * 64,
+            source_run_id="1",
+            source_code_sha="",
+            calibration_v2=None,
+        )
+    scores, _ = _caches()
+    scores_without_source_sha = dict(scores)
+    scores_without_source_sha.pop("source_code_sha")
+    with pytest.raises(ValueError, match="source_code_sha is missing"):
+        encrypt_score_cache(
+            scores_without_source_sha,
+            key=SCORE_KEY,
+            dataset_revision="rev",
+            code_sha="aggregate-code-sha",
+        )
+
+
 def test_score_cache_rejects_gold_labels_at_construction() -> None:
     with pytest.raises(ValueError, match="gold labels must never"):
         build_score_cache(
@@ -88,6 +111,7 @@ def test_score_cache_rejects_gold_labels_at_construction() -> None:
             protocols={},
             manifest_sha256="m",
             source_run_id="1",
+            source_code_sha="source-code-sha",
             calibration_v2=None,
         )
 
@@ -95,13 +119,16 @@ def test_score_cache_rejects_gold_labels_at_construction() -> None:
 def test_separate_envelopes_round_trip_and_authenticate_metadata() -> None:
     scores, labels = _caches()
     score_envelope = encrypt_score_cache(
-        scores, key=SCORE_KEY, dataset_revision="rev", code_sha="sha"
+        scores, key=SCORE_KEY, dataset_revision="rev", code_sha="aggregate-code-sha"
     )
     label_envelope = encrypt_gold_label_cache(
-        labels, key=GOLD_KEY, dataset_revision="rev", code_sha="sha"
+        labels, key=GOLD_KEY, dataset_revision="rev", code_sha="source-code-sha"
     )
     assert score_envelope["metadata"]["shard_id"] == SCORE_CACHE_SHARD_ID
     assert label_envelope["metadata"]["shard_id"] == GOLD_LABEL_CACHE_SHARD_ID
+    assert score_envelope["metadata"]["code_sha"] == "synthetic-aggregate-code-sha"
+    assert label_envelope["metadata"]["code_sha"] == "synthetic-code-sha"
+    assert decrypt_score_cache(score_envelope, key=SCORE_KEY)["source_code_sha"] == "synthetic-code-sha"
     assert score_envelope["metadata"] != label_envelope["metadata"]
     assert "rid-000" not in json.dumps(score_envelope)
     assert "rid-000" not in json.dumps(label_envelope)
@@ -141,7 +168,7 @@ def test_join_rejects_run_manifest_count_and_cohort_mismatches() -> None:
         join_scores_with_gold(scores, bad_labels)
 
 
-@pytest.mark.parametrize("mismatch", ["run_id", "dataset_revision", "code_sha"])
+@pytest.mark.parametrize("mismatch", ["run_id", "dataset_revision", "source_code_sha"])
 def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
     tmp_path: Path, mismatch: str
 ) -> None:
@@ -149,8 +176,8 @@ def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
     label_run_id = "123"
     score_revision = "rev"
     label_revision = "rev"
-    score_code_sha = "code-a"
-    label_code_sha = "code-a"
+    score_code_sha = "aggregate-code"
+    label_code_sha = "source-code-sha"
     if mismatch == "run_id":
         label_run_id = "other-run"
         labels = build_gold_label_cache(
@@ -161,7 +188,7 @@ def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
     elif mismatch == "dataset_revision":
         label_revision = "other-revision"
     else:
-        label_code_sha = "code-b"
+        label_code_sha = "source-code-b"
     score_envelope = encrypt_score_cache(
         scores, key=SCORE_KEY, dataset_revision=score_revision, code_sha=score_code_sha
     )
@@ -197,7 +224,12 @@ def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
         check=False,
     )
     assert completed.returncode != 0
-    assert f"envelope {mismatch} differs" in completed.stderr
+    expected_error = (
+        "source_code_sha does not match gold-label source code_sha"
+        if mismatch == "source_code_sha"
+        else f"envelope {mismatch} differs"
+    )
+    assert expected_error in completed.stderr
     assert not output_path.exists()
 
 
@@ -216,7 +248,7 @@ def test_cache_rejects_non_dev_payload() -> None:
 def test_cli_cache_and_replay_reproduce_calibration_v2(tmp_path: Path) -> None:
     cache_path = tmp_path / "cache" / "phase1b-dev-score-cache.json"
     completed, output_path, context = _run_aggregator(
-        tmp_path, "--score-cache-output", str(cache_path), "--code-sha", "synthetic-code-sha"
+        tmp_path, "--score-cache-output", str(cache_path), "--code-sha", "synthetic-aggregate-code-sha"
     )
     assert completed.returncode == 0, completed.stderr
     aggregate = json.loads(output_path.read_text())
@@ -225,6 +257,9 @@ def test_cli_cache_and_replay_reproduce_calibration_v2(tmp_path: Path) -> None:
     label_envelope = json.loads(labels_path.read_text())
     assert score_envelope["metadata"]["shard_id"] == SCORE_CACHE_SHARD_ID
     assert label_envelope["metadata"]["shard_id"] == GOLD_LABEL_CACHE_SHARD_ID
+    assert score_envelope["metadata"]["code_sha"] == "synthetic-aggregate-code-sha"
+    assert label_envelope["metadata"]["code_sha"] == "synthetic-code-sha"
+    assert decrypt_score_cache(score_envelope, key=SCORE_KEY)["source_code_sha"] == "synthetic-code-sha"
     assert "gold" not in json.dumps(decrypt_score_cache(score_envelope, key=SCORE_KEY)).lower()
     assert not any(record_id in cache_path.read_text() for record_id in context["rows_by_id"])
     assert not any(record_id in labels_path.read_text() for record_id in context["rows_by_id"])

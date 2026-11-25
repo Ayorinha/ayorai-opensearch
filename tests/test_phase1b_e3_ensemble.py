@@ -58,6 +58,7 @@ def _cache(noise: dict[str, float], seed: int = 20261108) -> dict:
         protocols={},
         manifest_sha256="m" * 64,
         source_run_id="1",
+        source_code_sha="synthetic-source-code-sha",
         calibration_v2=None,
     )
     label_cache = build_gold_label_cache(
