@@ -126,11 +126,11 @@ def test_separate_envelopes_round_trip_and_authenticate_metadata() -> None:
     )
     assert score_envelope["metadata"]["shard_id"] == SCORE_CACHE_SHARD_ID
     assert label_envelope["metadata"]["shard_id"] == GOLD_LABEL_CACHE_SHARD_ID
-    assert score_envelope["metadata"]["code_sha"] == "synthetic-aggregate-code-sha"
-    assert label_envelope["metadata"]["code_sha"] == "synthetic-code-sha"
+    assert score_envelope["metadata"]["code_sha"] == "aggregate-code-sha"
+    assert label_envelope["metadata"]["code_sha"] == "source-code-sha"
     assert (
         decrypt_score_cache(score_envelope, key=SCORE_KEY)["source_code_sha"]
-        == "synthetic-code-sha"
+        == "source-code-sha"
     )
     assert score_envelope["metadata"] != label_envelope["metadata"]
     assert "rid-000" not in json.dumps(score_envelope)
