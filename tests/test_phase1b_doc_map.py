@@ -175,7 +175,7 @@ def test_cache_v2_keeps_v1_records_and_round_trips() -> None:
     v1 = _v1_cache(rows)
     pin = {"revision": "a" * 40, "sha256": "b" * 64}
     v2 = build_cache_v2(v1, build_doc_map(rows, _expected(rows)), pin=pin)
-    assert v2["schema_version"] == "phase1b-dev-score-cache-v4"
+    assert v2["schema_version"] == "phase1b-dev-score-cache-v6"
     assert v2["calibration_v2_sha256"] == v1["calibration_v2_sha256"]
     envelope = encrypt_score_cache(v2, key=KEY, dataset_revision="a" * 40, code_sha="sha")
     assert "SYNTHETIC" not in json.dumps(envelope)
