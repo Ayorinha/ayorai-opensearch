@@ -54,7 +54,7 @@ The digest is obtained from the encrypted/authenticated manifest flow. The code 
 
 1. **CI for #636:** obtain the full required workflow set on the exact HEAD `b8854d389f640670cc2bf7a0f9b7357f723f6110`. Do not infer its success from #635.
 2. **Independent review:** #635 and #636 need a reviewer other than the author/maintainer's automated self-review where the repository governance requires it. This review does not satisfy that requirement.
-3. **Retention decision:** the full/reaggregate workflows currently set 90 days for both the gold-label cache and score cache. The prior seven-day decision for encrypted manifests/shards does not automatically determine retention for these new cache artifacts. The maintainer must decide the policy; no retention value was changed here.
+3. **Retention policy selected:** 30 days for both encrypted Gold-label and Score caches. This minimizes exposure while retaining a practical window for DEV re-aggregation and debugging. The policy is implemented in the updated #635 branch and still requires its CI checks to pass on the new HEAD. The seven-day manifest/shard retention remains unchanged.
 4. **Protected environment and secrets:** the maintainer must verify the protected Environment's allowed branches/approvals and provision the required secrets manually. No secrets were inspected, changed, or tested.
 5. **Operational authorization:** do not dispatch full/minimal/reaggregate/cache experiment workflows until the preceding gates are satisfied and the maintainer explicitly authorizes the specific operation.
 
@@ -63,7 +63,7 @@ The digest is obtained from the encrypted/authenticated manifest flow. The code 
 - No confirmed source-level defect was found in the two inspected inference-artifact digest checks.
 - The main outstanding technical evidence gap is the absence of CI results for #636.
 - Keep both PRs Draft. Do not approve or merge them as part of this review.
-- Keep retention policy pending until the maintainer makes the decision.
+- Keep the 30-day cache-retention change in #635; verify its static contract tests and full CI on the exact updated HEAD.
 - After CI and independent review, re-check the exact final HEADs and all changed files before considering the A1 task complete.
 
 ## Actions not performed
@@ -77,4 +77,4 @@ The digest is obtained from the encrypted/authenticated manifest flow. The code 
 
 ## Conclusion
 
-P3/A1 is **not complete**. The implementation is substantially present and #635 has passing CI on its exact HEAD, but #636 still lacks recorded CI evidence, independent review remains outstanding, and the cache-retention policy is a maintainer decision. The next safe step is to obtain CI evidence for #636 and independent review while leaving protected execution disabled.
+P3/A1 is **not complete**. The implementation is substantially present and #635 has passing CI on its exact HEAD, but #636 still lacks recorded CI evidence, independent review remains outstanding, and the 30-day cache-retention change passes CI. The next safe step is to obtain CI evidence for #636 and independent review while leaving protected execution disabled.
