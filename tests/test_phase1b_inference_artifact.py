@@ -194,7 +194,10 @@ def test_inference_artifact_rejects_non_string_digest_before_encryption(
     encrypted = tmp_path / "inference.jsonl.aesgcm"
     source.write_bytes(plaintext)
 
-    with pytest.raises(ValueError, match="expected inference dataset digest must be a SHA-256 hex digest"):
+    with pytest.raises(
+        ValueError,
+        match="expected inference dataset digest must be a SHA-256 hex digest",
+    ):
         encrypt_inference_file(
             source,
             encrypted,
