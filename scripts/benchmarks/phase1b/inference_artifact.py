@@ -44,7 +44,7 @@ def inference_metadata(manifest: dict[str, Any], *, run_id: str, code_sha: str) 
 
 
 def _verify_inference_digest(payload: bytes, expected_sha256: str) -> None:
-    if re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None:
+    if not isinstance(expected_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None:
         raise ValueError("expected inference dataset digest must be a SHA-256 hex digest")
     if sha256_bytes(payload) != expected_sha256:
         raise ValueError("inference dataset SHA-256 does not match the encrypted manifest")
