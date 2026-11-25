@@ -139,6 +139,19 @@ jobs:
           path: /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json
           if-no-files-found: error
           retention-days: 30
+      - name: Remove local DEV inputs and encrypted intermediates
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          rm -rf \
+            "$DEV_PARQUET" \
+            "$INFERENCE_DATA" \
+            "$INFERENCE_ENCRYPTED" \
+            "$MANIFEST_ENCRYPTED" \
+            /tmp/phase1b-manifest.json \
+            /tmp/phase1b-matrix.json \
+            /tmp/phase1b-gold-labels
+
 
   shard:
     needs: plan
