@@ -41,7 +41,7 @@ try:
     from .encrypt_artifact import decode_key
     from .score_cache import (
         SCORE_RECORD_FIELDS,
-        SCORE_SCHEMA_VERSION,
+        SCORE_SCHEMA_VERSION_V3,
         decrypt_gold_label_cache,
         decrypt_score_cache,
         encrypt_score_cache,
@@ -63,7 +63,7 @@ except ImportError:  # direct script execution
     from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
     from scripts.benchmarks.phase1b.score_cache import (
         SCORE_RECORD_FIELDS,
-        SCORE_SCHEMA_VERSION,
+        SCORE_SCHEMA_VERSION_V3,
         decrypt_gold_label_cache,
         decrypt_score_cache,
         encrypt_score_cache,
@@ -145,7 +145,7 @@ def _expected_from_labels(label_cache: dict[str, Any]) -> dict[str, tuple[str, s
 def build_cache_v2(
     cache: dict[str, Any], mapping: dict[str, str], *, pin: dict[str, Any]
 ) -> dict[str, Any]:
-    if cache.get("schema_version") != SCORE_SCHEMA_VERSION:
+    if cache.get("schema_version") != SCORE_SCHEMA_VERSION_V3:
         raise ValueError("cache v2 is built only from the current prediction-only score cache")
     models: dict[str, Any] = {}
     for model, entry in sorted(cache["models"].items()):
@@ -153,7 +153,7 @@ def build_cache_v2(
         models[model] = {"protocol": entry.get("protocol"), "records": records}
     v2 = {key: value for key, value in cache.items() if key != "models"}
     v2.update(
-        schema_version="phase1b-dev-score-cache-v4",
+        schema_version="phase1b-dev-score-cache-v6",
         record_fields=[*SCORE_RECORD_FIELDS, "doc_id"],
         models=models,
         doc_map={
@@ -161,7 +161,7 @@ def build_cache_v2(
             "dataset_revision": pin["revision"],
             "dataset_sha256": pin["sha256"],
             "doc_map_sha256": sha256_bytes(canonical_json(mapping)),
-            "parent_schema_version": SCORE_SCHEMA_VERSION,
+            "parent_schema_version": SCORE_SCHEMA_VERSION_V3,
         },
     )
     verify_v2_matches_v1(cache, v2)
@@ -169,7 +169,7 @@ def build_cache_v2(
 
 
 def verify_v2_matches_v1(v1: dict[str, Any], v2: dict[str, Any]) -> None:
-    """v4 must hold exactly the v3 prediction records plus doc_id."""
+    """v6 must hold exactly the v5 prediction records plus doc_id."""
 
     if set(v1["models"]) != set(v2["models"]) or v1["record_count"] != v2["record_count"]:
         raise ValueError("cache v2 does not cover the same models and record count")
@@ -182,6 +182,8 @@ def verify_v2_matches_v1(v1: dict[str, Any], v2: dict[str, Any]) -> None:
             raise ValueError(f"cache v2 records for {model} differ from v1")
     if v1.get("calibration_v2_sha256") != v2.get("calibration_v2_sha256"):
         raise ValueError("cache v2 must keep the source calibration digest")
+    if v1.get("source_code_sha") != v2.get("source_code_sha"):
+        raise ValueError("cache v2 must keep the source code SHA")
 
 
 def cluster_summary(cache_v2: dict[str, Any], *, replay_status: str) -> dict[str, Any]:
