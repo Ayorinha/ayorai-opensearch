@@ -165,6 +165,7 @@ def _v1_cache(rows: list[dict]) -> dict:
         protocols={},
         manifest_sha256="m" * 64,
         source_run_id="42",
+        source_code_sha="synthetic-source-code-sha",
         calibration_v2={"synthetic": True},
     )
 
