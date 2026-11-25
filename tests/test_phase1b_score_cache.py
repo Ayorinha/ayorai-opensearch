@@ -64,6 +64,7 @@ def _caches() -> tuple[dict, dict]:
         protocols={"model-a": {"name": "p"}, "model-b": {"name": "q"}},
         manifest_sha256="m" * 64,
         source_run_id="123",
+        source_code_sha="source-code-sha",
         calibration_v2={"synthetic": True},
     )
     labels = build_gold_label_cache(_labels(raw_a), manifest_sha256="m" * 64, source_run_id="123")
@@ -88,6 +89,7 @@ def test_score_cache_rejects_gold_labels_at_construction() -> None:
             protocols={},
             manifest_sha256="m",
             source_run_id="1",
+            source_code_sha="source-code-sha",
             calibration_v2=None,
         )
 
@@ -95,10 +97,10 @@ def test_score_cache_rejects_gold_labels_at_construction() -> None:
 def test_separate_envelopes_round_trip_and_authenticate_metadata() -> None:
     scores, labels = _caches()
     score_envelope = encrypt_score_cache(
-        scores, key=SCORE_KEY, dataset_revision="rev", code_sha="sha"
+        scores, key=SCORE_KEY, dataset_revision="rev", code_sha="aggregate-code-sha"
     )
     label_envelope = encrypt_gold_label_cache(
-        labels, key=GOLD_KEY, dataset_revision="rev", code_sha="sha"
+        labels, key=GOLD_KEY, dataset_revision="rev", code_sha="source-code-sha"
     )
     assert score_envelope["metadata"]["shard_id"] == SCORE_CACHE_SHARD_ID
     assert label_envelope["metadata"]["shard_id"] == GOLD_LABEL_CACHE_SHARD_ID
@@ -141,7 +143,7 @@ def test_join_rejects_run_manifest_count_and_cohort_mismatches() -> None:
         join_scores_with_gold(scores, bad_labels)
 
 
-@pytest.mark.parametrize("mismatch", ["run_id", "dataset_revision", "code_sha"])
+@pytest.mark.parametrize("mismatch", ["run_id", "dataset_revision", "source_code_sha"])
 def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
     tmp_path: Path, mismatch: str
 ) -> None:
@@ -149,8 +151,8 @@ def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
     label_run_id = "123"
     score_revision = "rev"
     label_revision = "rev"
-    score_code_sha = "code-a"
-    label_code_sha = "code-a"
+    score_code_sha = "aggregate-code"
+    label_code_sha = "source-code-a"
     if mismatch == "run_id":
         label_run_id = "other-run"
         labels = build_gold_label_cache(
@@ -161,7 +163,7 @@ def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
     elif mismatch == "dataset_revision":
         label_revision = "other-revision"
     else:
-        label_code_sha = "code-b"
+        label_code_sha = "source-code-b"
     score_envelope = encrypt_score_cache(
         scores, key=SCORE_KEY, dataset_revision=score_revision, code_sha=score_code_sha
     )
@@ -197,7 +199,12 @@ def test_replay_rejects_valid_envelopes_with_mismatched_provenance(
         check=False,
     )
     assert completed.returncode != 0
-    assert f"envelope {mismatch} differs" in completed.stderr
+    expected_error = (
+        "source_code_sha does not match gold-label source code_sha"
+        if mismatch == "source_code_sha"
+        else f"envelope {mismatch} differs"
+    )
+    assert expected_error in completed.stderr
     assert not output_path.exists()
 
 
