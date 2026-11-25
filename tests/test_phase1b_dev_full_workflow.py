@@ -82,6 +82,22 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in workflow_text
     assert "--gold-label-cache-input" in workflow_text
     assert "retention-days: 30" in workflow_text
+    cache_uploads = {
+        step["with"]["name"]: step
+        for job in workflow["jobs"].values()
+        for step in job["steps"]
+        if "upload-artifact" in str(step.get("uses", ""))
+        and step["with"].get("name")
+        in {
+            "phase1b-dev-gold-label-cache",
+            "phase1b-dev-score-cache",
+        }
+    }
+    assert set(cache_uploads) == {
+        "phase1b-dev-gold-label-cache",
+        "phase1b-dev-score-cache",
+    }
+    assert all(step["with"]["retention-days"] == "30" for step in cache_uploads.values())
 
 
 def test_full_dev_workflow_reuses_exact_minimal_action_pins() -> None:

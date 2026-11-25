@@ -138,7 +138,7 @@ jobs:
           name: phase1b-dev-gold-label-cache
           path: /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
 
   shard:
     needs: plan
@@ -348,5 +348,5 @@ jobs:
           name: phase1b-dev-score-cache
           path: /tmp/phase1b-score-cache/phase1b-dev-score-cache.json
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
 # No TEST split/job, no dispatch from repository tooling, and no automatic trigger.
