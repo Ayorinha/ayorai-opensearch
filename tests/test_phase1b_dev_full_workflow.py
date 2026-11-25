@@ -163,6 +163,7 @@ def test_full_dev_workflow_is_separate_from_minimal_workflow() -> None:
     assert "fetch_dev.py" not in str(minimal["jobs"]["shard"])
     assert "github.ref == 'refs/heads/main'" in minimal["jobs"]["plan"]["if"]
 
+
 def test_dev_plan_jobs_clean_local_inputs_after_all_upload_attempts() -> None:
     sensitive_paths = (
         "$DEV_PARQUET",
