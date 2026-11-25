@@ -266,7 +266,10 @@ def test_cli_cache_and_replay_reproduce_calibration_v2(tmp_path: Path) -> None:
     assert label_envelope["metadata"]["shard_id"] == GOLD_LABEL_CACHE_SHARD_ID
     assert score_envelope["metadata"]["code_sha"] == "synthetic-aggregate-code-sha"
     assert label_envelope["metadata"]["code_sha"] == "synthetic-code-sha"
-    assert decrypt_score_cache(score_envelope, key=SCORE_KEY)["source_code_sha"] == "synthetic-code-sha"
+    assert (
+        decrypt_score_cache(score_envelope, key=SCORE_KEY)["source_code_sha"]
+        == "synthetic-code-sha"
+    )
     assert "gold" not in json.dumps(decrypt_score_cache(score_envelope, key=SCORE_KEY)).lower()
     assert not any(record_id in cache_path.read_text() for record_id in context["rows_by_id"])
     assert not any(record_id in labels_path.read_text() for record_id in context["rows_by_id"])
