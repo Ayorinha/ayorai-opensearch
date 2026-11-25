@@ -128,7 +128,10 @@ def test_separate_envelopes_round_trip_and_authenticate_metadata() -> None:
     assert label_envelope["metadata"]["shard_id"] == GOLD_LABEL_CACHE_SHARD_ID
     assert score_envelope["metadata"]["code_sha"] == "synthetic-aggregate-code-sha"
     assert label_envelope["metadata"]["code_sha"] == "synthetic-code-sha"
-    assert decrypt_score_cache(score_envelope, key=SCORE_KEY)["source_code_sha"] == "synthetic-code-sha"
+    assert (
+        decrypt_score_cache(score_envelope, key=SCORE_KEY)["source_code_sha"]
+        == "synthetic-code-sha"
+    )
     assert score_envelope["metadata"] != label_envelope["metadata"]
     assert "rid-000" not in json.dumps(score_envelope)
     assert "rid-000" not in json.dumps(label_envelope)
@@ -248,7 +251,11 @@ def test_cache_rejects_non_dev_payload() -> None:
 def test_cli_cache_and_replay_reproduce_calibration_v2(tmp_path: Path) -> None:
     cache_path = tmp_path / "cache" / "phase1b-dev-score-cache.json"
     completed, output_path, context = _run_aggregator(
-        tmp_path, "--score-cache-output", str(cache_path), "--code-sha", "synthetic-aggregate-code-sha"
+        tmp_path,
+        "--score-cache-output",
+        str(cache_path),
+        "--code-sha",
+        "synthetic-aggregate-code-sha",
     )
     assert completed.returncode == 0, completed.stderr
     aggregate = json.loads(output_path.read_text())
