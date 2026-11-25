@@ -166,12 +166,16 @@ def encrypt_score_cache(
     cache: dict[str, Any], *, key: bytes, dataset_revision: str, code_sha: str
 ) -> dict[str, Any]:
     schema = cache.get("schema_version")
-    if schema not in {
-        SCORE_SCHEMA_VERSION,
-        SCORE_SCHEMA_VERSION_V2,
-        SCORE_SCHEMA_VERSION_V3,
-        SCORE_SCHEMA_VERSION_V4,
-    } or cache.get("split") != "dev":
+    if (
+        schema
+        not in {
+            SCORE_SCHEMA_VERSION,
+            SCORE_SCHEMA_VERSION_V2,
+            SCORE_SCHEMA_VERSION_V3,
+            SCORE_SCHEMA_VERSION_V4,
+        }
+        or cache.get("split") != "dev"
+    ):
         raise ValueError("only supported DEV score caches may be encrypted")
     if schema in {SCORE_SCHEMA_VERSION_V3, SCORE_SCHEMA_VERSION_V4} and (
         not isinstance(cache.get("source_code_sha"), str) or not cache["source_code_sha"]
@@ -197,12 +201,16 @@ def decrypt_score_cache(envelope: dict[str, Any], *, key: bytes) -> dict[str, An
         raise ValueError("envelope is not a DEV score cache")
     cache = json.loads(decrypt_bytes(envelope, key=key))
     schema = cache.get("schema_version")
-    if schema not in {
-        SCORE_SCHEMA_VERSION,
-        SCORE_SCHEMA_VERSION_V2,
-        SCORE_SCHEMA_VERSION_V3,
-        SCORE_SCHEMA_VERSION_V4,
-    } or cache.get("split") != "dev":
+    if (
+        schema
+        not in {
+            SCORE_SCHEMA_VERSION,
+            SCORE_SCHEMA_VERSION_V2,
+            SCORE_SCHEMA_VERSION_V3,
+            SCORE_SCHEMA_VERSION_V4,
+        }
+        or cache.get("split") != "dev"
+    ):
         raise ValueError("unsupported score cache payload; legacy caches must be regenerated")
     if str(cache.get("source_run_id")) != str(metadata.get("run_id")):
         raise ValueError("score cache payload does not match its envelope metadata")
