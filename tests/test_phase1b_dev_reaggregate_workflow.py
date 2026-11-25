@@ -39,7 +39,8 @@ def test_reaggregate_is_manual_gated_and_aggregate_only() -> None:
         for job in workflow["jobs"].values()
         for step in job["steps"]
         if "upload-artifact" in str(step.get("uses", ""))
-        and step["with"].get("name") in {
+        and step["with"].get("name")
+        in {
             "phase1b-dev-gold-label-cache",
             "phase1b-dev-score-cache",
         }
