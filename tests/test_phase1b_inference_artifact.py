@@ -183,11 +183,12 @@ def test_shared_inference_metadata_rejects_missing_or_invalid_digest() -> None:
         with pytest.raises(ValueError, match="digest is invalid or unavailable"):
             inference_metadata(manifest, run_id="synthetic-run", code_sha="synthetic-sha")
 
+
 @pytest.mark.parametrize("digest", [None, 7])
 def test_inference_artifact_rejects_non_string_digest_before_encryption(
     tmp_path: Path, digest: object
 ) -> None:
-    plaintext = b'{"record_id":"synthetic-id"}\\n'
+    plaintext = b'{"record_id":"synthetic-id"}\n'
     manifest = _manifest(plaintext)
     metadata = inference_metadata(manifest, run_id="synthetic-run", code_sha="synthetic-sha")
     source = tmp_path / "inference.jsonl"
