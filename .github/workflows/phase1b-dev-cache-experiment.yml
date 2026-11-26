@@ -43,8 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple \
-            cryptography==46.0.3 numpy==2.2.6
+          python -m pip install --require-hashes --only-binary :all: --index-url https://pypi.org/simple -r requirements-phase1b-protected.txt
       - name: Verify cache source run
         env:
           GH_TOKEN: ${{ github.token }}

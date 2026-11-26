@@ -45,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3
+          python -m pip install --require-hashes --only-binary :all: --index-url https://pypi.org/simple -r requirements-phase1b-protected.txt
       - name: Validate required secret without printing it
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
@@ -187,7 +187,7 @@ jobs:
           set -euo pipefail
           python -m pip install "pip==25.2"
           python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
-          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3 nltk==3.9.4
+          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==50.0.2 nltk==3.9.4
           python - <<'PY'
           import torch
           assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
@@ -309,8 +309,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple \
-            cryptography==46.0.3 numpy==2.2.6
+          python -m pip install --require-hashes --only-binary :all: --index-url https://pypi.org/simple -r requirements-phase1b-protected.txt
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: phase1b-dev-full-manifest-encrypted

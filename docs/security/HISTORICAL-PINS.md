@@ -37,3 +37,27 @@ As correções exigem trocar de versão maior (`transformers` 5.x, `pyarrow` 23)
    - um alerta passar a ser explorável com entrada fixa;
    - um novo experimento for planejado, que já deve nascer com versões atuais;
    - ou os segredos expostos mudarem.
+
+## Revisão de 2026-11-26 (P3/A1): segredos expostos mudaram
+
+A P3/A1 acrescentou a chave `PHASE1B_GOLD_LABEL_ENCRYPTION_KEY` ao job `plan`, que instalava estes pins. É o terceiro gatilho de revisão da regra 4.
+
+**Decisão técnica aplicada:** os jobs que **não rodam inferência** passam a instalar só `requirements-phase1b-protected.txt`:
+- `plan` e `aggregate` (full e minimal);
+- re-agregação;
+- experimento de cache.
+
+**Características do novo lock:**
+- travado por SHA-256, instalado com `--require-hashes --only-binary :all:`;
+- `cryptography` 50.0.2, a mesma linha 50.x do produto (`pyproject.toml`);
+- `pyarrow` 23.0.1, com o PYSEC-2026-113 corrigido;
+- `numpy` 2.2.6 e `huggingface-hub` 0.34.4;
+- `pip-audit` sem alertas.
+
+**Job de inferência (`shard`):**
+- continua com `requirements-benchmark-pilot.txt`, para preservar a reprodução numérica dos modelos;
+- não recebe a chave gold;
+- só troca `cryptography` 46.0.3 por 50.0.2. Os alertas da 46.0.3 incluem a cópia do OpenSSL embutida nas wheels (GHSA-537c-gmf6-5ccf). `cryptography` não afeta os escores.
+- O PyTorch continua vindo do índice oficial de CPU, por versão. Não foi possível gerar hash dele neste ambiente, porque `download.pytorch.org` estava bloqueado pela rede. Fica como risco residual.
+
+**Testes:** `tests/test_phase1b_protected_dependencies.py`.

@@ -27,7 +27,7 @@ def test_reaggregate_is_manual_gated_and_aggregate_only() -> None:
     assert "--calibration-v2" in text
     assert "run-id: ${{ inputs.source_run_id }}" in text
     assert '".github/workflows/phase1b-dev-full.yml"' in text
-    assert "numpy==2.2.6" in text
+    assert "-r requirements-phase1b-protected.txt" in text
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in text
     assert "phase1b-dev-full-manifest-encrypted" in text
     assert "manifest_artifact.py decrypt" in text
@@ -86,4 +86,7 @@ def test_full_workflow_aggregate_installs_numpy() -> None:
         for step in workflow["jobs"]["aggregate"]["steps"]
         if step.get("name") == "Install pinned dependencies"
     )
-    assert "numpy==2.2.6" in install
+    assert "--require-hashes" in install
+    assert "-r requirements-phase1b-protected.txt" in install
+    lock = Path("requirements-phase1b-protected.txt").read_text(encoding="utf-8")
+    assert "numpy==2.2.6 \\" in lock
