@@ -67,21 +67,30 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python scripts/benchmarks/phase1b/fetch_dev.py --output "$DEV_PARQUET"
       - name: Build manifest (2 shards x 5 DEV examples)
-        env:
-          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
-          PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           python scripts/benchmarks/phase1b/build_manifest.py \
             --dataset-path "$DEV_PARQUET" --split dev \
             --sample-size 10 --shard-size 5 --max-shards 2 \
             --seed 20261106 --output /tmp/phase1b-manifest.json
+      # A1: only this step receives the gold-label key; it splits labels from inputs.
+      - name: Separate inference inputs from encrypted gold labels
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
           python scripts/benchmarks/phase1b/prepare_dev_artifacts.py \
             --dataset-path "$DEV_PARQUET" \
             --manifest /tmp/phase1b-manifest.json \
             --inference-output "$INFERENCE_DATA" \
             --gold-label-cache-output /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json \
             --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
+      - name: Encrypt inference inputs for transport
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
           python scripts/benchmarks/phase1b/inference_artifact.py encrypt \
             --input "$INFERENCE_DATA" --output "$INFERENCE_ENCRYPTED" \
             --manifest /tmp/phase1b-manifest.json \

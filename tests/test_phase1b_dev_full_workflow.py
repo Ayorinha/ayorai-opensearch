@@ -206,3 +206,26 @@ def test_minimal_aggregate_removes_decrypted_inputs_on_failure() -> None:
         if step.get("name") == "Decrypt in protected job and publish operational aggregate only"
     )
     assert "trap 'rm -rf /tmp/phase1b-encrypted /tmp/phase1b-manifest' EXIT" in decrypt_step["run"]
+
+
+def test_gold_label_key_reaches_only_the_steps_that_need_it() -> None:
+    """S-15: in the plan job, only the key check and the label split see the gold key."""
+    allowed = {
+        "Validate required secret without printing it",
+        "Separate inference inputs from encrypted gold labels",
+    }
+    for path in (
+        Path(".github/workflows/phase1b-dev-full.yml"),
+        Path(".github/workflows/phase1b-dev-minimal.yml"),
+    ):
+        workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+        holders = {
+            step.get("name")
+            for step in workflow["jobs"]["plan"]["steps"]
+            if "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in (step.get("env") or {})
+        }
+        assert holders == allowed, (path, holders)
+        assert not any(
+            "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in (step.get("env") or {})
+            for step in workflow["jobs"]["shard"]["steps"]
+        )
