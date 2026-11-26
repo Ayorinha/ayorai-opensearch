@@ -17,6 +17,14 @@ except ImportError:  # direct script execution
     from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 
 
+INFERENCE_ENVELOPE_FIELDS = {
+    "schema_version",
+    "metadata",
+    "nonce_b64",
+    "ciphertext_b64",
+}
+
+
 def inference_metadata(manifest: dict[str, Any], *, run_id: str, code_sha: str) -> dict[str, str]:
     if manifest.get("split") != "dev":
         raise ValueError("only DEV inference inputs may be encrypted")
@@ -79,10 +87,18 @@ def decrypt_inference_file(
     expected_sha256: str,
 ) -> None:
     envelope = json.loads(input_path.read_text(encoding="utf-8"))
-    if envelope.get("schema_version") != "phase1b-aes256gcm-v1":
+    if not isinstance(envelope, dict):
+        raise ValueError("encrypted inference artifact envelope must be an object")
+    if set(envelope) != INFERENCE_ENVELOPE_FIELDS:
+        raise ValueError("encrypted inference artifact envelope has unexpected fields")
+    if envelope["schema_version"] != "phase1b-aes256gcm-v1":
         raise ValueError("unsupported encrypted inference artifact schema")
-    if envelope.get("metadata") != expected_metadata:
+    if envelope["metadata"] != expected_metadata:
         raise ValueError("encrypted inference metadata does not match expected provenance")
+    if not isinstance(envelope["nonce_b64"], str) or not isinstance(
+        envelope["ciphertext_b64"], str
+    ):
+        raise ValueError("encrypted inference artifact nonce and ciphertext must be Base64 strings")
     plaintext = decrypt_bytes(envelope, key=key, aad_metadata=expected_metadata)
     _verify_inference_digest(plaintext, expected_sha256)
     atomic_write_bytes(output_path, plaintext)
