@@ -56,3 +56,11 @@ def test_producers_upload_only_the_encrypted_cache() -> None:
         assert "--gold-label-cache-input" in text
         if path.name == "phase1b-dev-full.yml":
             assert "--gold-label-cache-output" in text
+
+
+def test_cache_experiment_requires_the_source_commit_on_main_of_this_repository() -> None:
+    text = Path(".github/workflows/phase1b-dev-cache-experiment.yml").read_text(encoding="utf-8")
+    assert '["head_repository"]["full_name"]' in text
+    assert 'test "$SOURCE_REPOSITORY" = "$GITHUB_REPOSITORY"' in text
+    assert "compare/${SOURCE_SHA}...main" in text
+    assert '"$status" == "identical" || "$status" == "ahead"' in text

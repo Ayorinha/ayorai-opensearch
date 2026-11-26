@@ -49,7 +49,34 @@ def test_reaggregate_is_manual_gated_and_aggregate_only() -> None:
         "phase1b-dev-gold-label-cache",
         "phase1b-dev-score-cache",
     }
-    assert all(step["with"]["retention-days"] == 30 for step in cache_uploads.values())
+    # Re-uploaded caches inherit what is left of the source run's 30-day window.
+    assert all(
+        step["with"]["retention-days"] == "${{ steps.source.outputs.cache_retention_days }}"
+        for step in cache_uploads.values()
+    )
+
+
+def _step(name: str) -> dict:
+    workflow = yaml.safe_load(WORKFLOW_PATH.read_text(encoding="utf-8"))
+    return next(step for step in workflow["jobs"]["aggregate"]["steps"] if step.get("name") == name)
+
+
+def test_reaggregate_requires_the_source_commit_on_main_of_this_repository() -> None:
+    step = _step("Verify source run provenance")
+    script = step["run"]
+    assert step["id"] == "source"
+    assert '["head_repository"]["full_name"]' in script
+    assert 'test "$SOURCE_REPOSITORY" = "$GITHUB_REPOSITORY"' in script
+    assert "compare/${SOURCE_SHA}...main" in script
+    assert '"$status" == "identical" || "$status" == "ahead"' in script
+
+
+def test_reaggregate_cache_retention_never_exceeds_the_source_window() -> None:
+    script = _step("Verify source run provenance")["run"]
+    assert 'run["created_at"]' in script
+    assert "remaining = 30 - math.ceil(age_days)" in script
+    assert "assert remaining >= 1" in script
+    assert "cache_retention_days={remaining}" in script
 
 
 def test_full_workflow_aggregate_installs_numpy() -> None:
