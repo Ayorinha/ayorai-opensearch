@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -207,3 +208,94 @@ def test_inference_artifact_rejects_non_string_digest_before_encryption(
             expected_sha256=digest,  # type: ignore[arg-type]
         )
     assert not encrypted.exists()
+
+
+@pytest.mark.parametrize("payload", [b"[]", b"null", b'"not-an-object"'])
+def test_inference_artifact_rejects_non_object_envelopes(
+    tmp_path: Path, payload: bytes
+) -> None:
+    plaintext = b'{"record_id":"synthetic-id"}\n'
+    manifest = _manifest(plaintext)
+    metadata = inference_metadata(manifest, run_id="synthetic-run", code_sha="synthetic-sha")
+    encrypted = tmp_path / "inference.jsonl.aesgcm"
+    restored = tmp_path / "restored.jsonl"
+    encrypted.write_bytes(payload)
+
+    with pytest.raises(ValueError, match="envelope must be an object"):
+        decrypt_inference_file(
+            encrypted,
+            restored,
+            key=bytes(range(32)),
+            expected_metadata=metadata,
+            expected_sha256=manifest["inference_dataset_sha256"],
+        )
+    assert not restored.exists()
+
+
+@pytest.mark.parametrize("mutation", ["missing-field", "extra-field"])
+def test_inference_artifact_rejects_noncanonical_envelope_fields(
+    tmp_path: Path, mutation: str
+) -> None:
+    plaintext = b'{"record_id":"synthetic-id"}\n'
+    manifest = _manifest(plaintext)
+    metadata = inference_metadata(manifest, run_id="synthetic-run", code_sha="synthetic-sha")
+    source = tmp_path / "inference.jsonl"
+    encrypted = tmp_path / "inference.jsonl.aesgcm"
+    restored = tmp_path / "restored.jsonl"
+    source.write_bytes(plaintext)
+    encrypt_inference_file(
+        source,
+        encrypted,
+        key=bytes(range(32)),
+        metadata=metadata,
+        expected_sha256=manifest["inference_dataset_sha256"],
+    )
+    envelope = json.loads(encrypted.read_text(encoding="utf-8"))
+    if mutation == "missing-field":
+        del envelope["ciphertext_b64"]
+    else:
+        envelope["unexpected"] = "synthetic-extra-field"
+    encrypted.write_text(json.dumps(envelope), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="envelope has unexpected fields"):
+        decrypt_inference_file(
+            encrypted,
+            restored,
+            key=bytes(range(32)),
+            expected_metadata=metadata,
+            expected_sha256=manifest["inference_dataset_sha256"],
+        )
+    assert not restored.exists()
+
+
+@pytest.mark.parametrize("field", ["nonce_b64", "ciphertext_b64"])
+def test_inference_artifact_rejects_non_string_envelope_payloads(
+    tmp_path: Path, field: str
+) -> None:
+    plaintext = b'{"record_id":"synthetic-id"}\n'
+    manifest = _manifest(plaintext)
+    metadata = inference_metadata(manifest, run_id="synthetic-run", code_sha="synthetic-sha")
+    source = tmp_path / "inference.jsonl"
+    encrypted = tmp_path / "inference.jsonl.aesgcm"
+    restored = tmp_path / "restored.jsonl"
+    source.write_bytes(plaintext)
+    encrypt_inference_file(
+        source,
+        encrypted,
+        key=bytes(range(32)),
+        metadata=metadata,
+        expected_sha256=manifest["inference_dataset_sha256"],
+    )
+    envelope = json.loads(encrypted.read_text(encoding="utf-8"))
+    envelope[field] = None
+    encrypted.write_text(json.dumps(envelope), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="nonce and ciphertext must be Base64 strings"):
+        decrypt_inference_file(
+            encrypted,
+            restored,
+            key=bytes(range(32)),
+            expected_metadata=metadata,
+            expected_sha256=manifest["inference_dataset_sha256"],
+        )
+    assert not restored.exists()
