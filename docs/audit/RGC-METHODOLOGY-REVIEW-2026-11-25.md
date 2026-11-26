@@ -12,7 +12,7 @@ Esta revisão retoma a linhagem já concluída da PR #269; não reinicia seus tr
 
 Foram consultados metadados GitHub, documentos normativos e de apoio, especificação do executor, código e testes automatizados. A ficha consultada do Piloto 02 é o template público em branco. Não foram abertos arquivos de casos reais, anotações humanas, partições DEV/oculta ou conteúdo do corpus capturado.
 
-Não foram executados testes locais, workflows, o Judge, o ATTRACTOR ou qualquer comando do executor. Nenhum caso foi criado, visto, completado ou rotulado; nenhuma anotação foi processada; nenhum K, kappa, intervalo, p-valor ou métrica real foi calculado.
+Não foram executados testes locais, workflows de avaliação/benchmark, o Judge, o ATTRACTOR ou qualquer comando do executor. A CI padrão da PR é acionada automaticamente e seus checks são acompanhados separadamente. Nenhum caso foi criado, visto, completado ou rotulado; nenhuma anotação foi processada; nenhum K, kappa, intervalo, p-valor ou métrica real foi calculado.
 
 Permanecem fora do escopo: alterações em Judge, Golden, manifests, hashes, fontes capturadas, pré-registro, protocolo normativo, decisões aprovadas e dados científicos; execução do sistema sobre o piloto ou benchmark; aprovação ou congelamento do protocolo.
 
