@@ -30,10 +30,10 @@ except ImportError:  # direct script execution
     from common import atomic_write_bytes, canonical_json, sha256_bytes
     from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 
-SCORE_SCHEMA_VERSION = "phase1b-dev-score-cache-v3"
-SCORE_SCHEMA_VERSION_V2 = "phase1b-dev-score-cache-v4"
-SCORE_SCHEMA_VERSION_V3 = "phase1b-dev-score-cache-v5"
-SCORE_SCHEMA_VERSION_V4 = "phase1b-dev-score-cache-v6"
+SCORE_CACHE_SCHEMA_V3 = "phase1b-dev-score-cache-v3"
+SCORE_CACHE_SCHEMA_V4 = "phase1b-dev-score-cache-v4"
+SCORE_CACHE_SCHEMA_V5 = "phase1b-dev-score-cache-v5"
+SCORE_CACHE_SCHEMA_V6 = "phase1b-dev-score-cache-v6"
 LABEL_SCHEMA_VERSION = "phase1b-dev-gold-label-cache-v1"
 SCORE_CACHE_SHARD_ID = "dev-score-cache"
 GOLD_LABEL_CACHE_SHARD_ID = "dev-gold-labels"
@@ -47,6 +47,10 @@ _HEX64 = re.compile(r"[0-9a-f]{64}")
 def _clean_score_record(record: dict[str, Any]) -> dict[str, Any]:
     if "gold" in record:
         raise ValueError("gold labels must never be included in the score cache")
+    unexpected = set(record) - set(SCORE_RECORD_FIELDS_V2)
+    if unexpected:
+        # Refuse rather than drop: a label-like field here means inference was contaminated.
+        raise ValueError(f"score record has unexpected fields: {sorted(unexpected)}")
     required = set(SCORE_RECORD_FIELDS)
     if not required.issubset(record):
         raise ValueError(f"score record is missing fields: {sorted(required - set(record))}")
@@ -69,8 +73,8 @@ def _clean_score_record(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def _clean_label_record(record: dict[str, Any]) -> dict[str, str]:
-    if not set(LABEL_RECORD_FIELDS).issubset(record):
-        raise ValueError("gold-label record is missing required fields")
+    if set(record) != set(LABEL_RECORD_FIELDS):
+        raise ValueError("gold-label record must contain exactly record_id, cohort and gold")
     record_id, cohort, gold = record["record_id"], record["cohort"], record["gold"]
     if not isinstance(record_id, str) or not record_id:
         raise ValueError("record_id must be a non-empty string")
@@ -116,7 +120,7 @@ def build_score_cache(
             raise ValueError("all models must cover the same DEV records")
         models[model] = {"protocol": protocols.get(model), "records": records}
     return {
-        "schema_version": SCORE_SCHEMA_VERSION_V3,
+        "schema_version": SCORE_CACHE_SCHEMA_V5,
         "split": "dev",
         "source_run_id": str(source_run_id),
         "source_code_sha": source_code_sha,
@@ -169,15 +173,15 @@ def encrypt_score_cache(
     if (
         schema
         not in {
-            SCORE_SCHEMA_VERSION,
-            SCORE_SCHEMA_VERSION_V2,
-            SCORE_SCHEMA_VERSION_V3,
-            SCORE_SCHEMA_VERSION_V4,
+            SCORE_CACHE_SCHEMA_V3,
+            SCORE_CACHE_SCHEMA_V4,
+            SCORE_CACHE_SCHEMA_V5,
+            SCORE_CACHE_SCHEMA_V6,
         }
         or cache.get("split") != "dev"
     ):
         raise ValueError("only supported DEV score caches may be encrypted")
-    if schema in {SCORE_SCHEMA_VERSION_V3, SCORE_SCHEMA_VERSION_V4} and (
+    if schema in {SCORE_CACHE_SCHEMA_V5, SCORE_CACHE_SCHEMA_V6} and (
         not isinstance(cache.get("source_code_sha"), str) or not cache["source_code_sha"]
     ):
         raise ValueError("score cache source_code_sha is missing")
@@ -204,23 +208,23 @@ def decrypt_score_cache(envelope: dict[str, Any], *, key: bytes) -> dict[str, An
     if (
         schema
         not in {
-            SCORE_SCHEMA_VERSION,
-            SCORE_SCHEMA_VERSION_V2,
-            SCORE_SCHEMA_VERSION_V3,
-            SCORE_SCHEMA_VERSION_V4,
+            SCORE_CACHE_SCHEMA_V3,
+            SCORE_CACHE_SCHEMA_V4,
+            SCORE_CACHE_SCHEMA_V5,
+            SCORE_CACHE_SCHEMA_V6,
         }
         or cache.get("split") != "dev"
     ):
         raise ValueError("unsupported score cache payload; legacy caches must be regenerated")
     if str(cache.get("source_run_id")) != str(metadata.get("run_id")):
         raise ValueError("score cache payload does not match its envelope metadata")
-    if schema in {SCORE_SCHEMA_VERSION_V3, SCORE_SCHEMA_VERSION_V4} and (
+    if schema in {SCORE_CACHE_SCHEMA_V5, SCORE_CACHE_SCHEMA_V6} and (
         not isinstance(cache.get("source_code_sha"), str) or not cache["source_code_sha"]
     ):
         raise ValueError("score cache source_code_sha is missing")
     for model, entry in cache["models"].items():
         records = _unique_sorted(entry["records"], _clean_score_record, f"score cache for {model}")
-        if schema in {SCORE_SCHEMA_VERSION_V2, SCORE_SCHEMA_VERSION_V4} and any(
+        if schema in {SCORE_CACHE_SCHEMA_V4, SCORE_CACHE_SCHEMA_V6} and any(
             "doc_id" not in record for record in records
         ):
             raise ValueError("cache v4 record is missing doc_id")
@@ -379,7 +383,7 @@ def main() -> None:
     for field in ("run_id", "split", "dataset_revision"):
         if score_metadata.get(field) != label_metadata.get(field):
             raise ValueError(f"score and gold-label envelope {field} differs")
-    if scores.get("schema_version") in {SCORE_SCHEMA_VERSION_V3, SCORE_SCHEMA_VERSION_V4}:
+    if scores.get("schema_version") in {SCORE_CACHE_SCHEMA_V5, SCORE_CACHE_SCHEMA_V6}:
         if scores.get("source_code_sha") != label_metadata.get("code_sha"):
             raise ValueError(
                 "score cache source_code_sha does not match gold-label source code_sha"

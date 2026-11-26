@@ -40,8 +40,8 @@ try:
     )
     from .encrypt_artifact import decode_key
     from .score_cache import (
+        SCORE_CACHE_SCHEMA_V5,
         SCORE_RECORD_FIELDS,
-        SCORE_SCHEMA_VERSION_V3,
         decrypt_gold_label_cache,
         decrypt_score_cache,
         encrypt_score_cache,
@@ -62,8 +62,8 @@ except ImportError:  # direct script execution
     )
     from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
     from scripts.benchmarks.phase1b.score_cache import (
+        SCORE_CACHE_SCHEMA_V5,
         SCORE_RECORD_FIELDS,
-        SCORE_SCHEMA_VERSION_V3,
         decrypt_gold_label_cache,
         decrypt_score_cache,
         encrypt_score_cache,
@@ -145,7 +145,7 @@ def _expected_from_labels(label_cache: dict[str, Any]) -> dict[str, tuple[str, s
 def build_cache_v2(
     cache: dict[str, Any], mapping: dict[str, str], *, pin: dict[str, Any]
 ) -> dict[str, Any]:
-    if cache.get("schema_version") != SCORE_SCHEMA_VERSION_V3:
+    if cache.get("schema_version") != SCORE_CACHE_SCHEMA_V5:
         raise ValueError("cache v2 is built only from the current prediction-only score cache")
     models: dict[str, Any] = {}
     for model, entry in sorted(cache["models"].items()):
@@ -161,7 +161,7 @@ def build_cache_v2(
             "dataset_revision": pin["revision"],
             "dataset_sha256": pin["sha256"],
             "doc_map_sha256": sha256_bytes(canonical_json(mapping)),
-            "parent_schema_version": SCORE_SCHEMA_VERSION_V3,
+            "parent_schema_version": SCORE_CACHE_SCHEMA_V5,
         },
     )
     verify_v2_matches_v1(cache, v2)
