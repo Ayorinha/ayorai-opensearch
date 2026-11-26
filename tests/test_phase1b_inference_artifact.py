@@ -211,9 +211,7 @@ def test_inference_artifact_rejects_non_string_digest_before_encryption(
 
 
 @pytest.mark.parametrize("payload", [b"[]", b"null", b'"not-an-object"'])
-def test_inference_artifact_rejects_non_object_envelopes(
-    tmp_path: Path, payload: bytes
-) -> None:
+def test_inference_artifact_rejects_non_object_envelopes(tmp_path: Path, payload: bytes) -> None:
     plaintext = b'{"record_id":"synthetic-id"}\n'
     manifest = _manifest(plaintext)
     metadata = inference_metadata(manifest, run_id="synthetic-run", code_sha="synthetic-sha")
