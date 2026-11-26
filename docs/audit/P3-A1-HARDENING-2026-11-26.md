@@ -51,11 +51,13 @@ As #635 e #636 continuam abertas. O mantenedor decide se esta PR as substitui.
 | S-01 | alto | teste da #636 fora do `ruff format`: a CI reprovaria | reformatado (`bfb3a834`) |
 | S-05 | médio | a re-agregação reenviava os caches gold e score com 30 dias novos; a vida dos rótulos podia passar de 30 dias (até 7 a mais, a janela dos shards de origem) | os caches reenviados herdam o que resta da janela de 30 dias da execução de origem; origem expirada é recusada (`ecefbdce`) |
 | S-06 | médio | a origem de re-agregação e experimento era aceita só por `head_branch == "main"`, o que uma tag chamada `main` também satisfaz | exige origem neste repositório e commit contido na `main` (`compare/<sha>...main` igual a `identical` ou `ahead`) (`ecefbdce`) |
-| S-08 | médio | caminhos de recusa sem teste; cobertura em processo baixa | 50 testes adversariais. Cobertura em processo: `manifest_artifact` 59%→77%, `encrypt_artifact` 49%→64%, `prepare_dev_artifacts` 56%→62%, `emit_matrix` 46%→51%. O restante é sobretudo o `main()` dos CLIs, exercitado em subprocesso, que a cobertura simples não mede |
+| S-08 | médio | caminhos de recusa sem teste; cobertura em processo baixa | 51 testes adversariais e 6 de CLI em processo. Cobertura em processo: `inference_artifact` 70%→89%, `manifest_artifact` 59%→87%, `prepare_dev_artifacts` 56%→87%, `encrypt_artifact` 49%→66%. `aggregate_dev` (42%) e `score_cache` (64%) têm o CLI coberto só por testes em subprocesso |
 | S-12 | baixo | `shard_id` sem formato, usado em nomes de artefato e caminhos | só `dev-NNNN`, sem duplicatas, no validador do manifesto e no gerador da matriz (`bbcd61b6`) |
 | S-13 | baixo | campo parecido com rótulo (`label`) no registro de score era descartado em silêncio | recusado; o registro gold também exige exatamente os seus 3 campos (`8abbd144`) |
 | S-15 | baixo | no job `plan`, a chave gold estava no passo que também montava o manifesto e cifrava a inferência | passo dividido; só a separação dos rótulos (e a checagem das chaves) recebe a chave gold (`0e15281f`) |
 | S-16 | baixo | `SCORE_SCHEMA_VERSION_V2..V4` guardavam as versões v4..v6 | renomeadas para `SCORE_CACHE_SCHEMA_V3..V6` (`8abbd144`) |
+| S-07 | médio | os jobs com as chaves instalavam `cryptography` 46.0.3 (7 alertas publicados, corrigidos até a 50.0.0, inclusive o OpenSSL embutido nas wheels), enquanto o produto e os testes usam a 50.x. O job `plan`, que agora tem a chave gold, instalava os pins históricos (`pyarrow` 21.0.0, PYSEC-2026-113) sem conferência de hash | `plan`, `aggregate`, re-agregação e experimento instalam `requirements-phase1b-protected.txt` com `--require-hashes --only-binary :all:` (`cryptography` 50.0.2, `pyarrow` 23.0.1; `pip-audit` sem alertas; instalação testada em Python 3.12). O job de inferência mantém os pins históricos, pela reprodução numérica, e recebe `cryptography` 50.0.2 (`d25bd828`). Ver `docs/security/HISTORICAL-PINS.md` |
+| S-04 | médio | colisão de identidade no DEV aborta a execução sem dizer o tamanho do problema | o construtor do manifesto informa só contagens: identidades repetidas, linhas extras, conflitos de rótulo. Nenhum conteúdo aparece (`91691caa`) |
 | S-14 | baixo | gold e score decifram com o próprio metadado como AAD | **sem mudança.** O AAD é autenticado pelo GCM, e os campos são comparados antes da junção (`aggregate_dev.py`, `score_cache.main`) com o manifesto e entre si. Equivale a passar o AAD esperado |
 
 ## 4. O que depende do mantenedor
@@ -64,9 +66,9 @@ As #635 e #636 continuam abertas. O mantenedor decide se esta PR as substitui.
 |---|---|---|---|
 | S-02 | alto | a guarda `github.ref == 'refs/heads/main'` está no próprio workflow; a barreira real é a política do Environment `international-benchmark-maintainer-approval` | configuração do GitHub, que exige acesso de administrador. Verificar: só a branch `main` (sem tags), aprovador obrigatório, dois secrets distintos [HIPÓTESE até a confirmação] |
 | S-03 | alto | a `main` atual roda o desenho anterior à P3 (manifesto em claro, gold junto com score) | **não disparar workflows phase1b na `main` até a P3 entrar** |
-| S-04 | médio | o `record_id` sem rótulo faz pares doc/afirmação/coorte com rótulos diferentes abortarem a execução | saber se existem no DEV fixado exige contar sobre o dado real; precisa de autorização para uma contagem agregada, sem expor registros |
-| S-07 | médio | jobs com secrets instalam pacotes sem `--require-hashes` (preexistente) | muda o lock de dependências de benchmark; tarefa própria |
-| S-09 | médio | a retenção de 30 dias foi registrada como "delegada" em comentário de ferramenta | decisão de governança. Proposta: registrar "caches gold e score cifrados: 30 dias a partir da execução de origem, sem renovação por re-agregação; manifesto e shards: 7 dias" |
+| S-04 | médio | só o dado real diz se há colisões | o DEV é restrito no Hugging Face e não foi baixado nesta revisão. A primeira execução autorizada informa as contagens antes de usar qualquer chave. Se houver conflitos de rótulo, a política é decisão metodológica |
+| S-07 (residual) | baixo | o PyTorch do job de inferência continua por versão, sem hash | `download.pytorch.org` estava bloqueado pela rede deste ambiente |
+| S-09 | médio | a retenção de 30 dias foi registrada como "delegada" em comentário de ferramenta | registrada como **proposta DEC-033** em `docs/DECISIONS-PENDING.md`; aguarda a decisão do mantenedor |
 | S-10 | médio | a #642 cita HEADs antigos | atualizar ou fechar a #642; este documento a substitui tecnicamente |
 | S-11 | médio | não há revisão humana independente | só o mantenedor pode obtê-la |
 
@@ -76,8 +78,9 @@ Ambiente: Python 3.13.18, Ruff 0.17.5.
 
 | verificação | resultado |
 |---|---|
-| suíte completa | 3.360 aprovados [FATO] |
-| testes phase1b | 309 aprovados (antes: 255) [FATO] |
+| suíte completa | ver a PR (atualizado a cada push) [FATO] |
+| testes phase1b | 321 aprovados (antes: 255) [FATO] |
+| lock protegido em Python 3.12 limpo (`--require-hashes`) | instalação ok; 101 testes phase1b ok nesse ambiente [FATO] |
 | Ruff check e format, mypy, Bandit (`src/`) | limpos [FATO] |
 | Golden smoke-v0, v0, v0.1 | `969ec61a…`, `21abb816…`, `1fd6fdb7…`: inalterados [FATO] |
 | arquivos protegidos (Judge, Golden, `evals/`, `rules/`, ADRs, decisões, `configs/`) | nenhum alterado [FATO] |

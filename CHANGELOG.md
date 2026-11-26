@@ -91,7 +91,8 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
   - **Caches cifrados à parte:** rótulos gold e scores ficam em caches separados, com chaves distintas, e só são juntados na avaliação.
   - **Manifesto e entrada cifrados:** o manifesto (IDs por registro) e a entrada de inferência sobem cifrados com AES-256-GCM. O SHA-256 da entrada é conferido antes de cifrar e depois de decifrar.
   - **Execuções de origem:** re-agregação e experimentos só aceitam origem com commit na `main` deste repositório.
-  - **Retenção:** os caches reenviados não ultrapassam a janela de 30 dias da execução de origem.
+  - **Retenção:** os caches reenviados não ultrapassam a janela de 30 dias da execução de origem. Proposta de decisão: DEC-033.
+  - **Dependências travadas por hash:** os jobs que têm as chaves e não rodam inferência instalam `requirements-phase1b-protected.txt` com hashes (`cryptography` 50.0.2, `pyarrow` 23.0.1). Antes instalavam `cryptography` 46.0.3, que tem alertas de segurança publicados.
 - `docker-compose.yml` endurecido: raiz só de leitura, `/tmp` em tmpfs `noexec,nosuid`, `cap_drop: ALL` e `no-new-privileges`, validados na homologação local de 2026-11-21 (`docs/audit/HOMOLOGATION-LOCAL-2026-11-21.md`).
 - Ferramentas de operação: `scripts/ops/homologation_smoke.py` (16 verificações de segurança e operação contra uma instância) e `scripts/benchmarks/load_test.py` (carga em laço fechado). A medição de capacidade de 2026-11-21 está em `docs/benchmarks/CAPACITY-2026-11-21.md`.
 - Correção: erros de providers deixam de expor ao cliente da API a URL interna completa da busca (host, porta e índice), que aparecia em `failures[].message` em respostas 4xx e 5xx do OpenSearch. O cliente recebe só o tipo do erro; o detalhe vai para o log do servidor.
