@@ -13,6 +13,7 @@ try:
     from .common import (
         DEV_PIN_PATH,
         MANIFEST_SCHEMA_VERSION,
+        SHARD_ID_PATTERN,
         atomic_write_bytes,
         canonical_json,
         sha256_bytes,
@@ -22,6 +23,7 @@ except ImportError:  # direct script execution
     from common import (
         DEV_PIN_PATH,
         MANIFEST_SCHEMA_VERSION,
+        SHARD_ID_PATTERN,
         atomic_write_bytes,
         canonical_json,
         sha256_bytes,
@@ -64,7 +66,11 @@ def validate_manifest(manifest: dict[str, Any], *, code_sha: str) -> None:
         shard_id = shard.get("shard_id")
         ids = shard.get("record_ids")
         count = shard.get("count")
-        if not isinstance(shard_id, str) or not shard_id or shard_id in shard_ids:
+        if (
+            not isinstance(shard_id, str)
+            or re.fullmatch(SHARD_ID_PATTERN, shard_id) is None
+            or shard_id in shard_ids
+        ):
             raise ValueError("DEV manifest shard identity is invalid or duplicated")
         if (
             not isinstance(ids, list)

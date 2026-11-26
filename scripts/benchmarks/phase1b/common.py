@@ -11,6 +11,8 @@ from typing import Any
 
 DEV_PIN_PATH = Path("configs/benchmarks/llm-aggrefact-dev-pin.json")
 MANIFEST_SCHEMA_VERSION = "phase1b-dev-manifest-v2"
+# Shard IDs become artifact names and runner paths; only the builder's format is valid.
+SHARD_ID_PATTERN = r"dev-[0-9]{4}"
 RECORD_ID_METHOD = 'sha256(canonical_json({"doc": ..., "claim": ..., "dataset": ...}))'
 LABEL_MAP_PATH = Path("configs/benchmarks/llm-aggrefact-label-map-v1.json")
 MODELS: dict[str, dict[str, str]] = {
