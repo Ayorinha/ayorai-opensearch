@@ -429,3 +429,31 @@ def test_encrypted_manifest_round_trip_and_tampering(tmp_path: Path) -> None:
         manifest_artifact.decrypt_manifest_file(
             tmp_path / "m.aesgcm", tmp_path / "x.json", key=key, expected_metadata=wrong_run
         )
+
+
+def test_manifest_builder_reports_duplicate_identities_as_counts_only() -> None:
+    """S-04: collisions are diagnosed without echoing any document, claim or label."""
+    from scripts.benchmarks.phase1b.build_manifest import build_manifest
+
+    rows = _rows()
+    secret_doc = "UNIQUE-SENTINEL-DOCUMENT"
+    rows[0] = {**rows[0], "doc": secret_doc}
+    duplicated = [
+        *rows,
+        dict(rows[0]),  # exact copy
+        {**rows[1], "label": "0" if rows[1]["label"] == "1" else "1"},  # label conflict
+    ]
+    with pytest.raises(ValueError) as caught:
+        build_manifest(
+            duplicated,
+            dataset_sha256=PIN["sha256"],
+            dataset_revision=PIN["revision"],
+            code_sha=CODE_SHA,
+            shard_size=2,
+        )
+    message = str(caught.value)
+    assert message == (
+        "duplicate content-addressed DEV row: 2 identities repeated (2 extra rows), "
+        "1 with conflicting labels"
+    )
+    assert secret_doc not in message and "claim" not in message
