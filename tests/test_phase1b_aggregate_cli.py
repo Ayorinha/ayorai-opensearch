@@ -186,6 +186,7 @@ def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
     assert "records" not in serialized
     assert not any(record_id in serialized for record_id in rows_by_id)
 
+
 def test_gold_label_cache_input_requires_calibration_v2_before_key_or_file_access(
     tmp_path: Path,
 ) -> None:
