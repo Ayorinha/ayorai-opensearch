@@ -21,6 +21,7 @@ Permanecem fora do escopo: alterações em Judge, Golden, manifests, hashes, fon
 ### `main`
 
 - `main` está protegida e aponta para `3932d171fa5b4554684ec247555d3eaa8081e568`, commit de 2026-11-22 que integrou a PR #634 (P2).
+- O ruleset `Protecao-main-ATTRACTOR` (ID `24996139`) foi consultado diretamente e está `active` no branch padrão. Exige PR, bloqueia deleção e non-fast-forward e exige os checks `test (3.11)`, `test (3.12)`, `test (3.13)`, `golden-regression`, `judge-regression` e `security`. A regra registra zero aprovações obrigatórias (configuração deliberada para o mantenedor único) e `current_user_can_bypass=never`, sem atores de bypass.
 - Os 18 check runs associados a esse SHA estão concluídos: **18 success, 0 skipped, 0 falhas**. Isso é evidência de CI de engenharia, não validação científica RGC.
 - A página atual de `docs/STATUS.md` ainda identifica a base anterior `a91da0f`. A PR #642, em Draft, atualiza o status para P3/A1 e não é uma continuação da revisão metodológica RGC; este documento não altera aquele arquivo.
 
