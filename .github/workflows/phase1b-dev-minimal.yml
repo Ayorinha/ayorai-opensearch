@@ -51,16 +51,11 @@ jobs:
       - name: Validate required secret without printing it
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
-          PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
         run: |
           python - <<'PY'
-          import os
           from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
-          score_key = decode_key()
-          gold_key = decode_key(os.environ["PHASE1B_GOLD_LABEL_ENCRYPTION_KEY"])
-          assert len(score_key) == len(gold_key) == 32
-          assert score_key != gold_key
-          print("ENCRYPTION_SECRETS: VALID AND DISTINCT (values not displayed)")
+          assert len(decode_key()) == 32
+          print("ARTIFACT_ENCRYPTION_SECRET: VALID (value not displayed)")
           PY
       - name: Download and verify immutable DEV parquet
         env:
@@ -73,18 +68,16 @@ jobs:
             --dataset-path "$DEV_PARQUET" --split dev \
             --sample-size 10 --shard-size 5 --max-shards 2 \
             --seed 20261106 --output /tmp/phase1b-manifest.json
-      # A1: only this step receives the gold-label key; it splits labels from inputs.
-      - name: Separate inference inputs from encrypted gold labels
-        env:
-          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
-          PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
+      # A1: the minimal run computes no quality metric, so it keeps no gold labels and
+      # never receives the gold-label key.
+      - name: Write inference-only inputs and discard gold labels
         run: |
           set -euo pipefail
           python scripts/benchmarks/phase1b/prepare_dev_artifacts.py \
             --dataset-path "$DEV_PARQUET" \
             --manifest /tmp/phase1b-manifest.json \
             --inference-output "$INFERENCE_DATA" \
-            --gold-label-cache-output /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json \
+            --discard-gold-labels \
             --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
       - name: Encrypt inference inputs for transport
         env:

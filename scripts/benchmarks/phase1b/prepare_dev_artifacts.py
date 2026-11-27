@@ -56,10 +56,18 @@ def prepare(
     *,
     source_run_id: str,
     code_sha: str,
-    gold_key: bytes,
+    gold_key: bytes | None,
     inference_output: Path,
-    gold_label_output: Path,
+    gold_label_output: Path | None,
 ) -> dict[str, Any]:
+    """Write the inference-only input and, unless discarded, the encrypted gold labels.
+
+    ``gold_label_output=None`` (with ``gold_key=None``) discards the labels: runs that
+    never evaluate quality, such as the minimal DEV smoke run, need neither the gold
+    key nor a gold artifact.
+    """
+    if (gold_key is None) != (gold_label_output is None):
+        raise ValueError("gold-label key and output must be given together or both omitted")
     if (
         manifest.get("split") != "dev"
         or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION
@@ -124,6 +132,8 @@ def prepare(
     manifest.pop("manifest_sha256", None)
     manifest["manifest_sha256"] = sha256_bytes(canonical_json(manifest))
 
+    if gold_key is None or gold_label_output is None:
+        return manifest
     labels = build_gold_label_cache(
         gold_rows,
         manifest_sha256=manifest["manifest_sha256"],
@@ -147,18 +157,26 @@ def main() -> None:
     parser.add_argument("--dataset-path", required=True, type=Path)
     parser.add_argument("--manifest", required=True, type=Path)
     parser.add_argument("--inference-output", required=True, type=Path)
-    parser.add_argument("--gold-label-cache-output", required=True, type=Path)
+    labels = parser.add_mutually_exclusive_group(required=True)
+    labels.add_argument("--gold-label-cache-output", type=Path)
+    labels.add_argument(
+        "--discard-gold-labels",
+        action="store_true",
+        help="write only the inference input; no gold key is read and no label is kept",
+    )
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--code-sha", required=True)
     args = parser.parse_args()
 
-    raw_key = os.environ.get("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY")
-    if not raw_key:
-        raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
-    gold_key = decode_key(raw_key)
-    score_key = decode_key()
-    if gold_key == score_key:
-        raise ValueError("gold-label and prediction encryption keys must be distinct")
+    gold_key: bytes | None = None
+    if not args.discard_gold_labels:
+        raw_key = os.environ.get("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY")
+        if not raw_key:
+            raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
+        gold_key = decode_key(raw_key)
+        score_key = decode_key()
+        if gold_key == score_key:
+            raise ValueError("gold-label and prediction encryption keys must be distinct")
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     if sha256_file(args.dataset_path) != manifest.get("dataset_sha256"):
         raise ValueError("source DEV dataset SHA-256 does not match the manifest")
@@ -169,7 +187,7 @@ def main() -> None:
         code_sha=args.code_sha,
         gold_key=gold_key,
         inference_output=args.inference_output,
-        gold_label_output=args.gold_label_cache_output,
+        gold_label_output=None if args.discard_gold_labels else args.gold_label_cache_output,
     )
     atomic_write_bytes(args.manifest, canonical_json(prepared) + b"\n")
     print(
@@ -180,7 +198,8 @@ def main() -> None:
                 "record_count": prepared["sample_count"],
                 "manifest_sha256": prepared["manifest_sha256"],
                 "inference_dataset_sha256": prepared["inference_dataset_sha256"],
-                "gold_labels_encrypted": True,
+                "gold_labels_encrypted": not args.discard_gold_labels,
+                "gold_labels_discarded": bool(args.discard_gold_labels),
                 "labels_in_inference_input": False,
             },
             sort_keys=True,

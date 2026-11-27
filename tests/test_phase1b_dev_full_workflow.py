@@ -159,7 +159,11 @@ def test_full_dev_workflow_is_separate_from_minimal_workflow() -> None:
     assert "inference_artifact.py encrypt" in minimal_text
     assert "inference_artifact.py decrypt" in minimal_text
     assert "path: /tmp/phase1b-dev-inference.jsonl.aesgcm" in minimal_text
-    assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" in minimal_text
+    # The minimal run computes no quality metric: no gold key, no gold artifact.
+    assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" not in minimal_text
+    assert "phase1b-dev-gold-label-cache" not in minimal_text
+    assert "--gold-label-cache" not in minimal_text
+    assert "--discard-gold-labels" in minimal_text
     assert "fetch_dev.py" not in str(minimal["jobs"]["shard"])
     assert "github.ref == 'refs/heads/main'" in minimal["jobs"]["plan"]["if"]
 
@@ -210,14 +214,15 @@ def test_minimal_aggregate_removes_decrypted_inputs_on_failure() -> None:
 
 def test_gold_label_key_reaches_only_the_steps_that_need_it() -> None:
     """S-15: in the plan job, only the key check and the label split see the gold key."""
-    allowed = {
-        "Validate required secret without printing it",
-        "Separate inference inputs from encrypted gold labels",
+    expected = {
+        Path(".github/workflows/phase1b-dev-full.yml"): {
+            "Validate required secret without printing it",
+            "Separate inference inputs from encrypted gold labels",
+        },
+        # The minimal run keeps no gold labels, so no step may see the gold key.
+        Path(".github/workflows/phase1b-dev-minimal.yml"): set(),
     }
-    for path in (
-        Path(".github/workflows/phase1b-dev-full.yml"),
-        Path(".github/workflows/phase1b-dev-minimal.yml"),
-    ):
+    for path, allowed in expected.items():
         workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
         holders = {
             step.get("name")

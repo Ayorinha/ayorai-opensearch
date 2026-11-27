@@ -237,3 +237,68 @@ def test_clis_refuse_to_start_without_the_artifact_key(
             CODE_SHA,
         )
     assert not (workspace["dir"] / "m.aesgcm").exists()
+
+
+def test_prepare_can_discard_gold_labels_without_the_gold_key(
+    workspace: dict[str, Any], monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    """The minimal run writes the inference input only: no gold key, no gold artifact."""
+    monkeypatch.delenv("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY")
+    monkeypatch.delenv("PHASE1B_ARTIFACT_ENCRYPTION_KEY")
+    directory = workspace["dir"]
+    _run(
+        monkeypatch,
+        prepare,
+        "--dataset-path",
+        str(workspace["dataset"]),
+        "--manifest",
+        str(workspace["manifest"]),
+        "--inference-output",
+        str(directory / "inference.jsonl"),
+        "--discard-gold-labels",
+        "--run-id",
+        "101",
+        "--code-sha",
+        CODE_SHA,
+    )
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["gold_labels_discarded"] is True
+    assert summary["gold_labels_encrypted"] is False
+    lines = (directory / "inference.jsonl").read_text(encoding="utf-8").splitlines()
+    assert all(set(json.loads(line)) == {"record_id", "doc", "claim", "dataset"} for line in lines)
+    assert sorted(path.name for path in directory.iterdir()) == [
+        "dev.jsonl",
+        "inference.jsonl",
+        "manifest.json",
+    ]
+
+
+def test_prepare_needs_exactly_one_label_destination(
+    workspace: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args = _prepare_args(workspace)
+    with pytest.raises(SystemExit) as caught:
+        _run(monkeypatch, prepare, *args, "--discard-gold-labels")
+    assert caught.value.code == 2
+    without_destination = [
+        arg
+        for index, arg in enumerate(args)
+        if arg != "--gold-label-cache-output"
+        and (index == 0 or args[index - 1] != "--gold-label-cache-output")
+    ]
+    with pytest.raises(SystemExit) as caught:
+        _run(monkeypatch, prepare, *without_destination)
+    assert caught.value.code == 2
+
+
+def test_prepare_function_requires_key_and_output_together(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="together"):
+        prepare.prepare(
+            _rows(),
+            _manifest("0" * 64),
+            source_run_id="101",
+            code_sha=CODE_SHA,
+            gold_key=secrets.token_bytes(32),
+            inference_output=tmp_path / "i",
+            gold_label_output=None,
+        )
