@@ -28,7 +28,7 @@ Permanecem fora do escopo: alterações em Judge, Golden, manifests, hashes, fon
 
 - [PR #269](https://github.com/Ayorinha/ayorai-opensearch/pull/269): fechada em 2026-10-19, **sem merge**, ainda registrada como Draft. Head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`; base histórica `71e682c97bb12788ef95e799d889a2454bfdd0eb`.
 - O diff da #269 tinha dois arquivos: `docs/ARCHITECTURE.md` (alteração incidental) e `docs/eval/METHODOLOGY-REVIEW-RGC-PTBR-2026-10-18.md`. A conversa tem três comentários do mantenedor; não há reviews submetidas nem threads inline.
-- No head da #269, os 20 check runs terminaram: **19 success e 1 skipped** (`rgc-design-simulation)); nenhum falhou. O endpoint legado de commit statuses não tinha registros, o que não invalida os check runs.
+- No head da #269, os 20 check runs terminaram: **19 success e 1 skipped** (`rgc-design-simulation`); nenhum falhou. O endpoint legado de commit statuses não tinha registros, o que não invalida os check runs.
 - A #269 foi substituída pela [#272](https://github.com/Ayorinha/ayorai-opensearch/pull/272), também fechada sem merge, e depois pela [#273](https://github.com/Ayorinha/ayorai-opensearch/pull/273). A #273 foi mesclada em 2026-10-20; o merge commit [`5719db4`](https://github.com/Ayorinha/ayorai-opensearch/commit/5719db48fc82c726671af7c9c7f7ef386d161edb) alterou somente `docs/eval/METHODOLOGY-REVIEW-RGC-PTBR-2026-10-18.md`. Seus checks foram 19 success e 1 skipped. A revisão inicial está, portanto, preservada e concluída.
 
 ### Continuidade metodológica já integrada
