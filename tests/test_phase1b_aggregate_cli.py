@@ -225,4 +225,3 @@ def test_gold_label_cache_input_requires_calibration_v2_before_key_or_file_acces
     assert "PHASE1B_ARTIFACT_ENCRYPTION_KEY" not in completed.stderr
     assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" not in completed.stderr
     assert not output_path.exists()
-
