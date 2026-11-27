@@ -330,6 +330,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.score_cache_output is not None and not args.calibration_v2:
         parser.error("--score-cache-output requires --calibration-v2")
+    if args.gold_label_cache_input is not None and not args.calibration_v2:
+        parser.error("--gold-label-cache-input requires --calibration-v2")
     if args.calibration_v2 and args.gold_label_cache_input is None:
         parser.error("--calibration-v2 requires --gold-label-cache-input")
 
