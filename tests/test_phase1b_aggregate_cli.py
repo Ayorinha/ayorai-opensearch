@@ -185,3 +185,43 @@ def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
     assert "record_id" not in serialized
     assert "records" not in serialized
     assert not any(record_id in serialized for record_id in rows_by_id)
+
+def test_gold_label_cache_input_requires_calibration_v2_before_key_or_file_access(
+    tmp_path: Path,
+) -> None:
+    output_path = tmp_path / "aggregate.json"
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key
+        not in {
+            "PYTHONPATH",
+            "PHASE1B_ARTIFACT_ENCRYPTION_KEY",
+            "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY",
+        }
+    }
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(AGGREGATOR),
+            "--manifest",
+            str(tmp_path / "missing-manifest.json"),
+            "--encrypted-dir",
+            str(tmp_path / "missing-encrypted"),
+            "--output",
+            str(output_path),
+            "--gold-label-cache-input",
+            str(tmp_path / "missing-gold-cache.json"),
+        ],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 2
+    assert "--gold-label-cache-input requires --calibration-v2" in completed.stderr
+    assert "PHASE1B_ARTIFACT_ENCRYPTION_KEY" not in completed.stderr
+    assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" not in completed.stderr
+    assert not output_path.exists()
+
