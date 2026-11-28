@@ -10,9 +10,12 @@ from pathlib import Path
 from typing import Any
 
 DEV_PIN_PATH = Path("configs/benchmarks/llm-aggrefact-dev-pin.json")
-MANIFEST_SCHEMA_VERSION = "phase1b-dev-manifest-v2"
+MANIFEST_SCHEMA_VERSION = "phase1b-dev-manifest-v3"
 # Shard IDs become artifact names and runner paths; only the builder's format is valid.
 SHARD_ID_PATTERN = r"dev-[0-9]{4}"
+# DEC-034 (option A): exact repeats keep one row; identities whose copies disagree on the
+# label are excluded entirely, so no gold label is ever chosen by the pipeline.
+DEDUP_POLICY = "dec-034-a: keep one copy of label-consistent repeats; exclude label conflicts"
 RECORD_ID_METHOD = 'sha256(canonical_json({"doc": ..., "claim": ..., "dataset": ...}))'
 LABEL_MAP_PATH = Path("configs/benchmarks/llm-aggrefact-label-map-v1.json")
 MODELS: dict[str, dict[str, str]] = {
@@ -82,6 +85,42 @@ def stable_record_id(row: dict[str, Any]) -> str:
         "dataset": row["dataset"],
     }
     return sha256_bytes(canonical_json(identity))
+
+
+def resolve_dev_identities(
+    rows: list[dict[str, Any]],
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """Apply DEC-034 option A and return the rows by record ID plus count-only stats.
+
+    Rows sharing a record ID (doc, claim and cohort) are copies of one inference input.
+    If every copy has the same label, the first copy is kept. If the copies disagree on
+    the label, the identity is excluded: the pipeline never picks a gold label. The stats
+    hold counts only, never row content.
+    """
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        groups.setdefault(stable_record_id(row), []).append(row)
+    kept: dict[str, dict[str, Any]] = {}
+    repeated = duplicate_rows_removed = conflicting = conflicting_rows = 0
+    for record_id, copies in groups.items():
+        if len(copies) > 1:
+            repeated += 1
+        if len({str(copy["label"]) for copy in copies}) > 1:
+            conflicting += 1
+            conflicting_rows += len(copies)
+            continue
+        duplicate_rows_removed += len(copies) - 1
+        kept[record_id] = copies[0]
+    stats = {
+        "policy": DEDUP_POLICY,
+        "source_rows": len(rows),
+        "repeated_identities": repeated,
+        "duplicate_rows_removed": duplicate_rows_removed,
+        "conflicting_identities_excluded": conflicting,
+        "conflicting_rows_excluded": conflicting_rows,
+        "unique_identities_kept": len(kept),
+    }
+    return kept, stats
 
 
 def safe_failure(exc: BaseException) -> dict[str, str]:

@@ -21,9 +21,9 @@ try:
         atomic_write_bytes,
         canonical_json,
         load_records,
+        resolve_dev_identities,
         sha256_bytes,
         sha256_file,
-        stable_record_id,
     )
     from .encrypt_artifact import decode_key
     from .score_cache import build_gold_label_cache, encrypt_gold_label_cache
@@ -39,9 +39,9 @@ except ImportError:  # direct script execution
         atomic_write_bytes,
         canonical_json,
         load_records,
+        resolve_dev_identities,
         sha256_bytes,
         sha256_file,
-        stable_record_id,
     )
     from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
     from scripts.benchmarks.phase1b.score_cache import (
@@ -79,14 +79,13 @@ def prepare(
         raise ValueError("source DEV manifest digest verification failed")
     if manifest.get("code_sha") != code_sha:
         raise ValueError("manifest code SHA does not match preparation code SHA")
-    indexed: dict[str, dict[str, Any]] = {}
     for row in rows:
-        record_id = stable_record_id(row)
-        if record_id in indexed:
-            raise ValueError("duplicate content-addressed DEV row")
         if str(row.get("label")) not in {"0", "1"}:
             raise ValueError("DEV label is outside the frozen binary mapping")
-        indexed[record_id] = row
+    # Same DEC-034 resolution as the manifest builder (the CLI already binds the source
+    # file to the manifest by SHA-256): conflicting identities are absent, so a manifest
+    # that selects one fails the coverage check below.
+    indexed, _ = resolve_dev_identities(rows)
 
     selected_ids = [
         record_id
