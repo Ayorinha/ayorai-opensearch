@@ -71,7 +71,7 @@ As #635 e #636 continuam abertas. O mantenedor decide se esta PR as substitui.
 | S-03 | alto | a `main` atual roda o desenho anterior à P3 (manifesto em claro, gold junto com score) | **não disparar workflows phase1b na `main` até a P3 entrar** |
 | S-04 | médio | só o dado real diz se há colisões | o DEV é restrito no Hugging Face e não foi baixado nesta revisão. A primeira execução autorizada informa as contagens antes de usar qualquer chave. Se houver conflitos de rótulo, a política é decisão metodológica |
 | S-07 (residual) | baixo | o PyTorch do job de inferência continua por versão, sem hash | `download.pytorch.org` estava bloqueado pela rede deste ambiente |
-| S-09 | médio | a retenção de 30 dias foi registrada como "delegada" em comentário de ferramenta | registrada como **proposta DEC-033** em `docs/DECISIONS-PENDING.md`; aguarda a decisão do mantenedor |
+| S-09 | médio | a retenção de 30 dias foi registrada como "delegada" em comentário de ferramenta | **decidida: DEC-033, opção A (2026-11-28)**, registrada em `docs/DECISIONS-APPROVED.md` |
 | S-10 | médio | a #642 cita HEADs antigos | atualizar ou fechar a #642; este documento a substitui tecnicamente |
 | S-11 | médio | não há revisão humana independente | só o mantenedor pode obtê-la |
 
