@@ -25,7 +25,6 @@ from scripts.benchmarks.phase1b.doc_map import (
     verify_v2_matches_v1,
 )
 from scripts.benchmarks.phase1b.score_cache import (
-    SCHEMA_VERSION_V2,
     build_score_cache,
     decrypt_score_cache,
     encrypt_score_cache,
@@ -57,7 +56,7 @@ def _clustered_rows() -> list[dict]:
 def _pin_for(path: Path, tmp_path: Path, *, file: str = EXPECTED_DEV_FILE) -> Path:
     pin = {
         "dataset": "lytang/LLM-AggreFact",
-        "revision": "a" * 40,
+        "revision": "synthetic-revision",
         "file": file,
         "size_bytes": path.stat().st_size,
         "sha256": sha256_file(path),
@@ -88,6 +87,13 @@ def test_doc_id_groups_claims_of_the_same_document_within_a_cohort() -> None:
     assert len(per_doc) == len(rows) // CLAIMS_PER_DOC
 
 
+def test_exact_duplicate_rows_map_once() -> None:
+    rows = _clustered_rows()
+    assert build_doc_map([*rows, dict(rows[0])], _expected(rows)) == build_doc_map(
+        rows, _expected(rows)
+    )
+
+
 def test_same_text_in_two_cohorts_is_two_clusters() -> None:
     assert document_id("cohort-a", "same text") != document_id("cohort-b", "same text")
     assert document_id("cohort-a", "same text") == document_id("cohort-a", "same text")
@@ -101,7 +107,7 @@ def test_doc_map_is_deterministic() -> None:
 
 
 @pytest.mark.parametrize(
-    "case", ["missing", "extra", "label", "cohort", "duplicate", "test_split", "raw_label"]
+    "case", ["missing", "extra", "label", "cohort", "conflict", "test_split", "raw_label"]
 )
 def test_doc_map_fails_closed(case: str) -> None:
     rows = _clustered_rows()
@@ -121,9 +127,10 @@ def test_doc_map_fails_closed(case: str) -> None:
         first = next(iter(expected))
         expected[first] = ("another-cohort", expected[first][1])
         message = "disagrees"
-    elif case == "duplicate":
-        rows = rows + rows[:1]
-        message = "duplicate"
+    elif case == "conflict":
+        # DEC-034 A: a label conflict excludes the identity, so the cache entry is missing.
+        rows = [*rows, dict(rows[0], label=0 if rows[0]["label"] else 1)]
+        message = "not found"
     elif case == "test_split":
         rows = [dict(rows[0], split="test"), *rows[1:]]
         message = "TEST"
@@ -157,7 +164,6 @@ def _v1_cache(rows: list[dict]) -> dict:
         {
             "record_id": stable_record_id(row),
             "cohort": row["dataset"],
-            "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED",
             "score": 0.25 + 0.5 * row["label"],
         }
         for row in rows
@@ -167,6 +173,7 @@ def _v1_cache(rows: list[dict]) -> dict:
         protocols={},
         manifest_sha256="m" * 64,
         source_run_id="42",
+        source_code_sha="synthetic-source-code-sha",
         calibration_v2={"synthetic": True},
     )
 
@@ -176,15 +183,17 @@ def test_cache_v2_keeps_v1_records_and_round_trips() -> None:
     v1 = _v1_cache(rows)
     pin = {"revision": "a" * 40, "sha256": "b" * 64}
     v2 = build_cache_v2(v1, build_doc_map(rows, _expected(rows)), pin=pin)
-    assert v2["schema_version"] == SCHEMA_VERSION_V2
+    assert v2["schema_version"] == "phase1b-dev-score-cache-v6"
     assert v2["calibration_v2_sha256"] == v1["calibration_v2_sha256"]
     envelope = encrypt_score_cache(v2, key=KEY, dataset_revision="a" * 40, code_sha="sha")
     assert "SYNTHETIC" not in json.dumps(envelope)
     decrypted = decrypt_score_cache(envelope, key=KEY)
     assert all("doc_id" in r for r in decrypted["models"]["factcg"]["records"])
-    # v1 envelopes still decrypt unchanged.
+    # The prediction-only parent cache remains decryptable and contains no gold.
     v1_env = encrypt_score_cache(v1, key=KEY, dataset_revision="a" * 40, code_sha="sha")
-    assert "doc_id" not in decrypt_score_cache(v1_env, key=KEY)["models"]["factcg"]["records"][0]
+    parent = decrypt_score_cache(v1_env, key=KEY)
+    assert "doc_id" not in parent["models"]["factcg"]["records"][0]
+    assert "gold" not in parent["models"]["factcg"]["records"][0]
 
 
 def test_cache_v2_detects_tampering_and_bad_doc_ids() -> None:
@@ -228,7 +237,12 @@ def test_cli_builds_v2_with_identical_calibration_replay(tmp_path: Path) -> None
     rows = _clustered_rows()
     cache_v1 = tmp_path / "cache" / "phase1b-dev-score-cache.json"
     completed, _, context = _run_aggregator(
-        tmp_path, "--score-cache-output", str(cache_v1), "--code-sha", "synthetic", rows=rows
+        tmp_path,
+        "--score-cache-output",
+        str(cache_v1),
+        "--code-sha",
+        "synthetic-code-sha",
+        rows=rows,
     )
     assert completed.returncode == 0, completed.stderr
 
@@ -243,6 +257,8 @@ def test_cli_builds_v2_with_identical_calibration_replay(tmp_path: Path) -> None
             str(DOC_MAP),
             "--cache",
             str(cache_v1),
+            "--gold-labels",
+            str(context["gold_label_cache_path"]),
             "--dataset-path",
             str(dataset),
             "--pin",
@@ -251,6 +267,8 @@ def test_cli_builds_v2_with_identical_calibration_replay(tmp_path: Path) -> None
             str(cache_v2),
             "--summary-output",
             str(summary_path),
+            "--code-sha",
+            "synthetic-code-sha",
         ],
         cwd=tmp_path,
         env=context["env"],
@@ -273,6 +291,8 @@ def test_cli_builds_v2_with_identical_calibration_replay(tmp_path: Path) -> None
             str(SCORE_CACHE),
             "--cache",
             str(cache_v2),
+            "--gold-labels",
+            str(context["gold_label_cache_path"]),
             "--experiment",
             "replay-calibration-v2",
             "--output",

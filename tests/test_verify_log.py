@@ -419,7 +419,7 @@ def test_idempotent_retry_with_a_tampered_receipt_is_never_served_over_http(
 
 
 def test_required_mode_fails_closed_and_local_mode_reports_not_recorded(
-    api: Any, monkeypatch: pytest.MonkeyPatch
+    api: Any, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     def failing(*args: object, **kwargs: object) -> None:
         raise sqlite3.OperationalError("disk full")
@@ -436,6 +436,13 @@ def test_required_mode_fails_closed_and_local_mode_reports_not_recorded(
     assert body["audit_status"] == "not_recorded"
     assert "audit_receipt" not in body
     assert body["result"]["verdict"] == "SUPPORTED"
+
+    failures = [r for r in caplog.records if r.name == "ayorai_attractor.api.app"]
+    assert [r.levelname for r in failures] == ["ERROR", "ERROR"]
+    assert "mode=required" in failures[0].getMessage()
+    assert "mode=local" in failures[1].getMessage()
+    assert all("OperationalError" in r.getMessage() for r in failures)
+    assert not any("disk full" in r.getMessage() for r in failures)
 
 
 def test_r1a_is_never_recorded(api: Any) -> None:
