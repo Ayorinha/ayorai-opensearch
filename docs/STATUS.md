@@ -6,6 +6,13 @@ This file is the single source of current project status. Historical documents d
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
+## Atualização — 2026-11-28 (P4 concluída na engenharia)
+
+- **Integradas:** #651, #645, #653 e #652 (`main` @ `02a20a86`), com CI verde no HEAD final de cada uma.
+- **Inferência Phase 1b:** locks com hash (torch 2.14.0+cpu, transformers 5.24.0), segmentação do nltk 3.9.4 embutida, sem alertas conhecidos. Pontuações equivalentes às do ambiente histórico nos três modelos (diferença máxima 2,6e-6, nenhuma decisão trocada).
+- **Pendências do mantenedor:** chave gold no Environment, disparo do minimal na `main` atual, execução DEV completa e rota de acurácia ([benchmarks/ACCURACY-PLAN-2026-11-28.md](benchmarks/ACCURACY-PLAN-2026-11-28.md)).
+- Relatório: [audit/P4-CLOSURE-REPORT-2026-11-28.md](audit/P4-CLOSURE-REPORT-2026-11-28.md).
+
 ## Atualização — 2026-11-28 (P3/A1 validada em operação)
 
 - **Execução protegida minimal `46153767025`:** sucesso na `main` @ `5fe34da8`, com aprovação do mantenedor no Environment em cada job.
