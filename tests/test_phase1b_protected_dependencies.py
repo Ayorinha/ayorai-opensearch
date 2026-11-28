@@ -116,10 +116,14 @@ def test_inference_locks_hold_the_historical_environment() -> None:
     # nltk, whose 3.9.4 segmentation is vendored (only nltk needed click and joblib).
     assert pins.pop("cryptography") == "50.0.2"
     assert historical.pop("cryptography") == "46.0.3"
+    assert pins.pop("setuptools") == "84.2.1"  # torch install requirement, patched
+    assert historical.pop("setuptools") == "78.1.0"
     from scripts.benchmarks.phase1b import vendor_nltk
 
     assert historical.pop("nltk") == vendor_nltk.NLTK_VERSION
-    for name in ("click", "joblib"):
+    # Packages the shards never import (they read JSONL, not parquet): left out of the
+    # lock so that no unused package with advisories ships to the key-holding job.
+    for name in ("click", "joblib", "pyarrow", "pandas", "python-dateutil", "pytz", "tzdata"):
         historical.pop(name)
     assert pins == historical
 
@@ -128,6 +132,21 @@ def test_no_phase1b_job_installs_nltk() -> None:
     for path in sorted((ROOT / ".github" / "workflows").glob("phase1b-*.yml")):
         assert "nltk==" not in path.read_text(encoding="utf-8"), path.name
     assert "nltk" not in _lock_pins(INFERENCE_LOCK)
+
+
+def test_shard_code_never_imports_parquet_or_dataframe_libraries() -> None:
+    phase1b = ROOT / "scripts" / "benchmarks" / "phase1b"
+    for name in (
+        "run_shard.py",
+        "protocols.py",
+        "manifest_artifact.py",
+        "inference_artifact.py",
+        "encrypt_artifact.py",
+        "nltk_resources.py",
+    ):
+        text = (phase1b / name).read_text(encoding="utf-8")
+        assert not re.search(r"^\s*(import|from) (pyarrow|pandas)\b", text, re.MULTILINE), name
+    assert not {"pyarrow", "pandas"} & set(_lock_pins(INFERENCE_LOCK))
 
 
 def test_inference_job_installs_only_the_hash_locks() -> None:

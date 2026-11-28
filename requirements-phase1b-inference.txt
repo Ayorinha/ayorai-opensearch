@@ -1,13 +1,18 @@
 # Phase 1b DEV inference environment (shard jobs), Python 3.12, linux x86_64, CPU only.
 #
-# Source: reproducibility/phase1b-dev-2026-11-07/inference-requirements.lock.txt, the
-# environment of the historical Calibration V2 runs, with the same versions and hashes,
-# except cryptography 46.0.3 -> 50.0.2 (same hashes as requirements-phase1b-protected.txt;
-# see docs/security/HISTORICAL-PINS.md). nltk 3.9.4 and its only dependents (click,
-# joblib) are left out: the shards use the nltk 3.9.4 segmentation vendored in
-# scripts/benchmarks/phase1b/vendor_nltk/, proven identical (P4-NLTK-EQUIVALENCE).
-# PyTorch CPU is locked separately in requirements-phase1b-torch-cpu.txt because it
-# comes from the official CPU index.
+# Source: inference-requirements.lock.txt of the historical Calibration V2 runs
+# (branch repro/phase1b-dev-env-2026-11-12, see reproducibility/phase1b-dev-2026-11-07/),
+# same versions and hashes, with these changes:
+# - cryptography 46.0.3 -> 50.0.2 (hashes as in requirements-phase1b-protected.txt);
+# - setuptools 78.1.0 -> 84.2.1 (5 advisories; torch install requirement only; hashes as
+#   in docker/requirements.lock);
+# - nltk 3.9.4 left out, with click and joblib, which only nltk needed: the shards use the
+#   nltk 3.9.4 segmentation vendored in scripts/benchmarks/phase1b/vendor_nltk/, proven
+#   identical (docs/audit/P4-NLTK-EQUIVALENCE-2026-11-28.md);
+# - pyarrow 21.0.0 (GHSA-rgxp-2hwp-jwgg) and pandas with python-dateutil, pytz and tzdata
+#   left out: the shards read only the decrypted JSONL input and never import them.
+# None of these packages takes part in tokenization or model scoring. PyTorch CPU is
+# locked in requirements-phase1b-torch-cpu.txt (official CPU index).
 #
 # Install: pip install --require-hashes --only-binary :all: --no-deps \
 #   --index-url https://pypi.org/simple -r requirements-phase1b-inference.txt
@@ -113,20 +118,10 @@ numpy==2.2.6 \
     --hash=sha256:fe27749d33bb772c80dcd84ae7e8df2adc920ae8297400dabec45f0dedb3f6de
 packaging==26.3 \
     --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
-pandas==2.3.2 \
-    --hash=sha256:213a5adf93d020b74327cb2c1b842884dbdd37f895f42dcc2f09d451d949f811 \
-    --hash=sha256:96d31a6b4354e3b9b8a2c848af75d31da390657e3ac6f30c05c82068b9ed79b9
 psutil==7.0.0 \
     --hash=sha256:4b1388a4f6875d7e2aff5c4ca1cc16c545ed41dd8bb596cefea80111db353a34
-pyarrow==21.0.0 \
-    --hash=sha256:072116f65604b822a7f22945a7a6e581cfa28e3454fdcc6939d4ff6090126623 \
-    --hash=sha256:b7ae0bbdc8c6674259b25bef5d2a1d6af5d39d7200c819cf99e07f7dfef1c51e
 pycparser==3.12 \
     --hash=sha256:a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e
-python-dateutil==4.0.0 \
-    --hash=sha256:a5e246f79eb80475e691bf93862cead98decd8a498cf53ba0516fcdc0f50dc1c
-pytz==2026.6 \
-    --hash=sha256:7fed3fee8fd6bd4a2b7b75a8d56021d0624127bf69bd5691f115db929ac570b3
 pyyaml==6.0.3 \
     --hash=sha256:41715c910c881bc081f1e8872880d3c650acf13dfa8214bad49ed4cede7c34ea \
     --hash=sha256:ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc
@@ -138,8 +133,8 @@ requests==2.34.2 \
 safetensors==0.6.2 \
     --hash=sha256:8045db2c872db8f4cbe3faa0495932d89c38c899c603f21e9b6486951a5ecb8f \
     --hash=sha256:d944cea65fad0ead848b6ec2c37cc0b197194bec228f8020054742190e9312ac
-setuptools==78.1.0 \
-    --hash=sha256:3e386e96793c8702ae83d17b853fb93d3e09ef82ec62722e61da5cd22376dcd8
+setuptools==84.2.1 \
+    --hash=sha256:ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2
 sympy==1.14.0 \
     --hash=sha256:e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5
 tokenizers==0.21.4 \
@@ -151,7 +146,5 @@ transformers==4.55.4 \
     --hash=sha256:df28f3849665faba4af5106f0db4510323277c4bb595055340544f7e59d06458
 typing-extensions==4.16.0 \
     --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8
-tzdata==2026.6 \
-    --hash=sha256:0a10eec6e13ef16b627fabed9a5f2ba61a62b1c67f327305f4e7e412a70b4aec
 urllib3==2.8.0 \
     --hash=sha256:0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3
