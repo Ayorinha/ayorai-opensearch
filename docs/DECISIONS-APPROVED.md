@@ -127,6 +127,20 @@ As quatro que restavam pendentes nesse registro (DEC-001, DEC-003, DEC-004 e DEC
   - autorização expressa do mantenedor para o gasto.
 - **Consequências:** até lá, `received_at` e os checkpoints têm hora declarada pelo operador, e não se afirma hora certificada.
 
+## DEC-034 — Identidades repetidas no DEV fixado da Phase 1b (P3/A1)
+
+- **Data da decisão:** 2026-11-28
+- **Decisor e mantenedor:** Anderson Leon Ayora
+- **Forma:** escolha escrita do mantenedor ("eu escolho a opção A"), entre as opções A a D apresentadas depois da execução protegida minimal `46151543376`.
+- **Contexto:** a primeira execução protegida sobre o DEV fixado do LLM-AggreFact (revisão `981dfd0b…`) parou, por desenho, na trava de identidades repetidas. A mensagem informou só contagens: 46 identidades (documento, afirmação e coorte) repetidas, 50 linhas extras, 5 identidades com rótulos divergentes entre as cópias. Nenhum conteúdo foi exposto e nenhum artefato foi gerado.
+- **Decisão (opção A):**
+  1. Cópias de uma identidade com o mesmo rótulo contam uma vez: fica uma cópia.
+  2. Identidades cujas cópias têm rótulos divergentes são excluídas por inteiro. O pipeline nunca escolhe um rótulo gold.
+  3. O manifesto registra as contagens da resolução (`identity_resolution`), sem conteúdo.
+- **Opções não escolhidas:** B (excluir todas as 46 identidades repetidas), C (escolher um rótulo para os conflitos) e D (manter as cópias com identificador por linha).
+- **Implementação:** `resolve_dev_identities` em `scripts/benchmarks/phase1b/common.py`, usada pelo construtor do manifesto, pela preparação dos artefatos e pelo mapa de documentos. Manifesto `phase1b-dev-manifest-v3`.
+- **Limites:** vale só para o DEV da Phase 1b. Não altera Judge, Golden, RGC, thresholds, o pino do dataset nem os dados de origem. Não autoriza execução DEV completa nem TEST.
+
 ## DEC-033 — Retenção dos caches cifrados da Phase 1b DEV (P3/A1)
 
 - **Data da decisão:** 2026-11-28
