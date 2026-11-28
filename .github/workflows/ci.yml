@@ -300,6 +300,16 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+      - name: Bootstrap the official torch CPU wheel hash (printed for review)
+        run: |
+          set -euo pipefail
+          python -m pip download --no-deps --only-binary :all: \
+            --index-url https://download.pytorch.org/whl/cpu \
+            -d /tmp/torch-wheel "torch==2.14.0+cpu"
+          sha256sum /tmp/torch-wheel/*.whl
+          python -m pip download --no-deps --only-binary :all: --dest /tmp/torch-meta \
+            --index-url https://download.pytorch.org/whl/cpu "torch==2.14.0+cpu" >/dev/null
+          unzip -p /tmp/torch-wheel/*.whl 'torch-*.dist-info/METADATA' | grep '^Requires-Dist' | grep -v extra
       - name: Install both inference locks with hash verification
         run: |
           set -euo pipefail
