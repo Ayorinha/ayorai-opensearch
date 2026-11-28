@@ -239,9 +239,16 @@ jobs:
       - run: pytest -W error::ResourceWarning -W error::pytest.PytestUnraisableExceptionWarning --cov=ayorai_attractor --cov-report=xml --cov-report=json --cov-report=term-missing
       - name: Measure Phase 1b CLI coverage with synthetic fixtures
         if: matrix.python-version == '3.13'
-        env:
-          COVERAGE_FILE: .coverage.phase1b
         run: |
+          set -euo pipefail
+          coverage_backup="$(mktemp)"
+          test -f .coverage
+          cp .coverage "$coverage_backup"
+          restore_coverage() {
+            cp "$coverage_backup" .coverage
+            rm -f "$coverage_backup"
+          }
+          trap restore_coverage EXIT
           pytest -q \
             tests/test_phase1b_aggregate_score_cache_inprocess.py \
             tests/test_phase1b_score_cache.py \
