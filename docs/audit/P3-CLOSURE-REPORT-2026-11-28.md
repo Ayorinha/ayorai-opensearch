@@ -56,7 +56,7 @@ O documento do roadmap v0.8 não está no repositório. Este relatório cobre o 
 | CI no HEAD da PR (`95d1bfcc`) | 38/38 verde |
 | CI na `main` depois do merge (`ef5679c0`) | CI, CodeQL e Security verdes |
 | suíte local na `main` (Python 3.13) | 3.392 aprovados |
-| testes phase1b | 341 (antes da P3: 243) |
+| testes phase1b | 341 (na `main` antes da P3, `3932d171`: 216) |
 | mutação dos contratos de workflow | 6/6 regressões detectadas |
 | Golden smoke-v0, v0, v0.1 | `969ec61a…`, `21abb816…`, `1fd6fdb7…`, inalterados |
 | componentes protegidos | Judge, Golden, RGC, `rules/`, `evals/` e thresholds inalterados |
