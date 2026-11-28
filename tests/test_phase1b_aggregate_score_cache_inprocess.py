@@ -211,6 +211,7 @@ def test_score_cache_cli_requires_gold_key_before_file_access(
 
     assert not output.exists()
 
+
 def test_score_cache_builder_rejects_empty_and_inconsistent_model_coverage() -> None:
     kwargs = {
         "protocols": {},
@@ -242,11 +243,7 @@ def test_score_cache_doc_id_is_validated_and_retained() -> None:
     }
     doc_id = "a" * 64
     cache = score_cache.build_score_cache(
-        {
-            "model-a": [
-                {"record_id": "rid-a", "cohort": "cohort-a", "score": 0.5, "doc_id": doc_id}
-            ]
-        },
+        {"model-a": [{"record_id": "rid-a", "cohort": "cohort-a", "score": 0.5, "doc_id": doc_id}]},
         **kwargs,
     )
     assert cache["models"]["model-a"]["records"][0]["doc_id"] == doc_id
@@ -275,9 +272,7 @@ def test_score_cache_v4_decryption_rejects_records_without_doc_id() -> None:
         "source_run_id": "synthetic-run",
         "record_count": 1,
         "models": {
-            "model-a": {
-                "records": [{"record_id": "rid-a", "cohort": "cohort-a", "score": 0.5}]
-            }
+            "model-a": {"records": [{"record_id": "rid-a", "cohort": "cohort-a", "score": 0.5}]}
         },
     }
     envelope = score_cache.encrypt_score_cache(
@@ -324,9 +319,7 @@ def test_score_cache_join_rejects_wrong_split_and_manifest() -> None:
         "calibration_v2": None,
     }
     scores = score_cache.build_score_cache(
-        {
-            "model-a": [{"record_id": "rid-a", "cohort": "cohort-a", "score": 0.5}]
-        },
+        {"model-a": [{"record_id": "rid-a", "cohort": "cohort-a", "score": 0.5}]},
         **kwargs,
     )
     labels = score_cache.build_gold_label_cache(
@@ -369,9 +362,7 @@ def test_score_cache_decryption_rejects_wrong_envelope_role() -> None:
         "calibration_v2": None,
     }
     cache = score_cache.build_score_cache(
-        {
-            "model-a": [{"record_id": "rid-a", "cohort": "cohort-a", "score": 0.5}]
-        },
+        {"model-a": [{"record_id": "rid-a", "cohort": "cohort-a", "score": 0.5}]},
         **kwargs,
     )
     key = bytes(range(32))
