@@ -112,18 +112,23 @@ def test_inference_locks_keep_the_scoring_stack_and_prove_the_rest() -> None:
         for name, version in record["environments"]["inference"]["packages"].items()
     }
     pins = {**_lock_pins(INFERENCE_LOCK), **_lock_pins(TORCH_LOCK)}
-    # The numerical core stays at the historical versions.
-    for name in ("torch", "numpy", "sympy", "networkx", "mpmath"):
+    # numpy and the torch math dependencies stay at the historical versions.
+    for name in ("numpy", "sympy", "networkx", "mpmath"):
         assert pins[name] == historical[name], name
     assert pins["cryptography"] == "50.0.2"
-    # transformers moves to a release with the published advisories fixed (>= 5.10);
-    # the equivalence workflow proves the same chunking and scores as 4.55.4.
+    # torch and transformers move to releases with the published advisories fixed
+    # (torch >= 2.13, transformers >= 5.10); the equivalence workflow proves the same
+    # chunking and scores as the historical torch 2.7.1 + transformers 4.55.4.
+    assert historical["torch"] == "2.7.1+cpu"
+    assert pins["torch"] == "2.14.0+cpu"
     major, minor = (int(part) for part in pins["transformers"].split(".")[:2])
     assert (major, minor) >= (5, 10)
     workflow = (ROOT / ".github" / "workflows" / "phase1b-inference-equivalence.yml").read_text(
         encoding="utf-8"
     )
     assert "0edc35b97ea6cd69d2b3e1258db355d7b31eb6a7" in workflow
+    # The oracle installs the historical torch by its reviewed hash.
+    assert "8f8b3cfc53010a4b4a3c7ecb88c212e9decc4f5eeb6af75c3c803937d2d60947" in workflow
     assert "requirements-phase1b-inference.txt" in workflow
     assert "--compare" in workflow
 
