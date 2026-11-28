@@ -1,0 +1,9 @@
+# PyTorch CPU for the Phase 1b DEV inference jobs (Python 3.12, linux x86_64).
+# Version of the historical runs (reproducibility/phase1b-dev-2026-11-07/MANIFEST.json).
+# Hash bootstrap: the CI job "phase1b-inference-lock" prints the SHA-256 of the official
+# wheel downloaded on the GitHub runner; it is reviewed and then pinned here.
+#
+# Install: pip install --require-hashes --only-binary :all: --no-deps \
+#   --index-url https://download.pytorch.org/whl/cpu -r requirements-phase1b-torch-cpu.txt
+
+torch==2.7.1+cpu

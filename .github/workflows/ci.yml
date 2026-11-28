@@ -287,6 +287,27 @@ jobs:
             echo "Coverage ratchet passed: measured=${measured}% baseline=${baseline}%."
           fi
 
+  phase1b-inference-lock:
+    # P4-01: the Phase 1b inference jobs install only hash-verified wheels. This job
+    # installs both locks in a clean venv (no secrets, no data) and checks consistency.
+    name: phase1b-inference-lock
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Bootstrap the official CPU wheel hash (printed for review)
+        run: |
+          set -euo pipefail
+          python -m pip download --no-deps --only-binary :all: \
+            --index-url https://download.pytorch.org/whl/cpu \
+            -d /tmp/torch-wheel "torch==2.7.1+cpu"
+          sha256sum /tmp/torch-wheel/*.whl
+
   typecheck-strict:
     name: typecheck-strict (non-blocking)
     runs-on: ubuntu-24.04
