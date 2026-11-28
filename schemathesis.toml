@@ -1,0 +1,22 @@
+# Schemathesis defaults omit HTTP 413 from negative_data_rejection.
+# The API returns 413 before JSON/schema validation when the configured
+# request-body limit is exceeded. Every POST operation documents this
+# response. Keep negative_data_rejection enabled and treat 413 as a valid
+# rejection; status_code_conformance and response_schema_conformance remain
+# enabled and continue checking the documented response.
+[checks.negative_data_rejection]
+expected-statuses = [
+  "400",
+  "401",
+  "403",
+  "404",
+  "405",
+  "406",
+  "409",
+  "413",
+  "415",
+  "422",
+  "428",
+  "429",
+  "5xx",
+]
