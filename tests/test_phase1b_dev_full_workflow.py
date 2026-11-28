@@ -58,7 +58,14 @@ def test_full_dev_workflow_uses_full_dev_only_and_calibration_v2() -> None:
     assert "split: test" not in workflow_text.lower()
     assert "--split test" not in workflow_text.lower()
     assert '["mdeberta", "minicheck", "factcg"]' in workflow_text
-    assert 'assert manifest["sample_count"] == 30420' in workflow_text
+    # DEC-034 option A: the pinned DEV keeps 30,365 unique identities (31 shards).
+    assert 'assert manifest["sample_count"] == 30420' not in workflow_text
+    assert workflow_text.count('assert manifest["sample_count"] == 30365') == 2
+    assert 'assert [shard["count"] for shard in manifest["shards"]][-1] == 365' in workflow_text
+    assert 'assert resolution["source_rows"] == 30420' in workflow_text
+    assert 'assert resolution["duplicate_rows_removed"] == 45' in workflow_text
+    assert 'assert resolution["conflicting_rows_excluded"] == 10' in workflow_text
+    assert 'assert resolution["unique_identities_kept"] == 30365' in workflow_text
     assert 'assert report["calibration_v2"]["certification_model_count"] == 1' in workflow_text
     assert "phase1b-dev-full-encrypted-*" in workflow_text
     assert "prepare_dev_artifacts.py" in workflow_text

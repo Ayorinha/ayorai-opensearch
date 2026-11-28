@@ -64,7 +64,9 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python scripts/benchmarks/phase1b/fetch_dev.py --output "$DEV_PARQUET"
-      - name: Build full DEV manifest (30,420 records; 1,000 per shard)
+      # DEC-034 (option A): 30,420 source rows; 45 label-consistent copies removed and
+      # 5 conflicting identities (10 rows) excluded, leaving 30,365 unique identities.
+      - name: Build full DEV manifest (30,365 identities after DEC-034; 1,000 per shard)
         run: |
           set -euo pipefail
           python scripts/benchmarks/phase1b/build_manifest.py \
@@ -76,11 +78,18 @@ jobs:
           from pathlib import Path
           manifest = json.loads(Path("/tmp/phase1b-manifest.json").read_text())
           assert manifest["split"] == "dev"
-          assert manifest["sample_count"] == 30420
+          assert manifest["sample_count"] == 30365
           assert manifest["shard_size"] == 1000
           assert len(manifest["shards"]) == 31
-          assert sum(shard["count"] for shard in manifest["shards"]) == 30420
-          assert [shard["count"] for shard in manifest["shards"]][-1] == 420
+          assert sum(shard["count"] for shard in manifest["shards"]) == 30365
+          assert [shard["count"] for shard in manifest["shards"]][-1] == 365
+          resolution = manifest["identity_resolution"]
+          assert resolution["source_rows"] == 30420
+          assert resolution["repeated_identities"] == 46
+          assert resolution["duplicate_rows_removed"] == 45
+          assert resolution["conflicting_identities_excluded"] == 5
+          assert resolution["conflicting_rows_excluded"] == 10
+          assert resolution["unique_identities_kept"] == 30365
           PY
       # A1: only this step receives the gold-label key; it splits labels from inputs.
       - name: Separate inference inputs from encrypted gold labels
@@ -122,7 +131,7 @@ jobs:
           assert matrix["split"] == "dev"
           assert matrix["model_ids"] == expected_models
           assert len(matrix["shard_ids"]) == len(manifest["shards"]) == 31
-          assert manifest["sample_count"] == 30420
+          assert manifest["sample_count"] == 30365
           print("shard_ids=" + json.dumps(matrix["shard_ids"]))
           print("model_ids=" + json.dumps(matrix["model_ids"]))
           PY
