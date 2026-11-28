@@ -127,6 +127,33 @@ As quatro que restavam pendentes nesse registro (DEC-001, DEC-003, DEC-004 e DEC
   - autorização expressa do mantenedor para o gasto.
 - **Consequências:** até lá, `received_at` e os checkpoints têm hora declarada pelo operador, e não se afirma hora certificada.
 
+## DEC-034 — Identidades repetidas no DEV fixado da Phase 1b (P3/A1)
+
+- **Data da decisão:** 2026-11-28
+- **Decisor e mantenedor:** Anderson Leon Ayora
+- **Forma:** escolha escrita do mantenedor ("eu escolho a opção A"), entre as opções A a D apresentadas depois da execução protegida minimal `46151543376`.
+- **Contexto:** a primeira execução protegida sobre o DEV fixado do LLM-AggreFact (revisão `981dfd0b…`) parou, por desenho, na trava de identidades repetidas. A mensagem informou só contagens: 46 identidades (documento, afirmação e coorte) repetidas, 50 linhas extras, 5 identidades com rótulos divergentes entre as cópias. Nenhum conteúdo foi exposto e nenhum artefato foi gerado.
+- **Decisão (opção A):**
+  1. Cópias de uma identidade com o mesmo rótulo contam uma vez: fica uma cópia.
+  2. Identidades cujas cópias têm rótulos divergentes são excluídas por inteiro. O pipeline nunca escolhe um rótulo gold.
+  3. O manifesto registra as contagens da resolução (`identity_resolution`), sem conteúdo.
+- **Opções não escolhidas:** B (excluir todas as 46 identidades repetidas), C (escolher um rótulo para os conflitos) e D (manter as cópias com identificador por linha).
+- **Implementação:** `resolve_dev_identities` em `scripts/benchmarks/phase1b/common.py`, usada pelo construtor do manifesto, pela preparação dos artefatos e pelo mapa de documentos. Manifesto `phase1b-dev-manifest-v3`.
+- **Limites:** vale só para o DEV da Phase 1b. Não altera Judge, Golden, RGC, thresholds, o pino do dataset nem os dados de origem. Não autoriza execução DEV completa nem TEST.
+
+## DEC-033 — Retenção dos caches cifrados da Phase 1b DEV (P3/A1)
+
+- **Data da decisão:** 2026-11-28
+- **Decisor e mantenedor:** Anderson Leon Ayora
+- **Forma:** ordem de execução escrita do mantenedor, aprovando a opção A da proposta registrada em [DECISIONS-PENDING.md](DECISIONS-PENDING.md#dec-033--retenção-dos-caches-cifrados-da-phase-1b-dev-p3a1).
+- **Decisão (opção A):**
+  1. Caches cifrados gold e score: 30 dias, contados da execução DEV de origem.
+  2. A re-agregação não renova o prazo: os caches reenviados herdam o que resta dos 30 dias, e uma origem vencida é recusada.
+  3. Manifesto cifrado, entrada de inferência cifrada e shards: 7 dias.
+  4. Relatórios agregados, sem dados por instância: 30 dias.
+- **Implementação:** PR #644 (`phase1b-dev-full.yml`, `phase1b-dev-full-reaggregate.yml` e testes de contrato).
+- **Limites:** não altera Judge, Golden, RGC, thresholds nem dados científicos. Não autoriza dispatch de workflows DEV ou TEST.
+
 ## DEC-032 — Tenant distinto de principal (ADR-013)
 
 - **Data da decisão:** 2026-11-22

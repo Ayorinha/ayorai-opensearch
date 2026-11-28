@@ -6,6 +6,21 @@ This file is the single source of current project status. Historical documents d
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
+## Atualização — 2026-11-28 (P3/A1 validada em operação)
+
+- **Execução protegida minimal `46153767025`:** sucesso na `main` @ `5fe34da8`, com aprovação do mantenedor no Environment em cada job.
+- **Isolamento gold:** rótulos gold descartados, nenhum rótulo na entrada de inferência, artefatos intermediários cifrados, agregado sem dados por instância.
+- **DEC-034 (opção A, #649):** no DEV fixado, 46 identidades repetidas; 45 cópias removidas e 5 identidades com rótulos divergentes excluídas; 30.365 identidades mantidas.
+- **Situação:** P3/A1 concluída com ressalvas. Falta a validação científica (execução DEV completa, que exige a chave gold disponível ao workflow). Relatório: [audit/P3-OPERATIONAL-VALIDATION-2026-11-28.md](audit/P3-OPERATIONAL-VALIDATION-2026-11-28.md).
+- **Qualidade:** #648 integrada (logs de falha no log de verificação e no `JobExecutor`; `Makefile` alinhado à CI).
+
+## Atualização — 2026-11-28 (P2 e P3 integradas)
+
+- **P2, trilha verificável (ADR-010):** #634 integrada em 2026-11-22 (`3932d171`). Relatório: [audit/P2-CLOSURE-REPORT.md](audit/P2-CLOSURE-REPORT.md).
+- **P3/A1, isolamento dos rótulos gold no DEV da Phase 1b:** #644 integrada em 2026-11-28 (`ef5679c0`); substitui #635, #636 e #642. Retenção conforme a DEC-033 (opção A). Relatório: [audit/P3-CLOSURE-REPORT-2026-11-28.md](audit/P3-CLOSURE-REPORT-2026-11-28.md).
+- **Validação:** CI verde na `main` depois de cada merge; 3.392 testes; hashes do Golden inalterados. É evidência de software, não validação científica: nenhum workflow DEV ou TEST foi executado.
+- **Pendências do mantenedor antes de qualquer disparo DEV:** confirmar o Environment `international-benchmark-maintainer-approval` (só `main`, sem tags, aprovador obrigatório, dois secrets distintos) e autorizar o primeiro disparo (recomendado: minimal).
+
 ## Estado atual — 2026-11-21 (operação, homologação local e preparação de release)
 
 - **Integradas em 2026-11-21, por autorização do mantenedor e com CI verde no HEAD final de cada PR:**

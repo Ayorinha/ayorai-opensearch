@@ -15,14 +15,18 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 env:
   DEV_PARQUET: /tmp/phase1b-dev.parquet
+  INFERENCE_DATA: /tmp/phase1b-dev-inference.jsonl
+  INFERENCE_ENCRYPTED: /tmp/phase1b-dev-inference.jsonl.aesgcm
+  MANIFEST_ENCRYPTED: /tmp/phase1b-manifest.json.aesgcm
   NLTK_DATA_DIR: /tmp/phase1b-nltk-data
 
 jobs:
   plan:
-    if: ${{ inputs.confirmation == 'full-dev-calibration-v2' }}
+    if: ${{ github.ref == 'refs/heads/main' && inputs.confirmation == 'full-dev-calibration-v2' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: international-benchmark-maintainer-approval
@@ -41,15 +45,20 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3
+          python -m pip install --require-hashes --only-binary :all: --index-url https://pypi.org/simple -r requirements-phase1b-protected.txt
       - name: Validate required secret without printing it
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
         run: |
           python - <<'PY'
+          import os
           from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
-          assert len(decode_key()) == 32
-          print("ENCRYPTION_SECRET: VALID (value not displayed)")
+          score_key = decode_key()
+          gold_key = decode_key(os.environ["PHASE1B_GOLD_LABEL_ENCRYPTION_KEY"])
+          assert len(score_key) == len(gold_key) == 32
+          assert score_key != gold_key
+          print("ENCRYPTION_SECRETS: VALID AND DISTINCT (values not displayed)")
           PY
       - name: Download and verify immutable DEV parquet
         env:
@@ -73,9 +82,33 @@ jobs:
           assert sum(shard["count"] for shard in manifest["shards"]) == 30420
           assert [shard["count"] for shard in manifest["shards"]][-1] == 420
           PY
-          rm -f "$DEV_PARQUET"
+      # A1: only this step receives the gold-label key; it splits labels from inputs.
+      - name: Separate inference inputs from encrypted gold labels
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/prepare_dev_artifacts.py \
+            --dataset-path "$DEV_PARQUET" \
+            --manifest /tmp/phase1b-manifest.json \
+            --inference-output "$INFERENCE_DATA" \
+            --gold-label-cache-output /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json \
+            --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
+      - name: Encrypt inference inputs for transport
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/inference_artifact.py encrypt \
+            --input "$INFERENCE_DATA" --output "$INFERENCE_ENCRYPTED" \
+            --manifest /tmp/phase1b-manifest.json \
+            --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
+          rm -f "$DEV_PARQUET" "$INFERENCE_DATA"
       - id: matrix
         name: Emit and validate full DEV matrix
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           python scripts/benchmarks/phase1b/emit_matrix.py \
@@ -93,16 +126,45 @@ jobs:
           print("shard_ids=" + json.dumps(matrix["shard_ids"]))
           print("model_ids=" + json.dumps(matrix["model_ids"]))
           PY
+          python scripts/benchmarks/phase1b/manifest_artifact.py encrypt \
+            --input /tmp/phase1b-manifest.json --output "$MANIFEST_ENCRYPTED" \
+            --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
+          rm -f /tmp/phase1b-manifest.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: phase1b-dev-full-manifest
-          path: /tmp/phase1b-manifest.json
+          name: phase1b-dev-full-manifest-encrypted
+          path: /tmp/phase1b-manifest.json.aesgcm
           if-no-files-found: error
           retention-days: 7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-inference-data-encrypted
+          path: /tmp/phase1b-dev-inference.jsonl.aesgcm
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-dev-gold-label-cache
+          path: /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Remove local DEV inputs and encrypted intermediates
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          rm -rf \
+            "$DEV_PARQUET" \
+            "$INFERENCE_DATA" \
+            "$INFERENCE_ENCRYPTED" \
+            "$MANIFEST_ENCRYPTED" \
+            /tmp/phase1b-manifest.json \
+            /tmp/phase1b-matrix.json \
+            /tmp/phase1b-gold-labels
+
 
   shard:
     needs: plan
-    if: ${{ inputs.confirmation == 'full-dev-calibration-v2' }}
+    if: ${{ github.ref == 'refs/heads/main' && inputs.confirmation == 'full-dev-calibration-v2' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     environment: international-benchmark-maintainer-approval
@@ -125,7 +187,7 @@ jobs:
           set -euo pipefail
           python -m pip install "pip==25.2"
           python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
-          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==46.0.3 nltk==3.9.4
+          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==50.0.2 nltk==3.9.4
           python - <<'PY'
           import torch
           assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
@@ -134,12 +196,38 @@ jobs:
         run: python scripts/benchmarks/phase1b/nltk_resources.py --data-dir "$NLTK_DATA_DIR"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: phase1b-dev-full-manifest
+          name: phase1b-dev-full-manifest-encrypted
           path: /tmp/phase1b-manifest
-      - name: Download and verify immutable DEV parquet
+          github-token: ${{ github.token }}
+      - name: Decrypt private DEV manifest inside protected shard
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python scripts/benchmarks/phase1b/fetch_dev.py --output "$DEV_PARQUET"
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          RUN_ID: ${{ github.run_id }}
+          CODE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/manifest_artifact.py decrypt \
+            --input /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm \
+            --output /tmp/phase1b-manifest/phase1b-manifest.json \
+            --run-id "$RUN_ID" --code-sha "$CODE_SHA"
+          rm -f /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: phase1b-dev-inference-data-encrypted
+          path: /tmp
+          github-token: ${{ github.token }}
+      - name: Decrypt shared DEV inference input inside protected shard
+        env:
+          PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          RUN_ID: ${{ github.run_id }}
+          CODE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python scripts/benchmarks/phase1b/inference_artifact.py decrypt \
+            --input "$INFERENCE_ENCRYPTED" --output "$INFERENCE_DATA" \
+            --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
+            --run-id "$RUN_ID" --code-sha "$CODE_SHA"
+          rm -f "$INFERENCE_ENCRYPTED"
       - name: Run pinned model on this DEV shard (private local output)
         env:
           MODEL_ID: ${{ matrix.model_id }}
@@ -147,9 +235,9 @@ jobs:
           PHASE1B_NLTK_DATA: /tmp/phase1b-nltk-data
         run: |
           set -euo pipefail
-          trap 'rm -f "$DEV_PARQUET"' EXIT
+          trap 'rm -f "$INFERENCE_DATA"' EXIT
           python scripts/benchmarks/phase1b/run_shard.py \
-            --dataset-path "$DEV_PARQUET" \
+            --dataset-path "$INFERENCE_DATA" \
             --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
             --shard-id "$SHARD_ID" --model-id "$MODEL_ID" \
             --order-by-length --output /tmp/phase1b-private.json
@@ -162,7 +250,7 @@ jobs:
           CODE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          trap 'rm -f /tmp/phase1b-private.json "$DEV_PARQUET"' EXIT
+          trap 'rm -f /tmp/phase1b-private.json "$INFERENCE_DATA" /tmp/phase1b-manifest/phase1b-manifest.json' EXIT
           mkdir -p /tmp/phase1b-encrypted
           python - <<'PY'
           import json
@@ -193,7 +281,7 @@ jobs:
               check=True,
           )
           PY
-          rm -f /tmp/phase1b-private.json "$DEV_PARQUET"
+          rm -f /tmp/phase1b-private.json "$INFERENCE_DATA"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: phase1b-dev-full-encrypted-${{ matrix.model_id }}-${{ matrix.shard_id }}
@@ -205,7 +293,7 @@ jobs:
 
   aggregate:
     needs: [plan, shard]
-    if: ${{ always() && needs.plan.result == 'success' && needs.shard.result == 'success' }}
+    if: ${{ always() && github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.shard.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     environment: international-benchmark-maintainer-approval
@@ -221,27 +309,40 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://pypi.org/simple \
-            cryptography==46.0.3 numpy==2.2.6
+          python -m pip install --require-hashes --only-binary :all: --index-url https://pypi.org/simple -r requirements-phase1b-protected.txt
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: phase1b-dev-full-manifest
+          name: phase1b-dev-full-manifest-encrypted
           path: /tmp/phase1b-manifest
+          github-token: ${{ github.token }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: phase1b-dev-full-encrypted-*
           path: /tmp/phase1b-encrypted
+          github-token: ${{ github.token }}
           merge-multiple: true
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: phase1b-dev-gold-label-cache
+          path: /tmp/phase1b-gold-labels
+          github-token: ${{ github.token }}
       - name: Decrypt, compute Calibration V2, and validate aggregate-only report
         env:
           PHASE1B_ARTIFACT_ENCRYPTION_KEY: ${{ secrets.PHASE1B_ARTIFACT_ENCRYPTION_KEY }}
+          PHASE1B_GOLD_LABEL_ENCRYPTION_KEY: ${{ secrets.PHASE1B_GOLD_LABEL_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
-          trap 'rm -rf /tmp/phase1b-encrypted' EXIT
+          trap 'rm -rf /tmp/phase1b-encrypted /tmp/phase1b-manifest' EXIT
+          python scripts/benchmarks/phase1b/manifest_artifact.py decrypt \
+            --input /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm \
+            --output /tmp/phase1b-manifest/phase1b-manifest.json \
+            --run-id "$GITHUB_RUN_ID" --code-sha "$GITHUB_SHA"
+          rm -f /tmp/phase1b-manifest/phase1b-manifest.json.aesgcm
           python scripts/benchmarks/phase1b/aggregate_dev.py \
             --manifest /tmp/phase1b-manifest/phase1b-manifest.json \
             --encrypted-dir /tmp/phase1b-encrypted \
             --output /tmp/phase1b-aggregate.json --calibration-v2 \
+            --gold-label-cache-input /tmp/phase1b-gold-labels/phase1b-dev-gold-label-cache.json \
             --score-cache-output /tmp/phase1b-score-cache/phase1b-dev-score-cache.json
           python - <<'PY'
           import json
@@ -261,12 +362,12 @@ jobs:
           path: /tmp/phase1b-aggregate.json
           if-no-files-found: error
           retention-days: 30
-      # A1: encrypted per-instance DEV score cache (AES-256-GCM; never published in plaintext).
+      # A1: predictions and gold labels are encrypted separately with distinct secrets.
+      # Artifact access remains restricted to the protected workflow/repository permissions.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: phase1b-dev-score-cache
           path: /tmp/phase1b-score-cache/phase1b-dev-score-cache.json
           if-no-files-found: error
-          retention-days: 90
-
+          retention-days: 30
 # No TEST split/job, no dispatch from repository tooling, and no automatic trigger.

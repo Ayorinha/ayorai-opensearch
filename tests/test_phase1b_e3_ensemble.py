@@ -20,7 +20,11 @@ from scripts.benchmarks.phase1b.e3_ensemble import (
     run_e3,
 )
 from scripts.benchmarks.phase1b.e3_ivap import ivap, nested_ivap
-from scripts.benchmarks.phase1b.score_cache import build_score_cache
+from scripts.benchmarks.phase1b.score_cache import (
+    build_gold_label_cache,
+    build_score_cache,
+    join_scores_with_gold,
+)
 
 PER_COHORT = 60
 
@@ -30,6 +34,7 @@ def _cache(noise: dict[str, float], seed: int = 20261108) -> dict:
 
     rng = np.random.default_rng(seed)
     rows: dict[str, list[dict]] = {model: [] for model in noise}
+    labels: dict[str, dict] = {}
     for cohort in COHORTS:
         for index in range(PER_COHORT):
             label = index % 2
@@ -40,17 +45,26 @@ def _cache(noise: dict[str, float], seed: int = 20261108) -> dict:
                     {
                         "record_id": record_id,
                         "cohort": cohort,
-                        "gold": "SUPPORTED" if label else "NOT_SUPPORTED",
                         "score": score,
                     }
                 )
-    return build_score_cache(
+                labels[record_id] = {
+                    "record_id": record_id,
+                    "cohort": cohort,
+                    "gold": "SUPPORTED" if label else "NOT_SUPPORTED",
+                }
+    score_cache = build_score_cache(
         rows,
         protocols={},
         manifest_sha256="m" * 64,
         source_run_id="1",
+        source_code_sha="synthetic-source-code-sha",
         calibration_v2=None,
     )
+    label_cache = build_gold_label_cache(
+        list(labels.values()), manifest_sha256="m" * 64, source_run_id="1"
+    )
+    return join_scores_with_gold(score_cache, label_cache)
 
 
 @pytest.fixture(autouse=True)

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 from collections import defaultdict
@@ -12,7 +13,13 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import canonical_json, sha256_bytes
+    from .common import (
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
+        atomic_write_bytes,
+        canonical_json,
+        sha256_bytes,
+    )
     from .encrypt_artifact import decode_key, decrypt_bytes
 except ImportError:  # direct script execution
     # Workflows run this file by path, so the repository root is not on sys.path.
@@ -20,7 +27,13 @@ except ImportError:  # direct script execution
     _REPOSITORY_ROOT = str(Path(__file__).resolve().parents[3])
     if _REPOSITORY_ROOT not in sys.path:
         sys.path.insert(0, _REPOSITORY_ROOT)
-    from common import canonical_json, sha256_bytes
+    from common import (
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
+        atomic_write_bytes,
+        canonical_json,
+        sha256_bytes,
+    )
     from encrypt_artifact import decode_key, decrypt_bytes
 
 
@@ -46,6 +59,7 @@ def aggregate_packages(
     key: bytes,
     calibration_v2: bool = False,
     score_sink: dict[str, Any] | None = None,
+    gold_label_cache: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate encrypted shard provenance and aggregate operational metadata only.
 
@@ -53,8 +67,12 @@ def aggregate_packages(
     per-instance rows, protocols and source run id so the caller can build the
     encrypted score cache (A1). Nothing from the sink is written to the report.
     """
-    if manifest.get("split") != "dev":
-        raise ValueError("aggregator accepts DEV manifests only")
+    if (
+        manifest.get("split") != "dev"
+        or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION
+        or manifest.get("record_id_method") != RECORD_ID_METHOD
+    ):
+        raise ValueError("aggregator accepts only current inference-only DEV manifests")
     manifest_body = {
         key_name: value for key_name, value in manifest.items() if key_name != "manifest_sha256"
     }
@@ -100,6 +118,28 @@ def aggregate_packages(
             raise ValueError("operational document count does not match shard manifest")
         if private.get("split") != "dev":
             raise ValueError("private package is not DEV-only")
+        records = private.get("records")
+        if not isinstance(records, list) or len(records) != expected_count:
+            raise ValueError("inference shard must contain one prediction per manifest record")
+        record_ids = []
+        for record in records:
+            if not isinstance(record, dict) or set(record) != {"record_id", "cohort", "score"}:
+                raise ValueError(
+                    "inference shard records must contain only record_id, cohort and score"
+                )
+            record_id, cohort, score = record["record_id"], record["cohort"], record["score"]
+            if not isinstance(record_id, str) or not record_id:
+                raise ValueError("inference shard record_id must be a non-empty string")
+            if not isinstance(cohort, str) or not cohort:
+                raise ValueError("inference shard cohort must be a non-empty string")
+            if isinstance(score, bool) or not isinstance(score, (int, float)):
+                raise ValueError("inference shard score must be numeric")
+            if not math.isfinite(float(score)) or not 0.0 <= float(score) <= 1.0:
+                raise ValueError("inference shard score must be finite and within [0, 1]")
+            record_ids.append(record_id)
+        expected_record_ids = set(expected[shard_id]["record_ids"])
+        if len(record_ids) != len(set(record_ids)) or set(record_ids) != expected_record_ids:
+            raise ValueError("inference shard predictions do not match manifest record IDs")
 
         package_key = (str(model_id), str(shard_id))
         if package_key in packages:
@@ -185,16 +225,45 @@ def aggregate_packages(
             raise ValueError(
                 "Calibration V2 requires complete encrypted DEV shards for every model"
             )
+        if gold_label_cache is None:
+            raise ValueError("Calibration V2 requires a separately encrypted gold-label cache")
+        if gold_label_cache.get("split") != "dev":
+            raise ValueError("gold-label cache must be DEV-only")
+        if gold_label_cache.get("manifest_sha256") != manifest.get("manifest_sha256"):
+            raise ValueError("gold-label cache manifest does not match DEV manifest")
+        source_run_id = next(iter(run_ids))
+        if str(gold_label_cache.get("source_run_id")) != str(source_run_id):
+            raise ValueError("gold-label cache belongs to a different source workflow run")
+        labels = {row["record_id"]: row for row in gold_label_cache.get("records", [])}
+        if len(labels) != manifest.get("sample_count"):
+            raise ValueError("gold-label cache record count does not match DEV manifest")
+        evaluation_rows: dict[str, list[dict[str, Any]]] = {}
+        for model, predictions in calibration_rows.items():
+            prediction_ids = [row["record_id"] for row in predictions]
+            if len(prediction_ids) != len(set(prediction_ids)):
+                raise ValueError(f"duplicate prediction record_id for {model}")
+            if len(prediction_ids) != len(labels) or set(prediction_ids) != set(labels):
+                raise ValueError(f"gold labels do not cover the same DEV records as {model}")
+            joined = []
+            for prediction in predictions:
+                label = labels[prediction["record_id"]]
+                if prediction["cohort"] != label["cohort"]:
+                    raise ValueError("prediction and gold-label cohort mismatch")
+                joined.append({**prediction, "gold": label["gold"]})
+            evaluation_rows[model] = joined
+
         from scripts.benchmarks.phase1b.calibration_v2.aggregate import (
             calibration_v2_report,
         )
 
-        report["calibration_v2"] = calibration_v2_report(calibration_rows)
+        # The join exists only in this evaluation process; persisted prediction cache
+        # and gold-label cache remain separate encrypted artifacts.
+        report["calibration_v2"] = calibration_v2_report(evaluation_rows)
         report["quality_metrics"] = "calibration_v2_aggregate_only"
         if score_sink is not None:
             score_sink["rows_by_model"] = calibration_rows
             score_sink["protocols"] = {model: summaries[model]["protocol"] for model in summaries}
-            score_sink["source_run_id"] = next(iter(run_ids))
+            score_sink["source_run_id"] = source_run_id
 
     report["report_sha256"] = sha256_bytes(canonical_json(report))
     return report
@@ -218,6 +287,7 @@ def _write_score_cache(
         protocols=score_sink["protocols"],
         manifest_sha256=str(manifest.get("manifest_sha256")),
         source_run_id=score_sink["source_run_id"],
+        source_code_sha=str(manifest.get("code_sha") or ""),
         calibration_v2=report.get("calibration_v2"),
     )
     envelope = encrypt_score_cache(
@@ -227,7 +297,9 @@ def _write_score_cache(
         code_sha=code_sha,
     )
     args.score_cache_output.parent.mkdir(parents=True, exist_ok=True)
-    args.score_cache_output.write_text(json.dumps(envelope, sort_keys=True), encoding="utf-8")
+    atomic_write_bytes(
+        args.score_cache_output, json.dumps(envelope, sort_keys=True).encode("utf-8")
+    )
 
 
 def main() -> None:
@@ -243,7 +315,12 @@ def main() -> None:
     parser.add_argument(
         "--score-cache-output",
         type=Path,
-        help="Write the encrypted per-instance DEV score cache (A1); requires --calibration-v2",
+        help="Write the encrypted prediction-only DEV score cache (A1); requires --calibration-v2",
+    )
+    parser.add_argument(
+        "--gold-label-cache-input",
+        type=Path,
+        help="Separately encrypted DEV gold labels prepared before inference",
     )
     parser.add_argument(
         "--code-sha",
@@ -253,10 +330,33 @@ def main() -> None:
     args = parser.parse_args()
     if args.score_cache_output is not None and not args.calibration_v2:
         parser.error("--score-cache-output requires --calibration-v2")
+    if args.gold_label_cache_input is not None and not args.calibration_v2:
+        parser.error("--gold-label-cache-input requires --calibration-v2")
+    if args.calibration_v2 and args.gold_label_cache_input is None:
+        parser.error("--calibration-v2 requires --gold-label-cache-input")
 
     # Fail closed before opening encrypted artifacts if the secret is absent/invalid.
     key = decode_key()
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    gold_label_cache = None
+    if args.gold_label_cache_input is not None:
+        gold_key_raw = os.environ.get("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY")
+        if not gold_key_raw:
+            raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
+        gold_key = decode_key(gold_key_raw)
+        if gold_key == key:
+            raise ValueError("gold-label and prediction encryption keys must be distinct")
+        try:
+            from .score_cache import decrypt_gold_label_cache
+        except ImportError:  # direct script execution
+            from score_cache import decrypt_gold_label_cache
+        gold_envelope = json.loads(args.gold_label_cache_input.read_text(encoding="utf-8"))
+        metadata = gold_envelope.get("metadata", {})
+        if metadata.get("dataset_revision") != manifest.get("dataset_revision") or metadata.get(
+            "code_sha"
+        ) != manifest.get("code_sha"):
+            raise ValueError("gold-label envelope provenance does not match DEV manifest")
+        gold_label_cache = decrypt_gold_label_cache(gold_envelope, key=gold_key)
     envelopes = [
         json.loads(path.read_text(encoding="utf-8"))
         for path in sorted(args.encrypted_dir.glob("*.json"))
@@ -268,9 +368,10 @@ def main() -> None:
         key=key,
         calibration_v2=args.calibration_v2,
         score_sink=score_sink,
+        gold_label_cache=gold_label_cache,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_bytes(canonical_json(report) + b"\n")
+    atomic_write_bytes(args.output, canonical_json(report) + b"\n")
     if score_sink is not None:
         if not score_sink:
             raise SystemExit("score cache requested but no Calibration V2 rows were produced")
