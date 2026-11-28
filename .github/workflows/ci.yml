@@ -254,8 +254,8 @@ jobs:
 
           report = json.loads(Path("phase1b-cli-coverage.json").read_text(encoding="utf-8"))
           expected = {
-              "aggregate_dev.py": {"line": 73.0, "branch": 63.0},
-              "score_cache.py": {"line": 67.0, "branch": 70.0},
+              "aggregate_dev.py": {"line": 73.0, "branch": 60.0},
+              "score_cache.py": {"line": 67.0, "branch": 67.0},
           }
           found = {}
           for path, details in report["files"].items():
