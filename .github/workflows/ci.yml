@@ -300,13 +300,22 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
-      - name: Bootstrap the official CPU wheel hash (printed for review)
+      - name: Install both inference locks with hash verification
         run: |
           set -euo pipefail
-          python -m pip download --no-deps --only-binary :all: \
-            --index-url https://download.pytorch.org/whl/cpu \
-            -d /tmp/torch-wheel "torch==2.7.1+cpu"
-          sha256sum /tmp/torch-wheel/*.whl
+          python -m venv /tmp/inference
+          /tmp/inference/bin/python -m pip install "pip==25.2"
+          /tmp/inference/bin/python -m pip install --require-hashes --only-binary :all: --no-deps --index-url https://download.pytorch.org/whl/cpu -r requirements-phase1b-torch-cpu.txt
+          /tmp/inference/bin/python -m pip install --require-hashes --only-binary :all: --no-deps --index-url https://pypi.org/simple -r requirements-phase1b-inference.txt
+          /tmp/inference/bin/python -m pip check
+          /tmp/inference/bin/python - <<'PY'
+          import torch
+          import transformers
+          assert torch.__version__ == "2.7.1+cpu", torch.__version__
+          assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
+          assert transformers.__version__ == "4.55.4", transformers.__version__
+          print("phase1b inference lock: installed with hashes, CPU-only")
+          PY
 
   typecheck-strict:
     name: typecheck-strict (non-blocking)

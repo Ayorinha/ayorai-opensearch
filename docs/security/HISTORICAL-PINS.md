@@ -61,3 +61,16 @@ A P3/A1 acrescentou a chave `PHASE1B_GOLD_LABEL_ENCRYPTION_KEY` ao job `plan` do
 - O PyTorch continua vindo do índice oficial de CPU, por versão. Não foi possível gerar hash dele neste ambiente, porque `download.pytorch.org` estava bloqueado pela rede. Fica como risco residual.
 
 **Testes:** `tests/test_phase1b_protected_dependencies.py`.
+
+## Revisão de 2026-11-28 (P4-01): inferência travada por hash
+
+**Registro histórico na `main`:** `reproducibility/phase1b-dev-2026-11-07/` foi restaurado byte a byte da branch preservada `repro/phase1b-dev-env-2026-11-12` (head `0edc35b9`). Os SHA-256 conferem com `docs/audit/PR-INVENTORY-2026-11-20.md`. A referência do início desta página volta a existir.
+
+**Job de inferência (`shard`):**
+- instala `requirements-phase1b-torch-cpu.txt` (índice oficial de CPU) e `requirements-phase1b-inference.txt` (PyPI), os dois com `--require-hashes --only-binary :all: --no-deps`, seguidos de `pip check`;
+- as versões são as do ambiente histórico, inclusive as transitivas, que antes não tinham versão fixada; só `cryptography` vai para 50.0.2;
+- o hash do `torch-2.7.1+cpu` (`8f8b3cfc…60947`) foi lido do wheel oficial baixado num runner do GitHub e revisado antes de ser fixado; o job de CI `phase1b-inference-lock` reinstala os dois locks a cada PR.
+
+**Pendente, decisão do mantenedor:** o `dependency-review` reprova o `nltk` 3.9.4, já usado pelo job hoje, com 31 alertas altos ou críticos, corrigidos na 3.10.4. O nltk faz a segmentação de sentenças do protocolo da Phase 1b, então trocar a versão pode mudar a reprodução numérica.
+
+**Testes:** `tests/test_phase1b_protected_dependencies.py` (hash em todo pacote, igualdade com o ambiente histórico, instalação só por lock com hash em todo job que recebe chave).
