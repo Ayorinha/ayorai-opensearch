@@ -6,6 +6,14 @@ This file is the single source of current project status. Historical documents d
 
 Historical snapshots and the previous execution-cycle merge table are preserved in [docs/history/STATUS-SNAPSHOTS.md](history/STATUS-SNAPSHOTS.md).
 
+## Atualização — 2026-11-28 (P3/A1 validada em operação)
+
+- **Execução protegida minimal `46153767025`:** sucesso na `main` @ `5fe34da8`, com aprovação do mantenedor no Environment em cada job.
+- **Isolamento gold:** rótulos gold descartados, nenhum rótulo na entrada de inferência, artefatos intermediários cifrados, agregado sem dados por instância.
+- **DEC-034 (opção A, #649):** no DEV fixado, 46 identidades repetidas; 45 cópias removidas e 5 identidades com rótulos divergentes excluídas; 30.365 identidades mantidas.
+- **Situação:** P3/A1 concluída com ressalvas. Falta a validação científica (execução DEV completa, que exige a chave gold disponível ao workflow). Relatório: [audit/P3-OPERATIONAL-VALIDATION-2026-11-28.md](audit/P3-OPERATIONAL-VALIDATION-2026-11-28.md).
+- **Qualidade:** #648 integrada (logs de falha no log de verificação e no `JobExecutor`; `Makefile` alinhado à CI).
+
 ## Atualização — 2026-11-28 (P2 e P3 integradas)
 
 - **P2, trilha verificável (ADR-010):** #634 integrada em 2026-11-22 (`3932d171`). Relatório: [audit/P2-CLOSURE-REPORT.md](audit/P2-CLOSURE-REPORT.md).
