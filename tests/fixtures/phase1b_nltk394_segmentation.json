@@ -1,0 +1,13 @@
+{
+  "description": "nltk 3.9.4 sent_tokenize/word_tokenize on the fixed equivalence corpus (edge cases + 20,000 seeded synthetic texts), pinned punkt_tab 550b6625. Reference produced with the official nltk 3.9.4 wheel; the vendored segmentation must reproduce it exactly.",
+  "reference": "nltk 3.9.4 (PyPI), Python 3.12.3",
+  "corpus": "fixed",
+  "seed": 20261128,
+  "items": 20028,
+  "corpus_sha256": "674fc993ce35317458caba84f2cd752e621af104578b5364a0bcc3478184d22f",
+  "results_sha256": {
+    "sent_tokenize": "01b6ffabc06696c626298ad17ab36c974e39c849b5f9f0c2b518ce4c3829a237",
+    "word_tokenize": "5a11b94cc0c36293a158219cf22a424f9813d2e68c99a4931b88bc1718f96eb4",
+    "words_per_sentence": "5090ed50d197ade51736778b427da2968f4eec071c7971f4bb57de1d3ebe8565"
+  }
+}

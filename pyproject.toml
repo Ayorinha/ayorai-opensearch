@@ -71,6 +71,12 @@ ayorai_attractor = ["py.typed", "verification/judge2/rules/*.json"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Upstream nltk 3.9.4 sources kept as close to upstream as possible (P4-01); the
+# vendored package's own modules (__init__, _api) are linted normally.
+extend-exclude = [
+  "scripts/benchmarks/phase1b/vendor_nltk/punkt.py",
+  "scripts/benchmarks/phase1b/vendor_nltk/destructive.py",
+]
 
 [tool.ruff.lint]
 select = ["E","F","I","B","UP"]

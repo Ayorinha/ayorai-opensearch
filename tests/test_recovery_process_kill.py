@@ -39,22 +39,41 @@ def _rows(path: Path, table: str) -> int:
         return int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])  # noqa: S608
 
 
+def _rows_while_writing(path: Path, table: str) -> int:
+    # A busy writer can hold the lock past the connection timeout; that is not a
+    # failure of the store, so retry instead of raising and leaking the child.
+    try:
+        return _rows(path, table)
+    except sqlite3.OperationalError as error:
+        if "locked" not in str(error) and "busy" not in str(error):
+            raise
+        return -1
+
+
 def _kill_rounds(target: object, path: Path, table: str, rounds: int = 3) -> None:
     # "spawn", not "fork": the test process may already run threads, and forking a
     # multi-threaded process can deadlock the child.
     context = multiprocessing.get_context("spawn")
     for round_ in range(rounds):
         before = _rows(path, table)
-        child = context.Process(target=target, args=(str(path), round_))
+        # daemon=True and the finally below: whatever fails, the writer (an endless
+        # loop) never outlives the test, so the run cannot hang at interpreter exit.
+        child = context.Process(target=target, args=(str(path), round_), daemon=True)
         child.start()
-        deadline = time.monotonic() + 30
-        while _rows(path, table) < before + 20:  # kill only once the child is writing
-            assert time.monotonic() < deadline, "writer never started"
-            time.sleep(0.05)
-        assert child.pid is not None
-        os.kill(child.pid, signal.SIGKILL)  # no cleanup, possibly inside a transaction
-        child.join(10)
-        assert child.exitcode == -signal.SIGKILL
+        try:
+            deadline = time.monotonic() + 30
+            while _rows_while_writing(path, table) < before + 20:  # wait for writes
+                assert child.is_alive(), f"writer exited early: {child.exitcode}"
+                assert time.monotonic() < deadline, "writer never started"
+                time.sleep(0.05)
+            assert child.pid is not None
+            os.kill(child.pid, signal.SIGKILL)  # no cleanup, possibly mid-transaction
+            child.join(10)
+            assert child.exitcode == -signal.SIGKILL
+        finally:
+            if child.is_alive():
+                child.kill()
+                child.join(10)
 
 
 # --- verification log ----------------------------------------------------------------

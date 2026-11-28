@@ -287,6 +287,44 @@ jobs:
             echo "Coverage ratchet passed: measured=${measured}% baseline=${baseline}%."
           fi
 
+  phase1b-inference-lock:
+    # P4-01: the Phase 1b inference jobs install only hash-verified wheels. This job
+    # installs both locks in a clean venv (no secrets, no data) and checks consistency.
+    name: phase1b-inference-lock
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install both inference locks with hash verification
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/inference
+          /tmp/inference/bin/python -m pip install "pip==25.2"
+          /tmp/inference/bin/python -m pip install --require-hashes --only-binary :all: --no-deps --index-url https://download.pytorch.org/whl/cpu -r requirements-phase1b-torch-cpu.txt
+          /tmp/inference/bin/python -m pip install --require-hashes --only-binary :all: --no-deps --index-url https://pypi.org/simple -r requirements-phase1b-inference.txt
+          /tmp/inference/bin/python -m pip check
+          /tmp/inference/bin/python - <<'PY'
+          import torch
+          import transformers
+          assert torch.__version__ == "2.14.0+cpu", torch.__version__
+          assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
+          assert transformers.__version__ == "5.24.0", transformers.__version__
+          print("phase1b inference lock: installed with hashes, CPU-only")
+          PY
+      - name: Vendored nltk 3.9.4 segmentation reproduces the reference
+        run: |
+          set -euo pipefail
+          /tmp/inference/bin/python -I scripts/benchmarks/phase1b/nltk_resources.py --data-dir /tmp/punkt
+          /tmp/inference/bin/python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('nltk') is not None)"
+          /tmp/inference/bin/python -I scripts/benchmarks/phase1b/nltk_equivalence.py \
+            --implementation vendored --corpus fixed --data-dir /tmp/punkt \
+            --output /tmp/vendored.json --expect tests/fixtures/phase1b_nltk394_segmentation.json
+
   typecheck-strict:
     name: typecheck-strict (non-blocking)
     runs-on: ubuntu-24.04

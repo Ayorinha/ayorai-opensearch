@@ -182,12 +182,13 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install pinned CPU dependencies
+      - name: Install hash-locked CPU inference dependencies
         run: |
           set -euo pipefail
           python -m pip install "pip==25.2"
-          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.7.1"
-          python -m pip install --index-url https://pypi.org/simple -r requirements-benchmark-pilot.txt cryptography==50.0.2 nltk==3.9.4
+          python -m pip install --require-hashes --only-binary :all: --no-deps --index-url https://download.pytorch.org/whl/cpu -r requirements-phase1b-torch-cpu.txt
+          python -m pip install --require-hashes --only-binary :all: --no-deps --index-url https://pypi.org/simple -r requirements-phase1b-inference.txt
+          python -m pip check
           python - <<'PY'
           import torch
           assert torch.version.cuda is None, "Expected CPU-only PyTorch build"

@@ -133,7 +133,10 @@ def _document_chunks(
         )
         units = sum(len(tokenizer.encode(chunk, add_special_tokens=False)) for chunk in chunks)
         return chunks, {protocol["count_unit"]: units}
-    from nltk.tokenize import sent_tokenize, word_tokenize
+    try:
+        from .vendor_nltk import sent_tokenize, word_tokenize
+    except ImportError:  # direct script execution
+        from vendor_nltk import sent_tokenize, word_tokenize  # type: ignore[no-redef]
 
     if protocol["splitter"] == "nltk_sent_tokenize_with_newlines":
 
@@ -172,7 +175,26 @@ def _document_chunks(
     return chunks, {protocol["count_unit"]: units}
 
 
+def load_pinned_tokenizer(model_dir: Path) -> Any:
+    """Load the tokenizer from the revision's own ``tokenizer.json``.
+
+    This is what transformers 4.x did for these models (``DebertaV2TokenizerFast``).
+    From 5.x, ``AutoTokenizer`` rebuilds the DeBERTa-v2 tokenizer from ``spm.model``
+    instead and maps some pieces to ``[UNK]``, which changes the scores (P4-01,
+    ``docs/audit/P4-INFERENCE-EQUIVALENCE-2026-11-28.md``). Loading the pinned
+    ``tokenizer.json`` gives the same encodings under both major versions.
+    """
+    if not (model_dir / "tokenizer.json").is_file():
+        raise RuntimeError("the pinned model revision has no tokenizer.json")
+    from transformers import PreTrainedTokenizerFast
+
+    return PreTrainedTokenizerFast.from_pretrained(str(model_dir), local_files_only=True)
+
+
 def _encode(tokenizer: Any, protocol: dict[str, Any], docs: list[str], claims: list[str]) -> Any:
+    # token_type_ids are requested explicitly: transformers 4.x returned them by
+    # default and 5.x does not. The three models ignore them (type_vocab_size 0), but
+    # the model input stays the same across versions.
     if protocol["input_format"] == "pair_doc_claim":
         return tokenizer(
             docs,
@@ -180,6 +202,7 @@ def _encode(tokenizer: Any, protocol: dict[str, Any], docs: list[str], claims: l
             padding=True,
             truncation=protocol["truncation"],
             max_length=protocol["max_length"],
+            return_token_type_ids=True,
             return_tensors="pt",
         )
     texts = [
@@ -191,6 +214,7 @@ def _encode(tokenizer: Any, protocol: dict[str, Any], docs: list[str], claims: l
         padding=True,
         truncation=protocol["truncation"],
         max_length=protocol["max_length"],
+        return_token_type_ids=True,
         return_tensors="pt",
     )
 
@@ -214,11 +238,11 @@ def run_inference(
     protocol = get_protocol(model_id)
     import torch
     from huggingface_hub import snapshot_download
-    from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
+    from transformers import AutoConfig, AutoModelForSequenceClassification
 
     spec = MODELS[model_id]
     model_dir = Path(snapshot_download(repo_id=spec["repo"], revision=spec["revision"]))
-    tokenizer = AutoTokenizer.from_pretrained(str(model_dir), local_files_only=True)
+    tokenizer = load_pinned_tokenizer(model_dir)
     if protocol["input_format"] == "factcg_instruction_template":
         # Official FactCG sets pad_token = eos_token (factcg/inference.py:195).
         tokenizer.pad_token = tokenizer.eos_token

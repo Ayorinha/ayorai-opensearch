@@ -1,0 +1,15 @@
+# PyTorch CPU for the Phase 1b DEV inference jobs (Python 3.12, linux x86_64).
+# torch 2.14.0, the version the product already uses (pyproject, nli-dependency-smoke):
+# the historical 2.7.1 has published high-severity advisories fixed only in 2.8-2.13,
+# including remote code execution through untrusted checkpoints (GHSA-63cw-57p8-fm3p);
+# MiniCheck loads .bin weights. phase1b-inference-equivalence.yml compares the scores
+# with the historical torch 2.7.1 + transformers 4.55.4 environment.
+# Hash: SHA-256 of torch-2.14.0+cpu-cp312-cp312-manylinux_2_28_x86_64.whl (196.3 MB) from
+# the official CPU index, read on a GitHub runner (CI job phase1b-inference-lock, run
+# 46159494520, 2026-11-28) and reviewed before pinning (option b).
+#
+# Install: pip install --require-hashes --only-binary :all: --no-deps \
+#   --index-url https://download.pytorch.org/whl/cpu -r requirements-phase1b-torch-cpu.txt
+
+torch==2.14.0+cpu \
+    --hash=sha256:a09987c95ec4cffdb6df798d3d641558110a334cfccce22f2f046d83142bc260

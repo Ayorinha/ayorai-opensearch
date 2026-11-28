@@ -64,21 +64,27 @@ def verify_files(pin: dict[str, Any], data_dir: Path) -> dict[str, str]:
     return verified
 
 
+def _vendored() -> Any:
+    try:
+        from . import vendor_nltk
+    except ImportError:  # direct script execution
+        import vendor_nltk  # type: ignore[no-redef]
+    return vendor_nltk
+
+
 def prepare_runtime(pin: dict[str, Any], data_dir: Path) -> dict[str, Any]:
-    """Verify version and files, restrict NLTK to ``data_dir`` and block any download."""
-    import nltk
+    """Verify version and files and point the vendored segmentation at ``data_dir``.
 
-    if nltk.__version__ != pin["nltk_version"]:
-        raise RuntimeError("installed nltk version does not match the pin")
+    The shards use the nltk 3.9.4 segmentation vendored in ``vendor_nltk`` (P4-01):
+    nltk itself is not installed, so nothing can download or load other resources.
+    """
+    vendor_nltk = _vendored()
+    if vendor_nltk.NLTK_VERSION != pin["nltk_version"]:
+        raise RuntimeError("vendored nltk version does not match the pin")
     verified = verify_files(pin, data_dir)
-    nltk.data.path[:] = [str(data_dir)]
-
-    def _blocked_download(*_args: Any, **_kwargs: Any) -> bool:
-        raise RuntimeError("NLTK downloads are forbidden during inference")
-
-    nltk.download = _blocked_download  # type: ignore[assignment]
+    vendor_nltk.configure(data_dir)
     return {
-        "nltk_version": nltk.__version__,
+        "nltk_version": vendor_nltk.NLTK_VERSION,
         "nltk_data_commit": pin["nltk_data_commit"],
         "punkt_tab_zip_sha256": pin["zip_sha256"],
         "punkt_tab_files_sha256": verified,

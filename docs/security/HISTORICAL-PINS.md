@@ -61,3 +61,29 @@ A P3/A1 acrescentou a chave `PHASE1B_GOLD_LABEL_ENCRYPTION_KEY` ao job `plan` do
 - O PyTorch continua vindo do índice oficial de CPU, por versão. Não foi possível gerar hash dele neste ambiente, porque `download.pytorch.org` estava bloqueado pela rede. Fica como risco residual.
 
 **Testes:** `tests/test_phase1b_protected_dependencies.py`.
+
+## Revisão de 2026-11-28 (P4-01): inferência travada por hash
+
+**Registro histórico na `main`:** `reproducibility/phase1b-dev-2026-11-07/` foi restaurado byte a byte da branch preservada `repro/phase1b-dev-env-2026-11-12` (head `0edc35b9`). Os SHA-256 conferem com `docs/audit/PR-INVENTORY-2026-11-20.md`. A referência do início desta página volta a existir.
+
+**Job de inferência (`shard`):**
+- instala `requirements-phase1b-torch-cpu.txt` (índice oficial de CPU) e `requirements-phase1b-inference.txt` (PyPI), os dois com `--require-hashes --only-binary :all: --no-deps`, seguidos de `pip check`;
+- todo pacote, inclusive os transitivos, que antes não tinham versão fixada, tem versão e hash;
+- `torch` vai de 2.7.1 para 2.14.0+cpu e `transformers` de 4.55.4 para 5.24.0, corrigindo os alertas altos das duas, inclusive execução de código ao carregar checkpoint no torch; `cryptography` vai para 50.0.2;
+- os hashes do PyTorch CPU foram lidos dos wheels oficiais baixados num runner do GitHub e revisados antes de serem fixados: 2.14.0 (`a09987c9…bc260`) no lock e 2.7.1 (`8f8b3cfc…60947`) no ambiente histórico de comparação; o job de CI `phase1b-inference-lock` reinstala os dois locks a cada PR;
+- **equivalência de escores:** o workflow `phase1b-inference-equivalence.yml` roda o código exato do shard nos três modelos, no ambiente histórico e no novo, e exige a mesma divisão em blocos, diferença máxima de 1e-5 e nenhuma decisão trocada. A primeira medição não passou: o `AutoTokenizer` do transformers 5.x reconstrói o tokenizador DeBERTa-v2 a partir do `spm.model`. O shard passou a ler o `tokenizer.json` de cada revisão fixada, como o 4.55.4 fazia, e a diferença máxima caiu para 2,6e-6 (`docs/audit/P4-INFERENCE-EQUIVALENCE-2026-11-28.md`).
+
+**nltk:** o `nltk` 3.9.4 tem 31 alertas altos ou críticos, corrigidos na 3.10.4. A 3.10.4, porém, segmenta de forma diferente (`docs/audit/P4-NLTK-EQUIVALENCE-2026-11-28.md`). Por isso, o job deixa de instalar o nltk e usa a segmentação da 3.9.4 embutida em `scripts/benchmarks/phase1b/vendor_nltk/`:
+- o pacote embutido tem só o código de `sent_tokenize` e `word_tokenize`, com a licença Apache-2.0;
+- o resultado é idêntico ao do nltk 3.9.4 oficial em 25.185 textos;
+- a CI confere a cada PR o resultado contra a referência fixada;
+- `click` e `joblib`, que só o nltk usava, saíram do lock.
+
+**Pacotes sem uso no job:**
+- O `pyarrow` 21.0.0 (GHSA-rgxp-2hwp-jwgg, alto) e o `pandas`, com `python-dateutil`, `pytz` e `tzdata`, também saíram do lock. O job lê só o JSONL decifrado e nunca os importa; um teste de contrato garante isso.
+- O `setuptools` vai de 78.1.0 para 84.2.1, com 5 alertas corrigidos. Ele é só requisito de instalação do torch.
+- Nenhum desses pacotes participa da tokenização ou dos escores.
+
+**Registro histórico:** na `main` fica o `MANIFEST.json`. Os três locks históricos, que fixam o nltk 3.9.4 e a cryptography 46.0.3, continuam na branch preservada, referenciados por SHA-256 em `reproducibility/phase1b-dev-2026-11-07/README.md`.
+
+**Testes:** `tests/test_phase1b_protected_dependencies.py` (hash em todo pacote, igualdade com o ambiente histórico, instalação só por lock com hash em todo job que recebe chave).
