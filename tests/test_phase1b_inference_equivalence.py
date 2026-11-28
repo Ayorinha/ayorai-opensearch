@@ -7,11 +7,14 @@ comparison rules without them.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 from scripts.benchmarks.phase1b import inference_equivalence as ie
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _report(model: str, scores: dict[str, float], blocks: int = 3) -> dict[str, Any]:
@@ -83,3 +86,29 @@ def test_merge_refuses_reports_from_different_environments_or_records() -> None:
     other["records_sha256"] = "different"
     with pytest.raises(SystemExit):
         ie.merge([_report("mdeberta", {"a": 0.1}), other])
+
+
+def test_the_shard_loads_the_pinned_tokenizer_json_not_auto_tokenizer() -> None:
+    # transformers 5.x AutoTokenizer rebuilds DeBERTa-v2 from spm.model and changes the
+    # encodings; the shard must read the revision's tokenizer.json (P4-01).
+    source = (ROOT / "scripts/benchmarks/phase1b/run_shard.py").read_text(encoding="utf-8")
+    assert "AutoTokenizer.from_pretrained" not in source
+    assert "import AutoTokenizer" not in source
+    assert ", AutoTokenizer" not in source
+    assert "tokenizer = load_pinned_tokenizer(model_dir)" in source
+    assert source.count("return_token_type_ids=True") == 2
+
+
+def test_a_revision_without_tokenizer_json_is_refused(tmp_path: Path) -> None:
+    from scripts.benchmarks.phase1b.run_shard import load_pinned_tokenizer
+
+    with pytest.raises(RuntimeError, match="tokenizer.json"):
+        load_pinned_tokenizer(tmp_path)
+
+
+def test_the_equivalence_gate_also_runs_one_package_at_a_time() -> None:
+    workflow = (ROOT / ".github/workflows/phase1b-inference-equivalence.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "environment: [historical, current, torch-only, transformers-only]" in workflow
+    assert "--compare /tmp/scores-historical.json /tmp/scores-current.json" in workflow
