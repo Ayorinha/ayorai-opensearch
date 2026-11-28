@@ -8,7 +8,8 @@
 # published high-severity advisories fixed only in 5.x. The CI workflow
 # phase1b-inference-equivalence.yml runs the exact shard code for mDeBERTa, MiniCheck and
 # FactCG under both environments and requires the same chunking and scores within 1e-5,
-# with no decision change at 0.5.
+# with no decision change at 0.5. It passes because the shard loads each revision's
+# tokenizer.json (docs/audit/P4-INFERENCE-EQUIVALENCE-2026-11-28.md).
 # nltk is not installed: the shards use the nltk 3.9.4 segmentation vendored in
 # scripts/benchmarks/phase1b/vendor_nltk/ (docs/audit/P4-NLTK-EQUIVALENCE-2026-11-28.md).
 # PyTorch CPU is locked in requirements-phase1b-torch-cpu.txt (official CPU index).

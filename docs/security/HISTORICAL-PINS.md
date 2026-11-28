@@ -68,8 +68,10 @@ A P3/A1 acrescentou a chave `PHASE1B_GOLD_LABEL_ENCRYPTION_KEY` ao job `plan` do
 
 **Job de inferência (`shard`):**
 - instala `requirements-phase1b-torch-cpu.txt` (índice oficial de CPU) e `requirements-phase1b-inference.txt` (PyPI), os dois com `--require-hashes --only-binary :all: --no-deps`, seguidos de `pip check`;
-- as versões são as do ambiente histórico, inclusive as transitivas, que antes não tinham versão fixada; só `cryptography` vai para 50.0.2;
-- o hash do `torch-2.7.1+cpu` (`8f8b3cfc…60947`) foi lido do wheel oficial baixado num runner do GitHub e revisado antes de ser fixado; o job de CI `phase1b-inference-lock` reinstala os dois locks a cada PR.
+- todo pacote, inclusive os transitivos, que antes não tinham versão fixada, tem versão e hash;
+- `torch` vai de 2.7.1 para 2.14.0+cpu e `transformers` de 4.55.4 para 5.24.0, corrigindo os alertas altos das duas, inclusive execução de código ao carregar checkpoint no torch; `cryptography` vai para 50.0.2;
+- os hashes do PyTorch CPU foram lidos dos wheels oficiais baixados num runner do GitHub e revisados antes de serem fixados: 2.14.0 (`a09987c9…bc260`) no lock e 2.7.1 (`8f8b3cfc…60947`) no ambiente histórico de comparação; o job de CI `phase1b-inference-lock` reinstala os dois locks a cada PR;
+- **equivalência de escores:** o workflow `phase1b-inference-equivalence.yml` roda o código exato do shard nos três modelos, no ambiente histórico e no novo, e exige a mesma divisão em blocos, diferença máxima de 1e-5 e nenhuma decisão trocada. A primeira medição não passou: o `AutoTokenizer` do transformers 5.x reconstrói o tokenizador DeBERTa-v2 a partir do `spm.model`. O shard passou a ler o `tokenizer.json` de cada revisão fixada, como o 4.55.4 fazia, e a diferença máxima caiu para 2,6e-6 (`docs/audit/P4-INFERENCE-EQUIVALENCE-2026-11-28.md`).
 
 **nltk:** o `nltk` 3.9.4 tem 31 alertas altos ou críticos, corrigidos na 3.10.4. A 3.10.4, porém, segmenta de forma diferente (`docs/audit/P4-NLTK-EQUIVALENCE-2026-11-28.md`). Por isso, o job deixa de instalar o nltk e usa a segmentação da 3.9.4 embutida em `scripts/benchmarks/phase1b/vendor_nltk/`:
 - o pacote embutido tem só o código de `sent_tokenize` e `word_tokenize`, com a licença Apache-2.0;
