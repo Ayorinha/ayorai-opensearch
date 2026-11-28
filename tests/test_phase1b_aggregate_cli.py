@@ -19,6 +19,7 @@ from scripts.benchmarks.phase1b.build_manifest import build_manifest
 from scripts.benchmarks.phase1b.calibration_v2.aggregate import COHORTS, MODEL_IDS
 from scripts.benchmarks.phase1b.common import stable_record_id
 from scripts.benchmarks.phase1b.encrypt_artifact import encrypt_bytes
+from scripts.benchmarks.phase1b.score_cache import build_gold_label_cache, encrypt_gold_label_cache
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 AGGREGATOR = REPOSITORY_ROOT / "scripts" / "benchmarks" / "phase1b" / "aggregate_dev.py"
@@ -42,7 +43,7 @@ def _synthetic_rows() -> list[dict]:
 
 def _write_synthetic_inputs(
     tmp_path: Path, rows: list[dict] | None = None
-) -> tuple[Path, Path, dict[str, str], dict]:
+) -> tuple[Path, Path, dict[str, str], dict, Path]:
     rows = rows if rows is not None else _synthetic_rows()
     manifest = build_manifest(
         rows,
@@ -69,7 +70,6 @@ def _write_synthetic_inputs(
                     {
                         "record_id": record_id,
                         "cohort": row["dataset"],
-                        "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED",
                         "score": float(np.clip(center + rng.normal(0.0, 0.015), 0.0, 1.0)),
                     }
                 )
@@ -99,17 +99,47 @@ def _write_synthetic_inputs(
 
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest))
+    gold_key = bytes(reversed(range(32)))
+    gold_rows = [
+        {
+            "record_id": record_id,
+            "cohort": row["dataset"],
+            "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED",
+        }
+        for record_id, row in rows_by_id.items()
+    ]
+    gold_cache = build_gold_label_cache(
+        gold_rows,
+        manifest_sha256=manifest["manifest_sha256"],
+        source_run_id="synthetic-run",
+    )
+    gold_envelope = encrypt_gold_label_cache(
+        gold_cache,
+        key=gold_key,
+        dataset_revision="synthetic-revision",
+        code_sha="synthetic-code-sha",
+    )
+    gold_label_cache_path = tmp_path / "gold-label-cache.json"
+    gold_label_cache_path.write_text(json.dumps(gold_envelope), encoding="utf-8")
     env = {key_name: value for key_name, value in os.environ.items() if key_name != "PYTHONPATH"}
     env["PHASE1B_ARTIFACT_ENCRYPTION_KEY"] = base64.b64encode(key).decode()
+    env["PHASE1B_GOLD_LABEL_ENCRYPTION_KEY"] = base64.b64encode(gold_key).decode()
 
-    return manifest_path, encrypted_dir, env, rows_by_id
+    return manifest_path, encrypted_dir, env, rows_by_id, gold_label_cache_path
 
 
 def _run_aggregator(
     tmp_path: Path, *extra: str, rows: list[dict] | None = None
 ) -> tuple[subprocess.CompletedProcess, Path, dict]:
-    manifest_path, encrypted_dir, env, rows_by_id = _write_synthetic_inputs(tmp_path, rows)
+    (
+        manifest_path,
+        encrypted_dir,
+        env,
+        rows_by_id,
+        gold_label_cache_path,
+    ) = _write_synthetic_inputs(tmp_path, rows)
     output_path = tmp_path / "aggregate.json"
+    cache_args = list(extra)
     completed = subprocess.run(
         [
             sys.executable,
@@ -121,7 +151,9 @@ def _run_aggregator(
             "--output",
             str(output_path),
             "--calibration-v2",
-            *extra,
+            "--gold-label-cache-input",
+            str(gold_label_cache_path),
+            *cache_args,
         ],
         cwd=tmp_path,
         env=env,
@@ -130,7 +162,15 @@ def _run_aggregator(
         check=False,
     )
 
-    return completed, output_path, {"env": env, "rows_by_id": rows_by_id}
+    return (
+        completed,
+        output_path,
+        {
+            "env": env,
+            "rows_by_id": rows_by_id,
+            "gold_label_cache_path": gold_label_cache_path,
+        },
+    )
 
 
 def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
@@ -145,3 +185,43 @@ def test_aggregator_cli_by_path_computes_calibration_v2(tmp_path: Path) -> None:
     assert "record_id" not in serialized
     assert "records" not in serialized
     assert not any(record_id in serialized for record_id in rows_by_id)
+
+
+def test_gold_label_cache_input_requires_calibration_v2_before_key_or_file_access(
+    tmp_path: Path,
+) -> None:
+    output_path = tmp_path / "aggregate.json"
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key
+        not in {
+            "PYTHONPATH",
+            "PHASE1B_ARTIFACT_ENCRYPTION_KEY",
+            "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY",
+        }
+    }
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(AGGREGATOR),
+            "--manifest",
+            str(tmp_path / "missing-manifest.json"),
+            "--encrypted-dir",
+            str(tmp_path / "missing-encrypted"),
+            "--output",
+            str(output_path),
+            "--gold-label-cache-input",
+            str(tmp_path / "missing-gold-cache.json"),
+        ],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 2
+    assert "--gold-label-cache-input requires --calibration-v2" in completed.stderr
+    assert "PHASE1B_ARTIFACT_ENCRYPTION_KEY" not in completed.stderr
+    assert "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY" not in completed.stderr
+    assert not output_path.exists()

@@ -14,20 +14,24 @@ from typing import Any
 try:
     from .common import (
         DEV_PIN_PATH,
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
         canonical_json,
         load_records,
+        resolve_dev_identities,
         sha256_bytes,
         sha256_file,
-        stable_record_id,
     )
 except ImportError:  # direct script execution
     from common import (
         DEV_PIN_PATH,
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
         canonical_json,
         load_records,
+        resolve_dev_identities,
         sha256_bytes,
         sha256_file,
-        stable_record_id,
     )
 
 
@@ -59,17 +63,14 @@ def build_manifest(
     required = {"doc", "claim", "label", "dataset"}
     if not rows or any(not required.issubset(row) for row in rows):
         raise ValueError("DEV rows do not match the pinned LLM-AggreFact schema")
-    indexed: dict[str, dict[str, Any]] = {}
     for row in rows:
-        rid = stable_record_id(row)
-        if rid in indexed:
-            raise ValueError("duplicate content-addressed DEV row")
-        label = str(row["label"])
-        if label not in {"0", "1"}:
+        if str(row["label"]) not in {"0", "1"}:
             raise ValueError("DEV label is outside the frozen binary mapping")
         if not str(row["doc"]).strip() or not str(row["claim"]).strip():
             raise ValueError("DEV row contains an empty document or claim")
-        indexed[rid] = row
+    indexed, identity_resolution = resolve_dev_identities(rows)
+    if not indexed:
+        raise ValueError("no DEV rows remain after identity resolution")
 
     selected = sorted(indexed)
     if sample_per_cohort is not None:
@@ -120,7 +121,8 @@ def build_manifest(
         selected = [rid for shard in shards for rid in shard["record_ids"]]
     cohort_counts = Counter(str(indexed[rid]["dataset"]) for rid in selected)
     manifest: dict[str, Any] = {
-        "schema_version": "phase1b-dev-manifest-v1",
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "record_id_method": RECORD_ID_METHOD,
         "split": "dev",
         "dataset": "lytang/LLM-AggreFact",
         "dataset_revision": dataset_revision,
@@ -130,6 +132,7 @@ def build_manifest(
         "shard_size": shard_size,
         "sample_count": len(selected),
         "cohort_counts": dict(sorted(cohort_counts.items())),
+        "identity_resolution": identity_resolution,
         "shards": shards,
     }
     manifest["manifest_sha256"] = sha256_bytes(canonical_json(manifest))
@@ -173,6 +176,7 @@ def main() -> None:
                 "sample_count": manifest["sample_count"],
                 "shard_count": len(manifest["shards"]),
                 "manifest_sha256": manifest["manifest_sha256"],
+                "identity_resolution": manifest["identity_resolution"],
             },
             sort_keys=True,
         )
