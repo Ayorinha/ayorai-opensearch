@@ -302,3 +302,55 @@ def test_prepare_function_requires_key_and_output_together(tmp_path: Path) -> No
             inference_output=tmp_path / "i",
             gold_label_output=None,
         )
+
+
+def test_discard_mode_still_refuses_labels_outside_the_mapping(tmp_path: Path) -> None:
+    rows = _rows()
+    rows[0] = {**rows[0], "label": "2"}
+    ids = sorted(common.stable_record_id(row) for row in rows)
+    manifest = _manifest("0" * 64)
+    manifest["shards"][0]["record_ids"] = ids
+    manifest["shards"][0]["record_ids_sha256"] = common.sha256_bytes(common.canonical_json(ids))
+    manifest.pop("manifest_sha256")
+    manifest["manifest_sha256"] = common.sha256_bytes(common.canonical_json(manifest))
+    with pytest.raises(ValueError, match="frozen binary mapping"):
+        prepare.prepare(
+            rows,
+            manifest,
+            source_run_id="101",
+            code_sha=CODE_SHA,
+            gold_key=None,
+            inference_output=tmp_path / "i",
+            gold_label_output=None,
+        )
+    assert not (tmp_path / "i").exists()
+
+
+def test_discard_mode_binds_the_inference_digest(tmp_path: Path) -> None:
+    prepared = prepare.prepare(
+        _rows(),
+        _manifest("0" * 64),
+        source_run_id="101",
+        code_sha=CODE_SHA,
+        gold_key=None,
+        inference_output=tmp_path / "i.jsonl",
+        gold_label_output=None,
+    )
+    assert prepared["inference_dataset_sha256"] == common.sha256_file(tmp_path / "i.jsonl")
+    body = {key: value for key, value in prepared.items() if key != "manifest_sha256"}
+    assert prepared["manifest_sha256"] == common.sha256_bytes(common.canonical_json(body))
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["i.jsonl"]
+
+
+def test_prepare_function_refuses_a_destination_without_a_key(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="together"):
+        prepare.prepare(
+            _rows(),
+            _manifest("0" * 64),
+            source_run_id="101",
+            code_sha=CODE_SHA,
+            gold_key=None,
+            inference_output=tmp_path / "i",
+            gold_label_output=tmp_path / "g.json",
+        )
+    assert not (tmp_path / "i").exists() and not (tmp_path / "g.json").exists()

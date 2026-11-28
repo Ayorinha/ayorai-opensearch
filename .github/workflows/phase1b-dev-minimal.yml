@@ -131,8 +131,7 @@ jobs:
             "$INFERENCE_ENCRYPTED" \
             "$MANIFEST_ENCRYPTED" \
             /tmp/phase1b-manifest.json \
-            /tmp/phase1b-matrix.json \
-            /tmp/phase1b-gold-labels
+            /tmp/phase1b-matrix.json
 
 
   shard:

@@ -176,8 +176,9 @@ def test_dev_plan_jobs_clean_local_inputs_after_all_upload_attempts() -> None:
         "$MANIFEST_ENCRYPTED",
         "/tmp/phase1b-manifest.json",
         "/tmp/phase1b-matrix.json",
-        "/tmp/phase1b-gold-labels",
     )
+    # Only the full run writes gold labels; the minimal run never creates the directory.
+    extra = {WORKFLOW_PATH: ("/tmp/phase1b-gold-labels",), MINIMAL_PATH: ()}
 
     for path in (WORKFLOW_PATH, MINIMAL_PATH):
         workflow = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
@@ -190,7 +191,7 @@ def test_dev_plan_jobs_clean_local_inputs_after_all_upload_attempts() -> None:
         assert len(cleanup) == 1
         cleanup_index, cleanup_step = cleanup[0]
         assert cleanup_step["if"] == "${{ always() }}"
-        assert all(item in cleanup_step["run"] for item in sensitive_paths)
+        assert all(item in cleanup_step["run"] for item in (*sensitive_paths, *extra[path]))
 
         upload_indexes = [
             index

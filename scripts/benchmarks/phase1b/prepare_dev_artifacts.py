@@ -100,6 +100,7 @@ def prepare(
     if set(selected_ids) - set(indexed):
         raise ValueError("manifest contains records absent from pinned DEV source")
 
+    keep_gold = gold_key is not None and gold_label_output is not None
     inference_rows = []
     gold_rows = []
     for record_id in sorted(selected_ids):
@@ -112,6 +113,8 @@ def prepare(
                 "dataset": str(row["dataset"]),
             }
         )
+        if not keep_gold:
+            continue
         gold_rows.append(
             {
                 "record_id": record_id,
@@ -132,7 +135,7 @@ def prepare(
     manifest.pop("manifest_sha256", None)
     manifest["manifest_sha256"] = sha256_bytes(canonical_json(manifest))
 
-    if gold_key is None or gold_label_output is None:
+    if not keep_gold or gold_key is None or gold_label_output is None:
         return manifest
     labels = build_gold_label_cache(
         gold_rows,
