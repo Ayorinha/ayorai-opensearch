@@ -34,12 +34,23 @@ def _integrity(path: Path) -> str:
         return str(connection.execute("PRAGMA integrity_check").fetchone()[0])
 
 
-def _kill_rounds(target: object, path: Path, rounds: int = 3) -> None:
-    context = multiprocessing.get_context("fork")
+def _rows(path: Path, table: str) -> int:
+    with closing(sqlite3.connect(str(path), timeout=5)) as connection:
+        return int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])  # noqa: S608
+
+
+def _kill_rounds(target: object, path: Path, table: str, rounds: int = 3) -> None:
+    # "spawn", not "fork": the test process may already run threads, and forking a
+    # multi-threaded process can deadlock the child.
+    context = multiprocessing.get_context("spawn")
     for round_ in range(rounds):
+        before = _rows(path, table)
         child = context.Process(target=target, args=(str(path), round_))
         child.start()
-        time.sleep(0.3)
+        deadline = time.monotonic() + 30
+        while _rows(path, table) < before + 20:  # kill only once the child is writing
+            assert time.monotonic() < deadline, "writer never started"
+            time.sleep(0.05)
         assert child.pid is not None
         os.kill(child.pid, signal.SIGKILL)  # no cleanup, possibly inside a transaction
         child.join(10)
@@ -60,7 +71,7 @@ def _append_forever(path: str, round_: int) -> None:
 def test_a_verification_log_killed_while_appending_stays_valid(tmp_path: Path) -> None:
     path = tmp_path / "verify.sqlite3"
     VerificationLog(str(path), NoteSigner(ORIGIN, SEED)).close()
-    _kill_rounds(_append_forever, path)
+    _kill_rounds(_append_forever, path, "vlog_leaves")
 
     assert _integrity(path) == "ok"
     with VerificationLog(str(path), NoteSigner(ORIGIN, SEED)) as log:
@@ -95,7 +106,7 @@ def _work_forever(path: str, round_: int) -> None:
 def test_a_job_store_killed_while_working_recovers_every_job(tmp_path: Path) -> None:
     path = tmp_path / "jobs.sqlite3"
     JobStore(str(path)).close()
-    _kill_rounds(_work_forever, path)
+    _kill_rounds(_work_forever, path, "jobs")
 
     assert _integrity(path) == "ok"
     with closing(sqlite3.connect(str(path))) as connection:
