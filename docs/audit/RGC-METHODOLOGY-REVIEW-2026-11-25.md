@@ -37,7 +37,7 @@ Permanecem fora do escopo: alterações em Judge, Golden, manifests, hashes, fon
 - [#491](https://github.com/Ayorinha/ayorai-opensearch/pull/491), merge commit [`f8d4648`](https://github.com/Ayorinha/ayorai-opensearch/commit/f8d464841fc75dee68bb39217379a5d8550d1f71): adicionou a revisão de continuidade de 2026-11-07 e atualizou `STATISTICS.md`. O head teve 20/20 checks success. A review registrada foi COMMENTED, não APPROVED; não substitui F-01 nem revisão humana independente.
 - [#598](https://github.com/Ayorinha/ayorai-opensearch/pull/598), merge commit `8b24ae8`: corrigiu o changelog da linha RGC e removeu de `STATISTICS.md` uma nota de estado já superada.
 - [#600](https://github.com/Ayorinha/ayorai-opensearch/pull/600), merge commit `870ad5f`: implementou o IC de Cohen's kappa por componente (DEC-022), preservando o bootstrap por caso como sensibilidade.
-- [#605](https://github.com/Ayorinha/ayorai-opensearch/pull/605), merge commit `221f82e`: tratou os dois comentários não bloqueantes da revisão da #600, acrescentou o texto integral proposto para a Emenda 12 no protocolo e um teste para componente composto inteiramente por pares `RULE_GAP`. A definição de K nesse texto foi identificada como redação nova que ainda requer confirmação explícita do mantenedor.
+- [#605](https://github.com/Ayorinha/ayorai-opensearch/pull/605), merge commit `221f82e`: tratou os dois comentários não bloqueantes da revisão da #600, ampliou o arquivo não normativo `AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md` com o texto integral proposto para a Emenda 12 e acrescentou um teste para componente composto inteiramente por pares `RULE_GAP`. **Não alterou** `PROTOCOL-GOLDEN-V1.md` nem `PREREGISTRATION-RGC-v1.md`; a definição de K na proposta continua sendo redação nova que requer confirmação explícita do mantenedor.
 - [#609](https://github.com/Ayorinha/ayorai-opensearch/pull/609), merge commit `50ed1ce`: avançou o executor para `rgc-eval/0.14.0` e exclui da adjudicação trechos que o corpus marcar explicitamente como superados por retificação.
 - [#610](https://github.com/Ayorinha/ayorai-opensearch/pull/610), merge commit `7ab841d`: alinhou o guia de anotação à Emenda 4 e saneou caminhos internos nos relatórios F1.2.
 
@@ -114,3 +114,34 @@ A ausência de artefatos humanos no repositório não prova que nenhuma atividad
 A linhagem iniciada pela #269 está concluída e não deve ser reiniciada. A engenharia posterior implementou os métodos DEC-021 a DEC-027 e elevou o runner a `rgc-eval/0.14.0`, com testes sintéticos e gates de falha fechada. O bloqueio atual não é falta de reiniciar a implementação: é alinhar os documentos normativos protegidos às decisões já aprovadas, resolver a clarificação nova de K para a Emenda 12 e concluir os gates humanos de anotação, proveniência, revisão independente e isolamento.
 
 **Estado final desta revisão:** documentação de continuidade preparada; protocolo RGC permanece **[PROPOSTO]**, não congelado; nenhuma execução ou validação científica foi realizada.
+
+
+## 8. Revalidação operacional — 2026-11-27
+
+Esta seção atualiza o estado observado no GitHub em 2026-11-27. É um registro de engenharia e documentação; não altera decisões metodológicas, não aprova o protocolo e não constitui validação científica.
+
+### Estado da main e da linhagem histórica
+
+- `main` permanece em `3932d171fa5b4554684ec247555d3eaa8081e568` (merge da #634). A consulta direta a `check-runs` retornou 18/18 concluídos com `success`, sem `skipped` ou falhas.
+- A #269 permanece fechada sem merge, head `f161c14b1bf196dd111e176ac04907d6eaa7f1f3`. Seu head tem 20 check runs: 19 `success`, 1 `skipped` (`rgc-design-simulation`) e nenhuma falha. A conversa contém três comentários; não há review submetida nem thread inline.
+- A #643 continua aberta em Draft, base `main`, head `af4ae8a7a4e4b8dd18bf4b98bf20718ed9dfb598`. Seus 20 check runs terminaram com 19 `success` e uma falha (`Schemathesis all contract checks`). Os seis contextos exigidos pelo ruleset — `test (3.11)`, `test (3.12)`, `test (3.13)`, `golden-regression`, `judge-regression` e `security` — passaram. A falha restante é a resposta HTTP 413 documentada em `POST /v1/check), que o `negative_data_rejection` da configuração padrão do Schemathesis não aceitava. Evidência: [job 140263779351](https://github.com/Ayorinha/ayorai-opensearch/actions/runs/45924883355/job/140263779351).
+- A correção isolada da #645 continua aberta em Draft, head `fd32df561d3579d71fbe8492ab2752d52201ea9a`, e agora tem 20/20 check runs concluídos com `success`, inclusive `Schemathesis all contract checks`. A PR adiciona somente `schemathesis.toml`, mantém o check negativo habilitado e aceita 413 como resposta de rejeição documentada. **A CI verde da #645 não altera retroativamente a CI da #643 nem integra a correção à main.** Nenhuma das duas PRs foi mesclada.
+- A #644 é uma trilha separada (P3/A1 de isolamento de artefatos DEV), não parte do benchmark RGC PT-BR. No head `9321fdc20e586ef6dcbf184e2385fc7f0b639e2f), seus 38 check runs estão `success`. A conversa contém um achado de revisão ainda não resolvido: o workflow DEV minimal gera e retém um cache cifrado de rótulos gold sem consumidor identificado, embora o job de agregação minimal não o consuma. Isso requer decisão/correção própria nessa trilha; não foi alterado nem executado nesta revisão.
+
+### Correção factual da linhagem #605
+
+A descrição da #605 na seção 2 foi corrigida nesta revisão. A consulta ao PR e ao diff confirma que a #605 alterou exatamente `docs/eval/AMENDMENT-PROPOSAL-2026-11-21-DEC-022.md` e `tests/test_rgc_agreement.py`; **não** alterou o protocolo nem o pré-registro. O protocolo em `main` (blob `574c3f92c55c09e4cb93bbd93448b258898a5d7b`, 159 linhas) termina na Emenda 10. O pré-registro (blob `af2c16f2bc0c12583fa5ff50f4135ad5a8bbaa86`) contém a Emenda 11, mas não a Emenda 12. `STATISTICS.md` também registra que a proposta de emendas ao protocolo aguarda inserção pelo mantenedor.
+
+Portanto, a lacuna normativa continua sendo:
+1. Emenda 11 ainda não inserida no protocolo;
+2. Emenda 12 ainda não inserida no pré-registro nem no protocolo;
+3. definição de K da Emenda 12 ainda depende de confirmação explícita do mantenedor;
+4. placeholders de data da proposta continuam sem data efetiva.
+
+### Limites e próximos gates
+
+- O ruleset `Protecao-main-ATTRACTOR` (ID `24996139`) permanece ativo: PR obrigatória, sem atores de bypass, `current_user_can_bypass=never`, e os seis checks obrigatórios listados acima.
+- Permanecem pendentes: decisão do mantenedor sobre K; autorização específica para inserir as emendas nos documentos protegidos; Piloto 02 realizado por humanos; anotação independente, adjudicação e revisão humana F-01; atestação de proveniência, completude do inventário D7 e isolamento da partição oculta.
+- Nenhum caso foi criado, visto, rotulado ou executado; nenhum dado DEV/oculto, anotação humana ou corpus capturado foi aberto. Nenhum teste local, executor RGC, Judge, ATTRACTOR ou workflow DEV/TEST foi disparado por esta revisão.
+- Nenhum arquivo de Judge, Golden, manifest, hash, pré-registro, protocolo ou decisão aprovada foi alterado. A única alteração deste commit é este documento em `docs/audit/`.
+- Checks verdes são evidência de engenharia, não evidência de validade dos rótulos, independência de anotadores, representatividade ou desempenho do sistema.
