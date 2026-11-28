@@ -87,6 +87,13 @@ def test_doc_id_groups_claims_of_the_same_document_within_a_cohort() -> None:
     assert len(per_doc) == len(rows) // CLAIMS_PER_DOC
 
 
+def test_exact_duplicate_rows_map_once() -> None:
+    rows = _clustered_rows()
+    assert build_doc_map([*rows, dict(rows[0])], _expected(rows)) == build_doc_map(
+        rows, _expected(rows)
+    )
+
+
 def test_same_text_in_two_cohorts_is_two_clusters() -> None:
     assert document_id("cohort-a", "same text") != document_id("cohort-b", "same text")
     assert document_id("cohort-a", "same text") == document_id("cohort-a", "same text")
@@ -100,7 +107,7 @@ def test_doc_map_is_deterministic() -> None:
 
 
 @pytest.mark.parametrize(
-    "case", ["missing", "extra", "label", "cohort", "duplicate", "test_split", "raw_label"]
+    "case", ["missing", "extra", "label", "cohort", "conflict", "test_split", "raw_label"]
 )
 def test_doc_map_fails_closed(case: str) -> None:
     rows = _clustered_rows()
@@ -120,9 +127,10 @@ def test_doc_map_fails_closed(case: str) -> None:
         first = next(iter(expected))
         expected[first] = ("another-cohort", expected[first][1])
         message = "disagrees"
-    elif case == "duplicate":
-        rows = rows + rows[:1]
-        message = "duplicate"
+    elif case == "conflict":
+        # DEC-034 A: a label conflict excludes the identity, so the cache entry is missing.
+        rows = [*rows, dict(rows[0], label=0 if rows[0]["label"] else 1)]
+        message = "not found"
     elif case == "test_split":
         rows = [dict(rows[0], split="test"), *rows[1:]]
         message = "TEST"
