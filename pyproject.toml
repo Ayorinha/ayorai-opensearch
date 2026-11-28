@@ -41,7 +41,7 @@ telemetry = [
 dev = [
   "pytest>=9.0.3,<10",
   "pytest-cov>=6,<7",
-  "ruff==0.17.5",
+  "ruff==0.17.6",
   "mypy>=1.17,<3",
   "pip-audit>=2.9,<3",
   "bandit>=1.8,<2",
