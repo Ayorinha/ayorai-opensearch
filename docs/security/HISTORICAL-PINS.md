@@ -40,7 +40,7 @@ As correções exigem trocar de versão maior (`transformers` 5.x, `pyarrow` 23)
 
 ## Revisão de 2026-11-26 (P3/A1): segredos expostos mudaram
 
-A P3/A1 acrescentou a chave `PHASE1B_GOLD_LABEL_ENCRYPTION_KEY` ao job `plan`, que instalava estes pins. É o terceiro gatilho de revisão da regra 4.
+A P3/A1 acrescentou a chave `PHASE1B_GOLD_LABEL_ENCRYPTION_KEY` ao job `plan` do workflow full, que instalava estes pins. O workflow minimal não recebe essa chave (S-19). É o terceiro gatilho de revisão da regra 4.
 
 **Decisão técnica aplicada:** os jobs que **não rodam inferência** passam a instalar só `requirements-phase1b-protected.txt`:
 - `plan` e `aggregate` (full e minimal);
