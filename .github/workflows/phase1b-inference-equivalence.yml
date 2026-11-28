@@ -38,14 +38,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: [historical, current]
+        # torch-only and transformers-only change one package at a time against the
+        # historical environment, to locate any difference; current is the gate.
+        environment: [historical, current, torch-only, transformers-only]
         model: [mdeberta, minicheck, factcg]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: matrix.environment == 'historical'
+        if: matrix.environment != 'current'
         with:
           ref: ${{ env.HISTORICAL_SHA }}
           path: historical
@@ -69,6 +71,30 @@ jobs:
           /tmp/env/bin/python -m pip install --require-hashes --only-binary :all: --no-deps \
             --index-url https://pypi.org/simple \
             -r historical/reproducibility/phase1b-dev-2026-11-07/inference-requirements.lock.txt
+      - name: Install torch 2.14 over the historical lock (hash-verified)
+        if: matrix.environment == 'torch-only'
+        run: |
+          set -euo pipefail
+          echo "cf052d1fb0c78a688349476b71ebd4b0856419945ba07b2d74997f2220347000  historical/reproducibility/phase1b-dev-2026-11-07/inference-requirements.lock.txt" | sha256sum --check --strict -
+          python -m venv /tmp/env
+          /tmp/env/bin/python -m pip install "pip==25.2"
+          /tmp/env/bin/python -m pip install --require-hashes --only-binary :all: --no-deps \
+            --index-url https://download.pytorch.org/whl/cpu -r requirements-phase1b-torch-cpu.txt
+          /tmp/env/bin/python -m pip install --require-hashes --only-binary :all: --no-deps \
+            --index-url https://pypi.org/simple \
+            -r historical/reproducibility/phase1b-dev-2026-11-07/inference-requirements.lock.txt
+      - name: Install the current lock over the historical torch (hash-verified)
+        if: matrix.environment == 'transformers-only'
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/env
+          /tmp/env/bin/python -m pip install "pip==25.2"
+          printf 'torch==2.7.1+cpu --hash=sha256:%s\n' \
+            8f8b3cfc53010a4b4a3c7ecb88c212e9decc4f5eeb6af75c3c803937d2d60947 > /tmp/torch-historical.txt
+          /tmp/env/bin/python -m pip install --require-hashes --only-binary :all: --no-deps \
+            --index-url https://download.pytorch.org/whl/cpu -r /tmp/torch-historical.txt
+          /tmp/env/bin/python -m pip install --require-hashes --only-binary :all: --no-deps \
+            --index-url https://pypi.org/simple -r requirements-phase1b-inference.txt
       - name: Install the current environment (hash-verified)
         if: matrix.environment == 'current'
         run: |
@@ -116,9 +142,15 @@ jobs:
       - name: Compare the historical and the current scores
         run: |
           set -euo pipefail
-          for env in historical current; do
+          for env in historical current torch-only transformers-only; do
             python -I scripts/benchmarks/phase1b/inference_equivalence.py \
               --merge /tmp/scores/scores-${env}-*.json --output "/tmp/scores-${env}.json"
+          done
+          # Diagnostics first (reported, never gating), then the gate on the current locks.
+          for env in torch-only transformers-only; do
+            python -I scripts/benchmarks/phase1b/inference_equivalence.py \
+              --compare /tmp/scores-historical.json "/tmp/scores-${env}.json" \
+              --output "/tmp/inference-equivalence-${env}.json" || true
           done
           python -I scripts/benchmarks/phase1b/inference_equivalence.py \
             --compare /tmp/scores-historical.json /tmp/scores-current.json \
@@ -127,6 +159,6 @@ jobs:
         if: always()
         with:
           name: phase1b-inference-equivalence-${{ github.sha }}
-          path: /tmp/inference-equivalence.json
+          path: /tmp/inference-equivalence*.json
           if-no-files-found: warn
           retention-days: 30

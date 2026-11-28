@@ -116,6 +116,12 @@ def compare(first: dict[str, Any], second: dict[str, Any]) -> dict[str, Any]:
             "max_abs_diff": max(diffs),
             "decision_flips_at_0_5": flips,
             "same_chunking": same_chunks,
+            "records_over_bound": sum(1 for d in diffs if d > MAX_ABS_DIFF),
+            "chunking": {
+                key: [a[key], b[key]]
+                for key in ("block_count", "token_count_by_unit", "truncation_count")
+                if a[key] != b[key]
+            },
             "equivalent": max(diffs) <= MAX_ABS_DIFF and flips == 0 and same_chunks,
         }
     result["equivalent"] = all(m["equivalent"] for m in result["models"].values())
