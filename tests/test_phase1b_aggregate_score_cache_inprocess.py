@@ -74,9 +74,7 @@ def test_aggregate_and_score_cache_replay_clis_run_in_process(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    manifest, encrypted_dir, environment, rows_by_id, gold_cache = _write_synthetic_inputs(
-        tmp_path
-    )
+    manifest, encrypted_dir, environment, rows_by_id, gold_cache = _write_synthetic_inputs(tmp_path)
     _set_artifact_key(monkeypatch, environment)
     monkeypatch.setenv(
         "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY",
