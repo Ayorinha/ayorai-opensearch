@@ -253,23 +253,32 @@ jobs:
           from pathlib import Path
 
           report = json.loads(Path("phase1b-cli-coverage.json").read_text(encoding="utf-8"))
-          expected = {"aggregate_dev.py", "score_cache.py"}
+          expected = {
+              "aggregate_dev.py": {"line": 73.0, "branch": 63.0},
+              "score_cache.py": {"line": 67.0, "branch": 70.0},
+          }
           found = {}
           for path, details in report["files"].items():
               name = Path(path).name
               if name in expected:
                   found[name] = details["summary"]
-          if set(found) != expected:
+          if set(found) != set(expected):
               raise SystemExit(
                   f"expected coverage for {sorted(expected)}; found {sorted(found)}"
               )
-          for name in sorted(expected):
+          for name, minimum in expected.items():
               summary = found[name]
               if summary["num_statements"] <= 0:
                   raise SystemExit(f"{name}: no executable statements were measured")
               line = summary["covered_lines"] / summary["num_statements"] * 100
               branch = summary.get("percent_branches_covered", 0.0)
               print(f"PHASE1B_COVERAGE {name}: lines={line:.2f}% branches={branch:.2f}%")
+              if line < minimum["line"] or branch < minimum["branch"]:
+                  raise SystemExit(
+                      f"{name}: coverage below initial floor "
+                      f"(lines {line:.2f}% < {minimum['line']:.2f}% or "
+                      f"branches {branch:.2f}% < {minimum['branch']:.2f}%)"
+                  )
           PY
       - name: Upload Phase 1b CLI coverage report
         if: matrix.python-version == '3.13'
