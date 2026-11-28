@@ -35,14 +35,29 @@ def test_executor_claims_runs_and_finishes_successfully(store: JobStore) -> None
     assert result.lease_until is None
 
 
-def test_executor_marks_handler_failure_as_failed(store: JobStore) -> None:
+def test_executor_marks_handler_failure_as_failed(
+    store: JobStore, caplog: pytest.LogCaptureFixture
+) -> None:
     store.enqueue("j1", "id-1")
 
-    result = JobExecutor(store, Handler(fail=True)).run("j1", now=100.0)
+    with caplog.at_level("WARNING", logger="ayorai_attractor.job_executor"):
+        result = JobExecutor(store, Handler(fail=True)).run("j1", now=100.0)
 
     assert result.status is JobStatus.FAILED
     assert result.attempts == 1
     assert result.lease_until is None
+    messages = [r.getMessage() for r in caplog.records if r.name == "ayorai_attractor.job_executor"]
+    assert messages == ["job j1 attempt 1 failed: RuntimeError"]
+    assert "worker failure" not in caplog.text
+
+
+def test_executor_success_logs_nothing(store: JobStore, caplog: pytest.LogCaptureFixture) -> None:
+    store.enqueue("j1", "id-1")
+
+    with caplog.at_level("DEBUG", logger="ayorai_attractor.job_executor"):
+        JobExecutor(store, Handler()).run("j1", now=100.0)
+
+    assert not [r for r in caplog.records if r.name == "ayorai_attractor.job_executor"]
 
 
 def test_executor_rejects_a_non_queued_job(store: JobStore) -> None:

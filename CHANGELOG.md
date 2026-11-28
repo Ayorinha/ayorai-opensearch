@@ -124,6 +124,10 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - ADR-011 (família de regras do Judge por rota), ADR-001 aceito, decisões DEC-001, DEC-003, DEC-004 e DEC-006 registradas, índice das aprovações em `DECISIONS-APPROVED.md`, roteiro de longo prazo (`docs/ROADMAP.md`) e política dos pins históricos (`docs/security/HISTORICAL-PINS.md`, com teste de isolamento).
 - `/v1/check`, `/v1/fields`, dono dos rastros, backup e novas variáveis documentados (#566); status de engenharia atualizado (#572, #578).
 
+### Manutenção
+- Diagnóstico: uma falha ao gravar o log de verificação do `/v1/verify` só incrementava a métrica; agora também gera um log `ERROR` com o modo e o tipo da exceção. Uma falha do handler no `JobExecutor` era descartada sem registro; agora gera um log `WARNING` com o job, a tentativa e o tipo da exceção. A mensagem da exceção não é registrada, porque pode conter dados da requisição ou do payload. O comportamento da API e dos jobs não mudou.
+- `Makefile`: as ferramentas rodam com `python -m`, para que uma instalação fora do ambiente do projeto (pipx, `~/.local/bin`) não substitua a do projeto. `make typecheck-eval` usa `--explicit-package-bases`, como a CI; antes falhava localmente. `format` entrou no `.PHONY`.
+
 ### Limites
 - Nenhum resultado de RGC existe ou foi produzido. Nenhum benchmark em português validado; nenhuma certificação.
 - A troca do detector para a v11 (#571) muda a referência do Golden v0.1 e depende de aprovação explícita do mantenedor; não faz parte desta lista.

@@ -1,28 +1,31 @@
+# Tools run through the project interpreter (python -m), so a tool installed
+# outside the project environment (pipx, ~/.local/bin) cannot shadow it.
+
 install:
 	python -m pip install -e ".[dev]"
 
 test:
-	pytest
+	python -m pytest
 
 lint:
-	ruff check .
-	ruff format --check .
+	python -m ruff check .
+	python -m ruff format --check .
 
 format:
-	ruff format .
+	python -m ruff format .
 
 typecheck:
-	mypy src/ayorai_attractor
+	python -m mypy src/ayorai_attractor
 
 typecheck-eval:
-	mypy --strict evals/ptbr/rgc_eval.py evals/ptbr/rgc_agreement.py
+	python -m mypy --strict --explicit-package-bases evals/ptbr/rgc_eval.py evals/ptbr/rgc_agreement.py
 
 security:
-	pip-audit
-	bandit -r src/ayorai_attractor
+	python -m pip_audit
+	python -m bandit -r src/ayorai_attractor
 
 run:
-	uvicorn ayorai_attractor.api.app:app --reload --lifespan on --no-access-log
+	python -m uvicorn ayorai_attractor.api.app:app --reload --lifespan on --no-access-log
 
 reproduce:
 	python scripts/reproduce.py
@@ -30,4 +33,4 @@ reproduce:
 reproduce-quick:
 	python scripts/reproduce.py --quick
 
-.PHONY: install test lint typecheck typecheck-eval security run reproduce reproduce-quick
+.PHONY: install test lint format typecheck typecheck-eval security run reproduce reproduce-quick

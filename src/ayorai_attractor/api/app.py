@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -88,6 +89,8 @@ from ayorai_attractor.verification.judge2 import adjudicate
 from ayorai_attractor.verification.judge2.explanations import explain_canonical_result
 from ayorai_attractor.verification.models import Evidence, Verdict
 from ayorai_attractor.verification.response import ResponsePolicy
+
+logger = logging.getLogger(__name__)
 
 engine = Attractor()
 audit_store = AuditTraceStore()
@@ -378,6 +381,8 @@ def _record_verification(
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except Exception as exc:
         http_metrics.audit_record_failed()
+        # Only the exception type: the message may carry request-derived data.
+        logger.error("verification log append failed (mode=%s): %s", mode, type(exc).__name__)
         if mode == "required":
             # Owner decision 3: no verdict circulates unrecorded.
             raise HTTPException(
