@@ -7,6 +7,7 @@ so coverage.py can measure the critical CLI paths.
 
 from __future__ import annotations
 
+import base64
 import json
 import sys
 from pathlib import Path
@@ -74,7 +75,7 @@ def test_aggregate_and_score_cache_replay_clis_run_in_process(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    manifest, encrypted_dir, environment, rows_by_id, gold_cache = _write_synthetic_inputs(tmp_path)
+    manifest, encrypted_dir, environment, _, gold_cache = _write_synthetic_inputs(tmp_path)
     _set_artifact_key(monkeypatch, environment)
     monkeypatch.setenv(
         "PHASE1B_GOLD_LABEL_ENCRYPTION_KEY",
@@ -103,13 +104,17 @@ def test_aggregate_and_score_cache_replay_clis_run_in_process(
 
     aggregate_summary = json.loads(capsys.readouterr().out)
     aggregate_report = json.loads(aggregate_output.read_text(encoding="utf-8"))
-    score_envelope_text = score_cache_output.read_text(encoding="utf-8")
-    score_envelope = json.loads(score_envelope_text)
+    score_envelope = json.loads(score_cache_output.read_text(encoding="utf-8"))
+    score_payload = score_cache.decrypt_score_cache(
+        score_envelope,
+        key=base64.b64decode(environment["PHASE1B_ARTIFACT_ENCRYPTION_KEY"]),
+    )
     assert aggregate_summary["status"] == "complete"
     assert aggregate_report["quality_metrics"] == "calibration_v2_aggregate_only"
     assert score_envelope["metadata"]["shard_id"] == score_cache.SCORE_CACHE_SHARD_ID
-    assert "gold" not in score_envelope_text.lower()
-    assert not any(record_id in score_envelope_text for record_id in rows_by_id)
+    assert "records" not in score_envelope
+    assert "record_id" not in score_envelope
+    assert "gold" not in json.dumps(score_payload).lower()
 
     replay_output = tmp_path / "reports" / "replay.json"
     _run_main(
