@@ -316,6 +316,14 @@ jobs:
           assert transformers.__version__ == "4.55.4", transformers.__version__
           print("phase1b inference lock: installed with hashes, CPU-only")
           PY
+      - name: Vendored nltk 3.9.4 segmentation reproduces the reference
+        run: |
+          set -euo pipefail
+          /tmp/inference/bin/python -I scripts/benchmarks/phase1b/nltk_resources.py --data-dir /tmp/punkt
+          /tmp/inference/bin/python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('nltk') is not None)"
+          /tmp/inference/bin/python -I scripts/benchmarks/phase1b/nltk_equivalence.py \
+            --implementation vendored --corpus fixed --data-dir /tmp/punkt \
+            --output /tmp/vendored.json --expect tests/fixtures/phase1b_nltk394_segmentation.json
 
   typecheck-strict:
     name: typecheck-strict (non-blocking)

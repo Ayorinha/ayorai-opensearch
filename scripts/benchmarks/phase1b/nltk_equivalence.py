@@ -158,9 +158,11 @@ def _synthetic() -> list[str]:
     return texts
 
 
-def corpus() -> list[tuple[str, str]]:
+def corpus(kind: str = "full") -> list[tuple[str, str]]:
+    """``full`` adds the repository's prose; ``fixed`` (edge + synthetic) never changes."""
     items = [("edge", text) for text in EDGE_CASES]
-    items += [("repository", text) for text in _repository_prose()]
+    if kind == "full":
+        items += [("repository", text) for text in _repository_prose()]
     items += [("synthetic", text) for text in _synthetic()]
     return items
 
@@ -170,13 +172,26 @@ def _digest(value: Any) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def run(data_dir: Path) -> dict[str, Any]:
+def _tokenizers(implementation: str, data_dir: Path) -> tuple[Any, Any, str]:
+    if implementation == "vendored":
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from scripts.benchmarks.phase1b import vendor_nltk
+
+        vendor_nltk.configure(data_dir)
+        version = f"vendored-{vendor_nltk.NLTK_VERSION}"
+        return vendor_nltk.sent_tokenize, vendor_nltk.word_tokenize, version
     import nltk
     from nltk.tokenize import sent_tokenize, word_tokenize
 
     nltk.data.path[:] = [str(data_dir)]
+    return sent_tokenize, word_tokenize, nltk.__version__
+
+
+def run(data_dir: Path, implementation: str = "nltk", kind: str = "full") -> dict[str, Any]:
+    sent_tokenize, word_tokenize, version = _tokenizers(implementation, data_dir)
     rows = []
-    for index, (source, text) in enumerate(corpus()):
+    for index, (source, text) in enumerate(corpus(kind)):
         sentences = sent_tokenize(text)
         rows.append(
             {
@@ -190,7 +205,8 @@ def run(data_dir: Path) -> dict[str, Any]:
             }
         )
     return {
-        "nltk_version": nltk.__version__,
+        "nltk_version": version,
+        "corpus": kind,
         "python": sys.version.split()[0],
         "seed": SEED,
         "items": len(rows),
@@ -209,7 +225,7 @@ def run(data_dir: Path) -> dict[str, Any]:
 def compare(first: dict[str, Any], second: dict[str, Any]) -> dict[str, Any]:
     if first["corpus_sha256"] != second["corpus_sha256"]:
         raise SystemExit("the two reports were run on different corpora")
-    texts = {index: text for index, (_, text) in enumerate(corpus())}
+    texts = dict(enumerate(text for _, text in corpus(first.get("corpus", "full"))))
     differences: dict[str, list[dict[str, Any]]] = {}
     for key in ("sent_tokenize", "word_tokenize", "words_per_sentence"):
         rows = [
@@ -233,6 +249,13 @@ def main() -> None:
     parser.add_argument("--data-dir", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--compare", nargs=2, type=Path, metavar=("BASELINE", "CANDIDATE"))
+    parser.add_argument("--implementation", choices=["nltk", "vendored"], default="nltk")
+    parser.add_argument("--corpus", choices=["full", "fixed"], default="full")
+    parser.add_argument(
+        "--expect",
+        type=Path,
+        help="fixture with corpus_sha256 and results_sha256; exit 1 unless the run matches",
+    )
     args = parser.parse_args()
     if args.compare:
         first, second = (json.loads(p.read_text(encoding="utf-8")) for p in args.compare)
@@ -244,10 +267,18 @@ def main() -> None:
         raise SystemExit(0 if all(result["equivalent"].values()) else 1)
     if not args.data_dir or not args.output:
         parser.error("--data-dir and --output are required unless --compare is given")
-    report = run(args.data_dir)
+    report = run(args.data_dir, args.implementation, args.corpus)
     args.output.write_text(json.dumps(report, ensure_ascii=False) + "\n", encoding="utf-8")
     summary = {k: v for k, v in report.items() if k != "rows"}
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+    if args.expect:
+        expected = json.loads(args.expect.read_text(encoding="utf-8"))
+        matches = (
+            report["corpus_sha256"] == expected["corpus_sha256"]
+            and report["results_sha256"] == expected["results_sha256"]
+        )
+        print(json.dumps({"matches_reference": matches}))
+        raise SystemExit(0 if matches else 1)
 
 
 if __name__ == "__main__":

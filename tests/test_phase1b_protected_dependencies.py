@@ -112,10 +112,22 @@ def test_inference_locks_hold_the_historical_environment() -> None:
         for name, version in record["environments"]["inference"]["packages"].items()
     }
     pins = {**_lock_pins(INFERENCE_LOCK), **_lock_pins(TORCH_LOCK)}
-    # Same environment as the historical runs, except the patched cryptography.
+    # Same environment as the historical runs, except the patched cryptography and
+    # nltk, whose 3.9.4 segmentation is vendored (only nltk needed click and joblib).
     assert pins.pop("cryptography") == "50.0.2"
     assert historical.pop("cryptography") == "46.0.3"
+    from scripts.benchmarks.phase1b import vendor_nltk
+
+    assert historical.pop("nltk") == vendor_nltk.NLTK_VERSION
+    for name in ("click", "joblib"):
+        historical.pop(name)
     assert pins == historical
+
+
+def test_no_phase1b_job_installs_nltk() -> None:
+    for path in sorted((ROOT / ".github" / "workflows").glob("phase1b-*.yml")):
+        assert "nltk==" not in path.read_text(encoding="utf-8"), path.name
+    assert "nltk" not in _lock_pins(INFERENCE_LOCK)
 
 
 def test_inference_job_installs_only_the_hash_locks() -> None:

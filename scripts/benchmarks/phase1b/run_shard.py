@@ -133,7 +133,10 @@ def _document_chunks(
         )
         units = sum(len(tokenizer.encode(chunk, add_special_tokens=False)) for chunk in chunks)
         return chunks, {protocol["count_unit"]: units}
-    from nltk.tokenize import sent_tokenize, word_tokenize
+    try:
+        from .vendor_nltk import sent_tokenize, word_tokenize
+    except ImportError:  # direct script execution
+        from vendor_nltk import sent_tokenize, word_tokenize  # type: ignore[no-redef]
 
     if protocol["splitter"] == "nltk_sent_tokenize_with_newlines":
 

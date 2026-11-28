@@ -58,3 +58,20 @@ python scripts/benchmarks/phase1b/nltk_equivalence.py --compare /tmp/a.json /tmp
 ```
 
 A parte de prosa do repositório depende do commit. Para obter o mesmo `corpus_sha256`, execute no commit `a9bc72d5`.
+
+## Desfecho: segmentação 3.9.4 embutida (2026-11-28)
+
+Nem a atualização (que muda a segmentação) nem a aceitação do risco (que enfraqueceria o `dependency-review`) atendiam às restrições. A saída foi embutir só o código das duas funções da 3.9.4 (`scripts/benchmarks/phase1b/vendor_nltk/`, Apache-2.0, edições listadas no README do pacote). O job `shard` deixa de instalar o nltk.
+
+**Equivalência do pacote embutido com o nltk 3.9.4 oficial [FATO]:**
+
+| corpus | textos | `sent_tokenize` | `word_tokenize` | palavras por sentença |
+|---|---|---|---|---|
+| completo (com a prosa do repositório) | 25.185 | 0 diferenças | 0 diferenças | 0 diferenças |
+| fixo (borda + sintéticos) | 20.028 | 0 diferenças | 0 diferenças | 0 diferenças |
+
+- **Ambientes:** Python 3.12.3 e 3.13.18.
+- **Referência fixa:** `tests/fixtures/phase1b_nltk394_segmentation.json`, produzida com o nltk 3.9.4 oficial:
+  - `corpus_sha256` `674fc993…d22f`;
+  - `sent_tokenize` `01b6ffab…a237`.
+- **CI:** o job `phase1b-inference-lock` instala o ambiente de inferência travado, confirma que o nltk não está instalado, baixa o `punkt_tab` fixado com SHA-256 conferido e exige a mesma referência.
