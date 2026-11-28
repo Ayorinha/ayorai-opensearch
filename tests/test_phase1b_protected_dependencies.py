@@ -105,27 +105,27 @@ def test_inference_locks_hash_every_package() -> None:
             assert re.search(r"--hash=sha256:[0-9a-f]{64}", block), (path.name, block)
 
 
-def test_inference_locks_hold_the_historical_environment() -> None:
+def test_inference_locks_keep_the_scoring_stack_and_prove_the_rest() -> None:
     record = json.loads(HISTORICAL.read_text(encoding="utf-8"))
     historical = {
         name.lower().replace("_", "-"): version
         for name, version in record["environments"]["inference"]["packages"].items()
     }
     pins = {**_lock_pins(INFERENCE_LOCK), **_lock_pins(TORCH_LOCK)}
-    # Same environment as the historical runs, except the patched cryptography and
-    # nltk, whose 3.9.4 segmentation is vendored (only nltk needed click and joblib).
-    assert pins.pop("cryptography") == "50.0.2"
-    assert historical.pop("cryptography") == "46.0.3"
-    assert pins.pop("setuptools") == "84.2.1"  # torch install requirement, patched
-    assert historical.pop("setuptools") == "78.1.0"
-    from scripts.benchmarks.phase1b import vendor_nltk
-
-    assert historical.pop("nltk") == vendor_nltk.NLTK_VERSION
-    # Packages the shards never import (they read JSONL, not parquet): left out of the
-    # lock so that no unused package with advisories ships to the key-holding job.
-    for name in ("click", "joblib", "pyarrow", "pandas", "python-dateutil", "pytz", "tzdata"):
-        historical.pop(name)
-    assert pins == historical
+    # The numerical core stays at the historical versions.
+    for name in ("torch", "numpy", "sympy", "networkx", "mpmath"):
+        assert pins[name] == historical[name], name
+    assert pins["cryptography"] == "50.0.2"
+    # transformers moves to a release with the published advisories fixed (>= 5.10);
+    # the equivalence workflow proves the same chunking and scores as 4.55.4.
+    major, minor = (int(part) for part in pins["transformers"].split(".")[:2])
+    assert (major, minor) >= (5, 10)
+    workflow = (ROOT / ".github" / "workflows" / "phase1b-inference-equivalence.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "0edc35b97ea6cd69d2b3e1258db355d7b31eb6a7" in workflow
+    assert "requirements-phase1b-inference.txt" in workflow
+    assert "--compare" in workflow
 
 
 def test_no_phase1b_job_installs_nltk() -> None:

@@ -1,0 +1,91 @@
+name: Phase 1b inference equivalence
+
+# P4-01: any change to the Phase 1b inference environment or shard code must keep the
+# historical scores. Runs the exact shard code (run_shard.run_inference) for the three
+# pinned models on deterministic synthetic text (no benchmark data, no secrets) under the
+# historical environment (transformers 4.55.4, from the preserved repro branch) and the
+# current locks, and fails unless chunking matches and scores agree within 1e-5.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "requirements-phase1b-inference.txt"
+      - "requirements-phase1b-torch-cpu.txt"
+      - "scripts/benchmarks/phase1b/run_shard.py"
+      - "scripts/benchmarks/phase1b/protocols.py"
+      - "scripts/benchmarks/phase1b/vendor_nltk/**"
+      - "scripts/benchmarks/phase1b/inference_equivalence.py"
+      - ".github/workflows/phase1b-inference-equivalence.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  equivalence:
+    name: phase1b-inference-equivalence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PHASE1B_NLTK_DATA: /tmp/punkt
+      HISTORICAL_SHA: 0edc35b97ea6cd69d2b3e1258db355d7b31eb6a7
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.HISTORICAL_SHA }}
+          path: historical
+          sparse-checkout: reproducibility/phase1b-dev-2026-11-07
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Verify the historical lock against its recorded SHA-256
+        run: |
+          echo "cf052d1fb0c78a688349476b71ebd4b0856419945ba07b2d74997f2220347000  historical/reproducibility/phase1b-dev-2026-11-07/inference-requirements.lock.txt" | sha256sum --check --strict -
+      - name: Install the historical and the current environments (hash-verified)
+        run: |
+          set -euo pipefail
+          for env in historical current; do
+            python -m venv "/tmp/$env"
+            "/tmp/$env/bin/python" -m pip install "pip==25.2"
+            "/tmp/$env/bin/python" -m pip install --require-hashes --only-binary :all: --no-deps \
+              --index-url https://download.pytorch.org/whl/cpu -r requirements-phase1b-torch-cpu.txt
+          done
+          /tmp/historical/bin/python -m pip install --require-hashes --only-binary :all: --no-deps \
+            --index-url https://pypi.org/simple \
+            -r historical/reproducibility/phase1b-dev-2026-11-07/inference-requirements.lock.txt
+          /tmp/current/bin/python -m pip install --require-hashes --only-binary :all: --no-deps \
+            --index-url https://pypi.org/simple -r requirements-phase1b-inference.txt
+          /tmp/current/bin/python -m pip check
+      - name: Fetch the pinned punkt_tab data (SHA-256 verified)
+        run: /tmp/current/bin/python -I scripts/benchmarks/phase1b/nltk_resources.py --data-dir "$PHASE1B_NLTK_DATA"
+      - name: Score synthetic pairs under both environments
+        run: |
+          set -euo pipefail
+          for env in historical current; do
+            "/tmp/$env/bin/python" -I scripts/benchmarks/phase1b/inference_equivalence.py \
+              --output "/tmp/scores-$env.json"
+          done
+      - name: Compare
+        run: |
+          python -I scripts/benchmarks/phase1b/inference_equivalence.py \
+            --compare /tmp/scores-historical.json /tmp/scores-current.json \
+            --output /tmp/inference-equivalence.json
+      - name: Upload the equivalence evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-inference-equivalence-${{ github.sha }}
+          path: |
+            /tmp/scores-historical.json
+            /tmp/scores-current.json
+            /tmp/inference-equivalence.json
+          if-no-files-found: warn
+          retention-days: 30

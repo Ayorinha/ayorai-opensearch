@@ -313,7 +313,7 @@ jobs:
           import transformers
           assert torch.__version__ == "2.7.1+cpu", torch.__version__
           assert torch.version.cuda is None, "Expected CPU-only PyTorch build"
-          assert transformers.__version__ == "4.55.4", transformers.__version__
+          assert transformers.__version__ == "5.24.0", transformers.__version__
           print("phase1b inference lock: installed with hashes, CPU-only")
           PY
       - name: Vendored nltk 3.9.4 segmentation reproduces the reference
