@@ -237,6 +237,66 @@ jobs:
           fi
           echo "RESOURCE_WARNING_SENTINEL: EXPECTED_FAILURE_CONFIRMED"
       - run: pytest -W error::ResourceWarning -W error::pytest.PytestUnraisableExceptionWarning --cov=ayorai_attractor --cov-report=xml --cov-report=json --cov-report=term-missing
+      - name: Measure Phase 1b CLI coverage with synthetic fixtures
+        if: matrix.python-version == '3.13'
+        run: |
+          set -euo pipefail
+          coverage_backup="$(mktemp)"
+          test -f .coverage
+          cp .coverage "$coverage_backup"
+          restore_coverage() {
+            cp "$coverage_backup" .coverage
+            rm -f "$coverage_backup"
+          }
+          trap restore_coverage EXIT
+          pytest -q \
+            tests/test_phase1b_aggregate_score_cache_inprocess.py \
+            tests/test_phase1b_score_cache.py \
+            --cov=scripts.benchmarks.phase1b.aggregate_dev \
+            --cov=scripts.benchmarks.phase1b.score_cache \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-report=json:phase1b-cli-coverage.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("phase1b-cli-coverage.json").read_text(encoding="utf-8"))
+          expected = {
+              "aggregate_dev.py": {"line": 73.0, "branch": 60.0},
+              "score_cache.py": {"line": 67.0, "branch": 67.0},
+          }
+          found = {}
+          for path, details in report["files"].items():
+              name = Path(path).name
+              if name in expected:
+                  found[name] = details["summary"]
+          if set(found) != set(expected):
+              raise SystemExit(
+                  f"expected coverage for {sorted(expected)}; found {sorted(found)}"
+              )
+          for name, minimum in expected.items():
+              summary = found[name]
+              if summary["num_statements"] <= 0:
+                  raise SystemExit(f"{name}: no executable statements were measured")
+              line = summary["covered_lines"] / summary["num_statements"] * 100
+              branch = summary.get("percent_branches_covered", 0.0)
+              print(f"PHASE1B_COVERAGE {name}: lines={line:.2f}% branches={branch:.2f}%")
+              if line < minimum["line"] or branch < minimum["branch"]:
+                  raise SystemExit(
+                      f"{name}: coverage below initial floor "
+                      f"(lines {line:.2f}% < {minimum['line']:.2f}% or "
+                      f"branches {branch:.2f}% < {minimum['branch']:.2f}%)"
+                  )
+          PY
+      - name: Upload Phase 1b CLI coverage report
+        if: matrix.python-version == '3.13'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phase1b-cli-coverage-${{ github.sha }}
+          path: phase1b-cli-coverage.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Enforce per-module verification backend coverage
         run: |
           python - <<'PY'
