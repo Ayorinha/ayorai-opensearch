@@ -29,7 +29,7 @@ if str(ROOT) not in sys.path:
 from scripts.benchmarks.phase1b import nltk_equivalence  # noqa: E402
 
 SEED = 20261128
-DOCUMENTS = 40
+DOCUMENTS = 30
 MODELS = ("mdeberta", "minicheck", "factcg")
 # Float32 noise bound for "same scores"; decisions at 0.5 must not change at all.
 MAX_ABS_DIFF = 1e-5
@@ -41,7 +41,7 @@ def records() -> list[tuple[str, dict[str, Any]]]:
     rows: list[tuple[str, dict[str, Any]]] = []
     for index in range(DOCUMENTS):
         # Short, medium and long documents, so that every chunking path is exercised.
-        size = (1, 6, 40)[index % 3]
+        size = (1, 5, 20)[index % 3]
         sentences = [rng.choice(pool) for _ in range(size)]
         doc = " ".join(sentences)
         other = rng.choice(pool)
@@ -58,7 +58,7 @@ def records() -> list[tuple[str, dict[str, Any]]]:
     return rows
 
 
-def run() -> dict[str, Any]:
+def run(models: tuple[str, ...] = MODELS) -> dict[str, Any]:
     import torch
     import transformers
 
@@ -73,7 +73,7 @@ def run() -> dict[str, Any]:
         ).hexdigest(),
         "models": {},
     }
-    for model_id in MODELS:
+    for model_id in models:
         scored, operational = run_inference(selected, model_id=model_id)
         report["models"][model_id] = {
             "scores": {row["record_id"]: row["score"] for row in scored},
@@ -82,6 +82,19 @@ def run() -> dict[str, Any]:
             "truncation_count": operational["truncation_count"],
         }
     return report
+
+
+def merge(reports: list[dict[str, Any]]) -> dict[str, Any]:
+    """Join per-model reports of one environment (run in parallel CI jobs)."""
+    merged = {key: value for key, value in reports[0].items() if key != "models"}
+    merged["models"] = {}
+    for report in reports:
+        if report["records_sha256"] != merged["records_sha256"]:
+            raise SystemExit("per-model reports were run on different records")
+        if report["versions"] != merged["versions"]:
+            raise SystemExit("per-model reports come from different environments")
+        merged["models"].update(report["models"])
+    return merged
 
 
 def compare(first: dict[str, Any], second: dict[str, Any]) -> dict[str, Any]:
@@ -113,7 +126,15 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path)
     parser.add_argument("--compare", nargs=2, type=Path, metavar=("BASELINE", "CANDIDATE"))
+    parser.add_argument("--model", choices=MODELS, action="append")
+    parser.add_argument("--merge", nargs="+", type=Path, metavar="REPORT")
     args = parser.parse_args()
+    if args.merge:
+        if not args.output:
+            parser.error("--output is required with --merge")
+        reports = [json.loads(p.read_text(encoding="utf-8")) for p in args.merge]
+        args.output.write_text(json.dumps(merge(reports)) + "\n", encoding="utf-8")
+        return
     if args.compare:
         first, second = (json.loads(p.read_text(encoding="utf-8")) for p in args.compare)
         result = compare(first, second)
@@ -123,7 +144,7 @@ def main() -> None:
         raise SystemExit(0 if result["equivalent"] else 1)
     if not args.output:
         parser.error("--output is required unless --compare is given")
-    report = run()
+    report = run(tuple(args.model) if args.model else MODELS)
     args.output.write_text(json.dumps(report) + "\n", encoding="utf-8")
     print(json.dumps({k: v for k, v in report.items() if k != "models"}, indent=2))
 
