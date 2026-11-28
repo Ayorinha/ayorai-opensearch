@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
-"""Encrypted per-instance DEV score cache (roadmap v0.8, item A1).
+"""Encrypted DEV score and label caches (roadmap v0.8, item A1).
 
-The aggregate job already decrypts every shard in the protected environment. This
-module keeps the per-instance scores it decrypted — and nothing else — in one
-AES-256-GCM envelope, so later DEV experiments (calibration replays, fixed-rule
-ensembles) can run in minutes without repeating inference.
+Predictions and gold labels are stored in separate AES-256-GCM envelopes and
+use separate 256-bit secrets. They are joined only in the evaluation process.
+No plaintext per-instance artifact is written or uploaded.
 
-Privacy contract:
-- only whitelisted fields per record are kept: ``record_id`` (a stable hash, not
-  dataset text), ``cohort``, ``gold`` and ``score``; schema v2 adds ``doc_id`` (a hash
-  of cohort and document, never the text) so experiments can resample whole documents;
-- the cache is DEV-only; TEST is rejected;
-- the plaintext never leaves the protected job; only the encrypted envelope is
-  uploaded, and experiment outputs are aggregates.
+The score cache contains only record_id, cohort, score and optional doc_id.
+The label cache contains only record_id, cohort and gold. Both are DEV-only.
 """
 
 from __future__ import annotations
@@ -20,53 +14,57 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import re
 import sys
 from pathlib import Path
 from typing import Any
 
 try:
-    from .common import canonical_json, sha256_bytes
+    from .common import atomic_write_bytes, canonical_json, sha256_bytes
     from .encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 except ImportError:  # direct script execution
     _REPOSITORY_ROOT = str(Path(__file__).resolve().parents[3])
     if _REPOSITORY_ROOT not in sys.path:
         sys.path.insert(0, _REPOSITORY_ROOT)
-    from common import canonical_json, sha256_bytes
+    from common import atomic_write_bytes, canonical_json, sha256_bytes
     from encrypt_artifact import decode_key, decrypt_bytes, encrypt_bytes
 
-SCHEMA_VERSION = "phase1b-dev-score-cache-v1"
-SCHEMA_VERSION_V2 = "phase1b-dev-score-cache-v2"
-CACHE_SHARD_ID = "dev-score-cache"
-RECORD_FIELDS = ("record_id", "cohort", "gold", "score")
-RECORD_FIELDS_V2 = (*RECORD_FIELDS, "doc_id")
-FIELDS_BY_SCHEMA = {SCHEMA_VERSION: RECORD_FIELDS, SCHEMA_VERSION_V2: RECORD_FIELDS_V2}
+SCORE_CACHE_SCHEMA_V3 = "phase1b-dev-score-cache-v3"
+SCORE_CACHE_SCHEMA_V4 = "phase1b-dev-score-cache-v4"
+SCORE_CACHE_SCHEMA_V5 = "phase1b-dev-score-cache-v5"
+SCORE_CACHE_SCHEMA_V6 = "phase1b-dev-score-cache-v6"
+LABEL_SCHEMA_VERSION = "phase1b-dev-gold-label-cache-v1"
+SCORE_CACHE_SHARD_ID = "dev-score-cache"
+GOLD_LABEL_CACHE_SHARD_ID = "dev-gold-labels"
+SCORE_RECORD_FIELDS = ("record_id", "cohort", "score")
+SCORE_RECORD_FIELDS_V2 = (*SCORE_RECORD_FIELDS, "doc_id")
+LABEL_RECORD_FIELDS = ("record_id", "cohort", "gold")
 GOLD_VALUES = frozenset({"SUPPORTED", "NOT_SUPPORTED"})
 _HEX64 = re.compile(r"[0-9a-f]{64}")
 
 
-def _clean_record(
-    record: dict[str, Any], fields: tuple[str, ...] = RECORD_FIELDS
-) -> dict[str, Any]:
-    missing = [field for field in fields if field not in record]
-    if missing:
-        raise ValueError(f"score record is missing fields: {missing}")
-    record_id = record["record_id"]
-    cohort = record["cohort"]
-    gold = record["gold"]
-    score = record["score"]
+def _clean_score_record(record: dict[str, Any]) -> dict[str, Any]:
+    if "gold" in record:
+        raise ValueError("gold labels must never be included in the score cache")
+    unexpected = set(record) - set(SCORE_RECORD_FIELDS_V2)
+    if unexpected:
+        # Refuse rather than drop: a label-like field here means inference was contaminated.
+        raise ValueError(f"score record has unexpected fields: {sorted(unexpected)}")
+    required = set(SCORE_RECORD_FIELDS)
+    if not required.issubset(record):
+        raise ValueError(f"score record is missing fields: {sorted(required - set(record))}")
+    record_id, cohort, score = record["record_id"], record["cohort"], record["score"]
     if not isinstance(record_id, str) or not record_id:
         raise ValueError("record_id must be a non-empty string")
     if not isinstance(cohort, str) or not cohort:
         raise ValueError("cohort must be a non-empty string")
-    if gold not in GOLD_VALUES:
-        raise ValueError("gold must be SUPPORTED or NOT_SUPPORTED")
     if isinstance(score, bool) or not isinstance(score, (int, float)):
         raise ValueError("score must be numeric")
     if not math.isfinite(float(score)) or not 0.0 <= float(score) <= 1.0:
         raise ValueError("score must be finite and within [0, 1]")
-    cleaned = {"record_id": record_id, "cohort": cohort, "gold": gold, "score": float(score)}
-    if "doc_id" in fields:
+    cleaned = {"record_id": record_id, "cohort": cohort, "score": float(score)}
+    if "doc_id" in record:
         doc_id = record["doc_id"]
         if not isinstance(doc_id, str) or not _HEX64.fullmatch(doc_id):
             raise ValueError("doc_id must be a 64-character lowercase hex digest")
@@ -74,13 +72,24 @@ def _clean_record(
     return cleaned
 
 
-def _validated_rows(
-    rows: list[dict[str, Any]], fields: tuple[str, ...] = RECORD_FIELDS
-) -> list[dict[str, Any]]:
-    cleaned = [_clean_record(record, fields) for record in rows]
+def _clean_label_record(record: dict[str, Any]) -> dict[str, str]:
+    if set(record) != set(LABEL_RECORD_FIELDS):
+        raise ValueError("gold-label record must contain exactly record_id, cohort and gold")
+    record_id, cohort, gold = record["record_id"], record["cohort"], record["gold"]
+    if not isinstance(record_id, str) or not record_id:
+        raise ValueError("record_id must be a non-empty string")
+    if not isinstance(cohort, str) or not cohort:
+        raise ValueError("cohort must be a non-empty string")
+    if gold not in GOLD_VALUES:
+        raise ValueError("gold must be SUPPORTED or NOT_SUPPORTED")
+    return {"record_id": record_id, "cohort": cohort, "gold": gold}
+
+
+def _unique_sorted(rows: list[dict[str, Any]], cleaner: Any, label: str) -> list[dict[str, Any]]:
+    cleaned = [cleaner(record) for record in rows]
     ids = [record["record_id"] for record in cleaned]
     if len(set(ids)) != len(ids):
-        raise ValueError("duplicate record_id in one model")
+        raise ValueError(f"duplicate record_id in {label}")
     return sorted(cleaned, key=lambda record: record["record_id"])
 
 
@@ -90,16 +99,20 @@ def build_score_cache(
     protocols: dict[str, Any],
     manifest_sha256: str,
     source_run_id: str,
+    source_code_sha: str,
     calibration_v2: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    """Build the plaintext cache payload (kept in memory, then encrypted)."""
-
+    """Build prediction-only cache payload; gold labels are rejected, not copied."""
+    if not isinstance(source_code_sha, str) or not source_code_sha:
+        raise ValueError("source_code_sha is required for score-cache provenance")
     if not rows_by_model:
         raise ValueError("score cache requires at least one model")
     models: dict[str, Any] = {}
     reference_ids: set[str] | None = None
     for model in sorted(rows_by_model):
-        records = _validated_rows(rows_by_model[model])
+        records = _unique_sorted(
+            rows_by_model[model], _clean_score_record, f"score cache for {model}"
+        )
         ids = {record["record_id"] for record in records}
         if reference_ids is None:
             reference_ids = ids
@@ -107,12 +120,13 @@ def build_score_cache(
             raise ValueError("all models must cover the same DEV records")
         models[model] = {"protocol": protocols.get(model), "records": records}
     return {
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": SCORE_CACHE_SCHEMA_V5,
         "split": "dev",
         "source_run_id": str(source_run_id),
+        "source_code_sha": source_code_sha,
         "manifest_sha256": manifest_sha256,
         "record_count": len(reference_ids or ()),
-        "record_fields": list(RECORD_FIELDS),
+        "record_fields": list(SCORE_RECORD_FIELDS),
         "calibration_v2_sha256": (
             sha256_bytes(canonical_json(calibration_v2)) if calibration_v2 is not None else None
         ),
@@ -120,12 +134,33 @@ def build_score_cache(
     }
 
 
-def _cache_metadata(cache: dict[str, Any], *, dataset_revision: str, code_sha: str) -> dict:
+def build_gold_label_cache(
+    labels: list[dict[str, Any]],
+    *,
+    manifest_sha256: str,
+    source_run_id: str,
+) -> dict[str, Any]:
+    """Build the separately encrypted gold-label payload."""
+    records = _unique_sorted(labels, _clean_label_record, "gold-label cache")
     return {
-        "run_id": cache["source_run_id"],
+        "schema_version": LABEL_SCHEMA_VERSION,
         "split": "dev",
-        "model_revision": "multi-model-score-cache",
-        "shard_id": CACHE_SHARD_ID,
+        "source_run_id": str(source_run_id),
+        "manifest_sha256": manifest_sha256,
+        "record_count": len(records),
+        "record_fields": list(LABEL_RECORD_FIELDS),
+        "records": records,
+    }
+
+
+def _cache_metadata(
+    *, source_run_id: str, shard_id: str, model_revision: str, dataset_revision: str, code_sha: str
+) -> dict[str, str]:
+    return {
+        "run_id": str(source_run_id),
+        "split": "dev",
+        "model_revision": model_revision,
+        "shard_id": shard_id,
         "dataset_revision": dataset_revision,
         "code_sha": code_sha,
     }
@@ -134,44 +169,158 @@ def _cache_metadata(cache: dict[str, Any], *, dataset_revision: str, code_sha: s
 def encrypt_score_cache(
     cache: dict[str, Any], *, key: bytes, dataset_revision: str, code_sha: str
 ) -> dict[str, Any]:
-    if cache.get("schema_version") not in FIELDS_BY_SCHEMA or cache.get("split") != "dev":
-        raise ValueError("only DEV score caches may be encrypted")
-    metadata = _cache_metadata(cache, dataset_revision=dataset_revision, code_sha=code_sha)
+    schema = cache.get("schema_version")
+    if (
+        schema
+        not in {
+            SCORE_CACHE_SCHEMA_V3,
+            SCORE_CACHE_SCHEMA_V4,
+            SCORE_CACHE_SCHEMA_V5,
+            SCORE_CACHE_SCHEMA_V6,
+        }
+        or cache.get("split") != "dev"
+    ):
+        raise ValueError("only supported DEV score caches may be encrypted")
+    if schema in {SCORE_CACHE_SCHEMA_V5, SCORE_CACHE_SCHEMA_V6} and (
+        not isinstance(cache.get("source_code_sha"), str) or not cache["source_code_sha"]
+    ):
+        raise ValueError("score cache source_code_sha is missing")
+    metadata = _cache_metadata(
+        source_run_id=cache["source_run_id"],
+        shard_id=SCORE_CACHE_SHARD_ID,
+        model_revision="multi-model-score-cache",
+        dataset_revision=dataset_revision,
+        code_sha=code_sha,
+    )
     return encrypt_bytes(canonical_json(cache), key=key, metadata=metadata)
 
 
 def decrypt_score_cache(envelope: dict[str, Any], *, key: bytes) -> dict[str, Any]:
     metadata = envelope.get("metadata") or {}
-    if metadata.get("shard_id") != CACHE_SHARD_ID or metadata.get("split") != "dev":
+    if (
+        metadata.get("shard_id") != SCORE_CACHE_SHARD_ID
+        or metadata.get("split") != "dev"
+        or metadata.get("model_revision") != "multi-model-score-cache"
+    ):
         raise ValueError("envelope is not a DEV score cache")
     cache = json.loads(decrypt_bytes(envelope, key=key))
-    fields = FIELDS_BY_SCHEMA.get(cache.get("schema_version"))
-    if fields is None or cache.get("split") != "dev":
-        raise ValueError("unsupported score cache payload")
+    schema = cache.get("schema_version")
+    if (
+        schema
+        not in {
+            SCORE_CACHE_SCHEMA_V3,
+            SCORE_CACHE_SCHEMA_V4,
+            SCORE_CACHE_SCHEMA_V5,
+            SCORE_CACHE_SCHEMA_V6,
+        }
+        or cache.get("split") != "dev"
+    ):
+        raise ValueError("unsupported score cache payload; legacy caches must be regenerated")
     if str(cache.get("source_run_id")) != str(metadata.get("run_id")):
         raise ValueError("score cache payload does not match its envelope metadata")
+    if schema in {SCORE_CACHE_SCHEMA_V5, SCORE_CACHE_SCHEMA_V6} and (
+        not isinstance(cache.get("source_code_sha"), str) or not cache["source_code_sha"]
+    ):
+        raise ValueError("score cache source_code_sha is missing")
     for model, entry in cache["models"].items():
-        records = _validated_rows(entry["records"], fields)
+        records = _unique_sorted(entry["records"], _clean_score_record, f"score cache for {model}")
+        if schema in {SCORE_CACHE_SCHEMA_V4, SCORE_CACHE_SCHEMA_V6} and any(
+            "doc_id" not in record for record in records
+        ):
+            raise ValueError("cache v4 record is missing doc_id")
         if len(records) != cache["record_count"]:
             raise ValueError(f"score cache for {model} has an unexpected record count")
         entry["records"] = records
     return cache
 
 
-def replay_calibration_v2(cache: dict[str, Any]) -> dict[str, Any]:
-    """Recompute Calibration V2 from the cache; must match the original aggregate."""
+def encrypt_gold_label_cache(
+    cache: dict[str, Any], *, key: bytes, dataset_revision: str, code_sha: str
+) -> dict[str, Any]:
+    if cache.get("schema_version") != LABEL_SCHEMA_VERSION or cache.get("split") != "dev":
+        raise ValueError("only DEV gold-label caches may be encrypted")
+    metadata = _cache_metadata(
+        source_run_id=cache["source_run_id"],
+        shard_id=GOLD_LABEL_CACHE_SHARD_ID,
+        model_revision="gold-labels",
+        dataset_revision=dataset_revision,
+        code_sha=code_sha,
+    )
+    return encrypt_bytes(canonical_json(cache), key=key, metadata=metadata)
 
+
+def decrypt_gold_label_cache(envelope: dict[str, Any], *, key: bytes) -> dict[str, Any]:
+    metadata = envelope.get("metadata") or {}
+    if (
+        metadata.get("shard_id") != GOLD_LABEL_CACHE_SHARD_ID
+        or metadata.get("split") != "dev"
+        or metadata.get("model_revision") != "gold-labels"
+    ):
+        raise ValueError("envelope is not a DEV gold-label cache")
+    cache = json.loads(decrypt_bytes(envelope, key=key))
+    if cache.get("schema_version") != LABEL_SCHEMA_VERSION or cache.get("split") != "dev":
+        raise ValueError("unsupported gold-label cache payload")
+    if str(cache.get("source_run_id")) != str(metadata.get("run_id")):
+        raise ValueError("gold-label cache payload does not match its envelope metadata")
+    records = _unique_sorted(cache["records"], _clean_label_record, "gold-label cache")
+    if len(records) != cache["record_count"]:
+        raise ValueError("gold-label cache has an unexpected record count")
+    cache["records"] = records
+    return cache
+
+
+def join_scores_with_gold(
+    score_cache: dict[str, Any], label_cache: dict[str, Any]
+) -> dict[str, Any]:
+    """Join private predictions and labels in memory at evaluation time only."""
+    if score_cache.get("split") != "dev" or label_cache.get("split") != "dev":
+        raise ValueError("only DEV score and label caches may be joined")
+    for field in ("source_run_id", "manifest_sha256", "record_count"):
+        if score_cache.get(field) != label_cache.get(field):
+            raise ValueError(f"score and gold-label cache {field} mismatch")
+    labels = {row["record_id"]: row for row in label_cache["records"]}
+    if len(labels) != score_cache["record_count"]:
+        raise ValueError("gold-label cache record count mismatch")
+    joined_models: dict[str, Any] = {}
+    for model, entry in score_cache["models"].items():
+        score_ids = {row["record_id"] for row in entry["records"]}
+        if score_ids != set(labels):
+            raise ValueError(f"gold labels do not cover the same records as {model}")
+        records = []
+        for score in entry["records"]:
+            label = labels[score["record_id"]]
+            if score["cohort"] != label["cohort"]:
+                raise ValueError("score and gold-label cohort mismatch")
+            records.append({**score, "gold": label["gold"]})
+        joined_models[model] = {"protocol": entry.get("protocol"), "records": records}
+    return {
+        **score_cache,
+        "models": joined_models,
+        "record_fields": ["record_id", "cohort", "gold", "score"],
+    }
+
+
+def replay_calibration_v2(cache: dict[str, Any]) -> dict[str, Any]:
+    """Recompute Calibration V2 from an evaluation-time joined cache."""
     from scripts.benchmarks.phase1b.calibration_v2.aggregate import calibration_v2_report
 
     rows = {
-        model: [{field: record[field] for field in RECORD_FIELDS} for record in entry["records"]]
+        model: [
+            {
+                "record_id": r["record_id"],
+                "cohort": r["cohort"],
+                "gold": r["gold"],
+                "score": r["score"],
+            }
+            for r in entry["records"]
+        ]
         for model, entry in cache["models"].items()
     }
     calibration = calibration_v2_report(rows)
     calibration_sha256 = sha256_bytes(canonical_json(calibration))
     expected = cache.get("calibration_v2_sha256")
     report = {
-        "schema_version": "phase1b-dev-cache-replay-v1",
+        "schema_version": "phase1b-dev-cache-replay-v2",
         "split": "dev",
         "experiment": "replay-calibration-v2",
         "source_run_id": cache["source_run_id"],
@@ -190,7 +339,6 @@ def replay_calibration_v2(cache: dict[str, Any]) -> dict[str, Any]:
 
 def run_e3_fixed_rule_ensemble(cache: dict[str, Any]) -> dict[str, Any]:
     """E3 under DEC-024 option B; see scripts/benchmarks/phase1b/e3_ensemble.py."""
-
     from scripts.benchmarks.phase1b.e3_ensemble import run_e3
 
     return run_e3(cache)
@@ -202,19 +350,50 @@ EXPERIMENTS = {
 }
 
 
+def _decode_gold_key() -> bytes:
+    raw = os.environ.get("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY")
+    if not raw:
+        raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
+    return decode_key(raw)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--cache", required=True, type=Path, help="encrypted cache envelope")
+    parser.add_argument("--cache", required=True, type=Path, help="encrypted prediction cache")
+    parser.add_argument(
+        "--gold-labels",
+        required=True,
+        type=Path,
+        help="separately encrypted gold-label cache",
+    )
     parser.add_argument("--experiment", required=True, choices=sorted(EXPERIMENTS))
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
 
-    key = decode_key()
-    envelope = json.loads(args.cache.read_text(encoding="utf-8"))
-    cache = decrypt_score_cache(envelope, key=key)
-    report = EXPERIMENTS[args.experiment](cache)
+    score_key = decode_key()
+    gold_key = _decode_gold_key()
+    if score_key == gold_key:
+        raise ValueError("gold-label and prediction encryption keys must be distinct")
+    score_envelope = json.loads(args.cache.read_text(encoding="utf-8"))
+    label_envelope = json.loads(args.gold_labels.read_text(encoding="utf-8"))
+    scores = decrypt_score_cache(score_envelope, key=score_key)
+    labels = decrypt_gold_label_cache(label_envelope, key=gold_key)
+    score_metadata = score_envelope.get("metadata") or {}
+    label_metadata = label_envelope.get("metadata") or {}
+    for field in ("run_id", "split", "dataset_revision"):
+        if score_metadata.get(field) != label_metadata.get(field):
+            raise ValueError(f"score and gold-label envelope {field} differs")
+    if scores.get("schema_version") in {SCORE_CACHE_SCHEMA_V5, SCORE_CACHE_SCHEMA_V6}:
+        if scores.get("source_code_sha") != label_metadata.get("code_sha"):
+            raise ValueError(
+                "score cache source_code_sha does not match gold-label source code_sha"
+            )
+    elif score_metadata.get("code_sha") != label_metadata.get("code_sha"):
+        raise ValueError("score and gold-label envelope code_sha differs")
+    joined = join_scores_with_gold(scores, labels)
+    report = EXPERIMENTS[args.experiment](joined)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_bytes(canonical_json(report) + b"\n")
+    atomic_write_bytes(args.output, canonical_json(report) + b"\n")
     print(
         json.dumps(
             {

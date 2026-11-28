@@ -46,6 +46,7 @@ Este índice só localiza registros; o texto de cada decisão continua sendo a f
 | DEC-030 | ADR-010, decisão 7: carimbo do tempo ICP-Brasil adiado | Decidida (2026-11-21) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-030--adr-010-decisão-7-carimbo-do-tempo-icp-brasil-adiado) |
 | DEC-031 | Chaves de API: escopos, expiração e revogação sem reinício (ADR-012) | Decidida (2026-11-21) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-031--chaves-de-api-escopos-expiração-e-revogação-sem-reinício-adr-012) |
 | DEC-032 | Tenant distinto de principal (ADR-013) | Decidida (2026-11-22) | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-032--tenant-distinto-de-principal-adr-013) |
+| DEC-033 | Retenção dos caches cifrados da Phase 1b DEV (P3/A1) | Decidida (2026-11-28): opção A | [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-033--retenção-dos-caches-cifrados-da-phase-1b-dev-p3a1) |
 
 ## Decisões aprovadas
 
@@ -627,3 +628,22 @@ Reportar:
 
 
 **Registro de aprovação do mantenedor (2026-11-07):** DEC-021, DEC-022 e DEC-023 aprovadas na opção A, com as especificações acima. A aprovação autoriza somente a preparação de uma PR Draft documental. A implementação permanece não autorizada.
+
+
+## DEC-033 — Retenção dos caches cifrados da Phase 1b DEV (P3/A1)
+
+- **Estado:** decidida pelo mantenedor em 2026-11-28, na opção A. Registro da aprovação em [DECISIONS-APPROVED.md](DECISIONS-APPROVED.md#dec-033--retenção-dos-caches-cifrados-da-phase-1b-dev-p3a1). O texto da proposta abaixo fica como histórico.
+- **Contexto:**
+  - a P3/A1 criou dois artefatos cifrados por execução DEV: o cache de rótulos gold e o cache de scores, com chaves distintas;
+  - a PR #635 passou a retenção deles de 90 para 30 dias, por comentário de ferramenta que citava "delegação" sem registro formal;
+  - a re-agregação reenviava os caches com prazo novo, o que estendia a vida dos rótulos gold.
+- **Proposta (opção A):**
+  1. caches gold e score: 30 dias, contados da execução DEV de origem;
+  2. re-agregação não renova o prazo: os caches reenviados herdam o que resta dos 30 dias, e uma origem vencida é recusada (implementado na branch `fix/p3-a1-hardening`);
+  3. manifesto cifrado, entrada de inferência cifrada e shards: 7 dias (inalterado);
+  4. relatórios agregados, sem dados por instância: 30 dias (inalterado).
+- **Alternativas:**
+  - **B:** 7 dias para os caches. Mais restritivo; impede re-agregação depois da primeira semana.
+  - **C:** 90 dias. Valor original da #635; maior exposição.
+- **Recomendação técnica:** A. Minimiza a exposição sem perder a janela de re-agregação, que já é limitada pelos 7 dias dos shards.
+- **Limites:** não altera Judge, Golden, RGC, thresholds nem dados científicos. Não autoriza dispatch de workflows DEV/TEST.

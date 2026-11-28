@@ -26,6 +26,18 @@ def synthetic_rows(count: int = 10) -> list[dict]:
     ]
 
 
+def inference_rows(rows: list[dict]) -> list[dict]:
+    return [
+        {
+            "record_id": stable_record_id(row),
+            "doc": row["doc"],
+            "claim": row["claim"],
+            "dataset": row["dataset"],
+        }
+        for row in rows
+    ]
+
+
 def manifest_for(rows: list[dict], shard_size: int = 10) -> dict:
     return build_manifest(
         rows,
@@ -35,6 +47,11 @@ def manifest_for(rows: list[dict], shard_size: int = 10) -> dict:
         shard_size=shard_size,
         seed=7,
     )
+
+
+def test_record_identity_does_not_depend_on_gold_label() -> None:
+    row = synthetic_rows()[0]
+    assert stable_record_id(row) == stable_record_id(dict(row, label=1 - row["label"]))
 
 
 def test_manifest_is_deterministic_and_contains_no_instance_text() -> None:
@@ -59,10 +76,29 @@ def test_shards_are_exact_disjoint_and_complete() -> None:
     assert set(flattened) == {stable_record_id(row) for row in synthetic_rows(23)}
 
 
+def test_inference_shard_rejects_any_gold_label_field() -> None:
+    rows = synthetic_rows(10)
+    manifest = manifest_for(rows)
+    contaminated = inference_rows(rows)
+    contaminated[0]["label"] = rows[0]["label"]
+    with pytest.raises(ValueError, match="only record_id"):
+        select_shard(manifest, contaminated, "dev-0000")
+
+
+@pytest.mark.parametrize("field", ["doc", "claim", "dataset"])
+def test_inference_shard_rejects_record_id_content_mismatch(field: str) -> None:
+    rows = synthetic_rows(10)
+    manifest = manifest_for(rows)
+    tampered = inference_rows(rows)
+    tampered[0][field] = f"{tampered[0][field]} altered"
+    with pytest.raises(ValueError, match="record_id does not match its content"):
+        select_shard(manifest, tampered, "dev-0000")
+
+
 def test_length_sorting_does_not_change_record_association() -> None:
     rows = synthetic_rows(10)
     manifest = manifest_for(rows)
-    selected = select_shard(manifest, rows, "dev-0000")
+    selected = select_shard(manifest, inference_rows(rows), "dev-0000")
     by_id = {record_id: row["claim"] for record_id, row in selected}
     reordered = sorted(selected, key=lambda item: (len(item[1]["doc"]), item[0]))
     assert {record_id: row["claim"] for record_id, row in reordered} == by_id
@@ -127,7 +163,7 @@ def test_aggregator_marks_missing_shard_as_incomplete() -> None:
         "records": [
             {
                 "record_id": record_id,
-                "gold": ("SUPPORTED" if rows_by_id[record_id]["label"] else "NOT_SUPPORTED"),
+                "cohort": rows_by_id[record_id]["dataset"],
                 "score": 0.9 if rows_by_id[record_id]["label"] else 0.1,
             }
             for record_id in first_shard_ids
@@ -144,6 +180,49 @@ def test_aggregator_marks_missing_shard_as_incomplete() -> None:
     assert report["incomplete_models"] == [
         {"model_id": "synthetic-model", "missing_shard_count": 1}
     ]
+
+
+def test_aggregator_rejects_gold_labels_in_private_inference_shards() -> None:
+    rows = synthetic_rows(10)
+    manifest = manifest_for(rows)
+    key = bytes(range(32))
+    metadata = {
+        "run_id": "run-gold-rejected",
+        "split": "dev",
+        "model_revision": "model-rev",
+        "shard_id": "dev-0000",
+        "dataset_revision": "synthetic-revision",
+        "code_sha": "synthetic-code-sha",
+    }
+    private = {
+        "split": "dev",
+        "shard_id": "dev-0000",
+        "model_id": "synthetic-model",
+        "model_revision": "model-rev",
+        "dataset_revision": "synthetic-revision",
+        "dataset_sha256": "a" * 64,
+        "code_sha": "synthetic-code-sha",
+        "document_count": len(rows),
+        "block_count": len(rows),
+        "token_count_by_unit": {"synthetic_tokens": 0},
+        "records": [
+            {
+                "record_id": stable_record_id(row),
+                "cohort": row["dataset"],
+                "score": 0.9,
+                "gold": "SUPPORTED",
+            }
+            for row in rows
+        ],
+    }
+    envelope = encrypt_bytes(
+        json.dumps(private).encode(),
+        key=key,
+        metadata=metadata,
+        nonce=b"g" * 12,
+    )
+    with pytest.raises(ValueError, match="only record_id"):
+        aggregate_packages(manifest, [envelope], key=key)
 
 
 def test_report_has_no_per_instance_output() -> None:
@@ -172,7 +251,7 @@ def test_report_has_no_per_instance_output() -> None:
         "records": [
             {
                 "record_id": stable_record_id(row),
-                "gold": "SUPPORTED" if row["label"] else "NOT_SUPPORTED",
+                "cohort": row["dataset"],
                 "score": 0.9 if row["label"] else 0.1,
             }
             for row in rows

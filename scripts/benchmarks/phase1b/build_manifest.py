@@ -14,6 +14,8 @@ from typing import Any
 try:
     from .common import (
         DEV_PIN_PATH,
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
         canonical_json,
         load_records,
         sha256_bytes,
@@ -23,6 +25,8 @@ try:
 except ImportError:  # direct script execution
     from common import (
         DEV_PIN_PATH,
+        MANIFEST_SCHEMA_VERSION,
+        RECORD_ID_METHOD,
         canonical_json,
         load_records,
         sha256_bytes,
@@ -37,6 +41,31 @@ def _validate_dev_pin(dataset_path: Path, pin_path: Path) -> dict[str, Any]:
     if actual != pin["sha256"]:
         raise ValueError("DEV dataset SHA-256 does not match the immutable pin")
     return pin
+
+
+def _refuse_duplicate_identities(rows: list[dict[str, Any]]) -> None:
+    """Fail before sampling if two rows share an inference identity.
+
+    The record ID hashes only doc, claim and cohort (never the label), so two rows with
+    the same inputs collide. The error reports counts only, never row content, so a
+    protected run tells the maintainer whether the collisions are exact copies or rows
+    whose labels disagree, which is a methodological decision.
+    """
+    labels: dict[str, set[str]] = {}
+    sizes: dict[str, int] = {}
+    for row in rows:
+        rid = stable_record_id(row)
+        labels.setdefault(rid, set()).add(str(row["label"]))
+        sizes[rid] = sizes.get(rid, 0) + 1
+    groups = [rid for rid, size in sizes.items() if size > 1]
+    if groups:
+        conflicting = sum(1 for rid in groups if len(labels[rid]) > 1)
+        extra_rows = sum(sizes[rid] - 1 for rid in groups)
+        raise ValueError(
+            "duplicate content-addressed DEV row: "
+            f"{len(groups)} identities repeated ({extra_rows} extra rows), "
+            f"{conflicting} with conflicting labels"
+        )
 
 
 def build_manifest(
@@ -59,11 +88,10 @@ def build_manifest(
     required = {"doc", "claim", "label", "dataset"}
     if not rows or any(not required.issubset(row) for row in rows):
         raise ValueError("DEV rows do not match the pinned LLM-AggreFact schema")
+    _refuse_duplicate_identities(rows)
     indexed: dict[str, dict[str, Any]] = {}
     for row in rows:
         rid = stable_record_id(row)
-        if rid in indexed:
-            raise ValueError("duplicate content-addressed DEV row")
         label = str(row["label"])
         if label not in {"0", "1"}:
             raise ValueError("DEV label is outside the frozen binary mapping")
@@ -120,7 +148,8 @@ def build_manifest(
         selected = [rid for shard in shards for rid in shard["record_ids"]]
     cohort_counts = Counter(str(indexed[rid]["dataset"]) for rid in selected)
     manifest: dict[str, Any] = {
-        "schema_version": "phase1b-dev-manifest-v1",
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "record_id_method": RECORD_ID_METHOD,
         "split": "dev",
         "dataset": "lytang/LLM-AggreFact",
         "dataset_revision": dataset_revision,

@@ -127,6 +127,19 @@ As quatro que restavam pendentes nesse registro (DEC-001, DEC-003, DEC-004 e DEC
   - autorização expressa do mantenedor para o gasto.
 - **Consequências:** até lá, `received_at` e os checkpoints têm hora declarada pelo operador, e não se afirma hora certificada.
 
+## DEC-033 — Retenção dos caches cifrados da Phase 1b DEV (P3/A1)
+
+- **Data da decisão:** 2026-11-28
+- **Decisor e mantenedor:** Anderson Leon Ayora
+- **Forma:** ordem de execução escrita do mantenedor, aprovando a opção A da proposta registrada em [DECISIONS-PENDING.md](DECISIONS-PENDING.md#dec-033--retenção-dos-caches-cifrados-da-phase-1b-dev-p3a1).
+- **Decisão (opção A):**
+  1. Caches cifrados gold e score: 30 dias, contados da execução DEV de origem.
+  2. A re-agregação não renova o prazo: os caches reenviados herdam o que resta dos 30 dias, e uma origem vencida é recusada.
+  3. Manifesto cifrado, entrada de inferência cifrada e shards: 7 dias.
+  4. Relatórios agregados, sem dados por instância: 30 dias.
+- **Implementação:** PR #644 (`phase1b-dev-full.yml`, `phase1b-dev-full-reaggregate.yml` e testes de contrato).
+- **Limites:** não altera Judge, Golden, RGC, thresholds nem dados científicos. Não autoriza dispatch de workflows DEV ou TEST.
+
 ## DEC-032 — Tenant distinto de principal (ADR-013)
 
 - **Data da decisão:** 2026-11-22

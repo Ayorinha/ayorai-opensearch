@@ -13,7 +13,17 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import DEV_PIN_PATH, MODELS, load_records, sha256_file, stable_record_id
+    from .common import (
+        MANIFEST_SCHEMA_VERSION,
+        MODELS,
+        RECORD_ID_METHOD,
+        atomic_write_bytes,
+        canonical_json,
+        load_records,
+        sha256_bytes,
+        sha256_file,
+        stable_record_id,
+    )
     from .nltk_resources import load_pin as load_nltk_pin
     from .nltk_resources import prepare_runtime as prepare_nltk_runtime
     from .protocols import (
@@ -24,7 +34,17 @@ try:
         get_protocol,
     )
 except ImportError:  # direct script execution
-    from common import DEV_PIN_PATH, MODELS, load_records, sha256_file, stable_record_id
+    from common import (
+        MANIFEST_SCHEMA_VERSION,
+        MODELS,
+        RECORD_ID_METHOD,
+        atomic_write_bytes,
+        canonical_json,
+        load_records,
+        sha256_bytes,
+        sha256_file,
+        stable_record_id,
+    )
     from nltk_resources import load_pin as load_nltk_pin
     from nltk_resources import prepare_runtime as prepare_nltk_runtime
     from protocols import (
@@ -41,9 +61,23 @@ def select_shard(
     rows: list[dict[str, Any]],
     shard_id: str,
 ) -> list[tuple[str, dict[str, Any]]]:
-    if manifest.get("split") != "dev":
-        raise ValueError("TEST execution is forbidden in the Phase 1b DEV runner")
-    indexed = {stable_record_id(row): row for row in rows}
+    if (
+        manifest.get("split") != "dev"
+        or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION
+        or manifest.get("record_id_method") != RECORD_ID_METHOD
+    ):
+        raise ValueError("runner accepts only current inference-only DEV manifests")
+    indexed: dict[str, dict[str, Any]] = {}
+    allowed_fields = {"record_id", "doc", "claim", "dataset"}
+    for row in rows:
+        if set(row) != allowed_fields:
+            raise ValueError("inference input must contain only record_id, doc, claim and dataset")
+        record_id = row["record_id"]
+        if not isinstance(record_id, str) or not record_id:
+            raise ValueError("inference record_id must be a non-empty string")
+        if record_id in indexed:
+            raise ValueError("duplicate inference record_id")
+        indexed[record_id] = row
     shard = next((item for item in manifest["shards"] if item["shard_id"] == shard_id), None)
     if shard is None:
         raise ValueError("requested shard is absent from manifest")
@@ -53,7 +87,10 @@ def select_shard(
     for rid in shard["record_ids"]:
         if rid not in indexed:
             raise ValueError("manifest row digest is absent from pinned DEV data")
-        selected.append((rid, indexed[rid]))
+        row = indexed[rid]
+        if stable_record_id(row) != rid:
+            raise ValueError("inference record_id does not match its content")
+        selected.append((rid, row))
     return selected
 
 
@@ -252,7 +289,6 @@ def run_inference(
     records = [
         {
             "record_id": rid,
-            "gold": "SUPPORTED" if str(row["label"]) == "1" else "NOT_SUPPORTED",
             "cohort": str(row["dataset"]),
             "score": scores[rid],
         }
@@ -302,12 +338,11 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=4)
     args = parser.parse_args()
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
-    pin = json.loads(DEV_PIN_PATH.read_text(encoding="utf-8"))
-    if (
-        sha256_file(args.dataset_path) != pin["sha256"]
-        or manifest["dataset_sha256"] != pin["sha256"]
-    ):
-        raise ValueError("DEV dataset does not match the immutable pin")
+    manifest_body = {key: value for key, value in manifest.items() if key != "manifest_sha256"}
+    if manifest.get("manifest_sha256") != sha256_bytes(canonical_json(manifest_body)):
+        raise ValueError("DEV manifest digest verification failed")
+    if sha256_file(args.dataset_path) != manifest.get("inference_dataset_sha256"):
+        raise ValueError("inference-only DEV dataset SHA-256 does not match the manifest")
     selected = select_shard(manifest, load_records(args.dataset_path), args.shard_id)
     result, operational = run_inference(
         selected,
@@ -327,9 +362,8 @@ def main() -> None:
         **operational,
         "records": result,
     }
-    args.output.parent.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps(package, sort_keys=True, separators=(",", ":"))
-    args.output.write_text(serialized, encoding="utf-8")
+    atomic_write_bytes(args.output, serialized.encode("utf-8"))
     print(
         json.dumps(
             {

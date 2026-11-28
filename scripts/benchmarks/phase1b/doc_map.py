@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
-"""Rebuild the record → document association for the DEV score cache (cache v2).
+"""Rebuild the record → document association for the prediction-only DEV score cache.
 
-Bootstrapping whole documents needs to know which claims share a document. The v1
-cache keeps only ``record_id`` (``sha256`` of the canonical JSON of the full dataset
-row), ``cohort``, ``gold`` and ``score``. Because ``record_id`` is a content address,
-re-reading the *pinned public DEV file* with the same loader and recomputing
-``record_id`` recovers each record's row without the expired inference shards:
+Gold labels live in a separate encrypted cache. This tool decrypts both caches only
+inside the protected evaluation process, uses the label cache to verify record
+identity against the pinned public DEV file, and adds doc_id only to the prediction
+cache. The two caches remain separate on disk; joining occurs only for replay.
 
-- ``doc_id = sha256(canonical_json({"cohort": ..., "doc": ...}))`` — the document text
-  exactly as stored (no normalisation), scoped by cohort so the same text in two
-  cohorts is never treated as one cluster;
-- every cached ``record_id`` must be found (a SHA-256 match on the whole row is a
-  cryptographic check that the loader and serialisation are identical);
-- the cohort and gold label of every match must agree with the cache;
+- doc_id is a SHA-256 of canonical JSON containing cohort and document text;
+- every cached record_id must be found in the pinned DEV file;
+- cohort and gold labels are checked against the separately encrypted label cache;
 - the map is built twice and must be identical (determinism);
-- the v2 cache must hold exactly the v1 records plus ``doc_id``.
+- the v4 prediction cache contains the original prediction fields plus doc_id.
 
-Privacy: only the DEV file is read; the TEST split is never loaded. Dataset text is
-used in memory only. The map lives only inside the encrypted v2 cache; the public
-summary holds per-cohort aggregate counts.
+Privacy: only the DEV file is read; TEST is never loaded. Dataset text is used in
+memory only. The map remains in the encrypted prediction cache; the public summary
+contains aggregate counts only.
 """
 
 from __future__ import annotations
@@ -44,11 +40,12 @@ try:
     )
     from .encrypt_artifact import decode_key
     from .score_cache import (
-        RECORD_FIELDS,
-        SCHEMA_VERSION,
-        SCHEMA_VERSION_V2,
+        SCORE_CACHE_SCHEMA_V5,
+        SCORE_RECORD_FIELDS,
+        decrypt_gold_label_cache,
         decrypt_score_cache,
         encrypt_score_cache,
+        join_scores_with_gold,
         replay_calibration_v2,
     )
 except ImportError:  # direct script execution
@@ -65,11 +62,12 @@ except ImportError:  # direct script execution
     )
     from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
     from scripts.benchmarks.phase1b.score_cache import (
-        RECORD_FIELDS,
-        SCHEMA_VERSION,
-        SCHEMA_VERSION_V2,
+        SCORE_CACHE_SCHEMA_V5,
+        SCORE_RECORD_FIELDS,
+        decrypt_gold_label_cache,
         decrypt_score_cache,
         encrypt_score_cache,
+        join_scores_with_gold,
         replay_calibration_v2,
     )
 
@@ -138,37 +136,32 @@ def build_doc_map(
     return dict(sorted(mapping.items()))
 
 
-def _expected_from_cache(cache: dict[str, Any]) -> dict[str, tuple[str, str]]:
-    expected: dict[str, tuple[str, str]] = {}
-    for model, entry in sorted(cache["models"].items()):
-        for record in entry["records"]:
-            key = (record["cohort"], record["gold"])
-            previous = expected.setdefault(record["record_id"], key)
-            if previous != key:
-                raise ValueError(f"{model} disagrees with another member on a record's labels")
-    return expected
+def _expected_from_labels(label_cache: dict[str, Any]) -> dict[str, tuple[str, str]]:
+    return {
+        record["record_id"]: (record["cohort"], record["gold"]) for record in label_cache["records"]
+    }
 
 
 def build_cache_v2(
     cache: dict[str, Any], mapping: dict[str, str], *, pin: dict[str, Any]
 ) -> dict[str, Any]:
-    if cache.get("schema_version") != SCHEMA_VERSION:
-        raise ValueError("cache v2 is built only from a v1 cache")
+    if cache.get("schema_version") != SCORE_CACHE_SCHEMA_V5:
+        raise ValueError("cache v2 is built only from the current prediction-only score cache")
     models: dict[str, Any] = {}
     for model, entry in sorted(cache["models"].items()):
         records = [dict(record, doc_id=mapping[record["record_id"]]) for record in entry["records"]]
         models[model] = {"protocol": entry.get("protocol"), "records": records}
     v2 = {key: value for key, value in cache.items() if key != "models"}
     v2.update(
-        schema_version=SCHEMA_VERSION_V2,
-        record_fields=[*RECORD_FIELDS, "doc_id"],
+        schema_version="phase1b-dev-score-cache-v6",
+        record_fields=[*SCORE_RECORD_FIELDS, "doc_id"],
         models=models,
         doc_map={
             "method": DOC_ID_METHOD,
             "dataset_revision": pin["revision"],
             "dataset_sha256": pin["sha256"],
             "doc_map_sha256": sha256_bytes(canonical_json(mapping)),
-            "parent_schema_version": SCHEMA_VERSION,
+            "parent_schema_version": SCORE_CACHE_SCHEMA_V5,
         },
     )
     verify_v2_matches_v1(cache, v2)
@@ -176,19 +169,21 @@ def build_cache_v2(
 
 
 def verify_v2_matches_v1(v1: dict[str, Any], v2: dict[str, Any]) -> None:
-    """v2 must hold exactly the v1 records (ids, cohorts, golds, scores) plus doc_id."""
+    """v6 must hold exactly the v5 prediction records plus doc_id."""
 
     if set(v1["models"]) != set(v2["models"]) or v1["record_count"] != v2["record_count"]:
         raise ValueError("cache v2 does not cover the same models and record count")
     for model, entry in v1["models"].items():
         stripped = [
-            {field: record[field] for field in RECORD_FIELDS}
+            {field: record[field] for field in SCORE_RECORD_FIELDS}
             for record in v2["models"][model]["records"]
         ]
         if stripped != entry["records"]:
             raise ValueError(f"cache v2 records for {model} differ from v1")
     if v1.get("calibration_v2_sha256") != v2.get("calibration_v2_sha256"):
         raise ValueError("cache v2 must keep the source calibration digest")
+    if v1.get("source_code_sha") != v2.get("source_code_sha"):
+        raise ValueError("cache v2 must keep the source code SHA")
 
 
 def cluster_summary(cache_v2: dict[str, Any], *, replay_status: str) -> dict[str, Any]:
@@ -235,7 +230,13 @@ def cluster_summary(cache_v2: dict[str, Any], *, replay_status: str) -> dict[str
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--cache", required=True, type=Path, help="encrypted v1 cache")
+    parser.add_argument("--cache", required=True, type=Path, help="encrypted prediction-only cache")
+    parser.add_argument(
+        "--gold-labels",
+        required=True,
+        type=Path,
+        help="separately encrypted gold-label cache",
+    )
     parser.add_argument("--dataset-path", required=True, type=Path, help="pinned DEV parquet")
     parser.add_argument("--pin", type=Path, default=DEV_PIN_PATH)
     parser.add_argument("--output-cache", required=True, type=Path)
@@ -251,8 +252,22 @@ def main() -> None:
     pin = json.loads(args.pin.read_text(encoding="utf-8"))
     validate_dev_file(args.dataset_path, pin)
     key = decode_key()
-    cache = decrypt_score_cache(json.loads(args.cache.read_text(encoding="utf-8")), key=key)
-    expected = _expected_from_cache(cache)
+    gold_key_raw = os.environ.get("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY")
+    if not gold_key_raw:
+        raise RuntimeError("PHASE1B_GOLD_LABEL_ENCRYPTION_KEY is required")
+    gold_key = decode_key(gold_key_raw)
+    if gold_key == key:
+        raise ValueError("gold-label and prediction encryption keys must be distinct")
+    score_envelope = json.loads(args.cache.read_text(encoding="utf-8"))
+    label_envelope = json.loads(args.gold_labels.read_text(encoding="utf-8"))
+    if score_envelope.get("metadata", {}).get("dataset_revision") != pin.get(
+        "revision"
+    ) or label_envelope.get("metadata", {}).get("dataset_revision") != pin.get("revision"):
+        raise ValueError("score, gold-label and pinned DEV dataset revisions differ")
+    cache = decrypt_score_cache(score_envelope, key=key)
+    label_cache = decrypt_gold_label_cache(label_envelope, key=gold_key)
+    join_scores_with_gold(cache, label_cache)  # fail closed on cross-cache provenance mismatch
+    expected = _expected_from_labels(label_cache)
 
     first = build_doc_map(load_records(args.dataset_path), expected)
     second = build_doc_map(load_records(args.dataset_path), expected)
@@ -262,7 +277,7 @@ def main() -> None:
 
     replay_status = "skipped"
     if not args.skip_replay:
-        replay = replay_calibration_v2(cache_v2)
+        replay = replay_calibration_v2(join_scores_with_gold(cache_v2, label_cache))
         if replay["replay_matches_source"] is not True:
             raise SystemExit(3)
         replay_status = "matches_source"
