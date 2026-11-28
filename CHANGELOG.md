@@ -103,6 +103,7 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - Documentação da integridade da auditoria e dos controles de admissão (#574) e guia de limite de requisições compartilhado entre réplicas (`docs/security/EDGE-RATE-LIMIT.md`).
 
 ### RGC e avaliação (sem resultado)
+- Phase 1b DEV (P3/A1, DEC-034, opção A): a primeira execução protegida minimal encontrou no DEV fixado 46 identidades repetidas (50 linhas extras), 5 delas com rótulos divergentes, e parou antes de cifrar ou inferir. Agora cópias com o mesmo rótulo contam uma vez, e identidades com rótulos divergentes são excluídas: o pipeline nunca escolhe um rótulo gold. A mesma regra vale para o manifesto, a preparação dos artefatos e o mapa de documentos. O manifesto passa a `phase1b-dev-manifest-v3` e registra só as contagens da resolução. Manifestos v2 não são reaproveitáveis.
 - Texto superado por retificação não é evidência (Emenda 4, DEC-011 opção A): o corpus pode declarar `superseded_spans` por documento, validados com falha fechada, e o runner `rgc-eval/0.14.0` retira da adjudicação os trechos que os tocam, listando-os em `excluded_superseded_passages`. O teste de propriedade que era `xfail` passa a ser normal; o Judge não muda; o corpus atual não declara o campo.
 - DEC-027: reconciliação estatística do RGC (#548). O runner `rgc-eval/0.8.0` e a ferramenta de concordância entre anotadores sorteiam toda amostra bootstrap com o RGC-PRNG-1 (gerador SHA-256 especificado byte a byte, com vetores de referência publicados) e calculam intervalos de 95% pelo percentil tipo 7 de Hyndman–Fan. Os intervalos deixam de ser numericamente comparáveis com `rgc-eval/0.7.0` (#549).
 - Gramática canônica única de ID de artigo (E1, #550); componentes de artigos conectados determinísticos (#532); gate de resolução de componentes antes da anotação (E4/D7, #551); H1 por sign-flip de componentes e IC por componente no runner (Emenda 11, #552).
@@ -122,6 +123,10 @@ Preparação da próxima versão de produto. Nenhuma tag, release ou DOI foi cri
 - Auditoria pós-encerramento de 2026-11-21 (`docs/audit/POST-CLOSURE-AUDIT-2026-11-21.md`): revisão pós-merge das #599 a #603, inventário das 92 branches por conteúdo, IDs DEC-025 e DEC-026 reservados como propostas não decididas, ADR-010 no índice de ADRs, remissão normativa no guia de anotação e matriz de prontidão para POC e produção no `ROADMAP.md`.
 - ADR-011 (família de regras do Judge por rota), ADR-001 aceito, decisões DEC-001, DEC-003, DEC-004 e DEC-006 registradas, índice das aprovações em `DECISIONS-APPROVED.md`, roteiro de longo prazo (`docs/ROADMAP.md`) e política dos pins históricos (`docs/security/HISTORICAL-PINS.md`, com teste de isolamento).
 - `/v1/check`, `/v1/fields`, dono dos rastros, backup e novas variáveis documentados (#566); status de engenharia atualizado (#572, #578).
+
+### Manutenção
+- Diagnóstico: uma falha ao gravar o log de verificação do `/v1/verify` só incrementava a métrica; agora também gera um log `ERROR` com o modo e o tipo da exceção. Uma falha do handler no `JobExecutor` era descartada sem registro; agora gera um log `WARNING` com o job, a tentativa e o tipo da exceção. A mensagem da exceção não é registrada, porque pode conter dados da requisição ou do payload. O comportamento da API e dos jobs não mudou.
+- `Makefile`: as ferramentas rodam com `python -m`, para que uma instalação fora do ambiente do projeto (pipx, `~/.local/bin`) não substitua a do projeto. `make typecheck-eval` usa `--explicit-package-bases`, como a CI; antes falhava localmente. `format` entrou no `.PHONY`.
 
 ### Limites
 - Nenhum resultado de RGC existe ou foi produzido. Nenhum benchmark em português validado; nenhuma certificação.

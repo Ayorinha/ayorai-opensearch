@@ -139,11 +139,14 @@ def test_gold_label_record_must_be_exact(record: dict[str, Any]) -> None:
         score_cache._clean_label_record(record)
 
 
-def test_conflicting_duplicates_abort_instead_of_choosing_a_label(tmp_path: Path) -> None:
+def test_conflicting_duplicates_are_excluded_instead_of_choosing_a_label(tmp_path: Path) -> None:
+    """DEC-034 A: an identity whose copies disagree on the label never reaches inference."""
     rows = _rows()
-    with pytest.raises(ValueError, match="duplicate content-addressed DEV row"):
+    conflicted = [*rows, {**rows[0], "label": "0" if rows[0]["label"] == "1" else "1"}]
+    # A manifest that still selects the conflicting identity cannot be prepared.
+    with pytest.raises(ValueError, match="absent from pinned DEV source"):
         prepare.prepare(
-            [*rows, {**rows[0], "label": "0" if rows[0]["label"] == "1" else "1"}],
+            conflicted,
             _manifest(rows),
             source_run_id="101",
             code_sha=CODE_SHA,
@@ -151,6 +154,19 @@ def test_conflicting_duplicates_abort_instead_of_choosing_a_label(tmp_path: Path
             inference_output=tmp_path / "i",
             gold_label_output=tmp_path / "g",
         )
+    # Without it, the remaining rows prepare normally and the excluded one is absent.
+    prepare.prepare(
+        conflicted,
+        _manifest(rows[1:]),
+        source_run_id="101",
+        code_sha=CODE_SHA,
+        gold_key=None,
+        inference_output=tmp_path / "i",
+        gold_label_output=None,
+    )
+    written = (tmp_path / "i").read_text(encoding="utf-8")
+    assert common.stable_record_id(rows[0]) not in written
+    assert written.count("record_id") == len(rows) - 1
 
 
 @pytest.mark.parametrize(
@@ -431,8 +447,8 @@ def test_encrypted_manifest_round_trip_and_tampering(tmp_path: Path) -> None:
         )
 
 
-def test_manifest_builder_reports_duplicate_identities_as_counts_only() -> None:
-    """S-04: collisions are diagnosed without echoing any document, claim or label."""
+def test_manifest_builder_resolves_duplicates_by_dec034_and_reports_counts_only() -> None:
+    """DEC-034 A: one copy of each consistent repeat, conflicts excluded, counts only."""
     from scripts.benchmarks.phase1b.build_manifest import build_manifest
 
     rows = _rows()
@@ -441,19 +457,63 @@ def test_manifest_builder_reports_duplicate_identities_as_counts_only() -> None:
     duplicated = [
         *rows,
         dict(rows[0]),  # exact copy
+        dict(rows[0]),  # second exact copy
         {**rows[1], "label": "0" if rows[1]["label"] == "1" else "1"},  # label conflict
     ]
-    with pytest.raises(ValueError) as caught:
+    manifest = build_manifest(
+        duplicated,
+        dataset_sha256=PIN["sha256"],
+        dataset_revision=PIN["revision"],
+        code_sha=CODE_SHA,
+        shard_size=2,
+    )
+    assert manifest["identity_resolution"] == {
+        "policy": common.DEDUP_POLICY,
+        "source_rows": len(rows) + 3,
+        "repeated_identities": 2,
+        "duplicate_rows_removed": 2,
+        "conflicting_identities_excluded": 1,
+        "conflicting_rows_excluded": 2,
+        "unique_identities_kept": len(rows) - 1,
+    }
+    selected = [rid for shard in manifest["shards"] for rid in shard["record_ids"]]
+    assert sorted(selected) == sorted(
+        common.stable_record_id(row) for row in rows if row is not rows[1]
+    )
+    assert common.stable_record_id(rows[1]) not in selected
+    assert manifest["sample_count"] == len(rows) - 1
+    encoded = common.canonical_json(manifest["identity_resolution"]).decode()
+    assert secret_doc not in encoded and "claim" not in encoded
+
+
+def test_manifest_builder_is_independent_of_duplicate_order() -> None:
+    from scripts.benchmarks.phase1b.build_manifest import build_manifest
+
+    rows = _rows()
+    duplicated = [
+        *rows,
+        dict(rows[2]),
+        {**rows[3], "label": "0" if rows[3]["label"] == "1" else "1"},
+    ]
+    kwargs = {
+        "dataset_sha256": PIN["sha256"],
+        "dataset_revision": PIN["revision"],
+        "code_sha": CODE_SHA,
+        "shard_size": 2,
+    }
+    assert build_manifest(duplicated, **kwargs) == build_manifest(
+        list(reversed(duplicated)), **kwargs
+    )
+
+
+def test_manifest_builder_refuses_when_nothing_remains() -> None:
+    from scripts.benchmarks.phase1b.build_manifest import build_manifest
+
+    row = _rows(1)[0]
+    with pytest.raises(ValueError, match="no DEV rows remain"):
         build_manifest(
-            duplicated,
+            [row, {**row, "label": "1" if row["label"] == "0" else "0"}],
             dataset_sha256=PIN["sha256"],
             dataset_revision=PIN["revision"],
             code_sha=CODE_SHA,
-            shard_size=2,
         )
-    message = str(caught.value)
-    assert message == (
-        "duplicate content-addressed DEV row: 2 identities repeated (2 extra rows), "
-        "1 with conflicting labels"
-    )
-    assert secret_doc not in message and "claim" not in message

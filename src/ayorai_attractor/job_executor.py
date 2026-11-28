@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Protocol
 
 from .job_store import Job, JobStore
+
+logger = logging.getLogger(__name__)
 
 
 class JobHandler(Protocol):
@@ -28,7 +31,11 @@ class JobExecutor:
         job = self.store.claim(job_id, lease_seconds=lease_seconds, now=now)
         try:
             self.handler.execute(job)
-        except Exception:
+        except Exception as exc:
+            # Only the exception type: the message may carry payload data.
+            logger.warning(
+                "job %s attempt %d failed: %s", job.job_id, job.attempts, type(exc).__name__
+            )
             return self.store.finish(job.job_id, success=False, attempt=job.attempts)
         return self.store.finish(job.job_id, success=True, attempt=job.attempts)
 
