@@ -34,9 +34,9 @@ try:
         DEV_PIN_PATH,
         canonical_json,
         load_records,
+        resolve_dev_identities,
         sha256_bytes,
         sha256_file,
-        stable_record_id,
     )
     from .encrypt_artifact import decode_key
     from .score_cache import (
@@ -56,9 +56,9 @@ except ImportError:  # direct script execution
         DEV_PIN_PATH,
         canonical_json,
         load_records,
+        resolve_dev_identities,
         sha256_bytes,
         sha256_file,
-        stable_record_id,
     )
     from scripts.benchmarks.phase1b.encrypt_artifact import decode_key
     from scripts.benchmarks.phase1b.score_cache import (
@@ -104,9 +104,9 @@ def build_doc_map(
     for row in rows:
         if "split" in row and str(row["split"]).lower() == "test":
             raise ValueError("TEST rows are forbidden in Phase 1b")
-        record_id = stable_record_id(row)
-        if record_id in index:
-            raise ValueError("duplicate content-addressed DEV row")
+    # DEC-034: the same identity resolution as the manifest builder.
+    resolved, _ = resolve_dev_identities(rows)
+    for record_id, row in resolved.items():
         cohort = str(row["dataset"])
         doc = row["doc"]
         if not isinstance(doc, str) or not doc.strip():
